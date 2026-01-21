@@ -20,3 +20,65 @@ Design Notes:
 - Identity-based equality (ContractId)
 - Pure domain entity (no persistence or framework concerns)
 """
+
+from dataclasses import dataclass, field
+from datetime import datetime, date, time
+from app.domain.value_objects.core import ContractId, TenantId, ClientId, DateRange, Money
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.events import DomainEvent, ContractRenewed, ContractTerminated
+from app.domain.exceptions import DomainError
+from app.shared.utils.datetime import utc_now
+
+@dataclass
+class ContractEntity:
+    _id: ContractId
+    _tenant_id: TenantId
+    _client_id: ClientId
+    
+    _period: DateRange  # Value Object
+    _billing_rate: Money  # Value Object
+    _payment_frequency: PaymentFrequency
+    _payment_status: PaymentStatus
+    
+    _status: ContractStatus
+    _is_auto_renew: bool
+    
+    _last_billing_date: date | None = None
+    _next_billing_date: date | None = None
+    
+    _signed_by: str | None = None
+    _signed_at: datetime | None = None
+    _termination_reason: str | None = None
+    
+    _created_at: datetime
+    _updated_at: datetime
+    _deleted_at: datetime | None = None
+    
+    _events: list[DomainEvent] = field(default_factory=list)
+    
+    def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
+        if new_end_date <= self._period.end_date.date():
+            raise DomainError("New end date must be after current")
+        # Convert date to datetime at end of day for the new period
+        new_end_datetime = datetime.combine(new_end_date, time.max).replace(tzinfo=self._period.end_date.tzinfo)
+        self._period = DateRange(self._period.start_date, new_end_datetime)
+        if new_rate:
+            self._billing_rate = new_rate
+        self._status = ContractStatus.RENEWED
+        self._events.append(ContractRenewed(occurred_at=utc_now(), contract_id=self._id, new_end_date=new_end_datetime))
+    
+    def terminate(self, reason: str) -> None:
+        if not reason:
+            raise DomainError("Termination requires reason")
+        self._status = ContractStatus.TERMINATED
+        self._termination_reason = reason
+        self._events.append(ContractTerminated(occurred_at=utc_now(), contract_id=self._id, reason=reason))
+    
+    def is_active(self) -> bool:
+        if self._status != ContractStatus.ACTIVE:
+            return False
+        return self._period.contains(utc_now())
+    
+    def days_remaining(self) -> int:
+        """Returns days remaining in contract. Negative if expired."""
+        return (self._period.end_date - utc_now()).days

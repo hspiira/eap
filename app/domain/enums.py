@@ -1,7 +1,6 @@
 """Enumarations for the application."""
 
 from enum import Enum
-from tkinter import ACTIVE
 
 class TenantStatus(str, Enum):
     ACTIVE = "Active"
@@ -85,3 +84,21 @@ class SubscriptionTier(str, Enum):
     BASIC = "Basic"
     PROFESSIONAL = "Professional"
     ENTERPRISE = "Enterprise"
+
+class Language(str, Enum):
+    ENGLISH = "en"
+    SPANISH = "es"
+    FRENCH = "fr"
+    GERMAN = "de"
+    ITALIAN = "it"
+    PORTUGUESE = "pt"
+    CHINESE = "zh"
+    JAPANESE = "ja"
+    KOREAN = "ko"
+
+class ContactMethod(str, Enum):
+    EMAIL = "email"
+    PHONE = "phone"
+    SMS = "sms"
+    WHATSAPP = "whatsapp"
+    WECHAT = "wechat"

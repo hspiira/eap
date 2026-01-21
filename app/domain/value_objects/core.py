@@ -5,13 +5,12 @@ Value objects are immutable types that represent domain concepts with self-valid
 They have no identity, only value.
 """
 
-from ast import Tuple
 from dataclasses import dataclass
 from datetime import date, datetime
-from pyexpat import features
+from typing import Tuple
 import re
-from typing import Optional
-from pydantic import BaseModel, Field, EmailStr
+from app.domain.enums import WorkStatus, StaffRole, RelationType
+from app.domain.enums import WorkStatus, StaffRole, RelationType
 
 
 @dataclass(frozen=True)
@@ -64,7 +63,10 @@ TenantId = Id # Alias for Id
 PersonId = Id # Alias for Id
 ContractId = Id # Alias for Id
 ServiceId = Id # Alias for Id
-
+SessionId = Id # Alias for Id
+UserId = Id # Alias for Id
+ClientId = Id # Alias for Id
+IndustryId = Id # Alias for Id
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)
@@ -135,3 +137,78 @@ class TenantSettings:
     custom_branding: bool=False
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
+
+@dataclass(frozen=True)
+class ContactInfo:
+    phone: str | None = None
+    email: Email | None = None
+    address: str | None = None
+    def has_any_contact(self) -> bool:
+        return bool(self.phone or self.email or self.address)
+
+@dataclass(frozen=True)
+class Address:
+    street: str
+    city: str
+    country: str
+    postal_code: str | None = None
+    def __post_init__(self):
+        if not self.street or not self.city or not self.country:
+            raise ValueError("Address requires street, city, country")
+
+@dataclass(frozen=True)
+class EmergencyContact:
+    name: str
+    phone: str | None = None
+    email: Email | None = None
+    def __post_init__(self):
+        if not self.name:
+            raise ValueError("Emergency contact name required")
+        if not self.phone and not self.email:
+            raise ValueError("Emergency contact needs phone or email")
+
+@dataclass(frozen=True)
+class LicenseInfo:
+    number: str
+    issuing_authority: str
+    expiry_date: date | None = None
+    def __post_init__(self):
+        if not self.number or not self.issuing_authority:
+            raise ValueError("License number and authority required")
+    def is_valid(self) -> bool:
+        if not self.expiry_date:
+            return True
+        return self.expiry_date >= date.today()
+
+@dataclass(frozen=True)
+class EmploymentInfo:
+    role: str
+    start_date: date
+    status: WorkStatus
+    department: str | None = None
+    employee_id: str | None = None
+    end_date: date | None = None
+    def __post_init__(self):
+        if self.end_date and self.end_date < self.start_date:
+            raise ValueError("End date must be after start date")
+    def is_active(self) -> bool:
+        return self.status == WorkStatus.ACTIVE
+
+@dataclass(frozen=True)
+class StaffInfo:
+    role: StaffRole
+    client_id: ClientId
+    department: str | None = None
+    can_manage_clients: bool = False
+    can_manage_services: bool = False
+    can_view_reports: bool = False
+
+@dataclass(frozen=True)
+class DependentInfo:
+    primary_employee_id: PersonId
+    relationship: RelationType
+    guardian_id: UserId | None = None
+    def is_eligible(self) -> bool:
+        # Dependent eligibility depends on primary employee
+        # This would be checked at application layer
+        return True

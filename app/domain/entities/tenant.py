@@ -11,7 +11,6 @@ Responsibilities:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.events import DomainEvent, TenantActivated, TenantSuspended, TenantTerminated
@@ -28,8 +27,8 @@ class TenantEntity:
     _status: TenantStatus
     _settings: TenantSettings
     _subscription_tier: SubscriptionTier
-    _deleted_at: Optional[datetime] = None
-    _updated_at: Optional[datetime] = None
+    _deleted_at: datetime | None = None
+    _updated_at: datetime | None = None
 
     # Domain Events
     _events: list[DomainEvent] = field(default_factory=list)
@@ -70,6 +69,9 @@ class TenantEntity:
     # === Invariants ===
     
     def _ensure_invariants(self) -> None:
+        """Ensure tenant invariants are met"""
+        if not self._code:
+            raise InvariantViolation("Tenant must have a code")
         if not self._name:
             raise InvariantViolation("Tenant must have a name")
         if not self._slug:
