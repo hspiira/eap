@@ -16,14 +16,5 @@
         "src": "/(.*)",
         "dest": "app/main.py"
       }
-    ],
-    "functions": {
-      "app/main.py": {
-        "memory": 1024,
-        "maxDuration": 60
-      }
-    },
-    "env": {
-      "PYTHONUNBUFFERED": "1"
-    }
+    ]
   }  
