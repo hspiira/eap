@@ -1,18 +1,18 @@
 """Input sanitization utilities."""
 
-import html
+import nh3
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 
 class InputSanitizer:
     """Sanitize user inputs to prevent XSS and injection attacks."""
 
     # Allowed HTML tags (empty for strict sanitization)
-    ALLOWED_TAGS: list[str] = []
+    ALLOWED_TAGS: ClassVar[list[str]] = []
 
     # Allowed HTML attributes
-    ALLOWED_ATTRIBUTES: dict[str, list[str]] = {}
+    ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {}
 
     # Regex for validating identifiers
     IDENTIFIER_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -25,12 +25,7 @@ class InputSanitizer:
         """Remove all HTML tags and entities."""
         if not value:
             return value
-
-        # Remove HTML tags using regex
-        cleaned = re.sub(r"<[^>]+>", "", value)
-
-        # Escape HTML entities
-        return html.escape(cleaned)
+        return nh3.clean(value, tags=set)
 
     @classmethod
     def sanitize_identifier(cls, value: str) -> str:
@@ -43,7 +38,7 @@ class InputSanitizer:
             return value
 
         if not cls.IDENTIFIER_PATTERN.match(value):
-            raise ValueError(f"Invalid identifier format: {value}")
+            raise ValueError("Invalid identifier format")
 
         return value
 

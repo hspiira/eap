@@ -7,10 +7,11 @@ They have no identity, only value.
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Tuple
+import decimal
 import re
 from app.domain.enums import WorkStatus, StaffRole, RelationType
 from app.domain.enums import WorkStatus, StaffRole, RelationType
+from app.shared.utils.datetime import utc_now
 
 
 @dataclass(frozen=True)
@@ -88,10 +89,10 @@ class Email:
 
 @dataclass(frozen=True)
 class Money:
-    amount: float
+    amount: decimal.Decimal
     currency: str
     def __post_init__(self):
-        if not self.amount or self.amount < 0:
+        if self.amount < 0:
             raise ValueError("Amount must be a positive number")
         if not self.currency or len(self.currency) != 3:
             raise ValueError("Currency must be a 3-letter ISO code")
@@ -103,10 +104,12 @@ class Money:
         if self.currency != other.currency:
             raise ValueError("Currencies must be the same")
         return Money(self.amount - other.amount, self.currency)
-    def multiply(self, other: 'Money') -> 'Money':
-        return Money(self.amount * other.amount, self.currency)
-    def divide(self, other: 'Money') -> 'Money':
-        return Money(self.amount / other.amount, self.currency)
+    def multiply(self, factor: decimal.Decimal) -> 'Money':
+        return Money(self.amount * factor, self.currency)
+    def divide(self, divisor: decimal.Decimal) -> 'Money':
+        if divisor == 0:
+            raise ValueError("Division by zero")
+        return Money(self.amount / divisor, self.currency)
 
 @dataclass(frozen=True)
 class DateRange:
@@ -126,14 +129,14 @@ class DateRange:
         return self.end_date.year - self.start_date.year
     def contains(self, date: datetime) -> bool:
         return self.start_date <= date <= self.end_date
-    def extend_to(self, new_end: date) -> 'DateRange':
+    def extend_to(self, new_end: datetime) -> 'DateRange':
         return DateRange(self.start_date, new_end)
 
 @dataclass(frozen=True)
 class TenantSettings:
     max_users: int
     max_clients: int
-    features_enabled: Tuple[str, ...]
+    features_enabled: tuple[str, ...]
     custom_branding: bool=False
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
@@ -178,7 +181,7 @@ class LicenseInfo:
     def is_valid(self) -> bool:
         if not self.expiry_date:
             return True
-        return self.expiry_date >= date.today()
+        return self.expiry_date >= utc_now().date()
 
 @dataclass(frozen=True)
 class EmploymentInfo:

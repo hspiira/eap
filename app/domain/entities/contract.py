@@ -65,6 +65,7 @@ class ContractEntity:
         if new_rate:
             self._billing_rate = new_rate
         self._status = ContractStatus.RENEWED
+        self._updated_at = utc_now()
         self._events.append(ContractRenewed(occurred_at=utc_now(), contract_id=self._id, new_end_date=new_end_datetime))
     
     def terminate(self, reason: str) -> None:
@@ -72,10 +73,12 @@ class ContractEntity:
             raise DomainError("Termination requires reason")
         self._status = ContractStatus.TERMINATED
         self._termination_reason = reason
+        self._updated_at = utc_now()
         self._events.append(ContractTerminated(occurred_at=utc_now(), contract_id=self._id, reason=reason))
     
     def is_active(self) -> bool:
-        if self._status != ContractStatus.ACTIVE:
+        """Check if contract is active. Returns True for ACTIVE or RENEWED status."""
+        if self._status not in (ContractStatus.ACTIVE, ContractStatus.RENEWED):
             return False
         return self._period.contains(utc_now())
     

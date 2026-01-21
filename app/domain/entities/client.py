@@ -36,12 +36,14 @@ class ClientEntity:
     
     def verify(self, verified_by: UserId) -> None:
         self._is_verified = True
+        self._updated_at = utc_now()
         self._events.append(ClientVerified(occurred_at=utc_now(), client_id=self._id, verified_by=verified_by))
     
     def activate(self) -> None:
         if not self._contact_info.has_any_contact():
             raise DomainError("Active clients must have contact info")
         self._status = BaseStatus.ACTIVE
+        self._updated_at = utc_now()
         self._events.append(ClientActivated(occurred_at=utc_now(), client_id=self._id))
     
     def is_active(self) -> bool:

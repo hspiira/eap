@@ -6,7 +6,7 @@ They are used to communicate state changes between bounded contexts.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from app.domain.value_objects.core import (
     TenantId, PersonId, UserId, ContractId, ClientId, SessionId
 )
@@ -17,6 +17,15 @@ from app.domain.enums import PersonType
 class DomainEvent:
     """Base class for all domain events."""
     occurred_at: datetime
+    
+    def __post_init__(self) -> None:
+        """Validate that occurred_at is timezone-aware UTC datetime."""
+        if self.occurred_at is None:
+            raise ValueError("occurred_at cannot be None")
+        if self.occurred_at.tzinfo is None:
+            raise ValueError("occurred_at must be timezone-aware")
+        if self.occurred_at.tzinfo != UTC:
+            raise ValueError(f"occurred_at must be UTC, got {self.occurred_at.tzinfo}")
 
 
 @dataclass(frozen=True)
@@ -111,6 +120,16 @@ class ContractRenewed(DomainEvent):
     """Event raised when a contract is renewed."""
     contract_id: ContractId
     new_end_date: datetime
+    
+    def __post_init__(self) -> None:
+        """Validate that new_end_date is timezone-aware UTC datetime."""
+        super().__post_init__()
+        if self.new_end_date is None:
+            raise ValueError("new_end_date cannot be None")
+        if self.new_end_date.tzinfo is None:
+            raise ValueError("new_end_date must be timezone-aware")
+        if self.new_end_date.tzinfo != UTC:
+            raise ValueError(f"new_end_date must be UTC, got {self.new_end_date.tzinfo}")
 
 
 @dataclass(frozen=True)
@@ -170,3 +189,13 @@ class SessionRescheduled(DomainEvent):
     """Event raised when a service session is rescheduled."""
     session_id: SessionId
     new_scheduled_at: datetime
+    
+    def __post_init__(self) -> None:
+        """Validate that new_scheduled_at is timezone-aware UTC datetime."""
+        super().__post_init__()
+        if self.new_scheduled_at is None:
+            raise ValueError("new_scheduled_at cannot be None")
+        if self.new_scheduled_at.tzinfo is None:
+            raise ValueError("new_scheduled_at must be timezone-aware")
+        if self.new_scheduled_at.tzinfo != UTC:
+            raise ValueError(f"new_scheduled_at must be UTC, got {self.new_scheduled_at.tzinfo}")

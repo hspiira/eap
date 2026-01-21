@@ -39,6 +39,12 @@ class ServiceSessionEntity:
     _events: list[DomainEvent] = field(default_factory=list)
     
     def complete(self, duration: int, notes: str | None = None) -> None:
+        if self._status not in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED}:
+            raise DomainError("Only scheduled sessions can be completed")
+        if duration <= 0:
+            raise DomainError("Duration must be positive")
+        if not notes:
+            raise DomainError("Notes are required for completed session")
         self._status = SessionStatus.COMPLETED
         self._completed_at = utc_now()
         self._duration = duration
@@ -46,13 +52,19 @@ class ServiceSessionEntity:
         self._events.append(SessionCompleted(occurred_at=utc_now(), session_id=self._id, person_id=self._person_id))
     
     def cancel(self, reason: str) -> None:
+        if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
+            raise DomainError("Cannot cancel completed or finalized session")
         if not reason:
             raise DomainError("Cancellation requires reason")
-        self._status = SessionStatus.CANCELED
+        self._status = SessionStatus.CANCELLED
         self._cancellation_reason = reason
         self._events.append(SessionCancelled(occurred_at=utc_now(), session_id=self._id, reason=reason))
     
     def reschedule(self, new_scheduled_at: datetime) -> None:
+        if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
+            raise DomainError("Cannot reschedule completed or finalized session")
+        if new_scheduled_at <= utc_now():
+            raise DomainError("New scheduled time must be in the future")
         self._status = SessionStatus.RESCHEDULED
         self._scheduled_at = new_scheduled_at
         self._reschedule_count += 1

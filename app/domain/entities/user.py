@@ -44,6 +44,10 @@ class UserEntity:
     # Events
     _events: list[DomainEvent] = field(default_factory=list)
     
+    def __post_init__(self) -> None:
+        """Validate invariants immediately after construction."""
+        self._ensure_invariants()
+    
     # === Behaviors ===
     
     def verify_email(self) -> None:
@@ -85,4 +89,5 @@ class UserEntity:
         """Ensure user invariants are met"""
         if not self._email:
             raise InvariantViolation("User must have an email")
-        # Note: password_hash may be None for OAuth users or pending users
+        if self._status == UserStatus.BANNED:
+            raise InvariantViolation("Banned users cannot be active")

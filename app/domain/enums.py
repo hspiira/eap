@@ -1,4 +1,4 @@
-"""Enumarations for the application."""
+"""Enumerations for the application."""
 
 from enum import Enum
 
@@ -76,7 +76,7 @@ class SessionStatus(str, Enum):
     SCHEDULED = "Scheduled"
     RESCHEDULED = "Rescheduled"
     COMPLETED = "Completed"
-    CANCELED = "Canceled"
+    CANCELLED = "Cancelled"
     NO_SHOW = "No Show"
 
 class SubscriptionTier(str, Enum):

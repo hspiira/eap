@@ -5,7 +5,7 @@ All datetime values in the system should be timezone-aware UTC.
 Use these helpers instead of datetime.now() or datetime.utcnow().
 """
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 
 def utc_now() -> datetime:

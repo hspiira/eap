@@ -6,5 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beanie>=2.0.1",
+    "cuid2>=2.0.1",
     "fastapi[standard]>=0.128.0",
+    "nh3>=0.3.2",
+    "sqlalchemy>=2.0.46",
 ]
