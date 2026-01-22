@@ -4,10 +4,18 @@ Repository Implementations
 SQLAlchemy implementations of domain repository interfaces.
 """
 
+from app.infrastructure.repositories.person_repository import (
+    PersonRepositoryImpl,
+)
 from app.infrastructure.repositories.tenant_repository import (
-    SQLAlchemyTenantRepository,
+    TenantRepositoryImpl,
+)
+from app.infrastructure.repositories.user_repository import (
+    UserRepositoryImpl,
 )
 
 __all__ = [
-    "SQLAlchemyTenantRepository",
+    "PersonRepositoryImpl",
+    "TenantRepositoryImpl",
+    "UserRepositoryImpl",
 ]

@@ -5,7 +5,7 @@ Database representation of Tenant aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import Enum as SQLEnum, JSON, String
+from sqlalchemy import CheckConstraint, Enum as SQLEnum, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import SubscriptionTier, TenantStatus
@@ -26,6 +26,16 @@ class TenantModel(CuidMixin, Base, TimestampMixin, SoftDeleteMixin):
     """
 
     __tablename__ = "tenants"
+    __table_args__ = (
+        CheckConstraint(
+            f"status IN {tuple([e.value for e in TenantStatus])}",
+            name="tenant_status_check",
+        ),
+        CheckConstraint(
+            f"subscription_tier IN {tuple([e.value for e in SubscriptionTier])}",
+            name="tenant_subscription_tier_check",
+        ),
+    )
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False)

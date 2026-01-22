@@ -4,8 +4,12 @@ Mappers
 Convert between domain entities and database models.
 """
 
+from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.mappers.tenant_mapper import TenantMapper
+from app.infrastructure.mappers.user_mapper import UserMapper
 
 __all__ = [
+    "PersonMapper",
     "TenantMapper",
+    "UserMapper",
 ]
