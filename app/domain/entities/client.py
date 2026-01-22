@@ -14,24 +14,22 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass
 class ClientEntity:
+    # Required fields (no defaults)
     _id: ClientId
     _tenant_id: TenantId
-    
     _name: str
-    _contact_info: ContactInfo  # Value Object
-    _billing_address: Address | None = None  # Value Object
-    
-    _industry_id: IndustryId | None = None
-    _parent_client_id: ClientId | None = None
-    
+    _contact_info: ContactInfo
     _status: BaseStatus
     _is_verified: bool
-    _preferred_contact_method: ContactMethod | None = None
-    
     _created_at: datetime
     _updated_at: datetime
-    _deleted_at: datetime | None = None
     
+    # Optional fields (with defaults)
+    _billing_address: Address | None = None
+    _industry_id: IndustryId | None = None
+    _parent_client_id: ClientId | None = None
+    _preferred_contact_method: ContactMethod | None = None
+    _deleted_at: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list)
     
     def verify(self, verified_by: UserId) -> None:

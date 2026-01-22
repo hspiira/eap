@@ -14,30 +14,26 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass
 class ServiceSessionEntity:
+    # Required fields (no defaults)
     _id: SessionId
     _tenant_id: TenantId
-    
     _service_id: ServiceId
     _provider_id: PersonId
     _person_id: PersonId
-    
     _scheduled_at: datetime
     _status: SessionStatus
-
     _created_at: datetime
     _updated_at: datetime
-
+    _reschedule_count: int
+    
+    # Optional fields (with defaults)
     _completed_at: datetime | None = None
     _duration: int | None = None
     _location: str | None = None
-    
     _notes: str | None = None
     _feedback: str | None = None
     _cancellation_reason: str | None = None
-    _reschedule_count: int
-    
     _deleted_at: datetime | None = None
-    
     _events: list[DomainEvent] = field(default_factory=list)
     
     def complete(self, duration: int, notes: str | None = None) -> None:

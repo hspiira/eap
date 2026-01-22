@@ -15,33 +15,23 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass
 class UserEntity:
-    # Identity
+    # Required fields (no defaults)
     _id: UserId
     _tenant_id: TenantId  # Multi-tenancy scope
-    
-    # Authentication
     _email: Email  # Value Object
-    _password_hash: str | None = None
-    _email_verified_at: datetime | None = None
-    
-    # Status
     _status: UserStatus
-    _status_changed_at: datetime | None = None
-    
-    # Preferences
-    _preferred_language: Language | None = None
-    _timezone: str | None = None
-    
-    # Security
     _is_two_factor_enabled: bool
-    _last_login_at: datetime | None = None
-    
-    # Audit
     _created_at: datetime
     _updated_at: datetime
-    _deleted_at: datetime | None = None
     
-    # Events
+    # Optional fields (with defaults)
+    _password_hash: str | None = None
+    _email_verified_at: datetime | None = None
+    _status_changed_at: datetime | None = None
+    _preferred_language: Language | None = None
+    _timezone: str | None = None
+    _last_login_at: datetime | None = None
+    _deleted_at: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
@@ -51,31 +41,38 @@ class UserEntity:
     # === Behaviors ===
     
     def verify_email(self) -> None:
-        self._email_verified_at = utc_now()
+        now = utc_now()
+        self._email_verified_at = now
         if self._status == UserStatus.PENDING_VERIFICATION:
             self.activate()
-        self._events.append(UserEmailVerified(occurred_at=utc_now(), user_id=self._id))
+        self._events.append(UserEmailVerified(occurred_at=now, user_id=self._id))
     
     def activate(self) -> None:
         if self._status == UserStatus.BANNED:
             raise DomainError("Cannot activate banned user")
         self._status = UserStatus.ACTIVE
-        self._status_changed_at = utc_now()
-        self._events.append(UserActivated(occurred_at=utc_now(), user_id=self._id))
+        now = utc_now()
+        self._status_changed_at = now
+        self._updated_at = now
+        self._events.append(UserActivated(occurred_at=now, user_id=self._id))
     
     def suspend(self, reason: str) -> None:
         if not reason:
             raise DomainError("Suspension requires reason")
         self._status = UserStatus.SUSPENDED
-        self._status_changed_at = utc_now()
-        self._events.append(UserSuspended(occurred_at=utc_now(), user_id=self._id, reason=reason))
+        now = utc_now()
+        self._status_changed_at = now
+        self._updated_at = now
+        self._events.append(UserSuspended(occurred_at=now, user_id=self._id, reason=reason))
     
     def ban(self, reason: str) -> None:
         if not reason:
             raise DomainError("Ban requires reason")
         self._status = UserStatus.BANNED
-        self._status_changed_at = utc_now()
-        self._events.append(UserBanned(occurred_at=utc_now(), user_id=self._id, reason=reason))
+        now = utc_now()
+        self._status_changed_at = now
+        self._updated_at = now
+        self._events.append(UserBanned(occurred_at=now, user_id=self._id, reason=reason))
     
     def record_login(self) -> None:
         self._last_login_at = utc_now()
