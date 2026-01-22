@@ -2,8 +2,16 @@
 Service Use Cases
 
 Application services for Service aggregate operations.
+Refactored to use base use case classes.
 """
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_archive_use_case,
+    create_deactivate_use_case,
+    create_restore_use_case,
+)
 from app.domain.entities.service import ServiceEntity
 from app.domain.enums import BaseStatus
 from app.domain.repositories.service_repository import ServiceRepository
@@ -11,10 +19,61 @@ from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-class CreateServiceUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateServiceUseCase:
+    """Use case for activating a service."""
+
+    def __init__(self, service_repository: ServiceRepository):
+        self._use_case = create_activate_use_case(service_repository, "Service")
+
+    async def execute(self, service_id: ServiceId) -> ServiceEntity:
+        return await self._use_case.execute(service_id)
+
+
+class DeactivateServiceUseCase:
+    """Use case for deactivating a service."""
+
+    def __init__(self, service_repository: ServiceRepository):
+        self._use_case = create_deactivate_use_case(service_repository, "Service")
+
+    async def execute(self, service_id: ServiceId, reason: str | None = None) -> ServiceEntity:
+        return await self._use_case.execute(service_id, reason=reason)
+
+
+class ArchiveServiceUseCase:
+    """Use case for archiving a service."""
+
+    def __init__(self, service_repository: ServiceRepository):
+        self._use_case = create_archive_use_case(service_repository, "Service")
+
+    async def execute(self, service_id: ServiceId) -> ServiceEntity:
+        return await self._use_case.execute(service_id)
+
+
+class RestoreServiceUseCase:
+    """Use case for restoring a service."""
+
+    def __init__(self, service_repository: ServiceRepository):
+        self._use_case = create_restore_use_case(service_repository, "Service")
+
+    async def execute(self, service_id: ServiceId) -> ServiceEntity:
+        return await self._use_case.execute(service_id)
+
+
+# =============================================================================
+# CREATE USE CASE
+# =============================================================================
+
+
+class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     """Use case for creating a new service."""
 
     def __init__(self, service_repository: ServiceRepository):
+        super().__init__(service_repository)
         self.service_repository = service_repository
 
     async def execute(
@@ -28,25 +87,7 @@ class CreateServiceUseCase:
         is_group_service: bool = False,
         max_participants: int | None = None,
     ) -> ServiceEntity:
-        """
-        Create a new service.
-
-        Args:
-            service_id: Unique service identifier
-            tenant_id: Tenant identifier
-            name: Service name
-            description: Service description (optional)
-            category: Service category (optional)
-            duration_minutes: Service duration in minutes (optional)
-            is_group_service: Whether this is a group service
-            max_participants: Maximum participants for group services (optional)
-
-        Returns:
-            Created ServiceEntity
-
-        Raises:
-            ValueError: If service with name already exists
-        """
+        """Create a new service."""
         # Check if service already exists
         existing = await self.service_repository.get_by_name(tenant_id, name)
         if existing:
@@ -67,142 +108,19 @@ class CreateServiceUseCase:
             _max_participants=max_participants,
         )
 
-        # Save service
-        await self.service_repository.save(service)
-
-        return service
+        return await self._save_and_publish_events(service)
 
 
-class ActivateServiceUseCase:
-    """Use case for activating a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        """
-        Activate a service.
-
-        Args:
-            service_id: Service identifier
-
-        Returns:
-            Activated ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If activation is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
-
-        service.activate()
-        service._updated_at = utc_now()
-        await self.service_repository.save(service)
-
-        return service
+# =============================================================================
+# UPDATE USE CASES
+# =============================================================================
 
 
-class DeactivateServiceUseCase:
-    """Use case for deactivating a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
-
-    async def execute(
-        self, service_id: ServiceId, reason: str | None = None
-    ) -> ServiceEntity:
-        """
-        Deactivate a service.
-
-        Args:
-            service_id: Service identifier
-            reason: Deactivation reason (optional)
-
-        Returns:
-            Deactivated ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If deactivation is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
-
-        service.deactivate(reason)
-        service._updated_at = utc_now()
-        await self.service_repository.save(service)
-
-        return service
-
-
-class ArchiveServiceUseCase:
-    """Use case for archiving a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        """
-        Archive a service.
-
-        Args:
-            service_id: Service identifier
-
-        Returns:
-            Archived ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If archive is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
-
-        service.archive()
-        await self.service_repository.save(service)
-
-        return service
-
-
-class RestoreServiceUseCase:
-    """Use case for restoring a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        """
-        Restore an archived or soft-deleted service.
-
-        Args:
-            service_id: Service identifier
-
-        Returns:
-            Restored ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If restore is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
-
-        service.restore()
-        await self.service_repository.save(service)
-
-        return service
-
-
-class UpdateServiceUseCase:
+class UpdateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     """Use case for updating service information."""
 
     def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
+        super().__init__(service_repository)
 
     async def execute(
         self,
@@ -212,26 +130,8 @@ class UpdateServiceUseCase:
         category: str | None = None,
         duration_minutes: int | None = None,
     ) -> ServiceEntity:
-        """
-        Update service information.
-
-        Args:
-            service_id: Service identifier
-            name: Service name (optional)
-            description: Service description (optional)
-            category: Service category (optional)
-            duration_minutes: Service duration in minutes (optional)
-
-        Returns:
-            Updated ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If update is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
+        """Update service information."""
+        service = await self._get_entity_or_raise(service_id, "Service")
 
         if name is not None:
             service.update_name(name)
@@ -242,16 +142,14 @@ class UpdateServiceUseCase:
         if duration_minutes is not None:
             service.update_duration(duration_minutes)
 
-        await self.service_repository.save(service)
-
-        return service
+        return await self._save_and_publish_events(service)
 
 
-class UpdateServiceGroupSettingsUseCase:
+class UpdateServiceGroupSettingsUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     """Use case for updating service group settings."""
 
     def __init__(self, service_repository: ServiceRepository):
-        self.service_repository = service_repository
+        super().__init__(service_repository)
 
     async def execute(
         self,
@@ -259,60 +157,30 @@ class UpdateServiceGroupSettingsUseCase:
         is_group_service: bool,
         max_participants: int | None = None,
     ) -> ServiceEntity:
-        """
-        Update service group settings.
-
-        Args:
-            service_id: Service identifier
-            is_group_service: Whether this is a group service
-            max_participants: Maximum participants for group services (optional)
-
-        Returns:
-            Updated ServiceEntity
-
-        Raises:
-            ValueError: If service not found
-            DomainError: If update is invalid
-        """
-        service = await self.service_repository.get_by_id(service_id)
-        if not service:
-            raise ValueError(f"Service {service_id.value} not found")
-
+        """Update service group settings."""
+        service = await self._get_entity_or_raise(service_id, "Service")
         service.update_group_settings(is_group_service, max_participants)
-        await self.service_repository.save(service)
-
-        return service
+        return await self._save_and_publish_events(service)
 
 
-class GetServiceUseCase:
+# =============================================================================
+# QUERY USE CASE
+# =============================================================================
+
+
+class GetServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     """Use case for retrieving a service."""
 
     def __init__(self, service_repository: ServiceRepository):
+        super().__init__(service_repository)
         self.service_repository = service_repository
 
     async def execute(self, service_id: ServiceId) -> ServiceEntity | None:
-        """
-        Get service by ID.
-
-        Args:
-            service_id: Service identifier
-
-        Returns:
-            ServiceEntity if found, None otherwise
-        """
-        return await self.service_repository.get_by_id(service_id)
+        """Get service by ID."""
+        return await self.repository.get_by_id(service_id)
 
     async def execute_by_name(
         self, tenant_id: TenantId, name: str
     ) -> ServiceEntity | None:
-        """
-        Get service by name within a tenant.
-
-        Args:
-            tenant_id: Tenant identifier
-            name: Service name
-
-        Returns:
-            ServiceEntity if found, None otherwise
-        """
+        """Get service by name within a tenant."""
         return await self.service_repository.get_by_name(tenant_id, name)

@@ -2,10 +2,19 @@
 Person Use Cases
 
 Application services for Person aggregate operations.
+Refactored to use base use case classes.
 """
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_archive_use_case,
+    create_deactivate_use_case,
+    create_restore_use_case,
+    create_terminate_use_case,
+)
 from app.domain.entities.person import PersonEntity
 from app.domain.enums import PersonType
 from app.domain.repositories.person_repository import PersonRepository
@@ -17,17 +26,77 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-from app.shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from app.domain.entities.user import UserEntity
     from app.domain.value_objects.core import EmergencyContact
 
 
-class CreateClientEmployeeUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivatePersonUseCase:
+    """Use case for activating a person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        self._use_case = create_activate_use_case(person_repository, "Person")
+
+    async def execute(self, person_id: PersonId) -> PersonEntity:
+        return await self._use_case.execute(person_id)
+
+
+class DeactivatePersonUseCase:
+    """Use case for deactivating a person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        self._use_case = create_deactivate_use_case(person_repository, "Person")
+
+    async def execute(self, person_id: PersonId, reason: str | None = None) -> PersonEntity:
+        return await self._use_case.execute(person_id, reason=reason)
+
+
+class TerminatePersonUseCase:
+    """Use case for terminating a person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        self._use_case = create_terminate_use_case(person_repository, "Person")
+
+    async def execute(self, person_id: PersonId, reason: str) -> PersonEntity:
+        return await self._use_case.execute(person_id, reason=reason)
+
+
+class ArchivePersonUseCase:
+    """Use case for archiving a person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        self._use_case = create_archive_use_case(person_repository, "Person")
+
+    async def execute(self, person_id: PersonId) -> PersonEntity:
+        return await self._use_case.execute(person_id)
+
+
+class RestorePersonUseCase:
+    """Use case for restoring a person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        self._use_case = create_restore_use_case(person_repository, "Person")
+
+    async def execute(self, person_id: PersonId) -> PersonEntity:
+        return await self._use_case.execute(person_id)
+
+
+# =============================================================================
+# CREATE USE CASE
+# =============================================================================
+
+
+class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for creating a client employee person."""
 
     def __init__(self, person_repository: PersonRepository):
+        super().__init__(person_repository)
         self.person_repository = person_repository
 
     async def execute(
@@ -38,22 +107,7 @@ class CreateClientEmployeeUseCase:
         profile: "UserEntity",
         employment_info: "EmploymentInfo",
     ) -> PersonEntity:
-        """
-        Create a new client employee person.
-
-        Args:
-            person_id: Unique person identifier
-            tenant_id: Tenant identifier
-            user_id: User identifier
-            profile: UserEntity profile
-            employment_info: Employment information
-
-        Returns:
-            Created PersonEntity
-
-        Raises:
-            ValueError: If person already exists
-        """
+        """Create a new client employee person."""
         # Check if person already exists for this user
         existing = await self.person_repository.get_by_user_id(user_id)
         if existing:
@@ -68,165 +122,19 @@ class CreateClientEmployeeUseCase:
             employment_info=employment_info,
         )
 
-        # Save person
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class ActivatePersonUseCase:
-    """Use case for activating a person."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(self, person_id: PersonId) -> PersonEntity:
-        """
-        Activate a person.
-
-        Args:
-            person_id: Person identifier
-
-        Returns:
-            Activated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
-        person.activate()
-        person._updated_at = utc_now()
-        await self.person_repository.save(person)
-
-        return person
+# =============================================================================
+# SPECIALIZED COMMAND USE CASES
+# =============================================================================
 
 
-class GetPersonUseCase:
-    """Use case for retrieving a person."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(self, person_id: PersonId) -> PersonEntity | None:
-        """
-        Get person by ID.
-
-        Args:
-            person_id: Person identifier
-
-        Returns:
-            PersonEntity if found, None otherwise
-        """
-        return await self.person_repository.get_by_id(person_id)
-
-    async def execute_by_user_id(self, user_id: UserId) -> PersonEntity | None:
-        """
-        Get person by user ID.
-
-        Args:
-            user_id: User identifier
-
-        Returns:
-            PersonEntity if found, None otherwise
-        """
-        return await self.person_repository.get_by_user_id(user_id)
-
-
-class GetPersonsByTypeUseCase:
-    """Use case for retrieving persons by type."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(
-        self, tenant_id: TenantId, person_type: PersonType
-    ) -> list[PersonEntity]:
-        """
-        Get all persons of a specific type within a tenant.
-
-        Args:
-            tenant_id: Tenant identifier
-            person_type: Person type to filter by
-
-        Returns:
-            List of PersonEntity matching the type
-        """
-        return await self.person_repository.get_by_type(tenant_id, person_type)
-
-
-class DeactivatePersonUseCase:
-    """Use case for deactivating a person."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(
-        self, person_id: PersonId, reason: str | None = None
-    ) -> PersonEntity:
-        """
-        Deactivate a person.
-
-        Args:
-            person_id: Person identifier
-            reason: Deactivation reason (optional)
-
-        Returns:
-            Deactivated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If deactivation is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
-        person.deactivate(reason)
-        person._updated_at = utc_now()
-        await self.person_repository.save(person)
-
-        return person
-
-
-class TerminatePersonUseCase:
-    """Use case for terminating a person."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(self, person_id: PersonId, reason: str) -> PersonEntity:
-        """
-        Terminate a person.
-
-        Args:
-            person_id: Person identifier
-            reason: Termination reason
-
-        Returns:
-            Terminated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If termination is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
-        person.terminate(reason)
-        await self.person_repository.save(person)
-
-        return person
-
-
-class AddSecondaryRoleUseCase:
+class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for adding a secondary role to a person."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(
         self,
@@ -234,243 +142,116 @@ class AddSecondaryRoleUseCase:
         role: PersonType,
         info: "EmploymentInfo | LicenseInfo | StaffInfo",
     ) -> PersonEntity:
-        """
-        Add a secondary role to a person.
-
-        Args:
-            person_id: Person identifier
-            role: Secondary person type
-            info: Role-specific information
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If adding role is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Add a secondary role to a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.add_secondary_role(role, info)
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class RemoveSecondaryRoleUseCase:
+class RemoveSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for removing a secondary role from a person."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(self, person_id: PersonId) -> PersonEntity:
-        """
-        Remove secondary role from a person.
-
-        Args:
-            person_id: Person identifier
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If person doesn't have secondary role
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Remove secondary role from a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.remove_secondary_role()
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class UpdateEmergencyContactUseCase:
+# =============================================================================
+# UPDATE USE CASES
+# =============================================================================
+
+
+class UpdateEmergencyContactUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for updating emergency contact."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(
         self, person_id: PersonId, contact: "EmergencyContact"
     ) -> PersonEntity:
-        """
-        Update emergency contact for a person.
-
-        Args:
-            person_id: Person identifier
-            contact: Emergency contact information
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Update emergency contact for a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.update_emergency_contact(contact)
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class UpdateEmploymentInfoUseCase:
+class UpdateEmploymentInfoUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for updating employment information."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(
         self, person_id: PersonId, info: "EmploymentInfo"
     ) -> PersonEntity:
-        """
-        Update employment information for a person.
-
-        Args:
-            person_id: Person identifier
-            info: Employment information
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If update is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Update employment information for a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.update_employment_info(info)
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class UpdateLicenseInfoUseCase:
+class UpdateLicenseInfoUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for updating license information."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(self, person_id: PersonId, info: "LicenseInfo") -> PersonEntity:
-        """
-        Update license information for a person.
-
-        Args:
-            person_id: Person identifier
-            info: License information
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If update is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Update license information for a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.update_license_info(info)
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class UpdateStaffInfoUseCase:
+class UpdateStaffInfoUseCase(BaseUseCase[PersonEntity, PersonId]):
     """Use case for updating staff information."""
 
     def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
+        super().__init__(person_repository)
 
     async def execute(self, person_id: PersonId, info: "StaffInfo") -> PersonEntity:
-        """
-        Update staff information for a person.
-
-        Args:
-            person_id: Person identifier
-            info: Staff information
-
-        Returns:
-            Updated PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If update is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
+        """Update staff information for a person."""
+        person = await self._get_entity_or_raise(person_id, "Person")
         person.update_staff_info(info)
-        await self.person_repository.save(person)
-
-        return person
+        return await self._save_and_publish_events(person)
 
 
-class ArchivePersonUseCase:
-    """Use case for archiving a person."""
-
-    def __init__(self, person_repository: PersonRepository):
-        self.person_repository = person_repository
-
-    async def execute(self, person_id: PersonId) -> PersonEntity:
-        """
-        Archive a person.
-
-        Args:
-            person_id: Person identifier
-
-        Returns:
-            Archived PersonEntity
-
-        Raises:
-            ValueError: If person not found
-            DomainError: If archive is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
-
-        person.archive()
-        await self.person_repository.save(person)
-
-        return person
+# =============================================================================
+# QUERY USE CASES
+# =============================================================================
 
 
-class RestorePersonUseCase:
-    """Use case for restoring a person."""
+class GetPersonUseCase(BaseUseCase[PersonEntity, PersonId]):
+    """Use case for retrieving a person."""
 
     def __init__(self, person_repository: PersonRepository):
+        super().__init__(person_repository)
         self.person_repository = person_repository
 
-    async def execute(self, person_id: PersonId) -> PersonEntity:
-        """
-        Restore an archived or soft-deleted person.
+    async def execute(self, person_id: PersonId) -> PersonEntity | None:
+        """Get person by ID."""
+        return await self.repository.get_by_id(person_id)
 
-        Args:
-            person_id: Person identifier
+    async def execute_by_user_id(self, user_id: UserId) -> PersonEntity | None:
+        """Get person by user ID."""
+        return await self.person_repository.get_by_user_id(user_id)
 
-        Returns:
-            Restored PersonEntity
 
-        Raises:
-            ValueError: If person not found
-            DomainError: If restore is invalid
-        """
-        person = await self.person_repository.get_by_id(person_id)
-        if not person:
-            raise ValueError(f"Person {person_id.value} not found")
+class GetPersonsByTypeUseCase(BaseUseCase[PersonEntity, PersonId]):
+    """Use case for retrieving persons by type."""
 
-        person.restore()
-        await self.person_repository.save(person)
+    def __init__(self, person_repository: PersonRepository):
+        super().__init__(person_repository)
+        self.person_repository = person_repository
 
-        return person
+    async def execute(
+        self, tenant_id: TenantId, person_type: PersonType
+    ) -> list[PersonEntity]:
+        """Get all persons of a specific type within a tenant."""
+        return await self.person_repository.get_by_type(tenant_id, person_type)

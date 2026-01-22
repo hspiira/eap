@@ -2,18 +2,55 @@
 Industry Use Cases
 
 Application services for Industry aggregate operations.
+Refactored to use base use case classes.
 """
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_deactivate_use_case,
+)
 from app.domain.entities.industry import IndustryEntity
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-class CreateIndustryUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateIndustryUseCase:
+    """Use case for activating an industry."""
+
+    def __init__(self, industry_repository: IndustryRepository):
+        self._use_case = create_activate_use_case(industry_repository, "Industry")
+
+    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
+        return await self._use_case.execute(industry_id)
+
+
+class DeactivateIndustryUseCase:
+    """Use case for deactivating an industry."""
+
+    def __init__(self, industry_repository: IndustryRepository):
+        self._use_case = create_deactivate_use_case(industry_repository, "Industry")
+
+    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
+        return await self._use_case.execute(industry_id)
+
+
+# =============================================================================
+# CREATE USE CASE
+# =============================================================================
+
+
+class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
     """Use case for creating a new industry."""
 
     def __init__(self, industry_repository: IndustryRepository):
+        super().__init__(industry_repository)
         self.industry_repository = industry_repository
 
     async def execute(
@@ -25,23 +62,7 @@ class CreateIndustryUseCase:
         code: str | None = None,
         parent_industry_id: IndustryId | None = None,
     ) -> IndustryEntity:
-        """
-        Create a new industry.
-
-        Args:
-            industry_id: Unique industry identifier
-            tenant_id: Tenant identifier
-            name: Industry name
-            description: Industry description (optional)
-            code: Industry code (optional)
-            parent_industry_id: Parent industry ID (optional)
-
-        Returns:
-            Created IndustryEntity
-
-        Raises:
-            ValueError: If validation fails
-        """
+        """Create a new industry."""
         # Check if industry with same name already exists
         existing = await self.industry_repository.get_by_name(name, tenant_id)
         if existing:
@@ -66,16 +87,19 @@ class CreateIndustryUseCase:
             _updated_at=utc_now(),
         )
 
-        # Save industry
-        await self.industry_repository.save(industry)
-
-        return industry
+        return await self._save_and_publish_events(industry)
 
 
-class UpdateIndustryUseCase:
+# =============================================================================
+# UPDATE USE CASE
+# =============================================================================
+
+
+class UpdateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
     """Use case for updating an industry."""
 
     def __init__(self, industry_repository: IndustryRepository):
+        super().__init__(industry_repository)
         self.industry_repository = industry_repository
 
     async def execute(
@@ -86,30 +110,12 @@ class UpdateIndustryUseCase:
         code: str | None = None,
         parent_industry_id: IndustryId | None = None,
     ) -> IndustryEntity:
-        """
-        Update an industry.
-
-        Args:
-            industry_id: Industry identifier
-            name: Industry name (optional)
-            description: Industry description (optional)
-            code: Industry code (optional)
-            parent_industry_id: Parent industry ID (optional)
-
-        Returns:
-            Updated IndustryEntity
-
-        Raises:
-            ValueError: If industry not found
-            DomainError: If update is invalid
-        """
-        industry = await self.industry_repository.get_by_id(industry_id)
-        if not industry:
-            raise ValueError(f"Industry {industry_id.value} not found")
+        """Update an industry."""
+        industry = await self._get_entity_or_raise(industry_id, "Industry")
 
         # Check name uniqueness if name is being updated
-        if name and name != industry._name:
-            existing = await self.industry_repository.get_by_name(name, industry._tenant_id)
+        if name and name != industry.name:
+            existing = await self.industry_repository.get_by_name(name, industry.tenant_id)
             if existing:
                 raise ValueError(f"Industry with name '{name}' already exists")
 
@@ -130,85 +136,20 @@ class UpdateIndustryUseCase:
         if parent_industry_id is not None:
             industry.set_parent(parent_industry_id)
 
-        await self.industry_repository.save(industry)
-
-        return industry
+        return await self._save_and_publish_events(industry)
 
 
-class ActivateIndustryUseCase:
-    """Use case for activating an industry."""
-
-    def __init__(self, industry_repository: IndustryRepository):
-        self.industry_repository = industry_repository
-
-    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
-        """
-        Activate an industry.
-
-        Args:
-            industry_id: Industry identifier
-
-        Returns:
-            Activated IndustryEntity
-
-        Raises:
-            ValueError: If industry not found
-            DomainError: If activation is invalid
-        """
-        industry = await self.industry_repository.get_by_id(industry_id)
-        if not industry:
-            raise ValueError(f"Industry {industry_id.value} not found")
-
-        industry.activate()
-        await self.industry_repository.save(industry)
-
-        return industry
+# =============================================================================
+# QUERY USE CASE
+# =============================================================================
 
 
-class DeactivateIndustryUseCase:
-    """Use case for deactivating an industry."""
-
-    def __init__(self, industry_repository: IndustryRepository):
-        self.industry_repository = industry_repository
-
-    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
-        """
-        Deactivate an industry.
-
-        Args:
-            industry_id: Industry identifier
-
-        Returns:
-            Deactivated IndustryEntity
-
-        Raises:
-            ValueError: If industry not found
-            DomainError: If deactivation is invalid
-        """
-        industry = await self.industry_repository.get_by_id(industry_id)
-        if not industry:
-            raise ValueError(f"Industry {industry_id.value} not found")
-
-        industry.deactivate()
-        await self.industry_repository.save(industry)
-
-        return industry
-
-
-class GetIndustryUseCase:
+class GetIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
     """Use case for retrieving an industry."""
 
     def __init__(self, industry_repository: IndustryRepository):
-        self.industry_repository = industry_repository
+        super().__init__(industry_repository)
 
     async def execute(self, industry_id: IndustryId) -> IndustryEntity | None:
-        """
-        Get industry by ID.
-
-        Args:
-            industry_id: Industry identifier
-
-        Returns:
-            IndustryEntity if found, None otherwise
-        """
-        return await self.industry_repository.get_by_id(industry_id)
+        """Get industry by ID."""
+        return await self.repository.get_by_id(industry_id)

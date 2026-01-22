@@ -1,5 +1,10 @@
 """ServiceAssignment Use Cases - Application services for ServiceAssignment operations."""
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_deactivate_use_case,
+)
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
 from app.domain.enums import BaseStatus
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
@@ -7,8 +12,41 @@ from app.domain.value_objects.core import ContractId, ServiceAssignmentId, Servi
 from app.shared.utils.datetime import utc_now
 
 
-class CreateServiceAssignmentUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateServiceAssignmentUseCase:
+    """Use case for activating a service assignment."""
+
     def __init__(self, assignment_repository: ServiceAssignmentRepository):
+        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
+
+    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
+        return await self._use_case.execute(assignment_id)
+
+
+class DeactivateServiceAssignmentUseCase:
+    """Use case for deactivating a service assignment."""
+
+    def __init__(self, assignment_repository: ServiceAssignmentRepository):
+        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
+
+    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
+        return await self._use_case.execute(assignment_id)
+
+
+# =============================================================================
+# CREATE USE CASE
+# =============================================================================
+
+
+class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, ServiceAssignmentId]):
+    """Use case for creating a service assignment."""
+
+    def __init__(self, assignment_repository: ServiceAssignmentRepository):
+        super().__init__(assignment_repository)
         self.assignment_repository = assignment_repository
 
     async def execute(
@@ -20,12 +58,16 @@ class CreateServiceAssignmentUseCase:
         assigned_by: str | None = None,
         notes: str | None = None,
     ) -> ServiceAssignmentEntity:
+        """Create a new service assignment."""
         # Check if assignment already exists
         existing = await self.assignment_repository.get_by_service_and_contract(
             service_id, contract_id, tenant_id
         )
         if existing:
-            raise ValueError(f"Service assignment already exists for service {service_id.value} and contract {contract_id.value}")
+            raise ValueError(
+                f"Service assignment already exists for service {service_id.value} "
+                f"and contract {contract_id.value}"
+            )
 
         assignment = ServiceAssignmentEntity(
             _id=assignment_id,
@@ -39,54 +81,40 @@ class CreateServiceAssignmentUseCase:
             _updated_at=utc_now(),
         )
 
-        await self.assignment_repository.save(assignment)
-        return assignment
+        return await self._save_and_publish_events(assignment)
 
 
-class ActivateServiceAssignmentUseCase:
+# =============================================================================
+# UPDATE USE CASE
+# =============================================================================
+
+
+class UpdateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, ServiceAssignmentId]):
+    """Use case for updating a service assignment."""
+
     def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self.assignment_repository = assignment_repository
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
-        assignment.activate()
-        await self.assignment_repository.save(assignment)
-        return assignment
-
-
-class DeactivateServiceAssignmentUseCase:
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self.assignment_repository = assignment_repository
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
-        assignment.deactivate()
-        await self.assignment_repository.save(assignment)
-        return assignment
-
-
-class UpdateServiceAssignmentUseCase:
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self.assignment_repository = assignment_repository
+        super().__init__(assignment_repository)
 
     async def execute(
         self, assignment_id: ServiceAssignmentId, notes: str | None
     ) -> ServiceAssignmentEntity:
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
+        """Update a service assignment."""
+        assignment = await self._get_entity_or_raise(assignment_id, "Assignment")
         assignment.update_notes(notes)
-        await self.assignment_repository.save(assignment)
-        return assignment
+        return await self._save_and_publish_events(assignment)
 
 
-class GetServiceAssignmentUseCase:
+# =============================================================================
+# QUERY USE CASE
+# =============================================================================
+
+
+class GetServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, ServiceAssignmentId]):
+    """Use case for retrieving a service assignment."""
+
     def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self.assignment_repository = assignment_repository
+        super().__init__(assignment_repository)
 
     async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity | None:
-        return await self.assignment_repository.get_by_id(assignment_id)
+        """Get service assignment by ID."""
+        return await self.repository.get_by_id(assignment_id)

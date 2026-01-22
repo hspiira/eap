@@ -2,10 +2,16 @@
 KPI Use Cases
 
 Application services for KPI aggregate operations.
+Refactored to use base use case classes.
 """
 
 from decimal import Decimal
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_deactivate_use_case,
+)
 from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.repositories.kpi_repository import (
@@ -16,10 +22,41 @@ from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-class CreateKPIUseCase:
+# =============================================================================
+# KPI LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateKPIUseCase:
+    """Use case for activating a KPI."""
+
+    def __init__(self, kpi_repository: KPIRepository):
+        self._use_case = create_activate_use_case(kpi_repository, "KPI")
+
+    async def execute(self, kpi_id: KPIId) -> KPIEntity:
+        return await self._use_case.execute(kpi_id)
+
+
+class DeactivateKPIUseCase:
+    """Use case for deactivating a KPI."""
+
+    def __init__(self, kpi_repository: KPIRepository):
+        self._use_case = create_deactivate_use_case(kpi_repository, "KPI")
+
+    async def execute(self, kpi_id: KPIId) -> KPIEntity:
+        return await self._use_case.execute(kpi_id)
+
+
+# =============================================================================
+# KPI CREATE USE CASE
+# =============================================================================
+
+
+class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
     """Use case for creating a new KPI."""
 
     def __init__(self, kpi_repository: KPIRepository):
+        super().__init__(kpi_repository)
         self.kpi_repository = kpi_repository
 
     async def execute(
@@ -35,27 +72,7 @@ class CreateKPIUseCase:
         threshold_max: Decimal | None = None,
         formula: str | None = None,
     ) -> KPIEntity:
-        """
-        Create a new KPI.
-
-        Args:
-            kpi_id: Unique KPI identifier
-            tenant_id: Tenant identifier
-            name: KPI name
-            category: KPI category
-            measurement_unit: Measurement unit
-            description: KPI description (optional)
-            target_value: Target value (optional)
-            threshold_min: Minimum threshold (optional)
-            threshold_max: Maximum threshold (optional)
-            formula: Calculation formula (optional)
-
-        Returns:
-            Created KPIEntity
-
-        Raises:
-            ValueError: If validation fails
-        """
+        """Create a new KPI."""
         # Check if KPI with same name already exists
         existing = await self.kpi_repository.get_by_name(name, tenant_id)
         if existing:
@@ -78,16 +95,19 @@ class CreateKPIUseCase:
             _updated_at=utc_now(),
         )
 
-        # Save KPI
-        await self.kpi_repository.save(kpi)
-
-        return kpi
+        return await self._save_and_publish_events(kpi)
 
 
-class UpdateKPIUseCase:
+# =============================================================================
+# KPI UPDATE USE CASE
+# =============================================================================
+
+
+class UpdateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
     """Use case for updating a KPI."""
 
     def __init__(self, kpi_repository: KPIRepository):
+        super().__init__(kpi_repository)
         self.kpi_repository = kpi_repository
 
     async def execute(
@@ -100,32 +120,12 @@ class UpdateKPIUseCase:
         threshold_max: Decimal | None = None,
         formula: str | None = None,
     ) -> KPIEntity:
-        """
-        Update a KPI.
-
-        Args:
-            kpi_id: KPI identifier
-            name: KPI name (optional)
-            description: KPI description (optional)
-            target_value: Target value (optional)
-            threshold_min: Minimum threshold (optional)
-            threshold_max: Maximum threshold (optional)
-            formula: Calculation formula (optional)
-
-        Returns:
-            Updated KPIEntity
-
-        Raises:
-            ValueError: If KPI not found
-            DomainError: If update is invalid
-        """
-        kpi = await self.kpi_repository.get_by_id(kpi_id)
-        if not kpi:
-            raise ValueError(f"KPI {kpi_id.value} not found")
+        """Update a KPI."""
+        kpi = await self._get_entity_or_raise(kpi_id, "KPI")
 
         # Check name uniqueness if name is being updated
-        if name and name != kpi._name:
-            existing = await self.kpi_repository.get_by_name(name, kpi._tenant_id)
+        if name and name != kpi.name:
+            existing = await self.kpi_repository.get_by_name(name, kpi.tenant_id)
             if existing:
                 raise ValueError(f"KPI with name '{name}' already exists")
 
@@ -137,91 +137,57 @@ class UpdateKPIUseCase:
             threshold_max=threshold_max,
             formula=formula,
         )
-        await self.kpi_repository.save(kpi)
 
-        return kpi
-
-
-class ActivateKPIUseCase:
-    """Use case for activating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self.kpi_repository = kpi_repository
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        """
-        Activate a KPI.
-
-        Args:
-            kpi_id: KPI identifier
-
-        Returns:
-            Activated KPIEntity
-
-        Raises:
-            ValueError: If KPI not found
-            DomainError: If activation is invalid
-        """
-        kpi = await self.kpi_repository.get_by_id(kpi_id)
-        if not kpi:
-            raise ValueError(f"KPI {kpi_id.value} not found")
-
-        kpi.activate()
-        await self.kpi_repository.save(kpi)
-
-        return kpi
+        return await self._save_and_publish_events(kpi)
 
 
-class DeactivateKPIUseCase:
-    """Use case for deactivating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self.kpi_repository = kpi_repository
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        """
-        Deactivate a KPI.
-
-        Args:
-            kpi_id: KPI identifier
-
-        Returns:
-            Deactivated KPIEntity
-
-        Raises:
-            ValueError: If KPI not found
-            DomainError: If deactivation is invalid
-        """
-        kpi = await self.kpi_repository.get_by_id(kpi_id)
-        if not kpi:
-            raise ValueError(f"KPI {kpi_id.value} not found")
-
-        kpi.deactivate()
-        await self.kpi_repository.save(kpi)
-
-        return kpi
+# =============================================================================
+# KPI QUERY USE CASE
+# =============================================================================
 
 
-class GetKPIUseCase:
+class GetKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
     """Use case for retrieving a KPI."""
 
     def __init__(self, kpi_repository: KPIRepository):
-        self.kpi_repository = kpi_repository
+        super().__init__(kpi_repository)
 
     async def execute(self, kpi_id: KPIId) -> KPIEntity | None:
-        """
-        Get KPI by ID.
-
-        Args:
-            kpi_id: KPI identifier
-
-        Returns:
-            KPIEntity if found, None otherwise
-        """
-        return await self.kpi_repository.get_by_id(kpi_id)
+        """Get KPI by ID."""
+        return await self.repository.get_by_id(kpi_id)
 
 
-class CreateKPIAssignmentUseCase:
+# =============================================================================
+# KPI ASSIGNMENT LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateKPIAssignmentUseCase:
+    """Use case for activating a KPI assignment."""
+
+    def __init__(self, assignment_repository: KPIAssignmentRepository):
+        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
+
+    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
+        return await self._use_case.execute(assignment_id)
+
+
+class DeactivateKPIAssignmentUseCase:
+    """Use case for deactivating a KPI assignment."""
+
+    def __init__(self, assignment_repository: KPIAssignmentRepository):
+        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
+
+    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
+        return await self._use_case.execute(assignment_id)
+
+
+# =============================================================================
+# KPI ASSIGNMENT CREATE USE CASE
+# =============================================================================
+
+
+class CreateKPIAssignmentUseCase(BaseUseCase[KPIAssignmentEntity, KPIAssignmentId]):
     """Use case for creating a KPI assignment."""
 
     def __init__(
@@ -229,8 +195,8 @@ class CreateKPIAssignmentUseCase:
         kpi_repository: KPIRepository,
         assignment_repository: KPIAssignmentRepository,
     ):
+        super().__init__(assignment_repository)
         self.kpi_repository = kpi_repository
-        self.assignment_repository = assignment_repository
 
     async def execute(
         self,
@@ -241,23 +207,7 @@ class CreateKPIAssignmentUseCase:
         contract_id: str | None = None,
         target_value: Decimal | None = None,
     ) -> KPIAssignmentEntity:
-        """
-        Create a new KPI assignment.
-
-        Args:
-            assignment_id: Unique assignment identifier
-            kpi_id: KPI identifier
-            tenant_id: Tenant identifier
-            client_id: Client identifier (optional)
-            contract_id: Contract identifier (optional)
-            target_value: Assignment-specific target value (optional)
-
-        Returns:
-            Created KPIAssignmentEntity
-
-        Raises:
-            ValueError: If validation fails
-        """
+        """Create a new KPI assignment."""
         # Validate KPI exists
         kpi = await self.kpi_repository.get_by_id(kpi_id)
         if not kpi:
@@ -282,125 +232,40 @@ class CreateKPIAssignmentUseCase:
             _updated_at=utc_now(),
         )
 
-        # Save assignment
-        await self.assignment_repository.save(assignment)
-
-        return assignment
+        return await self._save_and_publish_events(assignment)
 
 
-class UpdateKPIAssignmentUseCase:
+# =============================================================================
+# KPI ASSIGNMENT UPDATE USE CASE
+# =============================================================================
+
+
+class UpdateKPIAssignmentUseCase(BaseUseCase[KPIAssignmentEntity, KPIAssignmentId]):
     """Use case for updating a KPI assignment."""
 
     def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self.assignment_repository = assignment_repository
+        super().__init__(assignment_repository)
 
     async def execute(
         self, assignment_id: KPIAssignmentId, target_value: Decimal | None
     ) -> KPIAssignmentEntity:
-        """
-        Update a KPI assignment.
-
-        Args:
-            assignment_id: Assignment identifier
-            target_value: Assignment-specific target value (optional)
-
-        Returns:
-            Updated KPIAssignmentEntity
-
-        Raises:
-            ValueError: If assignment not found
-            DomainError: If update is invalid
-        """
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
-
+        """Update a KPI assignment."""
+        assignment = await self._get_entity_or_raise(assignment_id, "Assignment")
         assignment.update_target(target_value)
-        await self.assignment_repository.save(assignment)
-
-        return assignment
+        return await self._save_and_publish_events(assignment)
 
 
-class ActivateKPIAssignmentUseCase:
-    """Use case for activating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self.assignment_repository = assignment_repository
-
-    async def execute(
-        self, assignment_id: KPIAssignmentId
-    ) -> KPIAssignmentEntity:
-        """
-        Activate a KPI assignment.
-
-        Args:
-            assignment_id: Assignment identifier
-
-        Returns:
-            Activated KPIAssignmentEntity
-
-        Raises:
-            ValueError: If assignment not found
-            DomainError: If activation is invalid
-        """
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
-
-        assignment.activate()
-        await self.assignment_repository.save(assignment)
-
-        return assignment
+# =============================================================================
+# KPI ASSIGNMENT QUERY USE CASE
+# =============================================================================
 
 
-class DeactivateKPIAssignmentUseCase:
-    """Use case for deactivating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self.assignment_repository = assignment_repository
-
-    async def execute(
-        self, assignment_id: KPIAssignmentId
-    ) -> KPIAssignmentEntity:
-        """
-        Deactivate a KPI assignment.
-
-        Args:
-            assignment_id: Assignment identifier
-
-        Returns:
-            Deactivated KPIAssignmentEntity
-
-        Raises:
-            ValueError: If assignment not found
-            DomainError: If deactivation is invalid
-        """
-        assignment = await self.assignment_repository.get_by_id(assignment_id)
-        if not assignment:
-            raise ValueError(f"Assignment {assignment_id.value} not found")
-
-        assignment.deactivate()
-        await self.assignment_repository.save(assignment)
-
-        return assignment
-
-
-class GetKPIAssignmentUseCase:
+class GetKPIAssignmentUseCase(BaseUseCase[KPIAssignmentEntity, KPIAssignmentId]):
     """Use case for retrieving a KPI assignment."""
 
     def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self.assignment_repository = assignment_repository
+        super().__init__(assignment_repository)
 
-    async def execute(
-        self, assignment_id: KPIAssignmentId
-    ) -> KPIAssignmentEntity | None:
-        """
-        Get assignment by ID.
-
-        Args:
-            assignment_id: Assignment identifier
-
-        Returns:
-            KPIAssignmentEntity if found, None otherwise
-        """
-        return await self.assignment_repository.get_by_id(assignment_id)
+    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity | None:
+        """Get assignment by ID."""
+        return await self.repository.get_by_id(assignment_id)

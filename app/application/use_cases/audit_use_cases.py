@@ -2,6 +2,7 @@
 Audit Use Cases
 
 Application services for Audit aggregate operations.
+Refactored to use base use case classes.
 
 Note: These use cases are primarily for logging actions.
 They will be called by middleware/decorators, not directly via REST API.
@@ -9,6 +10,7 @@ They will be called by middleware/decorators, not directly via REST API.
 
 from typing import Any
 
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.enums import AuditActionType
 from app.domain.repositories.audit_repository import AuditRepository
@@ -41,24 +43,7 @@ class LogAuditActionUseCase:
         user_agent: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> AuditLog:
-        """
-        Log an audit action.
-
-        Args:
-            tenant_id: Tenant identifier
-            action_type: Type of action
-            resource_type: Type of resource (e.g., "Tenant", "Person")
-            user_id: User identifier (None for system actions)
-            resource_id: Resource identifier (None for actions that don't target a resource)
-            description: Action description
-            ip_address: IP address of the user
-            user_agent: User agent string
-            metadata: Additional context
-
-        Returns:
-            Created AuditLog
-        """
-        # Create audit log entity
+        """Log an audit action."""
         audit_log = AuditLog(
             _id=AuditLogId(generate_cuid()),
             _tenant_id=tenant_id,
@@ -73,9 +58,7 @@ class LogAuditActionUseCase:
             _metadata=metadata,
         )
 
-        # Save audit log
         await self.audit_repository.save_audit_log(audit_log)
-
         return audit_log
 
 
@@ -92,30 +75,16 @@ class LogEntityChangeUseCase:
         entity_id: str,
         field_changes: list[FieldChange],
     ) -> EntityChange:
-        """
-        Log entity changes associated with an audit log.
-
-        Args:
-            audit_log_id: Associated audit log identifier
-            entity_type: Entity type (e.g., "Tenant", "Person")
-            entity_id: Entity identifier
-            field_changes: List of field changes
-
-        Returns:
-            Created EntityChange
-        """
-        # Create entity change
+        """Log entity changes associated with an audit log."""
         entity_change = EntityChange(
             _id=EntityChangeId(generate_cuid()),
             _audit_log_id=audit_log_id,
             _entity_type=entity_type,
             _entity_id=entity_id,
-            _field_changes=tuple(field_changes),  # Immutable tuple
+            _field_changes=tuple(field_changes),
         )
 
-        # Save entity change
         await self.audit_repository.save_entity_change(entity_change)
-
         return entity_change
 
 
@@ -126,29 +95,13 @@ class GetAuditLogUseCase:
         self.audit_repository = audit_repository
 
     async def execute(self, audit_log_id: AuditLogId) -> AuditLog | None:
-        """
-        Get audit log by ID.
-
-        Args:
-            audit_log_id: Audit log identifier
-
-        Returns:
-            AuditLog if found, None otherwise
-        """
+        """Get audit log by ID."""
         return await self.audit_repository.get_audit_log_by_id(audit_log_id)
 
     async def execute_entity_changes(
         self, audit_log_id: AuditLogId
     ) -> list[EntityChange]:
-        """
-        Get all entity changes for an audit log.
-
-        Args:
-            audit_log_id: Audit log identifier
-
-        Returns:
-            List of EntityChange
-        """
+        """Get all entity changes for an audit log."""
         changes = await self.audit_repository.get_entity_changes_by_audit_log_id(
             audit_log_id
         )
@@ -162,19 +115,7 @@ class GetAuditLogUseCase:
         limit: int = 100,
         offset: int = 0,
     ) -> list[EntityChange]:
-        """
-        Get change history for a specific entity.
-
-        Args:
-            tenant_id: Tenant identifier
-            entity_type: Entity type
-            entity_id: Entity identifier
-            limit: Maximum number of results
-            offset: Number of results to skip
-
-        Returns:
-            List of EntityChange
-        """
+        """Get change history for a specific entity."""
         changes = await self.audit_repository.get_entity_changes_by_entity(
             tenant_id, entity_type, entity_id, limit, offset
         )
