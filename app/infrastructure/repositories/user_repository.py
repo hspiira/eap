@@ -4,10 +4,13 @@ User Repository Implementation
 SQLAlchemy implementation of UserRepository interface.
 """
 
-from sqlalchemy import select
+from typing import Sequence
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.user import UserEntity
+from app.domain.enums import UserStatus
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
@@ -97,3 +100,75 @@ class UserRepositoryImpl(UserRepository):
         ).select()
         result = await self.session.execute(stmt)
         return bool(result.scalar())
+    
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        status: UserStatus | None = None,
+        is_email_verified: bool | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[UserEntity]:
+        """List users with filtering, searching, and pagination."""
+        stmt = select(UserModel).where(
+            UserModel.tenant_id == tenant_id.value,
+            UserModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(UserModel.status == status)
+        if is_email_verified is not None:
+            if is_email_verified:
+                stmt = stmt.where(UserModel.email_verified_at.isnot(None))
+            else:
+                stmt = stmt.where(UserModel.email_verified_at.is_(None))
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(UserModel.email.ilike(search_pattern))
+        
+        # Apply sorting
+        sort_column = getattr(UserModel, sort_by, UserModel.created_at)
+        if sort_desc:
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+        
+        # Apply pagination
+        stmt = stmt.limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        return [UserMapper.to_entity(model) for model in models]
+    
+    async def count(
+        self,
+        tenant_id: TenantId,
+        status: UserStatus | None = None,
+        is_email_verified: bool | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count users matching filters."""
+        stmt = select(func.count(UserModel.id)).where(
+            UserModel.tenant_id == tenant_id.value,
+            UserModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(UserModel.status == status)
+        if is_email_verified is not None:
+            if is_email_verified:
+                stmt = stmt.where(UserModel.email_verified_at.isnot(None))
+            else:
+                stmt = stmt.where(UserModel.email_verified_at.is_(None))
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(UserModel.email.ilike(search_pattern))
+        
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)

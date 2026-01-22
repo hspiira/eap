@@ -734,3 +734,404 @@ async def test_contract_2(
     )
     assert response.status_code == 201
     return response.json()
+
+
+# =============================================================================
+# USER TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def user_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for user tests."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "User Test Tenant",
+            "code": "user-test",
+            "subscription_tier": "Professional",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_api_user(
+    client: AsyncClient, user_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a test user via API."""
+    tenant_id = user_test_tenant["id"]
+    response = await client.post(
+        f"/users/?tenant_id={tenant_id}",
+        json={
+            "email": "testuser@example.com",
+            "password": "SecurePassword123!",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_api_user_2(
+    client: AsyncClient, user_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a second test user via API."""
+    tenant_id = user_test_tenant["id"]
+    response = await client.post(
+        f"/users/?tenant_id={tenant_id}",
+        json={
+            "email": "testuser2@example.com",
+            "password": "SecurePassword456!",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_api_user_active(
+    client: AsyncClient, user_test_tenant: dict
+) -> dict[str, Any]:
+    """Create and activate a test user."""
+    tenant_id = user_test_tenant["id"]
+    
+    # Create user
+    create_response = await client.post(
+        f"/users/?tenant_id={tenant_id}",
+        json={
+            "email": "activeuser@example.com",
+            "password": "SecurePassword789!",
+        },
+    )
+    assert create_response.status_code == 201
+    user_data = create_response.json()
+    
+    # Verify email first
+    await client.post(f"/users/{user_data['id']}/verify-email")
+    
+    # Activate user
+    activate_response = await client.post(f"/users/{user_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+# =============================================================================
+# SERVICE TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def service_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for service tests."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "Service Test Tenant",
+            "code": "service-test",
+            "subscription_tier": "Professional",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_service(
+    client: AsyncClient, service_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a test service via API."""
+    tenant_id = service_test_tenant["id"]
+    response = await client.post(
+        f"/services/?tenant_id={tenant_id}",
+        json={
+            "name": "Individual Counseling",
+            "description": "One-on-one counseling session",
+            "category": "Counseling",
+            "duration_minutes": 60,
+            "is_group_service": False,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_service_active(
+    client: AsyncClient, service_test_tenant: dict
+) -> dict[str, Any]:
+    """Create and activate a test service."""
+    tenant_id = service_test_tenant["id"]
+    
+    # Create service
+    create_response = await client.post(
+        f"/services/?tenant_id={tenant_id}",
+        json={
+            "name": "Active Counseling Service",
+            "description": "An active service",
+            "category": "Counseling",
+            "duration_minutes": 45,
+            "is_group_service": False,
+        },
+    )
+    assert create_response.status_code == 201
+    service_data = create_response.json()
+    
+    # Activate service
+    activate_response = await client.post(f"/services/{service_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+@pytest_asyncio.fixture
+async def test_group_service(
+    client: AsyncClient, service_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a group service via API."""
+    tenant_id = service_test_tenant["id"]
+    response = await client.post(
+        f"/services/?tenant_id={tenant_id}",
+        json={
+            "name": "Group Therapy",
+            "description": "Group therapy session",
+            "category": "Therapy",
+            "duration_minutes": 90,
+            "is_group_service": True,
+            "max_participants": 10,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_service_2(
+    client: AsyncClient, service_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a second test service."""
+    tenant_id = service_test_tenant["id"]
+    response = await client.post(
+        f"/services/?tenant_id={tenant_id}",
+        json={
+            "name": "Crisis Intervention",
+            "description": "Emergency counseling service",
+            "category": "Emergency",
+            "duration_minutes": 30,
+            "is_group_service": False,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+# =============================================================================
+# SERVICE SESSION TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def session_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for service session tests."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "Session Test Tenant",
+            "code": "session-test",
+            "subscription_tier": "Professional",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def session_test_service(
+    client: AsyncClient, session_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a test service for sessions."""
+    tenant_id = session_test_tenant["id"]
+    response = await client.post(
+        f"/services/?tenant_id={tenant_id}",
+        json={
+            "name": "Session Test Service",
+            "description": "Service for session tests",
+            "category": "Testing",
+            "duration_minutes": 60,
+            "is_group_service": False,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def session_test_provider(
+    db_session: AsyncSession, session_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a provider person for session tests."""
+    from app.infrastructure.models.person_model import PersonModel
+    from app.infrastructure.models.user_model import UserModel
+    from app.domain.enums import PersonType, BaseStatus, UserStatus
+    
+    # Create user first
+    user_id = generate_cuid()
+    user = UserModel(
+        id=user_id,
+        tenant_id=session_test_tenant["id"],
+        email=f"provider-{user_id[:8]}@example.com",
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    
+    # Create provider person
+    person_id = generate_cuid()
+    person = PersonModel(
+        id=person_id,
+        tenant_id=session_test_tenant["id"],
+        user_id=user_id,
+        person_type=PersonType.SERVICE_PROVIDER,
+        is_dual_role=False,
+        status=BaseStatus.ACTIVE,
+        license_info={
+            "number": "LIC-TEST-001",
+            "issuing_authority": "Test Board",
+            "expiry_date": "2027-12-31",
+        },
+    )
+    db_session.add(person)
+    await db_session.commit()
+    
+    return {
+        "id": person_id,
+        "user_id": user_id,
+        "tenant_id": session_test_tenant["id"],
+    }
+
+
+@pytest_asyncio.fixture
+async def session_test_client_person(
+    db_session: AsyncSession, session_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a client employee person for session tests."""
+    from app.infrastructure.models.person_model import PersonModel
+    from app.infrastructure.models.user_model import UserModel
+    from app.domain.enums import PersonType, BaseStatus, UserStatus, WorkStatus
+    from datetime import date
+    
+    # Create user first
+    user_id = generate_cuid()
+    user = UserModel(
+        id=user_id,
+        tenant_id=session_test_tenant["id"],
+        email=f"client-person-{user_id[:8]}@example.com",
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    
+    # Create client employee person
+    person_id = generate_cuid()
+    person = PersonModel(
+        id=person_id,
+        tenant_id=session_test_tenant["id"],
+        user_id=user_id,
+        person_type=PersonType.CLIENT_EMPLOYEE,
+        is_dual_role=False,
+        status=BaseStatus.ACTIVE,
+        employment_info={
+            "role": "Test Employee",
+            "start_date": date.today().isoformat(),
+            "status": WorkStatus.ACTIVE.value,
+            "department": "Testing",
+        },
+    )
+    db_session.add(person)
+    await db_session.commit()
+    
+    return {
+        "id": person_id,
+        "user_id": user_id,
+        "tenant_id": session_test_tenant["id"],
+    }
+
+
+@pytest_asyncio.fixture
+async def test_service_session(
+    client: AsyncClient,
+    session_test_tenant: dict,
+    session_test_service: dict,
+    session_test_provider: dict,
+    session_test_client_person: dict,
+) -> dict[str, Any]:
+    """Create a test service session via API."""
+    from datetime import datetime, timedelta, timezone
+    
+    tenant_id = session_test_tenant["id"]
+    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    
+    response = await client.post(
+        f"/service-sessions/?tenant_id={tenant_id}",
+        json={
+            "service_id": session_test_service["id"],
+            "provider_id": session_test_provider["id"],
+            "person_id": session_test_client_person["id"],
+            "scheduled_at": scheduled_at,
+            "location": "Office A",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_service_session_2(
+    client: AsyncClient,
+    session_test_tenant: dict,
+    session_test_service: dict,
+    session_test_provider: dict,
+    session_test_client_person: dict,
+) -> dict[str, Any]:
+    """Create a second test service session."""
+    from datetime import datetime, timedelta, timezone
+    
+    tenant_id = session_test_tenant["id"]
+    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
+    
+    response = await client.post(
+        f"/service-sessions/?tenant_id={tenant_id}",
+        json={
+            "service_id": session_test_service["id"],
+            "provider_id": session_test_provider["id"],
+            "person_id": session_test_client_person["id"],
+            "scheduled_at": scheduled_at,
+            "location": "Office B",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+# =============================================================================
+# AUDIT TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def audit_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for audit tests."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "Audit Test Tenant",
+            "code": "audit-test",
+            "subscription_tier": "Professional",
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
