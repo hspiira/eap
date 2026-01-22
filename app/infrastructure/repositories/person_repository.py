@@ -14,6 +14,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.models.person_model import PersonModel
+from app.shared.utils.datetime import utc_now
 
 
 class PersonRepositoryImpl(PersonRepository):
@@ -113,13 +114,14 @@ class PersonRepositoryImpl(PersonRepository):
         In practice, this is usually done by calling person methods
         and then save(), but this method provides explicit soft delete.
         """
-        stmt = select(PersonModel).where(PersonModel.id == person_id.value)
+        stmt = select(PersonModel).where(
+            PersonModel.id == person_id.value,
+            PersonModel.deleted_at.is_(None),
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model:
-            from app.shared.utils.datetime import utc_now
-
             now = utc_now()
             model.deleted_at = now
             model.updated_at = now
@@ -127,9 +129,10 @@ class PersonRepositoryImpl(PersonRepository):
 
     async def exists(self, person_id: PersonId) -> bool:
         """Check if person exists (not soft-deleted)."""
-        stmt = select(PersonModel).where(
+        from sqlalchemy import exists as sql_exists
+        stmt = sql_exists().where(
             PersonModel.id == person_id.value,
             PersonModel.deleted_at.is_(None),
-        )
+        ).select()
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        return result.scalar()

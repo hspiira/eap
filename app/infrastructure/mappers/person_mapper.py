@@ -7,10 +7,12 @@ Converts between PersonEntity (domain) and PersonModel (persistence).
 from datetime import date
 
 from app.domain.entities.person import PersonEntity
+from app.domain.entities.user import UserEntity
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.domain.value_objects.core import (
     ClientId,
     DependentInfo,
+    Email,
     EmergencyContact,
     EmploymentInfo,
     LicenseInfo,
@@ -27,13 +29,13 @@ class PersonMapper:
     """Mapper for PersonEntity ↔ PersonModel conversion"""
 
     @staticmethod
-    def to_entity(model: PersonModel, profile: "UserEntity") -> PersonEntity:
+    def to_entity(model: PersonModel, profile: UserEntity) -> PersonEntity:
         """
         Convert database model to domain entity.
 
         Args:
             model: PersonModel from database
-            profile: UserEntity profile (loaded separately)
+            profile: UserEntity profile
 
         Returns:
             PersonEntity with business logic
@@ -107,7 +109,6 @@ class PersonMapper:
         emergency_contact = None
         if model.emergency_contact:
             ec_dict = model.emergency_contact
-            from app.domain.value_objects.core import Email
 
             emergency_contact = EmergencyContact(
                 name=ec_dict["name"],
@@ -224,7 +225,10 @@ class PersonMapper:
             deleted_at=entity._deleted_at,
         )
 
-        # Set updated_at if provided (otherwise TimestampMixin will handle it)
+        # Set timestamps explicitly to ensure they're available in-memory after merge()
+        # session.merge() doesn't automatically refresh database-generated values
+        if entity._created_at:
+            model.created_at = entity._created_at
         if entity._updated_at:
             model.updated_at = entity._updated_at
 
