@@ -1,17 +1,19 @@
 [project]
 name = "eap"
 version = "0.1.0"
-description = "Add your description here"
+description = "Allevia - Employee Assistance Program Management API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
     "alembic>=1.18.1",
+    "bcrypt>=4.2.0",
     "beanie>=2.0.1",
     "cuid2>=2.0.1",
     "fastapi[standard]>=0.128.0",
     "greenlet>=3.3.0",
     "nh3>=0.3.2",
+    "python-jose[cryptography]>=3.3.0",
     "sqlalchemy>=2.0.46",
 ]
 
