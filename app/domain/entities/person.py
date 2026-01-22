@@ -44,22 +44,14 @@ _DEPENDENT_DUAL_ROLE_ERROR = "Dependents cannot have dual roles"
 
 @dataclass
 class PersonEntity:
-    # Identity
+    # Required fields (no defaults)
     _id: PersonId
     _tenant_id: TenantId
-    
-    # Type discriminator
     _person_type: PersonType
     _is_dual_role: bool
-    
-    # Core relationships
     _user_id: UserId
     _profile: UserEntity  # Entity inside aggregate
-    
-    # Shared
     _status: BaseStatus
-    
-    # Audit
     _created_at: datetime
     _updated_at: datetime
 
@@ -72,7 +64,6 @@ class PersonEntity:
     _emergency_contact: EmergencyContact | None = None
     _last_service_date: date | None = None
     _deleted_at: datetime | None = None
-    
     _events: list[DomainEvent] = field(default_factory=list)
     
     # === Behaviors ===

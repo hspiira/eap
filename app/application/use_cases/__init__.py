@@ -22,6 +22,13 @@ from app.application.use_cases.person_use_cases import (
     GetPersonUseCase,
     GetPersonsByTypeUseCase,
 )
+from app.application.use_cases.tenant_use_cases import (
+    ActivateTenantUseCase,
+    CreateTenantUseCase,
+    SuspendTenantUseCase,
+    TerminateTenantUseCase,
+    UpdateTenantSettingsUseCase,
+)
 from app.application.use_cases.user_use_cases import (
     ActivateUserUseCase,
     CreateUserUseCase,
@@ -32,10 +39,12 @@ from app.application.use_cases.user_use_cases import (
 __all__ = [
     "ActivateClientUseCase",
     "ActivatePersonUseCase",
+    "ActivateTenantUseCase",
     "ActivateUserUseCase",
     "CreateClientUseCase",
     "CreateClientEmployeeUseCase",
     "CreateContractUseCase",
+    "CreateTenantUseCase",
     "CreateUserUseCase",
     "GetClientUseCase",
     "GetContractUseCase",
@@ -43,7 +52,10 @@ __all__ = [
     "GetPersonsByTypeUseCase",
     "GetUserUseCase",
     "RenewContractUseCase",
+    "SuspendTenantUseCase",
     "TerminateContractUseCase",
+    "TerminateTenantUseCase",
+    "UpdateTenantSettingsUseCase",
     "VerifyClientUseCase",
     "VerifyUserEmailUseCase",
 ]

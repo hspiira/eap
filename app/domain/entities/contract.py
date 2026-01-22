@@ -31,29 +31,26 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass
 class ContractEntity:
+    # Required fields (no defaults)
     _id: ContractId
     _tenant_id: TenantId
     _client_id: ClientId
-    
     _period: DateRange  # Value Object
     _billing_rate: Money  # Value Object
     _payment_frequency: PaymentFrequency
     _payment_status: PaymentStatus
-    
     _status: ContractStatus
     _is_auto_renew: bool
+    _created_at: datetime
+    _updated_at: datetime
     
+    # Optional fields (with defaults)
     _last_billing_date: date | None = None
     _next_billing_date: date | None = None
-    
     _signed_by: str | None = None
     _signed_at: datetime | None = None
     _termination_reason: str | None = None
-    
-    _created_at: datetime
-    _updated_at: datetime
     _deleted_at: datetime | None = None
-    
     _events: list[DomainEvent] = field(default_factory=list)
     
     def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
