@@ -67,6 +67,8 @@ SessionId = Id
 UserId = Id
 ClientId = Id
 IndustryId = Id
+AuditLogId = Id
+EntityChangeId = Id
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)

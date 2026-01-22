@@ -10,6 +10,7 @@ from sqlalchemy.orm import session
 from starlette.responses import JSONResponse
 
 from app.api.routes import (
+    audit_router,
     clients_router,
     contracts_router,
     persons_router,
@@ -32,6 +33,7 @@ app.include_router(clients_router)
 app.include_router(contracts_router)
 app.include_router(services_router)
 app.include_router(service_sessions_router)
+app.include_router(audit_router)
 
 
 @app.get("/")
