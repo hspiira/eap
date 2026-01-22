@@ -12,6 +12,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
 from app.infrastructure.models.user_model import UserModel
+from app.shared.utils.datetime import utc_now
 
 
 class UserRepositoryImpl(UserRepository):
@@ -77,21 +78,25 @@ class UserRepositoryImpl(UserRepository):
         In practice, this is usually done by calling user.ban() or similar
         and then save(), but this method provides explicit soft delete.
         """
-        stmt = select(UserModel).where(UserModel.id == user_id.value)
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            from app.shared.utils.datetime import utc_now
-
-            model.deleted_at = utc_now()
-            await self.session.merge(model)
-
-    async def exists(self, user_id: UserId) -> bool:
-        """Check if user exists (not soft-deleted)."""
         stmt = select(UserModel).where(
             UserModel.id == user_id.value,
             UserModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        model = result.scalar_one_or_none()
+
+        if model:
+            now = utc_now()
+            model.deleted_at = now
+            model.updated_at = now
+            await self.session.merge(model)
+
+    async def exists(self, user_id: UserId) -> bool:
+        """Check if user exists (not soft-deleted)."""
+        from sqlalchemy import exists as sql_exists
+        stmt = sql_exists().where(
+            UserModel.id == user_id.value,
+            UserModel.deleted_at.is_(None),
+        ).select()
+        result = await self.session.execute(stmt)
+        return result.scalar()

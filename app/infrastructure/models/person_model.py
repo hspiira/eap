@@ -8,15 +8,22 @@ This is a data container only - no business logic.
 from datetime import date
 
 from sqlalchemy import CheckConstraint, Enum as SQLEnum, ForeignKey, JSON, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, validates
 
-from app.domain.enums import BaseStatus, PersonType
+from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
+)
+from app.infrastructure.models.json_schemas import (
+    DependentInfoDict,
+    EmergencyContactDict,
+    EmploymentInfoDict,
+    LicenseInfoDict,
+    StaffInfoDict,
 )
 
 
@@ -35,11 +42,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             name="person_type_check",
         ),
         CheckConstraint(
-            f"secondary_person_type IN {tuple([e.value for e in PersonType])}",
+            f"secondary_person_type IS NULL OR secondary_person_type IN {tuple([e.value for e in PersonType])}",
             name="person_secondary_type_check",
         ),
         CheckConstraint(
-            f"status IN {tuple([e.value for e in BaseStatus])}",
+            "status IN (" + ", ".join(f"'{e.value}'" for e in BaseStatus) + ")",
             name="person_status_check",
         ),
     )
@@ -55,24 +62,205 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Core relationships
     user_id: Mapped[str] = mapped_column(
-        String,
+        String(25),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
 
     # Type-specific info (stored as JSON value objects)
-    employment_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    license_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    staff_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    dependent_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    employment_info: Mapped[EmploymentInfoDict | None] = mapped_column(
+        JSON, nullable=True
+    )
+    """
+    Employment information for CLIENT_EMPLOYEE person types.
+    
+    Schema: {
+        "role": str,
+        "start_date": str (ISO date: YYYY-MM-DD),
+        "status": str (WorkStatus enum value),
+        "department": str | None,
+        "employee_id": str | None,
+        "end_date": str | None (ISO date: YYYY-MM-DD)
+    }
+    """
+    
+    license_info: Mapped[LicenseInfoDict | None] = mapped_column(JSON, nullable=True)
+    """
+    Professional license information for SERVICE_PROVIDER person types.
+    
+    Schema: {
+        "number": str,
+        "issuing_authority": str,
+        "expiry_date": str | None (ISO date: YYYY-MM-DD)
+    }
+    """
+    
+    staff_info: Mapped[StaffInfoDict | None] = mapped_column(JSON, nullable=True)
+    """
+    Staff information for PLATFORM_STAFF person types.
+    
+    Schema: {
+        "role": str (StaffRole enum value),
+        "client_id": str,
+        "department": str | None,
+        "can_manage_clients": bool,
+        "can_manage_services": bool,
+        "can_view_reports": bool
+    }
+    """
+    
+    dependent_info: Mapped[DependentInfoDict | None] = mapped_column(JSON, nullable=True)
+    """
+    Dependent information for DEPENDENT person types.
+    
+    Schema: {
+        "primary_employee_id": str,
+        "relationship": str (RelationType enum value),
+        "guardian_id": str | None
+    }
+    """
 
     # Shared
     status: Mapped[BaseStatus] = mapped_column(
         SQLEnum(BaseStatus, native_enum=False), nullable=False, default=BaseStatus.PENDING
     )
-    emergency_contact: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    
+    emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(
+        JSON, nullable=True
+    )
+    """
+    Emergency contact information (shared across person types).
+    
+    Schema: {
+        "name": str,
+        "phone": str | None,
+        "email": str | None
+    }
+    Note: At least one of phone or email must be provided.
+    """
     last_service_date: Mapped[date | None] = mapped_column(nullable=True)
+
+    # Validation methods
+    @validates("employment_info")
+    def validate_employment_info(
+        self, key: str, value: EmploymentInfoDict | None
+    ) -> EmploymentInfoDict | None:
+        """Validate employment_info JSON structure."""
+        if value is None:
+            return None
+        
+        # Check required fields
+        required_fields = ["role", "start_date", "status"]
+        for field in required_fields:
+            if field not in value:
+                raise ValueError(f"employment_info missing required field: {field}")
+        
+        # Validate status is a valid WorkStatus value
+        if value["status"] not in [e.value for e in WorkStatus]:
+            raise ValueError(f"Invalid WorkStatus value: {value['status']}")
+        
+        # Validate date formats (basic check)
+        for date_field in ["start_date", "end_date"]:
+            if date_field in value and value[date_field] is not None:
+                try:
+                    date.fromisoformat(value[date_field])
+                except (ValueError, TypeError):
+                    raise ValueError(
+                        f"employment_info.{date_field} must be in ISO format (YYYY-MM-DD)"
+                    )
+        
+        return value
+    
+    @validates("license_info")
+    def validate_license_info(
+        self, key: str, value: LicenseInfoDict | None
+    ) -> LicenseInfoDict | None:
+        """Validate license_info JSON structure."""
+        if value is None:
+            return None
+        
+        # Check required fields
+        required_fields = ["number", "issuing_authority"]
+        for field in required_fields:
+            if field not in value:
+                raise ValueError(f"license_info missing required field: {field}")
+        
+        # Validate expiry_date format if present
+        if "expiry_date" in value and value["expiry_date"] is not None:
+            try:
+                date.fromisoformat(value["expiry_date"])
+            except (ValueError, TypeError):
+                raise ValueError(
+                    "license_info.expiry_date must be in ISO format (YYYY-MM-DD)"
+                )
+        
+        return value
+    
+    @validates("staff_info")
+    def validate_staff_info(
+        self, key: str, value: StaffInfoDict | None
+    ) -> StaffInfoDict | None:
+        """Validate staff_info JSON structure."""
+        if value is None:
+            return None
+        
+        # Check required fields
+        required_fields = ["role", "client_id"]
+        for field in required_fields:
+            if field not in value:
+                raise ValueError(f"staff_info missing required field: {field}")
+        
+        # Validate role is a valid StaffRole value
+        if value["role"] not in [e.value for e in StaffRole]:
+            raise ValueError(f"Invalid StaffRole value: {value['role']}")
+        
+        # Ensure boolean fields are booleans
+        for bool_field in ["can_manage_clients", "can_manage_services", "can_view_reports"]:
+            if bool_field in value and not isinstance(value[bool_field], bool):
+                raise ValueError(f"staff_info.{bool_field} must be a boolean")
+        
+        return value
+    
+    @validates("dependent_info")
+    def validate_dependent_info(
+        self, key: str, value: DependentInfoDict | None
+    ) -> DependentInfoDict | None:
+        """Validate dependent_info JSON structure."""
+        if value is None:
+            return None
+        
+        # Check required fields
+        required_fields = ["primary_employee_id", "relationship"]
+        for field in required_fields:
+            if field not in value:
+                raise ValueError(f"dependent_info missing required field: {field}")
+        
+        # Validate relationship is a valid RelationType value
+        if value["relationship"] not in [e.value for e in RelationType]:
+            raise ValueError(f"Invalid RelationType value: {value['relationship']}")
+        
+        return value
+    
+    @validates("emergency_contact")
+    def validate_emergency_contact(
+        self, key: str, value: EmergencyContactDict | None
+    ) -> EmergencyContactDict | None:
+        """Validate emergency_contact JSON structure."""
+        if value is None:
+            return None
+        
+        # Check required fields
+        if "name" not in value:
+            raise ValueError("emergency_contact missing required field: name")
+        
+        # Validate at least one contact method is provided
+        if not value.get("phone") and not value.get("email"):
+            raise ValueError(
+                "emergency_contact must have at least one of: phone or email"
+            )
+        
+        return value
 
     def __repr__(self) -> str:
         return f"<PersonModel(id={self.id}, person_type={self.person_type}, user_id={self.user_id})>"
