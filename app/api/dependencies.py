@@ -11,6 +11,9 @@ from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.activity_repository import ActivityRepository
+from app.domain.repositories.client_tag_repository import ClientTagRepository
+from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.kpi_repository import (
@@ -18,6 +21,9 @@ from app.domain.repositories.kpi_repository import (
     KPIRepository,
 )
 from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.service_assignment_repository import (
+    ServiceAssignmentRepository,
+)
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
@@ -27,6 +33,9 @@ from app.domain.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
+from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
+from app.infrastructure.repositories.contact_repository import ContactRepositoryImpl
 from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
 from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
 from app.infrastructure.repositories.kpi_repository import (
@@ -34,6 +43,9 @@ from app.infrastructure.repositories.kpi_repository import (
     KPIRepositoryImpl,
 )
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
+from app.infrastructure.repositories.service_assignment_repository import (
+    ServiceAssignmentRepositoryImpl,
+)
 from app.infrastructure.repositories.service_repository import ServiceRepositoryImpl
 from app.infrastructure.repositories.service_session_repository import (
     ServiceSessionRepositoryImpl,
@@ -223,6 +235,66 @@ async def get_industry_repository(
         IndustryRepository implementation
     """
     return IndustryRepositoryImpl(db)
+
+
+async def get_client_tag_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ClientTagRepository:
+    """
+    Dependency for getting client tag repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ClientTagRepository implementation
+    """
+    return ClientTagRepositoryImpl(db)
+
+
+async def get_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ContactRepository:
+    """
+    Dependency for getting contact repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ContactRepository implementation
+    """
+    return ContactRepositoryImpl(db)
+
+
+async def get_activity_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ActivityRepository:
+    """
+    Dependency for getting activity repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ActivityRepository implementation
+    """
+    return ActivityRepositoryImpl(db)
+
+
+async def get_service_assignment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceAssignmentRepository:
+    """
+    Dependency for getting service assignment repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceAssignmentRepository implementation
+    """
+    return ServiceAssignmentRepositoryImpl(db)
 
 
 async def get_audit_event_handler(

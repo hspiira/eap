@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.exceptions import DomainError, InvariantViolation
-from app.domain.value_objects.core import KPIId, TenantId
+from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
