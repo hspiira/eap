@@ -53,7 +53,9 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    extra_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata", JSON, nullable=True
+    )  # Column name is 'metadata' in DB, attribute is 'extra_metadata' in Python
 
     # Timestamp (immutable)
     occurred_at: Mapped[datetime] = mapped_column(

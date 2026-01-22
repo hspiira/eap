@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
@@ -21,6 +22,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
+from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
 from app.infrastructure.repositories.service_repository import ServiceRepositoryImpl
 from app.infrastructure.repositories.service_session_repository import (
@@ -28,6 +30,7 @@ from app.infrastructure.repositories.service_session_repository import (
 )
 from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
 from app.infrastructure.repositories.user_repository import UserRepositoryImpl
+from app.shared.handlers.audit_event_handler import AuditEventHandler
 
 
 async def get_tenant_repository(
@@ -150,3 +153,33 @@ async def get_service_session_repository(
         ServiceSessionRepository implementation
     """
     return ServiceSessionRepositoryImpl(db)
+
+
+async def get_document_repository(
+    db: AsyncSession = Depends(get_db),
+) -> DocumentRepository:
+    """
+    Dependency for getting document repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        DocumentRepository implementation
+    """
+    return DocumentRepositoryImpl(db)
+
+
+async def get_audit_event_handler(
+    audit_repo: AuditRepository = Depends(get_audit_repository),
+) -> AuditEventHandler:
+    """
+    Dependency for getting audit event handler.
+
+    Args:
+        audit_repo: Audit repository (injected dependency)
+
+    Returns:
+        AuditEventHandler instance
+    """
+    return AuditEventHandler(audit_repo)

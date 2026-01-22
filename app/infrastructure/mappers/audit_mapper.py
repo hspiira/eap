@@ -51,7 +51,7 @@ class AuditMapper:
             _ip_address=model.ip_address,
             _user_agent=model.user_agent,
             _occurred_at=ensure_utc(model.occurred_at),
-            _metadata=model.metadata,
+            _metadata=model.extra_metadata,
         )
 
     @staticmethod
@@ -77,7 +77,7 @@ class AuditMapper:
             ip_address=entity._ip_address,
             user_agent=entity._user_agent,
             occurred_at=ensure_utc(entity._occurred_at),
-            metadata=entity._metadata,
+            extra_metadata=entity._metadata,
             created_at=ensure_utc(entity._occurred_at),  # Use occurred_at for created_at
             updated_at=ensure_utc(entity._occurred_at),  # Immutable, so same as created_at
         )

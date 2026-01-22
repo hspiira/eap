@@ -13,10 +13,12 @@ from app.api.routes import (
     audit_router,
     clients_router,
     contracts_router,
+    documents_router,
     persons_router,
     services_router,
     service_sessions_router,
     tenants_router,
+    users_router,
 )
 from app.core.config import settings
 
@@ -28,11 +30,13 @@ app = FastAPI(
 
 # Include routers
 app.include_router(tenants_router)
+app.include_router(users_router)
 app.include_router(persons_router)
 app.include_router(clients_router)
 app.include_router(contracts_router)
 app.include_router(services_router)
 app.include_router(service_sessions_router)
+app.include_router(documents_router)
 app.include_router(audit_router)
 
 
