@@ -76,13 +76,14 @@ class TenantMapper:
         # Create model
         # Note: created_at and updated_at are handled by TimestampMixin
         # but we can set updated_at explicitly if needed
+        # For SQLEnum with native_enum=False, we need to ensure enum values are used
         model = TenantModel(
             id=entity._id.value,
             name=entity._name,
             code=entity._code.value,
-            status=entity._status,
+            status=entity._status,  # SQLEnum should handle conversion, but ensure it's the enum object
             settings=settings_dict,
-            subscription_tier=entity._subscription_tier,
+            subscription_tier=entity._subscription_tier,  # SQLEnum should handle conversion
             deleted_at=entity._deleted_at
         )
         

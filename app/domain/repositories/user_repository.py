@@ -9,7 +9,7 @@ from abc import abstractmethod
 
 from app.domain.entities.user import UserEntity
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import TenantId, UserId
+from app.domain.value_objects.core import Email, TenantId, UserId
 
 
 class UserRepository(BaseRepository[UserEntity, UserId]):
@@ -21,13 +21,13 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
     """
 
     @abstractmethod
-    async def get_by_email(self, email: str, tenant_id: TenantId) -> UserEntity | None:
+    async def get_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """
-        Get user by email within a tenant.
+        Get user by email address object within a tenant.
 
         Args:
-            email: User email address
-            tenant_id: Tenant identifier
+            email: User email address object
+            tenant_id: Tenant identifier object
 
         Returns:
             UserEntity if found, None otherwise

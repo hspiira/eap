@@ -46,11 +46,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Type discriminator
     person_type: Mapped[PersonType] = mapped_column(
-        SQLEnum(PersonType), nullable=False
+        SQLEnum(PersonType, native_enum=False), nullable=False
     )
     is_dual_role: Mapped[bool] = mapped_column(default=False, nullable=False)
     secondary_person_type: Mapped[PersonType | None] = mapped_column(
-        SQLEnum(PersonType), nullable=True
+        SQLEnum(PersonType, native_enum=False), nullable=True
     )
 
     # Core relationships
@@ -69,7 +69,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Shared
     status: Mapped[BaseStatus] = mapped_column(
-        SQLEnum(BaseStatus), nullable=False, default=BaseStatus.PENDING
+        SQLEnum(BaseStatus, native_enum=False), nullable=False, default=BaseStatus.PENDING
     )
     emergency_contact: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     last_service_date: Mapped[date | None] = mapped_column(nullable=True)

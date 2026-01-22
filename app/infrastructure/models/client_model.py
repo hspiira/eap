@@ -51,11 +51,11 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Status
     status: Mapped[BaseStatus] = mapped_column(
-        SQLEnum(BaseStatus), nullable=False, default=BaseStatus.PENDING
+        SQLEnum(BaseStatus, native_enum=False), nullable=False, default=BaseStatus.PENDING
     )
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
     preferred_contact_method: Mapped[ContactMethod | None] = mapped_column(
-        SQLEnum(ContactMethod), nullable=True
+        SQLEnum(ContactMethod, native_enum=False), nullable=True
     )
 
     def __repr__(self) -> str:

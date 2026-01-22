@@ -73,9 +73,9 @@ class UserMapper:
             email=entity._email.value,
             password_hash=entity._password_hash,
             email_verified_at=entity._email_verified_at,
-            status=entity._status.value,
+            status=entity._status,
             status_changed_at=entity._status_changed_at,
-            preferred_language=entity._preferred_language.value
+            preferred_language=entity._preferred_language
             if entity._preferred_language
             else None,
             timezone=entity._timezone,

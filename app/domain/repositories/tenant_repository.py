@@ -9,7 +9,7 @@ from abc import abstractmethod
 
 from app.domain.entities.tenant import TenantEntity
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import TenantId
+from app.domain.value_objects.core import TenantCode, TenantId
 
 
 class TenantRepository(BaseRepository[TenantEntity, TenantId]):
@@ -21,12 +21,12 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
     """
     
     @abstractmethod
-    async def get_by_code(self, code: str) -> TenantEntity | None:
+    async def get_by_code(self, code: TenantCode) -> TenantEntity | None:
         """
-        Get tenant by code.
+        Get tenant by code object.
         
         Args:
-            code: Tenant code
+            code: Tenant code object
             
         Returns:
             TenantEntity if found, None otherwise

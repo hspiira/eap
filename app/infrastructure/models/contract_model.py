@@ -65,15 +65,15 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
 
     # Payment configuration
     payment_frequency: Mapped[PaymentFrequency] = mapped_column(
-        SQLEnum(PaymentFrequency), nullable=False
+        SQLEnum(PaymentFrequency, native_enum=False), nullable=False
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        SQLEnum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING
+        SQLEnum(PaymentStatus, native_enum=False), nullable=False, default=PaymentStatus.PENDING
     )
 
     # Status
     status: Mapped[ContractStatus] = mapped_column(
-        SQLEnum(ContractStatus), nullable=False, default=ContractStatus.DRAFT
+        SQLEnum(ContractStatus, native_enum=False), nullable=False, default=ContractStatus.DRAFT
     )
     is_auto_renew: Mapped[bool] = mapped_column(default=False, nullable=False)
 

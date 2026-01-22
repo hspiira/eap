@@ -6,14 +6,8 @@ Specific repositories extend this with domain-specific methods.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
 
-# Type variables for generic repository
-EntityType = TypeVar("EntityType")
-IdType = TypeVar("IdType")
-
-
-class BaseRepository(ABC, Generic[EntityType, IdType]):
+class BaseRepository[EntityType, IdType](ABC):
     """
     Base repository interface with common CRUD operations.
 

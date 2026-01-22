@@ -52,19 +52,10 @@ class InputSanitizer:
         if not value:
             return value
 
-        # Remove SQL keywords and special characters
-        dangerous_patterns = [
-            r"\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|EXEC|EXECUTE)\b",
-            r"[;\'\"\\]",
-            r"--",
-            r"/\*.*?\*/",
-        ]
-
-        sanitized = value
-        for pattern in dangerous_patterns:
-            sanitized = re.sub(pattern, "", sanitized, flags=re.IGNORECASE)
-
-        return sanitized.strip()
+        # Allowlist validation to avoid lossy transforms
+        if not cls.SQL_SAFE_PATTERN.match(value):
+            raise ValueError("Unsafe SQL string")
+        return value
 
     @classmethod
     def sanitize_dict(cls, data: dict[str, Any], max_depth: int = 100) -> dict[str, Any]:
