@@ -6,7 +6,8 @@ Uses TenantScopedRepositoryImpl base class where possible, but requires
 UserRepository to load the profile (special dependency).
 """
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -151,12 +152,13 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
                 )
             )
 
-        # Apply sorting
-        sort_column = getattr(PersonModel, sort_by, PersonModel.created_at)
+        ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "status", "person_type"}
+        if sort_by not in ALLOWED_SORT_COLUMNS:
+            raise ValueError(f"Invalid sort column: {sort_by}") 
         if sort_desc:
-            stmt = stmt.order_by(sort_column.desc())
+            stmt = stmt.order_by(getattr(PersonModel, sort_by).desc())
         else:
-            stmt = stmt.order_by(sort_column.asc())
+            stmt = stmt.order_by(getattr(PersonModel, sort_by).asc())
 
         # Apply pagination
         stmt = stmt.limit(limit).offset(offset)

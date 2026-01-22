@@ -5,7 +5,8 @@ Generic base class that eliminates repetitive repository patterns.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Sequence, Any
+from collections.abc import Sequence
+from typing import Generic, TypeVar, Any
 
 from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession

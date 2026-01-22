@@ -1,7 +1,8 @@
 """Activity Repository Implementation - SQLAlchemy implementation."""
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Any
 
 from sqlalchemy import func, or_, select
 

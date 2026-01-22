@@ -8,7 +8,8 @@ Note: Tenant is a root aggregate, so it uses BaseRepositoryImpl instead of
 TenantScopedRepositoryImpl (tenants don't have a tenant_id on themselves).
 """
 
-from typing import Any, Sequence
+from typing import Any
+from collections.abc import Sequence
 
 from sqlalchemy import func, or_, select
 
@@ -89,12 +90,13 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
                 )
             )
 
-        # Apply sorting
-        sort_column = getattr(TenantModel, sort_by, TenantModel.created_at)
+        ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "name", "code", "status"}
+        if sort_by not in ALLOWED_SORT_COLUMNS:
+            raise ValueError(f"Invalid sort_by value: {sort_by}. Allowed values: {ALLOWED_SORT_COLUMNS}")
         if sort_desc:
-            stmt = stmt.order_by(sort_column.desc())
+            stmt = stmt.order_by(getattr(TenantModel, sort_by).desc())
         else:
-            stmt = stmt.order_by(sort_column.asc())
+            stmt = stmt.order_by(getattr(TenantModel, sort_by).asc())
 
         # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
