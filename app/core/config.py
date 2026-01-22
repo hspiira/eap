@@ -2,14 +2,22 @@
 Application Configuration
 
 Centralized configuration management using environment variables.
-Uses Pydantic Settings for validation and type safety.
+All configuration values must be set via environment variables.
+No defaults are provided - missing values will raise validation errors.
 """
 
+import warnings
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    """
+    Application settings loaded from environment variables.
+    
+    All values are required and must be set via environment variables.
+    Missing values will cause validation errors.
+    """
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -19,35 +27,101 @@ class Settings(BaseSettings):
     )
 
     # Application
-    APP_NAME: str = "Allevia"
-    APP_VERSION: str = "0.1.0"
-    DEBUG: bool = False
-    ENVIRONMENT: str = "development"  # development, staging, production
+    APP_NAME: str = Field(description="Application name")
+    APP_VERSION: str = Field(description="Application version")
+    DEBUG: bool = Field(description="Debug mode")
+    ENVIRONMENT: str = Field(
+        description="Environment: development, staging, production"
+    )
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./allevia.db"
-    DATABASE_ECHO: bool = False  # SQL query logging
+    DATABASE_URL: str = Field(description="Database connection URL")
+    DATABASE_ECHO: bool = Field(description="Echo SQL queries to console")
 
     # Security
-    SECRET_KEY: str = "change-me-in-production"  # TODO: Generate secure key
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    SECRET_KEY: str = Field(description="Secret key for JWT tokens")
+    ALGORITHM: str = Field(description="JWT algorithm")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        description="JWT token expiration in minutes"
+    )
 
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    CORS_ORIGINS: str = Field(
+        description="Comma-separated list of allowed CORS origins"
+    )
 
     # Logging
-    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_LEVEL: str = Field(
+        description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL"
+    )
+
+    @field_validator("ENVIRONMENT")
+    @classmethod
+    def validate_environment(cls, v: str) -> str:
+        """Validate environment value."""
+        allowed = {"development", "staging", "production"}
+        if v.lower() not in allowed:
+            raise ValueError(f"ENVIRONMENT must be one of {allowed}")
+        return v.lower()
+
+    @field_validator("LOG_LEVEL")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level."""
+        allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if v.upper() not in allowed:
+            raise ValueError(f"LOG_LEVEL must be one of {allowed}")
+        return v.upper()
+
+    @model_validator(mode="after")
+    def validate_config(self) -> "Settings":
+        """Validate configuration and warn about missing or invalid values."""
+        missing = []
+        
+        # Check for empty strings (which might indicate missing env vars)
+        if not self.SECRET_KEY or self.SECRET_KEY.strip() == "":
+            missing.append("SECRET_KEY")
+        if not self.DATABASE_URL or self.DATABASE_URL.strip() == "":
+            missing.append("DATABASE_URL")
+        
+        if missing:
+            warnings.warn(
+                f"Missing required configuration: {', '.join(missing)}. "
+                "Set these via environment variables.",
+                UserWarning,
+                stacklevel=2,
+            )
+        
+        # Production-specific validations
+        if self.is_production:
+            if "sqlite" in self.DATABASE_URL.lower():
+                warnings.warn(
+                    "SQLite database is not recommended for production. "
+                    "Consider using PostgreSQL or another production database.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        
+        return self
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Get CORS origins as a list."""
+        return [
+            origin.strip()
+            for origin in self.CORS_ORIGINS.split(",")
+            if origin.strip()
+        ]
 
     @property
     def is_development(self) -> bool:
         """Check if running in development environment."""
-        return self.ENVIRONMENT.lower() == "development"
+        return self.ENVIRONMENT == "development"
 
     @property
     def is_production(self) -> bool:
         """Check if running in production environment."""
-        return self.ENVIRONMENT.lower() == "production"
+        return self.ENVIRONMENT == "production"
 
 
 # Global settings instance
