@@ -32,7 +32,6 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         Returns:
             PersonEntity if found, None otherwise
         """
-        pass
 
     @abstractmethod
     async def get_by_type(
@@ -48,4 +47,3 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         Returns:
             List of PersonEntity matching the type
         """
-        pass

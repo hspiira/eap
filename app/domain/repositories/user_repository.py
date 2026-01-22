@@ -32,4 +32,3 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         Returns:
             UserEntity if found, None otherwise
         """
-        pass

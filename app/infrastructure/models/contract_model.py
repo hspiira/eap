@@ -1,0 +1,96 @@
+"""
+Contract SQLAlchemy Model
+
+Database representation of Contract aggregate.
+This is a data container only - no business logic.
+"""
+
+from datetime import date, datetime
+
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    Enum as SQLEnum,
+    ForeignKey,
+    JSON,
+    String,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.infrastructure.models.base import (
+    Base,
+    CuidMixin,
+    SoftDeleteMixin,
+    TenantMixin,
+    TimestampMixin,
+)
+
+
+class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
+    """
+    SQLAlchemy Model for Contract aggregate.
+
+    This is a data container for persistence only.
+    Business logic lives in ContractEntity.
+    """
+
+    __tablename__ = "contracts"
+    __table_args__ = (
+        CheckConstraint(
+            f"status IN {tuple([e.value for e in ContractStatus])}",
+            name="contract_status_check",
+        ),
+        CheckConstraint(
+            f"payment_frequency IN {tuple([e.value for e in PaymentFrequency])}",
+            name="contract_payment_frequency_check",
+        ),
+        CheckConstraint(
+            f"payment_status IN {tuple([e.value for e in PaymentStatus])}",
+            name="contract_payment_status_check",
+        ),
+    )
+
+    # Relationships
+    client_id: Mapped[str] = mapped_column(
+        ForeignKey("clients.id"), nullable=False, index=True
+    )
+
+    # Contract period (stored as JSON)
+    period: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    # Billing (stored as JSON)
+    billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    # Payment configuration
+    payment_frequency: Mapped[PaymentFrequency] = mapped_column(
+        SQLEnum(PaymentFrequency), nullable=False
+    )
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        SQLEnum(PaymentStatus), nullable=False, default=PaymentStatus.PENDING
+    )
+
+    # Status
+    status: Mapped[ContractStatus] = mapped_column(
+        SQLEnum(ContractStatus), nullable=False, default=ContractStatus.DRAFT
+    )
+    is_auto_renew: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+    # Billing dates
+    last_billing_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    next_billing_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Signing
+    signed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    signed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Termination
+    termination_reason: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
+
+    def __repr__(self) -> str:
+        return f"<ContractModel(id={self.id}, client_id={self.client_id}, status={self.status})>"
