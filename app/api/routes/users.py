@@ -49,15 +49,16 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 def _hash_password(password: str) -> str:
     """
-    Hash a password.
+    Hash a password using bcrypt.
     
-    Note: In production, use a proper password hashing library like bcrypt or argon2.
-    This is a placeholder - implement proper password hashing.
+    Args:
+        password: Plain text password to hash
+        
+    Returns:
+        Bcrypt hashed password string
     """
-    # TODO: Implement proper password hashing (bcrypt, argon2, etc.)
-    # For now, this is a placeholder
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
+    from app.core.security import hash_password
+    return hash_password(password)
 
 
 def _to_user_response(user: UserEntity) -> UserResponse:
