@@ -1,57 +1,58 @@
 """
 Database Configuration
 
-SQLAlchemy setup for FastAPI application.
+Async SQLAlchemy setup for FastAPI application.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.core.config import settings
 from app.infrastructure.models.base import Base
 
+# Create async engine
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    echo=settings.DATABASE_ECHO,
+)
 
-# Database URL - should come from config
-DATABASE_URL = "sqlite:///./eap.db"  # TODO: Move to config
-
-
-# Create engine
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
-    echo=False  # Set to True for SQL query logging
+# Async session factory
+AsyncSessionLocal = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
 )
 
 
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db() -> Session:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    Dependency for FastAPI to get database session.
+    Dependency for FastAPI to get async database session.
     
     Usage:
         @app.get("/items")
-        def get_items(db: Session = Depends(get_db)):
+        async def get_items(db: AsyncSession = Depends(get_db)):
             ...
     """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
-def init_db() -> None:
+async def init_db() -> None:
     """
     Initialize database - create all tables.
     
     Call this on application startup.
     """
-    Base.metadata.create_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
-def drop_db() -> None:
+async def drop_db() -> None:
     """
     Drop all tables (use with caution!).
     """
-    Base.metadata.drop_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)

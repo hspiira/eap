@@ -80,9 +80,9 @@ class TenantMapper:
             id=entity._id.value,
             name=entity._name,
             code=entity._code.value,
-            status=entity._status.value,
+            status=entity._status,
             settings=settings_dict,
-            subscription_tier=entity._subscription_tier.value,
+            subscription_tier=entity._subscription_tier,
             deleted_at=entity._deleted_at
         )
         

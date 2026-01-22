@@ -52,7 +52,6 @@ class Id:
 
     Attributes:
     - <25 characters
-    - alphanumeric with optional hyphen
     - immutable once activated
     """
     value: str
@@ -60,14 +59,14 @@ class Id:
         if not self.value or len(self.value) > 25:
             raise ValueError("ID must be less than 25 characters")
 
-TenantId = Id # Alias for Id
-PersonId = Id # Alias for Id
-ContractId = Id # Alias for Id
-ServiceId = Id # Alias for Id
-SessionId = Id # Alias for Id
-UserId = Id # Alias for Id
-ClientId = Id # Alias for Id
-IndustryId = Id # Alias for Id
+TenantId = Id
+PersonId = Id
+ContractId = Id
+ServiceId = Id
+SessionId = Id
+UserId = Id
+ClientId = Id
+IndustryId = Id
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)
@@ -85,7 +84,7 @@ class Email:
         if not self.value or len(self.value) > 255:
             raise ValueError("Email must be less than 255 characters")
         if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", self.value):
-            raise ValueError(f"{self.value} is not a valid email address")
+            raise ValueError("Invalid email address format")
 
 @dataclass(frozen=True)
 class Money:
@@ -138,6 +137,11 @@ class TenantSettings:
     max_clients: int
     features_enabled: tuple[str, ...]
     custom_branding: bool=False
+    def __post_init__(self) -> None:
+        if self.max_users < 0:
+            raise ValueError("Max users must be a positive number")
+        if self.max_clients < 0:
+            raise ValueError("Max clients must be a positive number")
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
 

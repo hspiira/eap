@@ -31,4 +31,3 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
         Returns:
             TenantEntity if found, None otherwise
         """
-        pass

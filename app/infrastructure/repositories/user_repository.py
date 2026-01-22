@@ -22,7 +22,7 @@ class UserRepositoryImpl(UserRepository):
     Uses mapper to convert between entity and model.
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         """
         Initialize repository with database session.
 

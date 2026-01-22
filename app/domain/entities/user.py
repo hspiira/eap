@@ -89,5 +89,3 @@ class UserEntity:
         """Ensure user invariants are met"""
         if not self._email:
             raise InvariantViolation("User must have an email")
-        if self._status == UserStatus.BANNED:
-            raise InvariantViolation("Banned users cannot be active")

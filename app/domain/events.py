@@ -71,6 +71,20 @@ class PersonTerminated(DomainEvent):
     reason: str
 
 
+@dataclass(frozen=True)
+class PersonSecondaryRoleAdded(DomainEvent):
+    """Event raised when a person's secondary role is added."""
+    person_id: PersonId
+    role: PersonType
+
+
+@dataclass(frozen=True)
+class PersonSecondaryRoleRemoved(DomainEvent):
+    """Event raised when a person's secondary role is removed."""
+    person_id: PersonId
+    role: PersonType
+
+
 # === User Events ===
 
 @dataclass(frozen=True)

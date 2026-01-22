@@ -25,7 +25,7 @@ class InputSanitizer:
         """Remove all HTML tags and entities."""
         if not value:
             return value
-        return nh3.clean(value, tags=set)
+        return nh3.clean(value, tags=set())
 
     @classmethod
     def sanitize_identifier(cls, value: str) -> str:
@@ -67,34 +67,64 @@ class InputSanitizer:
         return sanitized.strip()
 
     @classmethod
-    def sanitize_dict(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Recursively sanitize dictionary values."""
+    def sanitize_dict(cls, data: dict[str, Any], max_depth: int = 100) -> dict[str, Any]:
+        """
+        Recursively sanitize dictionary values.
+        
+        Args:
+            data: Dictionary to sanitize
+            max_depth: Maximum recursion depth (default 100)
+            
+        Returns:
+            Sanitized dictionary
+            
+        Raises:
+            ValueError: If max_depth <= 0
+        """
+        if max_depth <= 0:
+            raise ValueError("Maximum recursion depth exceeded or invalid max_depth")
+        
         sanitized = {}
 
         for key, value in data.items():
             if isinstance(value, str):
                 sanitized[key] = cls.sanitize_html(value)
             elif isinstance(value, dict):
-                sanitized[key] = cls.sanitize_dict(value)
+                sanitized[key] = cls.sanitize_dict(value, max_depth=max_depth - 1)
             elif isinstance(value, list):
-                sanitized[key] = cls.sanitize_list(value)
+                sanitized[key] = cls.sanitize_list(value, max_depth=max_depth - 1)
             else:
                 sanitized[key] = value
 
         return sanitized
 
     @classmethod
-    def sanitize_list(cls, data: list[Any]) -> list[Any]:
-        """Recursively sanitize list values."""
+    def sanitize_list(cls, data: list[Any], max_depth: int = 100) -> list[Any]:
+        """
+        Recursively sanitize list values.
+        
+        Args:
+            data: List to sanitize
+            max_depth: Maximum recursion depth (default 100)
+            
+        Returns:
+            Sanitized list
+            
+        Raises:
+            ValueError: If max_depth <= 0
+        """
+        if max_depth <= 0:
+            raise ValueError("Maximum recursion depth exceeded or invalid max_depth")
+        
         sanitized = []
 
         for item in data:
             if isinstance(item, str):
                 sanitized.append(cls.sanitize_html(item))
             elif isinstance(item, dict):
-                sanitized.append(cls.sanitize_dict(item))
+                sanitized.append(cls.sanitize_dict(item, max_depth=max_depth - 1))
             elif isinstance(item, list):
-                sanitized.append(cls.sanitize_list(item))
+                sanitized.append(cls.sanitize_list(item, max_depth=max_depth - 1))
             else:
                 sanitized.append(item)
 

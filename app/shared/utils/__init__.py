@@ -19,11 +19,11 @@ from app.shared.utils.sanitization import (
 )
 
 __all__ = [
+    "InputSanitizer",
     "ensure_utc",
     "from_timestamp_ms_utc",
     "from_timestamp_utc",
     "generate_cuid",
-    "InputSanitizer",
     "sanitize_input",
     "utc_now",
     "validate_identifier",

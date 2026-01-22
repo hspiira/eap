@@ -22,7 +22,7 @@ class TenantRepositoryImpl(TenantRepository):
     Uses mapper to convert between entity and model.
     """
     
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         """
         Initialize repository with database session.
         
@@ -82,7 +82,9 @@ class TenantRepositoryImpl(TenantRepository):
         
         if model:
             from app.shared.utils.datetime import utc_now
-            model.deleted_at = utc_now()
+            now = utc_now()
+            model.deleted_at = now
+            model.updated_at = now
             await self.session.merge(model)
     
     async def exists(self, tenant_id: TenantId) -> bool:

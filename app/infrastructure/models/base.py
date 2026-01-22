@@ -7,13 +7,13 @@ Provides common functionality for all database models.
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, DeclarativeBase
 from sqlalchemy.sql import func
 
 from app.shared.utils.generators import generate_cuid
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class CuidMixin:

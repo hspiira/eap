@@ -35,7 +35,7 @@ from typing import Union
 from app.domain.value_objects.core import PersonId, TenantId, UserId, EmploymentInfo, LicenseInfo, StaffInfo, DependentInfo, EmergencyContact
 from app.domain.entities.user import UserEntity
 from app.domain.enums import PersonType, BaseStatus
-from app.domain.events import DomainEvent, PersonActivated, PersonDeactivated, PersonTerminated
+from app.domain.events import DomainEvent, PersonActivated, PersonDeactivated, PersonTerminated, PersonSecondaryRoleAdded
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
 
@@ -51,26 +51,26 @@ class PersonEntity:
     # Type discriminator
     _person_type: PersonType
     _is_dual_role: bool
-    _secondary_person_type: PersonType | None = None
     
     # Core relationships
     _user_id: UserId
     _profile: UserEntity  # Entity inside aggregate
     
-    # Type-specific (use Value Objects)
-    _employment_info: EmploymentInfo | None = None  # CLIENT_EMPLOYEE
-    _license_info: LicenseInfo | None = None  # SERVICE_PROVIDER
-    _staff_info: StaffInfo | None = None  # PLATFORM_STAFF
-    _dependent_info: DependentInfo | None = None  # DEPENDENT
-    
     # Shared
     _status: BaseStatus
-    _emergency_contact: EmergencyContact | None = None
-    _last_service_date: date | None = None
     
     # Audit
     _created_at: datetime
     _updated_at: datetime
+
+    # Optional fields with defaults
+    _secondary_person_type: PersonType | None = None
+    _employment_info: EmploymentInfo | None = None  # CLIENT_EMPLOYEE
+    _license_info: LicenseInfo | None = None  # SERVICE_PROVIDER
+    _staff_info: StaffInfo | None = None  # PLATFORM_STAFF
+    _dependent_info: DependentInfo | None = None  # DEPENDENT
+    _emergency_contact: EmergencyContact | None = None
+    _last_service_date: date | None = None
     _deleted_at: datetime | None = None
     
     _events: list[DomainEvent] = field(default_factory=list)
@@ -141,7 +141,9 @@ class PersonEntity:
         
         self._is_dual_role = True
         self._secondary_person_type = role
+        self._updated_at = utc_now()
         self._ensure_invariants()
+        self._events.append(PersonSecondaryRoleAdded(occurred_at=utc_now(), person_id=self._id, role=role))
     
     # === Factory Methods ===
     

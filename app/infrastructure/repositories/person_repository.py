@@ -25,7 +25,7 @@ class PersonRepositoryImpl(PersonRepository):
     Requires UserRepository to load the profile.
     """
 
-    def __init__(self, session: AsyncSession, user_repository: UserRepository):
+    def __init__(self, session: AsyncSession, user_repository: UserRepository) -> None:
         """
         Initialize repository with database session and user repository.
 

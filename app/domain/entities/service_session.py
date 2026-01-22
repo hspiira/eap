@@ -22,18 +22,20 @@ class ServiceSessionEntity:
     _person_id: PersonId
     
     _scheduled_at: datetime
+    _status: SessionStatus
+
+    _created_at: datetime
+    _updated_at: datetime
+
     _completed_at: datetime | None = None
     _duration: int | None = None
     _location: str | None = None
     
-    _status: SessionStatus
     _notes: str | None = None
     _feedback: str | None = None
     _cancellation_reason: str | None = None
     _reschedule_count: int
     
-    _created_at: datetime
-    _updated_at: datetime
     _deleted_at: datetime | None = None
     
     _events: list[DomainEvent] = field(default_factory=list)
