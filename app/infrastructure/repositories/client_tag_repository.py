@@ -1,32 +1,44 @@
 """ClientTag Repository Implementation - SQLAlchemy implementation."""
 
-from typing import Sequence
+from typing import Any, Sequence
 
-from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.domain.entities.client_tag import ClientTagEntity
 from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.infrastructure.mappers.client_tag_mapper import ClientTagMapper
 from app.infrastructure.models.client_tag_model import ClientTagModel
-from app.shared.utils.datetime import utc_now
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ClientTagRepositoryImpl(ClientTagRepository):
-    def __init__(self, session: AsyncSession) -> None:
-        self.session = session
+class ClientTagRepositoryImpl(TenantScopedRepositoryImpl[ClientTagEntity, ClientTagModel, ClientTagId], ClientTagRepository):
+    """
+    SQLAlchemy implementation of ClientTagRepository.
 
-    async def get_by_id(self, tag_id: ClientTagId) -> ClientTagEntity | None:
-        stmt = select(ClientTagModel).where(
-            ClientTagModel.id == tag_id.value,
-            ClientTagModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        return ClientTagMapper.to_entity(model) if model else None
+    Inherits common CRUD operations from TenantScopedRepositoryImpl.
+    Only implements domain-specific queries.
+    """
+
+    model_class = ClientTagModel
+    id_column = "id"
+
+    def _to_entity(self, model: ClientTagModel) -> ClientTagEntity:
+        """Convert model to entity."""
+        return ClientTagMapper.to_entity(model)
+
+    def _to_model(self, entity: ClientTagEntity) -> ClientTagModel:
+        """Convert entity to model."""
+        return ClientTagMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: ClientTagId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    # Domain-specific queries (not in base class)
 
     async def get_by_name(self, name: str, tenant_id: TenantId) -> ClientTagEntity | None:
+        """Get tag by name within tenant."""
         stmt = select(ClientTagModel).where(
             ClientTagModel.name == name,
             ClientTagModel.tenant_id == tenant_id.value,
@@ -34,7 +46,7 @@ class ClientTagRepositoryImpl(ClientTagRepository):
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-        return ClientTagMapper.to_entity(model) if model else None
+        return self._to_entity(model) if model else None
 
     async def list_all(
         self,
@@ -44,17 +56,22 @@ class ClientTagRepositoryImpl(ClientTagRepository):
         limit: int = 100,
         offset: int = 0,
     ) -> Sequence[ClientTagEntity]:
-        stmt = select(ClientTagModel).where(
-            ClientTagModel.tenant_id == tenant_id.value,
-            ClientTagModel.deleted_at.is_(None),
-        )
+        """List tags with filtering, searching, and pagination."""
+        # Build filters dict for base class
+        filters: dict[str, Any] = {}
         if is_active is not None:
-            stmt = stmt.where(ClientTagModel.is_active == is_active)
-        if search:
-            stmt = stmt.where(ClientTagModel.name.ilike(f"%{search}%"))
-        stmt = stmt.limit(limit).offset(offset).order_by(ClientTagModel.name)
-        result = await self.session.execute(stmt)
-        return [ClientTagMapper.to_entity(m) for m in result.scalars().all()]
+            filters["is_active"] = is_active
+
+        return await self._query_all(
+            tenant_id=tenant_id.value,
+            limit=limit,
+            offset=offset,
+            sort_by="name",
+            sort_desc=False,
+            filters=filters,
+            search=search,
+            search_fields=["name"],
+        )
 
     async def count(
         self,
@@ -62,38 +79,14 @@ class ClientTagRepositoryImpl(ClientTagRepository):
         is_active: bool | None = None,
         search: str | None = None,
     ) -> int:
-        stmt = select(func.count(ClientTagModel.id)).where(
-            ClientTagModel.tenant_id == tenant_id.value,
-            ClientTagModel.deleted_at.is_(None),
-        )
+        """Count tags matching filters."""
+        filters: dict[str, Any] = {}
         if is_active is not None:
-            stmt = stmt.where(ClientTagModel.is_active == is_active)
-        if search:
-            stmt = stmt.where(ClientTagModel.name.ilike(f"%{search}%"))
-        result = await self.session.execute(stmt)
-        return int(result.scalar() or 0)
+            filters["is_active"] = is_active
 
-    async def save(self, tag: ClientTagEntity) -> None:
-        model = ClientTagMapper.to_model(tag)
-        await self.session.merge(model)
-
-    async def delete(self, tag_id: ClientTagId) -> None:
-        stmt = select(ClientTagModel).where(
-            ClientTagModel.id == tag_id.value,
-            ClientTagModel.deleted_at.is_(None),
+        return await self._count_all(
+            tenant_id=tenant_id.value,
+            filters=filters,
+            search=search,
+            search_fields=["name"],
         )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-        if model:
-            model.deleted_at = utc_now()
-            model.updated_at = utc_now()
-            await self.session.merge(model)
-
-    async def exists(self, tag_id: ClientTagId) -> bool:
-        from sqlalchemy import exists as sql_exists
-        stmt = sql_exists().where(
-            ClientTagModel.id == tag_id.value,
-            ClientTagModel.deleted_at.is_(None),
-        ).select()
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())

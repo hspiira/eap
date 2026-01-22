@@ -8,7 +8,6 @@ Write operations (logging) are handled by use cases called from middleware/decor
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_audit_repository
 from app.api.schemas.audit_schemas import (
@@ -19,7 +18,6 @@ from app.api.schemas.audit_schemas import (
     FieldChangeSchema,
 )
 from app.application.use_cases.audit_use_cases import GetAuditLogUseCase
-from app.core.database import get_db
 from app.domain.enums import AuditActionType
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.repositories.audit_repository import AuditRepository

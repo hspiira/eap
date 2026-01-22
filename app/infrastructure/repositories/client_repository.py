@@ -7,8 +7,7 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 
 from typing import Any, Sequence
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus
@@ -80,7 +79,7 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
         if is_verified is not None:
             filters["is_verified"] = is_verified
 
-        return await super().list_all(
+        return await self._query_all(
             tenant_id=tenant_id.value,
             limit=limit,
             offset=offset,
@@ -105,7 +104,7 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
         if is_verified is not None:
             filters["is_verified"] = is_verified
 
-        return await super().count_in_tenant(
+        return await self._count_all(
             tenant_id=tenant_id.value,
             filters=filters,
             search=search,

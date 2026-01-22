@@ -24,7 +24,7 @@ from app.domain.events import (
 from app.shared.events.event_bus import event_bus
 
 if TYPE_CHECKING:
-    from app.domain.repositories.audit_repository import AuditRepository
+    pass
 
 logger = logging.getLogger(__name__)
 

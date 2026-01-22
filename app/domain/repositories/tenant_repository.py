@@ -11,7 +11,7 @@ from typing import Sequence
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import TenantCode, TenantId
+from app.domain.value_objects.core import TenantId
 
 
 class TenantRepository(BaseRepository[TenantEntity, TenantId]):

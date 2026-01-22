@@ -6,11 +6,8 @@ Utilities for seamless audit integration with entities and repositories.
 
 from typing import Any
 
-from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.enums import AuditActionType
 from app.domain.value_objects.audit import FieldChange
-from app.domain.value_objects.core import AuditLogId, TenantId, UserId
-from app.shared.utils.datetime import utc_now
 
 
 def extract_field_changes(

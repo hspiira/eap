@@ -5,10 +5,9 @@ Converts between DocumentEntity (domain) and DocumentModel (persistence).
 """
 
 from app.domain.entities.document import DocumentEntity
-from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.infrastructure.models.document_model import DocumentModel
-from app.shared.utils.datetime import ensure_utc, utc_now
+from app.shared.utils.datetime import ensure_utc
 
 
 class DocumentMapper:

@@ -6,7 +6,6 @@ Separate from domain entities.
 """
 
 from datetime import date
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 

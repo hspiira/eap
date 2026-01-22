@@ -14,7 +14,6 @@ from app.domain.enums import AuditActionType
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.value_objects.core import (
     AuditLogId,
-    EntityChangeId,
     TenantId,
     UserId,
 )

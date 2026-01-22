@@ -5,10 +5,9 @@ Converts between KPI entities (domain) and models (persistence).
 """
 
 from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
-from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
-from app.shared.utils.datetime import ensure_utc, utc_now
+from app.shared.utils.datetime import ensure_utc
 
 
 class KPIMapper:
@@ -25,7 +24,6 @@ class KPIMapper:
         Returns:
             KPIEntity with business logic
         """
-        from decimal import Decimal
 
         kpi_id = KPIId(model.id)
         tenant_id = TenantId(model.tenant_id)

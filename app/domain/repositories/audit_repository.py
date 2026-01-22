@@ -12,7 +12,7 @@ from typing import Sequence
 
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.enums import AuditActionType
-from app.domain.value_objects.core import AuditLogId, EntityChangeId, TenantId, UserId
+from app.domain.value_objects.core import AuditLogId, TenantId, UserId
 
 
 class AuditRepository:
