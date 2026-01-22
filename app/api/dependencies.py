@@ -9,9 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
 from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
 from app.infrastructure.repositories.user_repository import UserRepositoryImpl
 
@@ -59,3 +61,20 @@ async def get_client_repository(
         ClientRepository implementation
     """
     return ClientRepositoryImpl(db)
+
+
+async def get_person_repository(
+    db: AsyncSession = Depends(get_db),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> PersonRepository:
+    """
+    Dependency for getting person repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+        user_repo: User repository (injected dependency)
+
+    Returns:
+        PersonRepository implementation
+    """
+    return PersonRepositoryImpl(db, user_repo)

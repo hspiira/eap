@@ -35,7 +35,14 @@ from typing import Union
 from app.domain.value_objects.core import PersonId, TenantId, UserId, EmploymentInfo, LicenseInfo, StaffInfo, DependentInfo, EmergencyContact
 from app.domain.entities.user import UserEntity
 from app.domain.enums import PersonType, BaseStatus
-from app.domain.events import DomainEvent, PersonActivated, PersonDeactivated, PersonTerminated, PersonSecondaryRoleAdded
+from app.domain.events import (
+    DomainEvent,
+    PersonActivated,
+    PersonDeactivated,
+    PersonTerminated,
+    PersonSecondaryRoleAdded,
+    PersonSecondaryRoleRemoved,
+)
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
 
@@ -69,10 +76,35 @@ class PersonEntity:
     # === Behaviors ===
     
     def activate(self) -> None:
-        self._ensure_can_activate()
+        """Activate person for operation"""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot activate deleted person")
+        if self._status == BaseStatus.ACTIVE:
+            raise DomainError("Person is already active")
         self._status = BaseStatus.ACTIVE
         self._updated_at = utc_now()
         self._events.append(PersonActivated(occurred_at=utc_now(), person_id=self._id, person_type=self._person_type))
+    
+    def deactivate(self, reason: str | None = None) -> None:
+        """Deactivate person"""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot deactivate deleted person")
+        if self._status == BaseStatus.INACTIVE:
+            raise DomainError("Person is already inactive")
+        self._status = BaseStatus.INACTIVE
+        self._updated_at = utc_now()
+        self._events.append(PersonDeactivated(occurred_at=utc_now(), person_id=self._id, reason=reason))
+    
+    def terminate(self, reason: str) -> None:
+        """Permanently terminate person"""
+        if not reason:
+            raise DomainError("Termination requires reason")
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Person is already terminated")
+        self._status = BaseStatus.DELETED
+        self._deleted_at = utc_now()
+        self._updated_at = utc_now()
+        self._events.append(PersonTerminated(occurred_at=utc_now(), person_id=self._id, reason=reason))
     
     def is_eligible_for_services(self) -> bool:
         """Complex eligibility based on person type"""
@@ -136,6 +168,87 @@ class PersonEntity:
         self._ensure_invariants()
         self._events.append(PersonSecondaryRoleAdded(occurred_at=utc_now(), person_id=self._id, role=role))
     
+    def remove_secondary_role(self) -> None:
+        """Remove the secondary role from the person.
+        
+        Raises:
+            DomainError: If the person doesn't have a secondary role
+        """
+        if not self._is_dual_role or not self._secondary_person_type:
+            raise DomainError("Person does not have a secondary role to remove")
+        
+        # Clear role-specific info based on secondary role
+        if self._secondary_person_type == PersonType.CLIENT_EMPLOYEE:
+            # Only clear if it's not the primary role
+            if self._person_type != PersonType.CLIENT_EMPLOYEE:
+                self._employment_info = None
+        elif self._secondary_person_type == PersonType.SERVICE_PROVIDER:
+            if self._person_type != PersonType.SERVICE_PROVIDER:
+                self._license_info = None
+        elif self._secondary_person_type == PersonType.PLATFORM_STAFF:
+            if self._person_type != PersonType.PLATFORM_STAFF:
+                self._staff_info = None
+        
+        removed_role = self._secondary_person_type
+        self._is_dual_role = False
+        self._secondary_person_type = None
+        self._updated_at = utc_now()
+        self._ensure_invariants()
+        self._events.append(PersonSecondaryRoleRemoved(occurred_at=utc_now(), person_id=self._id, role=removed_role))
+    
+    def update_emergency_contact(self, contact: EmergencyContact) -> None:
+        """Update emergency contact information."""
+        self._emergency_contact = contact
+        self._updated_at = utc_now()
+    
+    def update_employment_info(self, info: EmploymentInfo) -> None:
+        """Update employment information."""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot update employment info for deleted person")
+        self._employment_info = info
+        self._updated_at = utc_now()
+        self._ensure_invariants()
+    
+    def update_license_info(self, info: LicenseInfo) -> None:
+        """Update license information."""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot update license info for deleted person")
+        self._license_info = info
+        self._updated_at = utc_now()
+        self._ensure_invariants()
+    
+    def update_staff_info(self, info: StaffInfo) -> None:
+        """Update staff information."""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot update staff info for deleted person")
+        self._staff_info = info
+        self._updated_at = utc_now()
+        self._ensure_invariants()
+    
+    def archive(self) -> None:
+        """Archive person (softer than terminate)"""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot archive deleted person")
+        if self._status == BaseStatus.ARCHIVED:
+            raise DomainError("Person is already archived")
+        self._status = BaseStatus.ARCHIVED
+        self._updated_at = utc_now()
+    
+    def restore(self) -> None:
+        """Restore archived or soft-deleted person"""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot restore deleted person")
+        # Check if person is already active and not deleted
+        if self._status == BaseStatus.ACTIVE and self._deleted_at is None:
+            raise DomainError("Person is already active and does not need restoration")
+        # Restore soft-deleted person
+        if self._deleted_at:
+            self._deleted_at = None
+        # Restore archived person
+        if self._status == BaseStatus.ARCHIVED:
+            self._status = BaseStatus.ACTIVE
+        self._updated_at = utc_now()
+    
     # === Factory Methods ===
     
     @classmethod
@@ -176,10 +289,6 @@ class PersonEntity:
         person._ensure_invariants()
         return person
     
-    def _ensure_can_activate(self) -> None:
-        """Ensure person can be activated"""
-        if self._status == BaseStatus.DELETED:
-            raise DomainError("Cannot activate deleted person")
     
     def _ensure_invariants(self) -> None:
         """Ensure person invariants are met"""

@@ -43,7 +43,7 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
             name="contract_status_check",
         ),
         CheckConstraint(
-            f"payment_frequency IN ({', '.join([e.value for e in PaymentFrequency])})",
+            "payment_frequency IN (" + ", ".join(f"'{e.value}'" for e in PaymentFrequency) + ")",
             name="contract_payment_frequency_check",
         ),
         CheckConstraint(

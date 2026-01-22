@@ -7,13 +7,14 @@ This is a data container only - no business logic.
 
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Enum as SQLEnum, ForeignKey, JSON, String
+from sqlalchemy import CheckConstraint, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -38,11 +39,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     __tablename__ = "persons"
     __table_args__ = (
         CheckConstraint(
-            f"person_type IN ({', '.join([e.value for e in PersonType])})",
+            "person_type IN (" + ", ".join(f"'{e.value}'" for e in PersonType) + ")",
             name="person_type_check",
         ),
         CheckConstraint(
-            f"secondary_person_type IS NULL OR secondary_person_type IN ({', '.join([e.value for e in PersonType])})",
+            "secondary_person_type IS NULL OR secondary_person_type IN (" + ", ".join(f"'{e.value}'" for e in PersonType) + ")",
             name="person_secondary_type_check",
         ),
         CheckConstraint(
@@ -53,11 +54,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Type discriminator
     person_type: Mapped[PersonType] = mapped_column(
-        SQLEnum(PersonType, native_enum=False), nullable=False
+        EnumValueType(PersonType), nullable=False
     )
     is_dual_role: Mapped[bool] = mapped_column(default=False, nullable=False)
     secondary_person_type: Mapped[PersonType | None] = mapped_column(
-        SQLEnum(PersonType, native_enum=False), nullable=True
+        EnumValueType(PersonType), nullable=True
     )
 
     # Core relationships
@@ -123,7 +124,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Shared
     status: Mapped[BaseStatus] = mapped_column(
-        SQLEnum(BaseStatus, native_enum=False), nullable=False, default=BaseStatus.PENDING
+        EnumValueType(BaseStatus), nullable=False, default=BaseStatus.PENDING
     )
     
     emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(

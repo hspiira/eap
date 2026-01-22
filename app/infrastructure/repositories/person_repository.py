@@ -4,16 +4,19 @@ Person Repository Implementation
 SQLAlchemy implementation of PersonRepository interface.
 """
 
-from sqlalchemy import select
+from typing import Sequence
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.person import PersonEntity
-from app.domain.enums import PersonType
+from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.models.person_model import PersonModel
+from app.infrastructure.models.user_model import UserModel
 from app.shared.utils.datetime import utc_now
 
 
@@ -136,3 +139,92 @@ class PersonRepositoryImpl(PersonRepository):
         ).select()
         result = await self.session.execute(stmt)
         return bool(result.scalar())
+    
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        person_type: PersonType | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[PersonEntity]:
+        """List persons with filtering, searching, and pagination."""
+        # Join with UserModel for search capability
+        stmt = select(PersonModel).join(
+            UserModel, PersonModel.user_id == UserModel.id
+        ).where(
+            PersonModel.tenant_id == tenant_id.value,
+            PersonModel.deleted_at.is_(None),
+            UserModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(PersonModel.status == status)
+        if person_type:
+            stmt = stmt.where(PersonModel.person_type == person_type)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    UserModel.email.ilike(search_pattern),
+                )
+            )
+        
+        # Apply sorting
+        sort_column = getattr(PersonModel, sort_by, PersonModel.created_at)
+        if sort_desc:
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+        
+        # Apply pagination
+        stmt = stmt.limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        entities = []
+        for model in models:
+            user_id = UserId(model.user_id)
+            profile = await self.user_repository.get_by_id(user_id)
+            if profile:
+                entities.append(PersonMapper.to_entity(model, profile))
+        
+        return entities
+    
+    async def count(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        person_type: PersonType | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count persons matching filters."""
+        # Join with UserModel for search capability
+        stmt = select(func.count(PersonModel.id)).join(
+            UserModel, PersonModel.user_id == UserModel.id
+        ).where(
+            PersonModel.tenant_id == tenant_id.value,
+            PersonModel.deleted_at.is_(None),
+            UserModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(PersonModel.status == status)
+        if person_type:
+            stmt = stmt.where(PersonModel.person_type == person_type)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    UserModel.email.ilike(search_pattern),
+                )
+            )
+        
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)
