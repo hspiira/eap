@@ -355,3 +355,382 @@ def sample_emergency_contact() -> dict[str, Any]:
         "phone": "+1-555-123-4567",
         "email": "jane.doe@example.com",
     }
+
+
+# =============================================================================
+# CLIENT TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def client_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for client tests and return its data."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "Client Test Tenant",
+            "code": "client-test",
+            "subscription_tier": "Professional",
+            "settings": {
+                "max_users": 50,
+                "max_clients": 25,
+                "features_enabled": ["clients"],
+                "custom_branding": False,
+            },
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest.fixture
+def sample_client_data() -> dict[str, Any]:
+    """Sample client creation data."""
+    return {
+        "name": "Acme Corporation",
+        "contact_info": {
+            "phone": "+1-555-100-2000",
+            "email": "contact@acme.com",
+            "address": "123 Main St, Suite 100",
+        },
+        "billing_address": {
+            "street": "123 Main St",
+            "city": "New York",
+            "country": "USA",
+            "postal_code": "10001",
+        },
+    }
+
+
+@pytest.fixture
+def sample_client_data_minimal() -> dict[str, Any]:
+    """Minimal client creation data."""
+    return {
+        "name": "Simple Client",
+        "contact_info": {
+            "phone": "+1-555-999-8888",
+        },
+    }
+
+
+@pytest_asyncio.fixture
+async def test_client(
+    client: AsyncClient, client_test_tenant: dict, sample_client_data: dict
+) -> dict[str, Any]:
+    """Create a test client via API and return its data."""
+    tenant_id = client_test_tenant["id"]
+    response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json=sample_client_data,
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_client_active(
+    client: AsyncClient, client_test_tenant: dict
+) -> dict[str, Any]:
+    """Create and activate a test client."""
+    tenant_id = client_test_tenant["id"]
+    
+    # Create client
+    create_response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Active Test Client",
+            "contact_info": {
+                "phone": "+1-555-111-2222",
+                "email": "active@testclient.com",
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    client_data = create_response.json()
+    
+    # Activate client
+    activate_response = await client.post(f"/clients/{client_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+@pytest_asyncio.fixture
+async def test_client_2(
+    client: AsyncClient, client_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a second test client."""
+    tenant_id = client_test_tenant["id"]
+    response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Second Client Corp",
+            "contact_info": {
+                "phone": "+1-555-333-4444",
+                "email": "info@secondclient.com",
+            },
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_parent_client(
+    client: AsyncClient, client_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a parent test client."""
+    tenant_id = client_test_tenant["id"]
+    response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Parent Organization",
+            "contact_info": {
+                "phone": "+1-555-000-0001",
+                "email": "parent@organization.com",
+            },
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_child_client(
+    client: AsyncClient, client_test_tenant: dict, test_parent_client: dict
+) -> dict[str, Any]:
+    """Create a child test client under parent."""
+    tenant_id = client_test_tenant["id"]
+    response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Child Division",
+            "contact_info": {
+                "phone": "+1-555-000-0002",
+                "email": "child@organization.com",
+            },
+            "parent_client_id": test_parent_client["id"],
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def verifier_user(db_session: AsyncSession, client_test_tenant: dict) -> dict[str, Any]:
+    """Create a user who can verify clients."""
+    from app.infrastructure.models.user_model import UserModel
+    from app.domain.enums import UserStatus
+    
+    user_id = generate_cuid()
+    user = UserModel(
+        id=user_id,
+        tenant_id=client_test_tenant["id"],
+        email=f"verifier-{user_id[:8]}@example.com",
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    
+    return {
+        "id": user_id,
+        "tenant_id": client_test_tenant["id"],
+        "email": user.email,
+    }
+
+
+# =============================================================================
+# CONTRACT TEST FIXTURES
+# =============================================================================
+
+
+@pytest_asyncio.fixture
+async def contract_test_tenant(client: AsyncClient) -> dict[str, Any]:
+    """Create a test tenant for contract tests."""
+    response = await client.post(
+        "/tenants/",
+        json={
+            "name": "Contract Test Tenant",
+            "code": "contract-test",
+            "subscription_tier": "Professional",
+            "settings": {
+                "max_users": 50,
+                "max_clients": 25,
+                "features_enabled": ["contracts"],
+                "custom_branding": False,
+            },
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def contract_test_client(
+    client: AsyncClient, contract_test_tenant: dict
+) -> dict[str, Any]:
+    """Create and activate a test client for contract tests."""
+    tenant_id = contract_test_tenant["id"]
+    
+    # Create client
+    create_response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Contract Test Client",
+            "contact_info": {
+                "phone": "+1-555-CONTRACT",
+                "email": "contracts@testclient.com",
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    client_data = create_response.json()
+    
+    # Activate client
+    activate_response = await client.post(f"/clients/{client_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+@pytest_asyncio.fixture
+async def contract_test_client_2(
+    client: AsyncClient, contract_test_tenant: dict
+) -> dict[str, Any]:
+    """Create a second test client for contract tests."""
+    tenant_id = contract_test_tenant["id"]
+    
+    create_response = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Second Contract Client",
+            "contact_info": {
+                "phone": "+1-555-CONTRACT2",
+                "email": "contracts2@testclient.com",
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    client_data = create_response.json()
+    
+    # Activate client
+    activate_response = await client.post(f"/clients/{client_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+@pytest.fixture
+def sample_contract_data(contract_test_client: dict) -> dict[str, Any]:
+    """Sample contract creation data."""
+    from datetime import datetime, timedelta, timezone
+    
+    start_date = datetime.now(timezone.utc).isoformat()
+    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    
+    return {
+        "client_id": contract_test_client["id"],
+        "start_date": start_date,
+        "end_date": end_date,
+        "billing_rate": {
+            "amount": "5000.00",
+            "currency": "USD",
+        },
+        "payment_frequency": "Monthly",
+        "is_auto_renew": False,
+    }
+
+
+@pytest_asyncio.fixture
+async def test_contract(
+    client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
+) -> dict[str, Any]:
+    """Create a test contract via API."""
+    from datetime import datetime, timedelta, timezone
+    
+    tenant_id = contract_test_tenant["id"]
+    start_date = datetime.now(timezone.utc).isoformat()
+    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    
+    response = await client.post(
+        f"/contracts/?tenant_id={tenant_id}",
+        json={
+            "client_id": contract_test_client["id"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "billing_rate": {
+                "amount": "5000.00",
+                "currency": "USD",
+            },
+            "payment_frequency": "Monthly",
+            "is_auto_renew": False,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+@pytest_asyncio.fixture
+async def test_contract_active(
+    client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
+) -> dict[str, Any]:
+    """Create and activate a test contract."""
+    from datetime import datetime, timedelta, timezone
+    
+    tenant_id = contract_test_tenant["id"]
+    start_date = datetime.now(timezone.utc).isoformat()
+    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    
+    # Create contract
+    create_response = await client.post(
+        f"/contracts/?tenant_id={tenant_id}",
+        json={
+            "client_id": contract_test_client["id"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "billing_rate": {
+                "amount": "10000.00",
+                "currency": "USD",
+            },
+            "payment_frequency": "Monthly",
+            "is_auto_renew": True,
+        },
+    )
+    assert create_response.status_code == 201
+    contract_data = create_response.json()
+    
+    # Activate contract
+    activate_response = await client.post(f"/contracts/{contract_data['id']}/activate")
+    assert activate_response.status_code == 200
+    
+    return activate_response.json()
+
+
+@pytest_asyncio.fixture
+async def test_contract_2(
+    client: AsyncClient, contract_test_tenant: dict, contract_test_client_2: dict
+) -> dict[str, Any]:
+    """Create a second test contract for a different client."""
+    from datetime import datetime, timedelta, timezone
+    
+    tenant_id = contract_test_tenant["id"]
+    start_date = datetime.now(timezone.utc).isoformat()
+    end_date = (datetime.now(timezone.utc) + timedelta(days=180)).isoformat()
+    
+    response = await client.post(
+        f"/contracts/?tenant_id={tenant_id}",
+        json={
+            "client_id": contract_test_client_2["id"],
+            "start_date": start_date,
+            "end_date": end_date,
+            "billing_rate": {
+                "amount": "3000.00",
+                "currency": "EUR",
+            },
+            "payment_frequency": "Quarterly",
+            "is_auto_renew": False,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()

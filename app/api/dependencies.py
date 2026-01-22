@@ -9,11 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.service_session_repository import (
+    ServiceSessionRepository,
+)
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
+from app.infrastructure.repositories.service_repository import ServiceRepositoryImpl
+from app.infrastructure.repositories.service_session_repository import (
+    ServiceSessionRepositoryImpl,
+)
 from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
 from app.infrastructure.repositories.user_repository import UserRepositoryImpl
 
@@ -78,3 +88,48 @@ async def get_person_repository(
         PersonRepository implementation
     """
     return PersonRepositoryImpl(db, user_repo)
+
+
+async def get_contract_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ContractRepository:
+    """
+    Dependency for getting contract repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ContractRepository implementation
+    """
+    return ContractRepositoryImpl(db)
+
+
+async def get_service_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceRepository:
+    """
+    Dependency for getting service repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceRepository implementation
+    """
+    return ServiceRepositoryImpl(db)
+
+
+async def get_service_session_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceSessionRepository:
+    """
+    Dependency for getting service session repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceSessionRepository implementation
+    """
+    return ServiceSessionRepositoryImpl(db)
