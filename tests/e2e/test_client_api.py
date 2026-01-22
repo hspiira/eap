@@ -94,7 +94,8 @@ class TestCreateClient:
             },
         )
 
-        assert response.status_code == 400
+        # 409 Conflict for duplicate resource creation
+        assert response.status_code == 409
         assert "already exists" in response.json()["detail"].lower()
 
     async def test_create_client_requires_tenant_id(
@@ -439,7 +440,8 @@ class TestDeactivateClient:
             json={"reason": "Second deactivation"},
         )
 
-        assert response.status_code == 400
+        # 409 Conflict for state conflicts ("already" conditions)
+        assert response.status_code == 409
         assert "already inactive" in response.json()["detail"].lower()
 
     async def test_deactivate_not_found(self, client: AsyncClient):

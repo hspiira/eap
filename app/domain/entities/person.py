@@ -329,3 +329,80 @@ class PersonEntity:
             elif self._secondary_person_type == PersonType.PLATFORM_STAFF:
                 if not self._staff_info:
                     raise InvariantViolation("Secondary PLATFORM_STAFF role requires staff info")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> PersonId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def person_type(self) -> PersonType:
+        return self._person_type
+
+    @property
+    def is_dual_role(self) -> bool:
+        return self._is_dual_role
+
+    @property
+    def user_id(self) -> UserId:
+        return self._user_id
+
+    @property
+    def profile(self) -> UserEntity:
+        return self._profile
+
+    @property
+    def status(self) -> BaseStatus:
+        return self._status
+
+    @property
+    def secondary_person_type(self) -> PersonType | None:
+        return self._secondary_person_type
+
+    @property
+    def employment_info(self) -> EmploymentInfo | None:
+        return self._employment_info
+
+    @property
+    def license_info(self) -> LicenseInfo | None:
+        return self._license_info
+
+    @property
+    def staff_info(self) -> StaffInfo | None:
+        return self._staff_info
+
+    @property
+    def dependent_info(self) -> DependentInfo | None:
+        return self._dependent_info
+
+    @property
+    def emergency_contact(self) -> EmergencyContact | None:
+        return self._emergency_contact
+
+    @property
+    def last_service_date(self) -> date | None:
+        return self._last_service_date
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

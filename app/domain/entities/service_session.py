@@ -128,3 +128,80 @@ class ServiceSessionEntity:
     def is_active(self) -> bool:
         """Check if session is active (scheduled or rescheduled)"""
         return self._status in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED} and self._deleted_at is None
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> SessionId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def service_id(self) -> ServiceId:
+        return self._service_id
+
+    @property
+    def provider_id(self) -> PersonId:
+        return self._provider_id
+
+    @property
+    def person_id(self) -> PersonId:
+        return self._person_id
+
+    @property
+    def scheduled_at(self) -> datetime:
+        return self._scheduled_at
+
+    @property
+    def status(self) -> SessionStatus:
+        return self._status
+
+    @property
+    def reschedule_count(self) -> int:
+        return self._reschedule_count
+
+    @property
+    def completed_at(self) -> datetime | None:
+        return self._completed_at
+
+    @property
+    def duration(self) -> int | None:
+        return self._duration
+
+    @property
+    def location(self) -> str | None:
+        return self._location
+
+    @property
+    def notes(self) -> str | None:
+        return self._notes
+
+    @property
+    def feedback(self) -> str | None:
+        return self._feedback
+
+    @property
+    def cancellation_reason(self) -> str | None:
+        return self._cancellation_reason
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

@@ -73,3 +73,49 @@ class ServiceAssignmentEntity:
     def _ensure_invariants(self) -> None:
         """Ensure assignment invariants are met."""
         # No specific invariants beyond required fields
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ServiceAssignmentId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def service_id(self) -> ServiceId:
+        return self._service_id
+
+    @property
+    def contract_id(self) -> ContractId:
+        return self._contract_id
+
+    @property
+    def status(self) -> BaseStatus:
+        return self._status
+
+    @property
+    def assigned_at(self) -> datetime | None:
+        return self._assigned_at
+
+    @property
+    def assigned_by(self) -> str | None:
+        return self._assigned_by
+
+    @property
+    def notes(self) -> str | None:
+        return self._notes
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at

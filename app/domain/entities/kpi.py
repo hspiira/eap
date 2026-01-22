@@ -116,6 +116,60 @@ class KPIEntity:
                     "Target value cannot be greater than maximum threshold"
                 )
 
+    # === Public Properties ===
+
+    @property
+    def id(self) -> KPIId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def category(self) -> KPICategory:
+        return self._category
+
+    @property
+    def measurement_unit(self) -> KPIMeasurementUnit:
+        return self._measurement_unit
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def target_value(self) -> Decimal | None:
+        return self._target_value
+
+    @property
+    def threshold_min(self) -> Decimal | None:
+        return self._threshold_min
+
+    @property
+    def threshold_max(self) -> Decimal | None:
+        return self._threshold_max
+
+    @property
+    def formula(self) -> str | None:
+        return self._formula
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
 
 @dataclass
 class KPIAssignmentEntity:
@@ -187,3 +241,41 @@ class KPIAssignmentEntity:
             raise InvariantViolation(
                 "Assignment cannot be associated with both client and contract"
             )
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> KPIAssignmentId:
+        return self._id
+
+    @property
+    def kpi_id(self) -> KPIId:
+        return self._kpi_id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def client_id(self) -> str | None:
+        return self._client_id
+
+    @property
+    def contract_id(self) -> str | None:
+        return self._contract_id
+
+    @property
+    def target_value(self) -> Decimal | None:
+        return self._target_value
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at

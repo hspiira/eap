@@ -426,8 +426,8 @@ class TestSignContract:
             json={"signed_by": "Second Signer"},
         )
 
-        # Returns 400 Bad Request (not in conflict list)
-        assert response.status_code == 400
+        # 409 Conflict for state conflicts ("already" conditions)
+        assert response.status_code == 409
         assert "already signed" in response.json()["detail"].lower()
 
     async def test_sign_not_found(self, client: AsyncClient):

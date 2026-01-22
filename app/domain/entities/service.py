@@ -123,3 +123,60 @@ class ServiceEntity:
     def is_active(self) -> bool:
         """Check if service is operational"""
         return self._status == BaseStatus.ACTIVE and self._deleted_at is None
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ServiceId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def status(self) -> BaseStatus:
+        return self._status
+
+    @property
+    def category(self) -> str | None:
+        return self._category
+
+    @property
+    def duration_minutes(self) -> int | None:
+        return self._duration_minutes
+
+    @property
+    def is_group_service(self) -> bool:
+        return self._is_group_service
+
+    @property
+    def max_participants(self) -> int | None:
+        return self._max_participants
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

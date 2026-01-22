@@ -87,3 +87,37 @@ class ClientTagEntity:
         """Ensure tag invariants are met."""
         if not self._name:
             raise InvariantViolation("Tag must have a name")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ClientTagId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def color(self) -> str | None:
+        return self._color
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at

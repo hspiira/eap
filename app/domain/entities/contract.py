@@ -180,3 +180,80 @@ class ContractEntity:
     def days_remaining(self) -> int:
         """Returns days remaining in contract. Negative if expired."""
         return (self._period.end_date - utc_now()).days
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ContractId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def client_id(self) -> ClientId:
+        return self._client_id
+
+    @property
+    def period(self) -> DateRange:
+        return self._period
+
+    @property
+    def billing_rate(self) -> Money:
+        return self._billing_rate
+
+    @property
+    def payment_frequency(self) -> PaymentFrequency:
+        return self._payment_frequency
+
+    @property
+    def payment_status(self) -> PaymentStatus:
+        return self._payment_status
+
+    @property
+    def status(self) -> ContractStatus:
+        return self._status
+
+    @property
+    def is_auto_renew(self) -> bool:
+        return self._is_auto_renew
+
+    @property
+    def last_billing_date(self) -> date | None:
+        return self._last_billing_date
+
+    @property
+    def next_billing_date(self) -> date | None:
+        return self._next_billing_date
+
+    @property
+    def signed_by(self) -> str | None:
+        return self._signed_by
+
+    @property
+    def signed_at(self) -> datetime | None:
+        return self._signed_at
+
+    @property
+    def termination_reason(self) -> str | None:
+        return self._termination_reason
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

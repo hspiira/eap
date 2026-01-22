@@ -138,3 +138,79 @@ class ClientEntity:
     def is_active(self) -> bool:
         """Check if client is operational"""
         return self._status == BaseStatus.ACTIVE and self._deleted_at is None
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ClientId:
+        """Get client ID."""
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        """Get tenant ID."""
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        """Get client name."""
+        return self._name
+
+    @property
+    def contact_info(self) -> ContactInfo:
+        """Get contact information."""
+        return self._contact_info
+
+    @property
+    def status(self) -> BaseStatus:
+        """Get client status."""
+        return self._status
+
+    @property
+    def is_verified(self) -> bool:
+        """Check if client is verified."""
+        return self._is_verified
+
+    @property
+    def billing_address(self) -> Address | None:
+        """Get billing address."""
+        return self._billing_address
+
+    @property
+    def industry_id(self) -> IndustryId | None:
+        """Get industry ID."""
+        return self._industry_id
+
+    @property
+    def parent_client_id(self) -> ClientId | None:
+        """Get parent client ID."""
+        return self._parent_client_id
+
+    @property
+    def preferred_contact_method(self) -> ContactMethod | None:
+        """Get preferred contact method."""
+        return self._preferred_contact_method
+
+    @property
+    def created_at(self) -> datetime:
+        """Get creation timestamp."""
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        """Get last update timestamp."""
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        """Get deletion timestamp."""
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        """Get domain events (read-only copy)."""
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        """Clear collected domain events after publishing."""
+        self._events.clear()
