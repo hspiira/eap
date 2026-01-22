@@ -70,6 +70,12 @@ IndustryId = Id
 AuditLogId = Id
 EntityChangeId = Id
 DocumentId = Id
+KPIId = Id
+KPIAssignmentId = Id
+ClientTagId = Id
+ContactId = Id
+ActivityId = Id
+ServiceAssignmentId = Id
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)

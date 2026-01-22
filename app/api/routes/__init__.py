@@ -8,6 +8,8 @@ from app.api.routes.audit import router as audit_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contracts import router as contracts_router
 from app.api.routes.documents import router as documents_router
+from app.api.routes.industries import router as industries_router
+from app.api.routes.kpis import router as kpis_router
 from app.api.routes.persons import router as persons_router
 from app.api.routes.services import router as services_router
 from app.api.routes.service_sessions import router as service_sessions_router
@@ -19,6 +21,8 @@ __all__ = [
     "clients_router",
     "contracts_router",
     "documents_router",
+    "industries_router",
+    "kpis_router",
     "persons_router",
     "services_router",
     "service_sessions_router",

@@ -14,6 +14,8 @@ from app.api.routes import (
     clients_router,
     contracts_router,
     documents_router,
+    industries_router,
+    kpis_router,
     persons_router,
     services_router,
     service_sessions_router,
@@ -33,10 +35,12 @@ app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(persons_router)
 app.include_router(clients_router)
+app.include_router(industries_router)
 app.include_router(contracts_router)
 app.include_router(services_router)
 app.include_router(service_sessions_router)
 app.include_router(documents_router)
+app.include_router(kpis_router)
 app.include_router(audit_router)
 
 

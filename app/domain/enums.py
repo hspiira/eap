@@ -133,3 +133,19 @@ class DocumentStatus(str, Enum):
     PUBLISHED = "Published"
     ARCHIVED = "Archived"
     EXPIRED = "Expired"
+
+class KPICategory(str, Enum):
+    """Categories for KPIs."""
+    UTILIZATION = "Utilization"
+    SATISFACTION = "Satisfaction"
+    OUTCOME = "Outcome"
+    OPERATIONAL = "Operational"
+
+class KPIMeasurementUnit(str, Enum):
+    """Units for KPI measurements."""
+    PERCENTAGE = "Percentage"
+    COUNT = "Count"
+    RATE = "Rate"
+    SCORE = "Score"
+    TIME = "Time"
+    CURRENCY = "Currency"
