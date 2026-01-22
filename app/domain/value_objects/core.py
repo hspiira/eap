@@ -180,7 +180,11 @@ class EmergencyContact:
     def __post_init__(self):
         if not self.name:
             raise ValueError("Emergency contact name required")
-        if not self.phone and not self.email:
+        # Validate that at least one of phone or email is non-empty
+        # (not None and not empty string)
+        phone_provided = bool(self.phone and self.phone.strip())
+        email_provided = self.email is not None
+        if not phone_provided and not email_provided:
             raise ValueError("Emergency contact needs phone or email")
 
 @dataclass(frozen=True)

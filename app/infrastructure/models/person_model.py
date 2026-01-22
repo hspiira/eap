@@ -38,11 +38,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     __tablename__ = "persons"
     __table_args__ = (
         CheckConstraint(
-            f"person_type IN {tuple([e.value for e in PersonType])}",
+            f"person_type IN ({', '.join([e.value for e in PersonType])})",
             name="person_type_check",
         ),
         CheckConstraint(
-            f"secondary_person_type IS NULL OR secondary_person_type IN {tuple([e.value for e in PersonType])}",
+            f"secondary_person_type IS NULL OR secondary_person_type IN ({', '.join([e.value for e in PersonType])})",
             name="person_secondary_type_check",
         ),
         CheckConstraint(
@@ -165,10 +165,10 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             if date_field in value and value[date_field] is not None:
                 try:
                     date.fromisoformat(value[date_field])
-                except (ValueError, TypeError):
+                except (ValueError, TypeError) as e:
                     raise ValueError(
                         f"employment_info.{date_field} must be in ISO format (YYYY-MM-DD)"
-                    )
+                    ) from e
         
         return value
     
@@ -246,7 +246,14 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     def validate_emergency_contact(
         self, key: str, value: EmergencyContactDict | None
     ) -> EmergencyContactDict | None:
-        """Validate emergency_contact JSON structure."""
+        """
+        Validate emergency_contact JSON structure.
+        
+        Note: The "phone or email required" rule is enforced by the
+        EmergencyContact value object constructor when converting from
+        EmergencyContactDict to domain value object in the mapper.
+        This validator only checks basic structure (name field presence).
+        """
         if value is None:
             return None
         
@@ -254,11 +261,11 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         if "name" not in value:
             raise ValueError("emergency_contact missing required field: name")
         
-        # Validate at least one contact method is provided
-        if not value.get("phone") and not value.get("email"):
-            raise ValueError(
-                "emergency_contact must have at least one of: phone or email"
-            )
+        # Note: "phone or email required" validation is handled by
+        # EmergencyContact.__post_init__() when the mapper converts
+        # EmergencyContactDict to EmergencyContact value object in
+        # PersonMapper.to_entity(). This ensures domain-level validation
+        # is centralized in the value object.
         
         return value
 

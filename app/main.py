@@ -5,6 +5,9 @@ Main application entry point.
 """
 
 from fastapi import FastAPI
+from sqlalchemy import text
+from sqlalchemy.orm import session
+from starlette.responses import JSONResponse
 
 from app.api.routes import tenants_router
 from app.core.config import settings
@@ -31,4 +34,11 @@ async def root():
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "healthy"}
+    try:  
+        await session.execute(text("SELECT 1"))  
+        return {"status": "ready", "database": "connected"}  
+    except Exception as e:  
+        return JSONResponse(  
+            status_code=503,  
+            content={"status": "not ready", "database": "disconnected"}  
+        ) 

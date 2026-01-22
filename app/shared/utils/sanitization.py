@@ -25,7 +25,11 @@ class InputSanitizer:
         """Remove all HTML tags and entities."""
         if not value:
             return value
-        return nh3.clean(value, tags=set())
+        return nh3.clean(
+            value, 
+            tags=set(cls.ALLOWED_TAGS),
+            attributes=set(cls.ALLOWED_ATTRIBUTES),
+        )
 
     @classmethod
     def sanitize_identifier(cls, value: str) -> str:

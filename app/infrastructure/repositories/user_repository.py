@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.user import UserEntity
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.value_objects.core import TenantId, UserId
+from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
 from app.infrastructure.models.user_model import UserModel
 from app.shared.utils.datetime import utc_now
@@ -43,22 +43,19 @@ class UserRepositoryImpl(UserRepository):
 
         if not model:
             return None
-
         return UserMapper.to_entity(model)
 
-    async def get_by_email(self, email: str, tenant_id: TenantId) -> UserEntity | None:
+    async def get_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """Get user by email within tenant, excluding soft-deleted users."""
         stmt = select(UserModel).where(
-            UserModel.email == email,
+            UserModel.email == email.value,
             UserModel.tenant_id == tenant_id.value,
             UserModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
-
         if not model:
             return None
-
         return UserMapper.to_entity(model)
 
     async def save(self, user: UserEntity) -> None:
@@ -99,4 +96,4 @@ class UserRepositoryImpl(UserRepository):
             UserModel.deleted_at.is_(None),
         ).select()
         result = await self.session.execute(stmt)
-        return result.scalar()
+        return bool(result.scalar())

@@ -82,7 +82,7 @@ class PersonRepositoryImpl(PersonRepository):
         """Get all persons of a specific type within a tenant."""
         stmt = select(PersonModel).where(
             PersonModel.tenant_id == tenant_id.value,
-            PersonModel.person_type == person_type.value,
+            PersonModel.person_type == person_type,
             PersonModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
@@ -135,4 +135,4 @@ class PersonRepositoryImpl(PersonRepository):
             PersonModel.deleted_at.is_(None),
         ).select()
         result = await self.session.execute(stmt)
-        return result.scalar()
+        return bool(result.scalar())

@@ -72,4 +72,4 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<UserModel(id={self.id}, email={self.email}, status={self.status})>"
+        return f"<UserModel(id={self.id}, status={self.status})>"

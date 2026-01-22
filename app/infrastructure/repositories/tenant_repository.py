@@ -76,7 +76,10 @@ class TenantRepositoryImpl(TenantRepository):
         In practice, this is usually done by calling tenant.terminate()
         and then save(), but this method provides explicit soft delete.
         """
-        stmt = select(TenantModel).where(TenantModel.id == tenant_id.value)
+        stmt = select(TenantModel).where(
+            TenantModel.id == tenant_id.value,
+            TenantModel.deleted_at.is_(None),
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         
@@ -93,6 +96,6 @@ class TenantRepositoryImpl(TenantRepository):
         stmt = sql_exists().where(
             TenantModel.id == tenant_id.value,
             TenantModel.deleted_at.is_(None)
-        )
+        ).select()
         result = await self.session.execute(stmt)
-        return result.scalar()
+        return bool(result.scalar())
