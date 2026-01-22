@@ -4,10 +4,13 @@ Tenant Repository Implementation
 SQLAlchemy implementation of TenantRepository interface.
 """
 
-from sqlalchemy import select
+from typing import Sequence
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.tenant import TenantEntity
+from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import TenantId
 from app.infrastructure.mappers.tenant_mapper import TenantMapper
@@ -99,3 +102,75 @@ class TenantRepositoryImpl(TenantRepository):
         ).select()
         result = await self.session.execute(stmt)
         return bool(result.scalar())
+    
+    async def list_all(
+        self,
+        status: TenantStatus | None = None,
+        subscription_tier: SubscriptionTier | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[TenantEntity]:
+        """List tenants with filtering, searching, and pagination."""
+        stmt = select(TenantModel).where(
+            TenantModel.deleted_at.is_(None)
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(TenantModel.status == status)
+        if subscription_tier:
+            stmt = stmt.where(TenantModel.subscription_tier == subscription_tier)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    TenantModel.name.ilike(search_pattern),
+                    TenantModel.code.ilike(search_pattern),
+                )
+            )
+        
+        # Apply sorting
+        sort_column = getattr(TenantModel, sort_by, TenantModel.created_at)
+        if sort_desc:
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+        
+        # Apply pagination
+        stmt = stmt.limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        return [TenantMapper.to_entity(model) for model in models]
+    
+    async def count(
+        self,
+        status: TenantStatus | None = None,
+        subscription_tier: SubscriptionTier | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count tenants matching filters."""
+        stmt = select(func.count(TenantModel.id)).where(
+            TenantModel.deleted_at.is_(None)
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(TenantModel.status == status)
+        if subscription_tier:
+            stmt = stmt.where(TenantModel.subscription_tier == subscription_tier)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    TenantModel.name.ilike(search_pattern),
+                    TenantModel.code.ilike(search_pattern),
+                )
+            )
+        
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)

@@ -218,3 +218,135 @@ class UpdateTenantSettingsUseCase:
         await self.tenant_repository.save(tenant)
 
         return tenant
+
+
+class UpdateTenantUseCase:
+    """Use case for updating tenant basic information."""
+
+    def __init__(self, tenant_repository: TenantRepository):
+        self.tenant_repository = tenant_repository
+
+    async def execute(
+        self,
+        tenant_id: TenantId,
+        name: str | None = None,
+    ) -> TenantEntity:
+        """
+        Update tenant basic information.
+
+        Args:
+            tenant_id: Tenant identifier
+            name: Tenant name (optional)
+
+        Returns:
+            Updated TenantEntity
+
+        Raises:
+            ValueError: If tenant not found
+            DomainError: If update is invalid
+        """
+        tenant = await self.tenant_repository.get_by_id(tenant_id)
+        if not tenant:
+            raise ValueError(f"Tenant {tenant_id.value} not found")
+
+        if name is not None:
+            tenant.update_name(name)
+
+        await self.tenant_repository.save(tenant)
+
+        return tenant
+
+
+class UpdateSubscriptionUseCase:
+    """Use case for updating tenant subscription tier."""
+
+    def __init__(self, tenant_repository: TenantRepository):
+        self.tenant_repository = tenant_repository
+
+    async def execute(
+        self,
+        tenant_id: TenantId,
+        subscription_tier: SubscriptionTier,
+    ) -> TenantEntity:
+        """
+        Update tenant subscription tier.
+
+        Args:
+            tenant_id: Tenant identifier
+            subscription_tier: New subscription tier
+
+        Returns:
+            Updated TenantEntity
+
+        Raises:
+            ValueError: If tenant not found
+            DomainError: If update is invalid
+        """
+        tenant = await self.tenant_repository.get_by_id(tenant_id)
+        if not tenant:
+            raise ValueError(f"Tenant {tenant_id.value} not found")
+
+        tenant.update_subscription_tier(subscription_tier)
+        await self.tenant_repository.save(tenant)
+
+        return tenant
+
+
+class ArchiveTenantUseCase:
+    """Use case for archiving a tenant."""
+
+    def __init__(self, tenant_repository: TenantRepository):
+        self.tenant_repository = tenant_repository
+
+    async def execute(self, tenant_id: TenantId) -> TenantEntity:
+        """
+        Archive a tenant.
+
+        Args:
+            tenant_id: Tenant identifier
+
+        Returns:
+            Archived TenantEntity
+
+        Raises:
+            ValueError: If tenant not found
+            DomainError: If archive is invalid
+        """
+        tenant = await self.tenant_repository.get_by_id(tenant_id)
+        if not tenant:
+            raise ValueError(f"Tenant {tenant_id.value} not found")
+
+        tenant.archive()
+        await self.tenant_repository.save(tenant)
+
+        return tenant
+
+
+class RestoreTenantUseCase:
+    """Use case for restoring a tenant."""
+
+    def __init__(self, tenant_repository: TenantRepository):
+        self.tenant_repository = tenant_repository
+
+    async def execute(self, tenant_id: TenantId) -> TenantEntity:
+        """
+        Restore an archived or soft-deleted tenant.
+
+        Args:
+            tenant_id: Tenant identifier
+
+        Returns:
+            Restored TenantEntity
+
+        Raises:
+            ValueError: If tenant not found
+            DomainError: If restore is invalid
+        """
+        tenant = await self.tenant_repository.get_by_id(tenant_id)
+        if not tenant:
+            raise ValueError(f"Tenant {tenant_id.value} not found")
+
+        tenant.restore()
+        await self.tenant_repository.save(tenant)
+
+        return tenant
