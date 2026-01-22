@@ -4,7 +4,18 @@ API Routes
 FastAPI route handlers.
 """
 
+from app.api.routes.clients import router as clients_router
+from app.api.routes.contracts import router as contracts_router
 from app.api.routes.persons import router as persons_router
+from app.api.routes.services import router as services_router
+from app.api.routes.service_sessions import router as service_sessions_router
 from app.api.routes.tenants import router as tenants_router
 
-__all__ = ["persons_router", "tenants_router"]
+__all__ = [
+    "clients_router",
+    "contracts_router",
+    "persons_router",
+    "services_router",
+    "service_sessions_router",
+    "tenants_router",
+]

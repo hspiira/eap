@@ -4,11 +4,13 @@ Contract Repository Implementation
 SQLAlchemy implementation of ContractRepository interface.
 """
 
-from sqlalchemy import select
+from typing import Sequence
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus
+from app.domain.enums import ContractStatus, PaymentStatus
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import ClientId, ContractId, TenantId
 from app.infrastructure.mappers.contract_mapper import ContractMapper
@@ -119,3 +121,70 @@ class ContractRepositoryImpl(ContractRepository):
         ).select()
         result = await self.session.execute(stmt)
         return bool(result.scalar())
+    
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId | None = None,
+        status: ContractStatus | None = None,
+        payment_status: PaymentStatus | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[ContractEntity]:
+        """List contracts with filtering, searching, and pagination."""
+        stmt = select(ContractModel).where(
+            ContractModel.tenant_id == tenant_id.value,
+            ContractModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if client_id:
+            stmt = stmt.where(ContractModel.client_id == client_id.value)
+        if status:
+            stmt = stmt.where(ContractModel.status == status)
+        if payment_status:
+            stmt = stmt.where(ContractModel.payment_status == payment_status)
+        # Note: search not implemented as contracts don't have searchable text fields
+        
+        # Apply sorting
+        sort_column = getattr(ContractModel, sort_by, ContractModel.created_at)
+        if sort_desc:
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+        
+        # Apply pagination
+        stmt = stmt.limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        return [ContractMapper.to_entity(model) for model in models]
+    
+    async def count(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId | None = None,
+        status: ContractStatus | None = None,
+        payment_status: PaymentStatus | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count contracts matching filters."""
+        stmt = select(func.count(ContractModel.id)).where(
+            ContractModel.tenant_id == tenant_id.value,
+            ContractModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if client_id:
+            stmt = stmt.where(ContractModel.client_id == client_id.value)
+        if status:
+            stmt = stmt.where(ContractModel.status == status)
+        if payment_status:
+            stmt = stmt.where(ContractModel.payment_status == payment_status)
+        
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)

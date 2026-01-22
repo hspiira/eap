@@ -50,15 +50,22 @@ class ServiceSessionEntity:
         self._events.append(SessionCompleted(occurred_at=utc_now(), session_id=self._id, person_id=self._person_id))
     
     def cancel(self, reason: str) -> None:
+        """Cancel a session"""
+        if self._deleted_at:
+            raise DomainError("Cannot cancel deleted session")
         if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
             raise DomainError("Cannot cancel completed or finalized session")
         if not reason:
             raise DomainError("Cancellation requires reason")
         self._status = SessionStatus.CANCELLED
         self._cancellation_reason = reason
+        self._updated_at = utc_now()
         self._events.append(SessionCancelled(occurred_at=utc_now(), session_id=self._id, reason=reason))
     
     def reschedule(self, new_scheduled_at: datetime) -> None:
+        """Reschedule a session"""
+        if self._deleted_at:
+            raise DomainError("Cannot reschedule deleted session")
         if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
             raise DomainError("Cannot reschedule completed or finalized session")
         if new_scheduled_at <= utc_now():
@@ -66,4 +73,58 @@ class ServiceSessionEntity:
         self._status = SessionStatus.RESCHEDULED
         self._scheduled_at = new_scheduled_at
         self._reschedule_count += 1
+        self._updated_at = utc_now()
         self._events.append(SessionRescheduled(occurred_at=utc_now(), session_id=self._id, new_scheduled_at=new_scheduled_at))
+    
+    def mark_no_show(self) -> None:
+        """Mark a session as no-show"""
+        if self._deleted_at:
+            raise DomainError("Cannot mark deleted session as no-show")
+        if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
+            raise DomainError("Cannot mark completed or finalized session as no-show")
+        self._status = SessionStatus.NO_SHOW
+        self._updated_at = utc_now()
+    
+    def update_location(self, location: str | None) -> None:
+        """Update session location"""
+        if self._deleted_at:
+            raise DomainError("Cannot update location for deleted session")
+        if self._status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED}:
+            raise DomainError("Cannot update location for completed or cancelled session")
+        self._location = location
+        self._updated_at = utc_now()
+    
+    def update_notes(self, notes: str | None) -> None:
+        """Update session notes"""
+        if self._deleted_at:
+            raise DomainError("Cannot update notes for deleted session")
+        self._notes = notes
+        self._updated_at = utc_now()
+    
+    def update_feedback(self, feedback: str | None) -> None:
+        """Update session feedback"""
+        if self._deleted_at:
+            raise DomainError("Cannot update feedback for deleted session")
+        if self._status != SessionStatus.COMPLETED:
+            raise DomainError("Feedback can only be added to completed sessions")
+        self._feedback = feedback
+        self._updated_at = utc_now()
+    
+    def archive(self) -> None:
+        """Archive a session"""
+        if self._deleted_at:
+            raise DomainError("Cannot archive deleted session")
+        # Archive is a soft delete operation
+        self._deleted_at = utc_now()
+        self._updated_at = utc_now()
+    
+    def restore(self) -> None:
+        """Restore an archived session"""
+        if not self._deleted_at:
+            raise DomainError("Session is not archived and does not need restoration")
+        self._deleted_at = None
+        self._updated_at = utc_now()
+    
+    def is_active(self) -> bool:
+        """Check if session is active (scheduled or rescheduled)"""
+        return self._status in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED} and self._deleted_at is None

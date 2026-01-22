@@ -9,7 +9,14 @@ from sqlalchemy import text
 from sqlalchemy.orm import session
 from starlette.responses import JSONResponse
 
-from app.api.routes import persons_router, tenants_router
+from app.api.routes import (
+    clients_router,
+    contracts_router,
+    persons_router,
+    services_router,
+    service_sessions_router,
+    tenants_router,
+)
 from app.core.config import settings
 
 app = FastAPI(
@@ -21,6 +28,10 @@ app = FastAPI(
 # Include routers
 app.include_router(tenants_router)
 app.include_router(persons_router)
+app.include_router(clients_router)
+app.include_router(contracts_router)
+app.include_router(services_router)
+app.include_router(service_sessions_router)
 
 
 @app.get("/")

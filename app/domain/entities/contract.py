@@ -66,15 +66,110 @@ class ContractEntity:
         self._updated_at = now
         self._events.append(ContractRenewed(occurred_at=now, contract_id=self._id, new_end_date=new_end_datetime))
     
+    def activate(self) -> None:
+        """Activate a draft or pending contract"""
+        if self._deleted_at:
+            raise DomainError("Cannot activate deleted contract")
+        if self._status == ContractStatus.ACTIVE:
+            raise DomainError("Contract is already active")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot activate terminated contract")
+        if self._status == ContractStatus.EXPIRED:
+            raise DomainError("Cannot activate expired contract")
+        self._status = ContractStatus.ACTIVE
+        self._updated_at = utc_now()
+    
+    def sign(self, signed_by: str) -> None:
+        """Sign a contract"""
+        if not signed_by:
+            raise DomainError("Signer name is required")
+        if self._deleted_at:
+            raise DomainError("Cannot sign deleted contract")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot sign terminated contract")
+        if self._signed_at:
+            raise DomainError("Contract is already signed")
+        self._signed_by = signed_by
+        self._signed_at = utc_now()
+        self._updated_at = utc_now()
+        # Auto-activate when signed
+        if self._status in (ContractStatus.DRAFT, ContractStatus.PENDING):
+            self._status = ContractStatus.ACTIVE
+    
     def terminate(self, reason: str) -> None:
+        """Terminate a contract"""
         if not reason:
             raise DomainError("Termination requires reason")
+        if self._deleted_at:
+            raise DomainError("Contract is already terminated")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Contract is already terminated")
         self._status = ContractStatus.TERMINATED
         self._termination_reason = reason
         now = utc_now()
         self._updated_at = now
         self._deleted_at = now
         self._events.append(ContractTerminated(occurred_at=now, contract_id=self._id, reason=reason))
+    
+    def archive(self) -> None:
+        """Archive a contract (mark as expired if past end date)"""
+        if self._deleted_at:
+            raise DomainError("Cannot archive deleted contract")
+        # Archive is a soft operation - mark expired contracts
+        if self._period.end_date < utc_now() and self._status == ContractStatus.ACTIVE:
+            self._status = ContractStatus.EXPIRED
+        self._updated_at = utc_now()
+    
+    def restore(self) -> None:
+        """Restore a terminated or expired contract"""
+        if self._deleted_at:
+            raise DomainError("Cannot restore deleted contract")
+        # Check if contract is already active and not deleted
+        if self._status == ContractStatus.ACTIVE and self._deleted_at is None:
+            raise DomainError("Contract is already active and does not need restoration")
+        # Restore soft-deleted contract
+        if self._deleted_at:
+            self._deleted_at = None
+        # Restore terminated/expired contract to active if period is still valid
+        if self._status in (ContractStatus.TERMINATED, ContractStatus.EXPIRED):
+            if self._period.end_date >= utc_now():
+                self._status = ContractStatus.ACTIVE
+                self._termination_reason = None
+        self._updated_at = utc_now()
+    
+    def update_billing_rate(self, new_rate: Money) -> None:
+        """Update billing rate"""
+        if self._deleted_at:
+            raise DomainError("Cannot update billing rate for deleted contract")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot update billing rate for terminated contract")
+        self._billing_rate = new_rate
+        self._updated_at = utc_now()
+    
+    def update_payment_frequency(self, frequency: PaymentFrequency) -> None:
+        """Update payment frequency"""
+        if self._deleted_at:
+            raise DomainError("Cannot update payment frequency for deleted contract")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot update payment frequency for terminated contract")
+        self._payment_frequency = frequency
+        self._updated_at = utc_now()
+    
+    def update_payment_status(self, payment_status: PaymentStatus) -> None:
+        """Update payment status"""
+        if self._deleted_at:
+            raise DomainError("Cannot update payment status for deleted contract")
+        self._payment_status = payment_status
+        self._updated_at = utc_now()
+    
+    def update_auto_renew(self, is_auto_renew: bool) -> None:
+        """Update auto-renew setting"""
+        if self._deleted_at:
+            raise DomainError("Cannot update auto-renew for deleted contract")
+        if self._status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot update auto-renew for terminated contract")
+        self._is_auto_renew = is_auto_renew
+        self._updated_at = utc_now()
     
     def is_active(self) -> bool:
         """Check if contract is active. Returns True for ACTIVE or RENEWED status."""

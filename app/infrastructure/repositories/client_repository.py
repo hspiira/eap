@@ -4,10 +4,13 @@ Client Repository Implementation
 SQLAlchemy implementation of ClientRepository interface.
 """
 
-from sqlalchemy import select
+from typing import Sequence
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.client import ClientEntity
+from app.domain.enums import BaseStatus
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
@@ -101,3 +104,69 @@ class ClientRepositoryImpl(ClientRepository):
         )
         result = await self.session.execute(stmt)
         return bool(result.scalar())
+    
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        is_verified: bool | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[ClientEntity]:
+        """List clients with filtering, searching, and pagination."""
+        stmt = select(ClientModel).where(
+            ClientModel.tenant_id == tenant_id.value,
+            ClientModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(ClientModel.status == status)
+        if is_verified is not None:
+            stmt = stmt.where(ClientModel.is_verified == is_verified)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(ClientModel.name.ilike(search_pattern))
+        
+        # Apply sorting
+        sort_column = getattr(ClientModel, sort_by, ClientModel.created_at)
+        if sort_desc:
+            stmt = stmt.order_by(sort_column.desc())
+        else:
+            stmt = stmt.order_by(sort_column.asc())
+        
+        # Apply pagination
+        stmt = stmt.limit(limit).offset(offset)
+        
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        
+        return [ClientMapper.to_entity(model) for model in models]
+    
+    async def count(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        is_verified: bool | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count clients matching filters."""
+        stmt = select(func.count(ClientModel.id)).where(
+            ClientModel.tenant_id == tenant_id.value,
+            ClientModel.deleted_at.is_(None),
+        )
+        
+        # Apply filters
+        if status:
+            stmt = stmt.where(ClientModel.status == status)
+        if is_verified is not None:
+            stmt = stmt.where(ClientModel.is_verified == is_verified)
+        if search:
+            search_pattern = f"%{search.lower()}%"
+            stmt = stmt.where(ClientModel.name.ilike(search_pattern))
+        
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)
