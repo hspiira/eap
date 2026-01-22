@@ -29,14 +29,17 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     __tablename__ = "clients"
     __table_args__ = (
         CheckConstraint(
-            f"status IN {tuple([e.value for e in BaseStatus])}",
+            "status IN (" + ", ".join(f"'{e.value}'" for e in BaseStatus) + ")",
             name="client_status_check",
         ),
         CheckConstraint(
-            f"preferred_contact_method IN {tuple([e.value for e in ContactMethod])}",
+            "preferred_contact_method IN (" + ", ".join(f"'{e.value}'" for e in ContactMethod) + ")",
             name="client_contact_method_check",
         ),
     )
+
+    def _enum_values(enum_cls):
+        return [e.value for e in enum_cls]
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -51,11 +54,24 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Status
     status: Mapped[BaseStatus] = mapped_column(
-        SQLEnum(BaseStatus, native_enum=False), nullable=False, default=BaseStatus.PENDING
+        SQLEnum(
+            BaseStatus, 
+            native_enum=False,
+            values=_enum_values(BaseStatus),
+            create_constraint=False,
+        ), 
+        nullable=False, 
+        default=BaseStatus.PENDING.value
     )
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
     preferred_contact_method: Mapped[ContactMethod | None] = mapped_column(
-        SQLEnum(ContactMethod, native_enum=False), nullable=True
+        SQLEnum(
+            ContactMethod, 
+            native_enum=False,
+            values=_enum_values(ContactMethod),
+            create_constraint=False,
+        ), 
+        nullable=True,
     )
 
     def __repr__(self) -> str:

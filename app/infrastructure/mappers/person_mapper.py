@@ -110,10 +110,19 @@ class PersonMapper:
         if model.emergency_contact:
             ec_dict = model.emergency_contact
 
+            # Normalize empty strings to None for validation
+            phone = ec_dict.get("phone")
+            phone = phone if phone and phone.strip() else None
+            
+            email_str = ec_dict.get("email")
+            email = Email(email_str) if email_str and email_str.strip() else None
+
+            # EmergencyContact.__post_init__() validates that at least one of
+            # phone or email is non-empty (not None and not empty string)
             emergency_contact = EmergencyContact(
                 name=ec_dict["name"],
-                phone=ec_dict.get("phone"),
-                email=Email(ec_dict["email"]) if ec_dict.get("email") else None,
+                phone=phone,
+                email=email,
             )
 
         # Note: profile is required and should be loaded separately via UserRepository

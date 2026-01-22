@@ -39,15 +39,15 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     __tablename__ = "contracts"
     __table_args__ = (
         CheckConstraint(
-            f"status IN {tuple([e.value for e in ContractStatus])}",
+            "status IN (" + ", ".join(f"'{e.value}'" for e in ContractStatus) + ")",
             name="contract_status_check",
         ),
         CheckConstraint(
-            f"payment_frequency IN {tuple([e.value for e in PaymentFrequency])}",
+            f"payment_frequency IN ({', '.join([e.value for e in PaymentFrequency])})",
             name="contract_payment_frequency_check",
         ),
         CheckConstraint(
-            f"payment_status IN {tuple([e.value for e in PaymentStatus])}",
+            "payment_status IN (" + ", ".join(f"'{e.value}'" for e in PaymentStatus) + ")",
             name="contract_payment_status_check",
         ),
     )

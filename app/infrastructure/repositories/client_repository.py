@@ -12,6 +12,7 @@ from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
+from app.shared.utils.datetime import utc_now
 
 
 class ClientRepositoryImpl(ClientRepository):
@@ -79,21 +80,24 @@ class ClientRepositoryImpl(ClientRepository):
         In practice, this is usually done by calling client methods
         and then save(), but this method provides explicit soft delete.
         """
-        stmt = select(ClientModel).where(ClientModel.id == client_id.value)
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            from app.shared.utils.datetime import utc_now
-
-            model.deleted_at = utc_now()
-            await self.session.merge(model)
-
-    async def exists(self, client_id: ClientId) -> bool:
-        """Check if client exists (not soft-deleted)."""
         stmt = select(ClientModel).where(
             ClientModel.id == client_id.value,
             ClientModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        model = result.scalar_one_or_none()
+
+        if model:
+            now = utc_now()
+            model.deleted_at = now
+            model.updated_at = now
+            await self.session.merge(model)
+
+    async def exists(self, client_id: ClientId) -> bool:
+        """Check if client exists (not soft-deleted)."""
+        stmt = select(ClientModel.id).where(
+            ClientModel.id == client_id.value,
+            ClientModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        return bool(result.scalar())

@@ -95,21 +95,27 @@ class ContractRepositoryImpl(ContractRepository):
         In practice, this is usually done by calling contract.terminate()
         and then save(), but this method provides explicit soft delete.
         """
-        stmt = select(ContractModel).where(ContractModel.id == contract_id.value)
+        stmt = select(ContractModel).where(
+            ContractModel.id == contract_id.value,
+            ContractModel.deleted_at.is_(None),
+        )
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model:
             from app.shared.utils.datetime import utc_now
 
-            model.deleted_at = utc_now()
+            now = utc_now()
+            model.deleted_at = now
+            model.updated_at = now
             await self.session.merge(model)
 
     async def exists(self, contract_id: ContractId) -> bool:
         """Check if contract exists (not soft-deleted)."""
-        stmt = select(ContractModel).where(
+        from sqlalchemy import exists as sql_exists
+        stmt = sql_exists().where(
             ContractModel.id == contract_id.value,
             ContractModel.deleted_at.is_(None),
-        )
+        ).select()
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        return bool(result.scalar())

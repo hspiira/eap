@@ -47,8 +47,10 @@ class EnumValueType(TypeDecorator):
                 try:
                     enum_obj = getattr(self.enum_class, value)
                     return enum_obj.value
-                except AttributeError:
-                    return value
+                except AttributeError as e:
+                    raise ValueError(
+                        f"Invalid {self.enum_class.__name__} value: {value!r}"
+                    ) from e
         return value
     
     def process_result_value(self, value, dialect):
