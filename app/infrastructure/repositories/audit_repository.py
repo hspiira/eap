@@ -4,8 +4,7 @@ Audit Repository Implementation
 SQLAlchemy implementation of AuditRepository interface.
 """
 
-from typing import Sequence
-
+from collections.abc import Sequence
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

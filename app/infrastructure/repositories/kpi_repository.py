@@ -5,7 +5,8 @@ SQLAlchemy implementation of KPI repository interfaces.
 Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import select
 
