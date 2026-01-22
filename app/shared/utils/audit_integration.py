@@ -7,12 +7,10 @@ Helper functions for seamless audit integration in API routes.
 from typing import Any
 
 from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.audit import AuditLog
 from app.domain.value_objects.core import TenantId, UserId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
-from app.shared.utils.audit_helper import get_resource_id_from_entity, get_resource_type_from_entity
 
 
 async def process_entity_events_for_audit(

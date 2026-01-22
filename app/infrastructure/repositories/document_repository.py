@@ -2,12 +2,12 @@
 Document Repository Implementation
 
 SQLAlchemy implementation of DocumentRepository interface.
+Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
-from typing import Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.document import DocumentEntity
 from app.domain.enums import DocumentStatus, DocumentType
@@ -15,38 +15,33 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId
 from app.infrastructure.mappers.document_mapper import DocumentMapper
 from app.infrastructure.models.document_model import DocumentModel
-from app.shared.utils.datetime import utc_now
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class DocumentRepositoryImpl(DocumentRepository):
+class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, DocumentModel, DocumentId], DocumentRepository):
     """
     SQLAlchemy implementation of DocumentRepository.
 
-    Handles data access for Document aggregate.
-    Uses mapper to convert between entity and model.
+    Inherits common CRUD operations from TenantScopedRepositoryImpl.
+    Only implements domain-specific queries.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
-        """
-        Initialize repository with database session.
+    model_class = DocumentModel
+    id_column = "id"
 
-        Args:
-            session: SQLAlchemy async database session
-        """
-        self.session = session
-
-    async def get_by_id(self, document_id: DocumentId) -> DocumentEntity | None:
-        """Get document by ID, excluding soft-deleted documents."""
-        stmt = select(DocumentModel).where(
-            DocumentModel.id == document_id.value,
-            DocumentModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if not model:
-            return None
+    def _to_entity(self, model: DocumentModel) -> DocumentEntity:
+        """Convert model to entity."""
         return DocumentMapper.to_entity(model)
+
+    def _to_model(self, entity: DocumentEntity) -> DocumentModel:
+        """Convert entity to model."""
+        return DocumentMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: DocumentId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    # Domain-specific queries (not in base class)
 
     async def get_versions(
         self, document_id: DocumentId, tenant_id: TenantId
@@ -63,7 +58,7 @@ class DocumentRepositoryImpl(DocumentRepository):
 
         while current_id:
             doc = await self.get_by_id(current_id)
-            if not doc or doc._tenant_id != tenant_id:
+            if not doc or doc.tenant_id != tenant_id:
                 break
             versions.append(doc)
             # Find next version (where previous_version_id == current_id)
@@ -98,7 +93,7 @@ class DocumentRepositoryImpl(DocumentRepository):
             current_id = prev_id
 
         # Sort by version number
-        versions.sort(key=lambda d: d._version)
+        versions.sort(key=lambda d: d.version)
         return versions
 
     async def get_latest_version(
@@ -107,20 +102,20 @@ class DocumentRepositoryImpl(DocumentRepository):
         """Get the latest version of a document."""
         # Start with the given document ID
         current = await self.get_by_id(document_id)
-        if not current or current._tenant_id != tenant_id:
+        if not current or current.tenant_id != tenant_id:
             return None
 
         # Follow the version chain to find the latest
         while True:
             stmt = select(DocumentModel).where(
-                DocumentModel.previous_version_id == current._id.value,
+                DocumentModel.previous_version_id == current.id.value,
                 DocumentModel.tenant_id == tenant_id.value,
                 DocumentModel.deleted_at.is_(None),
             )
             result = await self.session.execute(stmt)
             next_model = result.scalar_one_or_none()
             if next_model:
-                current = DocumentMapper.to_entity(next_model)
+                current = self._to_entity(next_model)
             else:
                 break
 
@@ -183,7 +178,7 @@ class DocumentRepositoryImpl(DocumentRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
-        return [DocumentMapper.to_entity(model) for model in models]
+        return [self._to_entity(model) for model in models]
 
     async def count(
         self,
@@ -227,40 +222,3 @@ class DocumentRepositoryImpl(DocumentRepository):
 
         result = await self.session.execute(stmt)
         return int(result.scalar() or 0)
-
-    async def save(self, document: DocumentEntity) -> None:
-        """
-        Save document aggregate atomically.
-
-        Uses merge to handle both insert and update.
-        """
-        model = DocumentMapper.to_model(document)
-        await self.session.merge(model)
-
-    async def delete(self, document_id: DocumentId) -> None:
-        """
-        Soft delete document.
-        """
-        stmt = select(DocumentModel).where(
-            DocumentModel.id == document_id.value,
-            DocumentModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            now = utc_now()
-            model.deleted_at = now
-            model.updated_at = now
-            await self.session.merge(model)
-
-    async def exists(self, document_id: DocumentId) -> bool:
-        """Check if document exists (not soft-deleted)."""
-        from sqlalchemy import exists as sql_exists
-
-        stmt = sql_exists().where(
-            DocumentModel.id == document_id.value,
-            DocumentModel.deleted_at.is_(None),
-        ).select()
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())

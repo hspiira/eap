@@ -9,7 +9,6 @@ from typing import Any, Callable, TypeVar
 
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.value_objects.core import TenantId, UserId
-from app.shared.handlers.audit_event_handler import AuditEventHandler
 
 T = TypeVar("T")
 

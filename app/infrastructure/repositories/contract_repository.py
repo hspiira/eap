@@ -2,12 +2,12 @@
 Contract Repository Implementation
 
 SQLAlchemy implementation of ContractRepository interface.
+Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
-from typing import Sequence
+from typing import Any, Sequence
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentStatus
@@ -15,38 +15,33 @@ from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import ClientId, ContractId, TenantId
 from app.infrastructure.mappers.contract_mapper import ContractMapper
 from app.infrastructure.models.contract_model import ContractModel
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ContractRepositoryImpl(ContractRepository):
+class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, ContractModel, ContractId], ContractRepository):
     """
     SQLAlchemy implementation of ContractRepository.
 
-    Handles data access for Contract aggregate.
-    Uses mapper to convert between entity and model.
+    Inherits common CRUD operations from TenantScopedRepositoryImpl.
+    Only implements domain-specific queries.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
-        """
-        Initialize repository with database session.
+    model_class = ContractModel
+    id_column = "id"
 
-        Args:
-            session: SQLAlchemy async database session
-        """
-        self.session = session
-
-    async def get_by_id(self, contract_id: ContractId) -> ContractEntity | None:
-        """Get contract by ID, excluding soft-deleted contracts."""
-        stmt = select(ContractModel).where(
-            ContractModel.id == contract_id.value,
-            ContractModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if not model:
-            return None
-
+    def _to_entity(self, model: ContractModel) -> ContractEntity:
+        """Convert model to entity."""
         return ContractMapper.to_entity(model)
+
+    def _to_model(self, entity: ContractEntity) -> ContractModel:
+        """Convert entity to model."""
+        return ContractMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: ContractId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    # Domain-specific queries (not in base class)
 
     async def get_by_client_id(
         self, tenant_id: TenantId, client_id: ClientId
@@ -60,7 +55,7 @@ class ContractRepositoryImpl(ContractRepository):
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
-        return [ContractMapper.to_entity(model) for model in models]
+        return [self._to_entity(model) for model in models]
 
     async def get_active_by_client_id(
         self, tenant_id: TenantId, client_id: ClientId
@@ -78,50 +73,8 @@ class ContractRepositoryImpl(ContractRepository):
         if not model:
             return None
 
-        return ContractMapper.to_entity(model)
+        return self._to_entity(model)
 
-    async def save(self, contract: ContractEntity) -> None:
-        """
-        Save contract aggregate atomically.
-
-        Uses merge to handle both insert and update.
-        """
-        model = ContractMapper.to_model(contract)
-        await self.session.merge(model)
-        # Note: commit is typically handled by the application service/unit of work
-
-    async def delete(self, contract_id: ContractId) -> None:
-        """
-        Soft delete contract.
-
-        In practice, this is usually done by calling contract.terminate()
-        and then save(), but this method provides explicit soft delete.
-        """
-        stmt = select(ContractModel).where(
-            ContractModel.id == contract_id.value,
-            ContractModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            from app.shared.utils.datetime import utc_now
-
-            now = utc_now()
-            model.deleted_at = now
-            model.updated_at = now
-            await self.session.merge(model)
-
-    async def exists(self, contract_id: ContractId) -> bool:
-        """Check if contract exists (not soft-deleted)."""
-        from sqlalchemy import exists as sql_exists
-        stmt = sql_exists().where(
-            ContractModel.id == contract_id.value,
-            ContractModel.deleted_at.is_(None),
-        ).select()
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())
-    
     async def list_all(
         self,
         tenant_id: TenantId,
@@ -135,35 +88,26 @@ class ContractRepositoryImpl(ContractRepository):
         sort_desc: bool = True,
     ) -> Sequence[ContractEntity]:
         """List contracts with filtering, searching, and pagination."""
-        stmt = select(ContractModel).where(
-            ContractModel.tenant_id == tenant_id.value,
-            ContractModel.deleted_at.is_(None),
-        )
-        
-        # Apply filters
+        # Build filters dict for base class
+        filters: dict[str, Any] = {}
         if client_id:
-            stmt = stmt.where(ContractModel.client_id == client_id.value)
+            filters["client_id"] = client_id.value
         if status:
-            stmt = stmt.where(ContractModel.status == status)
+            filters["status"] = status
         if payment_status:
-            stmt = stmt.where(ContractModel.payment_status == payment_status)
-        # Note: search not implemented as contracts don't have searchable text fields
-        
-        # Apply sorting
-        sort_column = getattr(ContractModel, sort_by, ContractModel.created_at)
-        if sort_desc:
-            stmt = stmt.order_by(sort_column.desc())
-        else:
-            stmt = stmt.order_by(sort_column.asc())
-        
-        # Apply pagination
-        stmt = stmt.limit(limit).offset(offset)
-        
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        
-        return [ContractMapper.to_entity(model) for model in models]
-    
+            filters["payment_status"] = payment_status
+
+        return await self._query_all(
+            tenant_id=tenant_id.value,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            filters=filters,
+            search=None,  # Contracts don't have searchable text fields
+            search_fields=None,
+        )
+
     async def count(
         self,
         tenant_id: TenantId,
@@ -173,18 +117,17 @@ class ContractRepositoryImpl(ContractRepository):
         search: str | None = None,
     ) -> int:
         """Count contracts matching filters."""
-        stmt = select(func.count(ContractModel.id)).where(
-            ContractModel.tenant_id == tenant_id.value,
-            ContractModel.deleted_at.is_(None),
-        )
-        
-        # Apply filters
+        filters: dict[str, Any] = {}
         if client_id:
-            stmt = stmt.where(ContractModel.client_id == client_id.value)
+            filters["client_id"] = client_id.value
         if status:
-            stmt = stmt.where(ContractModel.status == status)
+            filters["status"] = status
         if payment_status:
-            stmt = stmt.where(ContractModel.payment_status == payment_status)
-        
-        result = await self.session.execute(stmt)
-        return int(result.scalar() or 0)
+            filters["payment_status"] = payment_status
+
+        return await self._count_all(
+            tenant_id=tenant_id.value,
+            filters=filters,
+            search=None,
+            search_fields=None,
+        )

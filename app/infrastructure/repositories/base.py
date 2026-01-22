@@ -111,32 +111,15 @@ class BaseRepositoryImpl(ABC, Generic[TEntity, TModel, TId]):
         stmt = sql_exists().where(*conditions).select()
         result = await self.session.execute(stmt)
         return result.scalar() or False
-    
-    async def count(
-        self,
-        filters: dict[str, Any] | None = None,
-    ) -> int:
-        """Count entities matching filters."""
-        id_col = getattr(self.model_class, self.id_column)
-        stmt = select(func.count(id_col))
-        
-        if hasattr(self.model_class, 'deleted_at'):
-            stmt = stmt.where(self.model_class.deleted_at.is_(None))
-        
-        if filters:
-            for key, value in filters.items():
-                if value is not None and hasattr(self.model_class, key):
-                    stmt = stmt.where(getattr(self.model_class, key) == value)
-        
-        result = await self.session.execute(stmt)
-        return int(result.scalar() or 0)
 
 
 class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
     """
     Base repository for tenant-scoped entities.
     
-    Automatically adds tenant_id filtering to queries.
+    Provides helper methods for tenant-scoped queries.
+    Subclasses implement domain-specific list_all/count methods
+    that can use these helpers internally.
     """
     
     async def get_by_id_in_tenant(
@@ -164,10 +147,10 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
         
         return self._to_entity(model)
     
-    async def list_all(
+    async def _query_all(
         self,
         tenant_id: Any,
-        limit: int = 20,
+        limit: int = 100,
         offset: int = 0,
         sort_by: str = "created_at",
         sort_desc: bool = True,
@@ -176,10 +159,12 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
         search_fields: list[str] | None = None,
     ) -> Sequence[TEntity]:
         """
-        List entities with filtering, searching, and pagination.
+        Internal helper to query entities with filtering, searching, and pagination.
+        
+        Subclasses should call this from their domain-specific list_all methods.
         
         Args:
-            tenant_id: Tenant identifier
+            tenant_id: Tenant identifier (raw value)
             limit: Maximum number of results
             offset: Number of results to skip
             sort_by: Field to sort by
@@ -225,14 +210,18 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
         
         return [self._to_entity(model) for model in models]
     
-    async def count_in_tenant(
+    async def _count_all(
         self,
         tenant_id: Any,
         filters: dict[str, Any] | None = None,
         search: str | None = None,
         search_fields: list[str] | None = None,
     ) -> int:
-        """Count entities in tenant matching filters."""
+        """
+        Internal helper to count entities in tenant matching filters.
+        
+        Subclasses should call this from their domain-specific count methods.
+        """
         id_col = getattr(self.model_class, self.id_column)
         stmt = select(func.count(id_col)).where(
             self.model_class.tenant_id == tenant_id,

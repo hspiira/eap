@@ -5,7 +5,7 @@ Converts between ContractEntity (domain) and ContractModel (persistence).
 """
 
 import decimal
-from datetime import date, datetime
+from datetime import datetime
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus

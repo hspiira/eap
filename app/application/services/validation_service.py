@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from app.domain.enums import BaseStatus
-from app.domain.exceptions import DomainError, ValidationException
+from app.domain.exceptions import ValidationException
 from app.domain.value_objects.core import (
     ClientId,
     ContractId,

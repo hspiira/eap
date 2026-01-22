@@ -8,7 +8,6 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 from typing import Any, Sequence
 
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus
@@ -75,7 +74,7 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
             filters["status"] = status
 
         # Use base class for common functionality
-        entities = await super().list_all(
+        entities = await self._query_all(
             tenant_id=tenant_id.value,
             limit=limit,
             offset=offset,

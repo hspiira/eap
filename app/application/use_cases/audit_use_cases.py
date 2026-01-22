@@ -10,7 +10,6 @@ They will be called by middleware/decorators, not directly via REST API.
 
 from typing import Any
 
-from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.enums import AuditActionType
 from app.domain.repositories.audit_repository import AuditRepository

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums import BaseStatus
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ServiceAssignmentId, TenantId, ServiceId, ContractId
 from app.shared.utils.datetime import utc_now
 

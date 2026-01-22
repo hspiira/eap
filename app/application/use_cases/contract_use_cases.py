@@ -9,7 +9,6 @@ from datetime import date, datetime
 
 from app.application.use_cases.base import (
     BaseUseCase,
-    EntityLifecycleUseCase,
     create_activate_use_case,
     create_archive_use_case,
     create_restore_use_case,

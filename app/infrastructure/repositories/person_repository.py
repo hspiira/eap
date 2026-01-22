@@ -2,9 +2,11 @@
 Person Repository Implementation
 
 SQLAlchemy implementation of PersonRepository interface.
+Uses TenantScopedRepositoryImpl base class where possible, but requires
+UserRepository to load the profile (special dependency).
 """
 
-from typing import Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,17 +19,20 @@ from app.domain.value_objects.core import PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.user_model import UserModel
-from app.shared.utils.datetime import utc_now
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class PersonRepositoryImpl(PersonRepository):
+class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel, PersonId], PersonRepository):
     """
     SQLAlchemy implementation of PersonRepository.
 
-    Handles data access for Person aggregate.
-    Uses mapper to convert between entity and model.
-    Requires UserRepository to load the profile.
+    Partially inherits from TenantScopedRepositoryImpl, but overrides
+    get_by_id and related methods because Person requires loading the
+    associated User profile.
     """
+
+    model_class = PersonModel
+    id_column = "id"
 
     def __init__(self, session: AsyncSession, user_repository: UserRepository) -> None:
         """
@@ -37,8 +42,30 @@ class PersonRepositoryImpl(PersonRepository):
             session: SQLAlchemy async database session
             user_repository: UserRepository to load user profiles
         """
-        self.session = session
+        super().__init__(session)
         self.user_repository = user_repository
+
+    def _to_entity(self, model: PersonModel) -> PersonEntity:
+        """Convert model to entity - NOT USED directly, use _to_entity_with_profile."""
+        raise NotImplementedError("Use _to_entity_with_profile for Person")
+
+    def _to_model(self, entity: PersonEntity) -> PersonModel:
+        """Convert entity to model."""
+        return PersonMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: PersonId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    async def _to_entity_with_profile(self, model: PersonModel) -> PersonEntity | None:
+        """Convert model to entity, loading the user profile."""
+        user_id = UserId(model.user_id)
+        profile = await self.user_repository.get_by_id(user_id)
+        if not profile:
+            return None
+        return PersonMapper.to_entity(model, profile)
+
+    # Override base methods to load profile
 
     async def get_by_id(self, person_id: PersonId) -> PersonEntity | None:
         """Get person by ID, excluding soft-deleted persons."""
@@ -52,13 +79,9 @@ class PersonRepositoryImpl(PersonRepository):
         if not model:
             return None
 
-        # Load user profile
-        user_id = UserId(model.user_id)
-        profile = await self.user_repository.get_by_id(user_id)
-        if not profile:
-            raise ValueError(f"User {user_id.value} not found for person {person_id.value}")
+        return await self._to_entity_with_profile(model)
 
-        return PersonMapper.to_entity(model, profile)
+    # Domain-specific queries
 
     async def get_by_user_id(self, user_id: UserId) -> PersonEntity | None:
         """Get person by user ID, excluding soft-deleted persons."""
@@ -72,12 +95,7 @@ class PersonRepositoryImpl(PersonRepository):
         if not model:
             return None
 
-        # Load user profile
-        profile = await self.user_repository.get_by_id(user_id)
-        if not profile:
-            raise ValueError(f"User {user_id.value} not found")
-
-        return PersonMapper.to_entity(model, profile)
+        return await self._to_entity_with_profile(model)
 
     async def get_by_type(
         self, tenant_id: TenantId, person_type: PersonType
@@ -93,53 +111,12 @@ class PersonRepositoryImpl(PersonRepository):
 
         entities = []
         for model in models:
-            user_id = UserId(model.user_id)
-            profile = await self.user_repository.get_by_id(user_id)
-            if profile:
-                entities.append(PersonMapper.to_entity(model, profile))
+            entity = await self._to_entity_with_profile(model)
+            if entity:
+                entities.append(entity)
 
         return entities
 
-    async def save(self, person: PersonEntity) -> None:
-        """
-        Save person aggregate atomically.
-
-        Uses merge to handle both insert and update.
-        """
-        model = PersonMapper.to_model(person)
-        await self.session.merge(model)
-        # Note: commit is typically handled by the application service/unit of work
-
-    async def delete(self, person_id: PersonId) -> None:
-        """
-        Soft delete person.
-
-        In practice, this is usually done by calling person methods
-        and then save(), but this method provides explicit soft delete.
-        """
-        stmt = select(PersonModel).where(
-            PersonModel.id == person_id.value,
-            PersonModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            now = utc_now()
-            model.deleted_at = now
-            model.updated_at = now
-            await self.session.merge(model)
-
-    async def exists(self, person_id: PersonId) -> bool:
-        """Check if person exists (not soft-deleted)."""
-        from sqlalchemy import exists as sql_exists
-        stmt = sql_exists().where(
-            PersonModel.id == person_id.value,
-            PersonModel.deleted_at.is_(None),
-        ).select()
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())
-    
     async def list_all(
         self,
         tenant_id: TenantId,
@@ -160,7 +137,7 @@ class PersonRepositoryImpl(PersonRepository):
             PersonModel.deleted_at.is_(None),
             UserModel.deleted_at.is_(None),
         )
-        
+
         # Apply filters
         if status:
             stmt = stmt.where(PersonModel.status == status)
@@ -173,29 +150,28 @@ class PersonRepositoryImpl(PersonRepository):
                     UserModel.email.ilike(search_pattern),
                 )
             )
-        
+
         # Apply sorting
         sort_column = getattr(PersonModel, sort_by, PersonModel.created_at)
         if sort_desc:
             stmt = stmt.order_by(sort_column.desc())
         else:
             stmt = stmt.order_by(sort_column.asc())
-        
+
         # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
-        
+
         result = await self.session.execute(stmt)
         models = result.scalars().all()
-        
+
         entities = []
         for model in models:
-            user_id = UserId(model.user_id)
-            profile = await self.user_repository.get_by_id(user_id)
-            if profile:
-                entities.append(PersonMapper.to_entity(model, profile))
-        
+            entity = await self._to_entity_with_profile(model)
+            if entity:
+                entities.append(entity)
+
         return entities
-    
+
     async def count(
         self,
         tenant_id: TenantId,
@@ -212,7 +188,7 @@ class PersonRepositoryImpl(PersonRepository):
             PersonModel.deleted_at.is_(None),
             UserModel.deleted_at.is_(None),
         )
-        
+
         # Apply filters
         if status:
             stmt = stmt.where(PersonModel.status == status)
@@ -225,6 +201,6 @@ class PersonRepositoryImpl(PersonRepository):
                     UserModel.email.ilike(search_pattern),
                 )
             )
-        
+
         result = await self.session.execute(stmt)
         return int(result.scalar() or 0)

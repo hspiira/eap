@@ -5,7 +5,6 @@ Simple in-process event bus for publishing and subscribing to domain events.
 For distributed systems, this can be replaced with message queue integration.
 """
 
-import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
