@@ -1,0 +1,108 @@
+"""
+Contact Entity (Aggregate Root)
+
+Represents an additional contact person for a client.
+"""
+
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.value_objects.core import ContactId, TenantId, Email
+from app.shared.utils.datetime import utc_now
+
+
+@dataclass
+class ContactEntity:
+    # Required fields
+    _id: ContactId
+    _tenant_id: TenantId
+    _client_id: str  # Associated client
+    _name: str
+    _created_at: datetime
+    _updated_at: datetime
+    
+    # Optional fields
+    _title: str | None = None  # Job title
+    _email: Email | None = None
+    _phone: str | None = None
+    _department: str | None = None
+    _is_primary: bool = False  # Primary contact for client
+    _notes: str | None = None
+    _is_active: bool = True
+    _deleted_at: datetime | None = None
+    _events: list = field(default_factory=list)
+    
+    def __post_init__(self) -> None:
+        """Validate invariants immediately after construction."""
+        self._ensure_invariants()
+    
+    # === Behaviors ===
+    
+    def update_name(self, name: str) -> None:
+        """Update contact name."""
+        if self._deleted_at:
+            raise DomainError("Cannot update deleted contact")
+        if not name:
+            raise DomainError("Contact name cannot be empty")
+        self._name = name
+        self._updated_at = utc_now()
+    
+    def update_contact_info(
+        self,
+        email: Email | None = None,
+        phone: str | None = None,
+        title: str | None = None,
+        department: str | None = None,
+    ) -> None:
+        """Update contact information."""
+        if self._deleted_at:
+            raise DomainError("Cannot update deleted contact")
+        if email is not None:
+            self._email = email
+        if phone is not None:
+            self._phone = phone
+        if title is not None:
+            self._title = title
+        if department is not None:
+            self._department = department
+        self._updated_at = utc_now()
+        self._ensure_invariants()  # Re-validate after update
+    
+    def set_primary(self, is_primary: bool) -> None:
+        """Set or unset as primary contact."""
+        if self._deleted_at:
+            raise DomainError("Cannot update deleted contact")
+        self._is_primary = is_primary
+        self._updated_at = utc_now()
+    
+    def activate(self) -> None:
+        """Activate contact."""
+        if self._deleted_at:
+            raise DomainError("Cannot activate deleted contact")
+        if self._is_active:
+            raise DomainError("Contact is already active")
+        self._is_active = True
+        self._updated_at = utc_now()
+    
+    def deactivate(self) -> None:
+        """Deactivate contact."""
+        if self._deleted_at:
+            raise DomainError("Cannot deactivate deleted contact")
+        if not self._is_active:
+            raise DomainError("Contact is already inactive")
+        self._is_active = False
+        self._updated_at = utc_now()
+    
+    def is_active(self) -> bool:
+        """Check if contact is active."""
+        return self._is_active and self._deleted_at is None
+    
+    # === Invariants ===
+    
+    def _ensure_invariants(self) -> None:
+        """Ensure contact invariants are met."""
+        if not self._name:
+            raise InvariantViolation("Contact must have a name")
+        if not self._email and not self._phone:
+            raise InvariantViolation("Contact must have at least email or phone")

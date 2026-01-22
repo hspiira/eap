@@ -12,6 +12,11 @@ from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.industry_repository import IndustryRepository
+from app.domain.repositories.kpi_repository import (
+    KPIAssignmentRepository,
+    KPIRepository,
+)
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
@@ -23,6 +28,11 @@ from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
+from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
+from app.infrastructure.repositories.kpi_repository import (
+    KPIAssignmentRepositoryImpl,
+    KPIRepositoryImpl,
+)
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
 from app.infrastructure.repositories.service_repository import ServiceRepositoryImpl
 from app.infrastructure.repositories.service_session_repository import (
@@ -168,6 +178,51 @@ async def get_document_repository(
         DocumentRepository implementation
     """
     return DocumentRepositoryImpl(db)
+
+
+async def get_kpi_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPIRepository:
+    """
+    Dependency for getting KPI repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        KPIRepository implementation
+    """
+    return KPIRepositoryImpl(db)
+
+
+async def get_kpi_assignment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPIAssignmentRepository:
+    """
+    Dependency for getting KPI assignment repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        KPIAssignmentRepository implementation
+    """
+    return KPIAssignmentRepositoryImpl(db)
+
+
+async def get_industry_repository(
+    db: AsyncSession = Depends(get_db),
+) -> IndustryRepository:
+    """
+    Dependency for getting industry repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        IndustryRepository implementation
+    """
+    return IndustryRepositoryImpl(db)
 
 
 async def get_audit_event_handler(
