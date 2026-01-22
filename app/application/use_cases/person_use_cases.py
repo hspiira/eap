@@ -10,6 +10,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.enums import PersonType
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.value_objects.core import PersonId, TenantId, UserId
+from app.shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from app.domain.entities.user import UserEntity
@@ -90,6 +91,7 @@ class ActivatePersonUseCase:
             raise ValueError(f"Person {person_id.value} not found")
 
         person.activate()
+        person._updated_at = utc_now()
         await self.person_repository.save(person)
 
         return person

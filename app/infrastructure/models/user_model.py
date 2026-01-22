@@ -31,11 +31,11 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint(
-            f"status IN {tuple([e.value for e in UserStatus])}",
+            "status IN (" + ", ".join(f"'{e.value}'" for e in UserStatus) + ")",
             name="user_status_check",
         ),
         CheckConstraint(
-            f"preferred_language IN {tuple([e.value for e in Language])}",
+            "preferred_language IN (" + ", ".join(f"'{e.value}'" for e in Language) + ")",
             name="user_language_check",
         ),
     )
@@ -51,7 +51,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     # Status
     status: Mapped[UserStatus] = mapped_column(
-        SQLEnum(UserStatus), nullable=False, default=UserStatus.PENDING_VERIFICATION
+        SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.PENDING_VERIFICATION
     )
     status_changed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -59,7 +59,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     # Preferences
     preferred_language: Mapped[Language | None] = mapped_column(
-        SQLEnum(Language), nullable=True
+        SQLEnum(Language, native_enum=False), nullable=True
     )
     timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 

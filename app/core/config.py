@@ -85,12 +85,10 @@ class Settings(BaseSettings):
             missing.append("DATABASE_URL")
         
         if missing:
-            warnings.warn(
-                f"Missing required configuration: {', '.join(missing)}. "
-                "Set these via environment variables.",
-                UserWarning,
-                stacklevel=2,
-            )
+            raise ValueError(  
+                f"Missing required configuration: {', '.join(missing)}. "  
+                "Set these via environment variables."  
+            ) 
         
         # Production-specific validations
         if self.is_production:

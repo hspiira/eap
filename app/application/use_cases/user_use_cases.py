@@ -5,6 +5,7 @@ Application services for User aggregate operations.
 """
 
 from app.domain.entities.user import UserEntity
+from app.domain.enums import UserStatus
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
@@ -42,8 +43,6 @@ class CreateUserUseCase:
         existing = await self.user_repository.get_by_email(email.value, tenant_id)
         if existing:
             raise ValueError(f"User with email {email.value} already exists")
-
-        from app.domain.enums import UserStatus
 
         # Create user entity
         user = UserEntity(
@@ -114,7 +113,7 @@ class VerifyUserEmailUseCase:
         """
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise ValueError(f"User {user_id.value} not found")
+            raise ValueError("User not found")
 
         user.verify_email()
         user._updated_at = utc_now()

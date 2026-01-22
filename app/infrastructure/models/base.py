@@ -5,8 +5,9 @@ Provides common functionality for all database models.
 """
 
 from datetime import datetime
+from enum import Enum
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, TypeDecorator
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, DeclarativeBase
 from sqlalchemy.sql import func
 
@@ -16,12 +17,55 @@ class Base(DeclarativeBase):
     pass
 
 
+class EnumValueType(TypeDecorator):
+    """
+    Custom type decorator that ensures enum values (not names) are stored.
+    
+    For string enums, SQLAlchemy's Enum type may use enum names instead of values.
+    This decorator ensures we always store the enum value.
+    """
+    impl = String
+    cache_ok = True
+    
+    def __init__(self, enum_class, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enum_class = enum_class
+    
+    def process_bind_param(self, value, dialect):
+        """Convert enum to its value when storing in database."""
+        if value is None:
+            return None
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, str):
+            # If it's already a string, validate it's a valid enum value
+            try:
+                enum_obj = self.enum_class(value)
+                return enum_obj.value
+            except ValueError:
+                # If value doesn't match, try by name
+                try:
+                    enum_obj = getattr(self.enum_class, value)
+                    return enum_obj.value
+                except AttributeError:
+                    return value
+        return value
+    
+    def process_result_value(self, value, dialect):
+        """Convert database value back to enum object."""
+        if value is None:
+            return None
+        if isinstance(value, self.enum_class):
+            return value
+        return self.enum_class(value)
+
+
 class CuidMixin:
     """Mixin for models using CUID as primary key."""
 
     @declared_attr
     def id(cls) -> Mapped[str]:
-        return mapped_column(String, primary_key=True, default=generate_cuid)
+        return mapped_column(String(25), primary_key=True, default=generate_cuid)
 
 
 class TenantMixin:
@@ -30,8 +74,8 @@ class TenantMixin:
     @declared_attr
     def tenant_id(cls) -> Mapped[str]:
         return mapped_column(
-            String,
-            ForeignKey("tenant.id", ondelete="CASCADE"),
+            String(25),
+            ForeignKey("tenants.id", ondelete="CASCADE"),
             nullable=False,
             index=True,
         )

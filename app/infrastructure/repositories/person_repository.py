@@ -120,7 +120,9 @@ class PersonRepositoryImpl(PersonRepository):
         if model:
             from app.shared.utils.datetime import utc_now
 
-            model.deleted_at = utc_now()
+            now = utc_now()
+            model.deleted_at = now
+            model.updated_at = now
             await self.session.merge(model)
 
     async def exists(self, person_id: PersonId) -> bool:

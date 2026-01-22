@@ -89,9 +89,10 @@ class TenantRepositoryImpl(TenantRepository):
     
     async def exists(self, tenant_id: TenantId) -> bool:
         """Check if tenant exists (not soft-deleted)."""
-        stmt = select(TenantModel).where(
+        from sqlalchemy import exists as sql_exists
+        stmt = sql_exists().where(
             TenantModel.id == tenant_id.value,
             TenantModel.deleted_at.is_(None)
         )
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        return result.scalar()
