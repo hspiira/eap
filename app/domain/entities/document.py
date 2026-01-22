@@ -189,7 +189,11 @@ class DocumentEntity:
         if self._deleted_at:
             return False
         self.check_expiry()  # Update status if expired
-        return self._status == DocumentStatus.PUBLISHED and not self._expires_at or self._expires_at > utc_now()
+        if self._status != DocumentStatus.PUBLISHED:
+            return False
+        if self._expires_at is None:
+            return True
+        return self._expires_at > utc_now()
     
     # === Invariants ===
     
