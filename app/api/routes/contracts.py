@@ -2,13 +2,12 @@
 Contract API Routes
 
 FastAPI routes for Contract operations.
-Follows hybrid approach: Commands use use cases, Queries use repositories directly.
+Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 import decimal
-from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_contract_repository
@@ -37,50 +36,48 @@ from app.application.use_cases.contract_use_cases import (
     UpdateContractUseCase,
 )
 from app.core.database import get_db
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentStatus
 from app.domain.entities.contract import ContractEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import (
     ClientId,
     ContractId,
-    DateRange,
     Money,
     TenantId,
 )
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
 
 
 def _to_contract_response(contract: ContractEntity) -> ContractResponse:
-    """Map ContractEntity to API response."""
+    """Map ContractEntity to API response using public properties."""
     period = DateRangeSchema(
-        start_date=contract._period.start_date,
-        end_date=contract._period.end_date,
+        start_date=contract.period.start_date,
+        end_date=contract.period.end_date,
     )
 
     billing_rate = MoneySchema(
-        amount=str(contract._billing_rate.amount),
-        currency=contract._billing_rate.currency,
+        amount=str(contract.billing_rate.amount),
+        currency=contract.billing_rate.currency,
     )
 
     return ContractResponse(
-        id=contract._id.value,
-        tenant_id=contract._tenant_id.value,
-        client_id=contract._client_id.value,
+        id=contract.id.value,
+        tenant_id=contract.tenant_id.value,
+        client_id=contract.client_id.value,
         period=period,
         billing_rate=billing_rate,
-        payment_frequency=contract._payment_frequency,
-        payment_status=contract._payment_status,
-        status=contract._status,
-        is_auto_renew=contract._is_auto_renew,
-        last_billing_date=contract._last_billing_date,
-        next_billing_date=contract._next_billing_date,
-        signed_by=contract._signed_by,
-        signed_at=contract._signed_at,
-        termination_reason=contract._termination_reason,
+        payment_frequency=contract.payment_frequency,
+        payment_status=contract.payment_status,
+        status=contract.status,
+        is_auto_renew=contract.is_auto_renew,
+        last_billing_date=contract.last_billing_date,
+        next_billing_date=contract.next_billing_date,
+        signed_by=contract.signed_by,
+        signed_at=contract.signed_at,
+        termination_reason=contract.termination_reason,
         is_active=contract.is_active(),
         days_remaining=contract.days_remaining(),
     )
@@ -95,49 +92,30 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
     status_code=status.HTTP_201_CREATED,
     summary="Create a new contract",
 )
+@transactional()
 async def create_contract(
     data: ContractCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create a new contract.
+    """Create a new contract."""
+    billing_rate = Money(
+        amount=decimal.Decimal(data.billing_rate.amount),
+        currency=data.billing_rate.currency,
+    )
 
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        # Convert schemas to value objects
-        billing_rate = Money(
-            amount=decimal.Decimal(data.billing_rate.amount),
-            currency=data.billing_rate.currency,
-        )
-
-        period = DateRange(start_date=data.start_date, end_date=data.end_date)
-
-        create_use_case = CreateContractUseCase(contract_repo)
-
-        contract = await create_use_case.execute(
-            contract_id=ContractId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            client_id=ClientId(data.client_id),
-            start_date=data.start_date,
-            end_date=data.end_date,
-            billing_rate=billing_rate,
-            payment_frequency=data.payment_frequency,
-            is_auto_renew=data.is_auto_renew,
-        )
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contract = await CreateContractUseCase(contract_repo).execute(
+        contract_id=ContractId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        client_id=ClientId(data.client_id),
+        start_date=data.start_date,
+        end_date=data.end_date,
+        billing_rate=billing_rate,
+        payment_frequency=data.payment_frequency,
+        is_auto_renew=data.is_auto_renew,
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -145,31 +123,17 @@ async def create_contract(
     response_model=ContractResponse,
     summary="Activate a contract",
 )
+@transactional()
 async def activate_contract(
     contract_id: str,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Activate a contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        activate_use_case = ActivateContractUseCase(contract_repo)
-
-        contract = await activate_use_case.execute(ContractId(contract_id))
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Activate a contract."""
+    contract = await ActivateContractUseCase(contract_repo).execute(
+        ContractId(contract_id)
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -177,34 +141,18 @@ async def activate_contract(
     response_model=ContractResponse,
     summary="Sign a contract",
 )
+@transactional()
 async def sign_contract(
     contract_id: str,
     request: ContractSignRequest,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Sign a contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        sign_use_case = SignContractUseCase(contract_repo)
-
-        contract = await sign_use_case.execute(
-            ContractId(contract_id), request.signed_by
-        )
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Sign a contract."""
+    contract = await SignContractUseCase(contract_repo).execute(
+        ContractId(contract_id), request.signed_by
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -212,44 +160,28 @@ async def sign_contract(
     response_model=ContractResponse,
     summary="Renew a contract",
 )
+@transactional()
 async def renew_contract(
     contract_id: str,
     request: ContractRenewRequest,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Renew a contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        new_rate = None
-        if request.new_rate:
-            new_rate = Money(
-                amount=decimal.Decimal(request.new_rate.amount),
-                currency=request.new_rate.currency,
-            )
-
-        renew_use_case = RenewContractUseCase(contract_repo)
-
-        # Convert datetime to date for renew method
-        new_end_date = request.new_end_date.date()
-
-        contract = await renew_use_case.execute(
-            ContractId(contract_id), new_end_date, new_rate
+    """Renew a contract."""
+    new_rate = None
+    if request.new_rate:
+        new_rate = Money(
+            amount=decimal.Decimal(request.new_rate.amount),
+            currency=request.new_rate.currency,
         )
 
-        await db.commit()
+    # Convert datetime to date for renew method
+    new_end_date = request.new_end_date.date()
 
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contract = await RenewContractUseCase(contract_repo).execute(
+        ContractId(contract_id), new_end_date, new_rate
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -257,34 +189,18 @@ async def renew_contract(
     response_model=ContractResponse,
     summary="Terminate a contract",
 )
+@transactional()
 async def terminate_contract(
     contract_id: str,
     request: ContractTerminateRequest,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Terminate a contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        terminate_use_case = TerminateContractUseCase(contract_repo)
-
-        contract = await terminate_use_case.execute(
-            ContractId(contract_id), request.reason
-        )
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Terminate a contract."""
+    contract = await TerminateContractUseCase(contract_repo).execute(
+        ContractId(contract_id), request.reason
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -292,31 +208,17 @@ async def terminate_contract(
     response_model=ContractResponse,
     summary="Archive a contract",
 )
+@transactional()
 async def archive_contract(
     contract_id: str,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Archive a contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        archive_use_case = ArchiveContractUseCase(contract_repo)
-
-        contract = await archive_use_case.execute(ContractId(contract_id))
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Archive a contract."""
+    contract = await ArchiveContractUseCase(contract_repo).execute(
+        ContractId(contract_id)
+    )
+    return _to_contract_response(contract)
 
 
 @router.post(
@@ -324,31 +226,17 @@ async def archive_contract(
     response_model=ContractResponse,
     summary="Restore a contract",
 )
+@transactional()
 async def restore_contract(
     contract_id: str,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Restore a terminated or expired contract.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        restore_use_case = RestoreContractUseCase(contract_repo)
-
-        contract = await restore_use_case.execute(ContractId(contract_id))
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Restore a terminated or expired contract."""
+    contract = await RestoreContractUseCase(contract_repo).execute(
+        ContractId(contract_id)
+    )
+    return _to_contract_response(contract)
 
 
 @router.patch(
@@ -356,44 +244,28 @@ async def restore_contract(
     response_model=ContractResponse,
     summary="Update contract information",
 )
+@transactional()
 async def update_contract(
     contract_id: str,
     data: ContractUpdate,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update contract information.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        billing_rate = None
-        if data.billing_rate:
-            billing_rate = Money(
-                amount=decimal.Decimal(data.billing_rate.amount),
-                currency=data.billing_rate.currency,
-            )
-
-        update_use_case = UpdateContractUseCase(contract_repo)
-
-        contract = await update_use_case.execute(
-            ContractId(contract_id),
-            billing_rate=billing_rate,
-            payment_frequency=data.payment_frequency,
-            is_auto_renew=data.is_auto_renew,
+    """Update contract information."""
+    billing_rate = None
+    if data.billing_rate:
+        billing_rate = Money(
+            amount=decimal.Decimal(data.billing_rate.amount),
+            currency=data.billing_rate.currency,
         )
 
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contract = await UpdateContractUseCase(contract_repo).execute(
+        ContractId(contract_id),
+        billing_rate=billing_rate,
+        payment_frequency=data.payment_frequency,
+        is_auto_renew=data.is_auto_renew,
+    )
+    return _to_contract_response(contract)
 
 
 @router.patch(
@@ -401,34 +273,18 @@ async def update_contract(
     response_model=ContractResponse,
     summary="Update contract payment status",
 )
+@transactional()
 async def update_contract_payment_status(
     contract_id: str,
     request: ContractUpdatePaymentStatus,
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update contract payment status.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateContractPaymentStatusUseCase(contract_repo)
-
-        contract = await update_use_case.execute(
-            ContractId(contract_id), request.payment_status
-        )
-
-        await db.commit()
-
-        return _to_contract_response(contract)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update contract payment status."""
+    contract = await UpdateContractPaymentStatusUseCase(contract_repo).execute(
+        ContractId(contract_id), request.payment_status
+    )
+    return _to_contract_response(contract)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -439,6 +295,7 @@ async def update_contract_payment_status(
     response_model=ContractListResponse,
     summary="List contracts with filtering and pagination",
 )
+@readonly()
 async def list_contracts(
     tenant_id: str = Query(..., description="Tenant identifier"),
     client_id: str | None = Query(None, description="Filter by client identifier"),
@@ -451,12 +308,9 @@ async def list_contracts(
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    List contracts with filtering, searching, and pagination.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """List contracts with filtering, searching, and pagination."""
     offset = (page - 1) * limit
 
     contracts = await contract_repo.list_all(
@@ -477,10 +331,8 @@ async def list_contracts(
         payment_status=payment_status,
     )
 
-    contract_responses = [_to_contract_response(contract) for contract in contracts]
-
     return ContractListResponse(
-        items=contract_responses,
+        items=[_to_contract_response(contract) for contract in contracts],
         total=total,
         page=page,
         limit=limit,
@@ -493,22 +345,16 @@ async def list_contracts(
     response_model=ContractResponse,
     summary="Get contract by ID",
 )
+@readonly()
 async def get_contract(
     contract_id: str,
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get contract by ID.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get contract by ID."""
     contract = await contract_repo.get_by_id(ContractId(contract_id))
-
     if not contract:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found"
-        )
-
+        raise ValueError("Contract not found")
     return _to_contract_response(contract)
 
 
@@ -517,22 +363,17 @@ async def get_contract(
     response_model=list[ContractResponse],
     summary="Get all contracts for a client",
 )
+@readonly()
 async def get_contracts_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all contracts for a client.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetContractUseCase(contract_repo)
-
-    contracts = await get_use_case.execute_by_client(
+    """Get all contracts for a client."""
+    contracts = await GetContractUseCase(contract_repo).execute_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
-
     return [_to_contract_response(contract) for contract in contracts]
 
 
@@ -541,26 +382,17 @@ async def get_contracts_by_client(
     response_model=ContractResponse,
     summary="Get active contract for a client",
 )
+@readonly()
 async def get_active_contract_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get active contract for a client.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetContractUseCase(contract_repo)
-
-    contract = await get_use_case.execute_active_by_client(
+    """Get active contract for a client."""
+    contract = await GetContractUseCase(contract_repo).execute_active_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
-
     if not contract:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active contract found for this client",
-        )
-
+        raise ValueError("Active contract not found for this client")
     return _to_contract_response(contract)
