@@ -2,10 +2,10 @@
 Industry API Routes
 
 FastAPI routes for Industry operations.
-Follows hybrid approach: Commands use use cases, Queries use repositories directly.
+Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_industry_repository
@@ -24,27 +24,26 @@ from app.application.use_cases.industry_use_cases import (
 )
 from app.core.database import get_db
 from app.domain.entities.industry import IndustryEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/industries", tags=["industries"])
 
 
 def _to_industry_response(industry: IndustryEntity) -> IndustryResponse:
-    """Map IndustryEntity to API response."""
+    """Map IndustryEntity to API response using public properties."""
     return IndustryResponse(
-        id=industry._id.value,
-        tenant_id=industry._tenant_id.value,
-        name=industry._name,
-        description=industry._description,
-        code=industry._code,
-        parent_industry_id=industry._parent_industry_id.value if industry._parent_industry_id else None,
+        id=industry.id.value,
+        tenant_id=industry.tenant_id.value,
+        name=industry.name,
+        description=industry.description,
+        code=industry.code,
+        parent_industry_id=industry.parent_industry_id.value if industry.parent_industry_id else None,
         is_active=industry.is_active(),
-        created_at=industry._created_at.isoformat(),
-        updated_at=industry._updated_at.isoformat(),
+        created_at=industry.created_at.isoformat(),
+        updated_at=industry.updated_at.isoformat(),
     )
 
 
@@ -57,41 +56,23 @@ def _to_industry_response(industry: IndustryEntity) -> IndustryResponse:
     status_code=status.HTTP_201_CREATED,
     summary="Create a new industry",
 )
+@transactional()
 async def create_industry(
     data: IndustryCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create a new industry.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        create_use_case = CreateIndustryUseCase(industry_repo)
-
-        industry = await create_use_case.execute(
-            industry_id=IndustryId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            name=data.name,
-            description=data.description,
-            code=data.code,
-            parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
-        )
-
-        await db.commit()
-
-        return _to_industry_response(industry)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Create a new industry."""
+    industry = await CreateIndustryUseCase(industry_repo).execute(
+        industry_id=IndustryId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        name=data.name,
+        description=data.description,
+        code=data.code,
+        parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
+    )
+    return _to_industry_response(industry)
 
 
 @router.patch(
@@ -99,40 +80,22 @@ async def create_industry(
     response_model=IndustryResponse,
     summary="Update an industry",
 )
+@transactional()
 async def update_industry(
     industry_id: str,
     data: IndustryUpdate,
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update an industry.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateIndustryUseCase(industry_repo)
-
-        industry = await update_use_case.execute(
-            IndustryId(industry_id),
-            name=data.name,
-            description=data.description,
-            code=data.code,
-            parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
-        )
-
-        await db.commit()
-
-        return _to_industry_response(industry)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update an industry."""
+    industry = await UpdateIndustryUseCase(industry_repo).execute(
+        IndustryId(industry_id),
+        name=data.name,
+        description=data.description,
+        code=data.code,
+        parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
+    )
+    return _to_industry_response(industry)
 
 
 @router.post(
@@ -140,33 +103,15 @@ async def update_industry(
     response_model=IndustryResponse,
     summary="Activate an industry",
 )
+@transactional()
 async def activate_industry(
     industry_id: str,
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Activate an industry.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        activate_use_case = ActivateIndustryUseCase(industry_repo)
-
-        industry = await activate_use_case.execute(IndustryId(industry_id))
-
-        await db.commit()
-
-        return _to_industry_response(industry)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Activate an industry."""
+    industry = await ActivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    return _to_industry_response(industry)
 
 
 @router.post(
@@ -174,33 +119,15 @@ async def activate_industry(
     response_model=IndustryResponse,
     summary="Deactivate an industry",
 )
+@transactional()
 async def deactivate_industry(
     industry_id: str,
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Deactivate an industry.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        deactivate_use_case = DeactivateIndustryUseCase(industry_repo)
-
-        industry = await deactivate_use_case.execute(IndustryId(industry_id))
-
-        await db.commit()
-
-        return _to_industry_response(industry)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Deactivate an industry."""
+    industry = await DeactivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    return _to_industry_response(industry)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -211,6 +138,7 @@ async def deactivate_industry(
     response_model=IndustryListResponse,
     summary="List industries with filtering and pagination",
 )
+@readonly()
 async def list_industries(
     tenant_id: str = Query(..., description="Tenant identifier"),
     parent_id: str | None = Query(None, description="Filter by parent industry"),
@@ -219,12 +147,9 @@ async def list_industries(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    List industries with filtering, searching, and pagination.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """List industries with filtering, searching, and pagination."""
     offset = (page - 1) * limit
 
     industries = await industry_repo.list_all(
@@ -243,10 +168,8 @@ async def list_industries(
         search=search,
     )
 
-    industry_responses = [_to_industry_response(industry) for industry in industries]
-
     return IndustryListResponse(
-        items=industry_responses,
+        items=[_to_industry_response(i) for i in industries],
         total=total,
         page=page,
         limit=limit,
@@ -259,24 +182,16 @@ async def list_industries(
     response_model=IndustryResponse,
     summary="Get industry by ID",
 )
+@readonly()
 async def get_industry(
     industry_id: str,
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get industry by ID.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetIndustryUseCase(industry_repo)
-
-    industry = await get_use_case.execute(IndustryId(industry_id))
-
+    """Get industry by ID."""
+    industry = await GetIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
     if not industry:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Industry not found"
-        )
-
+        raise ValueError("Industry not found")
     return _to_industry_response(industry)
 
 
@@ -285,27 +200,22 @@ async def get_industry(
     response_model=IndustryListResponse,
     summary="Get child industries",
 )
+@readonly()
 async def get_industry_children(
     industry_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all child industries for a parent industry.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get all child industries for a parent industry."""
     children = await industry_repo.get_children(
         IndustryId(industry_id), TenantId(tenant_id)
     )
-
-    children_responses = [_to_industry_response(child) for child in children]
-
     return IndustryListResponse(
-        items=children_responses,
-        total=len(children_responses),
+        items=[_to_industry_response(c) for c in children],
+        total=len(children),
         page=1,
-        limit=len(children_responses),
+        limit=len(children),
         has_more=False,
     )
 
@@ -314,16 +224,13 @@ async def get_industry_children(
     "/check-name/{name}",
     summary="Check if industry name is available",
 )
+@readonly()
 async def check_industry_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Check if an industry name is available within a tenant.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Check if an industry name is available within a tenant."""
     industry = await industry_repo.get_by_name(name, TenantId(tenant_id))
-
     return {"available": industry is None, "name": name, "tenant_id": tenant_id}

@@ -1,6 +1,6 @@
 """Contact API Routes - FastAPI routes for Contact operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_contact_repository
@@ -19,31 +19,30 @@ from app.application.use_cases.contact_use_cases import (
 )
 from app.core.database import get_db
 from app.domain.entities.contact import ContactEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, TenantId
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 
 def _to_contact_response(contact: ContactEntity) -> ContactResponse:
-    """Map ContactEntity to API response."""
+    """Map ContactEntity to API response using public properties."""
     return ContactResponse(
-        id=contact._id.value,
-        tenant_id=contact._tenant_id.value,
-        client_id=contact._client_id,
-        name=contact._name,
-        title=contact._title,
-        email=contact._email.value if contact._email else None,
-        phone=contact._phone,
-        department=contact._department,
-        is_primary=contact._is_primary,
-        notes=contact._notes,
+        id=contact.id.value,
+        tenant_id=contact.tenant_id.value,
+        client_id=contact.client_id,
+        name=contact.name,
+        title=contact.title,
+        email=contact.email.value if contact.email else None,
+        phone=contact.phone,
+        department=contact.department,
+        is_primary=contact.is_primary,
+        notes=contact.notes,
         is_active=contact.is_active(),
-        created_at=contact._created_at.isoformat(),
-        updated_at=contact._updated_at.isoformat(),
+        created_at=contact.created_at.isoformat(),
+        updated_at=contact.updated_at.isoformat(),
     )
 
 
@@ -53,6 +52,7 @@ def _to_contact_response(contact: ContactEntity) -> ContactResponse:
     status_code=status.HTTP_201_CREATED,
     summary="Create a new contact",
 )
+@transactional()
 async def create_contact(
     data: ContactCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
@@ -60,29 +60,19 @@ async def create_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contact."""
-    try:
-        create_use_case = CreateContactUseCase(contact_repo)
-        contact = await create_use_case.execute(
-            contact_id=ContactId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            client_id=data.client_id,
-            name=data.name,
-            title=data.title,
-            email=data.email,
-            phone=data.phone,
-            department=data.department,
-            is_primary=data.is_primary,
-            notes=data.notes,
-        )
-        await db.commit()
-        return _to_contact_response(contact)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contact = await CreateContactUseCase(contact_repo).execute(
+        contact_id=ContactId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        client_id=data.client_id,
+        name=data.name,
+        title=data.title,
+        email=data.email,
+        phone=data.phone,
+        department=data.department,
+        is_primary=data.is_primary,
+        notes=data.notes,
+    )
+    return _to_contact_response(contact)
 
 
 @router.patch(
@@ -90,6 +80,7 @@ async def create_contact(
     response_model=ContactResponse,
     summary="Update a contact",
 )
+@transactional()
 async def update_contact(
     contact_id: str,
     data: ContactUpdate,
@@ -97,27 +88,17 @@ async def update_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a contact."""
-    try:
-        update_use_case = UpdateContactUseCase(contact_repo)
-        contact = await update_use_case.execute(
-            ContactId(contact_id),
-            name=data.name,
-            title=data.title,
-            email=data.email,
-            phone=data.phone,
-            department=data.department,
-            is_primary=data.is_primary,
-            notes=data.notes,
-        )
-        await db.commit()
-        return _to_contact_response(contact)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contact = await UpdateContactUseCase(contact_repo).execute(
+        ContactId(contact_id),
+        name=data.name,
+        title=data.title,
+        email=data.email,
+        phone=data.phone,
+        department=data.department,
+        is_primary=data.is_primary,
+        notes=data.notes,
+    )
+    return _to_contact_response(contact)
 
 
 @router.post(
@@ -125,24 +106,15 @@ async def update_contact(
     response_model=ContactResponse,
     summary="Activate a contact",
 )
+@transactional()
 async def activate_contact(
     contact_id: str,
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contact."""
-    try:
-        activate_use_case = ActivateContactUseCase(contact_repo)
-        contact = await activate_use_case.execute(ContactId(contact_id))
-        await db.commit()
-        return _to_contact_response(contact)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contact = await ActivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    return _to_contact_response(contact)
 
 
 @router.post(
@@ -150,24 +122,15 @@ async def activate_contact(
     response_model=ContactResponse,
     summary="Deactivate a contact",
 )
+@transactional()
 async def deactivate_contact(
     contact_id: str,
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a contact."""
-    try:
-        deactivate_use_case = DeactivateContactUseCase(contact_repo)
-        contact = await deactivate_use_case.execute(ContactId(contact_id))
-        await db.commit()
-        return _to_contact_response(contact)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    contact = await DeactivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    return _to_contact_response(contact)
 
 
 @router.get(
@@ -175,6 +138,7 @@ async def deactivate_contact(
     response_model=ContactListResponse,
     summary="List contacts with filtering and pagination",
 )
+@readonly()
 async def list_contacts(
     tenant_id: str = Query(..., description="Tenant identifier"),
     client_id: str | None = Query(None, description="Filter by client"),
@@ -184,6 +148,7 @@ async def list_contacts(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """List contacts with filtering, searching, and pagination."""
     offset = (page - 1) * limit
@@ -206,10 +171,8 @@ async def list_contacts(
         search=search,
     )
 
-    contact_responses = [_to_contact_response(contact) for contact in contacts]
-
     return ContactListResponse(
-        items=contact_responses,
+        items=[_to_contact_response(contact) for contact in contacts],
         total=total,
         page=page,
         limit=limit,
@@ -222,15 +185,16 @@ async def list_contacts(
     response_model=ContactResponse,
     summary="Get contact by ID",
 )
+@readonly()
 async def get_contact(
     contact_id: str,
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get contact by ID."""
-    get_use_case = GetContactUseCase(contact_repo)
-    contact = await get_use_case.execute(ContactId(contact_id))
+    contact = await GetContactUseCase(contact_repo).execute(ContactId(contact_id))
     if not contact:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+        raise ValueError("Contact not found")
     return _to_contact_response(contact)
 
 
@@ -239,10 +203,12 @@ async def get_contact(
     response_model=ContactListResponse,
     summary="Get all contacts for a client",
 )
+@readonly()
 async def get_contacts_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all contacts for a specific client."""
     contacts = await contact_repo.get_by_client_id(client_id, TenantId(tenant_id))
@@ -261,13 +227,15 @@ async def get_contacts_by_client(
     response_model=ContactResponse,
     summary="Get primary contact for a client",
 )
+@readonly()
 async def get_primary_contact(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get primary contact for a specific client."""
     contact = await contact_repo.get_primary_contact(client_id, TenantId(tenant_id))
     if not contact:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Primary contact not found")
+        raise ValueError("Primary contact not found")
     return _to_contact_response(contact)

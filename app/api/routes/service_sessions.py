@@ -2,10 +2,10 @@
 Service Session API Routes
 
 FastAPI routes for Service Session operations.
-Follows hybrid approach: Commands use use cases, Queries use repositories directly.
+Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_service_session_repository
@@ -34,7 +34,6 @@ from app.application.use_cases.service_session_use_cases import (
 from app.core.database import get_db
 from app.domain.enums import SessionStatus
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
@@ -44,8 +43,8 @@ from app.domain.value_objects.core import (
     SessionId,
     TenantId,
 )
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
@@ -53,22 +52,22 @@ router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 def _to_service_session_response(
     session: ServiceSessionEntity,
 ) -> ServiceSessionResponse:
-    """Map ServiceSessionEntity to API response."""
+    """Map ServiceSessionEntity to API response using public properties."""
     return ServiceSessionResponse(
-        id=session._id.value,
-        tenant_id=session._tenant_id.value,
-        service_id=session._service_id.value,
-        provider_id=session._provider_id.value,
-        person_id=session._person_id.value,
-        scheduled_at=session._scheduled_at,
-        status=session._status,
-        reschedule_count=session._reschedule_count,
-        completed_at=session._completed_at,
-        duration=session._duration,
-        location=session._location,
-        notes=session._notes,
-        feedback=session._feedback,
-        cancellation_reason=session._cancellation_reason,
+        id=session.id.value,
+        tenant_id=session.tenant_id.value,
+        service_id=session.service_id.value,
+        provider_id=session.provider_id.value,
+        person_id=session.person_id.value,
+        scheduled_at=session.scheduled_at,
+        status=session.status,
+        reschedule_count=session.reschedule_count,
+        completed_at=session.completed_at,
+        duration=session.duration,
+        location=session.location,
+        notes=session.notes,
+        feedback=session.feedback,
+        cancellation_reason=session.cancellation_reason,
         is_active=session.is_active(),
     )
 
@@ -82,40 +81,24 @@ def _to_service_session_response(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new service session",
 )
+@transactional()
 async def create_service_session(
     data: ServiceSessionCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create a new service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        create_use_case = CreateServiceSessionUseCase(session_repo)
-
-        session = await create_use_case.execute(
-            session_id=SessionId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            service_id=ServiceId(data.service_id),
-            provider_id=PersonId(data.provider_id),
-            person_id=PersonId(data.person_id),
-            scheduled_at=data.scheduled_at,
-            location=data.location,
-        )
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Create a new service session."""
+    session = await CreateServiceSessionUseCase(session_repo).execute(
+        session_id=SessionId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        service_id=ServiceId(data.service_id),
+        provider_id=PersonId(data.provider_id),
+        person_id=PersonId(data.person_id),
+        scheduled_at=data.scheduled_at,
+        location=data.location,
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -123,34 +106,18 @@ async def create_service_session(
     response_model=ServiceSessionResponse,
     summary="Complete a service session",
 )
+@transactional()
 async def complete_service_session(
     session_id: str,
     request: ServiceSessionCompleteRequest,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Complete a service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        complete_use_case = CompleteServiceSessionUseCase(session_repo)
-
-        session = await complete_use_case.execute(
-            SessionId(session_id), request.duration, request.notes
-        )
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Complete a service session."""
+    session = await CompleteServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id), request.duration, request.notes
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -158,32 +125,18 @@ async def complete_service_session(
     response_model=ServiceSessionResponse,
     summary="Cancel a service session",
 )
+@transactional()
 async def cancel_service_session(
     session_id: str,
     request: ServiceSessionCancelRequest,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Cancel a service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        cancel_use_case = CancelServiceSessionUseCase(session_repo)
-
-        session = await cancel_use_case.execute(SessionId(session_id), request.reason)
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Cancel a service session."""
+    session = await CancelServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id), request.reason
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -191,34 +144,18 @@ async def cancel_service_session(
     response_model=ServiceSessionResponse,
     summary="Reschedule a service session",
 )
+@transactional()
 async def reschedule_service_session(
     session_id: str,
     request: ServiceSessionRescheduleRequest,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Reschedule a service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        reschedule_use_case = RescheduleServiceSessionUseCase(session_repo)
-
-        session = await reschedule_use_case.execute(
-            SessionId(session_id), request.new_scheduled_at
-        )
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Reschedule a service session."""
+    session = await RescheduleServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id), request.new_scheduled_at
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -226,31 +163,17 @@ async def reschedule_service_session(
     response_model=ServiceSessionResponse,
     summary="Mark a service session as no-show",
 )
+@transactional()
 async def mark_no_show_service_session(
     session_id: str,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Mark a service session as no-show.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        mark_no_show_use_case = MarkNoShowServiceSessionUseCase(session_repo)
-
-        session = await mark_no_show_use_case.execute(SessionId(session_id))
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Mark a service session as no-show."""
+    session = await MarkNoShowServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id)
+    )
+    return _to_service_session_response(session)
 
 
 @router.patch(
@@ -258,34 +181,18 @@ async def mark_no_show_service_session(
     response_model=ServiceSessionResponse,
     summary="Update service session information",
 )
+@transactional()
 async def update_service_session(
     session_id: str,
     data: ServiceSessionUpdate,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update service session information.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateServiceSessionUseCase(session_repo)
-
-        session = await update_use_case.execute(
-            SessionId(session_id), location=data.location, notes=data.notes
-        )
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update service session information."""
+    session = await UpdateServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id), location=data.location, notes=data.notes
+    )
+    return _to_service_session_response(session)
 
 
 @router.patch(
@@ -293,34 +200,18 @@ async def update_service_session(
     response_model=ServiceSessionResponse,
     summary="Update service session feedback",
 )
+@transactional()
 async def update_service_session_feedback(
     session_id: str,
     request: ServiceSessionUpdateFeedback,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update service session feedback.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateServiceSessionFeedbackUseCase(session_repo)
-
-        session = await update_use_case.execute(
-            SessionId(session_id), request.feedback
-        )
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update service session feedback."""
+    session = await UpdateServiceSessionFeedbackUseCase(session_repo).execute(
+        SessionId(session_id), request.feedback
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -328,31 +219,17 @@ async def update_service_session_feedback(
     response_model=ServiceSessionResponse,
     summary="Archive a service session",
 )
+@transactional()
 async def archive_service_session(
     session_id: str,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Archive a service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        archive_use_case = ArchiveServiceSessionUseCase(session_repo)
-
-        session = await archive_use_case.execute(SessionId(session_id))
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Archive a service session."""
+    session = await ArchiveServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id)
+    )
+    return _to_service_session_response(session)
 
 
 @router.post(
@@ -360,31 +237,17 @@ async def archive_service_session(
     response_model=ServiceSessionResponse,
     summary="Restore a service session",
 )
+@transactional()
 async def restore_service_session(
     session_id: str,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Restore an archived service session.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        restore_use_case = RestoreServiceSessionUseCase(session_repo)
-
-        session = await restore_use_case.execute(SessionId(session_id))
-
-        await db.commit()
-
-        return _to_service_session_response(session)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Restore an archived service session."""
+    session = await RestoreServiceSessionUseCase(session_repo).execute(
+        SessionId(session_id)
+    )
+    return _to_service_session_response(session)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -395,6 +258,7 @@ async def restore_service_session(
     response_model=ServiceSessionListResponse,
     summary="List service sessions with filtering and pagination",
 )
+@readonly()
 async def list_service_sessions(
     tenant_id: str = Query(..., description="Tenant identifier"),
     person_id: str | None = Query(None, description="Filter by person identifier"),
@@ -406,12 +270,9 @@ async def list_service_sessions(
     sort_by: str = Query("scheduled_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    List service sessions with filtering, searching, and pagination.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """List service sessions with filtering, searching, and pagination."""
     offset = (page - 1) * limit
 
     sessions = await session_repo.list_all(
@@ -434,12 +295,8 @@ async def list_service_sessions(
         status=status,
     )
 
-    session_responses = [
-        _to_service_session_response(session) for session in sessions
-    ]
-
     return ServiceSessionListResponse(
-        items=session_responses,
+        items=[_to_service_session_response(session) for session in sessions],
         total=total,
         page=page,
         limit=limit,
@@ -452,22 +309,16 @@ async def list_service_sessions(
     response_model=ServiceSessionResponse,
     summary="Get service session by ID",
 )
+@readonly()
 async def get_service_session(
     session_id: str,
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get service session by ID.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get service session by ID."""
     session = await session_repo.get_by_id(SessionId(session_id))
-
     if not session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Service session not found"
-        )
-
+        raise ValueError("Service session not found")
     return _to_service_session_response(session)
 
 
@@ -476,22 +327,17 @@ async def get_service_session(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a person",
 )
+@readonly()
 async def get_sessions_by_person(
     person_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all sessions for a person.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetServiceSessionUseCase(session_repo)
-
-    sessions = await get_use_case.execute_by_person(
+    """Get all sessions for a person."""
+    sessions = await GetServiceSessionUseCase(session_repo).execute_by_person(
         TenantId(tenant_id), PersonId(person_id)
     )
-
     return [_to_service_session_response(session) for session in sessions]
 
 
@@ -500,22 +346,17 @@ async def get_sessions_by_person(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a provider",
 )
+@readonly()
 async def get_sessions_by_provider(
     provider_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all sessions for a provider.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetServiceSessionUseCase(session_repo)
-
-    sessions = await get_use_case.execute_by_provider(
+    """Get all sessions for a provider."""
+    sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), PersonId(provider_id)
     )
-
     return [_to_service_session_response(session) for session in sessions]
 
 
@@ -524,20 +365,15 @@ async def get_sessions_by_provider(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a service",
 )
+@readonly()
 async def get_sessions_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all sessions for a service.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetServiceSessionUseCase(session_repo)
-
-    sessions = await get_use_case.execute_by_service(
+    """Get all sessions for a service."""
+    sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )
-
     return [_to_service_session_response(session) for session in sessions]

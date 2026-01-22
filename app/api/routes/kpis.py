@@ -2,12 +2,10 @@
 KPI API Routes
 
 FastAPI routes for KPI operations.
-Follows hybrid approach: Commands use use cases, Queries use repositories directly.
+Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -39,51 +37,50 @@ from app.application.use_cases.kpi_use_cases import (
 from app.core.database import get_db
 from app.domain.enums import KPICategory
 from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
 from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/kpis", tags=["kpis"])
 
 
 def _to_kpi_response(kpi: KPIEntity) -> KPIResponse:
-    """Map KPIEntity to API response."""
+    """Map KPIEntity to API response using public properties."""
     return KPIResponse(
-        id=kpi._id.value,
-        tenant_id=kpi._tenant_id.value,
-        name=kpi._name,
-        description=kpi._description,
-        category=kpi._category,
-        measurement_unit=kpi._measurement_unit,
-        target_value=kpi._target_value,
-        threshold_min=kpi._threshold_min,
-        threshold_max=kpi._threshold_max,
-        formula=kpi._formula,
+        id=kpi.id.value,
+        tenant_id=kpi.tenant_id.value,
+        name=kpi.name,
+        description=kpi.description,
+        category=kpi.category,
+        measurement_unit=kpi.measurement_unit,
+        target_value=kpi.target_value,
+        threshold_min=kpi.threshold_min,
+        threshold_max=kpi.threshold_max,
+        formula=kpi.formula,
         is_active=kpi.is_active(),
-        created_at=kpi._created_at.isoformat(),
-        updated_at=kpi._updated_at.isoformat(),
+        created_at=kpi.created_at.isoformat(),
+        updated_at=kpi.updated_at.isoformat(),
     )
 
 
 def _to_kpi_assignment_response(
     assignment: KPIAssignmentEntity,
 ) -> KPIAssignmentResponse:
-    """Map KPIAssignmentEntity to API response."""
+    """Map KPIAssignmentEntity to API response using public properties."""
     return KPIAssignmentResponse(
-        id=assignment._id.value,
-        kpi_id=assignment._kpi_id.value,
-        tenant_id=assignment._tenant_id.value,
-        client_id=assignment._client_id,
-        contract_id=assignment._contract_id,
-        target_value=assignment._target_value,
+        id=assignment.id.value,
+        kpi_id=assignment.kpi_id.value,
+        tenant_id=assignment.tenant_id.value,
+        client_id=assignment.client_id,
+        contract_id=assignment.contract_id,
+        target_value=assignment.target_value,
         is_active=assignment.is_active(),
-        created_at=assignment._created_at.isoformat(),
-        updated_at=assignment._updated_at.isoformat(),
+        created_at=assignment.created_at.isoformat(),
+        updated_at=assignment.updated_at.isoformat(),
     )
 
 
@@ -96,45 +93,27 @@ def _to_kpi_assignment_response(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new KPI",
 )
+@transactional()
 async def create_kpi(
     data: KPICreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create a new KPI.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        create_use_case = CreateKPIUseCase(kpi_repo)
-
-        kpi = await create_use_case.execute(
-            kpi_id=KPIId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            name=data.name,
-            category=data.category,
-            measurement_unit=data.measurement_unit,
-            description=data.description,
-            target_value=data.target_value,
-            threshold_min=data.threshold_min,
-            threshold_max=data.threshold_max,
-            formula=data.formula,
-        )
-
-        await db.commit()
-
-        return _to_kpi_response(kpi)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Create a new KPI."""
+    kpi = await CreateKPIUseCase(kpi_repo).execute(
+        kpi_id=KPIId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        name=data.name,
+        category=data.category,
+        measurement_unit=data.measurement_unit,
+        description=data.description,
+        target_value=data.target_value,
+        threshold_min=data.threshold_min,
+        threshold_max=data.threshold_max,
+        formula=data.formula,
+    )
+    return _to_kpi_response(kpi)
 
 
 @router.patch(
@@ -142,42 +121,24 @@ async def create_kpi(
     response_model=KPIResponse,
     summary="Update a KPI",
 )
+@transactional()
 async def update_kpi(
     kpi_id: str,
     data: KPIUpdate,
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update a KPI.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateKPIUseCase(kpi_repo)
-
-        kpi = await update_use_case.execute(
-            KPIId(kpi_id),
-            name=data.name,
-            description=data.description,
-            target_value=data.target_value,
-            threshold_min=data.threshold_min,
-            threshold_max=data.threshold_max,
-            formula=data.formula,
-        )
-
-        await db.commit()
-
-        return _to_kpi_response(kpi)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update a KPI."""
+    kpi = await UpdateKPIUseCase(kpi_repo).execute(
+        KPIId(kpi_id),
+        name=data.name,
+        description=data.description,
+        target_value=data.target_value,
+        threshold_min=data.threshold_min,
+        threshold_max=data.threshold_max,
+        formula=data.formula,
+    )
+    return _to_kpi_response(kpi)
 
 
 @router.post(
@@ -185,33 +146,15 @@ async def update_kpi(
     response_model=KPIResponse,
     summary="Activate a KPI",
 )
+@transactional()
 async def activate_kpi(
     kpi_id: str,
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Activate a KPI.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        activate_use_case = ActivateKPIUseCase(kpi_repo)
-
-        kpi = await activate_use_case.execute(KPIId(kpi_id))
-
-        await db.commit()
-
-        return _to_kpi_response(kpi)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Activate a KPI."""
+    kpi = await ActivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    return _to_kpi_response(kpi)
 
 
 @router.post(
@@ -219,33 +162,15 @@ async def activate_kpi(
     response_model=KPIResponse,
     summary="Deactivate a KPI",
 )
+@transactional()
 async def deactivate_kpi(
     kpi_id: str,
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Deactivate a KPI.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        deactivate_use_case = DeactivateKPIUseCase(kpi_repo)
-
-        kpi = await deactivate_use_case.execute(KPIId(kpi_id))
-
-        await db.commit()
-
-        return _to_kpi_response(kpi)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Deactivate a KPI."""
+    kpi = await DeactivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    return _to_kpi_response(kpi)
 
 
 # ==================== KPI QUERIES (Direct Repository) ====================
@@ -256,6 +181,7 @@ async def deactivate_kpi(
     response_model=KPIListResponse,
     summary="List KPIs with filtering and pagination",
 )
+@readonly()
 async def list_kpis(
     tenant_id: str = Query(..., description="Tenant identifier"),
     category: KPICategory | None = Query(None, description="Filter by KPI category"),
@@ -266,12 +192,9 @@ async def list_kpis(
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    List KPIs with filtering, searching, and pagination.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """List KPIs with filtering, searching, and pagination."""
     offset = (page - 1) * limit
 
     kpis = await kpi_repo.list_all(
@@ -292,10 +215,8 @@ async def list_kpis(
         search=search,
     )
 
-    kpi_responses = [_to_kpi_response(kpi) for kpi in kpis]
-
     return KPIListResponse(
-        items=kpi_responses,
+        items=[_to_kpi_response(kpi) for kpi in kpis],
         total=total,
         page=page,
         limit=limit,
@@ -308,24 +229,16 @@ async def list_kpis(
     response_model=KPIResponse,
     summary="Get KPI by ID",
 )
+@readonly()
 async def get_kpi(
     kpi_id: str,
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get KPI by ID.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetKPIUseCase(kpi_repo)
-
-    kpi = await get_use_case.execute(KPIId(kpi_id))
-
+    """Get KPI by ID."""
+    kpi = await GetKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
     if not kpi:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="KPI not found"
-        )
-
+        raise ValueError("KPI not found")
     return _to_kpi_response(kpi)
 
 
@@ -333,18 +246,15 @@ async def get_kpi(
     "/check-name/{name}",
     summary="Check if KPI name is available",
 )
+@readonly()
 async def check_kpi_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Check if a KPI name is available within a tenant.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Check if a KPI name is available within a tenant."""
     kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
-
     return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
 
 
@@ -357,44 +267,24 @@ async def check_kpi_name_availability(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new KPI assignment",
 )
+@transactional()
 async def create_kpi_assignment(
     data: KPIAssignmentCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Create a new KPI assignment.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        create_use_case = CreateKPIAssignmentUseCase(kpi_repo, assignment_repo)
-
-        assignment = await create_use_case.execute(
-            assignment_id=KPIAssignmentId(generate_cuid()),
-            kpi_id=KPIId(data.kpi_id),
-            tenant_id=TenantId(tenant_id),
-            client_id=data.client_id,
-            contract_id=data.contract_id,
-            target_value=data.target_value,
-        )
-
-        await db.commit()
-
-        return _to_kpi_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Create a new KPI assignment."""
+    assignment = await CreateKPIAssignmentUseCase(kpi_repo, assignment_repo).execute(
+        assignment_id=KPIAssignmentId(generate_cuid()),
+        kpi_id=KPIId(data.kpi_id),
+        tenant_id=TenantId(tenant_id),
+        client_id=data.client_id,
+        contract_id=data.contract_id,
+        target_value=data.target_value,
+    )
+    return _to_kpi_assignment_response(assignment)
 
 
 @router.patch(
@@ -402,38 +292,18 @@ async def create_kpi_assignment(
     response_model=KPIAssignmentResponse,
     summary="Update a KPI assignment",
 )
+@transactional()
 async def update_kpi_assignment(
     assignment_id: str,
     data: KPIAssignmentUpdate,
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Update a KPI assignment.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        update_use_case = UpdateKPIAssignmentUseCase(assignment_repo)
-
-        assignment = await update_use_case.execute(
-            KPIAssignmentId(assignment_id), data.target_value
-        )
-
-        await db.commit()
-
-        return _to_kpi_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Update a KPI assignment."""
+    assignment = await UpdateKPIAssignmentUseCase(assignment_repo).execute(
+        KPIAssignmentId(assignment_id), data.target_value
+    )
+    return _to_kpi_assignment_response(assignment)
 
 
 @router.post(
@@ -441,37 +311,17 @@ async def update_kpi_assignment(
     response_model=KPIAssignmentResponse,
     summary="Activate a KPI assignment",
 )
+@transactional()
 async def activate_kpi_assignment(
     assignment_id: str,
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Activate a KPI assignment.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        activate_use_case = ActivateKPIAssignmentUseCase(assignment_repo)
-
-        assignment = await activate_use_case.execute(
-            KPIAssignmentId(assignment_id)
-        )
-
-        await db.commit()
-
-        return _to_kpi_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Activate a KPI assignment."""
+    assignment = await ActivateKPIAssignmentUseCase(assignment_repo).execute(
+        KPIAssignmentId(assignment_id)
+    )
+    return _to_kpi_assignment_response(assignment)
 
 
 @router.post(
@@ -479,37 +329,17 @@ async def activate_kpi_assignment(
     response_model=KPIAssignmentResponse,
     summary="Deactivate a KPI assignment",
 )
+@transactional()
 async def deactivate_kpi_assignment(
     assignment_id: str,
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Deactivate a KPI assignment.
-
-    This is a COMMAND operation, so it uses a use case for orchestration.
-    """
-    try:
-        deactivate_use_case = DeactivateKPIAssignmentUseCase(assignment_repo)
-
-        assignment = await deactivate_use_case.execute(
-            KPIAssignmentId(assignment_id)
-        )
-
-        await db.commit()
-
-        return _to_kpi_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    """Deactivate a KPI assignment."""
+    assignment = await DeactivateKPIAssignmentUseCase(assignment_repo).execute(
+        KPIAssignmentId(assignment_id)
+    )
+    return _to_kpi_assignment_response(assignment)
 
 
 # ==================== KPI ASSIGNMENT QUERIES (Direct Repository) ====================
@@ -520,6 +350,7 @@ async def deactivate_kpi_assignment(
     response_model=KPIAssignmentListResponse,
     summary="List KPI assignments with filtering and pagination",
 )
+@readonly()
 async def list_kpi_assignments(
     tenant_id: str = Query(..., description="Tenant identifier"),
     kpi_id: str | None = Query(None, description="Filter by KPI"),
@@ -530,15 +361,10 @@ async def list_kpi_assignments(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    List KPI assignments with filtering and pagination.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """List KPI assignments with filtering and pagination."""
     offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
@@ -561,12 +387,8 @@ async def list_kpi_assignments(
         is_active=is_active,
     )
 
-    assignment_responses = [
-        _to_kpi_assignment_response(assignment) for assignment in assignments
-    ]
-
     return KPIAssignmentListResponse(
-        items=assignment_responses,
+        items=[_to_kpi_assignment_response(a) for a in assignments],
         total=total,
         page=page,
         limit=limit,
@@ -579,27 +401,18 @@ async def list_kpi_assignments(
     response_model=KPIAssignmentResponse,
     summary="Get KPI assignment by ID",
 )
+@readonly()
 async def get_kpi_assignment(
     assignment_id: str,
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get KPI assignment by ID.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
-    get_use_case = GetKPIAssignmentUseCase(assignment_repo)
-
-    assignment = await get_use_case.execute(KPIAssignmentId(assignment_id))
-
+    """Get KPI assignment by ID."""
+    assignment = await GetKPIAssignmentUseCase(assignment_repo).execute(
+        KPIAssignmentId(assignment_id)
+    )
     if not assignment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="KPI assignment not found",
-        )
-
+        raise ValueError("KPI assignment not found")
     return _to_kpi_assignment_response(assignment)
 
 
@@ -608,31 +421,22 @@ async def get_kpi_assignment(
     response_model=KPIAssignmentListResponse,
     summary="Get all assignments for a KPI",
 )
+@readonly()
 async def get_kpi_assignments_by_kpi(
     kpi_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all assignments for a specific KPI.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get all assignments for a specific KPI."""
     assignments = await assignment_repo.get_by_kpi_id(
         KPIId(kpi_id), TenantId(tenant_id)
     )
-
-    assignment_responses = [
-        _to_kpi_assignment_response(assignment) for assignment in assignments
-    ]
-
     return KPIAssignmentListResponse(
-        items=assignment_responses,
-        total=len(assignment_responses),
+        items=[_to_kpi_assignment_response(a) for a in assignments],
+        total=len(assignments),
         page=1,
-        limit=len(assignment_responses),
+        limit=len(assignments),
         has_more=False,
     )
 
@@ -642,31 +446,22 @@ async def get_kpi_assignments_by_kpi(
     response_model=KPIAssignmentListResponse,
     summary="Get all assignments for a client",
 )
+@readonly()
 async def get_kpi_assignments_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all assignments for a specific client.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get all assignments for a specific client."""
     assignments = await assignment_repo.get_by_client_id(
         client_id, TenantId(tenant_id)
     )
-
-    assignment_responses = [
-        _to_kpi_assignment_response(assignment) for assignment in assignments
-    ]
-
     return KPIAssignmentListResponse(
-        items=assignment_responses,
-        total=len(assignment_responses),
+        items=[_to_kpi_assignment_response(a) for a in assignments],
+        total=len(assignments),
         page=1,
-        limit=len(assignment_responses),
+        limit=len(assignments),
         has_more=False,
     )
 
@@ -676,30 +471,21 @@ async def get_kpi_assignments_by_client(
     response_model=KPIAssignmentListResponse,
     summary="Get all assignments for a contract",
 )
+@readonly()
 async def get_kpi_assignments_by_contract(
     contract_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    assignment_repo: KPIAssignmentRepository = Depends(
-        get_kpi_assignment_repository
-    ),
+    assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Get all assignments for a specific contract.
-
-    This is a QUERY operation, so it calls the repository directly.
-    """
+    """Get all assignments for a specific contract."""
     assignments = await assignment_repo.get_by_contract_id(
         contract_id, TenantId(tenant_id)
     )
-
-    assignment_responses = [
-        _to_kpi_assignment_response(assignment) for assignment in assignments
-    ]
-
     return KPIAssignmentListResponse(
-        items=assignment_responses,
-        total=len(assignment_responses),
+        items=[_to_kpi_assignment_response(a) for a in assignments],
+        total=len(assignments),
         page=1,
-        limit=len(assignment_responses),
+        limit=len(assignments),
         has_more=False,
     )

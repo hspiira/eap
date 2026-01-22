@@ -1,6 +1,6 @@
 """ServiceAssignment API Routes - FastAPI routes for ServiceAssignment operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_service_assignment_repository
@@ -20,29 +20,28 @@ from app.application.use_cases.service_assignment_use_cases import (
 from app.core.database import get_db
 from app.domain.enums import BaseStatus
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
-from app.domain.exceptions import DomainError
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
+from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 
 router = APIRouter(prefix="/service-assignments", tags=["service-assignments"])
 
 
 def _to_service_assignment_response(assignment: ServiceAssignmentEntity) -> ServiceAssignmentResponse:
-    """Map ServiceAssignmentEntity to API response."""
+    """Map ServiceAssignmentEntity to API response using public properties."""
     return ServiceAssignmentResponse(
-        id=assignment._id.value,
-        tenant_id=assignment._tenant_id.value,
-        service_id=assignment._service_id.value,
-        contract_id=assignment._contract_id.value,
-        status=assignment._status,
-        assigned_at=assignment._assigned_at.isoformat() if assignment._assigned_at else None,
-        assigned_by=assignment._assigned_by,
-        notes=assignment._notes,
+        id=assignment.id.value,
+        tenant_id=assignment.tenant_id.value,
+        service_id=assignment.service_id.value,
+        contract_id=assignment.contract_id.value,
+        status=assignment.status,
+        assigned_at=assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+        assigned_by=assignment.assigned_by,
+        notes=assignment.notes,
         is_active=assignment.is_active(),
-        created_at=assignment._created_at.isoformat(),
-        updated_at=assignment._updated_at.isoformat(),
+        created_at=assignment.created_at.isoformat(),
+        updated_at=assignment.updated_at.isoformat(),
     )
 
 
@@ -52,6 +51,7 @@ def _to_service_assignment_response(assignment: ServiceAssignmentEntity) -> Serv
     status_code=status.HTTP_201_CREATED,
     summary="Create a new service assignment",
 )
+@transactional()
 async def create_service_assignment(
     data: ServiceAssignmentCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
@@ -60,25 +60,15 @@ async def create_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service assignment."""
-    try:
-        create_use_case = CreateServiceAssignmentUseCase(assignment_repo)
-        assignment = await create_use_case.execute(
-            assignment_id=ServiceAssignmentId(generate_cuid()),
-            tenant_id=TenantId(tenant_id),
-            service_id=ServiceId(data.service_id),
-            contract_id=ContractId(data.contract_id),
-            assigned_by=assigned_by,
-            notes=data.notes,
-        )
-        await db.commit()
-        return _to_service_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    assignment = await CreateServiceAssignmentUseCase(assignment_repo).execute(
+        assignment_id=ServiceAssignmentId(generate_cuid()),
+        tenant_id=TenantId(tenant_id),
+        service_id=ServiceId(data.service_id),
+        contract_id=ContractId(data.contract_id),
+        assigned_by=assigned_by,
+        notes=data.notes,
+    )
+    return _to_service_assignment_response(assignment)
 
 
 @router.patch(
@@ -86,6 +76,7 @@ async def create_service_assignment(
     response_model=ServiceAssignmentResponse,
     summary="Update a service assignment",
 )
+@transactional()
 async def update_service_assignment(
     assignment_id: str,
     data: ServiceAssignmentUpdate,
@@ -93,20 +84,10 @@ async def update_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a service assignment."""
-    try:
-        update_use_case = UpdateServiceAssignmentUseCase(assignment_repo)
-        assignment = await update_use_case.execute(
-            ServiceAssignmentId(assignment_id), data.notes
-        )
-        await db.commit()
-        return _to_service_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    assignment = await UpdateServiceAssignmentUseCase(assignment_repo).execute(
+        ServiceAssignmentId(assignment_id), data.notes
+    )
+    return _to_service_assignment_response(assignment)
 
 
 @router.post(
@@ -114,24 +95,17 @@ async def update_service_assignment(
     response_model=ServiceAssignmentResponse,
     summary="Activate a service assignment",
 )
+@transactional()
 async def activate_service_assignment(
     assignment_id: str,
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service assignment."""
-    try:
-        activate_use_case = ActivateServiceAssignmentUseCase(assignment_repo)
-        assignment = await activate_use_case.execute(ServiceAssignmentId(assignment_id))
-        await db.commit()
-        return _to_service_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    assignment = await ActivateServiceAssignmentUseCase(assignment_repo).execute(
+        ServiceAssignmentId(assignment_id)
+    )
+    return _to_service_assignment_response(assignment)
 
 
 @router.post(
@@ -139,24 +113,17 @@ async def activate_service_assignment(
     response_model=ServiceAssignmentResponse,
     summary="Deactivate a service assignment",
 )
+@transactional()
 async def deactivate_service_assignment(
     assignment_id: str,
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service assignment."""
-    try:
-        deactivate_use_case = DeactivateServiceAssignmentUseCase(assignment_repo)
-        assignment = await deactivate_use_case.execute(ServiceAssignmentId(assignment_id))
-        await db.commit()
-        return _to_service_assignment_response(assignment)
-    except ValueError as e:
-        await db.rollback()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-    except DomainError as e:
-        await db.rollback()
-        status_code = get_error_status_code(str(e))
-        raise HTTPException(status_code=status_code, detail=str(e)) from e
+    assignment = await DeactivateServiceAssignmentUseCase(assignment_repo).execute(
+        ServiceAssignmentId(assignment_id)
+    )
+    return _to_service_assignment_response(assignment)
 
 
 @router.get(
@@ -164,6 +131,7 @@ async def deactivate_service_assignment(
     response_model=ServiceAssignmentListResponse,
     summary="List service assignments with filtering and pagination",
 )
+@readonly()
 async def list_service_assignments(
     tenant_id: str = Query(..., description="Tenant identifier"),
     service_id: str | None = Query(None, description="Filter by service"),
@@ -172,6 +140,7 @@ async def list_service_assignments(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """List service assignments with filtering and pagination."""
     offset = (page - 1) * limit
@@ -192,10 +161,8 @@ async def list_service_assignments(
         status=status,
     )
 
-    assignment_responses = [_to_service_assignment_response(a) for a in assignments]
-
     return ServiceAssignmentListResponse(
-        items=assignment_responses,
+        items=[_to_service_assignment_response(a) for a in assignments],
         total=total,
         page=page,
         limit=limit,
@@ -208,15 +175,18 @@ async def list_service_assignments(
     response_model=ServiceAssignmentResponse,
     summary="Get service assignment by ID",
 )
+@readonly()
 async def get_service_assignment(
     assignment_id: str,
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get service assignment by ID."""
-    get_use_case = GetServiceAssignmentUseCase(assignment_repo)
-    assignment = await get_use_case.execute(ServiceAssignmentId(assignment_id))
+    assignment = await GetServiceAssignmentUseCase(assignment_repo).execute(
+        ServiceAssignmentId(assignment_id)
+    )
     if not assignment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+        raise ValueError("Assignment not found")
     return _to_service_assignment_response(assignment)
 
 
@@ -225,19 +195,22 @@ async def get_service_assignment(
     response_model=ServiceAssignmentListResponse,
     summary="Get all assignments for a service",
 )
+@readonly()
 async def get_service_assignments_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific service."""
-    assignments = await assignment_repo.get_by_service_id(ServiceId(service_id), TenantId(tenant_id))
-    assignment_responses = [_to_service_assignment_response(a) for a in assignments]
+    assignments = await assignment_repo.get_by_service_id(
+        ServiceId(service_id), TenantId(tenant_id)
+    )
     return ServiceAssignmentListResponse(
-        items=assignment_responses,
-        total=len(assignment_responses),
+        items=[_to_service_assignment_response(a) for a in assignments],
+        total=len(assignments),
         page=1,
-        limit=len(assignment_responses),
+        limit=len(assignments),
         has_more=False,
     )
 
@@ -247,18 +220,21 @@ async def get_service_assignments_by_service(
     response_model=ServiceAssignmentListResponse,
     summary="Get all assignments for a contract",
 )
+@readonly()
 async def get_service_assignments_by_contract(
     contract_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific contract."""
-    assignments = await assignment_repo.get_by_contract_id(ContractId(contract_id), TenantId(tenant_id))
-    assignment_responses = [_to_service_assignment_response(a) for a in assignments]
+    assignments = await assignment_repo.get_by_contract_id(
+        ContractId(contract_id), TenantId(tenant_id)
+    )
     return ServiceAssignmentListResponse(
-        items=assignment_responses,
-        total=len(assignment_responses),
+        items=[_to_service_assignment_response(a) for a in assignments],
+        total=len(assignments),
         page=1,
-        limit=len(assignment_responses),
+        limit=len(assignments),
         has_more=False,
     )

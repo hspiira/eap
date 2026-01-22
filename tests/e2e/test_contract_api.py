@@ -228,7 +228,7 @@ class TestGetActiveContractByClient:
         )
 
         assert response.status_code == 404
-        assert "no active contract" in response.json()["detail"].lower()
+        assert "not found" in response.json()["detail"].lower()
 
 
 # =============================================================================
