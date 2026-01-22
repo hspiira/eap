@@ -5,8 +5,10 @@ Immutable domain concepts identified by their value, not identity.
 Self-validating and encapsulating domain rules.
 """
 
+from app.domain.value_objects.audit import FieldChange
 from app.domain.value_objects.core import (
     Address,
+    AuditLogId,
     ClientId,
     ContactInfo,
     ContractId,
@@ -15,6 +17,7 @@ from app.domain.value_objects.core import (
     Email,
     EmploymentInfo,
     EmergencyContact,
+    EntityChangeId,
     Id,
     IndustryId,
     LicenseInfo,
@@ -31,6 +34,7 @@ from app.domain.value_objects.core import (
 
 __all__ = [
     "Address",
+    "AuditLogId",
     "ClientId",
     "ContactInfo",
     "ContractId",
@@ -39,6 +43,8 @@ __all__ = [
     "Email",
     "EmploymentInfo",
     "EmergencyContact",
+    "EntityChangeId",
+    "FieldChange",
     "Id",
     "IndustryId",
     "LicenseInfo",

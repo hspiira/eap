@@ -102,3 +102,17 @@ class ContactMethod(str, Enum):
     SMS = "sms"
     WHATSAPP = "whatsapp"
     WECHAT = "wechat"
+
+class AuditActionType(str, Enum):
+    """Types of actions that can be audited."""
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+    APPROVE = "APPROVE"
+    REJECT = "REJECT"
+    LIST = "LIST"
+    VIEW = "VIEW"
+    EXPORT = "EXPORT"
+    IMPORT = "IMPORT"

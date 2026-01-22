@@ -8,6 +8,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.person_repository import PersonRepository
@@ -17,6 +18,7 @@ from app.domain.repositories.service_session_repository import (
 )
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
@@ -103,6 +105,21 @@ async def get_contract_repository(
         ContractRepository implementation
     """
     return ContractRepositoryImpl(db)
+
+
+async def get_audit_repository(
+    db: AsyncSession = Depends(get_db),
+) -> AuditRepository:
+    """
+    Dependency for getting audit repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        AuditRepository implementation
+    """
+    return AuditRepositoryImpl(db)
 
 
 async def get_service_repository(
