@@ -2,15 +2,18 @@
 
 from datetime import datetime
 
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.activity import ActivityEntity
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
 
-class CreateActivityUseCase:
+class CreateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
+    """Use case for creating an activity."""
+
     def __init__(self, activity_repository: ActivityRepository):
-        self.activity_repository = activity_repository
+        super().__init__(activity_repository)
 
     async def execute(
         self,
@@ -26,6 +29,7 @@ class CreateActivityUseCase:
         next_follow_up: datetime | None = None,
         is_important: bool = False,
     ) -> ActivityEntity:
+        """Create a new activity."""
         activity = ActivityEntity(
             _id=activity_id,
             _tenant_id=tenant_id,
@@ -42,13 +46,14 @@ class CreateActivityUseCase:
             _updated_at=utc_now(),
         )
 
-        await self.activity_repository.save(activity)
-        return activity
+        return await self._save_and_publish_events(activity)
 
 
-class UpdateActivityUseCase:
+class UpdateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
+    """Use case for updating an activity."""
+
     def __init__(self, activity_repository: ActivityRepository):
-        self.activity_repository = activity_repository
+        super().__init__(activity_repository)
 
     async def execute(
         self,
@@ -58,9 +63,8 @@ class UpdateActivityUseCase:
         next_follow_up: datetime | None = None,
         is_important: bool | None = None,
     ) -> ActivityEntity:
-        activity = await self.activity_repository.get_by_id(activity_id)
-        if not activity:
-            raise ValueError(f"Activity {activity_id.value} not found")
+        """Update an activity."""
+        activity = await self._get_entity_or_raise(activity_id, "Activity")
 
         if description:
             activity.update_description(description)
@@ -71,13 +75,15 @@ class UpdateActivityUseCase:
         if is_important is not None:
             activity.mark_important(is_important)
 
-        await self.activity_repository.save(activity)
-        return activity
+        return await self._save_and_publish_events(activity)
 
 
-class GetActivityUseCase:
+class GetActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
+    """Use case for retrieving an activity."""
+
     def __init__(self, activity_repository: ActivityRepository):
-        self.activity_repository = activity_repository
+        super().__init__(activity_repository)
 
     async def execute(self, activity_id: ActivityId) -> ActivityEntity | None:
-        return await self.activity_repository.get_by_id(activity_id)
+        """Get activity by ID."""
+        return await self.repository.get_by_id(activity_id)

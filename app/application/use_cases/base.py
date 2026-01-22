@@ -137,7 +137,13 @@ class DeactivateUseCase(EntityLifecycleUseCase[TEntity, TId]):
     
     async def _perform_action(self, entity: TEntity, reason: str | None = None, **kwargs: Any) -> None:
         if hasattr(entity, 'deactivate'):
-            entity.deactivate(reason)
+            import inspect
+            sig = inspect.signature(entity.deactivate)
+            # Check if deactivate accepts a reason parameter
+            if len(sig.parameters) > 0:
+                entity.deactivate(reason)
+            else:
+                entity.deactivate()
         else:
             raise NotImplementedError(f"{self.entity_name} does not support deactivation")
 

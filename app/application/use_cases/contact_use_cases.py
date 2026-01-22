@@ -1,14 +1,51 @@
 """Contact Use Cases - Application services for Contact operations."""
 
+from app.application.use_cases.base import (
+    BaseUseCase,
+    create_activate_use_case,
+    create_deactivate_use_case,
+)
 from app.domain.entities.contact import ContactEntity
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, Email, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-class CreateContactUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (Using Base Factories)
+# =============================================================================
+
+
+class ActivateContactUseCase:
+    """Use case for activating a contact."""
+
     def __init__(self, contact_repository: ContactRepository):
-        self.contact_repository = contact_repository
+        self._use_case = create_activate_use_case(contact_repository, "Contact")
+
+    async def execute(self, contact_id: ContactId) -> ContactEntity:
+        return await self._use_case.execute(contact_id)
+
+
+class DeactivateContactUseCase:
+    """Use case for deactivating a contact."""
+
+    def __init__(self, contact_repository: ContactRepository):
+        self._use_case = create_deactivate_use_case(contact_repository, "Contact")
+
+    async def execute(self, contact_id: ContactId) -> ContactEntity:
+        return await self._use_case.execute(contact_id)
+
+
+# =============================================================================
+# CREATE USE CASE
+# =============================================================================
+
+
+class CreateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
+    """Use case for creating a contact."""
+
+    def __init__(self, contact_repository: ContactRepository):
+        super().__init__(contact_repository)
 
     async def execute(
         self,
@@ -23,6 +60,7 @@ class CreateContactUseCase:
         is_primary: bool = False,
         notes: str | None = None,
     ) -> ContactEntity:
+        """Create a new contact."""
         contact = ContactEntity(
             _id=contact_id,
             _tenant_id=tenant_id,
@@ -39,13 +77,19 @@ class CreateContactUseCase:
             _updated_at=utc_now(),
         )
 
-        await self.contact_repository.save(contact)
-        return contact
+        return await self._save_and_publish_events(contact)
 
 
-class UpdateContactUseCase:
+# =============================================================================
+# UPDATE USE CASE
+# =============================================================================
+
+
+class UpdateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
+    """Use case for updating a contact."""
+
     def __init__(self, contact_repository: ContactRepository):
-        self.contact_repository = contact_repository
+        super().__init__(contact_repository)
 
     async def execute(
         self,
@@ -58,18 +102,17 @@ class UpdateContactUseCase:
         is_primary: bool | None = None,
         notes: str | None = None,
     ) -> ContactEntity:
-        contact = await self.contact_repository.get_by_id(contact_id)
-        if not contact:
-            raise ValueError(f"Contact {contact_id.value} not found")
+        """Update a contact."""
+        contact = await self._get_entity_or_raise(contact_id, "Contact")
 
         if name:
             contact.update_name(name)
         if email is not None or phone is not None or title is not None or department is not None:
             contact.update_contact_info(
-                email=Email(email) if email else contact._email,
-                phone=phone if phone is not None else contact._phone,
-                title=title if title is not None else contact._title,
-                department=department if department is not None else contact._department,
+                email=Email(email) if email else contact.email,
+                phone=phone if phone is not None else contact.phone,
+                title=title if title is not None else contact.title,
+                department=department if department is not None else contact.department,
             )
         if is_primary is not None:
             contact.set_primary(is_primary)
@@ -77,39 +120,20 @@ class UpdateContactUseCase:
             contact._notes = notes
             contact._updated_at = utc_now()
 
-        await self.contact_repository.save(contact)
-        return contact
+        return await self._save_and_publish_events(contact)
 
 
-class ActivateContactUseCase:
+# =============================================================================
+# QUERY USE CASE
+# =============================================================================
+
+
+class GetContactUseCase(BaseUseCase[ContactEntity, ContactId]):
+    """Use case for retrieving a contact."""
+
     def __init__(self, contact_repository: ContactRepository):
-        self.contact_repository = contact_repository
-
-    async def execute(self, contact_id: ContactId) -> ContactEntity:
-        contact = await self.contact_repository.get_by_id(contact_id)
-        if not contact:
-            raise ValueError(f"Contact {contact_id.value} not found")
-        contact.activate()
-        await self.contact_repository.save(contact)
-        return contact
-
-
-class DeactivateContactUseCase:
-    def __init__(self, contact_repository: ContactRepository):
-        self.contact_repository = contact_repository
-
-    async def execute(self, contact_id: ContactId) -> ContactEntity:
-        contact = await self.contact_repository.get_by_id(contact_id)
-        if not contact:
-            raise ValueError(f"Contact {contact_id.value} not found")
-        contact.deactivate()
-        await self.contact_repository.save(contact)
-        return contact
-
-
-class GetContactUseCase:
-    def __init__(self, contact_repository: ContactRepository):
-        self.contact_repository = contact_repository
+        super().__init__(contact_repository)
 
     async def execute(self, contact_id: ContactId) -> ContactEntity | None:
-        return await self.contact_repository.get_by_id(contact_id)
+        """Get contact by ID."""
+        return await self.repository.get_by_id(contact_id)
