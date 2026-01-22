@@ -79,3 +79,61 @@ class ActivityEntity:
             raise InvariantViolation("Activity must have a description")
         if not self._activity_type:
             raise InvariantViolation("Activity must have a type")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ActivityId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def client_id(self) -> str:
+        return self._client_id
+
+    @property
+    def activity_type(self) -> str:
+        return self._activity_type
+
+    @property
+    def description(self) -> str:
+        return self._description
+
+    @property
+    def created_by(self) -> UserId:
+        return self._created_by
+
+    @property
+    def occurred_at(self) -> datetime:
+        return self._occurred_at
+
+    @property
+    def subject(self) -> str | None:
+        return self._subject
+
+    @property
+    def outcome(self) -> str | None:
+        return self._outcome
+
+    @property
+    def next_follow_up(self) -> datetime | None:
+        return self._next_follow_up
+
+    @property
+    def is_important(self) -> bool:
+        return self._is_important
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at

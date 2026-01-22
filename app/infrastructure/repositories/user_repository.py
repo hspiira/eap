@@ -2,11 +2,12 @@
 User Repository Implementation
 
 SQLAlchemy implementation of UserRepository interface.
+Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
-from typing import Sequence
+from typing import Any, Sequence
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.user import UserEntity
@@ -15,38 +16,33 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
 from app.infrastructure.models.user_model import UserModel
-from app.shared.utils.datetime import utc_now
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class UserRepositoryImpl(UserRepository):
+class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserId], UserRepository):
     """
     SQLAlchemy implementation of UserRepository.
 
-    Handles data access for User aggregate.
-    Uses mapper to convert between entity and model.
+    Inherits common CRUD operations from TenantScopedRepositoryImpl.
+    Only implements domain-specific queries.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
-        """
-        Initialize repository with database session.
+    model_class = UserModel
+    id_column = "id"
 
-        Args:
-            session: SQLAlchemy async database session
-        """
-        self.session = session
-
-    async def get_by_id(self, user_id: UserId) -> UserEntity | None:
-        """Get user by ID, excluding soft-deleted users."""
-        stmt = select(UserModel).where(
-            UserModel.id == user_id.value,
-            UserModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if not model:
-            return None
+    def _to_entity(self, model: UserModel) -> UserEntity:
+        """Convert model to entity."""
         return UserMapper.to_entity(model)
+
+    def _to_model(self, entity: UserEntity) -> UserModel:
+        """Convert entity to model."""
+        return UserMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: UserId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    # Domain-specific queries (not in base class)
 
     async def get_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """Get user by email within tenant, excluding soft-deleted users."""
@@ -59,48 +55,8 @@ class UserRepositoryImpl(UserRepository):
         model = result.scalar_one_or_none()
         if not model:
             return None
-        return UserMapper.to_entity(model)
+        return self._to_entity(model)
 
-    async def save(self, user: UserEntity) -> None:
-        """
-        Save user aggregate atomically.
-
-        Uses merge to handle both insert and update.
-        """
-        model = UserMapper.to_model(user)
-        await self.session.merge(model)
-        # Note: commit is typically handled by the application service/unit of work
-
-    async def delete(self, user_id: UserId) -> None:
-        """
-        Soft delete user.
-
-        In practice, this is usually done by calling user.ban() or similar
-        and then save(), but this method provides explicit soft delete.
-        """
-        stmt = select(UserModel).where(
-            UserModel.id == user_id.value,
-            UserModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if model:
-            now = utc_now()
-            model.deleted_at = now
-            model.updated_at = now
-            await self.session.merge(model)
-
-    async def exists(self, user_id: UserId) -> bool:
-        """Check if user exists (not soft-deleted)."""
-        from sqlalchemy import exists as sql_exists
-        stmt = sql_exists().where(
-            UserModel.id == user_id.value,
-            UserModel.deleted_at.is_(None),
-        ).select()
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())
-    
     async def list_all(
         self,
         tenant_id: TenantId,
@@ -113,38 +69,32 @@ class UserRepositoryImpl(UserRepository):
         sort_desc: bool = True,
     ) -> Sequence[UserEntity]:
         """List users with filtering, searching, and pagination."""
-        stmt = select(UserModel).where(
-            UserModel.tenant_id == tenant_id.value,
-            UserModel.deleted_at.is_(None),
-        )
-        
-        # Apply filters
+        # Build filters dict for base class
+        filters: dict[str, Any] = {}
         if status:
-            stmt = stmt.where(UserModel.status == status)
+            filters["status"] = status
+
+        # Use base class for common functionality
+        entities = await super().list_all(
+            tenant_id=tenant_id.value,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            filters=filters,
+            search=search,
+            search_fields=["email"],
+        )
+
+        # Apply email verification filter (special case)
         if is_email_verified is not None:
-            if is_email_verified:
-                stmt = stmt.where(UserModel.email_verified_at.isnot(None))
-            else:
-                stmt = stmt.where(UserModel.email_verified_at.is_(None))
-        if search:
-            search_pattern = f"%{search.lower()}%"
-            stmt = stmt.where(UserModel.email.ilike(search_pattern))
-        
-        # Apply sorting
-        sort_column = getattr(UserModel, sort_by, UserModel.created_at)
-        if sort_desc:
-            stmt = stmt.order_by(sort_column.desc())
-        else:
-            stmt = stmt.order_by(sort_column.asc())
-        
-        # Apply pagination
-        stmt = stmt.limit(limit).offset(offset)
-        
-        result = await self.session.execute(stmt)
-        models = result.scalars().all()
-        
-        return [UserMapper.to_entity(model) for model in models]
-    
+            entities = [
+                e for e in entities
+                if e.is_email_verified == is_email_verified
+            ]
+
+        return entities
+
     async def count(
         self,
         tenant_id: TenantId,
@@ -153,12 +103,12 @@ class UserRepositoryImpl(UserRepository):
         search: str | None = None,
     ) -> int:
         """Count users matching filters."""
+        # For accurate count with email verification filter, use direct query
         stmt = select(func.count(UserModel.id)).where(
             UserModel.tenant_id == tenant_id.value,
             UserModel.deleted_at.is_(None),
         )
-        
-        # Apply filters
+
         if status:
             stmt = stmt.where(UserModel.status == status)
         if is_email_verified is not None:
@@ -167,8 +117,7 @@ class UserRepositoryImpl(UserRepository):
             else:
                 stmt = stmt.where(UserModel.email_verified_at.is_(None))
         if search:
-            search_pattern = f"%{search.lower()}%"
-            stmt = stmt.where(UserModel.email.ilike(search_pattern))
-        
+            stmt = stmt.where(UserModel.email.ilike(f"%{search}%"))
+
         result = await self.session.execute(stmt)
         return int(result.scalar() or 0)

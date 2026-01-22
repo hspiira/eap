@@ -88,3 +88,41 @@ class IndustryEntity:
         """Ensure industry invariants are met."""
         if not self._name:
             raise InvariantViolation("Industry must have a name")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> IndustryId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def parent_industry_id(self) -> IndustryId | None:
+        return self._parent_industry_id
+
+    @property
+    def code(self) -> str | None:
+        return self._code
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at

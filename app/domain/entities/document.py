@@ -209,3 +209,108 @@ class DocumentEntity:
             raise InvariantViolation("Document version must be at least 1")
         if self._expires_at and self._expires_at <= self._created_at:
             raise InvariantViolation("Expiry date must be after creation date")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> DocumentId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def document_type(self) -> DocumentType:
+        return self._document_type
+
+    @property
+    def status(self) -> DocumentStatus:
+        return self._status
+
+    @property
+    def version(self) -> int:
+        return self._version
+
+    @property
+    def is_latest(self) -> bool:
+        return self._is_latest
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def file_path(self) -> str | None:
+        return self._file_path
+
+    @property
+    def file_url(self) -> str | None:
+        return self._file_url
+
+    @property
+    def file_size(self) -> int | None:
+        return self._file_size
+
+    @property
+    def mime_type(self) -> str | None:
+        return self._mime_type
+
+    @property
+    def previous_version_id(self) -> DocumentId | None:
+        return self._previous_version_id
+
+    @property
+    def uploaded_by(self) -> UserId | None:
+        return self._uploaded_by
+
+    @property
+    def client_id(self) -> str | None:
+        return self._client_id
+
+    @property
+    def contract_id(self) -> str | None:
+        return self._contract_id
+
+    @property
+    def person_id(self) -> str | None:
+        return self._person_id
+
+    @property
+    def expires_at(self) -> datetime | None:
+        return self._expires_at
+
+    @property
+    def is_confidential(self) -> bool:
+        return self._is_confidential
+
+    @property
+    def published_at(self) -> datetime | None:
+        return self._published_at
+
+    @property
+    def archived_at(self) -> datetime | None:
+        return self._archived_at
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

@@ -2,17 +2,17 @@
 Client Use Cases
 
 Application services for Client aggregate operations.
+Refactored to use base use case classes to eliminate boilerplate.
 """
 
+from app.application.use_cases.base import BaseUseCase, EntityLifecycleUseCase
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.repositories.client_repository import ClientRepository
-from app.domain.enums import ContactMethod
 from app.domain.value_objects.core import (
     Address,
     ClientId,
     ContactInfo,
-    Email,
     IndustryId,
     TenantId,
     UserId,
@@ -20,10 +20,16 @@ from app.domain.value_objects.core import (
 from app.shared.utils.datetime import utc_now
 
 
-class CreateClientUseCase:
+# =============================================================================
+# CREATE USE CASE (special - not a lifecycle operation)
+# =============================================================================
+
+
+class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
     """Use case for creating a new client."""
 
     def __init__(self, client_repository: ClientRepository):
+        super().__init__(client_repository)
         self.client_repository = client_repository
 
     async def execute(
@@ -76,80 +82,165 @@ class CreateClientUseCase:
             _deleted_at=None,
         )
 
-        # Save client
-        await self.client_repository.save(client)
-
-        return client
+        return await self._save_and_publish_events(client)
 
 
-class VerifyClientUseCase:
+# =============================================================================
+# LIFECYCLE USE CASES (using base class)
+# =============================================================================
+
+
+class VerifyClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
     """Use case for verifying a client."""
 
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
+    entity_name = "Client"
 
-    async def execute(
-        self, client_id: ClientId, verified_by: UserId
-    ) -> ClientEntity:
-        """
-        Verify a client.
+    async def _perform_action(self, entity: ClientEntity, verified_by: UserId, **kwargs) -> None:
+        entity.verify(verified_by)
 
-        Args:
-            client_id: Client identifier
-            verified_by: User identifier who verified the client
-
-        Returns:
-            Verified ClientEntity
-
-        Raises:
-            ValueError: If client not found
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.verify(verified_by)
-        client._updated_at = utc_now()
-        await self.client_repository.save(client)
-
-        return client
+    async def execute(self, client_id: ClientId, verified_by: UserId) -> ClientEntity:
+        """Execute with required verified_by parameter."""
+        return await super().execute(client_id, verified_by=verified_by)
 
 
-class ActivateClientUseCase:
+class ActivateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
     """Use case for activating a client."""
 
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
+    entity_name = "Client"
 
-    async def execute(self, client_id: ClientId) -> ClientEntity:
-        """
-        Activate a client.
-
-        Args:
-            client_id: Client identifier
-
-        Returns:
-            Activated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If client cannot be activated (e.g., no contact info)
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.activate()
-        client._updated_at = utc_now()
-        await self.client_repository.save(client)
-
-        return client
+    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
+        entity.activate()
 
 
-class GetClientUseCase:
+class DeactivateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for deactivating a client."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, reason: str | None = None, **kwargs) -> None:
+        entity.deactivate(reason)
+
+    async def execute(self, client_id: ClientId, reason: str | None = None) -> ClientEntity:
+        """Execute with optional reason parameter."""
+        return await super().execute(client_id, reason=reason)
+
+
+class SuspendClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for suspending a client."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, reason: str, **kwargs) -> None:
+        entity.suspend(reason)
+
+    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
+        """Execute with required reason parameter."""
+        return await super().execute(client_id, reason=reason)
+
+
+class TerminateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for terminating a client."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, reason: str, **kwargs) -> None:
+        entity.terminate(reason)
+
+    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
+        """Execute with required reason parameter."""
+        return await super().execute(client_id, reason=reason)
+
+
+class ArchiveClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for archiving a client."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
+        entity.archive()
+
+
+class RestoreClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for restoring a client."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
+        entity.restore()
+
+
+# =============================================================================
+# UPDATE USE CASES (using base class)
+# =============================================================================
+
+
+class UpdateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for updating client basic information."""
+
+    entity_name = "Client"
+
+    async def _perform_action(
+        self,
+        entity: ClientEntity,
+        name: str | None = None,
+        preferred_contact_method: ContactMethod | None = None,
+        **kwargs,
+    ) -> None:
+        if name is not None:
+            entity.update_name(name)
+        if preferred_contact_method is not None:
+            entity.update_preferred_contact_method(preferred_contact_method)
+
+    async def execute(
+        self,
+        client_id: ClientId,
+        name: str | None = None,
+        preferred_contact_method: ContactMethod | None = None,
+    ) -> ClientEntity:
+        """Execute with optional update parameters."""
+        return await super().execute(
+            client_id,
+            name=name,
+            preferred_contact_method=preferred_contact_method,
+        )
+
+
+class UpdateClientContactInfoUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for updating client contact information."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, contact_info: ContactInfo, **kwargs) -> None:
+        entity.update_contact_info(contact_info)
+
+    async def execute(self, client_id: ClientId, contact_info: ContactInfo) -> ClientEntity:
+        """Execute with required contact_info parameter."""
+        return await super().execute(client_id, contact_info=contact_info)
+
+
+class UpdateClientBillingAddressUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
+    """Use case for updating client billing address."""
+
+    entity_name = "Client"
+
+    async def _perform_action(self, entity: ClientEntity, billing_address: Address | None, **kwargs) -> None:
+        entity.update_billing_address(billing_address)
+
+    async def execute(self, client_id: ClientId, billing_address: Address | None) -> ClientEntity:
+        """Execute with billing_address parameter (can be None to clear)."""
+        return await super().execute(client_id, billing_address=billing_address)
+
+
+# =============================================================================
+# QUERY USE CASE
+# =============================================================================
+
+
+class GetClientUseCase(BaseUseCase[ClientEntity, ClientId]):
     """Use case for retrieving a client."""
 
     def __init__(self, client_repository: ClientRepository):
+        super().__init__(client_repository)
         self.client_repository = client_repository
 
     async def execute(self, client_id: ClientId) -> ClientEntity | None:
@@ -162,7 +253,7 @@ class GetClientUseCase:
         Returns:
             ClientEntity if found, None otherwise
         """
-        return await self.client_repository.get_by_id(client_id)
+        return await self.repository.get_by_id(client_id)
 
     async def execute_by_name(
         self, tenant_id: TenantId, name: str
@@ -178,266 +269,3 @@ class GetClientUseCase:
             ClientEntity if found, None otherwise
         """
         return await self.client_repository.get_by_name(tenant_id, name)
-
-
-class DeactivateClientUseCase:
-    """Use case for deactivating a client."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(
-        self, client_id: ClientId, reason: str | None = None
-    ) -> ClientEntity:
-        """
-        Deactivate a client.
-
-        Args:
-            client_id: Client identifier
-            reason: Deactivation reason (optional)
-
-        Returns:
-            Deactivated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If deactivation is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.deactivate(reason)
-        client._updated_at = utc_now()
-        await self.client_repository.save(client)
-
-        return client
-
-
-class SuspendClientUseCase:
-    """Use case for suspending a client."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
-        """
-        Suspend a client.
-
-        Args:
-            client_id: Client identifier
-            reason: Suspension reason
-
-        Returns:
-            Suspended ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If suspension is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.suspend(reason)
-        await self.client_repository.save(client)
-
-        return client
-
-
-class TerminateClientUseCase:
-    """Use case for terminating a client."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
-        """
-        Terminate a client.
-
-        Args:
-            client_id: Client identifier
-            reason: Termination reason
-
-        Returns:
-            Terminated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If termination is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.terminate(reason)
-        await self.client_repository.save(client)
-
-        return client
-
-
-class ArchiveClientUseCase:
-    """Use case for archiving a client."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(self, client_id: ClientId) -> ClientEntity:
-        """
-        Archive a client.
-
-        Args:
-            client_id: Client identifier
-
-        Returns:
-            Archived ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If archive is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.archive()
-        await self.client_repository.save(client)
-
-        return client
-
-
-class RestoreClientUseCase:
-    """Use case for restoring a client."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(self, client_id: ClientId) -> ClientEntity:
-        """
-        Restore an archived or soft-deleted client.
-
-        Args:
-            client_id: Client identifier
-
-        Returns:
-            Restored ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If restore is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.restore()
-        await self.client_repository.save(client)
-
-        return client
-
-
-class UpdateClientUseCase:
-    """Use case for updating client basic information."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(
-        self,
-        client_id: ClientId,
-        name: str | None = None,
-        preferred_contact_method: ContactMethod | None = None,
-    ) -> ClientEntity:
-        """
-        Update client basic information.
-
-        Args:
-            client_id: Client identifier
-            name: Client name (optional)
-            preferred_contact_method: Preferred contact method (optional)
-
-        Returns:
-            Updated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If update is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        if name is not None:
-            client.update_name(name)
-        if preferred_contact_method is not None:
-            client.update_preferred_contact_method(preferred_contact_method)
-
-        await self.client_repository.save(client)
-
-        return client
-
-
-class UpdateClientContactInfoUseCase:
-    """Use case for updating client contact information."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(
-        self, client_id: ClientId, contact_info: ContactInfo
-    ) -> ClientEntity:
-        """
-        Update client contact information.
-
-        Args:
-            client_id: Client identifier
-            contact_info: Contact information
-
-        Returns:
-            Updated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If update is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.update_contact_info(contact_info)
-        await self.client_repository.save(client)
-
-        return client
-
-
-class UpdateClientBillingAddressUseCase:
-    """Use case for updating client billing address."""
-
-    def __init__(self, client_repository: ClientRepository):
-        self.client_repository = client_repository
-
-    async def execute(
-        self, client_id: ClientId, billing_address: Address | None
-    ) -> ClientEntity:
-        """
-        Update client billing address.
-
-        Args:
-            client_id: Client identifier
-            billing_address: Billing address (None to remove)
-
-        Returns:
-            Updated ClientEntity
-
-        Raises:
-            ValueError: If client not found
-            DomainError: If update is invalid
-        """
-        client = await self.client_repository.get_by_id(client_id)
-        if not client:
-            raise ValueError(f"Client {client_id.value} not found")
-
-        client.update_billing_address(billing_address)
-        await self.client_repository.save(client)
-
-        return client

@@ -144,3 +144,44 @@ class TenantEntity:
             raise InvariantViolation("Tenant must have a code")
         if not self._name:
             raise InvariantViolation("Tenant must have a name")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> TenantId:
+        return self._id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def code(self) -> TenantCode:
+        return self._code
+
+    @property
+    def status(self) -> TenantStatus:
+        return self._status
+
+    @property
+    def settings(self) -> TenantSettings:
+        return self._settings
+
+    @property
+    def subscription_tier(self) -> SubscriptionTier:
+        return self._subscription_tier
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def updated_at(self) -> datetime | None:
+        return self._updated_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

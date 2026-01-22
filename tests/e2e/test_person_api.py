@@ -324,8 +324,8 @@ class TestDeactivatePerson:
             json={"reason": "Second deactivation"},
         )
 
-        # Returns 400 Bad Request (not in conflict list)
-        assert response.status_code == 400
+        # 409 Conflict for state conflicts ("already" conditions)
+        assert response.status_code == 409
         assert "already inactive" in response.json()["detail"].lower()
 
     async def test_deactivate_not_found(self, client: AsyncClient, test_tenant: dict):
@@ -662,7 +662,8 @@ class TestAddSecondaryRole:
             },
         )
 
-        assert response.status_code == 400
+        # 409 Conflict - role already exists as primary
+        assert response.status_code == 409
 
     async def test_add_secondary_role_not_found(
         self, client: AsyncClient, test_tenant: dict, sample_license_info: dict

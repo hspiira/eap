@@ -1,7 +1,7 @@
 """
-HTTP Error Status Code Utilities
+HTTP Error Utilities
 
-Maps domain errors to appropriate HTTP status codes according to RFC 9110.
+Helper functions for consistent HTTP error handling.
 """
 
 from fastapi import status
@@ -9,32 +9,29 @@ from fastapi import status
 
 def get_error_status_code(error_message: str) -> int:
     """
-    Determine appropriate HTTP status code based on error message.
-    
-    According to HTTP standards (RFC 9110):
-    - 409 Conflict: Request conflicts with current state of the resource
-    - 400 Bad Request: Client error (invalid request, business rule violation)
+    Determine HTTP status code based on error message content.
     
     Args:
-        error_message: Error message from domain exception
+        error_message: The error message string
         
     Returns:
-        - 409 Conflict for state conflicts (already in that state)
-        - 400 Bad Request for other business rule violations
+        Appropriate HTTP status code
     """
-    conflict_messages = [
-        "already active",
-        "already suspended",
-        "already terminated",
-        "already archived",
-        "does not need restoration",
-        "already exists",
-        "already verified",
-        "already completed",
-        "already cancelled",
-    ]
+    error_lower = error_message.lower()
     
-    if any(msg in error_message.lower() for msg in conflict_messages):
+    if "not found" in error_lower:
+        return status.HTTP_404_NOT_FOUND
+    
+    if "already" in error_lower:
         return status.HTTP_409_CONFLICT
+    
+    if "cannot" in error_lower or "invalid" in error_lower:
+        return status.HTTP_400_BAD_REQUEST
+    
+    if "unauthorized" in error_lower or "authentication" in error_lower:
+        return status.HTTP_401_UNAUTHORIZED
+    
+    if "forbidden" in error_lower or "permission" in error_lower:
+        return status.HTTP_403_FORBIDDEN
     
     return status.HTTP_400_BAD_REQUEST

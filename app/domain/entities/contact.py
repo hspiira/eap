@@ -106,3 +106,57 @@ class ContactEntity:
             raise InvariantViolation("Contact must have a name")
         if not self._email and not self._phone:
             raise InvariantViolation("Contact must have at least email or phone")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> ContactId:
+        return self._id
+
+    @property
+    def tenant_id(self) -> TenantId:
+        return self._tenant_id
+
+    @property
+    def client_id(self) -> str:
+        return self._client_id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def title(self) -> str | None:
+        return self._title
+
+    @property
+    def email(self) -> Email | None:
+        return self._email
+
+    @property
+    def phone(self) -> str | None:
+        return self._phone
+
+    @property
+    def department(self) -> str | None:
+        return self._department
+
+    @property
+    def is_primary(self) -> bool:
+        return self._is_primary
+
+    @property
+    def notes(self) -> str | None:
+        return self._notes
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def updated_at(self) -> datetime:
+        return self._updated_at
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
