@@ -5,7 +5,7 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.domain.enums import SubscriptionTier, TenantStatus
 
@@ -73,8 +73,7 @@ class TenantResponse(BaseModel):
     settings: TenantSettingsResponse = Field(..., description="Tenant settings")
     is_active: bool = Field(..., description="Whether tenant is active")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TenantUpdateSettings(BaseModel):
