@@ -1,5 +1,5 @@
 # =============================================================================
-# Allevia API Docker Compose
+# Evexía API Docker Compose
 # =============================================================================
 
 services:
@@ -16,13 +16,13 @@ services:
       - ./app:/app/app:ro
       - ./tests:/app/tests:ro
       - ./alembic:/app/alembic
-      - allevia-data:/app/data
+      - evexia-data:/app/data
     environment:
-      - APP_NAME=Allevia
+      - APP_NAME=Evexía
       - APP_VERSION=0.1.0
       - DEBUG=true
       - ENVIRONMENT=development
-      - DATABASE_URL=sqlite+aiosqlite:///./data/allevia.db
+      - DATABASE_URL=sqlite+aiosqlite:///./data/evexia.db
       - DATABASE_ECHO=false
       - SECRET_KEY=dev-secret-key-change-in-production-at-least-32-chars
       - ALGORITHM=HS256
@@ -47,11 +47,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - APP_NAME=Allevia
+      - APP_NAME=Evexía
       - APP_VERSION=0.1.0
       - DEBUG=false
       - ENVIRONMENT=production
-      - DATABASE_URL=postgresql+asyncpg://allevia:allevia@db:5432/allevia
+      - DATABASE_URL=postgresql+asyncpg://evexia:evexia@db:5432/evexia
       - DATABASE_ECHO=false
       - SECRET_KEY=${SECRET_KEY:?Secret key is required}
       - ALGORITHM=HS256
@@ -77,13 +77,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_USER=allevia
-      - POSTGRES_PASSWORD=allevia
-      - POSTGRES_DB=allevia
+      - POSTGRES_USER=evexia
+      - POSTGRES_PASSWORD=evexia
+      - POSTGRES_DB=evexia
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U allevia -d allevia"]
+      test: ["CMD-SHELL", "pg_isready -U evexia -d evexia"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -95,7 +95,7 @@ services:
 # Volumes
 # =============================================================================
 volumes:
-  allevia-data:
+  evexia-data:
     driver: local
   postgres-data:
     driver: local

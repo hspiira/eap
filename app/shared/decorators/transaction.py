@@ -12,7 +12,7 @@ from typing import Any, Callable, TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.exceptions import DomainError, AlleviaException
+from app.domain.exceptions import DomainError, EvexiaException
 from app.shared.utils.http_errors import get_error_status_code
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ def transactional(
                     detail=str(e),
                 ) from e
                 
-            except AlleviaException as e:
+            except EvexiaException as e:
                 await session.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

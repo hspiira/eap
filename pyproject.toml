@@ -1,7 +1,7 @@
 [project]
 name = "eap"
 version = "0.1.0"
-description = "Allevia - Employee Assistance Program Management API"
+description = "Evexía - Employee Assistance Program Management API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Allevia API - Employee Assistance Program Management",
+    description="Evexía API - Employee Assistance Program Management",
     lifespan=lifespan,
 )
 
