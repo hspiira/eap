@@ -1,13 +1,36 @@
 /**
  * Users API Endpoints
- * 
- * To be implemented in Phase 3.2
  */
 
 import apiClient from '../client'
-import type { User, PaginatedResponse, ListParams } from '../types'
+import type { User, PaginatedResponse, ListParams, CreateRequest } from '../types'
 
-// Placeholder - will be implemented in Phase 3.2
+export interface UserCreate extends CreateRequest {
+  email: string
+  password?: string
+  preferred_language?: string
+  timezone?: string
+}
+
 export const usersApi = {
-  // Implementation coming in Phase 3.2
+  /**
+   * Create a new user
+   */
+  async create(userData: UserCreate): Promise<User> {
+    return apiClient.post<User>('/users', userData)
+  },
+
+  /**
+   * Get user by ID
+   */
+  async getById(userId: string): Promise<User> {
+    return apiClient.get<User>(`/users/${userId}`)
+  },
+
+  /**
+   * List users
+   */
+  async list(params?: ListParams): Promise<PaginatedResponse<User>> {
+    return apiClient.get<PaginatedResponse<User>>('/users', params)
+  },
 }

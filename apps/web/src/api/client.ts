@@ -7,9 +7,9 @@ import type {
   ApiClientConfig,
   RequestOptions,
   ErrorResponse,
-  ApiError,
   FieldErrors,
 } from '@/types/api'
+import { ApiError } from '@/types/api'
 
 const DEFAULT_TIMEOUT = 30000 // 30 seconds
 const DEFAULT_RETRY_ATTEMPTS = 3
@@ -231,7 +231,11 @@ class ApiClient {
       ? AbortSignal.any([signal, controller.signal])
       : controller.signal
 
-    const url = this.buildUrl(endpoint)
+    // endpoint may already be a full URL or a relative path
+    // If it starts with http, use it directly, otherwise build URL
+    const url = endpoint.startsWith('http') 
+      ? endpoint 
+      : this.buildUrl(endpoint)
     const requestHeaders = this.buildHeaders(headers as Record<string, string>)
 
     const requestFn = () =>
@@ -301,7 +305,12 @@ class ApiClient {
     params?: Record<string, unknown>,
     options?: RequestOptions
   ): Promise<T> {
-    return this.request<T>(endpoint, {
+    // Build full URL with params and pass as endpoint
+    const fullUrl = this.buildUrl(endpoint, params)
+    // Extract relative path from full URL for request method
+    const urlObj = new URL(fullUrl)
+    const relativePath = urlObj.pathname + urlObj.search
+    return this.request<T>(relativePath, {
       method: 'GET',
       ...options,
     })

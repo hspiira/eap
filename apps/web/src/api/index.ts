@@ -6,7 +6,14 @@
 export { default as apiClient } from './client'
 export * from './types'
 
-// Endpoints will be exported here as they are implemented
-// export * from './endpoints/tenants'
-// export * from './endpoints/users'
+// Auth endpoints
+export * from './endpoints/auth'
+
+// Users endpoints
+export * from './endpoints/users'
+
+// Tenants endpoints
+export * from './endpoints/tenants'
+
+// Other endpoints will be exported here as they are implemented
 // etc.
