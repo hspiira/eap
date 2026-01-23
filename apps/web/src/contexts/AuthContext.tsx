@@ -6,6 +6,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { authApi } from '@/api/endpoints/auth'
+import { useToast } from './ToastContext'
 import type { LoginRequest, AuthResponse } from '@/api/types'
 
 interface AuthContextType {
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [token, setToken] = useState<string | null>(null)
   const navigate = useNavigate()
+  const { showSuccess, showError } = useToast()
 
   // Check authentication status on mount
   useEffect(() => {
@@ -45,9 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setToken(response.access_token)
       setIsAuthenticated(true)
+      showSuccess('Successfully signed in')
       
       // Redirect to dashboard or home after successful login
-      navigate({ to: '/' })
+      navigate({ to: '/', search: {} })
     } catch (error) {
       setIsAuthenticated(false)
       setToken(null)
@@ -61,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authApi.logout()
     setToken(null)
     setIsAuthenticated(false)
+    showSuccess('Successfully signed out')
     navigate({ to: '/auth/login', search: {} })
   }
 
