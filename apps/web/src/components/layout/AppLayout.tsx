@@ -23,6 +23,7 @@ import {
   LogOut,
   ChevronDown,
   Settings,
+  Link as LinkIcon,
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -39,6 +40,7 @@ const navigationItems = [
   { path: '/persons', label: 'Persons', icon: UserCircle },
   { path: '/contracts', label: 'Contracts', icon: FileText },
   { path: '/services', label: 'Services', icon: ClipboardList },
+  { path: '/service-assignments', label: 'Service Assignments', icon: LinkIcon },
   { path: '/sessions', label: 'Sessions', icon: Calendar },
   { path: '/documents', label: 'Documents', icon: FolderOpen },
   { path: '/kpis', label: 'KPIs', icon: BarChart3 },

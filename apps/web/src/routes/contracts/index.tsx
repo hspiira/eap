@@ -277,6 +277,22 @@ function ContractsPage() {
                   setCurrentPage(1)
                 },
               },
+              customFilters: [
+                ...(clients.length > 0
+                  ? [
+                      {
+                        id: 'client-filter',
+                        label: 'Client',
+                        value: clientFilter,
+                        options: clientOptions,
+                        onChange: (value) => {
+                          setClientFilter(value)
+                          setCurrentPage(1)
+                        },
+                      },
+                    ]
+                  : []),
+              ],
               onClearFilters: () => {
                 setSearchValue('')
                 setStatusFilter('')
@@ -289,30 +305,6 @@ function ContractsPage() {
             emptyMessage="No contracts found"
           />
         )}
-
-        {/* Additional Filters */}
-        <div className="mt-4 flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <label htmlFor="client-filter" className="text-sm text-safe">
-              Client:
-            </label>
-            <select
-              id="client-filter"
-              value={clientFilter}
-              onChange={(e) => {
-                setClientFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-4 py-2 bg-calm border border-[0.5px] border-safe text-safe rounded-none focus:outline-none focus:border-natural"
-            >
-              {clientOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
     </AppLayout>
   )

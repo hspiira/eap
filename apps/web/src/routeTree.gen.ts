@@ -14,6 +14,7 @@ import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as KpisIndexRouteImport } from './routes/kpis/index'
 import { Route as DocumentsIndexRouteImport } from './routes/documents/index'
@@ -26,10 +27,16 @@ import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
 import { Route as TenantsNewRouteImport } from './routes/tenants/new'
 import { Route as TenantsCreateRouteImport } from './routes/tenants/create'
 import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
+import { Route as SessionsNewRouteImport } from './routes/sessions/new'
+import { Route as SessionsSessionIdRouteImport } from './routes/sessions/$sessionId'
 import { Route as ServicesNewRouteImport } from './routes/services/new'
 import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
+import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
+import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
+import { Route as DocumentsNewRouteImport } from './routes/documents/new'
+import { Route as DocumentsDocumentIdRouteImport } from './routes/documents/$documentId'
 import { Route as ContractsNewRouteImport } from './routes/contracts/new'
 import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
@@ -61,6 +68,11 @@ const SessionsIndexRoute = SessionsIndexRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
+  id: '/service-assignments/',
+  path: '/service-assignments/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonsIndexRoute = PersonsIndexRouteImport.update({
@@ -123,6 +135,16 @@ const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
   path: '/tenants/$tenantId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SessionsNewRoute = SessionsNewRouteImport.update({
+  id: '/sessions/new',
+  path: '/sessions/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionsSessionIdRoute = SessionsSessionIdRouteImport.update({
+  id: '/sessions/$sessionId',
+  path: '/sessions/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesNewRoute = ServicesNewRouteImport.update({
   id: '/services/new',
   path: '/services/new',
@@ -133,6 +155,17 @@ const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
   path: '/services/$serviceId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServiceAssignmentsNewRoute = ServiceAssignmentsNewRouteImport.update({
+  id: '/service-assignments/new',
+  path: '/service-assignments/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceAssignmentsAssignmentIdRoute =
+  ServiceAssignmentsAssignmentIdRouteImport.update({
+    id: '/service-assignments/$assignmentId',
+    path: '/service-assignments/$assignmentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PersonsNewRoute = PersonsNewRouteImport.update({
   id: '/persons/new',
   path: '/persons/new',
@@ -141,6 +174,16 @@ const PersonsNewRoute = PersonsNewRouteImport.update({
 const PersonsPersonIdRoute = PersonsPersonIdRouteImport.update({
   id: '/persons/$personId',
   path: '/persons/$personId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsNewRoute = DocumentsNewRouteImport.update({
+  id: '/documents/new',
+  path: '/documents/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsDocumentIdRoute = DocumentsDocumentIdRouteImport.update({
+  id: '/documents/$documentId',
+  path: '/documents/$documentId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContractsNewRoute = ContractsNewRouteImport.update({
@@ -187,10 +230,16 @@ export interface FileRoutesByFullPath {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/documents/$documentId': typeof DocumentsDocumentIdRoute
+  '/documents/new': typeof DocumentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/sessions/new': typeof SessionsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -203,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/documents/': typeof DocumentsIndexRoute
   '/kpis/': typeof KpisIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
@@ -217,10 +267,16 @@ export interface FileRoutesByTo {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/documents/$documentId': typeof DocumentsDocumentIdRoute
+  '/documents/new': typeof DocumentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/sessions/new': typeof SessionsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -233,6 +289,7 @@ export interface FileRoutesByTo {
   '/documents': typeof DocumentsIndexRoute
   '/kpis': typeof KpisIndexRoute
   '/persons': typeof PersonsIndexRoute
+  '/service-assignments': typeof ServiceAssignmentsIndexRoute
   '/services': typeof ServicesIndexRoute
   '/sessions': typeof SessionsIndexRoute
   '/tenants': typeof TenantsIndexRoute
@@ -248,10 +305,16 @@ export interface FileRoutesById {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/documents/$documentId': typeof DocumentsDocumentIdRoute
+  '/documents/new': typeof DocumentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/sessions/new': typeof SessionsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -264,6 +327,7 @@ export interface FileRoutesById {
   '/documents/': typeof DocumentsIndexRoute
   '/kpis/': typeof KpisIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
@@ -280,10 +344,16 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/documents/$documentId'
+    | '/documents/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/sessions/$sessionId'
+    | '/sessions/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -296,6 +366,7 @@ export interface FileRouteTypes {
     | '/documents/'
     | '/kpis/'
     | '/persons/'
+    | '/service-assignments/'
     | '/services/'
     | '/sessions/'
     | '/tenants/'
@@ -310,10 +381,16 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/documents/$documentId'
+    | '/documents/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/sessions/$sessionId'
+    | '/sessions/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -326,6 +403,7 @@ export interface FileRouteTypes {
     | '/documents'
     | '/kpis'
     | '/persons'
+    | '/service-assignments'
     | '/services'
     | '/sessions'
     | '/tenants'
@@ -340,10 +418,16 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/documents/$documentId'
+    | '/documents/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/sessions/$sessionId'
+    | '/sessions/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -356,6 +440,7 @@ export interface FileRouteTypes {
     | '/documents/'
     | '/kpis/'
     | '/persons/'
+    | '/service-assignments/'
     | '/services/'
     | '/sessions/'
     | '/tenants/'
@@ -371,10 +456,16 @@ export interface RootRouteChildren {
   ClientsNewRoute: typeof ClientsNewRoute
   ContractsContractIdRoute: typeof ContractsContractIdRoute
   ContractsNewRoute: typeof ContractsNewRoute
+  DocumentsDocumentIdRoute: typeof DocumentsDocumentIdRoute
+  DocumentsNewRoute: typeof DocumentsNewRoute
   PersonsPersonIdRoute: typeof PersonsPersonIdRoute
   PersonsNewRoute: typeof PersonsNewRoute
+  ServiceAssignmentsAssignmentIdRoute: typeof ServiceAssignmentsAssignmentIdRoute
+  ServiceAssignmentsNewRoute: typeof ServiceAssignmentsNewRoute
   ServicesServiceIdRoute: typeof ServicesServiceIdRoute
   ServicesNewRoute: typeof ServicesNewRoute
+  SessionsSessionIdRoute: typeof SessionsSessionIdRoute
+  SessionsNewRoute: typeof SessionsNewRoute
   TenantsTenantIdRoute: typeof TenantsTenantIdRouteWithChildren
   TenantsCreateRoute: typeof TenantsCreateRoute
   TenantsNewRoute: typeof TenantsNewRoute
@@ -387,6 +478,7 @@ export interface RootRouteChildren {
   DocumentsIndexRoute: typeof DocumentsIndexRoute
   KpisIndexRoute: typeof KpisIndexRoute
   PersonsIndexRoute: typeof PersonsIndexRoute
+  ServiceAssignmentsIndexRoute: typeof ServiceAssignmentsIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   SessionsIndexRoute: typeof SessionsIndexRoute
   TenantsIndexRoute: typeof TenantsIndexRoute
@@ -428,6 +520,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-assignments/': {
+      id: '/service-assignments/'
+      path: '/service-assignments'
+      fullPath: '/service-assignments/'
+      preLoaderRoute: typeof ServiceAssignmentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/persons/': {
@@ -514,6 +613,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantsTenantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sessions/new': {
+      id: '/sessions/new'
+      path: '/sessions/new'
+      fullPath: '/sessions/new'
+      preLoaderRoute: typeof SessionsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessions/$sessionId': {
+      id: '/sessions/$sessionId'
+      path: '/sessions/$sessionId'
+      fullPath: '/sessions/$sessionId'
+      preLoaderRoute: typeof SessionsSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/new': {
       id: '/services/new'
       path: '/services/new'
@@ -528,6 +641,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/service-assignments/new': {
+      id: '/service-assignments/new'
+      path: '/service-assignments/new'
+      fullPath: '/service-assignments/new'
+      preLoaderRoute: typeof ServiceAssignmentsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-assignments/$assignmentId': {
+      id: '/service-assignments/$assignmentId'
+      path: '/service-assignments/$assignmentId'
+      fullPath: '/service-assignments/$assignmentId'
+      preLoaderRoute: typeof ServiceAssignmentsAssignmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/persons/new': {
       id: '/persons/new'
       path: '/persons/new'
@@ -540,6 +667,20 @@ declare module '@tanstack/react-router' {
       path: '/persons/$personId'
       fullPath: '/persons/$personId'
       preLoaderRoute: typeof PersonsPersonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents/new': {
+      id: '/documents/new'
+      path: '/documents/new'
+      fullPath: '/documents/new'
+      preLoaderRoute: typeof DocumentsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents/$documentId': {
+      id: '/documents/$documentId'
+      path: '/documents/$documentId'
+      fullPath: '/documents/$documentId'
+      preLoaderRoute: typeof DocumentsDocumentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contracts/new': {
@@ -614,10 +755,16 @@ const rootRouteChildren: RootRouteChildren = {
   ClientsNewRoute: ClientsNewRoute,
   ContractsContractIdRoute: ContractsContractIdRoute,
   ContractsNewRoute: ContractsNewRoute,
+  DocumentsDocumentIdRoute: DocumentsDocumentIdRoute,
+  DocumentsNewRoute: DocumentsNewRoute,
   PersonsPersonIdRoute: PersonsPersonIdRoute,
   PersonsNewRoute: PersonsNewRoute,
+  ServiceAssignmentsAssignmentIdRoute: ServiceAssignmentsAssignmentIdRoute,
+  ServiceAssignmentsNewRoute: ServiceAssignmentsNewRoute,
   ServicesServiceIdRoute: ServicesServiceIdRoute,
   ServicesNewRoute: ServicesNewRoute,
+  SessionsSessionIdRoute: SessionsSessionIdRoute,
+  SessionsNewRoute: SessionsNewRoute,
   TenantsTenantIdRoute: TenantsTenantIdRouteWithChildren,
   TenantsCreateRoute: TenantsCreateRoute,
   TenantsNewRoute: TenantsNewRoute,
@@ -630,6 +777,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocumentsIndexRoute: DocumentsIndexRoute,
   KpisIndexRoute: KpisIndexRoute,
   PersonsIndexRoute: PersonsIndexRoute,
+  ServiceAssignmentsIndexRoute: ServiceAssignmentsIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   SessionsIndexRoute: SessionsIndexRoute,
   TenantsIndexRoute: TenantsIndexRoute,
