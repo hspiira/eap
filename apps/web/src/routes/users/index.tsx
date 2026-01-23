@@ -1,21 +1,235 @@
 /**
  * Users List Page
- * To be implemented in Phase 3.2
+ * Displays all users within the current tenant with filtering, search, and pagination
  */
 
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { DataTable, type Column } from '@/components/common/DataTable'
+import { StatusBadge } from '@/components/common/StatusBadge'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { useToast } from '@/contexts/ToastContext'
+import { usersApi } from '@/api/endpoints/users'
+import type { User } from '@/types/entities'
+import type { UserStatus } from '@/types/enums'
+import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/users/')({
   component: UsersPage,
 })
 
 function UsersPage() {
+  const navigate = useNavigate()
+  const { showError } = useToast()
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [totalItems, setTotalItems] = useState(0)
+  const [searchValue, setSearchValue] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+
+  // Fetch users (tenant-scoped automatically via API client)
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const params: any = {
+        page: currentPage,
+        limit: pageSize,
+      }
+
+      if (searchValue) {
+        params.search = searchValue
+      }
+
+      if (statusFilter) {
+        params.status = statusFilter
+      }
+
+      if (sortBy) {
+        params.sort_by = sortBy
+        params.sort_desc = sortDirection === 'desc'
+      }
+
+      const response = await usersApi.list(params)
+      setUsers(response.items)
+      setTotalItems(response.total)
+    } catch (error) {
+      showError('Failed to load users')
+      console.error('Error fetching users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
+
+  const handleSort = (columnId: string) => {
+    if (sortBy === columnId) {
+      // Toggle direction
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else if (sortDirection === 'desc') {
+        setSortBy(null)
+        setSortDirection(null)
+      } else {
+        setSortDirection('asc')
+      }
+    } else {
+      setSortBy(columnId)
+      setSortDirection('asc')
+    }
+  }
+
+  const handleRowClick = (user: User) => {
+    navigate({ to: `/users/${user.id}` })
+  }
+
+  const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Suspended', label: 'Suspended' },
+    { value: 'Banned', label: 'Banned' },
+    { value: 'Terminated', label: 'Terminated' },
+    { value: 'Pending Verification', label: 'Pending Verification' },
+    { value: 'Inactive', label: 'Inactive' },
+  ]
+
+  const columns: Column<User>[] = [
+    {
+      id: 'email',
+      header: 'Email',
+      accessor: 'email',
+      sortable: true,
+      render: (value, row) => (
+        <button
+          onClick={() => handleRowClick(row)}
+          className="text-left text-natural hover:text-natural-dark font-medium"
+        >
+          {value as string}
+        </button>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessor: 'status',
+      sortable: true,
+      render: (value) => <StatusBadge status={value as UserStatus} size="sm" />,
+    },
+    {
+      id: 'is_email_verified',
+      header: 'Email Verified',
+      accessor: 'is_email_verified',
+      sortable: true,
+      render: (value) => (
+        <span className={value ? 'text-natural' : 'text-safe-light'}>
+          {value ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
+    {
+      id: 'is_two_factor_enabled',
+      header: '2FA',
+      accessor: 'is_two_factor_enabled',
+      sortable: true,
+      render: (value) => (
+        <span className={value ? 'text-natural' : 'text-safe-light'}>
+          {value ? 'Enabled' : 'Disabled'}
+        </span>
+      ),
+    },
+    {
+      id: 'last_login_at',
+      header: 'Last Login',
+      accessor: 'last_login_at',
+      sortable: true,
+      render: (value) => {
+        if (!value) return <span className="text-safe-light">Never</span>
+        const date = new Date(value as string)
+        return date.toLocaleDateString()
+      },
+    },
+    {
+      id: 'created_at',
+      header: 'Created',
+      accessor: 'created_at',
+      sortable: true,
+      render: (value) => {
+        if (!value) return '-'
+        const date = new Date(value as string)
+        return date.toLocaleDateString()
+      },
+    },
+  ]
+
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-safe mb-6">Users</h1>
-        <p className="text-safe-light">User management will be implemented here.</p>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-safe">Users</h1>
+          <button
+            onClick={() => navigate({ to: '/users/new' })}
+            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          >
+            <Plus size={18} />
+            <span>Create User</span>
+          </button>
+        </div>
+
+        {loading && users.length === 0 ? (
+          <div className="flex items-center justify-center p-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
+          <DataTable
+            data={users}
+            columns={columns}
+            loading={loading}
+            pagination={{
+              currentPage,
+              pageSize,
+              totalItems,
+              onPageChange: setCurrentPage,
+              onPageSizeChange: (size) => {
+                setPageSize(size)
+                setCurrentPage(1)
+              },
+            }}
+            sorting={{
+              sortBy,
+              sortDirection,
+              onSort: handleSort,
+            }}
+            filters={{
+              searchValue,
+              onSearchChange: (value) => {
+                setSearchValue(value)
+                setCurrentPage(1)
+              },
+              searchPlaceholder: 'Search users by email...',
+              statusFilter: {
+                value: statusFilter,
+                options: statusOptions,
+                onChange: (value) => {
+                  setStatusFilter(value)
+                  setCurrentPage(1)
+                },
+              },
+              onClearFilters: () => {
+                setSearchValue('')
+                setStatusFilter('')
+                setCurrentPage(1)
+              },
+            }}
+            emptyMessage="No users found"
+          />
+        )}
       </div>
     </AppLayout>
   )

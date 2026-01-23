@@ -29,9 +29,11 @@ interface AppLayoutProps {
   children: React.ReactNode
 }
 
+// Navigation items - tenants module is for platform admins only
+// Regular tenants should not see other tenants
 const navigationItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, comingSoon: true },
-  { path: '/tenants', label: 'Tenants', icon: Building2 },
+  // { path: '/tenants', label: 'Tenants', icon: Building2 }, // Platform admin only - hidden for regular tenants
   { path: '/users', label: 'Users', icon: Users },
   { path: '/clients', label: 'Clients', icon: UserCircle },
   { path: '/persons', label: 'Persons', icon: UserCircle },

@@ -21,9 +21,14 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as AuditIndexRouteImport } from './routes/audit/index'
+import { Route as UsersNewRouteImport } from './routes/users/new'
+import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
+import { Route as TenantsNewRouteImport } from './routes/tenants/new'
 import { Route as TenantsCreateRouteImport } from './routes/tenants/create'
+import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as TenantsTenantIdEditRouteImport } from './routes/tenants/$tenantId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -85,9 +90,29 @@ const AuditIndexRoute = AuditIndexRouteImport.update({
   path: '/audit/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersNewRoute = UsersNewRouteImport.update({
+  id: '/users/new',
+  path: '/users/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersUserIdRoute = UsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantsNewRoute = TenantsNewRouteImport.update({
+  id: '/tenants/new',
+  path: '/tenants/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TenantsCreateRoute = TenantsCreateRouteImport.update({
   id: '/tenants/create',
   path: '/tenants/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
+  id: '/tenants/$tenantId',
+  path: '/tenants/$tenantId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -100,12 +125,21 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TenantsTenantIdEditRoute = TenantsTenantIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => TenantsTenantIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
+  '/tenants/new': typeof TenantsNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/audit/': typeof AuditIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -117,12 +151,17 @@ export interface FileRoutesByFullPath {
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
+  '/tenants/new': typeof TenantsNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/audit': typeof AuditIndexRoute
   '/clients': typeof ClientsIndexRoute
   '/contracts': typeof ContractsIndexRoute
@@ -134,13 +173,18 @@ export interface FileRoutesByTo {
   '/sessions': typeof SessionsIndexRoute
   '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
+  '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
+  '/tenants/new': typeof TenantsNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/audit/': typeof AuditIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -152,6 +196,7 @@ export interface FileRoutesById {
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -159,7 +204,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/tenants/$tenantId'
     | '/tenants/create'
+    | '/tenants/new'
+    | '/users/$userId'
+    | '/users/new'
     | '/audit/'
     | '/clients/'
     | '/contracts/'
@@ -171,12 +220,17 @@ export interface FileRouteTypes {
     | '/sessions/'
     | '/tenants/'
     | '/users/'
+    | '/tenants/$tenantId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/tenants/$tenantId'
     | '/tenants/create'
+    | '/tenants/new'
+    | '/users/$userId'
+    | '/users/new'
     | '/audit'
     | '/clients'
     | '/contracts'
@@ -188,12 +242,17 @@ export interface FileRouteTypes {
     | '/sessions'
     | '/tenants'
     | '/users'
+    | '/tenants/$tenantId/edit'
   id:
     | '__root__'
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/tenants/$tenantId'
     | '/tenants/create'
+    | '/tenants/new'
+    | '/users/$userId'
+    | '/users/new'
     | '/audit/'
     | '/clients/'
     | '/contracts/'
@@ -205,13 +264,18 @@ export interface FileRouteTypes {
     | '/sessions/'
     | '/tenants/'
     | '/users/'
+    | '/tenants/$tenantId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  TenantsTenantIdRoute: typeof TenantsTenantIdRouteWithChildren
   TenantsCreateRoute: typeof TenantsCreateRoute
+  TenantsNewRoute: typeof TenantsNewRoute
+  UsersUserIdRoute: typeof UsersUserIdRoute
+  UsersNewRoute: typeof UsersNewRoute
   AuditIndexRoute: typeof AuditIndexRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
@@ -311,11 +375,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users/new': {
+      id: '/users/new'
+      path: '/users/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof UsersNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/$userId': {
+      id: '/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof UsersUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/new': {
+      id: '/tenants/new'
+      path: '/tenants/new'
+      fullPath: '/tenants/new'
+      preLoaderRoute: typeof TenantsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tenants/create': {
       id: '/tenants/create'
       path: '/tenants/create'
       fullPath: '/tenants/create'
       preLoaderRoute: typeof TenantsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/$tenantId': {
+      id: '/tenants/$tenantId'
+      path: '/tenants/$tenantId'
+      fullPath: '/tenants/$tenantId'
+      preLoaderRoute: typeof TenantsTenantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -332,14 +424,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tenants/$tenantId/edit': {
+      id: '/tenants/$tenantId/edit'
+      path: '/edit'
+      fullPath: '/tenants/$tenantId/edit'
+      preLoaderRoute: typeof TenantsTenantIdEditRouteImport
+      parentRoute: typeof TenantsTenantIdRoute
+    }
   }
 }
+
+interface TenantsTenantIdRouteChildren {
+  TenantsTenantIdEditRoute: typeof TenantsTenantIdEditRoute
+}
+
+const TenantsTenantIdRouteChildren: TenantsTenantIdRouteChildren = {
+  TenantsTenantIdEditRoute: TenantsTenantIdEditRoute,
+}
+
+const TenantsTenantIdRouteWithChildren = TenantsTenantIdRoute._addFileChildren(
+  TenantsTenantIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
+  TenantsTenantIdRoute: TenantsTenantIdRouteWithChildren,
   TenantsCreateRoute: TenantsCreateRoute,
+  TenantsNewRoute: TenantsNewRoute,
+  UsersUserIdRoute: UsersUserIdRoute,
+  UsersNewRoute: UsersNewRoute,
   AuditIndexRoute: AuditIndexRoute,
   ClientsIndexRoute: ClientsIndexRoute,
   ContractsIndexRoute: ContractsIndexRoute,

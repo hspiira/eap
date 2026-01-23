@@ -1,33 +1,142 @@
 /**
  * Form Field Component
  * Reusable form field with label, input, and error display
+ * Supports both controlled and React Hook Form integration
  */
+
+import { useFormContext, Controller } from 'react-hook-form'
+import { getFieldError } from '@/utils/validators'
 
 interface FormFieldProps {
   label: string
   name: string
-  type?: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea'
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   error?: string
   required?: boolean
   placeholder?: string
   autoComplete?: string
+  disabled?: boolean
+  min?: number
+  max?: number
+  rows?: number
+  className?: string
+  // React Hook Form integration
+  useFormContext?: boolean
 }
 
 export function FormField({
   label,
   name,
   type = 'text',
-  value,
-  onChange,
-  error,
+  value: controlledValue,
+  onChange: controlledOnChange,
+  error: externalError,
   required = false,
   placeholder,
   autoComplete,
+  disabled = false,
+  min,
+  max,
+  rows = 4,
+  className = '',
+  useFormContext: useForm = false,
 }: FormFieldProps) {
+  const formContext = useForm ? useFormContext() : null
+  const formError = formContext ? getFieldError(formContext.formState.errors, name) : null
+  const error = externalError || formError
+
+  // If using React Hook Form, use Controller
+  if (useForm && formContext) {
+    return (
+      <div className={`mb-4 ${className}`}>
+        <label
+          htmlFor={name}
+          className="block text-safe text-sm font-medium mb-2"
+        >
+          {label}
+          {required && <span className="text-nurturing ml-1">*</span>}
+        </label>
+        <Controller
+          name={name}
+          control={formContext.control}
+          render={({ field }) => {
+            if (type === 'textarea') {
+              return (
+                <textarea
+                  {...field}
+                  id={name}
+                  rows={rows}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  required={required}
+                  className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+                    error ? 'border-nurturing' : 'border-safe'
+                  } rounded-none focus:outline-none focus:border-natural ${
+                    disabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                />
+              )
+            }
+            return (
+              <input
+                {...field}
+                type={type}
+                id={name}
+                placeholder={placeholder}
+                autoComplete={autoComplete}
+                disabled={disabled}
+                required={required}
+                min={min}
+                max={max}
+                className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+                  error ? 'border-nurturing' : 'border-safe'
+                } rounded-none focus:outline-none focus:border-natural ${
+                  disabled ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              />
+            )
+          }}
+        />
+        {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+      </div>
+    )
+  }
+
+  // Controlled component (non-React Hook Form)
+  if (type === 'textarea') {
+    return (
+      <div className={`mb-4 ${className}`}>
+        <label
+          htmlFor={name}
+          className="block text-safe text-sm font-medium mb-2"
+        >
+          {label}
+          {required && <span className="text-nurturing ml-1">*</span>}
+        </label>
+        <textarea
+          id={name}
+          name={name}
+          value={controlledValue || ''}
+          onChange={controlledOnChange as any}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          rows={rows}
+          className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+            error ? 'border-nurturing' : 'border-safe'
+          } rounded-none focus:outline-none focus:border-natural ${
+            disabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        />
+        {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+      </div>
+    )
+  }
+
   return (
-    <div className="mb-4">
+    <div className={`mb-4 ${className}`}>
       <label
         htmlFor={name}
         className="block text-safe text-sm font-medium mb-2"
@@ -39,18 +148,21 @@ export function FormField({
         type={type}
         id={name}
         name={name}
-        value={value}
-        onChange={onChange}
+        value={controlledValue || ''}
+        onChange={controlledOnChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
+        disabled={disabled}
+        min={min}
+        max={max}
         className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
           error ? 'border-nurturing' : 'border-safe'
-        } rounded-none focus:outline-none focus:border-natural`}
+        } rounded-none focus:outline-none focus:border-natural ${
+          disabled ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       />
-      {error && (
-        <p className="mt-1 text-sm text-nurturing">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
     </div>
   )
 }
