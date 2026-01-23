@@ -26,6 +26,12 @@ import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
 import { Route as TenantsNewRouteImport } from './routes/tenants/new'
 import { Route as TenantsCreateRouteImport } from './routes/tenants/create'
 import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
+import { Route as ServicesNewRouteImport } from './routes/services/new'
+import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
+import { Route as PersonsNewRouteImport } from './routes/persons/new'
+import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
+import { Route as ContractsNewRouteImport } from './routes/contracts/new'
+import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
@@ -117,6 +123,36 @@ const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
   path: '/tenants/$tenantId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesNewRoute = ServicesNewRouteImport.update({
+  id: '/services/new',
+  path: '/services/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
+  id: '/services/$serviceId',
+  path: '/services/$serviceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonsNewRoute = PersonsNewRouteImport.update({
+  id: '/persons/new',
+  path: '/persons/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonsPersonIdRoute = PersonsPersonIdRouteImport.update({
+  id: '/persons/$personId',
+  path: '/persons/$personId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsNewRoute = ContractsNewRouteImport.update({
+  id: '/contracts/new',
+  path: '/contracts/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsContractIdRoute = ContractsContractIdRouteImport.update({
+  id: '/contracts/$contractId',
+  path: '/contracts/$contractId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientsNewRoute = ClientsNewRouteImport.update({
   id: '/clients/new',
   path: '/clients/new',
@@ -149,6 +185,12 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -173,6 +215,12 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -198,6 +246,12 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -224,6 +278,12 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/services/$serviceId'
+    | '/services/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -248,6 +308,12 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/services/$serviceId'
+    | '/services/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -272,6 +338,12 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/services/$serviceId'
+    | '/services/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -297,6 +369,12 @@ export interface RootRouteChildren {
   AuthSignupRoute: typeof AuthSignupRoute
   ClientsClientIdRoute: typeof ClientsClientIdRoute
   ClientsNewRoute: typeof ClientsNewRoute
+  ContractsContractIdRoute: typeof ContractsContractIdRoute
+  ContractsNewRoute: typeof ContractsNewRoute
+  PersonsPersonIdRoute: typeof PersonsPersonIdRoute
+  PersonsNewRoute: typeof PersonsNewRoute
+  ServicesServiceIdRoute: typeof ServicesServiceIdRoute
+  ServicesNewRoute: typeof ServicesNewRoute
   TenantsTenantIdRoute: typeof TenantsTenantIdRouteWithChildren
   TenantsCreateRoute: typeof TenantsCreateRoute
   TenantsNewRoute: typeof TenantsNewRoute
@@ -436,6 +514,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantsTenantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/new': {
+      id: '/services/new'
+      path: '/services/new'
+      fullPath: '/services/new'
+      preLoaderRoute: typeof ServicesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/$serviceId': {
+      id: '/services/$serviceId'
+      path: '/services/$serviceId'
+      fullPath: '/services/$serviceId'
+      preLoaderRoute: typeof ServicesServiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persons/new': {
+      id: '/persons/new'
+      path: '/persons/new'
+      fullPath: '/persons/new'
+      preLoaderRoute: typeof PersonsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persons/$personId': {
+      id: '/persons/$personId'
+      path: '/persons/$personId'
+      fullPath: '/persons/$personId'
+      preLoaderRoute: typeof PersonsPersonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts/new': {
+      id: '/contracts/new'
+      path: '/contracts/new'
+      fullPath: '/contracts/new'
+      preLoaderRoute: typeof ContractsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts/$contractId': {
+      id: '/contracts/$contractId'
+      path: '/contracts/$contractId'
+      fullPath: '/contracts/$contractId'
+      preLoaderRoute: typeof ContractsContractIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clients/new': {
       id: '/clients/new'
       path: '/clients/new'
@@ -492,6 +612,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignupRoute: AuthSignupRoute,
   ClientsClientIdRoute: ClientsClientIdRoute,
   ClientsNewRoute: ClientsNewRoute,
+  ContractsContractIdRoute: ContractsContractIdRoute,
+  ContractsNewRoute: ContractsNewRoute,
+  PersonsPersonIdRoute: PersonsPersonIdRoute,
+  PersonsNewRoute: PersonsNewRoute,
+  ServicesServiceIdRoute: ServicesServiceIdRoute,
+  ServicesNewRoute: ServicesNewRoute,
   TenantsTenantIdRoute: TenantsTenantIdRouteWithChildren,
   TenantsCreateRoute: TenantsCreateRoute,
   TenantsNewRoute: TenantsNewRoute,

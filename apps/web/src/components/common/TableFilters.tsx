@@ -11,6 +11,14 @@ export interface FilterOption {
   label: string
 }
 
+export interface CustomFilter {
+  id: string
+  label: string
+  value: string
+  options: FilterOption[]
+  onChange: (value: string) => void
+}
+
 export interface TableFiltersProps {
   searchValue?: string
   onSearchChange?: (value: string) => void
@@ -26,6 +34,7 @@ export interface TableFiltersProps {
     onStartDateChange: (date: string) => void
     onEndDateChange: (date: string) => void
   }
+  customFilters?: CustomFilter[]
   onClearFilters?: () => void
   className?: string
 }
@@ -36,6 +45,7 @@ export function TableFilters({
   searchPlaceholder = 'Search...',
   statusFilter,
   dateRangeFilter,
+  customFilters = [],
   onClearFilters,
   className = '',
 }: TableFiltersProps) {
@@ -49,7 +59,8 @@ export function TableFilters({
   const hasActiveFilters =
     localSearch ||
     (statusFilter && statusFilter.value) ||
-    (dateRangeFilter && (dateRangeFilter.startDate || dateRangeFilter.endDate))
+    (dateRangeFilter && (dateRangeFilter.startDate || dateRangeFilter.endDate)) ||
+    (customFilters && customFilters.some(filter => filter.value))
 
   const handleClear = () => {
     setLocalSearch('')
@@ -59,6 +70,7 @@ export function TableFilters({
       dateRangeFilter.onStartDateChange('')
       dateRangeFilter.onEndDateChange('')
     }
+    customFilters.forEach(filter => filter.onChange(''))
     onClearFilters?.()
   }
 
@@ -116,6 +128,27 @@ export function TableFilters({
           />
         </div>
       )}
+
+      {/* Custom Filters */}
+      {customFilters.map((filter) => (
+        <div key={filter.id} className="flex items-center gap-2">
+          <label htmlFor={filter.id} className="text-sm text-safe whitespace-nowrap">
+            {filter.label}:
+          </label>
+          <select
+            id={filter.id}
+            value={filter.value}
+            onChange={(e) => filter.onChange(e.target.value)}
+            className="px-4 py-2 bg-calm border border-[0.5px] border-safe text-safe rounded-none focus:outline-none focus:border-natural"
+          >
+            {filter.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
 
       {/* Clear Filters Button */}
       {hasActiveFilters && onClearFilters && (

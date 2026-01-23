@@ -6,7 +6,7 @@
 import { useState, useMemo } from 'react'
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Pagination } from './Pagination'
-import { TableFilters, type FilterOption } from './TableFilters'
+import { TableFilters, type FilterOption, type CustomFilter } from './TableFilters'
 import { StatusBadge } from './StatusBadge'
 import type { PaginatedResponse } from '@/types/api'
 
@@ -53,6 +53,7 @@ export interface DataTableProps<T> {
       onStartDateChange: (date: string) => void
       onEndDateChange: (date: string) => void
     }
+    customFilters?: CustomFilter[]
     onClearFilters?: () => void
   }
   rowSelection?: {
@@ -166,6 +167,7 @@ export function DataTable<T extends { id?: string }>({
           searchPlaceholder={filters.searchPlaceholder}
           statusFilter={filters.statusFilter}
           dateRangeFilter={filters.dateRangeFilter}
+          customFilters={filters.customFilters}
           onClearFilters={filters.onClearFilters}
         />
       )}

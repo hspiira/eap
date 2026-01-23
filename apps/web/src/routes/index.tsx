@@ -29,47 +29,48 @@ function HomePage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-calm">
-        <section className="relative py-20 px-6 text-center overflow-hidden">
-          <div className="relative max-w-5xl mx-auto">
-            <h1 className="text-6xl md:text-7xl font-black text-safe mb-6 [letter-spacing:-0.08em]">
-              Evexía
-            </h1>
-            <p className="text-2xl md:text-3xl text-safe mb-4 font-light">
-              Management Platform
-            </p>
-            <p className="text-lg text-safe-light max-w-3xl mx-auto mb-8">
-              Multi-tenant platform for managing services, clients, contracts, and service delivery.
-            </p>
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex flex-col gap-4 items-center">
-                <div className="flex gap-4">
-                  <Link
-                    to="/auth/login"
-                    search={{}}
-                    className="px-8 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/auth/signup"
-                    className="px-8 py-3 bg-nurturing hover:bg-nurturing-dark text-white font-semibold rounded-none transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-                <Link
-                  to="/tenants/create"
-                  className="px-8 py-3 bg-safe hover:bg-safe-dark text-white font-semibold rounded-none transition-colors"
-                >
-                  Create Tenant
-                </Link>
-              </div>
-              <p className="text-safe-light text-sm mt-2">
-                Backend API: <code className="px-2 py-1 bg-calm-dark text-safe rounded-none">http://localhost:8000</code>
+        <div className="max-w-4xl mx-auto px-6 py-16">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-bold text-safe mb-4">Evexía</h1>
+            <p className="text-xl text-safe-light">Management Platform</p>
+          </div>
+
+          {/* Main Content */}
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            <div className="bg-calm border border-[0.5px] border-safe p-8">
+              <h2 className="text-2xl font-semibold text-safe mb-4">Sign In</h2>
+              <p className="text-safe-light mb-6">
+                Access your account to manage your organization, users, and services.
               </p>
+              <Link
+                to="/auth/login"
+                search={{}}
+                className="inline-block w-full px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold text-center rounded-none transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+
+            <div className="bg-calm border border-[0.5px] border-safe p-8">
+              <h2 className="text-2xl font-semibold text-safe mb-4">Get Started</h2>
+              <p className="text-safe-light mb-6">
+                Create a new tenant organization and start managing your services today.
+              </p>
+              <Link
+                to="/auth/signup"
+                className="inline-block w-full px-6 py-3 bg-nurturing hover:bg-nurturing-dark text-white font-semibold text-center rounded-none transition-colors"
+              >
+                Sign Up
+              </Link>
             </div>
           </div>
-        </section>
+
+          {/* Footer Info */}
+          <div className="text-center text-sm text-safe-light">
+            <p>Multi-tenant platform for service management and delivery</p>
+          </div>
+        </div>
       </div>
     )
   }
