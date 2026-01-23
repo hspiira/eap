@@ -73,6 +73,8 @@ class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
             parent = await self.industry_repository.get_by_id(parent_industry_id)
             if not parent:
                 raise ValueError(f"Parent industry {parent_industry_id.value} not found")
+            if parent.tenant_id != tenant_id:
+                raise ValueError("Parent industry must belong to the same tenant")
 
         # Create industry entity
         industry = IndustryEntity(
@@ -124,6 +126,8 @@ class UpdateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
             parent = await self.industry_repository.get_by_id(parent_industry_id)
             if not parent:
                 raise ValueError(f"Parent industry {parent_industry_id.value} not found")
+            if parent.tenant_id != industry.tenant_id:
+                raise ValueError("Parent industry must belong to the same tenant")
 
         # Update fields
         if name:
@@ -131,8 +135,7 @@ class UpdateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
         if description is not None:
             industry.update_description(description)
         if code is not None:
-            industry._code = code
-            industry._updated_at = utc_now()
+            industry.update_code(code)
         if parent_industry_id is not None:
             industry.set_parent(parent_industry_id)
 

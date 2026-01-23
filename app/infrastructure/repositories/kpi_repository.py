@@ -51,8 +51,6 @@ class KPIRepositoryImpl(TenantScopedRepositoryImpl[KPIEntity, KPIModel, KPIId], 
         """Extract raw ID value."""
         return entity_id.value
 
-    # Domain-specific queries (not in base class)
-
     async def get_by_name(
         self, name: str, tenant_id: TenantId
     ) -> KPIEntity | None:

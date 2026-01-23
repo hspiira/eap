@@ -38,11 +38,11 @@ class ActivityResponse(BaseModel):
     description: str = Field(..., description="Activity description")
     outcome: str | None = Field(None, description="Activity outcome")
     created_by: str = Field(..., description="User who created the activity")
-    occurred_at: str = Field(..., description="When the activity occurred")
-    next_follow_up: str | None = Field(None, description="Next follow-up date")
+    occurred_at: datetime = Field(..., description="When the activity occurred")
+    next_follow_up: datetime | None = Field(None, description="Next follow-up date")
     is_important: bool = Field(..., description="Whether activity is important")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 

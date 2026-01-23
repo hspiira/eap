@@ -36,8 +36,6 @@ class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactMod
         """Extract raw ID value."""
         return entity_id.value
 
-    # Domain-specific queries (not in base class)
-
     async def get_by_client_id(self, client_id: str, tenant_id: TenantId) -> Sequence[ContactEntity]:
         """Get all contacts for a client."""
         stmt = select(ContactModel).where(
@@ -54,7 +52,7 @@ class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactMod
         stmt = select(ContactModel).where(
             ContactModel.client_id == client_id,
             ContactModel.tenant_id == tenant_id.value,
-            ContactModel.is_primary == True,
+            ContactModel.is_primary.is_(True),
             ContactModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
@@ -72,7 +70,6 @@ class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactMod
         offset: int = 0,
     ) -> Sequence[ContactEntity]:
         """List contacts with filtering, searching, and pagination."""
-        # Build filters dict for base class
         filters: dict[str, Any] = {}
         if client_id:
             filters["client_id"] = client_id

@@ -30,6 +30,7 @@ class CreateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
         is_important: bool = False,
     ) -> ActivityEntity:
         """Create a new activity."""
+        now = utc_now()
         activity = ActivityEntity(
             _id=activity_id,
             _tenant_id=tenant_id,
@@ -37,13 +38,13 @@ class CreateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
             _activity_type=activity_type,
             _description=description,
             _created_by=created_by,
-            _occurred_at=occurred_at or utc_now(),
+            _occurred_at=occurred_at or now,
             _subject=subject,
             _outcome=outcome,
             _next_follow_up=next_follow_up,
             _is_important=is_important,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            _created_at=now,
+            _updated_at=now,
         )
 
         return await self._save_and_publish_events(activity)
@@ -66,7 +67,7 @@ class UpdateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
         """Update an activity."""
         activity = await self._get_entity_or_raise(activity_id, "Activity")
 
-        if description:
+        if description is not None:
             activity.update_description(description)
         if outcome is not None:
             activity.update_outcome(outcome)

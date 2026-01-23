@@ -43,7 +43,7 @@ class ServiceEntity:
         self._status = BaseStatus.ACTIVE
         self._updated_at = utc_now()
 
-    def deactivate(self, reason: str | None = None) -> None:
+    def deactivate(self) -> None:
         """Deactivate service"""
         if self._deleted_at:
             raise DomainError("Cannot deactivate deleted service")
@@ -62,16 +62,16 @@ class ServiceEntity:
         self._updated_at = utc_now()
 
     def restore(self) -> None:
-        """Restore archived or soft-deleted service"""
-        if self._deleted_at:
-            raise DomainError("Cannot restore deleted service")
-        # Check if service is already active and not deleted
-        if self._status == BaseStatus.ACTIVE and self._deleted_at is None:
+        """Restore archived or soft-deleted service.
+        
+        Only restores from ARCHIVED to ACTIVE. Deleted services (DELETED status)
+        cannot be restored as deletion is permanent.
+        """
+        if self._status == BaseStatus.ACTIVE and not self._deleted_at:
             raise DomainError("Service is already active and does not need restoration")
-        # Restore soft-deleted service
         if self._deleted_at:
             self._deleted_at = None
-        # Restore archived service
+            self._status = BaseStatus.ACTIVE
         if self._status == BaseStatus.ARCHIVED:
             self._status = BaseStatus.ACTIVE
         self._updated_at = utc_now()
@@ -109,7 +109,7 @@ class ServiceEntity:
         self._updated_at = utc_now()
 
     def update_group_settings(
-        self, is_group_service: bool, max_participants: int | None = None
+        self, *, is_group_service: bool, max_participants: int | None = None
     ) -> None:
         """Update group service settings"""
         if self._deleted_at:

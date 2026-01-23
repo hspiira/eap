@@ -7,7 +7,7 @@ Separate from domain entities.
 
 from datetime import date
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 
@@ -24,6 +24,8 @@ class EmploymentInfoSchema(BaseModel):
     employee_id: str | None = Field(None, description="Employee ID")
     end_date: date | None = Field(None, description="Employment end date")
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class LicenseInfoSchema(BaseModel):
     """License information schema."""
@@ -32,6 +34,8 @@ class LicenseInfoSchema(BaseModel):
     issuing_authority: str = Field(..., description="Issuing authority")
     expiry_date: date | None = Field(None, description="License expiry date")
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class StaffInfoSchema(BaseModel):
     """Staff information schema."""
@@ -39,9 +43,11 @@ class StaffInfoSchema(BaseModel):
     role: StaffRole = Field(..., description="Staff role")
     client_id: str = Field(..., description="Client ID")
     department: str | None = Field(None, description="Department")
-    can_manage_clients: bool = Field(False, description="Can manage clients")
-    can_manage_services: bool = Field(False, description="Can manage services")
-    can_view_reports: bool = Field(False, description="Can view reports")
+    can_manage_clients: bool = Field(default=False, description="Can manage clients")
+    can_manage_services: bool = Field(default=False, description="Can manage services")
+    can_view_reports: bool = Field(default=False, description="Can view reports")
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class DependentInfoSchema(BaseModel):
@@ -51,6 +57,8 @@ class DependentInfoSchema(BaseModel):
     relationship: RelationType = Field(..., description="Relationship type")
     guardian_id: str | None = Field(None, description="Guardian user ID")
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class EmergencyContactSchema(BaseModel):
     """Emergency contact schema."""
@@ -59,6 +67,8 @@ class EmergencyContactSchema(BaseModel):
     phone: str | None = Field(None, description="Phone number")
     email: str | None = Field(None, description="Email address")
 
+    model_config = ConfigDict(extra="forbid")
+
 
 # === Request Schemas ===
 
@@ -66,6 +76,8 @@ class PersonDeactivateRequest(BaseModel):
     """Request schema for deactivating a person."""
 
     reason: str | None = Field(None, description="Deactivation reason")
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PersonTerminateRequest(BaseModel):
@@ -87,6 +99,15 @@ class AddSecondaryRoleRequest(BaseModel):
     staff_info: StaffInfoSchema | None = Field(
         None, description="Staff info (for PLATFORM_STAFF role)"
     )
+    @model_validator(mode="after")
+    def _validate_role_payload(self) -> 'AddSecondaryRoleRequest':
+        if self.role == PersonType.CLIENT_EMPLOYEE and self.employment_info is None:
+            raise ValueError("employment_info is required for CLIENT_EMPLOYEE role")
+        if self.role == PersonType.SERVICE_PROVIDER and self.license_info is None:
+            raise ValueError("license_info is required for SERVICE_PROVIDER role")
+        if self.role == PersonType.PLATFORM_STAFF and self.staff_info is None:
+            raise ValueError("staff_info is required for PLATFORM_STAFF role")
+        return self
 
 
 class UpdateEmergencyContactRequest(BaseModel):

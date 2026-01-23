@@ -225,6 +225,22 @@ async def list_kpis(
 
 
 @router.get(
+    "/check-name/{name}",
+    summary="Check if KPI name is available",
+)
+@readonly()
+async def check_kpi_name_availability(
+    name: str,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check if a KPI name is available within a tenant."""
+    kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
+    return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
+
+    
+@router.get(
     "/{kpi_id}",
     response_model=KPIResponse,
     summary="Get KPI by ID",
@@ -240,22 +256,6 @@ async def get_kpi(
     if not kpi:
         raise ValueError("KPI not found")
     return _to_kpi_response(kpi)
-
-
-@router.get(
-    "/check-name/{name}",
-    summary="Check if KPI name is available",
-)
-@readonly()
-async def check_kpi_name_availability(
-    name: str,
-    tenant_id: str = Query(..., description="Tenant identifier"),
-    kpi_repo: KPIRepository = Depends(get_kpi_repository),
-    db: AsyncSession = Depends(get_db),
-):
-    """Check if a KPI name is available within a tenant."""
-    kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
-    return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
 
 
 # ==================== KPI ASSIGNMENT COMMANDS (Use Cases) ====================

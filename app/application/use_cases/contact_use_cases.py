@@ -61,6 +61,7 @@ class CreateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
         notes: str | None = None,
     ) -> ContactEntity:
         """Create a new contact."""
+        now = utc_now()
         contact = ContactEntity(
             _id=contact_id,
             _tenant_id=tenant_id,
@@ -73,8 +74,8 @@ class CreateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
             _is_primary=is_primary,
             _notes=notes,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            _created_at=now,
+            _updated_at=now,
         )
 
         return await self._save_and_publish_events(contact)
@@ -117,8 +118,7 @@ class UpdateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
         if is_primary is not None:
             contact.set_primary(is_primary)
         if notes is not None:
-            contact._notes = notes
-            contact._updated_at = utc_now()
+            contact.update_contact_info(notes=notes)
 
         return await self._save_and_publish_events(contact)
 

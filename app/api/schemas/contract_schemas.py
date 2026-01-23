@@ -5,7 +5,7 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,7 +15,7 @@ from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 # === Value Object Schemas ===
 
 class MoneySchema(BaseModel):
-    """Money value object schema."""
+    """Money value object schema for request/response."""
 
     amount: str = Field(..., description="Amount as decimal string")
     currency: str = Field(..., min_length=3, max_length=3, description="ISO 3-letter currency code")
@@ -43,7 +43,7 @@ class ContractCreate(BaseModel):
     client_id: str = Field(..., description="Client identifier")
     start_date: datetime = Field(..., description="Contract start date")
     end_date: datetime = Field(..., description="Contract end date")
-    billing_rate: MoneyCreate = Field(..., description="Billing rate")
+    billing_rate: MoneySchema = Field(..., description="Billing rate")
     payment_frequency: PaymentFrequency = Field(..., description="Payment frequency")
     is_auto_renew: bool = Field(False, description="Whether contract auto-renews")
 
@@ -95,8 +95,8 @@ class ContractResponse(BaseModel):
     payment_status: PaymentStatus = Field(..., description="Payment status")
     status: ContractStatus = Field(..., description="Contract status")
     is_auto_renew: bool = Field(..., description="Whether contract auto-renews")
-    last_billing_date: datetime | None = Field(None, description="Last billing date")
-    next_billing_date: datetime | None = Field(None, description="Next billing date")
+    last_billing_date: date | None = Field(None, description="Last billing date")
+    next_billing_date: date | None = Field(None, description="Next billing date")
     signed_by: str | None = Field(None, description="Name of person who signed")
     signed_at: datetime | None = Field(None, description="When contract was signed")
     termination_reason: str | None = Field(None, description="Termination reason")

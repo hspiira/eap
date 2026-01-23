@@ -31,10 +31,6 @@ class ServiceAssignmentEntity:
     _deleted_at: datetime | None = None
     _events: list = field(default_factory=list)
     
-    def __post_init__(self) -> None:
-        """Validate invariants immediately after construction."""
-        self._ensure_invariants()
-    
     # === Behaviors ===
     
     def activate(self) -> None:
@@ -64,16 +60,25 @@ class ServiceAssignmentEntity:
         self._notes = notes
         self._updated_at = utc_now()
     
+    def archive(self) -> None:
+        """Archive service assignment."""
+        if self._deleted_at:
+            raise DomainError("Assignment is already archived")
+        self._status = BaseStatus.ARCHIVED
+        self._updated_at = utc_now()
+    
+    def restore(self) -> None:
+        """Restore archived assignment."""
+        if not self._deleted_at:
+            raise DomainError("Assignment is not archived")
+        self._deleted_at = None
+        self._status = BaseStatus.ACTIVE
+        self._updated_at = utc_now()
+    
     def is_active(self) -> bool:
         """Check if assignment is active."""
         return self._status == BaseStatus.ACTIVE and self._deleted_at is None
     
-    # === Invariants ===
-    
-    def _ensure_invariants(self) -> None:
-        """Ensure assignment invariants are met."""
-        # No specific invariants beyond required fields
-
     # === Public Properties ===
 
     @property

@@ -332,22 +332,8 @@ async def get_tenant_stats(
     tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
     if not tenant:
         raise ValueError("Tenant not found")
-
-    # Count users for this tenant
-    user_count_stmt = select(func.count(UserModel.id)).where(
-        UserModel.tenant_id == tenant_id,
-        UserModel.deleted_at.is_(None),
-    )
-    user_result = await db.execute(user_count_stmt)
-    user_count = int(user_result.scalar() or 0)
-
-    # Count clients for this tenant
-    client_count_stmt = select(func.count(ClientModel.id)).where(
-        ClientModel.tenant_id == tenant_id,
-        ClientModel.deleted_at.is_(None),
-    )
-    client_result = await db.execute(client_count_stmt)
-    client_count = int(client_result.scalar() or 0)
+    user_count = await user_repo.count(tenant_id=TenantId(tenant_id))
+    client_count = await client_repo.count(tenant_id=TenantId(tenant_id)) 
 
     # Calculate quota usage
     user_quota_usage = (

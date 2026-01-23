@@ -7,6 +7,7 @@ Represents an additional contact person for a client.
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import ContactId, TenantId, Email
 from app.shared.utils.datetime import utc_now
@@ -31,7 +32,7 @@ class ContactEntity:
     _notes: str | None = None
     _is_active: bool = True
     _deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
@@ -54,6 +55,7 @@ class ContactEntity:
         phone: str | None = None,
         title: str | None = None,
         department: str | None = None,
+        notes: str | None = None,
     ) -> None:
         """Update contact information."""
         if self._deleted_at:
@@ -66,6 +68,8 @@ class ContactEntity:
             self._title = title
         if department is not None:
             self._department = department
+        if notes is not None:
+            self._notes = notes
         self._updated_at = utc_now()
         self._ensure_invariants()  # Re-validate after update
     

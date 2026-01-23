@@ -7,7 +7,7 @@ Separate from domain entities.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.domain.enums import Language, UserStatus
 
@@ -58,6 +58,12 @@ class UserUpdatePreferencesRequest(BaseModel):
 
     preferred_language: Language | None = Field(None, description="Preferred language")
     timezone: str | None = Field(None, description="User timezone")
+
+    @model_validator(mode="after")
+    def _validate_preferences(self) -> 'UserUpdatePreferencesRequest':
+        if self.preferred_language is None and self.timezone is None:
+            raise ValueError("At least one preference (preferred_language or timezone) must be provided")
+        return self
 
 
 # === Response Schemas ===

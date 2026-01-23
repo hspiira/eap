@@ -6,6 +6,7 @@ Represents a categorization tag for clients.
 
 from dataclasses import dataclass, field
 from datetime import datetime
+import re
 
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import ClientTagId, TenantId
@@ -33,6 +34,7 @@ class ClientTagEntity:
         self._ensure_invariants()
     
     # === Behaviors ===
+    _HEX_COLOR_PATTERN = re.compile(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$') 
     
     def update_name(self, name: str) -> None:
         """Update tag name."""
@@ -54,8 +56,8 @@ class ClientTagEntity:
         """Update tag color."""
         if self._deleted_at:
             raise DomainError("Cannot update deleted tag")
-        if color and not color.startswith("#"):
-            raise DomainError("Color must be a hex code starting with #")
+        if color and not self._HEX_COLOR_PATTERN.match(color):
+            raise DomainError("Color must be a valid hex code (e.g., `#RRGGBB` or `#RGB`)")
         self._color = color
         self._updated_at = utc_now()
     

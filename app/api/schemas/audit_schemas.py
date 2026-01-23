@@ -24,6 +24,8 @@ class FieldChangeSchema(BaseModel):
     old_value: str | None = Field(None, description="Old value")
     new_value: str | None = Field(None, description="New value")
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 # === Response Schemas ===
 

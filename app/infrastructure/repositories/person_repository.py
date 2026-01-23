@@ -66,7 +66,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             return None
         return PersonMapper.to_entity(model, profile)
 
-    # Override base methods to load profile
 
     async def get_by_id(self, person_id: PersonId) -> PersonEntity | None:
         """Get person by ID, excluding soft-deleted persons."""
@@ -82,7 +81,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
 
         return await self._to_entity_with_profile(model)
 
-    # Domain-specific queries
 
     async def get_by_user_id(self, user_id: UserId) -> PersonEntity | None:
         """Get person by user ID, excluding soft-deleted persons."""
@@ -130,7 +128,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         sort_desc: bool = True,
     ) -> Sequence[PersonEntity]:
         """List persons with filtering, searching, and pagination."""
-        # Join with UserModel for search capability
         stmt = select(PersonModel).join(
             UserModel, PersonModel.user_id == UserModel.id
         ).where(
@@ -139,7 +136,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             UserModel.deleted_at.is_(None),
         )
 
-        # Apply filters
         if status:
             stmt = stmt.where(PersonModel.status == status)
         if person_type:
@@ -160,7 +156,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         else:
             stmt = stmt.order_by(getattr(PersonModel, sort_by).asc())
 
-        # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
 
         result = await self.session.execute(stmt)
@@ -182,7 +177,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         search: str | None = None,
     ) -> int:
         """Count persons matching filters."""
-        # Join with UserModel for search capability
         stmt = select(func.count(PersonModel.id)).join(
             UserModel, PersonModel.user_id == UserModel.id
         ).where(
@@ -191,7 +185,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             UserModel.deleted_at.is_(None),
         )
 
-        # Apply filters
         if status:
             stmt = stmt.where(PersonModel.status == status)
         if person_type:

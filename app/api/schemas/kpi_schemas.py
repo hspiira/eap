@@ -6,8 +6,8 @@ Separate from domain entities.
 """
 
 from decimal import Decimal
-
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 
@@ -48,13 +48,14 @@ class KPIAssignmentCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    def model_validate(cls, values):
-        """Validate that either client_id or contract_id is provided."""
-        if not values.get("client_id") and not values.get("contract_id"):
+    @model_validator(mode="after")
+    def validate_client_or_contract(self) -> 'KPICreate':
+        """Validate that either client_id or contract_id is provided, but not both."""
+        if not self.client_id and not self.contract_id:
             raise ValueError("Either client_id or contract_id must be provided")
-        if values.get("client_id") and values.get("contract_id"):
+        if self.client_id and self.contract_id:
             raise ValueError("Cannot provide both client_id and contract_id")
-        return values
+        return self
 
 
 class KPIAssignmentUpdate(BaseModel):
@@ -79,8 +80,8 @@ class KPIResponse(BaseModel):
     threshold_max: Decimal | None = Field(None, description="Maximum threshold")
     formula: str | None = Field(None, description="Calculation formula")
     is_active: bool = Field(..., description="Whether KPI is active")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -105,8 +106,8 @@ class KPIAssignmentResponse(BaseModel):
     contract_id: str | None = Field(None, description="Associated contract ID")
     target_value: Decimal | None = Field(None, description="Assignment-specific target value")
     is_active: bool = Field(..., description="Whether assignment is active")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 

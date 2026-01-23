@@ -10,8 +10,9 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.domain.enums import KPICategory, KPIMeasurementUnit
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
+from app.domain.value_objects.core import ClientId, ContractId, KPIId, KPIAssignmentId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
@@ -34,7 +35,7 @@ class KPIEntity:
     _formula: str | None = None  # Calculation formula (optional)
     _is_active: bool = True
     _deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)  # Domain events
+    _events: list[DomainEvent] = field(default_factory=list)  # Domain events
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
@@ -187,12 +188,12 @@ class KPIAssignmentEntity:
     _updated_at: datetime
     
     # Optional fields - one of client_id or contract_id must be provided
-    _client_id: str | None = None
-    _contract_id: str | None = None
+    _client_id: ClientId | None = None
+    _contract_id: ContractId | None = None
     _target_value: Decimal | None = None  # Override KPI target for this assignment
     _is_active: bool = True
     _deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
@@ -257,11 +258,11 @@ class KPIAssignmentEntity:
         return self._tenant_id
 
     @property
-    def client_id(self) -> str | None:
+    def client_id(self) -> ClientId | None:
         return self._client_id
 
     @property
-    def contract_id(self) -> str | None:
+    def contract_id(self) -> ContractId | None:
         return self._contract_id
 
     @property

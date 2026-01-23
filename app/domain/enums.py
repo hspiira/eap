@@ -12,6 +12,7 @@ class UserStatus(str, Enum):
     ACTIVE = "Active"
     SUSPENDED = "Suspended"
     BANNED = "Banned"
+    TERMINATED = "Terminated"
     PENDING_VERIFICATION = "Pending Verification"
     INACTIVE = "Inactive"
 
@@ -104,7 +105,13 @@ class ContactMethod(str, Enum):
     WECHAT = "wechat"
 
 class AuditActionType(str, Enum):
-    """Types of actions that can be audited."""
+    """Types of actions that can be audited.
+    
+    Note: LIST and VIEW actions are subject to configurable filtering/sampling
+    to prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)
+    are always logged. See AUDIT_SAMPLE_RATE, AUDIT_ALWAYS_LOG_RESOURCES, and
+    AUDIT_SKIP_RESOURCES environment variables for configuration.
+    """
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
@@ -112,8 +119,8 @@ class AuditActionType(str, Enum):
     LOGOUT = "LOGOUT"
     APPROVE = "APPROVE"
     REJECT = "REJECT"
-    LIST = "LIST"
-    VIEW = "VIEW"
+    LIST = "LIST"  # Subject to filtering/sampling
+    VIEW = "VIEW"  # Subject to filtering/sampling
     EXPORT = "EXPORT"
     IMPORT = "IMPORT"
 
