@@ -122,7 +122,7 @@ function CreateUserPage() {
 
         <h1 className="text-3xl font-bold text-safe mb-6">Create New User</h1>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-[0.5px] border-safe p-6">
+        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe p-6">
           <FormField
             label="Email"
             name="email"

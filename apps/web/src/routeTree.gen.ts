@@ -26,6 +26,8 @@ import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
 import { Route as TenantsNewRouteImport } from './routes/tenants/new'
 import { Route as TenantsCreateRouteImport } from './routes/tenants/create'
 import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
+import { Route as ClientsNewRouteImport } from './routes/clients/new'
+import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as TenantsTenantIdEditRouteImport } from './routes/tenants/$tenantId.edit'
@@ -115,6 +117,16 @@ const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
   path: '/tenants/$tenantId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientsNewRoute = ClientsNewRouteImport.update({
+  id: '/clients/new',
+  path: '/clients/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
+  id: '/clients/$clientId',
+  path: '/clients/$clientId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/auth/signup',
   path: '/auth/signup',
@@ -135,6 +147,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -157,6 +171,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -180,6 +196,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
   '/tenants/$tenantId': typeof TenantsTenantIdRouteWithChildren
   '/tenants/create': typeof TenantsCreateRoute
   '/tenants/new': typeof TenantsNewRoute
@@ -204,6 +222,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -226,6 +246,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -248,6 +270,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/login'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
     | '/tenants/$tenantId'
     | '/tenants/create'
     | '/tenants/new'
@@ -271,6 +295,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  ClientsClientIdRoute: typeof ClientsClientIdRoute
+  ClientsNewRoute: typeof ClientsNewRoute
   TenantsTenantIdRoute: typeof TenantsTenantIdRouteWithChildren
   TenantsCreateRoute: typeof TenantsCreateRoute
   TenantsNewRoute: typeof TenantsNewRoute
@@ -410,6 +436,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantsTenantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clients/new': {
+      id: '/clients/new'
+      path: '/clients/new'
+      fullPath: '/clients/new'
+      preLoaderRoute: typeof ClientsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/$clientId': {
+      id: '/clients/$clientId'
+      path: '/clients/$clientId'
+      fullPath: '/clients/$clientId'
+      preLoaderRoute: typeof ClientsClientIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/signup': {
       id: '/auth/signup'
       path: '/auth/signup'
@@ -450,6 +490,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
+  ClientsClientIdRoute: ClientsClientIdRoute,
+  ClientsNewRoute: ClientsNewRoute,
   TenantsTenantIdRoute: TenantsTenantIdRouteWithChildren,
   TenantsCreateRoute: TenantsCreateRoute,
   TenantsNewRoute: TenantsNewRoute,

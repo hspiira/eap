@@ -118,7 +118,7 @@ export function Pagination({
               id="page-size"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="px-2 py-1 bg-white border border-[0.5px] border-safe text-safe text-sm rounded-none focus:outline-none focus:border-natural"
+              className="px-2 py-1 bg-calm border border-[0.5px] border-safe text-safe text-sm rounded-none focus:outline-none focus:border-natural"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -170,7 +170,7 @@ export function Pagination({
                 className={`px-3 py-1 border border-[0.5px] text-sm font-medium transition-colors rounded-none ${
                   isActive
                     ? 'bg-natural text-white border-natural-dark'
-                    : 'bg-white text-safe border-safe hover:bg-calm'
+                    : 'bg-calm text-safe border-safe hover:bg-calm-dark'
                 }`}
               >
                 {pageNum}

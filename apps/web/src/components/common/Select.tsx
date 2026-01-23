@@ -164,7 +164,7 @@ export function Select({
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-[0.5px] border-safe shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-calm border border-[0.5px] border-safe shadow-lg max-h-60 overflow-auto">
             {searchable && (
               <div className="p-2 border-b border-[0.5px] border-safe">
                 <input
@@ -196,7 +196,7 @@ export function Select({
                       {multiple && (
                         <div
                           className={`w-4 h-4 border border-[0.5px] border-safe flex items-center justify-center ${
-                            selected ? 'bg-natural border-natural-dark' : 'bg-white'
+                            selected ? 'bg-natural border-natural-dark' : 'bg-calm'
                           }`}
                         >
                           {selected && <Check size={12} className="text-white" />}

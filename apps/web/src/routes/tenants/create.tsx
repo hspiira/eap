@@ -78,7 +78,7 @@ function CreateTenantPage() {
     <>
       <div className="min-h-screen bg-calm flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <div className="bg-white p-8 rounded-none">
+          <div className="bg-calm p-8 rounded-none border border-[0.5px] border-safe">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-safe mb-2">Evexía</h1>
               <p className="text-safe-light">Create a new tenant</p>

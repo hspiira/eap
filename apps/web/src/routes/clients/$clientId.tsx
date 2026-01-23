@@ -1,6 +1,6 @@
 /**
- * Tenant Detail Page
- * Displays tenant information and lifecycle actions
+ * Client Detail Page
+ * Displays client information and lifecycle actions
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -11,52 +11,50 @@ import { LifecycleActions } from '@/components/common/LifecycleActions'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorDisplay } from '@/components/common/ErrorDisplay'
 import { useToast } from '@/contexts/ToastContext'
-import { tenantsApi } from '@/api/endpoints/tenants'
-import type { Tenant } from '@/types/entities'
-import type { TenantStatus } from '@/types/enums'
-import { Edit, Building2, Calendar, MapPin, Phone, Mail } from 'lucide-react'
+import { clientsApi } from '@/api/endpoints/clients'
+import type { Client } from '@/types/entities'
+import type { BaseStatus } from '@/types/enums'
+import { Edit, Building2, MapPin, Phone, Mail, Calendar } from 'lucide-react'
 
-export const Route = createFileRoute('/tenants/$tenantId')({
-  component: TenantDetailPage,
+export const Route = createFileRoute('/clients/$clientId')({
+  component: ClientDetailPage,
 })
 
-function TenantDetailPage() {
-  const { tenantId } = Route.useParams()
+function ClientDetailPage() {
+  const { clientId } = Route.useParams()
   const navigate = useNavigate()
   const { showSuccess, showError } = useToast()
-  const [tenant, setTenant] = useState<Tenant | null>(null)
+  const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchTenant = async () => {
+  const fetchClient = async () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await tenantsApi.getById(tenantId)
-      setTenant(data)
+      const data = await clientsApi.getById(clientId)
+      setClient(data)
     } catch (err: any) {
-      setError(err.message || 'Failed to load tenant')
-      showError('Failed to load tenant')
+      setError(err.message || 'Failed to load client')
+      showError('Failed to load client')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchTenant()
-  }, [tenantId])
+    fetchClient()
+  }, [clientId])
 
   const handleAction = async (action: string) => {
     try {
       setActionLoading(true)
       // TODO: Implement actual API calls for lifecycle actions
-      // For now, just show a message
-      showSuccess(`Tenant ${action} action initiated`)
-      // Refresh tenant data
-      await fetchTenant()
+      showSuccess(`Client ${action} action initiated`)
+      await fetchClient()
     } catch (err: any) {
-      showError(`Failed to ${action} tenant`)
+      showError(`Failed to ${action} client`)
     } finally {
       setActionLoading(false)
     }
@@ -74,13 +72,13 @@ function TenantDetailPage() {
     )
   }
 
-  if (error || !tenant) {
+  if (error || !client) {
     return (
       <AppLayout>
         <div className="max-w-7xl mx-auto">
           <ErrorDisplay
-            error={error || 'Tenant not found'}
-            onRetry={fetchTenant}
+            error={error || 'Client not found'}
+            onRetry={fetchClient}
           />
         </div>
       </AppLayout>
@@ -93,20 +91,19 @@ function TenantDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-safe mb-2">{tenant.name}</h1>
+            <h1 className="text-3xl font-bold text-safe mb-2">{client.name}</h1>
             <div className="flex items-center gap-4">
-              <StatusBadge status={tenant.status as TenantStatus} />
-              <span className="text-safe-light text-sm">Code: {tenant.code || 'N/A'}</span>
+              <StatusBadge status={client.status as BaseStatus} />
             </div>
           </div>
           <div className="flex items-center gap-3">
             <LifecycleActions
-              currentStatus={tenant.status}
+              currentStatus={client.status}
               onAction={handleAction}
               loading={actionLoading}
             />
             <button
-              onClick={() => navigate({ to: `/tenants/${tenantId}/edit` })}
+              onClick={() => navigate({ to: `/clients/${clientId}/edit` })}
               className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
             >
               <Edit size={18} />
@@ -115,7 +112,7 @@ function TenantDetailPage() {
           </div>
         </div>
 
-        {/* Tenant Information */}
+        {/* Client Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Basic Information */}
           <div className="bg-calm border border-[0.5px] border-safe p-6">
@@ -126,57 +123,77 @@ function TenantDetailPage() {
             <dl className="space-y-3">
               <div>
                 <dt className="text-sm font-medium text-safe-light">Name</dt>
-                <dd className="text-safe mt-1">{tenant.name}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-safe-light">Code</dt>
-                <dd className="text-safe mt-1 font-mono">{tenant.code || 'N/A'}</dd>
+                <dd className="text-safe mt-1">{client.name}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-safe-light">Status</dt>
                 <dd className="text-safe mt-1">
-                  <StatusBadge status={tenant.status as TenantStatus} size="sm" />
+                  <StatusBadge status={client.status as BaseStatus} size="sm" />
                 </dd>
               </div>
-              {tenant.industry_id && (
+              {client.industry_id && (
                 <div>
                   <dt className="text-sm font-medium text-safe-light">Industry ID</dt>
-                  <dd className="text-safe mt-1">{tenant.industry_id}</dd>
+                  <dd className="text-safe mt-1">{client.industry_id}</dd>
+                </div>
+              )}
+              {client.tax_id && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Tax ID</dt>
+                  <dd className="text-safe mt-1">{client.tax_id}</dd>
+                </div>
+              )}
+              {client.registration_number && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Registration Number</dt>
+                  <dd className="text-safe mt-1">{client.registration_number}</dd>
+                </div>
+              )}
+              {client.parent_client_id && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Parent Client</dt>
+                  <dd className="text-safe mt-1">{client.parent_client_id}</dd>
                 </div>
               )}
             </dl>
           </div>
 
           {/* Contact Information */}
-          {tenant.contact_info && (
+          {client.contact_info && (
             <div className="bg-calm border border-[0.5px] border-safe p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Phone size={20} />
                 Contact Information
               </h2>
               <dl className="space-y-3">
-                {tenant.contact_info.email && (
+                {client.contact_info.email && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light flex items-center gap-2">
                       <Mail size={16} />
                       Email
                     </dt>
-                    <dd className="text-safe mt-1">{tenant.contact_info.email}</dd>
+                    <dd className="text-safe mt-1">{client.contact_info.email}</dd>
                   </div>
                 )}
-                {tenant.contact_info.phone && (
+                {client.contact_info.phone && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light flex items-center gap-2">
                       <Phone size={16} />
                       Phone
                     </dt>
-                    <dd className="text-safe mt-1">{tenant.contact_info.phone}</dd>
+                    <dd className="text-safe mt-1">{client.contact_info.phone}</dd>
                   </div>
                 )}
-                {tenant.contact_info.mobile && (
+                {client.contact_info.mobile && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Mobile</dt>
-                    <dd className="text-safe mt-1">{tenant.contact_info.mobile}</dd>
+                    <dd className="text-safe mt-1">{client.contact_info.mobile}</dd>
+                  </div>
+                )}
+                {client.contact_info.preferred_method && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Preferred Method</dt>
+                    <dd className="text-safe mt-1">{client.contact_info.preferred_method}</dd>
                   </div>
                 )}
               </dl>
@@ -184,41 +201,41 @@ function TenantDetailPage() {
           )}
 
           {/* Address */}
-          {tenant.address && (
+          {client.address && (
             <div className="bg-calm border border-[0.5px] border-safe p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <MapPin size={20} />
                 Address
               </h2>
               <dl className="space-y-3">
-                {tenant.address.street && (
+                {client.address.street && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Street</dt>
-                    <dd className="text-safe mt-1">{tenant.address.street}</dd>
+                    <dd className="text-safe mt-1">{client.address.street}</dd>
                   </div>
                 )}
-                {tenant.address.city && (
+                {client.address.city && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">City</dt>
-                    <dd className="text-safe mt-1">{tenant.address.city}</dd>
+                    <dd className="text-safe mt-1">{client.address.city}</dd>
                   </div>
                 )}
-                {tenant.address.state && (
+                {client.address.state && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">State</dt>
-                    <dd className="text-safe mt-1">{tenant.address.state}</dd>
+                    <dd className="text-safe mt-1">{client.address.state}</dd>
                   </div>
                 )}
-                {tenant.address.postal_code && (
+                {client.address.postal_code && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Postal Code</dt>
-                    <dd className="text-safe mt-1">{tenant.address.postal_code}</dd>
+                    <dd className="text-safe mt-1">{client.address.postal_code}</dd>
                   </div>
                 )}
-                {tenant.address.country && (
+                {client.address.country && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Country</dt>
-                    <dd className="text-safe mt-1">{tenant.address.country}</dd>
+                    <dd className="text-safe mt-1">{client.address.country}</dd>
                   </div>
                 )}
               </dl>
@@ -235,23 +252,15 @@ function TenantDetailPage() {
               <div>
                 <dt className="text-sm font-medium text-safe-light">Created</dt>
                 <dd className="text-safe mt-1">
-                  {new Date(tenant.created_at).toLocaleString()}
+                  {new Date(client.created_at).toLocaleString()}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-safe-light">Last Updated</dt>
                 <dd className="text-safe mt-1">
-                  {new Date(tenant.updated_at).toLocaleString()}
+                  {new Date(client.updated_at).toLocaleString()}
                 </dd>
               </div>
-              {tenant.status_changed_at && (
-                <div>
-                  <dt className="text-sm font-medium text-safe-light">Status Changed</dt>
-                  <dd className="text-safe mt-1">
-                    {new Date(tenant.status_changed_at).toLocaleString()}
-                  </dd>
-                </div>
-              )}
             </dl>
           </div>
         </div>

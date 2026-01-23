@@ -172,7 +172,7 @@ export function DataTable<T extends { id?: string }>({
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse bg-white">
+        <table className="w-full border-collapse bg-calm">
           <thead>
             <tr className="bg-calm border-b border-[0.5px] border-safe">
               {rowSelection && (
@@ -215,7 +215,7 @@ export function DataTable<T extends { id?: string }>({
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 text-center text-safe-light"
+                  className="px-4 py-12 text-center text-safe-light bg-calm"
                 >
                   {emptyMessage}
                 </td>
@@ -229,7 +229,7 @@ export function DataTable<T extends { id?: string }>({
                   <tr
                     key={rowId}
                     className={`border-b border-[0.5px] border-safe ${
-                      isSelected ? 'bg-calm' : 'bg-white hover:bg-calm/50'
+                      isSelected ? 'bg-calm-dark' : 'bg-calm hover:bg-calm-dark/50'
                     } transition-colors`}
                   >
                     {rowSelection && (
@@ -261,7 +261,7 @@ export function DataTable<T extends { id?: string }>({
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {data.length === 0 ? (
-          <div className="p-12 text-center text-safe-light bg-white border border-[0.5px] border-safe">
+          <div className="p-12 text-center text-safe-light bg-calm border border-[0.5px] border-safe">
             {emptyMessage}
           </div>
         ) : (
@@ -272,8 +272,8 @@ export function DataTable<T extends { id?: string }>({
             return (
               <div
                 key={rowId}
-                className={`bg-white border border-[0.5px] border-safe p-4 ${
-                  isSelected ? 'bg-calm' : ''
+                className={`bg-calm border border-[0.5px] border-safe p-4 ${
+                  isSelected ? 'bg-calm-dark' : ''
                 }`}
               >
                 {rowSelection && (

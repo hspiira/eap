@@ -56,7 +56,7 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white border border-[0.5px] border-safe max-w-md w-full">
+      <div className="bg-calm border border-[0.5px] border-safe max-w-md w-full">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">

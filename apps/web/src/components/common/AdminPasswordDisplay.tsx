@@ -39,7 +39,7 @@ export function AdminPasswordDisplay({
 
   return (
     <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-calm p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-safe mb-2">✓ Tenant Created Successfully!</h2>
           <div className="mb-4 p-3 bg-calm border-[0.5px] border-safe rounded-none">
