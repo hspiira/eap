@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Evexía Color Palette - Flat Design System */
+@theme {
+  --color-safe: #5A626A;
+  --color-safe-light: #7A828A;
+  --color-safe-dark: #3A424A;
+  
+  --color-natural: #8BA88B;
+  --color-natural-light: #ABD0AB;
+  --color-natural-dark: #6B886B;
+  
+  --color-nurturing: #D0B5B3;
+  --color-nurturing-light: #F0D5D3;
+  --color-nurturing-dark: #B09593;
+  
+  --color-calm: #E6E0D7;
+  --color-calm-light: #F6F0E7;
+  --color-calm-dark: #D6D0C7;
+  
+  --radius-none: 0;
+}
+
+body {
+  @apply m-0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-calm);
+  color: var(--color-safe);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* Ensure no rounded corners by default */
+* {
+  border-radius: 0;
+}
