@@ -72,6 +72,12 @@ class TenantResponse(BaseModel):
     subscription_tier: SubscriptionTier = Field(..., description="Subscription tier")
     settings: TenantSettingsResponse = Field(..., description="Tenant settings")
     is_active: bool = Field(..., description="Whether tenant is active")
+    admin_email: str | None = Field(
+        None, description="Admin user email (only returned on creation)"
+    )
+    admin_password: str | None = Field(
+        None, description="Admin user password (only returned on creation)"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

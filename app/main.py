@@ -15,6 +15,7 @@ from sqlalchemy import text
 from app.api.routes import (
     activities_router,
     audit_router,
+    auth_router,
     client_tags_router,
     clients_router,
     contacts_router,
@@ -210,6 +211,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # ROUTERS
 # =============================================================================
 
+app.include_router(auth_router)  # Authentication routes (login, etc.)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(persons_router)

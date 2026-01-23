@@ -13,6 +13,7 @@ from app.shared.utils.datetime import (
 )
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.http_errors import get_error_status_code
+from app.shared.utils.password_generator import generate_secure_password
 from app.shared.utils.sanitization import (
     InputSanitizer,
     sanitize_input,
@@ -25,6 +26,7 @@ __all__ = [
     "from_timestamp_ms_utc",
     "from_timestamp_utc",
     "generate_cuid",
+    "generate_secure_password",
     "get_error_status_code",
     "sanitize_input",
     "utc_now",
