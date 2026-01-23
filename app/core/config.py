@@ -55,6 +55,29 @@ class Settings(BaseSettings):
         description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL"
     )
 
+    # Audit Logging
+    # Sampling rate for high-volume actions (LIST, VIEW)
+    # Value between 0.0 (log none) and 1.0 (log all)
+    # Default: 1.0 (log all) - set to lower value (e.g., 0.1 for 10%) to reduce volume
+    AUDIT_SAMPLE_RATE: float = Field(
+        default=1.0,
+        description="Sampling rate for LIST/VIEW audit actions (0.0-1.0)"
+    )
+    
+    # Comma-separated list of resource types to always audit (even for LIST/VIEW)
+    # Example: "Person,Client" - these will always be logged regardless of sample rate
+    AUDIT_ALWAYS_LOG_RESOURCES: str = Field(
+        default="",
+        description="Comma-separated resource types to always audit (e.g., 'Person,Client')"
+    )
+    
+    # Comma-separated list of resource types to never audit for LIST/VIEW
+    # Example: "AuditLog,Health" - these will never be logged for LIST/VIEW actions
+    AUDIT_SKIP_RESOURCES: str = Field(
+        default="",
+        description="Comma-separated resource types to skip for LIST/VIEW (e.g., 'AuditLog,Health')"
+    )
+
     @field_validator("ENVIRONMENT")
     @classmethod
     def validate_environment(cls, v: str) -> str:
@@ -72,6 +95,14 @@ class Settings(BaseSettings):
         if v.upper() not in allowed:
             raise ValueError(f"LOG_LEVEL must be one of {allowed}")
         return v.upper()
+
+    @field_validator("AUDIT_SAMPLE_RATE")
+    @classmethod
+    def validate_audit_sample_rate(cls, v: float) -> float:
+        """Validate audit sample rate."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("AUDIT_SAMPLE_RATE must be between 0.0 and 1.0")
+        return v
 
     @model_validator(mode="after")
     def validate_config(self) -> "Settings":
@@ -120,6 +151,28 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """Check if running in production environment."""
         return self.ENVIRONMENT == "production"
+
+    @property
+    def audit_always_log_resources_list(self) -> list[str]:
+        """Get always-log resource types as a list."""
+        if not self.AUDIT_ALWAYS_LOG_RESOURCES:
+            return []
+        return [
+            resource.strip()
+            for resource in self.AUDIT_ALWAYS_LOG_RESOURCES.split(",")
+            if resource.strip()
+        ]
+
+    @property
+    def audit_skip_resources_list(self) -> list[str]:
+        """Get skip resource types as a list."""
+        if not self.AUDIT_SKIP_RESOURCES:
+            return []
+        return [
+            resource.strip()
+            for resource in self.AUDIT_SKIP_RESOURCES.split(",")
+            if resource.strip()
+        ]
 
 
 # Global settings instance

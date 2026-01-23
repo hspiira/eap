@@ -395,7 +395,7 @@ async def restore_person(
     person_repo: PersonRepository = Depends(get_person_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Restore an archived or soft-deleted person."""
+    """Restore an archived person to active status."""
     person = await RestorePersonUseCase(person_repo).execute(PersonId(person_id))
     return _to_person_response(person)
 

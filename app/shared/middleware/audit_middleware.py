@@ -4,6 +4,8 @@ Audit Middleware
 FastAPI middleware for automatic audit logging of HTTP requests.
 """
 
+import asyncio
+import logging
 from typing import Callable
 
 from fastapi import Request, Response
@@ -14,6 +16,8 @@ from app.application.use_cases.audit_use_cases import LogAuditActionUseCase
 from app.core.database import AsyncSessionLocal
 from app.domain.enums import AuditActionType
 from app.domain.value_objects.core import TenantId, UserId
+
+logger = logging.getLogger(__name__)
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
@@ -67,36 +71,21 @@ class AuditMiddleware(BaseHTTPMiddleware):
         # Process request
         response = await call_next(request)
 
-        # Log audit entry (async, don't block response)
+        # Fire-and-forget audit logging (doesn't block response)
         if tenant_id:
-            try:
-                # Create a new database session for audit logging
-                # This runs in background and doesn't block the response
-                async with AsyncSessionLocal() as db:
-                    audit_repo = self.audit_repository_factory(db)
-                    log_use_case = LogAuditActionUseCase(audit_repo)
-
-                    await log_use_case.execute(
-                        tenant_id=TenantId(tenant_id),
-                        action_type=action_type,
-                        resource_type=resource_type,
-                        user_id=UserId(user_id) if user_id else None,
-                        resource_id=resource_id,
-                        description=f"{request.method} {request.url.path}",
-                        ip_address=ip_address,
-                        user_agent=user_agent,
-                        metadata={
-                            "method": request.method,
-                            "path": str(request.url.path),
-                            "status_code": response.status_code,
-                            "query_params": dict(request.query_params),
-                        },
-                    )
-                    await db.commit()
-            except Exception:
-                # Don't fail the request if audit logging fails
-                # In production, log this error to application logs
-                pass
+            asyncio.create_task(
+                self._log_audit_entry(
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action_type=action_type,
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                    request=request,
+                    response=response,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
+            )
 
         return response
 
@@ -233,3 +222,79 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 break
 
         return resource_type, resource_id
+
+    async def _log_audit_entry(
+        self,
+        tenant_id: str,
+        user_id: str | None,
+        action_type: AuditActionType,
+        resource_type: str,
+        resource_id: str | None,
+        request: Request,
+        response: Response,
+        ip_address: str | None,
+        user_agent: str | None,
+    ) -> None:
+        """
+        Background task to log audit entry.
+        
+        This runs asynchronously and doesn't block the HTTP response.
+        All exceptions are caught and logged to prevent crashes.
+        
+        Args:
+            tenant_id: Tenant identifier
+            user_id: User identifier
+            action_type: Audit action type
+            resource_type: Resource type
+            resource_id: Resource identifier
+            request: FastAPI request
+            response: FastAPI response
+            ip_address: Client IP address
+            user_agent: Client user agent
+        """
+        try:
+            async with AsyncSessionLocal() as db:
+                audit_repo = self.audit_repository_factory(db)
+                log_use_case = LogAuditActionUseCase(audit_repo)
+
+                # Log audit entry (may return None if filtered)
+                audit_log = await log_use_case.execute(
+                    tenant_id=TenantId(tenant_id),
+                    action_type=action_type,
+                    resource_type=resource_type,
+                    user_id=UserId(user_id) if user_id else None,
+                    resource_id=resource_id,
+                    description=f"{request.method} {request.url.path}",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    metadata={
+                        "method": request.method,
+                        "path": str(request.url.path),
+                        "status_code": response.status_code,
+                        "query_params": dict(request.query_params),
+                    },
+                )
+                # Only commit if audit log was created (not filtered)
+                if audit_log is not None:
+                    await db.commit()
+        except Exception:
+            # Log error but don't fail the request
+            # Include context for debugging
+            # logger.exception() automatically includes exception traceback
+            logger.exception(
+                "Failed to log audit entry for %s %s (tenant_id=%s, user_id=%s, action_type=%s)",
+                request.method,
+                request.url.path,
+                tenant_id,
+                user_id,
+                action_type.value,
+                extra={
+                    "tenant_id": tenant_id,
+                    "user_id": user_id,
+                    "action_type": action_type.value,
+                    "resource_type": resource_type,
+                    "resource_id": resource_id,
+                    "method": request.method,
+                    "path": str(request.url.path),
+                },
+            )

@@ -94,14 +94,15 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
             raise ValueError(f"Service with name '{name}' already exists")
 
         # Create service entity
+        now = utc_now()
         service = ServiceEntity(
             _id=service_id,
             _tenant_id=tenant_id,
             _name=name,
             _description=description,
             _status=BaseStatus.PENDING,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            _created_at=now,
+            _updated_at=now,
             _category=category,
             _duration_minutes=duration_minutes,
             _is_group_service=is_group_service,

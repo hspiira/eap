@@ -1,5 +1,6 @@
 """ServiceAssignment API Schemas (DTOs)."""
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import BaseStatus
@@ -27,12 +28,12 @@ class ServiceAssignmentResponse(BaseModel):
     service_id: str = Field(..., description="Service identifier")
     contract_id: str = Field(..., description="Contract identifier")
     status: BaseStatus = Field(..., description="Assignment status")
-    assigned_at: str | None = Field(None, description="Assignment timestamp")
+    assigned_at: datetime | None = Field(None, description="Assignment timestamp")
     assigned_by: str | None = Field(None, description="User who assigned")
     notes: str | None = Field(None, description="Assignment notes")
     is_active: bool = Field(..., description="Whether assignment is active")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 

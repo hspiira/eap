@@ -10,6 +10,7 @@ from app.application.use_cases.audit_use_cases import (
     LogAuditActionUseCase,
     LogEntityChangeUseCase,
 )
+from app.domain.enums import AuditActionType
 from app.domain.events import DomainEvent
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.value_objects.core import TenantId, UserId
@@ -62,12 +63,9 @@ class AuditEventHandler:
         resource_type = get_resource_type_from_entity(entity)
         resource_id = get_resource_id_from_entity(entity)
 
-        # Process each event
         for event in events:
-            # Map event to audit action
             action_type = map_domain_event_to_audit_action(type(event).__name__)
 
-            # Create audit log
             audit_log = await log_use_case.execute(
                 tenant_id=tenant_id,
                 action_type=action_type,
@@ -83,12 +81,14 @@ class AuditEventHandler:
                 },
             )
 
-            # If we have old entity, track field changes
-            if old_entity is not None and action_type in {
-                AuditActionType.UPDATE,
-                AuditActionType.CREATE,
-            }:
-                field_changes = extract_field_changes(old_entity, entity)
+            if audit_log is not None:
+                if action_type == AuditActionType.CREATE:
+                    field_changes = extract_field_changes(None, entity)
+                elif action_type == AuditActionType.UPDATE and old_entity is not None:
+                    field_changes = extract_field_changes(old_entity, entity)
+                else:
+                    field_changes = []
+                
                 if field_changes:
                     await change_use_case.execute(
                         audit_log_id=audit_log._id,
@@ -103,7 +103,6 @@ class AuditEventHandler:
         for field_name, field_value in event.__dict__.items():
             if field_name == "occurred_at":
                 continue
-            # Convert value objects to their values
             if hasattr(field_value, "value"):
                 data[field_name] = field_value.value
             else:

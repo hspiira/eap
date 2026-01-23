@@ -204,8 +204,9 @@ async def get_entity_changes(
         TenantId(tenant_id), entity_type, entity_id, limit, offset
     )
 
-    # Get total count (simplified - in production might want separate count method)
-    total = len(entity_changes)  # This is approximate for pagination
+    total = await audit_repo.count_entity_changes(
+        TenantId(tenant_id), entity_type, entity_id
+    )
 
     entity_change_responses = [
         _to_entity_change_response(ec) for ec in entity_changes

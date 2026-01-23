@@ -90,12 +90,17 @@ class UpdateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
     async def execute(
         self,
         tag_id: ClientTagId,
+        tenant_id: TenantId,
         name: str | None = None,
         description: str | None = None,
         color: str | None = None,
     ) -> ClientTagEntity:
         """Update a client tag."""
         tag = await self._get_entity_or_raise(tag_id, "Tag")
+        if not tag:
+            raise ValueError(f"Tag {tag_id.value} not found")
+        if tag.tenant_id != tenant_id:
+            raise ValueError("Tag not found")
 
         if name and name != tag.name:
             existing = await self.tag_repository.get_by_name(name, tag.tenant_id)

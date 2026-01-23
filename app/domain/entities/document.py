@@ -110,6 +110,7 @@ class DocumentEntity:
         self._updated_at = utc_now()
         
         # Create new version
+        now = utc_now()
         new_version = DocumentEntity(
             _id=new_version_id,
             _tenant_id=self._tenant_id,
@@ -130,11 +131,10 @@ class DocumentEntity:
             _person_id=self._person_id,
             _expires_at=self._expires_at,
             _is_confidential=self._is_confidential,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            _created_at=now,
+            _updated_at=now,
         )
         
-        now = utc_now()
         self._events.append(
             DocumentVersionCreated(
                 occurred_at=now,
@@ -188,7 +188,6 @@ class DocumentEntity:
         """Check if document is active (published and not expired/deleted)."""
         if self._deleted_at:
             return False
-        self.check_expiry()  # Update status if expired
         if self._status != DocumentStatus.PUBLISHED:
             return False
         if self._expires_at is None:

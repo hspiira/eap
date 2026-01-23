@@ -48,8 +48,8 @@ class UserEntity:
         self._events.append(UserEmailVerified(occurred_at=now, user_id=self._id))
     
     def activate(self) -> None:
-        if self._status == UserStatus.BANNED:
-            raise DomainError("Cannot activate banned user")
+        if self._status in (UserStatus.BANNED, UserStatus.TERMINATED):
+            raise DomainError("Cannot activate banned or terminated user")
         self._status = UserStatus.ACTIVE
         now = utc_now()
         self._status_changed_at = now
@@ -68,6 +68,8 @@ class UserEntity:
     def ban(self, reason: str) -> None:
         if not reason:
             raise DomainError("Ban requires reason")
+        if self._status == UserStatus.TERMINATED:
+            raise DomainError("Cannot ban terminated user")
         self._status = UserStatus.BANNED
         now = utc_now()
         self._status_changed_at = now
@@ -76,8 +78,8 @@ class UserEntity:
     
     def deactivate(self, reason: str | None = None) -> None:
         """Deactivate user"""
-        if self._status == UserStatus.BANNED:
-            raise DomainError("Cannot deactivate banned user")
+        if self._status in (UserStatus.BANNED, UserStatus.TERMINATED):
+            raise DomainError("Cannot deactivate banned or terminated user")
         if self._status == UserStatus.INACTIVE:
             raise DomainError("User is already inactive")
         self._status = UserStatus.INACTIVE
@@ -90,9 +92,9 @@ class UserEntity:
         """Permanently terminate user"""
         if not reason:
             raise DomainError("Termination requires reason")
-        if self._status == UserStatus.BANNED:
-            raise DomainError("User is already banned")
-        self._status = UserStatus.BANNED  # Terminated users are banned
+        if self._status == UserStatus.TERMINATED:
+            raise DomainError("User is already terminated")
+        self._status = UserStatus.TERMINATED
         now = utc_now()
         self._status_changed_at = now
         self._updated_at = now

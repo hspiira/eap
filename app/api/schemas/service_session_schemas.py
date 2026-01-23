@@ -7,7 +7,7 @@ Separate from domain entities.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import SessionStatus
 
@@ -48,6 +48,12 @@ class ServiceSessionUpdate(BaseModel):
 
     location: str | None = Field(None, description="Session location")
     notes: str | None = Field(None, description="Session notes")
+
+    @model_validator(mode="after")
+    def _validate_location_or_notes(self) -> 'ServiceSessionUpdate':
+        if self.location is None and self.notes is None:
+            raise ValueError("At least one of location or notes must be provided")
+        return self
 
 
 class ServiceSessionUpdateFeedback(BaseModel):

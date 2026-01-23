@@ -42,12 +42,10 @@ class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, Contract
         """Extract raw ID value."""
         return entity_id.value
 
-    # Domain-specific queries (not in base class)
-
     async def get_by_client_id(
         self, tenant_id: TenantId, client_id: ClientId
     ) -> list[ContractEntity]:
-        """Get all contracts for a client within tenant, excluding soft-deleted."""
+        """Get all contracts for a client within tenant."""
         stmt = select(ContractModel).where(
             ContractModel.tenant_id == tenant_id.value,
             ContractModel.client_id == client_id.value,
@@ -89,7 +87,6 @@ class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, Contract
         sort_desc: bool = True,
     ) -> Sequence[ContractEntity]:
         """List contracts with filtering, searching, and pagination."""
-        # Build filters dict for base class
         filters: dict[str, Any] = {}
         if client_id:
             filters["client_id"] = client_id.value
@@ -105,7 +102,7 @@ class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, Contract
             sort_by=sort_by,
             sort_desc=sort_desc,
             filters=filters,
-            search=None,  # Contracts don't have searchable text fields
+            search=None,
             search_fields=None,
         )
 

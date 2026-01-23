@@ -52,6 +52,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
@@ -530,7 +531,6 @@ async def get_child_clients(
     total = int(count_result.scalar() or 0)
 
     # Convert to entities and responses
-    from app.infrastructure.mappers.client_mapper import ClientMapper
 
     clients = [ClientMapper.to_entity(model) for model in models]
 

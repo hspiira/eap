@@ -51,14 +51,12 @@ async def audit_entity_operation(
         request: FastAPI request (for IP/user agent)
         db: Database session (for committing audit logs)
     """
-    # Convert string IDs to value objects if needed
     if isinstance(tenant_id, str):
         tenant_id = TenantId(tenant_id)
     
     if user_id is not None and isinstance(user_id, str):
         user_id = UserId(user_id)
 
-    # Process events
     await process_entity_events_for_audit(
         entity=entity,
         audit_handler=audit_handler,
@@ -68,6 +66,3 @@ async def audit_entity_operation(
         request=request,
     )
 
-    # Note: Audit logs are committed separately
-    # The db session here is for the main transaction
-    # Audit should be in a separate transaction or committed after main commit

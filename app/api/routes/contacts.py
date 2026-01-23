@@ -181,24 +181,6 @@ async def list_contacts(
 
 
 @router.get(
-    "/{contact_id}",
-    response_model=ContactResponse,
-    summary="Get contact by ID",
-)
-@readonly()
-async def get_contact(
-    contact_id: str,
-    contact_repo: ContactRepository = Depends(get_contact_repository),
-    db: AsyncSession = Depends(get_db),
-):
-    """Get contact by ID."""
-    contact = await GetContactUseCase(contact_repo).execute(ContactId(contact_id))
-    if not contact:
-        raise ValueError("Contact not found")
-    return _to_contact_response(contact)
-
-
-@router.get(
     "/client/{client_id}",
     response_model=ContactListResponse,
     summary="Get all contacts for a client",
@@ -238,4 +220,21 @@ async def get_primary_contact(
     contact = await contact_repo.get_primary_contact(client_id, TenantId(tenant_id))
     if not contact:
         raise ValueError("Primary contact not found")
+    return _to_contact_response(contact)
+
+@router.get(
+    "/{contact_id}",
+    response_model=ContactResponse,
+    summary="Get contact by ID",
+)
+@readonly()
+async def get_contact(
+    contact_id: str,
+    contact_repo: ContactRepository = Depends(get_contact_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get contact by ID."""
+    contact = await GetContactUseCase(contact_repo).execute(ContactId(contact_id))
+    if not contact:
+        raise ValueError("Contact not found")
     return _to_contact_response(contact)

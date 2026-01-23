@@ -20,6 +20,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.shared.utils.audit_filter import AuditFilterService
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 
@@ -41,8 +42,21 @@ class LogAuditActionUseCase:
         ip_address: str | None = None,
         user_agent: str | None = None,
         metadata: dict[str, Any] | None = None,
-    ) -> AuditLog:
-        """Log an audit action."""
+    ) -> AuditLog | None:
+        """
+        Log an audit action.
+        
+        Applies configurable filtering for high-volume actions (LIST, VIEW)
+        to prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)
+        are always logged.
+        
+        Returns:
+            AuditLog if action was logged, None if filtered out
+        """
+        # Check if action should be logged based on filtering rules
+        if not AuditFilterService.should_log_action(action_type, resource_type):
+            return None
+
         audit_log = AuditLog(
             _id=AuditLogId(generate_cuid()),
             _tenant_id=tenant_id,

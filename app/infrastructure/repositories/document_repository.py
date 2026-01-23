@@ -42,18 +42,15 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
         """Extract raw ID value."""
         return entity_id.value
 
-    # Domain-specific queries (not in base class)
 
     async def get_versions(
         self, document_id: DocumentId, tenant_id: TenantId
     ) -> Sequence[DocumentEntity]:
         """Get all versions of a document."""
-        # Find the original document (version 1 or the one without previous_version_id)
         original = await self.get_by_id(document_id)
         if not original:
             return []
 
-        # Get all versions by following the version chain
         versions = []
         current_id = document_id
 
@@ -62,7 +59,6 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
             if not doc or doc.tenant_id != tenant_id:
                 break
             versions.append(doc)
-            # Find next version (where previous_version_id == current_id)
             stmt = select(DocumentModel).where(
                 DocumentModel.previous_version_id == current_id.value,
                 DocumentModel.tenant_id == tenant_id.value,
@@ -75,7 +71,6 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
             else:
                 current_id = None
 
-        # Also get previous versions (where current_id is previous_version_id)
         current_id = document_id
         while current_id:
             stmt = select(DocumentModel).where(
@@ -93,7 +88,6 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
                 versions.insert(0, prev_doc)
             current_id = prev_id
 
-        # Sort by version number
         versions.sort(key=lambda d: d.version)
         return versions
 
@@ -101,12 +95,10 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
         self, document_id: DocumentId, tenant_id: TenantId
     ) -> DocumentEntity | None:
         """Get the latest version of a document."""
-        # Start with the given document ID
         current = await self.get_by_id(document_id)
         if not current or current.tenant_id != tenant_id:
             return None
 
-        # Follow the version chain to find the latest
         while True:
             stmt = select(DocumentModel).where(
                 DocumentModel.previous_version_id == current.id.value,
@@ -141,10 +133,9 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
         stmt = select(DocumentModel).where(
             DocumentModel.tenant_id == tenant_id.value,
             DocumentModel.deleted_at.is_(None),
-            DocumentModel.is_latest == True,  # Only latest versions
+            DocumentModel.is_latest.is_(True),
         )
 
-        # Apply filters
         if document_type:
             stmt = stmt.where(DocumentModel.document_type == document_type)
         if status:
@@ -166,14 +157,12 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
                 )
             )
 
-        # Apply sorting
         sort_column = getattr(DocumentModel, sort_by, DocumentModel.created_at)
         if sort_desc:
             stmt = stmt.order_by(sort_column.desc())
         else:
             stmt = stmt.order_by(sort_column.asc())
 
-        # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
 
         result = await self.session.execute(stmt)
@@ -196,10 +185,9 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
         stmt = select(func.count(DocumentModel.id)).where(
             DocumentModel.tenant_id == tenant_id.value,
             DocumentModel.deleted_at.is_(None),
-            DocumentModel.is_latest == True,  # Only latest versions
+            DocumentModel.is_latest.is_(True),
         )
 
-        # Apply filters
         if document_type:
             stmt = stmt.where(DocumentModel.document_type == document_type)
         if status:

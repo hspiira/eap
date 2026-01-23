@@ -101,7 +101,7 @@ class ContractEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self._deleted_at:
-            raise DomainError("Contract is already terminated")
+            raise DomainError("Cannot terminate deleted contract")
         if self._status == ContractStatus.TERMINATED:
             raise DomainError("Contract is already terminated")
         self._status = ContractStatus.TERMINATED
@@ -122,8 +122,6 @@ class ContractEntity:
     
     def restore(self) -> None:
         """Restore a terminated or expired contract"""
-        if self._deleted_at:
-            raise DomainError("Cannot restore deleted contract")
         # Check if contract is already active and not deleted
         if self._status == ContractStatus.ACTIVE and self._deleted_at is None:
             raise DomainError("Contract is already active and does not need restoration")

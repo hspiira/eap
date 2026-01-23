@@ -82,8 +82,9 @@ class PersonEntity:
         if self._status == BaseStatus.ACTIVE:
             raise DomainError("Person is already active")
         self._status = BaseStatus.ACTIVE
-        self._updated_at = utc_now()
-        self._events.append(PersonActivated(occurred_at=utc_now(), person_id=self._id, person_type=self._person_type))
+        now = utc_now()
+        self._updated_at = now
+        self._events.append(PersonActivated(occurred_at=now, person_id=self._id, person_type=self._person_type))
     
     def deactivate(self, reason: str | None = None) -> None:
         """Deactivate person"""
@@ -92,8 +93,9 @@ class PersonEntity:
         if self._status == BaseStatus.INACTIVE:
             raise DomainError("Person is already inactive")
         self._status = BaseStatus.INACTIVE
-        self._updated_at = utc_now()
-        self._events.append(PersonDeactivated(occurred_at=utc_now(), person_id=self._id, reason=reason))
+        now = utc_now()
+        self._updated_at = now
+        self._events.append(PersonDeactivated(occurred_at=now, person_id=self._id, reason=reason))
     
     def terminate(self, reason: str) -> None:
         """Permanently terminate person"""
@@ -102,9 +104,10 @@ class PersonEntity:
         if self._status == BaseStatus.DELETED:
             raise DomainError("Person is already terminated")
         self._status = BaseStatus.DELETED
-        self._deleted_at = utc_now()
-        self._updated_at = utc_now()
-        self._events.append(PersonTerminated(occurred_at=utc_now(), person_id=self._id, reason=reason))
+        now = utc_now()
+        self._deleted_at = now
+        self._updated_at = now
+        self._events.append(PersonTerminated(occurred_at=now, person_id=self._id, reason=reason))
     
     def is_eligible_for_services(self) -> bool:
         """Complex eligibility based on person type"""
@@ -164,9 +167,10 @@ class PersonEntity:
         
         self._is_dual_role = True
         self._secondary_person_type = role
-        self._updated_at = utc_now()
+        now = utc_now()
+        self._updated_at = now
         self._ensure_invariants()
-        self._events.append(PersonSecondaryRoleAdded(occurred_at=utc_now(), person_id=self._id, role=role))
+        self._events.append(PersonSecondaryRoleAdded(occurred_at=now, person_id=self._id, role=role))
     
     def remove_secondary_role(self) -> None:
         """Remove the secondary role from the person.
@@ -192,14 +196,18 @@ class PersonEntity:
         removed_role = self._secondary_person_type
         self._is_dual_role = False
         self._secondary_person_type = None
-        self._updated_at = utc_now()
+        now = utc_now()
+        self._updated_at = now
         self._ensure_invariants()
-        self._events.append(PersonSecondaryRoleRemoved(occurred_at=utc_now(), person_id=self._id, role=removed_role))
+        self._events.append(PersonSecondaryRoleRemoved(occurred_at=now, person_id=self._id, role=removed_role))
     
     def update_emergency_contact(self, contact: EmergencyContact) -> None:
         """Update emergency contact information."""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot update emergency contact for deleted person")
         self._emergency_contact = contact
-        self._updated_at = utc_now()
+        now = utc_now()
+        self._updated_at = now
     
     def update_employment_info(self, info: EmploymentInfo) -> None:
         """Update employment information."""
@@ -226,7 +234,11 @@ class PersonEntity:
         self._ensure_invariants()
     
     def archive(self) -> None:
-        """Archive person (softer than terminate)"""
+        """Archive person (softer than terminate).
+        
+        Sets status to ARCHIVED. This is reversible via restore().
+        Note: archive() does NOT set _deleted_at; only terminate() does.
+        """
         if self._status == BaseStatus.DELETED:
             raise DomainError("Cannot archive deleted person")
         if self._status == BaseStatus.ARCHIVED:
@@ -235,18 +247,18 @@ class PersonEntity:
         self._updated_at = utc_now()
     
     def restore(self) -> None:
-        """Restore archived or soft-deleted person"""
+        """Restore archived person to active status.
+        
+        Only restores from ARCHIVED to ACTIVE. Terminated persons (DELETED status)
+        cannot be restored as termination is permanent.
+        """
         if self._status == BaseStatus.DELETED:
             raise DomainError("Cannot restore deleted person")
-        # Check if person is already active and not deleted
-        if self._status == BaseStatus.ACTIVE and self._deleted_at is None:
-            raise DomainError("Person is already active and does not need restoration")
-        # Restore soft-deleted person
-        if self._deleted_at:
-            self._deleted_at = None
-        # Restore archived person
-        if self._status == BaseStatus.ARCHIVED:
-            self._status = BaseStatus.ACTIVE
+        if self._status == BaseStatus.ACTIVE:
+            raise DomainError("Person is already active")
+        if self._status != BaseStatus.ARCHIVED:
+            raise DomainError("Person must be archived to restore")
+        self._status = BaseStatus.ACTIVE
         self._updated_at = utc_now()
     
     # === Factory Methods ===

@@ -8,7 +8,10 @@ from typing import Any
 
 from fastapi import Request
 
-from app.domain.entities.audit import AuditLog
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.domain.entities.audit import AuditLog
 from app.domain.value_objects.core import TenantId, UserId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 
@@ -37,11 +40,9 @@ async def process_entity_events_for_audit(
     if not hasattr(entity, "_events") or not entity._events:
         return
 
-    # Extract IP and user agent from request if available
     ip_address = None
     user_agent = None
     if request:
-        # Extract IP address
         forwarded = request.headers.get("x-forwarded-for")
         if forwarded:
             ip_address = forwarded.split(",")[0].strip()
@@ -52,13 +53,11 @@ async def process_entity_events_for_audit(
             elif request.client:
                 ip_address = request.client.host
 
-        # Extract user agent
         user_agent = request.headers.get("user-agent")
 
-    # Process events
     await audit_handler.handle_events(
         entity=entity,
-        events=entity._events.copy(),  # Copy to avoid mutation
+        events=entity._events.copy(),
         tenant_id=tenant_id,
         user_id=user_id,
         old_entity=old_entity,
@@ -66,7 +65,6 @@ async def process_entity_events_for_audit(
         user_agent=user_agent,
     )
 
-    # Clear events after processing
     entity._events.clear()
 
 
@@ -80,7 +78,7 @@ async def log_audit_action_directly(
     description: str | None = None,
     request: Request | None = None,
     metadata: dict[str, Any] | None = None,
-) -> AuditLog:
+) -> "AuditLog | None":
     """
     Log an audit action directly (for actions that don't raise domain events).
     
@@ -96,12 +94,11 @@ async def log_audit_action_directly(
         metadata: Additional metadata
         
     Returns:
-        Created AuditLog
+        Created AuditLog, or None if action was filtered out
     """
     from app.application.use_cases.audit_use_cases import LogAuditActionUseCase
     from app.domain.enums import AuditActionType
 
-    # Extract IP and user agent from request if available
     ip_address = None
     user_agent = None
     if request:
@@ -118,7 +115,6 @@ async def log_audit_action_directly(
 
     log_use_case = LogAuditActionUseCase(audit_handler.audit_repository)
 
-    # Convert string to enum if needed
     if isinstance(action_type, str):
         action_type = AuditActionType[action_type]
 

@@ -4,6 +4,7 @@ Industry API Schemas (DTOs)
 Pydantic models for request/response validation.
 """
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -35,8 +36,8 @@ class IndustryResponse(BaseModel):
     code: str | None = Field(None, description="Industry code")
     parent_industry_id: str | None = Field(None, description="Parent industry ID")
     is_active: bool = Field(..., description="Whether industry is active")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,5 +1,6 @@
 """ClientTag API Schemas (DTOs)."""
 
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -8,7 +9,7 @@ class ClientTagCreate(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="Tag name")
     description: str | None = Field(None, description="Tag description")
-    color: str | None = Field(None, max_length=7, description="Hex color code")
+    color: str | None = Field(None, max_length=7, pattern=r'^#([0-9A-Fa-f]{6})$', description="Hex color code (e.g., `#FF5733`)")
 
 
 class ClientTagUpdate(BaseModel):
@@ -16,7 +17,7 @@ class ClientTagUpdate(BaseModel):
 
     name: str | None = Field(None, min_length=1, max_length=255, description="Tag name")
     description: str | None = Field(None, description="Tag description")
-    color: str | None = Field(None, max_length=7, description="Hex color code")
+    color: str | None = Field(None, max_length=7, pattern=r'^#([0-9A-Fa-f]{6})$', description="Hex color code (e.g., `#FF5733`)")
 
 
 class ClientTagResponse(BaseModel):
@@ -26,10 +27,10 @@ class ClientTagResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     name: str = Field(..., description="Tag name")
     description: str | None = Field(None, description="Tag description")
-    color: str | None = Field(None, description="Hex color code")
+    color: str | None = Field(None, max_length=7, pattern=r'^#([0-9A-Fa-f]{6})$', description="Hex color code (e.g., `#FF5733`)")
     is_active: bool = Field(..., description="Whether tag is active")
-    created_at: str = Field(..., description="Creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = ConfigDict(from_attributes=True)
 

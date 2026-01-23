@@ -103,16 +103,19 @@ class TenantEntity:
         self._updated_at = utc_now()
     
     def restore(self) -> None:
-        """Restore archived or soft-deleted tenant"""
+        """Restore archived or soft-deleted tenant.
+        
+        Only restores from ARCHIVED to ACTIVE. Terminated tenants (TERMINATED status)
+        cannot be restored as termination is permanent.
+        """
         if self._status == TenantStatus.TERMINATED:
             raise DomainError("Cannot restore terminated tenant")
-        # Check if tenant is already active and not deleted
-        if self._status == TenantStatus.ACTIVE and self._deleted_at is None:
+        if self._status not in (TenantStatus.ARCHIVED, TenantStatus.ACTIVE) and self._deleted_at is None:
+             raise DomainError("Tenant is not archived or deleted")
+        if self._status == TenantStatus.ACTIVE and not self._deleted_at:
             raise DomainError("Tenant is already active and does not need restoration")
-        # Restore soft-deleted tenant
         if self._deleted_at:
             self._deleted_at = None
-        # Restore archived tenant
         if self._status == TenantStatus.ARCHIVED:
             self._status = TenantStatus.ACTIVE
         self._updated_at = utc_now()

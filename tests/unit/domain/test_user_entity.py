@@ -244,7 +244,7 @@ class TestUserTermination:
         """Test terminating a user."""
         active_user.terminate("Account closed")
 
-        assert active_user._status == UserStatus.BANNED
+        assert active_user._status == UserStatus.TERMINATED
         assert active_user._deleted_at is not None
         assert any(isinstance(e, UserTerminated) for e in active_user._events)
 
@@ -253,10 +253,11 @@ class TestUserTermination:
         with pytest.raises(DomainError, match="Termination requires reason"):
             active_user.terminate("")
 
-    def test_terminate_banned_user_raises_error(self, banned_user):
-        """Test that terminating banned user raises DomainError."""
-        with pytest.raises(DomainError, match="User is already banned"):
-            banned_user.terminate("Double ban attempt")
+    def test_terminate_terminated_user_raises_error(self, active_user):
+        """Test that terminating already terminated user raises DomainError."""
+        active_user.terminate("First termination")
+        with pytest.raises(DomainError, match="User is already terminated"):
+            active_user.terminate("Double termination attempt")
 
 
 # =============================================================================

@@ -6,7 +6,8 @@ Immutable audit log entities for tracking system-wide events and changes.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
 from app.domain.enums import AuditActionType
 from app.domain.value_objects.audit import FieldChange
@@ -52,12 +53,14 @@ class AuditLog:
     _ip_address: str | None
     _user_agent: str | None
     _occurred_at: datetime
-    _metadata: dict[str, Any] | None  # Additional context
+    _metadata: Mapping[str, Any] | None  # Additional context
     
     def __post_init__(self) -> None:
         """Validate audit log."""
         if not self._resource_type:
             raise ValueError("Resource type cannot be empty")
+        if isinstance(self._metadata, dict):
+            object.__setattr__(self, "_metadata", MappingProxyType(self._metadata))
     
     def has_changes(self) -> bool:
         """Check if this audit log has associated entity changes."""

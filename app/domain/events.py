@@ -169,6 +169,13 @@ class ClientActivated(DomainEvent):
 
 
 @dataclass(frozen=True)
+class ClientDeactivated(DomainEvent):
+    """Event raised when a client is deactivated."""
+    client_id: ClientId
+    reason: str
+
+
+@dataclass(frozen=True)
 class ClientSuspended(DomainEvent):
     """Event raised when a client is suspended."""
     client_id: ClientId

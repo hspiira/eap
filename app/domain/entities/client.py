@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import ClientId, TenantId, UserId, ContactInfo, Address, IndustryId
 from app.domain.enums import BaseStatus, ContactMethod
-from app.domain.events import DomainEvent, ClientVerified, ClientActivated, ClientSuspended, ClientTerminated
+from app.domain.events import ClientDeactivated, DomainEvent, ClientVerified, ClientActivated, ClientSuspended, ClientTerminated
 from app.domain.exceptions import DomainError
 from app.shared.utils.datetime import utc_now
 
@@ -49,7 +49,7 @@ class ClientEntity:
         self._updated_at = utc_now()
         self._events.append(ClientActivated(occurred_at=utc_now(), client_id=self._id))
     
-    def deactivate(self, reason: str | None = None) -> None:
+    def deactivate(self) -> None:
         """Deactivate client"""
         if self._status == BaseStatus.DELETED:
             raise DomainError("Cannot deactivate deleted client")
@@ -57,6 +57,7 @@ class ClientEntity:
             raise DomainError("Client is already inactive")
         self._status = BaseStatus.INACTIVE
         self._updated_at = utc_now()
+        self._events.append(ClientDeactivated(occurred_at=utc_now(), client_id=self._id))
     
     def suspend(self, reason: str) -> None:
         """Suspend client (e.g., payment issues)"""
@@ -100,6 +101,7 @@ class ClientEntity:
         # Restore soft-deleted client
         if self._deleted_at:
             self._deleted_at = None
+            self._status = BaseStatus.INACTIVE
         # Restore archived client
         if self._status == BaseStatus.ARCHIVED:
             self._status = BaseStatus.ACTIVE
