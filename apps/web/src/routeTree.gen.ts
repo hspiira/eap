@@ -10,6 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
+import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
+import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as PersonsIndexRouteImport } from './routes/persons/index'
+import { Route as KpisIndexRouteImport } from './routes/kpis/index'
+import { Route as DocumentsIndexRouteImport } from './routes/documents/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
+import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as AuditIndexRouteImport } from './routes/audit/index'
 import { Route as TenantsCreateRouteImport } from './routes/tenants/create'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
@@ -17,6 +28,61 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantsIndexRoute = TenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessionsIndexRoute = SessionsIndexRouteImport.update({
+  id: '/sessions/',
+  path: '/sessions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonsIndexRoute = PersonsIndexRouteImport.update({
+  id: '/persons/',
+  path: '/persons/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KpisIndexRoute = KpisIndexRouteImport.update({
+  id: '/kpis/',
+  path: '/kpis/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsIndexRoute = DocumentsIndexRouteImport.update({
+  id: '/documents/',
+  path: '/documents/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsIndexRoute = ContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/clients/',
+  path: '/clients/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditIndexRoute = AuditIndexRouteImport.update({
+  id: '/audit/',
+  path: '/audit/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TenantsCreateRoute = TenantsCreateRouteImport.update({
@@ -40,12 +106,34 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/tenants/create': typeof TenantsCreateRoute
+  '/audit/': typeof AuditIndexRoute
+  '/clients/': typeof ClientsIndexRoute
+  '/contracts/': typeof ContractsIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/documents/': typeof DocumentsIndexRoute
+  '/kpis/': typeof KpisIndexRoute
+  '/persons/': typeof PersonsIndexRoute
+  '/services/': typeof ServicesIndexRoute
+  '/sessions/': typeof SessionsIndexRoute
+  '/tenants/': typeof TenantsIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/tenants/create': typeof TenantsCreateRoute
+  '/audit': typeof AuditIndexRoute
+  '/clients': typeof ClientsIndexRoute
+  '/contracts': typeof ContractsIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/documents': typeof DocumentsIndexRoute
+  '/kpis': typeof KpisIndexRoute
+  '/persons': typeof PersonsIndexRoute
+  '/services': typeof ServicesIndexRoute
+  '/sessions': typeof SessionsIndexRoute
+  '/tenants': typeof TenantsIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +141,70 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/tenants/create': typeof TenantsCreateRoute
+  '/audit/': typeof AuditIndexRoute
+  '/clients/': typeof ClientsIndexRoute
+  '/contracts/': typeof ContractsIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/documents/': typeof DocumentsIndexRoute
+  '/kpis/': typeof KpisIndexRoute
+  '/persons/': typeof PersonsIndexRoute
+  '/services/': typeof ServicesIndexRoute
+  '/sessions/': typeof SessionsIndexRoute
+  '/tenants/': typeof TenantsIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/login' | '/auth/signup' | '/tenants/create'
+  fullPaths:
+    | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/tenants/create'
+    | '/audit/'
+    | '/clients/'
+    | '/contracts/'
+    | '/dashboard/'
+    | '/documents/'
+    | '/kpis/'
+    | '/persons/'
+    | '/services/'
+    | '/sessions/'
+    | '/tenants/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/login' | '/auth/signup' | '/tenants/create'
-  id: '__root__' | '/' | '/auth/login' | '/auth/signup' | '/tenants/create'
+  to:
+    | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/tenants/create'
+    | '/audit'
+    | '/clients'
+    | '/contracts'
+    | '/dashboard'
+    | '/documents'
+    | '/kpis'
+    | '/persons'
+    | '/services'
+    | '/sessions'
+    | '/tenants'
+    | '/users'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/tenants/create'
+    | '/audit/'
+    | '/clients/'
+    | '/contracts/'
+    | '/dashboard/'
+    | '/documents/'
+    | '/kpis/'
+    | '/persons/'
+    | '/services/'
+    | '/sessions/'
+    | '/tenants/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +212,17 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
   TenantsCreateRoute: typeof TenantsCreateRoute
+  AuditIndexRoute: typeof AuditIndexRoute
+  ClientsIndexRoute: typeof ClientsIndexRoute
+  ContractsIndexRoute: typeof ContractsIndexRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DocumentsIndexRoute: typeof DocumentsIndexRoute
+  KpisIndexRoute: typeof KpisIndexRoute
+  PersonsIndexRoute: typeof PersonsIndexRoute
+  ServicesIndexRoute: typeof ServicesIndexRoute
+  SessionsIndexRoute: typeof SessionsIndexRoute
+  TenantsIndexRoute: typeof TenantsIndexRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +232,83 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/': {
+      id: '/tenants/'
+      path: '/tenants'
+      fullPath: '/tenants/'
+      preLoaderRoute: typeof TenantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessions/': {
+      id: '/sessions/'
+      path: '/sessions'
+      fullPath: '/sessions/'
+      preLoaderRoute: typeof SessionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/': {
+      id: '/services/'
+      path: '/services'
+      fullPath: '/services/'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persons/': {
+      id: '/persons/'
+      path: '/persons'
+      fullPath: '/persons/'
+      preLoaderRoute: typeof PersonsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpis/': {
+      id: '/kpis/'
+      path: '/kpis'
+      fullPath: '/kpis/'
+      preLoaderRoute: typeof KpisIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents/': {
+      id: '/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof DocumentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts/': {
+      id: '/contracts/'
+      path: '/contracts'
+      fullPath: '/contracts/'
+      preLoaderRoute: typeof ContractsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/': {
+      id: '/clients/'
+      path: '/clients'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit/': {
+      id: '/audit/'
+      path: '/audit'
+      fullPath: '/audit/'
+      preLoaderRoute: typeof AuditIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tenants/create': {
@@ -107,6 +340,17 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
   TenantsCreateRoute: TenantsCreateRoute,
+  AuditIndexRoute: AuditIndexRoute,
+  ClientsIndexRoute: ClientsIndexRoute,
+  ContractsIndexRoute: ContractsIndexRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+  DocumentsIndexRoute: DocumentsIndexRoute,
+  KpisIndexRoute: KpisIndexRoute,
+  PersonsIndexRoute: PersonsIndexRoute,
+  ServicesIndexRoute: ServicesIndexRoute,
+  SessionsIndexRoute: SessionsIndexRoute,
+  TenantsIndexRoute: TenantsIndexRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
