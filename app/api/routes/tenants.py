@@ -52,8 +52,17 @@ from app.shared.utils.generators import generate_cuid
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 
-def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
-    """Map TenantEntity to API response using public properties."""
+def _to_tenant_response(
+    tenant: TenantEntity, admin_password: str | None = None
+) -> TenantResponse:
+    """
+    Map TenantEntity to API response using public properties.
+    
+    Args:
+        tenant: Tenant entity
+        admin_password: Admin password (only provided on creation)
+    """
+    admin_email = f"admin_{tenant.code.value}@evexia.test" if admin_password else None
     return TenantResponse(
         id=tenant.id.value,
         name=tenant.name,
@@ -67,6 +76,8 @@ def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
             custom_branding=tenant.settings.custom_branding,
         ),
         is_active=tenant.is_active(),
+        admin_email=admin_email,
+        admin_password=admin_password,
     )
 
 
@@ -83,10 +94,23 @@ def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
 async def create_tenant(
     data: TenantCreate,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new tenant."""
-    tenant = await CreateTenantUseCase(tenant_repo).execute(
+    """
+    Create a new tenant and an admin user.
+    
+    An admin user is automatically created with:
+    - Email: admin_{tenant_code}@evexia.test
+    - A secure randomly generated password (returned in response)
+    - Active status and verified email
+    
+    The admin password is only returned once during tenant creation.
+    Store it securely as it cannot be retrieved later.
+    """
+    tenant, admin_password = await CreateTenantUseCase(
+        tenant_repo, user_repo
+    ).execute(
         tenant_id=TenantId(generate_cuid()),
         name=data.name,
         code=data.code,
@@ -96,7 +120,7 @@ async def create_tenant(
         features_enabled=tuple(data.settings.features_enabled),
         custom_branding=data.settings.custom_branding,
     )
-    return _to_tenant_response(tenant)
+    return _to_tenant_response(tenant, admin_password)
 
 
 @router.post(

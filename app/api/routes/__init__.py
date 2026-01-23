@@ -6,6 +6,7 @@ FastAPI route handlers.
 
 from app.api.routes.activities import router as activities_router
 from app.api.routes.audit import router as audit_router
+from app.api.routes.auth import router as auth_router
 from app.api.routes.client_tags import router as client_tags_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contacts import router as contacts_router
@@ -23,6 +24,7 @@ from app.api.routes.users import router as users_router
 __all__ = [
     "activities_router",
     "audit_router",
+    "auth_router",
     "client_tags_router",
     "clients_router",
     "contacts_router",

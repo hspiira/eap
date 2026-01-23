@@ -13,11 +13,16 @@ from app.application.use_cases.base import (
     create_suspend_use_case,
     create_terminate_use_case,
 )
+from app.application.use_cases.user_use_cases import CreateUserUseCase, ActivateUserUseCase, VerifyUserEmailUseCase
+from app.core.security import hash_password
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.repositories.tenant_repository import TenantRepository
-from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
+from app.domain.repositories.user_repository import UserRepository
+from app.domain.value_objects.core import Email, TenantCode, TenantId, TenantSettings, UserId
 from app.shared.utils.datetime import utc_now
+from app.shared.utils.generators import generate_cuid
+from app.shared.utils.password_generator import generate_secure_password
 
 
 # =============================================================================
@@ -83,9 +88,14 @@ class RestoreTenantUseCase:
 class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
     """Use case for creating a new tenant."""
 
-    def __init__(self, tenant_repository: TenantRepository):
+    def __init__(
+        self,
+        tenant_repository: TenantRepository,
+        user_repository: UserRepository | None = None,
+    ):
         super().__init__(tenant_repository)
         self.tenant_repository = tenant_repository
+        self.user_repository = user_repository
 
     async def execute(
         self,
@@ -97,8 +107,13 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         max_clients: int = 5,
         features_enabled: tuple[str, ...] = (),
         custom_branding: bool = False,
-    ) -> TenantEntity:
-        """Create a new tenant."""
+    ) -> tuple[TenantEntity, str]:
+        """
+        Create a new tenant and an admin user.
+        
+        Returns:
+            Tuple of (TenantEntity, admin_password)
+        """
         # Check if tenant already exists
         existing = await self.tenant_repository.get_by_code(code)
         if existing:
@@ -125,7 +140,51 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             _updated_at=utc_now(),
         )
 
-        return await self._save_and_publish_events(tenant)
+        tenant = await self._save_and_publish_events(tenant)
+
+        # Create admin user if user_repository is provided
+        admin_password = ""
+        if self.user_repository:
+            admin_password = await self._create_admin_user(tenant)
+
+        return tenant, admin_password
+
+    async def _create_admin_user(self, tenant: TenantEntity) -> str:
+        """
+        Create an admin user for the tenant.
+        
+        Args:
+            tenant: The newly created tenant
+            
+        Returns:
+            The generated admin password
+        """
+        # Generate secure password
+        admin_password = generate_secure_password(length=16)
+        password_hash = hash_password(admin_password)
+
+        # Create admin email: admin_{tenant_code}@evexia.test
+        admin_email = Email(f"admin_{tenant.code.value}@evexia.test")
+        user_id = UserId(generate_cuid())
+
+        # Create admin user
+        create_user_use_case = CreateUserUseCase(self.user_repository)
+        admin_user = await create_user_use_case.execute(
+            user_id=user_id,
+            tenant_id=tenant.id,
+            email=admin_email,
+            password_hash=password_hash,
+        )
+
+        # Activate and verify email for admin user (skip verification step)
+        activate_use_case = ActivateUserUseCase(self.user_repository)
+        await activate_use_case.execute(admin_user.id)
+
+        # Verify email automatically for admin
+        verify_email_use_case = VerifyUserEmailUseCase(self.user_repository)
+        await verify_email_use_case.execute(admin_user.id)
+
+        return admin_password
 
 
 # =============================================================================
