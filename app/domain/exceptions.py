@@ -1,5 +1,5 @@
 """
-Domain exceptions for the Allevia application.
+Domain exceptions for the Evexía application.
 
 This module defines domain-level exceptions that represent business rule violations.
 These exceptions are independent of infrastructure concerns.
@@ -8,9 +8,9 @@ These exceptions are independent of infrastructure concerns.
 from typing import Any
 
 
-class AlleviaException(Exception):
+class EvexiaException(Exception):
     """
-    Base exception for all Allevia application errors.
+    Base exception for all Evexía application errors.
 
     All custom exceptions should inherit from this class to allow
     for consistent error handling and logging.
@@ -41,7 +41,7 @@ class AlleviaException(Exception):
         }
 
 
-class ValidationException(AlleviaException):
+class ValidationException(EvexiaException):
     """Raised when input validation fails."""
 
     def __init__(self, message: str, field: str | None = None):
@@ -49,14 +49,14 @@ class ValidationException(AlleviaException):
         super().__init__(message, "VALIDATION_ERROR", details)
 
 
-class AuthenticationException(AlleviaException):
+class AuthenticationException(EvexiaException):
     """Raised when authentication fails."""
 
     def __init__(self, message: str = "Authentication failed"):
         super().__init__(message, "AUTHENTICATION_ERROR")
 
 
-class AuthorizationException(AlleviaException):
+class AuthorizationException(EvexiaException):
     """Raised when user lacks required permissions."""
 
     def __init__(self, resource: str, action: str):
@@ -64,7 +64,7 @@ class AuthorizationException(AlleviaException):
         super().__init__(message, "AUTHORIZATION_ERROR", {"resource": resource, "action": action})
 
 
-class TenantNotFoundException(AlleviaException):
+class TenantNotFoundException(EvexiaException):
     """Raised when tenant is not found."""
 
     def __init__(self, tenant_id: str):
@@ -75,7 +75,7 @@ class TenantNotFoundException(AlleviaException):
         )
 
 
-class ResourceNotFoundException(AlleviaException):
+class ResourceNotFoundException(EvexiaException):
     """Raised when a requested resource is not found."""
 
     def __init__(self, resource_type: str, resource_id: str):
@@ -86,7 +86,7 @@ class ResourceNotFoundException(AlleviaException):
         )
 
 
-class EventChainBrokenException(AlleviaException):
+class EventChainBrokenException(EvexiaException):
     """Raised when event chain integrity is violated."""
 
     def __init__(self, subject_id: str, event_id: str, reason: str):
@@ -97,7 +97,7 @@ class EventChainBrokenException(AlleviaException):
         )
 
 
-class SchemaValidationException(AlleviaException):
+class SchemaValidationException(EvexiaException):
     """Raised when schema validation fails."""
 
     def __init__(self, schema_type: str, validation_errors: list[Any]):
@@ -108,7 +108,7 @@ class SchemaValidationException(AlleviaException):
         )
 
 
-class PermissionDeniedError(AlleviaException):
+class PermissionDeniedError(EvexiaException):
     """Permission denied - user lacks required permission."""
 
     def __init__(
@@ -125,14 +125,14 @@ class PermissionDeniedError(AlleviaException):
         super().__init__(message, "PERMISSION_DENIED", details)
 
 
-class DomainError(AlleviaException):
+class DomainError(EvexiaException):
     """Raised when a domain rule is violated."""
     
     def __init__(self, message: str):
         super().__init__(message, "DOMAIN_ERROR")
 
 
-class InvariantViolation(AlleviaException):
+class InvariantViolation(EvexiaException):
     """Raised when an entity invariant is violated."""
     
     def __init__(self, message: str):

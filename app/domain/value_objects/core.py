@@ -1,5 +1,5 @@
 """
-Domain value objects for the Allevia core domain.
+Domain value objects for the Evexía core domain.
 
 Value objects are immutable types that represent domain concepts with self-validation.
 They have no identity, only value.

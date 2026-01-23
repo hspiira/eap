@@ -1,4 +1,4 @@
-# Allevia
+# Evexía
 
 A multi-tenant Employee Assistance Program (EAP) management platform.
 
@@ -44,8 +44,8 @@ uvicorn app.main:app --reload
 
 Once running, the API is available at:
 
-- **API**: http://localhost:8000
-- **Documentation**: http://localhost:8000/docs
+- **API**: <http://localhost:8000>
+- **Documentation**: <http://localhost:8000/docs>  
 
 ## API Overview
 

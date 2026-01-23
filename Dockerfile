@@ -1,5 +1,5 @@
 # =============================================================================
-# Allevia API Dockerfile
+# Evexía API Dockerfile
 # =============================================================================
 # Multi-stage build for smaller production image
 
@@ -32,16 +32,16 @@ FROM python:3.12-slim AS production
 WORKDIR /app
 
 # Create non-root user for security
-RUN groupadd --gid 1000 allevia && \
-    useradd --uid 1000 --gid allevia --shell /bin/bash --create-home allevia
+RUN groupadd --gid 1000 evexia && \
+    useradd --uid 1000 --gid evexia --shell /bin/bash --create-home evexia
 
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
-COPY --chown=allevia:allevia app/ ./app/
-COPY --chown=allevia:allevia alembic/ ./alembic/
-COPY --chown=allevia:allevia alembic.ini ./
+COPY --chown=evexia:evexia app/ ./app/
+COPY --chown=evexia:evexia alembic/ ./alembic/
+COPY --chown=evexia:evexia alembic.ini ./
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
@@ -50,7 +50,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Switch to non-root user
-USER allevia
+USER evexia
 
 # Expose port
 EXPOSE 8000
