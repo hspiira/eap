@@ -51,7 +51,7 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
         if not original:
             return []
 
-        versions = []
+        versions: list[DocumentEntity] = []
         current_id = document_id
 
         while current_id:

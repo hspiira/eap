@@ -22,6 +22,12 @@ class IndustryRepository(BaseRepository[IndustryEntity, IndustryId]):
         """Get industry by name within a tenant."""
     
     @abstractmethod
+    async def get_by_code(
+        self, code: str, tenant_id: TenantId
+    ) -> IndustryEntity | None:
+        """Get industry by code within a tenant."""
+    
+    @abstractmethod
     async def get_children(
         self, parent_id: IndustryId, tenant_id: TenantId
     ) -> Sequence[IndustryEntity]:

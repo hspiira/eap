@@ -17,14 +17,9 @@ from alembic import context
 from app.core.config import settings
 
 # Import Base and all models so Alembic can detect them
+# Importing the models package executes __init__.py which imports all models,
+# registering them with Base.metadata for Alembic autogenerate
 from app.infrastructure.models.base import Base
-from app.infrastructure.models import (
-    ClientModel,
-    ContractModel,
-    PersonModel,
-    TenantModel,
-    UserModel,
-)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

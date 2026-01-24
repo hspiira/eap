@@ -17,6 +17,7 @@ from app.application.use_cases.user_use_cases import CreateUserUseCase, Activate
 from app.core.security import hash_password
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantCode, TenantId, TenantSettings, UserId
@@ -92,10 +93,12 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         self,
         tenant_repository: TenantRepository,
         user_repository: UserRepository | None = None,
+        industry_repository: IndustryRepository | None = None,
     ):
         super().__init__(tenant_repository)
         self.tenant_repository = tenant_repository
         self.user_repository = user_repository
+        self.industry_repository = industry_repository
 
     async def execute(
         self,
@@ -141,6 +144,11 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         )
 
         tenant = await self._save_and_publish_events(tenant)
+
+        # Seed default industries for the tenant
+        if self.industry_repository:
+            from app.application.services.industry_seeder import seed_industries_for_tenant
+            await seed_industries_for_tenant(tenant.id, self.industry_repository)
 
         # Create admin user if user_repository is provided
         admin_password = ""

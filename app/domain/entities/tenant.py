@@ -111,7 +111,7 @@ class TenantEntity:
         if self._status == TenantStatus.TERMINATED:
             raise DomainError("Cannot restore terminated tenant")
         if self._status not in (TenantStatus.ARCHIVED, TenantStatus.ACTIVE) and self._deleted_at is None:
-             raise DomainError("Tenant is not archived or deleted")
+            raise DomainError("Tenant is not archived or deleted")
         if self._status == TenantStatus.ACTIVE and not self._deleted_at:
             raise DomainError("Tenant is already active and does not need restoration")
         if self._deleted_at:
