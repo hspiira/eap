@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { auditApi, type AuditListParams } from '@/api/endpoints/audit'
 import { usersApi } from '@/api/endpoints/users'
 import type { AuditLog } from '@/types/entities'
-import { Shield, Calendar, User, FileText } from 'lucide-react'
+import { Calendar, User, FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/audit/')({
   component: AuditPage,
@@ -223,13 +223,6 @@ function AuditPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe flex items-center gap-2">
-            <Shield size={28} />
-            Audit Logs
-          </h1>
-        </div>
-
         {loading && logs.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />

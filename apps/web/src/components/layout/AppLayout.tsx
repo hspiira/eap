@@ -1,9 +1,9 @@
 /**
  * Application Layout
- * Main layout with fixed top navigation (Anduril-style)
+ * Sidebar navigation layout with dark theme
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTenant } from '@/contexts/TenantContext'
@@ -21,13 +21,13 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronDown,
   Settings,
   Link as LinkIcon,
   Phone,
   History,
   Building2,
   Tag,
+  Pencil,
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -64,6 +64,7 @@ const navigationCategories: NavCategory[] = [
     description: 'High-level dashboard and analytics for your organization.',
     items: [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, comingSoon: true },
+      { path: '/settings', label: 'Settings', icon: Settings },
     ],
   },
   {
@@ -113,355 +114,265 @@ const navigationCategories: NavCategory[] = [
 ]
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { logout, isAuthenticated } = useAuth()
   const { currentTenant } = useTenant()
   const location = useLocation()
-  const navRef = useRef<HTMLDivElement>(null)
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null)
-      }
-    }
-
-    if (activeDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [activeDropdown])
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const profileButton = document.querySelector('[aria-label="User menu"]')
-      if (profileButton && !profileButton.contains(event.target as Node)) {
-        setProfileMenuOpen(false)
-      }
-    }
-
-    if (profileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [profileMenuOpen])
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current)
-      }
-    }
-  }, [])
 
   if (!isAuthenticated) {
     return <>{children}</>
   }
 
-  const handleCategoryHover = (categoryId: string) => {
-    // Clear any pending timeout
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current)
-      hoverTimeoutRef.current = null
-    }
-    setActiveDropdown(categoryId)
-  }
-
-  const handleCategoryLeave = () => {
-    // Smooth delay to allow moving to dropdown
-    hoverTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null)
-      hoverTimeoutRef.current = null
-    }, 150)
-  }
-
-  const handleDropdownEnter = () => {
-    // Clear timeout when entering dropdown
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current)
-      hoverTimeoutRef.current = null
-    }
-  }
-
-  const handleDropdownLeave = () => {
-    // Smooth delay when leaving dropdown
-    hoverTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null)
-      hoverTimeoutRef.current = null
-    }, 150)
-  }
-
-  const getVisibleCategories = () => {
-    return navigationCategories.map((category) => {
+  // Flatten navigation items with category separators
+  const getNavigationItems = () => {
+    const items: Array<NavItem | { type: 'divider'; id: string }> = []
+    
+    navigationCategories.forEach((category, categoryIndex) => {
       const visibleItems = category.items.filter(
         (item) => !item.platformAdminOnly
       )
-      return { ...category, visibleItems }
-    }).filter((category) => category.visibleItems.length > 0)
+      
+      if (visibleItems.length > 0) {
+        visibleItems.forEach((item) => {
+          items.push(item)
+        })
+        // Add divider after each category except the last
+        if (categoryIndex < navigationCategories.length - 1) {
+          items.push({ type: 'divider', id: `divider-${category.id}` })
+        }
+      }
+    })
+    
+    return items
   }
 
-  const visibleCategories = getVisibleCategories()
+  const navigationItems = getNavigationItems()
 
   return (
     <div className="min-h-screen bg-calm flex flex-col">
-      {/* Fixed Top Navigation */}
-      <header className={`fixed top-0 left-0 right-0 z-50 bg-calm transition-shadow duration-200 ease-in-out ${
-        activeDropdown ? 'nav-shadow' : ''
-      }`}>
-        <div ref={navRef} className="relative">
-          {/* Main Nav Bar */}
-          <div className="flex items-center justify-between px-6 h-16">
-            {/* Brand */}
-            <div className="flex items-center">
-              <Link to="/dashboard" className="text-xl font-bold text-safe">
-                Evexía
-              </Link>
+      {/* Top Bar */}
+      <header className="sticky top-0 z-30 bg-calm border-b border-[0.5px] border-safe">
+        <div className="flex items-center justify-between px-6 h-16">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="hidden lg:flex p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={20} />
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            aria-label="Menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex-1" />
+          {currentTenant && (
+            <div className="hidden md:block text-sm text-safe">
+              <span className="text-safe-light">Tenant:</span>{' '}
+              <span className="font-medium">{currentTenant.name}</span>
+            </div>
+          )}
+          <button
+            onClick={logout}
+            className="p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={20} />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area with Sidebar */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside
+          className={`${
+            sidebarOpen ? 'w-64' : 'w-0'
+          } hidden lg:block bg-calm transition-all duration-300 ease-in-out overflow-hidden`}
+        >
+          <div className="flex flex-col h-[calc(100vh-4rem)] ml-4">
+            {/* User/Tenant Info Section */}
+            <div className="p-4">
+              {currentTenant ? (
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h2 className="text-base font-semibold text-safe truncate">
+                        {currentTenant.name}
+                      </h2>
+                      <button
+                        className="p-1 hover:bg-safe-light/10 rounded transition-colors"
+                        aria-label="Edit tenant"
+                        title="Edit tenant"
+                      >
+                        <Pencil size={12} className="text-safe-light" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-safe-light truncate">
+                      Tenant Plan · {currentTenant.name}
+                    </p>
+                    <p className="text-xs text-safe-light truncate mt-0.5">
+                      Evexía Platform
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-safe">Evexía</h2>
+                </div>
+              )}
             </div>
 
-            {/* Desktop Navigation - Categories */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {visibleCategories.map((category) => {
-                const hasActiveItem = category.visibleItems.some((item) =>
-                  location.pathname.startsWith(item.path)
-                )
-                const isDropdownOpen = activeDropdown === category.id
+            {/* Navigation */}
+            <nav className="flex-1 overflow-y-auto py-1">
+              {navigationItems.map((item) => {
+                if ('type' in item && item.type === 'divider') {
+                  return (
+                    <div
+                      key={item.id}
+                      className="h-px bg-safe-light/30 mx-2 my-1"
+                    />
+                  )
+                }
+
+                const navItem = item as NavItem
+                const Icon = navItem.icon
+                const isActive = location.pathname.startsWith(navItem.path)
+
+                if (navItem.comingSoon) {
+                  return (
+                    <div
+                      key={navItem.path}
+                      className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm">{navItem.label}</span>
+                      <span className="ml-auto text-xs">Soon</span>
+                    </div>
+                  )
+                }
 
                 return (
-                  <div
-                    key={category.id}
-                    className="relative"
-                    onMouseEnter={() => handleCategoryHover(category.id)}
-                    onMouseLeave={handleCategoryLeave}
+                  <Link
+                    key={navItem.path}
+                    to={navItem.path}
+                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors ${
+                      isActive
+                        ? 'bg-natural text-white'
+                        : 'text-safe hover:bg-safe-light/10'
+                    }`}
                   >
-                    <button
-                      className={`px-4 py-2 text-sm font-medium text-safe transition-all duration-200 ease-in-out rounded-none ${
-                        hasActiveItem || isDropdownOpen
-                          ? 'bg-natural text-white'
-                          : 'hover:bg-safe-light/10'
-                      }`}
-                    >
-                      {category.label}
-                    </button>
-                  </div>
+                    <Icon size={18} />
+                    <span className="text-sm">{navItem.label}</span>
+                  </Link>
                 )
               })}
             </nav>
 
-            {/* Right Side - Utility Links */}
-            <div className="flex items-center gap-4">
+          </div>
+        </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <aside className="fixed left-0 top-16 h-full w-64 bg-calm z-50 lg:hidden overflow-y-auto">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-[0.5px] border-safe">
+                <h2 className="text-base font-semibold text-safe">Evexía</h2>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 hover:bg-safe-light/10 rounded transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* User/Tenant Info */}
               {currentTenant && (
-                <div className="hidden md:block text-sm text-safe">
-                  <span className="text-safe-light">Tenant:</span>{' '}
-                  <span className="font-medium">{currentTenant.name}</span>
+                <div className="p-4 ml-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-safe truncate">
+                          {currentTenant.name}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-safe-light truncate">
+                        Tenant Plan · {currentTenant.name}
+                      </p>
+                      <p className="text-xs text-safe-light truncate mt-0.5">
+                        Evexía Platform
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 text-safe hover:bg-safe-light/10 transition-all duration-200 ease-in-out rounded-none"
-                aria-label="Menu"
-              >
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
+              {/* Navigation */}
+              <nav className="flex-1 py-1 ml-4">
+                {navigationItems.map((item) => {
+                  if ('type' in item && item.type === 'divider') {
+                    return (
+                      <div
+                        key={item.id}
+                        className="h-px bg-safe-light/30 mx-2 my-1"
+                      />
+                    )
+                  }
 
-              {/* User Profile Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className="flex items-center gap-2 px-2 py-2 text-safe hover:bg-safe-light/10 transition-all duration-200 ease-in-out rounded-none"
-                  aria-label="User menu"
-                >
-                  <UserCircle size={20} />
-                  <ChevronDown
-                    size={16}
-                    className={profileMenuOpen ? 'rotate-180' : ''}
-                  />
-                </button>
-                {profileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[0.5px] border-safe z-50">
-                    <div className="p-3 border-b border-[0.5px] border-safe">
-                      <p className="text-sm font-medium text-safe">Profile</p>
-                      <p className="text-xs text-safe-light mt-1">
-                        User account
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        // TODO: Navigate to profile/settings page
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-safe hover:bg-calm transition-all duration-150 ease-in-out"
-                    >
-                      <Settings size={16} />
-                      <span>Settings</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        logout()
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-safe hover:bg-calm transition-all duration-150 ease-in-out border-t border-[0.5px] border-safe"
-                    >
-                      <LogOut size={16} />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                  const navItem = item as NavItem
+                  const Icon = navItem.icon
+                  const isActive = location.pathname.startsWith(navItem.path)
 
-          {/* Full-Width Dropdowns */}
-          {activeDropdown && (
-            <div
-              className="nav-dropdown nav-shadow absolute left-0 right-0 top-full bg-calm transition-all duration-200 ease-in-out"
-              onMouseEnter={handleDropdownEnter}
-              onMouseLeave={handleDropdownLeave}
-            >
-              {(() => {
-                const category = visibleCategories.find(
-                  (c) => c.id === activeDropdown
-                )
-                if (!category) return null
-
-                return (
-                  <div className="max-w-7xl mx-auto px-6 py-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Left Column - Description */}
-                      <div>
-                        <h3 className="text-lg font-semibold uppercase tracking-wide text-safe mb-3">
-                          {category.label.toUpperCase()}
-                        </h3>
-                        <p className="text-sm text-safe leading-relaxed">
-                          {category.description}
-                        </p>
+                  if (navItem.comingSoon) {
+                    return (
+                      <div
+                        key={navItem.path}
+                        className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                      >
+                        <Icon size={18} />
+                        <span className="text-sm">{navItem.label}</span>
+                        <span className="ml-auto text-xs">Soon</span>
                       </div>
+                    )
+                  }
 
-                      {/* Right Column - Items */}
-                      <div>
-                        <h3 className="text-lg font-semibold uppercase tracking-wide text-safe mb-3">
-                          {category.label}
-                        </h3>
-                        <ul className="space-y-1">
-                          {category.visibleItems.map((item) => {
-                            const Icon = item.icon
-                            const isActive = location.pathname.startsWith(
-                              item.path
-                            )
+                  return (
+                    <Link
+                      key={navItem.path}
+                      to={navItem.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-1.5 transition-colors ${
+                        isActive
+                          ? 'bg-natural text-white'
+                          : 'text-safe hover:bg-safe-light/10'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm">{navItem.label}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
 
-                            if (item.comingSoon) {
-                              return (
-                                <li key={item.path}>
-                                  <div className="flex items-center gap-2 px-3 py-2 text-safe-light cursor-not-allowed">
-                                    <Icon size={16} />
-                                    <span className="text-sm">{item.label}</span>
-                                    <span className="ml-auto text-xs">Soon</span>
-                                  </div>
-                                </li>
-                              )
-                            }
-
-                            return (
-                              <li key={item.path}>
-                                <Link
-                                  to={item.path}
-                                  onClick={() => setActiveDropdown(null)}
-                                  className={`flex items-center gap-2 px-3 py-2 text-sm transition-all duration-150 ease-in-out rounded-none ${
-                                    isActive
-                                      ? 'bg-natural text-white'
-                                      : 'text-safe hover:bg-safe-light/10'
-                                  }`}
-                                >
-                                  <Icon size={16} />
-                                  <span>+ {item.label}</span>
-                                </Link>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })()}
             </div>
-          )}
-        </div>
+          </aside>
+        </>
+      )}
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-[0.5px] border-safe bg-calm">
-            <nav className="p-4 space-y-2">
-              {visibleCategories.map((category) => {
-                return (
-                  <div key={category.id} className="mb-4">
-                    <h3 className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-safe-light mb-2">
-                      {category.label}
-                    </h3>
-                    <div className="space-y-1">
-                      {category.visibleItems.map((item) => {
-                        const Icon = item.icon
-                        const isActive = location.pathname.startsWith(
-                          item.path
-                        )
-
-                        if (item.comingSoon) {
-                          return (
-                            <div
-                              key={item.path}
-                              className="flex items-center gap-2 px-2 py-1.5 text-safe-light cursor-not-allowed"
-                            >
-                              <Icon size={18} />
-                              <span className="text-sm font-medium">
-                                {item.label}
-                              </span>
-                              <span className="ml-auto text-xs">Soon</span>
-                            </div>
-                          )
-                        }
-
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex items-center gap-2 px-2 py-1.5 transition-all duration-150 ease-in-out rounded-none ${
-                              isActive
-                                ? 'bg-natural text-white'
-                                : 'text-safe hover:bg-safe-light/10'
-                            }`}
-                          >
-                            <Icon size={18} />
-                            <span className="text-sm font-medium">
-                              {item.label}
-                            </span>
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </nav>
-          </div>
-        )}
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 pt-16 lg:pt-16 p-6">{children}</main>
+        {/* Main Content Area */}
+        <main className="flex-1 p-6">{children}</main>
+      </div>
     </div>
   )
 }

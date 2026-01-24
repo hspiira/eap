@@ -11,7 +11,6 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { usersApi } from '@/api/endpoints/users'
 import type { User } from '@/types/entities'
 import type { UserStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/users/')({
   component: UsersPage,
@@ -171,17 +170,6 @@ function UsersPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Users</h1>
-          <button
-            onClick={() => navigate({ to: '/users/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create User</span>
-          </button>
-        </div>
-
         <DataTable
             data={users}
             columns={columns}
@@ -222,6 +210,10 @@ function UsersPage() {
                 setSearchValue('')
                 setStatusFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/users/new' }),
+                label: 'Create User',
               },
             }}
             emptyMessage="No users found"

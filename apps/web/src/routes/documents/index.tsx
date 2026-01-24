@@ -12,7 +12,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { documentsApi } from '@/api/endpoints/documents'
 import type { Document } from '@/types/entities'
 import type { DocumentStatus } from '@/types/enums'
-import { Plus, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/documents/')({
   component: DocumentsPage,
@@ -211,17 +211,6 @@ function DocumentsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Documents</h1>
-          <button
-            onClick={() => navigate({ to: '/documents/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Upload Document</span>
-          </button>
-        </div>
-
         {loading && documents.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -291,6 +280,10 @@ function DocumentsPage() {
                 setTypeFilter('')
                 setConfidentialityFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/documents/new' }),
+                label: 'Upload Document',
               },
             }}
             emptyMessage="No documents found"

@@ -13,7 +13,6 @@ import { contractsApi } from '@/api/endpoints/contracts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contract } from '@/types/entities'
 import type { ContractStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/contracts/')({
   component: ContractsPage,
@@ -216,17 +215,6 @@ function ContractsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Contracts</h1>
-          <button
-            onClick={() => navigate({ to: '/contracts/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Contract</span>
-          </button>
-        </div>
-
         {loading && contracts.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -303,6 +291,10 @@ function ContractsPage() {
                 setStartDateFilter('')
                 setEndDateFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/contracts/new' }),
+                label: 'Create Contract',
               },
             }}
             emptyMessage="No contracts found"

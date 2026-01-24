@@ -14,7 +14,7 @@ import { personsApi } from '@/api/endpoints/persons'
 import { servicesApi } from '@/api/endpoints/services'
 import type { ServiceSession } from '@/types/entities'
 import type { SessionStatus } from '@/types/enums'
-import { Plus, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 
 export const Route = createFileRoute('/sessions/')({
   component: SessionsPage,
@@ -218,17 +218,6 @@ function SessionsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Service Sessions</h1>
-          <button
-            onClick={() => navigate({ to: '/sessions/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Schedule Session</span>
-          </button>
-        </div>
-
         {loading && sessions.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -320,6 +309,10 @@ function SessionsPage() {
                 setStartDateFilter('')
                 setEndDateFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/sessions/new' }),
+                label: 'Schedule Session',
               },
             }}
             emptyMessage="No sessions found"

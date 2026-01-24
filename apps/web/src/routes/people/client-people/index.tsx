@@ -12,7 +12,6 @@ import { personsApi } from '@/api/endpoints/persons'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Person } from '@/types/entities'
 import type { BaseStatus, PersonType } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 const ALLOWED_TYPES: PersonType[] = ['ClientEmployee', 'Dependent']
 
@@ -195,17 +194,6 @@ function ClientPeoplePage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Client people</h1>
-          <button
-            onClick={() => navigate({ to: '/people/client-people/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add client person</span>
-          </button>
-        </div>
-
         <DataTable
           data={persons}
           columns={columns}
@@ -270,6 +258,10 @@ function ClientPeoplePage() {
               setPersonTypeFilter('ClientEmployee')
               setClientFilter('')
               setCurrentPage(1)
+            },
+            createAction: {
+              onClick: () => navigate({ to: '/people/client-people/new' }),
+              label: 'Add client person',
             },
           }}
           emptyMessage="No client people found"

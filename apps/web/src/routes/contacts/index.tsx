@@ -13,7 +13,7 @@ import { contactsApi } from '@/api/endpoints/contacts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contact } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Plus, UserCircle, Star } from 'lucide-react'
+import { UserCircle, Star } from 'lucide-react'
 
 export const Route = createFileRoute('/contacts/')({
   component: ContactsPage,
@@ -178,17 +178,6 @@ function ContactsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Contacts</h1>
-          <button
-            onClick={() => navigate({ to: '/contacts/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Contact</span>
-          </button>
-        </div>
-
         {loading && contacts.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -247,6 +236,10 @@ function ContactsPage() {
                 setStatusFilter('')
                 setClientFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/contacts/new' }),
+                label: 'Create Contact',
               },
             }}
             emptyMessage="No contacts found"

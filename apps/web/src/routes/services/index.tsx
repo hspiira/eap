@@ -12,7 +12,6 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { servicesApi } from '@/api/endpoints/services'
 import type { Service } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/services/')({
   component: ServicesPage,
@@ -177,17 +176,6 @@ function ServicesPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Services</h1>
-          <button
-            onClick={() => navigate({ to: '/services/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Service</span>
-          </button>
-        </div>
-
         {loading && services.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -233,6 +221,10 @@ function ServicesPage() {
                 setSearchValue('')
                 setStatusFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/services/new' }),
+                label: 'Create Service',
               },
             }}
             emptyMessage="No services found"

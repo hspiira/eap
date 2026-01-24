@@ -12,7 +12,6 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { Tenant } from '@/types/entities'
 import type { TenantStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/tenants/')({
   component: TenantsPage,
@@ -143,17 +142,6 @@ function TenantsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Tenants</h1>
-          <button
-            onClick={() => navigate({ to: '/tenants/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Tenant</span>
-          </button>
-        </div>
-
         {loading && tenants.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -199,6 +187,10 @@ function TenantsPage() {
                 setSearchValue('')
                 setStatusFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/tenants/new' }),
+                label: 'Create Tenant',
               },
             }}
             emptyMessage="No tenants found"

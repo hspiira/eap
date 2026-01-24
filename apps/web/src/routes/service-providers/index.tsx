@@ -11,7 +11,6 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { personsApi } from '@/api/endpoints/persons'
 import type { Person } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/service-providers/')({
   component: ServiceProvidersPage,
@@ -154,17 +153,6 @@ function ServiceProvidersPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Service providers</h1>
-          <button
-            onClick={() => navigate({ to: '/service-providers/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add provider</span>
-          </button>
-        </div>
-
         <DataTable
           data={persons}
           columns={columns}
@@ -201,6 +189,10 @@ function ServiceProvidersPage() {
               setSearchValue('')
               setStatusFilter('')
               setCurrentPage(1)
+            },
+            createAction: {
+              onClick: () => navigate({ to: '/service-providers/new' }),
+              label: 'Add provider',
             },
           }}
           emptyMessage="No service providers found"

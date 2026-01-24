@@ -11,7 +11,6 @@ import { TableFilters } from '@/components/common/TableFilters'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { industriesApi } from '@/api/endpoints/industries'
 import type { Industry } from '@/types/entities'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/industries/')({
   component: IndustriesPage,
@@ -76,23 +75,16 @@ function IndustriesPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Industries</h1>
-          <button
-            onClick={() => navigate({ to: '/industries/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add Industry</span>
-          </button>
-        </div>
-
         <TableFilters
           searchValue={searchValue}
           onSearchChange={(v) => setSearchValue(v)}
           searchPlaceholder="Search by name or code..."
           onClearFilters={() => {
             setSearchValue('')
+          }}
+          createAction={{
+            onClick: () => navigate({ to: '/industries/new' }),
+            label: 'Add Industry',
           }}
           className="mb-4"
         />

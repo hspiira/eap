@@ -10,7 +10,7 @@ import { DataTable, type Column } from '@/components/common/DataTable'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { clientTagsApi } from '@/api/endpoints/client-tags'
 import type { ClientTag } from '@/types/entities'
-import { Plus, Tag } from 'lucide-react'
+import { Tag } from 'lucide-react'
 
 export const Route = createFileRoute('/client-tags/')({
   component: ClientTagsPage,
@@ -133,17 +133,6 @@ function ClientTagsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Client Tags</h1>
-          <button
-            onClick={() => navigate({ to: '/client-tags/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Add Tag</span>
-          </button>
-        </div>
-
         {loading && tags.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -176,6 +165,10 @@ function ClientTagsPage() {
               onClearFilters: () => {
                 setSearchValue('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/client-tags/new' }),
+                label: 'Add Tag',
               },
             }}
             emptyMessage="No tags found"

@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { activitiesApi } from '@/api/endpoints/activities'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Activity } from '@/types/entities'
-import { Plus, Calendar, Phone, Mail, Users, FileText } from 'lucide-react'
+import { Calendar, Phone, Mail, Users, FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/activities/')({
   component: ActivitiesPage,
@@ -186,17 +186,6 @@ function ActivitiesPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Activities</h1>
-          <button
-            onClick={() => navigate({ to: '/activities/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Log Activity</span>
-          </button>
-        </div>
-
         {loading && activities.length === 0 ? (
           <div className="flex items-center justify-center p-12">
             <LoadingSpinner size="lg" />
@@ -267,6 +256,10 @@ function ActivitiesPage() {
                 setStartDateFilter('')
                 setEndDateFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/activities/new' }),
+                label: 'Log Activity',
               },
             }}
             emptyMessage="No activities found"

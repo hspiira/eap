@@ -11,7 +11,6 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Client } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/clients/')({
   component: ClientsPage,
@@ -157,17 +156,6 @@ function ClientsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-safe">Clients</h1>
-          <button
-            onClick={() => navigate({ to: '/clients/new' })}
-            className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Client</span>
-          </button>
-        </div>
-
         <DataTable
             data={clients}
             columns={columns}
@@ -208,6 +196,10 @@ function ClientsPage() {
                 setSearchValue('')
                 setStatusFilter('')
                 setCurrentPage(1)
+              },
+              createAction: {
+                onClick: () => navigate({ to: '/clients/new' }),
+                label: 'Create Client',
               },
             }}
             emptyMessage="No clients found"
