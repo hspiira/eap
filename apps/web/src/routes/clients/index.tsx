@@ -8,9 +8,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { CreateModal } from '@/components/common/CreateModal'
 import { CreateClientForm } from '@/components/forms/CreateClientForm'
-import { useTenant } from '@/contexts/TenantContext'
+import { useTenant } from '@/hooks/useTenant'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Client } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -35,62 +36,54 @@ function ClientsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
 
-  // Fetch clients (tenant-scoped automatically via API client)
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const params: any = {
+      const params: Record<string, unknown> = {
         page: currentPage,
         limit: pageSize,
       }
-
-      if (searchValue) {
-        params.search = searchValue
-      }
-
-      if (statusFilter) {
-        params.status = statusFilter
-      }
-
+      if (currentTenant) params.tenant_id = currentTenant.id
+      if (searchValue) params.search = searchValue
+      if (statusFilter) params.status = statusFilter
       if (sortBy) {
         params.sort_by = sortBy
         params.sort_desc = sortDirection === 'desc'
       }
-
       const response = await clientsApi.list(params)
-      setClients(response.items)
-      setTotalItems(response.total)
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to load clients'
-      setError(errorMessage)
+      const items = Array.isArray(response?.items)
+        ? response.items
+        : Array.isArray((response as { data?: unknown[] })?.data)
+          ? (response as { data: unknown[] }).data
+          : []
+      const total = typeof response?.total === 'number' ? response.total : items.length
+      setClients(items as Client[])
+      setTotalItems(total)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to load clients'
+      setError(msg)
       console.error('Error fetching clients:', err)
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
+  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection, currentTenant])
 
   useEffect(() => {
-    // Wait for tenant to be loaded before fetching
-    if (!tenantLoading && currentTenant) {
+    if (!tenantLoading) {
       fetchClients()
-    } else if (!tenantLoading && !currentTenant) {
-      // Tenant loading is complete but no tenant selected
-      setLoading(false)
-      setError('No tenant selected')
+    } else {
+      setLoading(true)
     }
-  }, [tenantLoading, currentTenant, fetchClients])
+  }, [tenantLoading, fetchClients])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc')
-      } else if (sortDirection === 'desc') {
+      if (sortDirection === 'asc') setSortDirection('desc')
+      else if (sortDirection === 'desc') {
         setSortBy(null)
         setSortDirection(null)
-      } else {
-        setSortDirection('asc')
-      }
+      } else setSortDirection('asc')
     } else {
       setSortBy(columnId)
       setSortDirection('asc')
@@ -169,7 +162,12 @@ function ClientsPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
-        <DataTable
+        {loading && clients.length === 0 ? (
+          <div className="flex items-center justify-center p-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
+          <DataTable
             data={clients}
             columns={columns}
             loading={loading}
@@ -217,6 +215,7 @@ function ClientsPage() {
             }}
             emptyMessage="No clients found"
           />
+        )}
 
         <CreateModal
           isOpen={createModalOpen}

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { FormField } from '@/components/common/FormField'
+import { FormAccordionSection } from '@/components/common/FormAccordionSection'
 import { Select } from '@/components/common/Select'
 import { DatePicker } from '@/components/common/DatePicker'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -45,14 +46,21 @@ export interface CreateContractFormProps {
   onSuccess: () => void
   onCancel: () => void
   onLoadingChange?: (loading: boolean) => void
+  /** Pre-fill client and hide selector (e.g. when opened from client detail) */
+  initialClientId?: string
 }
 
-export function CreateContractForm({ onSuccess, onCancel, onLoadingChange }: CreateContractFormProps) {
+export function CreateContractForm({
+  onSuccess,
+  onCancel,
+  onLoadingChange,
+  initialClientId,
+}: CreateContractFormProps) {
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
-    client_id: '',
+    client_id: initialClientId ?? '',
     contract_number: '',
     start_date: '',
     end_date: '',
@@ -75,6 +83,10 @@ export function CreateContractForm({ onSuccess, onCancel, onLoadingChange }: Cre
     }
     fetchClients()
   }, [])
+
+  useEffect(() => {
+    if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
+  }, [initialClientId])
 
   const setLoadingState = (v: boolean) => {
     setLoading(v)
@@ -133,48 +145,52 @@ export function CreateContractForm({ onSuccess, onCancel, onLoadingChange }: Cre
   const clientOptions = [{ value: '', label: 'Select client (required)' }, ...clients.map((c) => ({ value: c.id, label: c.name }))]
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <h3 className="text-sm font-semibold text-safe">Contract Information</h3>
-      <Select
-        label="Client"
-        name="client_id"
-        value={formData.client_id}
-        onChange={(v) => { setFormData({ ...formData, client_id: v as string }); if (errors.client_id) setErrors({ ...errors, client_id: '' }) }}
-        options={clientOptions}
-        error={errors.client_id}
-        required
-        placeholder="Select client"
-      />
-      <FormField label="Contract Number" name="contract_number" value={formData.contract_number} onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })} placeholder="Optional" />
+      {!initialClientId && (
+        <Select
+          label="Client"
+          name="client_id"
+          value={formData.client_id}
+          onChange={(v) => { setFormData({ ...formData, client_id: v as string }); if (errors.client_id) setErrors({ ...errors, client_id: '' }) }}
+          options={clientOptions}
+          error={errors.client_id}
+          required
+          placeholder="Select client"
+        />
+      )}
+      <FormField label="Contract Number" name="contract_number" value={formData.contract_number} onChange={(e) => setFormData({ ...formData, contract_number: e.target.value })} placeholder="Optional" compact />
 
-      <h3 className="text-sm font-semibold text-safe mt-4">Dates</h3>
+      <h3 className="text-sm font-semibold text-safe pt-1">Dates</h3>
       <DatePicker label="Start Date" name="start_date" value={formData.start_date} onChange={(v) => { setFormData({ ...formData, start_date: v }); if (errors.start_date) setErrors({ ...errors, start_date: '' }) }} error={errors.start_date} required />
       <DatePicker label="End Date" name="end_date" value={formData.end_date} onChange={(v) => { setFormData({ ...formData, end_date: v }); if (errors.end_date) setErrors({ ...errors, end_date: '' }) }} error={errors.end_date} />
       <DatePicker label="Renewal Date" name="renewal_date" value={formData.renewal_date} onChange={(v) => { setFormData({ ...formData, renewal_date: v }); if (errors.renewal_date) setErrors({ ...errors, renewal_date: '' }) }} error={errors.renewal_date} />
 
-      <h3 className="text-sm font-semibold text-safe mt-4">Billing</h3>
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          label="Billing Amount"
-          name="billing_amount"
-          type="number"
-          step="0.01"
-          min="0"
-          value={formData.billing_amount}
-          onChange={(e) => { setFormData({ ...formData, billing_amount: e.target.value }); if (errors.billing_amount) setErrors({ ...errors, billing_amount: '' }) }}
-          error={errors.billing_amount}
-          placeholder="0.00"
-        />
-        <Select label="Currency" name="currency" value={formData.currency} onChange={(v) => setFormData({ ...formData, currency: v as string })} options={currencyOptions} placeholder="Currency" />
-      </div>
-      <Select label="Billing Frequency" name="billing_frequency" value={formData.billing_frequency} onChange={(v) => setFormData({ ...formData, billing_frequency: v as PaymentFrequency })} options={billingFrequencyOptions} placeholder="Optional" />
-      <Select label="Payment Status" name="payment_status" value={formData.payment_status} onChange={(v) => setFormData({ ...formData, payment_status: v as PaymentStatus })} options={paymentStatusOptions} placeholder="Optional" />
+      <FormAccordionSection title="Billing (Optional)">
+        <div className="grid grid-cols-2 gap-2">
+          <FormField
+            label="Billing Amount"
+            name="billing_amount"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.billing_amount}
+            onChange={(e) => { setFormData({ ...formData, billing_amount: e.target.value }); if (errors.billing_amount) setErrors({ ...errors, billing_amount: '' }) }}
+            error={errors.billing_amount}
+            placeholder="0.00"
+            compact
+          />
+          <Select label="Currency" name="currency" value={formData.currency} onChange={(v) => setFormData({ ...formData, currency: v as string })} options={currencyOptions} placeholder="Currency" />
+        </div>
+        <Select label="Billing Frequency" name="billing_frequency" value={formData.billing_frequency} onChange={(v) => setFormData({ ...formData, billing_frequency: v as PaymentFrequency })} options={billingFrequencyOptions} placeholder="Optional" />
+        <Select label="Payment Status" name="payment_status" value={formData.payment_status} onChange={(v) => setFormData({ ...formData, payment_status: v as PaymentStatus })} options={paymentStatusOptions} placeholder="Optional" />
+      </FormAccordionSection>
 
-      <div className="flex gap-3 pt-4">
-        <button type="submit" disabled={loading} className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
+      <div className="flex gap-2 pt-2">
+        <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
           {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" />Creating...</span> : 'Create Contract'}
         </button>
-        <button type="button" onClick={onCancel} disabled={loading} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
+        <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
       </div>
     </form>
   )

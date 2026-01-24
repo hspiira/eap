@@ -1,9 +1,11 @@
 /**
  * Tenant Context
  * Provides tenant state and management. Uses Zustand tenant store as source of truth.
+ * @see docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context, GET /tenants/{tenant_id}, store tenant_id
+ * @see docs/IMPLEMENTATION_PLAN.md – Phase 1.2 Tenant Context Management
  */
 
-import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import apiClient from '@/api/client'
@@ -22,7 +24,7 @@ interface TenantContextType {
   refreshTenantsList: () => Promise<void>
 }
 
-const TenantContext = createContext<TenantContextType | undefined>(undefined)
+export const TenantContext = createContext<TenantContextType | undefined>(undefined)
 
 function syncTenantToApiAndStorage(tenant: TenantEntity | null) {
   if (tenant) {
@@ -67,20 +69,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     [setStoreTenant, setLoading]
   )
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const storedTenantId = localStorage.getItem('current_tenant_id')
-    if (storedTenantId) {
-      loadTenant(storedTenantId)
-    } else {
-      setLoading(false)
-    }
-  }, [loadTenant, setLoading])
-
-  useEffect(() => {
-    syncTenantToApiAndStorage(currentTenant)
-  }, [currentTenant])
-
   const setCurrentTenant = useCallback(
     (tenant: TenantEntity | null) => {
       setStoreTenant(tenant)
@@ -89,6 +77,31 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     },
     [setStoreTenant, invalidateAll]
   )
+
+  useEffect(() => {
+    syncTenantToApiAndStorage(currentTenant)
+  }, [currentTenant])
+
+  // Restore current tenant by ID only (see docs: GET /tenants/{tenant_id}). No list fetch on bootstrap.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isAuthenticated || !token) return
+    const storedTenantId = localStorage.getItem('current_tenant_id')
+    if (storedTenantId && !currentTenant) {
+      loadTenant(storedTenantId)
+    } else if (!storedTenantId) {
+      setLoading(false)
+    }
+  }, [isAuthenticated, token, currentTenant, loadTenant, setLoading])
+
+  // Clear tenant state when user logs out.
+  useEffect(() => {
+    if (isAuthenticated) return
+    setStoreTenant(null)
+    setAvailableTenants([])
+    setLoading(false)
+    syncTenantToApiAndStorage(null)
+    if (typeof window !== 'undefined') localStorage.removeItem('current_tenant_id')
+  }, [isAuthenticated, setStoreTenant, setAvailableTenants, setLoading])
 
   const createTenant = useCallback(
     async (tenantData: TenantCreate): Promise<TenantCreateResponse> => {
@@ -129,12 +142,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, token, setAvailableTenants, setLoading])
 
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      refreshTenantsList()
-    }
-  }, [isAuthenticated, token, refreshTenantsList])
-
   return (
     <TenantContext.Provider
       value={{
@@ -150,12 +157,4 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       {children}
     </TenantContext.Provider>
   )
-}
-
-export function useTenant() {
-  const context = useContext(TenantContext)
-  if (context === undefined) {
-    throw new Error('useTenant must be used within a TenantProvider')
-  }
-  return context
 }

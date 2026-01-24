@@ -6,16 +6,14 @@
 import { useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTenant } from '@/contexts/TenantContext'
+import { useTenant } from '@/hooks/useTenant'
 import {
   PieChart,
-  Users,
   UserCircle,
   FileText,
   ClipboardList,
   Calendar,
   FolderOpen,
-  FolderTree,
   BarChart3,
   Shield,
   Menu,
@@ -26,8 +24,6 @@ import {
   Phone,
   History,
   Building2,
-  Tag,
-  Pencil,
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -55,7 +51,7 @@ type NavCategory = {
  * People: clients, contacts, persons (who we serve / who works for us)
  * Engagement & Delivery: contracts → services → assignments → sessions, activities
  * Content & Insights: documents, KPIs
- * Administration: users, audit, tenants (platform admin)
+ * Administration: users, audit (tenant management is in a separate app)
  */
 const navigationCategories: NavCategory[] = [
   {
@@ -74,7 +70,6 @@ const navigationCategories: NavCategory[] = [
     items: [
       { path: '/clients', label: 'Clients', icon: UserCircle },
       { path: '/contacts', label: 'Contacts', icon: Phone },
-      { path: '/client-tags', label: 'Client Tags', icon: Tag },
       { path: '/people/client-people', label: 'Client people', icon: UserCircle },
     ],
   },
@@ -97,18 +92,15 @@ const navigationCategories: NavCategory[] = [
     description: 'Document management, industry classification, and key performance indicators for tracking organizational metrics.',
     items: [
       { path: '/documents', label: 'Documents', icon: FolderOpen },
-      { path: '/industries', label: 'Industries', icon: FolderTree },
       { path: '/kpis', label: 'KPIs', icon: BarChart3 },
     ],
   },
   {
     id: 'administration',
     label: 'Administration',
-    description: 'User management, audit logs, and platform administration tools.',
+    description: 'User management and audit logs.',
     items: [
-      { path: '/users', label: 'Users', icon: Users },
       { path: '/audit', label: 'Audit', icon: Shield },
-      { path: '/tenants', label: 'Tenants', icon: Building2, platformAdminOnly: true },
     ],
   },
 ]
@@ -117,7 +109,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { logout, isAuthenticated } = useAuth()
-  const { currentTenant } = useTenant()
+  const { currentTenant, availableTenants, setCurrentTenant, isLoading: tenantLoading } = useTenant()
   const location = useLocation()
 
   if (!isAuthenticated) {
@@ -169,12 +161,35 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Menu size={20} />
           </button>
           <div className="flex-1" />
-          {currentTenant && (
-            <div className="hidden md:block text-sm text-safe">
-              <span className="text-safe-light">Tenant:</span>{' '}
-              <span className="font-medium">{currentTenant.name}</span>
-            </div>
-          )}
+          {/* Tenant indicator */}
+          <div className="flex items-center gap-2 mr-4">
+            {tenantLoading ? (
+              <span className="text-sm text-safe-light">Loading…</span>
+            ) : currentTenant ? (
+              availableTenants.length > 1 ? (
+                <select
+                  value={currentTenant.id}
+                  onChange={(e) => {
+                    const t = availableTenants.find((x) => x.id === e.target.value)
+                    if (t) setCurrentTenant(t)
+                  }}
+                  className="text-sm bg-calm border border-[0.5px] border-safe text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
+                  aria-label="Current organization"
+                >
+                  {availableTenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="flex items-center gap-1.5 text-sm text-safe" title="Current organization">
+                  <Building2 size={16} />
+                  {currentTenant.name}
+                </span>
+              )
+            ) : null}
+          </div>
           <button
             onClick={logout}
             className="p-2 text-safe hover:bg-safe-light/10 transition-colors"
@@ -195,36 +210,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           } hidden lg:block bg-calm transition-all duration-300 ease-in-out overflow-hidden`}
         >
           <div className="flex flex-col h-[calc(100vh-4rem)] ml-4">
-            {/* User/Tenant Info Section */}
             <div className="p-4">
-              {currentTenant ? (
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h2 className="text-base font-semibold text-safe truncate">
-                        {currentTenant.name}
-                      </h2>
-                      <button
-                        className="p-1 hover:bg-safe-light/10 rounded transition-colors"
-                        aria-label="Edit tenant"
-                        title="Edit tenant"
-                      >
-                        <Pencil size={12} className="text-safe-light" />
-                      </button>
-                    </div>
-                    <p className="text-xs text-safe-light truncate">
-                      Tenant Plan · {currentTenant.name}
-                    </p>
-                    <p className="text-xs text-safe-light truncate mt-0.5">
-                      Evexía Platform
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-safe">Evexía</h2>
-                </div>
-              )}
+              <h2 className="text-base font-semibold text-safe">Evexía</h2>
             </div>
 
             {/* Navigation */}
@@ -285,7 +272,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           />
           <aside className="fixed left-0 top-16 h-full w-64 bg-calm z-50 lg:hidden overflow-y-auto">
             <div className="flex flex-col h-full">
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[0.5px] border-safe">
                 <h2 className="text-base font-semibold text-safe">Evexía</h2>
                 <button
@@ -296,27 +282,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <X size={20} />
                 </button>
               </div>
-
-              {/* User/Tenant Info */}
-              {currentTenant && (
-                <div className="p-4 ml-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-safe truncate">
-                          {currentTenant.name}
-                        </h3>
-                      </div>
-                      <p className="text-xs text-safe-light truncate">
-                        Tenant Plan · {currentTenant.name}
-                      </p>
-                      <p className="text-xs text-safe-light truncate mt-0.5">
-                        Evexía Platform
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Navigation */}
               <nav className="flex-1 py-1 ml-4">

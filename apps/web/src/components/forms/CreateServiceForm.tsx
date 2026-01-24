@@ -107,7 +107,7 @@ export function CreateServiceForm({ onSuccess, onCancel, onLoadingChange }: Crea
 
       <h3 className="text-sm font-semibold text-safe mt-4">Group Settings</h3>
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={formData.allow_group_sessions} onChange={(e) => setFormData({ ...formData, allow_group_sessions: e.target.checked })} className="w-4 h-4 text-natural focus:ring-natural border-safe" />
+        <input type="checkbox" checked={formData.allow_group_sessions} onChange={(e) => setFormData({ ...formData, allow_group_sessions: e.target.checked })} className="w-4 h-4 text-natural focus:ring-natural border-safe rounded-full" />
         <span className="text-safe text-sm">Allow group sessions</span>
       </label>
       {formData.allow_group_sessions && (

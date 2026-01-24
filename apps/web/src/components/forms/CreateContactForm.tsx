@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { FormField } from '@/components/common/FormField'
+import { FormAccordionSection } from '@/components/common/FormAccordionSection'
 import { Select } from '@/components/common/Select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useToast } from '@/contexts/ToastContext'
@@ -24,14 +25,21 @@ export interface CreateContactFormProps {
   onSuccess: () => void
   onCancel: () => void
   onLoadingChange?: (loading: boolean) => void
+  /** Pre-fill client and hide selector (e.g. when opened from client detail) */
+  initialClientId?: string
 }
 
-export function CreateContactForm({ onSuccess, onCancel, onLoadingChange }: CreateContactFormProps) {
+export function CreateContactForm({
+  onSuccess,
+  onCancel,
+  onLoadingChange,
+  initialClientId,
+}: CreateContactFormProps) {
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
-    client_id: '',
+    client_id: initialClientId ?? '',
     first_name: '',
     last_name: '',
     title: '',
@@ -53,6 +61,10 @@ export function CreateContactForm({ onSuccess, onCancel, onLoadingChange }: Crea
     }
     load()
   }, [])
+
+  useEffect(() => {
+    if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
+  }, [initialClientId])
 
   const setLoadingState = (v: boolean) => {
     setLoading(v)
@@ -108,22 +120,24 @@ export function CreateContactForm({ onSuccess, onCancel, onLoadingChange }: Crea
   const clientOptions = [{ value: '', label: 'Select client (required)' }, ...clients.map((c) => ({ value: c.id, label: c.name }))]
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <h3 className="text-sm font-semibold text-safe">Contact Information</h3>
-      <Select
-        label="Client"
-        name="client_id"
-        value={formData.client_id}
-        onChange={(v) => {
-          setFormData((prev) => ({ ...prev, client_id: v as string }))
-          if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' }))
-        }}
-        options={clientOptions}
-        error={errors.client_id}
-        required
-        placeholder="Select client"
-      />
-      <div className="grid grid-cols-2 gap-4">
+      {!initialClientId && (
+        <Select
+          label="Client"
+          name="client_id"
+          value={formData.client_id}
+          onChange={(v) => {
+            setFormData((prev) => ({ ...prev, client_id: v as string }))
+            if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' }))
+          }}
+          options={clientOptions}
+          error={errors.client_id}
+          required
+          placeholder="Select client"
+        />
+      )}
+      <div className="grid grid-cols-2 gap-2">
         <FormField
           label="First name"
           name="first_name"
@@ -135,6 +149,7 @@ export function CreateContactForm({ onSuccess, onCancel, onLoadingChange }: Crea
           error={errors.first_name}
           required
           placeholder="First name"
+          compact
         />
         <FormField
           label="Last name"
@@ -147,21 +162,23 @@ export function CreateContactForm({ onSuccess, onCancel, onLoadingChange }: Crea
           error={errors.last_name}
           required
           placeholder="Last name"
+          compact
         />
       </div>
-      <FormField label="Title" name="title" value={formData.title} onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))} placeholder="e.g. HR Manager (optional)" />
+      <FormField label="Title" name="title" value={formData.title} onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))} placeholder="e.g. HR Manager (optional)" compact />
 
-      <h3 className="text-sm font-semibold text-safe mt-4">Contact Details</h3>
-      <FormField label="Email" name="email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Optional" />
-      <FormField label="Phone" name="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Optional" />
-      <FormField label="Mobile" name="mobile" type="tel" value={formData.mobile} onChange={(e) => setFormData((prev) => ({ ...prev, mobile: e.target.value }))} placeholder="Optional" />
-      <Select label="Preferred contact method" name="preferred_method" value={formData.preferred_method} onChange={(v) => setFormData((prev) => ({ ...prev, preferred_method: v as string }))} options={preferredMethodOptions} placeholder="Optional" />
+      <FormAccordionSection title="Contact Details (Optional)">
+        <FormField label="Email" name="email" type="email" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} placeholder="Optional" compact />
+        <FormField label="Phone" name="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} placeholder="Optional" compact />
+        <FormField label="Mobile" name="mobile" type="tel" value={formData.mobile} onChange={(e) => setFormData((prev) => ({ ...prev, mobile: e.target.value }))} placeholder="Optional" compact />
+        <Select label="Preferred contact method" name="preferred_method" value={formData.preferred_method} onChange={(v) => setFormData((prev) => ({ ...prev, preferred_method: v as string }))} options={preferredMethodOptions} placeholder="Optional" />
+      </FormAccordionSection>
 
-      <div className="flex gap-3 pt-4">
-        <button type="submit" disabled={loading} className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
+      <div className="flex gap-2 pt-2">
+        <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
           {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" />Creating...</span> : 'Create Contact'}
         </button>
-        <button type="button" onClick={onCancel} disabled={loading} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
+        <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
       </div>
     </form>
   )

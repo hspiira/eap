@@ -5,7 +5,7 @@
 
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
-import { useTenant } from '@/contexts/TenantContext'
+import { useTenant } from '@/hooks/useTenant'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import { FormField } from '@/components/common/FormField'
 import { AdminPasswordDisplay } from '@/components/common/AdminPasswordDisplay'

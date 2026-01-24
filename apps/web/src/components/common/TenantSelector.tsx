@@ -3,7 +3,7 @@
  * Allows users to switch between available tenants
  */
 
-import { useTenant } from '@/contexts/TenantContext'
+import { useTenant } from '@/hooks/useTenant'
 import type { Tenant } from '@/api/endpoints/tenants'
 
 export function TenantSelector() {

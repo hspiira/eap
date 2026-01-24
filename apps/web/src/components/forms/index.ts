@@ -1,5 +1,6 @@
 export { CreateUserForm } from './CreateUserForm'
 export { CreateClientForm } from './CreateClientForm'
+export { EditClientForm } from './EditClientForm'
 export { CreateContactForm } from './CreateContactForm'
 export { CreateClientTagForm } from './CreateClientTagForm'
 export { CreateContractForm } from './CreateContractForm'

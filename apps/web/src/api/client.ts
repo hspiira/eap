@@ -65,13 +65,18 @@ class ApiClient {
   }
 
   /**
-   * Get tenant ID
+   * Get tenant ID.
+   * Uses in-memory value, then localStorage 'tenant_id', then 'current_tenant_id' (TenantContext).
+   * Ensures tenant is available even before TenantContext sync (e.g. after SSR hydrate).
    */
   getTenantId(): string | null {
-    if (!this.tenantId) {
-      this.tenantId = localStorage.getItem('tenant_id')
-    }
-    return this.tenantId
+    if (this.tenantId) return this.tenantId
+    if (typeof window === 'undefined') return null
+    const fromTenant = localStorage.getItem('tenant_id')
+    const fromCurrent = localStorage.getItem('current_tenant_id')
+    const id = fromTenant || fromCurrent || null
+    if (id) this.tenantId = id
+    return id
   }
 
   /**
@@ -80,8 +85,24 @@ class ApiClient {
   clearAuth(): void {
     this.token = null
     this.tenantId = null
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('tenant_id')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('tenant_id')
+      localStorage.removeItem('current_tenant_id')
+    }
+  }
+
+  /**
+   * Paths that must work without tenant context (auth, get-by-id bootstrap).
+   * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context; GET /tenants/{id} used to load current tenant.
+   */
+  private shouldSkipTenantId(endpoint: string): boolean {
+    const pathname = new URL(endpoint, 'http://x').pathname
+    if (pathname.startsWith('/auth/')) return true
+    if (pathname === '/tenants') return true
+    if (pathname.startsWith('/tenants/check-code')) return true
+    if (/^\/tenants\/[^/]+$/.test(pathname)) return true // GET /tenants/:id
+    return false
   }
 
   /**
@@ -89,13 +110,13 @@ class ApiClient {
    */
   private buildUrl(endpoint: string, params?: Record<string, unknown>): string {
     const url = new URL(endpoint, this.baseUrl)
+    const tenantId = this.getTenantId()
+    const skipTenant = this.shouldSkipTenantId(endpoint)
 
-    // Add tenant_id if not already in params
-    if (this.tenantId && !params?.tenant_id) {
-      url.searchParams.set('tenant_id', this.tenantId)
+    if (tenantId && !skipTenant && !params?.tenant_id) {
+      url.searchParams.set('tenant_id', tenantId)
     }
 
-    // Add other query parameters
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -114,21 +135,24 @@ class ApiClient {
   /**
    * Build request headers
    */
-  private buildHeaders(customHeaders?: Record<string, string>): HeadersInit {
+  private buildHeaders(
+    customHeaders?: Record<string, string>,
+    endpoint?: string
+  ): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...customHeaders,
     }
 
-    // Add authentication token
     const token = this.getToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    // Add tenant ID header (alternative to query param)
-    if (this.tenantId) {
-      headers['x-tenant-id'] = this.tenantId
+    const tenantId = this.getTenantId()
+    const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
+    if (tenantId && !skipTenant) {
+      headers['x-tenant-id'] = tenantId
     }
 
     return headers
@@ -236,7 +260,10 @@ class ApiClient {
     const url = endpoint.startsWith('http') 
       ? endpoint 
       : this.buildUrl(endpoint)
-    const requestHeaders = this.buildHeaders(headers as Record<string, string>)
+    const requestHeaders = this.buildHeaders(
+      headers as Record<string, string>,
+      endpoint.startsWith('http') ? new URL(endpoint).pathname + new URL(endpoint).search : endpoint
+    )
 
     const requestFn = () =>
       fetch(url, {
@@ -368,10 +395,12 @@ const apiClient = new ApiClient({
   retryDelay: DEFAULT_RETRY_DELAY,
 })
 
-// Initialize token and tenant from localStorage if available
+// Initialize token and tenant from localStorage if available (client-only).
+// Use both tenant_id and current_tenant_id (TenantContext) so we have tenant before sync.
 if (typeof window !== 'undefined') {
   const storedToken = localStorage.getItem('auth_token')
-  const storedTenantId = localStorage.getItem('tenant_id')
+  const storedTenantId =
+    localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id')
   if (storedToken) {
     apiClient.setToken(storedToken)
   }

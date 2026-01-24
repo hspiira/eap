@@ -36,7 +36,7 @@ export function CreateModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[0.5px] border-safe shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[0.5px] border-safe shrink-0">
           <h2 id="create-modal-title" className="text-lg font-semibold text-safe">
             {title}
           </h2>
@@ -52,7 +52,7 @@ export function CreateModal({
         </div>
 
         {/* Body - scrollable; form includes Submit + Cancel */}
-        <div className="overflow-y-auto flex-1 p-6">{children}</div>
+        <div className="overflow-y-auto flex-1 p-4">{children}</div>
       </div>
     </div>
   )

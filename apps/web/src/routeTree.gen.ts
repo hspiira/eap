@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServiceProvidersIndexRouteImport } from './routes/service-providers/index'
@@ -78,6 +79,11 @@ const UsersIndexRoute = UsersIndexRouteImport.update({
 const TenantsIndexRoute = TenantsIndexRouteImport.update({
   id: '/tenants/',
   path: '/tenants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionsIndexRoute = SessionsIndexRouteImport.update({
@@ -393,6 +399,7 @@ export interface FileRoutesByFullPath {
   '/service-providers/': typeof ServiceProvidersIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
@@ -450,6 +457,7 @@ export interface FileRoutesByTo {
   '/service-providers': typeof ServiceProvidersIndexRoute
   '/services': typeof ServicesIndexRoute
   '/sessions': typeof SessionsIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
@@ -508,6 +516,7 @@ export interface FileRoutesById {
   '/service-providers/': typeof ServiceProvidersIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
@@ -567,6 +576,7 @@ export interface FileRouteTypes {
     | '/service-providers/'
     | '/services/'
     | '/sessions/'
+    | '/settings/'
     | '/tenants/'
     | '/users/'
     | '/people/client-people/new'
@@ -624,6 +634,7 @@ export interface FileRouteTypes {
     | '/service-providers'
     | '/services'
     | '/sessions'
+    | '/settings'
     | '/tenants'
     | '/users'
     | '/people/client-people/new'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/service-providers/'
     | '/services/'
     | '/sessions/'
+    | '/settings/'
     | '/tenants/'
     | '/users/'
     | '/people/client-people/new'
@@ -739,6 +751,7 @@ export interface RootRouteChildren {
   ServiceProvidersIndexRoute: typeof ServiceProvidersIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   SessionsIndexRoute: typeof SessionsIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   TenantsIndexRoute: typeof TenantsIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
   PeopleClientPeopleNewRoute: typeof PeopleClientPeopleNewRoute
@@ -767,6 +780,13 @@ declare module '@tanstack/react-router' {
       path: '/tenants'
       fullPath: '/tenants/'
       preLoaderRoute: typeof TenantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sessions/': {
@@ -1198,6 +1218,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServiceProvidersIndexRoute: ServiceProvidersIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   SessionsIndexRoute: SessionsIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   TenantsIndexRoute: TenantsIndexRoute,
   UsersIndexRoute: UsersIndexRoute,
   PeopleClientPeopleNewRoute: PeopleClientPeopleNewRoute,

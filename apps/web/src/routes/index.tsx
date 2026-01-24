@@ -55,7 +55,7 @@ function HomePage() {
             <div className="bg-calm border border-[0.5px] border-safe p-8">
               <h2 className="text-2xl font-semibold text-safe mb-4">Get Started</h2>
               <p className="text-safe-light mb-6">
-                Create a new tenant organization and start managing your services today.
+                Create an organization and start managing your services today.
               </p>
               <Link
                 to="/auth/signup"
@@ -68,7 +68,7 @@ function HomePage() {
 
           {/* Footer Info */}
           <div className="text-center text-sm text-safe-light">
-            <p>Multi-tenant platform for service management and delivery</p>
+            <p>Platform for service management and delivery</p>
           </div>
         </div>
       </div>

@@ -17,6 +17,9 @@ import type { PersonType } from '@/types/enums'
 import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/people/client-people/new')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    client_id: typeof search?.client_id === 'string' ? search.client_id : undefined,
+  }),
   component: CreateClientPersonPage,
 })
 
@@ -27,6 +30,7 @@ const personTypeOptions = [
 
 function CreateClientPersonPage() {
   const navigate = useNavigate()
+  const { client_id: initialClientId } = Route.useSearch()
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
@@ -37,7 +41,7 @@ function CreateClientPersonPage() {
     person_type: 'ClientEmployee' as PersonType,
     date_of_birth: '',
     gender: '',
-    client_id: '',
+    client_id: initialClientId ?? '',
     email: '',
     phone: '',
     mobile: '',
@@ -64,6 +68,10 @@ function CreateClientPersonPage() {
     }
     fetchClients()
   }, [])
+
+  useEffect(() => {
+    if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
+  }, [initialClientId])
 
   const validate = () => {
     const next: Record<string, string> = {}
@@ -198,16 +206,18 @@ function CreateClientPersonPage() {
             onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
           />
 
-          <Select
-            label="Client"
-            name="client_id"
-            value={formData.client_id}
-            onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }}
-            options={clientOptions}
-            error={errors.client_id}
-            required
-            placeholder="Select client"
-          />
+          {!initialClientId && (
+            <Select
+              label="Client"
+              name="client_id"
+              value={formData.client_id}
+              onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }}
+              options={clientOptions}
+              error={errors.client_id}
+              required
+              placeholder="Select client"
+            />
+          )}
 
           <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Contact (optional)</h2>
           <FormField label="Email" name="email" type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} />

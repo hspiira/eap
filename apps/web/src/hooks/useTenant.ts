@@ -1,7 +1,16 @@
 /**
  * useTenant Hook
- * Convenience hook for accessing tenant context
- * Re-exports useTenant from TenantContext for easier imports
+ * Access tenant context. Implemented here so TenantContext only exports
+ * the provider (fixes Fast Refresh "incompatible export" warning).
  */
 
-export { useTenant } from '@/contexts/TenantContext'
+import { useContext } from 'react'
+import { TenantContext } from '@/contexts/TenantContext'
+
+export function useTenant() {
+  const context = useContext(TenantContext)
+  if (context === undefined) {
+    throw new Error('useTenant must be used within a TenantProvider')
+  }
+  return context
+}

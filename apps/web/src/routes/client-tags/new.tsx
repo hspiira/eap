@@ -1,12 +1,12 @@
 /**
- * Create Client Tag - redirects to Client Tags list (create via modal)
+ * Create Client Tag - redirects to Settings > Client tags (create via modal)
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/client-tags/new')({
   beforeLoad: () => {
-    throw redirect({ to: '/client-tags' })
+    throw redirect({ to: '/settings', search: { tab: 'client-tags' } })
   },
   component: () => null,
 })

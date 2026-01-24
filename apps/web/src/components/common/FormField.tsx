@@ -22,6 +22,8 @@ interface FormFieldProps {
   max?: number
   rows?: number
   className?: string
+  /** Tighter spacing (e.g. in modals) */
+  compact?: boolean
   // React Hook Form integration
   useFormContext?: boolean
 }
@@ -41,19 +43,22 @@ export function FormField({
   max,
   rows = 4,
   className = '',
+  compact = false,
   useFormContext: useForm = false,
 }: FormFieldProps) {
   const formContext = useForm ? useFormContext() : null
   const formError = formContext ? getFieldError(formContext.formState.errors, name) : null
   const error = externalError || formError
+  const space = compact ? 'mb-2' : 'mb-4'
+  const labelSpace = compact ? 'mb-1' : 'mb-2'
 
   // If using React Hook Form, use Controller
   if (useForm && formContext) {
     return (
-      <div className={`mb-4 ${className}`}>
+      <div className={`${space} ${className}`}>
         <label
           htmlFor={name}
-          className="block text-safe text-sm font-medium mb-2"
+          className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-nurturing ml-1">*</span>}
@@ -107,10 +112,10 @@ export function FormField({
   // Controlled component (non-React Hook Form)
   if (type === 'textarea') {
     return (
-      <div className={`mb-4 ${className}`}>
+      <div className={`${space} ${className}`}>
         <label
           htmlFor={name}
-          className="block text-safe text-sm font-medium mb-2"
+          className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-nurturing ml-1">*</span>}
@@ -136,10 +141,10 @@ export function FormField({
   }
 
   return (
-    <div className={`mb-4 ${className}`}>
+    <div className={`${space} ${className}`}>
       <label
         htmlFor={name}
-        className="block text-safe text-sm font-medium mb-2"
+        className={`block text-safe text-sm font-medium ${labelSpace}`}
       >
         {label}
         {required && <span className="text-nurturing ml-1">*</span>}

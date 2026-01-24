@@ -5,7 +5,7 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useTenant } from '@/contexts/TenantContext'
+import { useTenant } from '@/hooks/useTenant'
 import { FormField } from '@/components/common/FormField'
 import { AdminPasswordDisplay } from '@/components/common/AdminPasswordDisplay'
 import type { ApiError } from '@/api/types'

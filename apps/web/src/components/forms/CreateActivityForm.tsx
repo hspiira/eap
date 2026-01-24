@@ -24,14 +24,21 @@ export interface CreateActivityFormProps {
   onSuccess: () => void
   onCancel: () => void
   onLoadingChange?: (loading: boolean) => void
+  /** Pre-fill client and hide selector (e.g. when opened from client detail) */
+  initialClientId?: string
 }
 
-export function CreateActivityForm({ onSuccess, onCancel, onLoadingChange }: CreateActivityFormProps) {
+export function CreateActivityForm({
+  onSuccess,
+  onCancel,
+  onLoadingChange,
+  initialClientId,
+}: CreateActivityFormProps) {
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [formData, setFormData] = useState({
-    client_id: '',
+    client_id: initialClientId ?? '',
     activity_type: '' as ActivityType | '',
     title: '',
     description: '',
@@ -50,6 +57,10 @@ export function CreateActivityForm({ onSuccess, onCancel, onLoadingChange }: Cre
     }
     load()
   }, [])
+
+  useEffect(() => {
+    if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
+  }, [initialClientId])
 
   const setLoadingState = (v: boolean) => { setLoading(v); onLoadingChange?.(v) }
 
@@ -92,13 +103,15 @@ export function CreateActivityForm({ onSuccess, onCancel, onLoadingChange }: Cre
   const clientOptions = [{ value: '', label: 'Select client (required)' }, ...clients.map((c) => ({ value: c.id, label: c.name }))]
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Select label="Client" name="client_id" value={formData.client_id} onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }} options={clientOptions} error={errors.client_id} required placeholder="Select client" />
+    <form onSubmit={handleSubmit} className="space-y-2">
+      {!initialClientId && (
+        <Select label="Client" name="client_id" value={formData.client_id} onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }} options={clientOptions} error={errors.client_id} required placeholder="Select client" />
+      )}
       <Select label="Type" name="activity_type" value={formData.activity_type} onChange={(v) => { setFormData((p) => ({ ...p, activity_type: v as ActivityType })); if (errors.activity_type) setErrors((e) => ({ ...e, activity_type: '' })) }} options={typeOptions} error={errors.activity_type} required placeholder="Select type" />
-      <FormField label="Title" name="title" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} placeholder="Optional short title" />
-      <FormField label="Description" name="description" type="textarea" rows={3} value={formData.description} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} placeholder="Optional" />
+      <FormField label="Title" name="title" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} placeholder="Optional short title" compact />
+      <FormField label="Description" name="description" type="textarea" rows={3} value={formData.description} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} placeholder="Optional" compact />
       <div>
-        <label htmlFor="occurred_at" className="block text-safe text-sm font-medium mb-2">Date &amp; Time (required)</label>
+        <label htmlFor="occurred_at" className="block text-safe text-sm font-medium mb-1">Date &amp; Time (required)</label>
         <input
           id="occurred_at"
           type="datetime-local"
@@ -109,11 +122,11 @@ export function CreateActivityForm({ onSuccess, onCancel, onLoadingChange }: Cre
         {errors.occurred_at && <p className="text-nurturing text-sm mt-1">{errors.occurred_at}</p>}
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <button type="submit" disabled={loading} className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
+      <div className="flex gap-2 pt-2">
+        <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
           {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" />Logging...</span> : 'Log Activity'}
         </button>
-        <button type="button" onClick={onCancel} disabled={loading} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
+        <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
       </div>
     </form>
   )

@@ -23,7 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated, isLoading, setAuth, setLoading, clearAuth } = useAuthStore()
   const navigate = useNavigate()
-  const { showSuccess, showError } = useToast()
+  const { showSuccess } = useToast()
 
   useEffect(() => {
     const checkAuth = () => {
