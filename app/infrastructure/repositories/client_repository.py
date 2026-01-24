@@ -2,49 +2,47 @@
 Client Repository Implementation
 
 SQLAlchemy implementation of ClientRepository interface.
+Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
+from collections.abc import Sequence
+from typing import Any
+
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.client import ClientEntity
+from app.domain.enums import BaseStatus
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
-from app.shared.utils.datetime import utc_now
+from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ClientRepositoryImpl(ClientRepository):
+class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel, ClientId], ClientRepository):
     """
     SQLAlchemy implementation of ClientRepository.
 
-    Handles data access for Client aggregate.
-    Uses mapper to convert between entity and model.
+    Inherits common CRUD operations from TenantScopedRepositoryImpl.
+    Only implements domain-specific queries.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
-        """
-        Initialize repository with database session.
+    model_class = ClientModel
+    id_column = "id"
 
-        Args:
-            session: SQLAlchemy async database session
-        """
-        self.session = session
-
-    async def get_by_id(self, client_id: ClientId) -> ClientEntity | None:
-        """Get client by ID, excluding soft-deleted clients."""
-        stmt = select(ClientModel).where(
-            ClientModel.id == client_id.value,
-            ClientModel.deleted_at.is_(None),
-        )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
-
-        if not model:
-            return None
-
+    def _to_entity(self, model: ClientModel) -> ClientEntity:
+        """Convert model to entity."""
         return ClientMapper.to_entity(model)
+
+    def _to_model(self, entity: ClientEntity) -> ClientModel:
+        """Convert entity to model."""
+        return ClientMapper.to_model(entity)
+
+    def _get_id_value(self, entity_id: ClientId) -> Any:
+        """Extract raw ID value."""
+        return entity_id.value
+
+    # Domain-specific queries (not in base class)
 
     async def get_by_name(
         self, tenant_id: TenantId, name: str
@@ -61,43 +59,55 @@ class ClientRepositoryImpl(ClientRepository):
         if not model:
             return None
 
-        return ClientMapper.to_entity(model)
+        return self._to_entity(model)
 
-    async def save(self, client: ClientEntity) -> None:
-        """
-        Save client aggregate atomically.
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        is_verified: bool | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[ClientEntity]:
+        """List clients with filtering, searching, and pagination."""
+        # Build filters dict for base class
+        filters: dict[str, Any] = {}
+        if status:
+            filters["status"] = status
+        if is_verified is not None:
+            filters["is_verified"] = is_verified
 
-        Uses merge to handle both insert and update.
-        """
-        model = ClientMapper.to_model(client)
-        await self.session.merge(model)
-        # Note: commit is typically handled by the application service/unit of work
-
-    async def delete(self, client_id: ClientId) -> None:
-        """
-        Soft delete client.
-
-        In practice, this is usually done by calling client methods
-        and then save(), but this method provides explicit soft delete.
-        """
-        stmt = select(ClientModel).where(
-            ClientModel.id == client_id.value,
-            ClientModel.deleted_at.is_(None),
+        return await self._query_all(
+            tenant_id=tenant_id.value,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            filters=filters,
+            search=search,
+            search_fields=["name"],
         )
-        result = await self.session.execute(stmt)
-        model = result.scalar_one_or_none()
 
-        if model:
-            now = utc_now()
-            model.deleted_at = now
-            model.updated_at = now
-            await self.session.merge(model)
+    async def count(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        is_verified: bool | None = None,
+        search: str | None = None,
+    ) -> int:
+        """Count clients matching filters."""
+        filters: dict[str, Any] = {}
+        if status:
+            filters["status"] = status
+        if is_verified is not None:
+            filters["is_verified"] = is_verified
 
-    async def exists(self, client_id: ClientId) -> bool:
-        """Check if client exists (not soft-deleted)."""
-        stmt = select(ClientModel.id).where(
-            ClientModel.id == client_id.value,
-            ClientModel.deleted_at.is_(None),
+        return await self._count_all(
+            tenant_id=tenant_id.value,
+            filters=filters,
+            search=search,
+            search_fields=["name"],
         )
-        result = await self.session.execute(stmt)
-        return bool(result.scalar())

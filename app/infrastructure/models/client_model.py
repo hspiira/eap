@@ -5,13 +5,14 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, Enum as SQLEnum, ForeignKey, JSON, String
+from sqlalchemy import CheckConstraint, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import BaseStatus, ContactMethod
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -33,13 +34,10 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             name="client_status_check",
         ),
         CheckConstraint(
-            "preferred_contact_method IN (" + ", ".join(f"'{e.value}'" for e in ContactMethod) + ")",
+            "preferred_contact_method IS NULL OR preferred_contact_method IN (" + ", ".join(f"'{e.value}'" for e in ContactMethod) + ")",
             name="client_contact_method_check",
         ),
     )
-
-    def _enum_values(enum_cls):
-        return [e.value for e in enum_cls]
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -54,23 +52,13 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Status
     status: Mapped[BaseStatus] = mapped_column(
-        SQLEnum(
-            BaseStatus, 
-            native_enum=False,
-            values=_enum_values(BaseStatus),
-            create_constraint=False,
-        ), 
-        nullable=False, 
-        default=BaseStatus.PENDING.value
+        EnumValueType(BaseStatus),
+        nullable=False,
+        default=BaseStatus.PENDING,
     )
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
     preferred_contact_method: Mapped[ContactMethod | None] = mapped_column(
-        SQLEnum(
-            ContactMethod, 
-            native_enum=False,
-            values=_enum_values(ContactMethod),
-            create_constraint=False,
-        ), 
+        EnumValueType(ContactMethod),
         nullable=True,
     )
 

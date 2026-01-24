@@ -12,6 +12,7 @@ class UserStatus(str, Enum):
     ACTIVE = "Active"
     SUSPENDED = "Suspended"
     BANNED = "Banned"
+    TERMINATED = "Terminated"
     PENDING_VERIFICATION = "Pending Verification"
     INACTIVE = "Inactive"
 
@@ -102,3 +103,56 @@ class ContactMethod(str, Enum):
     SMS = "sms"
     WHATSAPP = "whatsapp"
     WECHAT = "wechat"
+
+class AuditActionType(str, Enum):
+    """Types of actions that can be audited.
+    
+    Note: LIST and VIEW actions are subject to configurable filtering/sampling
+    to prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)
+    are always logged. See AUDIT_SAMPLE_RATE, AUDIT_ALWAYS_LOG_RESOURCES, and
+    AUDIT_SKIP_RESOURCES environment variables for configuration.
+    """
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
+    APPROVE = "APPROVE"
+    REJECT = "REJECT"
+    LIST = "LIST"  # Subject to filtering/sampling
+    VIEW = "VIEW"  # Subject to filtering/sampling
+    EXPORT = "EXPORT"
+    IMPORT = "IMPORT"
+
+class DocumentType(str, Enum):
+    """Types of documents in the system."""
+    CONTRACT = "Contract"
+    CERTIFICATION = "Certification"
+    KPI_REPORT = "KPI Report"
+    FEEDBACK_SUMMARY = "Feedback Summary"
+    BILLING_REPORT = "Billing Report"
+    UTILIZATION_REPORT = "Utilization Report"
+    OTHER = "Other"
+
+class DocumentStatus(str, Enum):
+    """Status of a document."""
+    DRAFT = "Draft"
+    PUBLISHED = "Published"
+    ARCHIVED = "Archived"
+    EXPIRED = "Expired"
+
+class KPICategory(str, Enum):
+    """Categories for KPIs."""
+    UTILIZATION = "Utilization"
+    SATISFACTION = "Satisfaction"
+    OUTCOME = "Outcome"
+    OPERATIONAL = "Operational"
+
+class KPIMeasurementUnit(str, Enum):
+    """Units for KPI measurements."""
+    PERCENTAGE = "Percentage"
+    COUNT = "Count"
+    RATE = "Rate"
+    SCORE = "Score"
+    TIME = "Time"
+    CURRENCY = "Currency"

@@ -6,9 +6,10 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
+from typing import Sequence
 
 from app.domain.entities.person import PersonEntity
-from app.domain.enums import PersonType
+from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import PersonId, TenantId, UserId
 
@@ -46,4 +47,54 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
 
         Returns:
             List of PersonEntity matching the type
+        """
+    
+    @abstractmethod
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        person_type: PersonType | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> Sequence[PersonEntity]:
+        """
+        List persons with filtering, searching, and pagination.
+        
+        Args:
+            tenant_id: Tenant identifier
+            status: Filter by person status
+            person_type: Filter by person type
+            search: Search in user profile (name, email)
+            limit: Maximum number of results
+            offset: Number of results to skip
+            sort_by: Field to sort by
+            sort_desc: Sort in descending order
+            
+        Returns:
+            Sequence of PersonEntity
+        """
+    
+    @abstractmethod
+    async def count(
+        self,
+        tenant_id: TenantId,
+        status: BaseStatus | None = None,
+        person_type: PersonType | None = None,
+        search: str | None = None,
+    ) -> int:
+        """
+        Count persons matching filters.
+        
+        Args:
+            tenant_id: Tenant identifier
+            status: Filter by person status
+            person_type: Filter by person type
+            search: Search in user profile
+            
+        Returns:
+            Total count
         """
