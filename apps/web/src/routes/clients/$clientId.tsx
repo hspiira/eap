@@ -432,7 +432,7 @@ function ClientDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-safe mb-4">
+        <div className="border-b border-safe/30 mb-4">
           <nav className="flex gap-1" aria-label="Client sections">
             {TABS.map(({ id, label, icon: Icon }) => {
               const count =
@@ -671,7 +671,7 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'people' }}
-          className="bg-calm border border-[0.5px] border-safe p-4 hover:border-natural transition-colors block"
+          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <Users size={20} />
@@ -683,7 +683,7 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'contacts' }}
-          className="bg-calm border border-[0.5px] border-safe p-4 hover:border-natural transition-colors block"
+          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <UserCircle size={20} />
@@ -694,7 +694,7 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'contracts' }}
-          className="bg-calm border border-[0.5px] border-safe p-4 hover:border-natural transition-colors block"
+          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <FileText size={20} />
@@ -707,7 +707,7 @@ function OverviewTab({
       {/* Summary + Primary contact + Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Building2 size={20} />
               Summary
@@ -762,7 +762,7 @@ function OverviewTab({
           </div>
 
           {primaryContact && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Star size={20} className="text-nurturing" />
                 Primary contact
@@ -794,7 +794,7 @@ function OverviewTab({
         </div>
 
         <div className="space-y-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-safe flex items-center gap-2">
                 <ActivityIcon size={20} />
@@ -864,7 +864,7 @@ function OverviewTab({
           </div>
 
           {hasContracts && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Calendar size={20} />
                 Upcoming sessions
@@ -911,7 +911,7 @@ function OverviewTab({
       </div>
 
       {/* Tags */}
-      <div className="bg-calm border border-[0.5px] border-safe p-6">
+      <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
         <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
           <Tag size={20} />
           Tags
@@ -960,7 +960,7 @@ function OverviewTab({
                 id="addTag"
                 value={addTagId}
                 onChange={(e) => setAddTagId(e.target.value)}
-                className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe rounded-none focus:outline-none focus:border-natural text-safe"
+                className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe"
               >
                 {addTagOptions.map((o) => (
                   <option key={o.value} value={o.value}>

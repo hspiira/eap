@@ -23,7 +23,7 @@ export function FormAccordionSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className={`border-b border-safe/30 last:border-b-0 ${className}`}>
+    <div className={className}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

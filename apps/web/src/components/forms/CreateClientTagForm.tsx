@@ -83,14 +83,14 @@ export function CreateClientTagForm({ onSuccess, onCancel, onLoadingChange }: Cr
             type="color"
             value={formData.color || '#94a3b8'}
             onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
-            className="w-10 h-10 rounded-none border border-[0.5px] border-safe cursor-pointer bg-calm"
+            className="w-10 h-10 rounded-none border border-[0.5px] border-safe/30 cursor-pointer bg-calm"
           />
           <input
             type="text"
             value={formData.color}
             onChange={(e) => setFormData((p) => ({ ...p, color: e.target.value }))}
             placeholder="#hex or CSS color"
-            className="flex-1 px-4 py-2 bg-calm border border-[0.5px] border-safe rounded-none focus:outline-none focus:border-natural text-safe"
+            className="flex-1 px-4 py-2 bg-calm border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe"
           />
         </div>
       </div>

@@ -25,6 +25,8 @@ export interface SelectProps {
   required?: boolean
   disabled?: boolean
   className?: string
+  /** Tighter spacing (e.g. in modals) */
+  compact?: boolean
 }
 
 export function Select({
@@ -40,6 +42,7 @@ export function Select({
   required = false,
   disabled = false,
   className = '',
+  compact = false,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -120,12 +123,15 @@ export function Select({
     return selectedValues.includes(optionValue)
   }
 
+  const space = compact ? 'mb-2' : 'mb-4'
+  const labelSpace = compact ? 'mb-1' : 'mb-2'
+
   return (
-    <div className={`mb-4 ${className}`}>
+    <div className={`${space} ${className}`}>
       {label && (
         <label
           htmlFor={name}
-          className="block text-safe text-sm font-medium mb-2"
+          className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-nurturing ml-1">*</span>}
@@ -137,7 +143,7 @@ export function Select({
           onClick={handleToggle}
           disabled={disabled}
           className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
-            error ? 'border-nurturing' : 'border-safe'
+            error ? 'border-nurturing' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural flex items-center justify-between ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}
@@ -164,16 +170,16 @@ export function Select({
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-calm border border-[0.5px] border-safe shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-calm border border-[0.5px] border-safe/30 shadow-lg max-h-60 overflow-auto">
             {searchable && (
-              <div className="p-2 border-b border-[0.5px] border-safe">
+              <div className="p-2">
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full px-3 py-1.5 bg-calm border border-[0.5px] border-safe text-safe rounded-none focus:outline-none focus:border-natural"
+                  className="w-full px-3 py-1.5 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
                 />
               </div>
             )}
@@ -195,7 +201,7 @@ export function Select({
                     >
                       {multiple && (
                         <div
-                          className={`w-4 h-4 border border-[0.5px] border-safe flex items-center justify-center ${
+                          className={`w-4 h-4 border border-[0.5px] border-safe/30 flex items-center justify-center ${
                             selected ? 'bg-natural border-natural-dark' : 'bg-calm'
                           }`}
                         >

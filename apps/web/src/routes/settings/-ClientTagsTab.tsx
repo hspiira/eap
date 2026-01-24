@@ -100,7 +100,7 @@ export function ClientTagsTab() {
         value ? (
           <span className="flex items-center gap-2">
             <span
-              className="w-4 h-4 rounded-full border border-[0.5px] border-safe"
+              className="w-4 h-4 rounded-full border border-[0.5px] border-safe/30"
               style={{ backgroundColor: value as string }}
             />
             <span className="text-safe-light text-sm">{value as string}</span>

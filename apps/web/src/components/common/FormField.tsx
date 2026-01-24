@@ -77,7 +77,7 @@ export function FormField({
                   disabled={disabled}
                   required={required}
                   className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
-                    error ? 'border-nurturing' : 'border-safe'
+                    error ? 'border-nurturing' : 'border-safe/30'
                   } rounded-none focus:outline-none focus:border-natural ${
                     disabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
@@ -96,7 +96,7 @@ export function FormField({
                 min={min}
                 max={max}
                 className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
-                  error ? 'border-nurturing' : 'border-safe'
+                  error ? 'border-nurturing' : 'border-safe/30'
                 } rounded-none focus:outline-none focus:border-natural ${
                   disabled ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -130,7 +130,7 @@ export function FormField({
           disabled={disabled}
           rows={rows}
           className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
-            error ? 'border-nurturing' : 'border-safe'
+            error ? 'border-nurturing' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
@@ -162,7 +162,7 @@ export function FormField({
         min={min}
         max={max}
         className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
-          error ? 'border-nurturing' : 'border-safe'
+          error ? 'border-nurturing' : 'border-safe/30'
         } rounded-none focus:outline-none focus:border-natural ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         }`}

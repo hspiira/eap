@@ -171,7 +171,7 @@ function ContactDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <UserCircle size={20} />
               Contact Details
@@ -215,7 +215,7 @@ function ContactDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Mail size={20} />
               Contact Info
@@ -258,7 +258,7 @@ function ContactDetailPage() {
             )}
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Metadata</h2>
             <dl className="space-y-3">
               <div>

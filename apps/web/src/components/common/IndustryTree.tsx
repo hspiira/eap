@@ -12,6 +12,9 @@ export interface IndustryTreeProps {
   onSelect?: (industry: Industry) => void
   selectedId?: string | null
   emptyMessage?: string
+  /** Paginate roots: show roots in [offset, offset+limit). Omit to show all. */
+  rootOffset?: number
+  rootLimit?: number
   className?: string
 }
 
@@ -26,11 +29,17 @@ export const IndustryTree = memo(function IndustryTree({
   onSelect,
   selectedId,
   emptyMessage = 'No industries',
+  rootOffset = 0,
+  rootLimit,
   className = '',
 }: IndustryTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const roots = useMemo(() => buildTree(industries, null), [industries])
+  const allRoots = useMemo(() => buildTree(industries, null), [industries])
+  const roots = useMemo(() => {
+    if (rootLimit == null) return allRoots
+    return allRoots.slice(rootOffset, rootOffset + rootLimit)
+  }, [allRoots, rootOffset, rootLimit])
 
   const toggle = useCallback((id: string) => {
     setExpanded((prev) => {
@@ -47,11 +56,14 @@ export const IndustryTree = memo(function IndustryTree({
     const isExpanded = expanded.has(node.id)
     const isSelected = selectedId === node.id
 
+    const iconCls = isSelected ? 'text-white opacity-90' : 'text-safe-light'
+    const codeCls = isSelected ? 'opacity-90' : 'text-safe-light'
+
     return (
       <div key={node.id} className="select-none">
         <div
-          style={{ paddingLeft: `${depth * 20 + 8}px` }}
-          className={`flex items-center gap-2 py-2 px-2 rounded-none cursor-pointer transition-colors ${
+          style={{ paddingLeft: `${depth * 14 + 6}px` }}
+          className={`flex items-center gap-1.5 py-1 px-1.5 rounded-none cursor-pointer transition-colors text-sm ${
             isSelected ? 'bg-natural text-white' : 'hover:bg-safe-light/10'
           }`}
           onClick={() => onSelect?.(node)}
@@ -67,24 +79,24 @@ export const IndustryTree = memo(function IndustryTree({
           >
             {hasChildren ? (
               isExpanded ? (
-                <ChevronDown size={16} />
+                <ChevronDown size={14} className={iconCls} />
               ) : (
-                <ChevronRight size={16} />
+                <ChevronRight size={14} className={iconCls} />
               )
             ) : (
-              <span className="w-4 inline-block" />
+              <span className="w-3 inline-block" />
             )}
           </button>
-          <span className="flex-shrink-0">
+          <span className={`flex-shrink-0 ${iconCls}`}>
             {hasChildren && isExpanded ? (
-              <FolderOpen size={18} className="text-safe-light" />
+              <FolderOpen size={16} />
             ) : (
-              <Folder size={18} className="text-safe-light" />
+              <Folder size={16} />
             )}
           </span>
           <span className="font-medium truncate">{node.name}</span>
           {node.code && (
-            <span className="text-safe-light text-sm truncate">({node.code})</span>
+            <span className={`text-xs truncate ${codeCls}`}>({node.code})</span>
           )}
         </div>
         {hasChildren && isExpanded && (
@@ -98,14 +110,14 @@ export const IndustryTree = memo(function IndustryTree({
 
   if (roots.length === 0) {
     return (
-      <div className={`py-12 text-center text-safe-light ${className}`}>
+      <div className={`py-8 text-center text-safe-light text-sm ${className}`}>
         {emptyMessage}
       </div>
     )
   }
 
   return (
-    <div className={`border border-[0.5px] border-safe bg-calm ${className}`}>
+    <div className={`border border-[0.5px] border-safe/30 bg-calm ${className}`}>
       {roots.map((node) => renderNode(node, 0))}
     </div>
   )

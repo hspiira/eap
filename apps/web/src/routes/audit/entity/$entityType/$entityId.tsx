@@ -92,7 +92,7 @@ function EntityHistoryPage() {
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-calm border border-[0.5px] border-safe">
+          <div className="p-3 bg-calm border border-[0.5px] border-safe/30">
             <Shield size={28} className="text-natural" />
           </div>
           <div>
@@ -104,7 +104,7 @@ function EntityHistoryPage() {
           </div>
         </div>
 
-        <div className="bg-calm border border-[0.5px] border-safe p-6">
+        <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
           <h2 className="text-lg font-semibold text-safe mb-4">Timeline</h2>
           {logs.length === 0 ? (
             <p className="text-safe-light text-sm">No audit history for this entity.</p>

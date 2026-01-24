@@ -1,6 +1,7 @@
 /**
  * API Client
- * Centralized API client with authentication, tenant context, and error handling
+ * Centralized API client with authentication, tenant context, and error handling.
+ * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
 import type {
@@ -93,8 +94,11 @@ class ApiClient {
   }
 
   /**
-   * Paths that must work without tenant context (auth, get-by-id bootstrap).
-   * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context; GET /tenants/{id} used to load current tenant.
+   * Paths that must work WITHOUT tenant context (auth, tenant bootstrap).
+   * All other endpoints require tenant_id: we add ?tenant_id= and x-tenant-id for every
+   * GET/POST/PATCH/DELETE (list, create, update, etc.). Backend requires tenant context
+   * for all data fetch and post operations.
+   * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context.
    */
   private shouldSkipTenantId(endpoint: string): boolean {
     const pathname = new URL(endpoint, 'http://x').pathname

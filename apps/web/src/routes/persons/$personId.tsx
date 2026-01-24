@@ -142,7 +142,7 @@ function PersonDetailPage() {
         {/* Person Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Basic Information */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <User size={20} />
               Basic Information
@@ -181,7 +181,7 @@ function PersonDetailPage() {
 
           {/* Contact Information */}
           {person.contact_info && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Phone size={20} />
                 Contact Information
@@ -217,7 +217,7 @@ function PersonDetailPage() {
 
           {/* Employment Information */}
           {person.employment_info && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Briefcase size={20} />
                 Employment Information
@@ -261,7 +261,7 @@ function PersonDetailPage() {
 
           {/* License Information */}
           {person.license_info && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Shield size={20} />
                 License Information
@@ -307,7 +307,7 @@ function PersonDetailPage() {
 
           {/* Emergency Contact */}
           {person.emergency_contact && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Users size={20} />
                 Emergency Contact
@@ -337,7 +337,7 @@ function PersonDetailPage() {
 
           {/* Address */}
           {person.address && (
-            <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <MapPin size={20} />
                 Address
@@ -378,7 +378,7 @@ function PersonDetailPage() {
           )}
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata

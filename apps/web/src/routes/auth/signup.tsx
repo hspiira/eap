@@ -212,7 +212,7 @@ Generated: ${new Date().toISOString()}
     <>
       <div className="min-h-screen bg-calm flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
-          <div className="bg-calm p-8 rounded-none border border-[0.5px] border-safe">
+          <div className="bg-calm p-8 rounded-none border border-[0.5px] border-safe/30">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-safe mb-2">Evexía</h1>
               <p className="text-safe-light">Register as a new tenant</p>
@@ -264,7 +264,7 @@ Generated: ${new Date().toISOString()}
                   {code && validateCode(code) && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       {codeAvailability.checking ? (
-                        <div className="w-5 h-5 border-2 border-safe border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-safe/30 border-t-transparent rounded-full animate-spin"></div>
                       ) : codeAvailability.available === true ? (
                         <Check size={20} className="text-natural" />
                       ) : codeAvailability.available === false ? (

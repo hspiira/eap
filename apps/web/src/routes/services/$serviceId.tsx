@@ -143,7 +143,7 @@ function ServiceDetailPage() {
         {/* Service Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Service Details */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Package size={20} />
               Service Details
@@ -190,7 +190,7 @@ function ServiceDetailPage() {
           </div>
 
           {/* Group Settings */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Users size={20} />
               Group Settings
@@ -226,7 +226,7 @@ function ServiceDetailPage() {
           </div>
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Settings size={20} />
               Metadata

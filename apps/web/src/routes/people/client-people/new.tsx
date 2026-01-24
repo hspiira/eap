@@ -155,7 +155,7 @@ function CreateClientPersonPage() {
 
         <h1 className="text-3xl font-bold text-safe mb-6">Add client person</h1>
 
-        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe p-6">
+        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe/30 p-6">
           <h2 className="text-lg font-semibold text-safe mb-4">Basic</h2>
 
           <Select

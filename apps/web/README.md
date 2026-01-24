@@ -77,9 +77,10 @@ VITE_APP_ENV=development
 
 ## Backend API
 
-The frontend connects to a FastAPI backend. API documentation is available at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+The frontend connects to a FastAPI backend (same API locally and deployed). API documentation:
+
+- **Local**: Swagger UI `http://localhost:8000/docs` · ReDoc `http://localhost:8000/redoc`
+- **Deployed**: [ReDoc](https://eap-ten.vercel.app/redoc) · use for reference when running local backend
 
 ## Features
 

@@ -129,7 +129,7 @@ function UserDetailPage() {
         {/* User Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Account Information */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Mail size={20} />
               Account Information
@@ -174,7 +174,7 @@ function UserDetailPage() {
           </div>
 
           {/* Preferences */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Globe size={20} />
               Preferences
@@ -196,7 +196,7 @@ function UserDetailPage() {
           </div>
 
           {/* Activity */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Clock size={20} />
               Activity
@@ -222,7 +222,7 @@ function UserDetailPage() {
           </div>
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata

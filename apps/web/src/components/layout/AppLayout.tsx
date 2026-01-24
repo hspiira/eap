@@ -144,7 +144,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-calm flex flex-col">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-calm border-b border-[0.5px] border-safe">
+      <header className="sticky top-0 z-30 bg-calm border-b border-[0.5px] border-safe/30">
         <div className="flex items-center justify-between px-6 h-16">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -173,7 +173,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     const t = availableTenants.find((x) => x.id === e.target.value)
                     if (t) setCurrentTenant(t)
                   }}
-                  className="text-sm bg-calm border border-[0.5px] border-safe text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
+                  className="text-sm bg-calm border border-[0.5px] border-safe/30 text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
                   aria-label="Current organization"
                 >
                   {availableTenants.map((tenant) => (
@@ -272,7 +272,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           />
           <aside className="fixed left-0 top-16 h-full w-64 bg-calm z-50 lg:hidden overflow-y-auto">
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b border-[0.5px] border-safe">
+              <div className="flex items-center justify-between p-4">
                 <h2 className="text-base font-semibold text-safe">Evexía</h2>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

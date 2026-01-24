@@ -65,7 +65,7 @@ export function EmptyState({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center p-12 text-center bg-calm border border-[0.5px] border-safe ${className}`}
+      className={`flex flex-col items-center justify-center p-12 text-center bg-calm border border-[0.5px] border-safe/30 ${className}`}
     >
       <DisplayIcon size={48} className="text-safe-light mb-4" />
       <h3 className="text-lg font-semibold text-safe mb-2">{displayTitle}</h3>

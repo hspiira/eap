@@ -32,11 +32,11 @@ export function CreateModal({
       aria-labelledby="create-modal-title"
     >
       <div
-        className="bg-calm border border-[0.5px] border-safe max-w-2xl w-full max-h-[90vh] flex flex-col shadow-lg"
+        className="bg-calm border border-[0.5px] border-safe/30 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[0.5px] border-safe shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[0.5px] border-safe/30 shrink-0">
           <h2 id="create-modal-title" className="text-lg font-semibold text-safe">
             {title}
           </h2>

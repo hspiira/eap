@@ -119,7 +119,7 @@ export function FileUpload({
         onClick={handleClick}
         className={`
           relative border-2 border-dashed rounded-none transition-colors cursor-pointer
-          ${isDragging ? 'border-natural bg-natural/10' : 'border-safe'}
+          ${isDragging ? 'border-natural bg-natural/10' : 'border-safe/30'}
           ${error || dragError ? 'border-nurturing' : ''}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-natural'}
           ${value ? 'bg-calm' : 'bg-calm/50'}

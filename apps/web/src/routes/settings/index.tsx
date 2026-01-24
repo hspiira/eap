@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { FormField } from '@/components/common/FormField'
+import { Select } from '@/components/common/Select'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -198,9 +199,8 @@ function SettingsPage() {
     <AppLayout>
       <div className="max-w-7xl mx-auto">
         <Breadcrumb items={[{ label: 'Settings' }]} className="mb-2" />
-        <h1 className="text-xl font-bold text-safe mb-4">Settings</h1>
 
-        <div className="border-b border-safe mb-4">
+        <div className="border-b border-safe/30 mb-4">
           <nav className="flex gap-1" aria-label="Settings tabs">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -219,7 +219,7 @@ function SettingsPage() {
           </nav>
         </div>
 
-        <div className="bg-calm border border-[0.5px] border-safe p-4">
+        <div className="bg-calm border border-[0.5px] border-safe/30 p-4">
           {tab === 'account' && <AccountTab onLogout={logout} />}
           {tab === 'industries' && <IndustriesTab />}
           {tab === 'users' && <UsersTab />}
@@ -314,12 +314,12 @@ function Switch({
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       className={`relative inline-block h-5 w-9 flex-shrink-0 !rounded-full border-[0.5px] transition-colors ${
-        checked ? 'bg-natural border-natural' : 'bg-calm border-safe'
+        checked ? 'bg-natural border-natural' : 'bg-calm border-safe/30'
       }`}
       style={{ borderRadius: '9999px' }}
     >
       <span
-        className={`absolute top-0.5 block h-4 w-4 !rounded-full bg-white border border-safe transition-transform ${
+        className={`absolute top-0.5 block h-4 w-4 !rounded-full bg-white border border-safe/30 transition-transform ${
           checked ? 'left-[18px]' : 'left-0.5'
         }`}
         style={{ borderRadius: '9999px' }}
@@ -361,7 +361,7 @@ function ManageLinkTab({
       <div className="flex flex-wrap gap-1.5">
         <Link
           to={path}
-          className="inline-flex items-center gap-1 px-2 py-1 text-sm border border-[0.5px] border-safe text-safe hover:bg-safe-light/10 rounded-none transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-1 text-sm border border-[0.5px] border-safe/30 text-safe hover:bg-safe-light/10 rounded-none transition-colors"
         >
           <ExternalLink size={14} />
           Manage {label}
@@ -378,34 +378,6 @@ function ManageLinkTab({
   )
 }
 
-function CompactSelect({
-  label,
-  value,
-  onChange,
-  options,
-  className = '',
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  options: { value: string; label: string }[]
-  className?: string
-}) {
-  return (
-    <div className={`py-1 border-b border-safe/20 ${className}`}>
-      <label className="block text-xs font-medium text-safe mb-0.5">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full max-w-xs px-2 py-1 text-sm bg-calm border-[0.5px] border-safe rounded-none focus:outline-none focus:border-natural"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </div>
-  )
-}
 
 function PreferencesTab({
   language,
@@ -465,22 +437,59 @@ function PreferencesTab({
   return (
     <div className="space-y-0">
       <h2 className="text-sm font-semibold text-safe mb-1.5">Display & locale</h2>
-      <CompactSelect label="Language" value={language} onChange={setLanguage} options={langOpts} />
-      <CompactSelect label="Timezone" value={timezone} onChange={setTimezone} options={tzOpts} />
-      <CompactSelect label="Date format" value={dateFormat} onChange={setDateFormat} options={dateOpts} />
-      <CompactSelect label="Week starts on" value={weekStartsOn} onChange={setWeekStartsOn} options={weekOpts} />
-      <h2 className="text-sm font-semibold text-safe mt-2 mb-1.5">Security</h2>
-      <CompactSelect label="Session timeout" value={sessionTimeout} onChange={setSessionTimeout} options={timeoutOpts} />
-      <div className="pt-2">
-        <button
-          onClick={onSave}
-          disabled={saving}
-          className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
-        >
-          {saving && <LoadingSpinner size="sm" color="white" />}
-          Save
-        </button>
-      </div>
+      <form onSubmit={(e) => { e.preventDefault(); onSave(); }} className="space-y-1">
+        <Select
+          name="language"
+          label="Language"
+          value={language}
+          onChange={(v) => setLanguage(v as string)}
+          options={langOpts}
+          compact
+        />
+        <Select
+          name="timezone"
+          label="Timezone"
+          value={timezone}
+          onChange={(v) => setTimezone(v as string)}
+          options={tzOpts}
+          compact
+        />
+        <Select
+          name="dateFormat"
+          label="Date format"
+          value={dateFormat}
+          onChange={(v) => setDateFormat(v as string)}
+          options={dateOpts}
+          compact
+        />
+        <Select
+          name="weekStartsOn"
+          label="Week starts on"
+          value={weekStartsOn}
+          onChange={(v) => setWeekStartsOn(v as string)}
+          options={weekOpts}
+          compact
+        />
+        <h2 className="text-sm font-semibold text-safe mt-2 mb-1.5">Security</h2>
+        <Select
+          name="sessionTimeout"
+          label="Session timeout"
+          value={sessionTimeout}
+          onChange={(v) => setSessionTimeout(v as string)}
+          options={timeoutOpts}
+          compact
+        />
+        <div className="pt-1">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            {saving && <LoadingSpinner size="sm" color="white" />}
+            Save
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

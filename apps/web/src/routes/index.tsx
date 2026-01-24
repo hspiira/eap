@@ -38,7 +38,7 @@ function HomePage() {
 
           {/* Main Content */}
           <div className="grid md:grid-cols-2 gap-8 mb-12">
-            <div className="bg-calm border border-[0.5px] border-safe p-8">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-8">
               <h2 className="text-2xl font-semibold text-safe mb-4">Sign In</h2>
               <p className="text-safe-light mb-6">
                 Access your account to manage your organization, users, and services.
@@ -52,7 +52,7 @@ function HomePage() {
               </Link>
             </div>
 
-            <div className="bg-calm border border-[0.5px] border-safe p-8">
+            <div className="bg-calm border border-[0.5px] border-safe/30 p-8">
               <h2 className="text-2xl font-semibold text-safe mb-4">Get Started</h2>
               <p className="text-safe-light mb-6">
                 Create an organization and start managing your services today.

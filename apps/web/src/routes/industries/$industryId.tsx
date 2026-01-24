@@ -83,7 +83,7 @@ function IndustryDetailPage() {
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-calm border border-[0.5px] border-safe">
+          <div className="p-3 bg-calm border border-[0.5px] border-safe/30">
             <Folder size={28} className="text-natural" />
           </div>
           <div>
@@ -98,7 +98,7 @@ function IndustryDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Details</h2>
             <dl className="space-y-3">
               <div>
@@ -146,7 +146,7 @@ function IndustryDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Child Industries</h2>
             {children.length === 0 ? (
               <p className="text-safe-light text-sm">No child industries</p>

@@ -5,6 +5,8 @@
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 
+export type PaginationInfoPosition = 'above' | 'below' | 'inline'
+
 export interface PaginationProps {
   currentPage: number
   totalPages: number
@@ -14,6 +16,8 @@ export interface PaginationProps {
   onPageSizeChange: (size: number) => void
   pageSizeOptions?: number[]
   showPageSizeSelector?: boolean
+  /** Where to show "Showing X to Y of Z": above nav, below nav, or inline (default). */
+  infoPosition?: PaginationInfoPosition
   className?: string
 }
 
@@ -28,6 +32,7 @@ export function Pagination({
   onPageSizeChange,
   pageSizeOptions = defaultPageSizeOptions,
   showPageSizeSelector = true,
+  infoPosition = 'inline',
   className = '',
 }: PaginationProps) {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
@@ -61,141 +66,146 @@ export function Pagination({
     return null
   }
 
-  // Generate page numbers to display
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = []
-    const maxVisible = 5
-
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is small
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      // Always show first page
-      pages.push(1)
-
-      if (currentPage > 3) {
-        pages.push('...')
-      }
-
-      // Show pages around current page
-      const start = Math.max(2, currentPage - 1)
-      const end = Math.min(totalPages - 1, currentPage + 1)
-
-      for (let i = start; i <= end; i++) {
-        if (i !== 1 && i !== totalPages) {
-          pages.push(i)
-        }
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...')
-      }
-
-      // Always show last page
-      if (totalPages > 1) {
-        pages.push(totalPages)
-      }
+  // Generate page numbers: show all only when ≤5 pages; otherwise first, last, current only, ellipsis.
+  // Compact (window 0) keeps strip narrow so it fits in small areas.
+  const getPageNumbers = (): (number | string)[] => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
     }
 
+    const windowSize = 0
+    const left = Math.max(2, currentPage - windowSize)
+    const right = Math.min(totalPages - 1, currentPage + windowSize)
+    const numbers = new Set<number>([1, totalPages])
+    for (let i = left; i <= right; i++) numbers.add(i)
+    const sorted = [...numbers].sort((a, b) => a - b)
+
+    const pages: (number | string)[] = []
+    let prev = 0
+    for (const n of sorted) {
+      if (prev !== 0 && n > prev + 1) pages.push('...')
+      pages.push(n)
+      prev = n
+    }
     return pages
   }
 
-  return (
-    <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}>
-      {/* Items info and page size selector */}
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-safe">
-          Showing {startItem} to {endItem} of {totalItems}
-        </span>
-        {showPageSizeSelector && (
-          <div className="flex items-center gap-2">
-            <label htmlFor="page-size" className="text-sm text-safe">
-              Items per page:
-            </label>
-            <select
-              id="page-size"
-              value={pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="px-2 py-1 bg-calm border border-[0.5px] border-safe text-safe text-sm rounded-none focus:outline-none focus:border-natural"
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {/* Page navigation */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleFirstPage}
-          disabled={currentPage === 1}
-          className="p-2 border border-[0.5px] border-safe text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none"
-          aria-label="First page"
-        >
-          <ChevronsLeft size={16} />
-        </button>
-        <button
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-          className="p-2 border border-[0.5px] border-safe text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none"
-          aria-label="Previous page"
-        >
-          <ChevronLeft size={16} />
-        </button>
-
-        {/* Page numbers */}
-        <div className="flex items-center gap-1">
-          {getPageNumbers().map((page, index) => {
-            if (page === '...') {
-              return (
-                <span key={`ellipsis-${index}`} className="px-2 text-safe">
-                  ...
-                </span>
-              )
-            }
-
-            const pageNum = page as number
-            const isActive = pageNum === currentPage
-
-            return (
-              <button
-                key={pageNum}
-                onClick={() => onPageChange(pageNum)}
-                className={`px-3 py-1 border border-[0.5px] text-sm font-medium transition-colors rounded-none ${
-                  isActive
-                    ? 'bg-natural text-white border-natural-dark'
-                    : 'bg-calm text-safe border-safe hover:bg-calm-dark'
-                }`}
-              >
-                {pageNum}
-              </button>
-            )
-          })}
+  const infoBlock = (
+    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 min-w-0">
+      <span className="text-sm text-safe">
+        Showing {startItem} to {endItem} of {totalItems}
+      </span>
+      {showPageSizeSelector && (
+        <div className="flex items-center gap-2">
+          <label htmlFor="page-size" className="text-sm text-safe">
+            Items per page:
+          </label>
+          <select
+            id="page-size"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="px-2 py-1 bg-calm border border-[0.5px] border-safe/30 text-safe text-sm rounded-none focus:outline-none focus:border-natural"
+          >
+            {pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
         </div>
+      )}
+    </div>
+  )
 
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          className="p-2 border border-[0.5px] border-safe text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none"
-          aria-label="Next page"
-        >
-          <ChevronRight size={16} />
-        </button>
-        <button
-          onClick={handleLastPage}
-          disabled={currentPage === totalPages}
-          className="p-2 border border-[0.5px] border-safe text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none"
-          aria-label="Last page"
-        >
-          <ChevronsRight size={16} />
-        </button>
+  const navBlock = (
+    <div className="flex flex-nowrap items-center justify-center gap-0.5 min-w-0 overflow-x-auto max-w-full">
+      <button
+        onClick={handleFirstPage}
+        disabled={currentPage === 1}
+        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none shrink-0"
+        aria-label="First page"
+      >
+        <ChevronsLeft size={12} />
+      </button>
+      <button
+        onClick={handlePreviousPage}
+        disabled={currentPage === 1}
+        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none shrink-0"
+        aria-label="Previous page"
+      >
+        <ChevronLeft size={12} />
+      </button>
+
+      <div className="flex flex-nowrap items-center gap-0.5 min-w-0 shrink">
+        {getPageNumbers().map((page, index) => {
+          if (page === '...') {
+            return (
+              <span key={`ellipsis-${index}`} className="px-0.5 text-safe text-xs shrink-0">
+                …
+              </span>
+            )
+          }
+
+          const pageNum = page as number
+          const isActive = pageNum === currentPage
+
+          return (
+            <button
+              key={pageNum}
+              onClick={() => onPageChange(pageNum)}
+              className={`min-w-[1.25rem] w-5 h-5 flex items-center justify-center border border-[0.5px] text-xs font-medium transition-colors rounded-none shrink-0 ${
+                isActive
+                  ? 'bg-natural text-white border-natural-dark'
+                  : 'bg-calm text-safe border-safe hover:bg-calm-dark'
+              }`}
+            >
+              {pageNum}
+            </button>
+          )
+        })}
       </div>
+
+      <button
+        onClick={handleNextPage}
+        disabled={currentPage === totalPages}
+        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none shrink-0"
+        aria-label="Next page"
+      >
+        <ChevronRight size={12} />
+      </button>
+      <button
+        onClick={handleLastPage}
+        disabled={currentPage === totalPages}
+        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-calm transition-colors rounded-none shrink-0"
+        aria-label="Last page"
+      >
+        <ChevronsRight size={12} />
+      </button>
+    </div>
+  )
+
+  if (infoPosition === 'above') {
+    return (
+      <div className={`flex flex-col items-stretch gap-2 min-w-0 w-full ${className}`}>
+        {infoBlock}
+        {navBlock}
+      </div>
+    )
+  }
+
+  if (infoPosition === 'below') {
+    return (
+      <div className={`flex flex-col items-stretch gap-2 min-w-0 w-full ${className}`}>
+        {navBlock}
+        {infoBlock}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 min-w-0 w-full ${className}`}>
+      {infoBlock}
+      {navBlock}
     </div>
   )
 }

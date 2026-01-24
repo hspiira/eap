@@ -96,7 +96,7 @@ function AuditLogDetailPage() {
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-calm border border-[0.5px] border-safe">
+          <div className="p-3 bg-calm border border-[0.5px] border-safe/30">
             <Shield size={28} className="text-natural" />
           </div>
           <div>
@@ -110,7 +110,7 @@ function AuditLogDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <FileText size={20} />
               Details
@@ -172,14 +172,14 @@ function AuditLogDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Entity Changes</h2>
             {changeList && changeList.length > 0 ? (
               <div className="space-y-3">
                 {changeList.map((c, i) => (
                   <div
                     key={i}
-                    className="py-2 px-3 rounded-none bg-safe-light/5 border border-[0.5px] border-safe"
+                    className="py-2 px-3 rounded-none bg-safe-light/5 border border-[0.5px] border-safe/30"
                   >
                     {c.field && (
                       <p className="text-sm font-medium text-safe mb-1">{c.field}</p>
@@ -206,11 +206,11 @@ function AuditLogDetailPage() {
                 ))}
               </div>
             ) : changeObj && Object.keys(changeObj).length > 0 ? (
-              <pre className="text-sm text-safe overflow-x-auto p-4 bg-safe-light/5 rounded-none border border-[0.5px] border-safe">
+              <pre className="text-sm text-safe overflow-x-auto p-4 bg-safe-light/5 rounded-none border border-[0.5px] border-safe/30">
                 {JSON.stringify(changeObj, null, 2)}
               </pre>
             ) : log.changes && typeof log.changes === 'object' && Object.keys(log.changes).length > 0 ? (
-              <pre className="text-sm text-safe overflow-x-auto p-4 bg-safe-light/5 rounded-none border border-[0.5px] border-safe">
+              <pre className="text-sm text-safe overflow-x-auto p-4 bg-safe-light/5 rounded-none border border-[0.5px] border-safe/30">
                 {JSON.stringify(log.changes, null, 2)}
               </pre>
             ) : (

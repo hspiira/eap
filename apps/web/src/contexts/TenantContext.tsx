@@ -41,7 +41,7 @@ function syncTenantToApiAndStorage(tenant: TenantEntity | null) {
 }
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, token } = useAuth()
+  const { isAuthenticated, token, isLoading: authLoading } = useAuth()
   const {
     currentTenant,
     availableTenants,
@@ -61,7 +61,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Failed to load tenant:', error)
         setStoreTenant(null)
-        if (typeof window !== 'undefined') localStorage.removeItem('current_tenant_id')
+        // Keep current_tenant_id in localStorage so we can retry on next load; only logout clears it.
       } finally {
         setLoading(false)
       }
@@ -83,25 +83,28 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   }, [currentTenant])
 
   // Restore current tenant by ID only (see docs: GET /tenants/{tenant_id}). No list fetch on bootstrap.
+  // Wait for auth to be restored from localStorage before reading current_tenant_id.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isAuthenticated || !token) return
+    if (typeof window === 'undefined' || authLoading || !isAuthenticated || !token) return
     const storedTenantId = localStorage.getItem('current_tenant_id')
     if (storedTenantId && !currentTenant) {
       loadTenant(storedTenantId)
     } else if (!storedTenantId) {
       setLoading(false)
     }
-  }, [isAuthenticated, token, currentTenant, loadTenant, setLoading])
+  }, [authLoading, isAuthenticated, token, currentTenant, loadTenant, setLoading])
 
-  // Clear tenant state when user logs out.
+  // Clear tenant state when user logs out. Do NOT clear during initial auth load:
+  // isAuthenticated is false before token is restored from localStorage, which would
+  // wipe current_tenant_id and cause "tenant lost on reload".
   useEffect(() => {
-    if (isAuthenticated) return
+    if (authLoading || isAuthenticated) return
     setStoreTenant(null)
     setAvailableTenants([])
     setLoading(false)
     syncTenantToApiAndStorage(null)
     if (typeof window !== 'undefined') localStorage.removeItem('current_tenant_id')
-  }, [isAuthenticated, setStoreTenant, setAvailableTenants, setLoading])
+  }, [authLoading, isAuthenticated, setStoreTenant, setAvailableTenants, setLoading])
 
   const createTenant = useCallback(
     async (tenantData: TenantCreate): Promise<TenantCreateResponse> => {

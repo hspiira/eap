@@ -70,12 +70,19 @@ function ClientsPage() {
   }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection, currentTenant])
 
   useEffect(() => {
-    if (!tenantLoading) {
-      fetchClients()
-    } else {
+    if (tenantLoading) {
       setLoading(true)
+      return
     }
-  }, [tenantLoading, fetchClients])
+    if (!currentTenant) {
+      setLoading(false)
+      setClients([])
+      setTotalItems(0)
+      setError(null)
+      return
+    }
+    fetchClients()
+  }, [tenantLoading, currentTenant, fetchClients])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
@@ -158,6 +165,21 @@ function ClientsPage() {
       },
     },
   ]
+
+  if (!tenantLoading && !currentTenant) {
+    return (
+      <AppLayout>
+        <div className="max-w-7xl mx-auto">
+          <div className="p-6 bg-calm border border-[0.5px] border-safe/30 text-safe">
+            <p className="font-medium">No organization selected</p>
+            <p className="text-sm text-safe-light mt-1">
+              Log in with a tenant code to view clients, or create a tenant first.
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>

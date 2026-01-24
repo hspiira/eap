@@ -8,6 +8,7 @@ import { FormField } from '@/components/common/FormField'
 import { Select } from '@/components/common/Select'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useToast } from '@/contexts/ToastContext'
+import { useTenant } from '@/hooks/useTenant'
 import { industriesApi } from '@/api/endpoints/industries'
 
 export interface CreateIndustryFormProps {
@@ -18,22 +19,28 @@ export interface CreateIndustryFormProps {
 
 export function CreateIndustryForm({ onSuccess, onCancel, onLoadingChange }: CreateIndustryFormProps) {
   const { showSuccess, showError } = useToast()
+  const { currentTenant } = useTenant()
   const [loading, setLoading] = useState(false)
   const [industries, setIndustries] = useState<Array<{ id: string; name: string; code?: string | null }>>([])
   const [formData, setFormData] = useState({ name: '', code: '', parent_id: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    if (!currentTenant) return
     const load = async () => {
       try {
-        const res = await industriesApi.list({ limit: 500 })
+        const res = await industriesApi.list({
+          tenant_id: currentTenant.id,
+          page: 1,
+          limit: 100,
+        })
         setIndustries(res.items.map((i) => ({ id: i.id, name: i.name, code: i.code })))
       } catch (e) {
         console.error(e)
       }
     }
     load()
-  }, [])
+  }, [currentTenant])
 
   const setLoadingState = (v: boolean) => { setLoading(v); onLoadingChange?.(v) }
 

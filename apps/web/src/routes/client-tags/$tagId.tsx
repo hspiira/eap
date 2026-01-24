@@ -99,7 +99,7 @@ function ClientTagDetailPage() {
 
         <div className="flex items-center gap-4 mb-6">
           <div
-            className="p-3 bg-calm border border-[0.5px] border-safe flex items-center justify-center"
+            className="p-3 bg-calm border border-[0.5px] border-safe/30 flex items-center justify-center"
             style={tag.color ? { backgroundColor: `${tag.color}20` } : undefined}
           >
             <Tag size={28} className="text-natural" style={tag.color ? { color: tag.color } : undefined} />
@@ -112,7 +112,7 @@ function ClientTagDetailPage() {
             {tag.color && (
               <p className="text-safe-light text-sm mt-1 flex items-center gap-2">
                 <span
-                  className="w-3 h-3 rounded-full border border-[0.5px] border-safe"
+                  className="w-3 h-3 rounded-full border border-[0.5px] border-safe/30"
                   style={{ backgroundColor: tag.color }}
                 />
                 {tag.color}
@@ -122,7 +122,7 @@ function ClientTagDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Details</h2>
             <dl className="space-y-3">
               <div>
@@ -134,7 +134,7 @@ function ClientTagDetailPage() {
                   <dt className="text-sm font-medium text-safe-light">Color</dt>
                   <dd className="text-safe mt-1 flex items-center gap-2">
                     <span
-                      className="w-4 h-4 rounded-full border border-[0.5px] border-safe"
+                      className="w-4 h-4 rounded-full border border-[0.5px] border-safe/30"
                       style={{ backgroundColor: tag.color }}
                     />
                     {tag.color}
@@ -158,7 +158,7 @@ function ClientTagDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe p-6">
+          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <UserCircle size={20} />
               Assigned Clients ({clients.length})

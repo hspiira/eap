@@ -42,7 +42,7 @@ export function AdminPasswordDisplay({
       <div className="bg-calm p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-safe mb-2">✓ Tenant Created Successfully!</h2>
-          <div className="mb-4 p-3 bg-calm border-[0.5px] border-safe rounded-none">
+          <div className="mb-4 p-3 bg-calm border-[0.5px] border-safe/30 rounded-none">
             <p className="text-safe text-sm font-medium mb-1">Tenant: {tenant.name}</p>
             <p className="text-safe-light text-sm">Code: {tenant.code}</p>
           </div>
@@ -63,7 +63,7 @@ export function AdminPasswordDisplay({
               Admin Email
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-calm border-[0.5px] border-safe rounded-none">
+              <div className="flex-1 px-4 py-2 bg-calm border-[0.5px] border-safe/30 rounded-none">
                 <code className="text-safe">{tenant.admin_email}</code>
               </div>
               <button
@@ -82,7 +82,7 @@ export function AdminPasswordDisplay({
               Admin Password
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-calm border-[0.5px] border-safe rounded-none flex items-center">
+              <div className="flex-1 px-4 py-2 bg-calm border-[0.5px] border-safe/30 rounded-none flex items-center">
                 <code className="text-safe font-mono flex-1">
                   {showPassword ? tenant.admin_password : '•'.repeat(16)}
                 </code>

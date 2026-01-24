@@ -2,6 +2,7 @@
  * Auth store slice
  * Single source of truth for authentication state.
  * AuthContext syncs with this store (read/write).
+ * Hydrates from localStorage on init so we never have a false "logged out" phase on reload.
  */
 
 import { create } from 'zustand'
@@ -20,14 +21,20 @@ export interface AuthActions {
 
 export type AuthStore = AuthState & AuthActions
 
-const initialState: AuthState = {
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
+function getInitialState(): AuthState {
+  if (typeof window === 'undefined') {
+    return { token: null, isAuthenticated: false, isLoading: true }
+  }
+  const token = localStorage.getItem('auth_token')
+  return {
+    token,
+    isAuthenticated: !!token,
+    isLoading: false,
+  }
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  ...initialState,
+  ...getInitialState(),
 
   setAuth: (token) =>
     set({

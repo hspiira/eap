@@ -56,7 +56,7 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-calm border border-[0.5px] border-safe max-w-md w-full">
+      <div className="bg-calm border border-[0.5px] border-safe/30 max-w-md w-full">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
@@ -85,7 +85,7 @@ export function ConfirmDialog({
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 bg-calm hover:bg-calm-dark text-safe border border-[0.5px] border-safe rounded-none transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-calm hover:bg-calm-dark text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
             >
               {cancelLabel}
             </button>

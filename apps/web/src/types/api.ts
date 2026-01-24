@@ -94,12 +94,15 @@ export interface RequestOptions {
 }
 
 /**
- * Authentication response
+ * Authentication response.
+ * These simple pieces of detail (e.g. tenant_id) are picked from the user
+ * on successful authentication and used for session/tenant context.
  */
 export interface AuthResponse {
   access_token: string
   token_type: 'bearer'
   expires_in: number // seconds
+  tenant_id?: string
 }
 
 /**

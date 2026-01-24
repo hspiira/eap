@@ -129,7 +129,7 @@ function CreateTenantPage() {
 
         <h1 className="text-3xl font-bold text-safe mb-6">Create New Tenant</h1>
 
-        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe p-6">
+        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe/30 p-6">
           <FormField
             label="Tenant Name"
             name="name"

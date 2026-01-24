@@ -196,7 +196,7 @@ export function DataTable<T extends { id?: string }>({
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse bg-calm">
           <thead>
-            <tr className="bg-calm border-b border-[0.5px] border-safe">
+            <tr className="bg-calm border-b border-[0.5px] border-safe/30">
               {rowSelection && (
                 <th className="px-4 py-3 text-left">
                   <input
@@ -206,7 +206,7 @@ export function DataTable<T extends { id?: string }>({
                       if (input) input.indeterminate = isIndeterminate || false
                     }}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded-none border-[0.5px] border-safe"
+                    className="rounded-none border-[0.5px] border-safe/30"
                   />
                 </th>
               )}
@@ -276,7 +276,7 @@ export function DataTable<T extends { id?: string }>({
                 return (
                   <tr
                     key={rowId}
-                    className={`border-b border-[0.5px] border-safe ${
+                    className={`border-b border-[0.5px] border-safe/30 ${
                       isSelected ? 'bg-calm-dark' : 'bg-calm hover:bg-calm-dark/50'
                     } transition-colors`}
                   >
@@ -286,7 +286,7 @@ export function DataTable<T extends { id?: string }>({
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => handleSelectRow(rowId, e.target.checked)}
-                          className="rounded-none border-[0.5px] border-safe"
+                          className="rounded-none border-[0.5px] border-safe/30"
                         />
                       </td>
                     )}
@@ -311,7 +311,7 @@ export function DataTable<T extends { id?: string }>({
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
-              <div key={`skeleton-${i}`} className="bg-calm border border-[0.5px] border-safe p-4">
+              <div key={`skeleton-${i}`} className="bg-calm border border-[0.5px] border-safe/30 p-4">
                 <div className="space-y-2">
                   {columns.map((col) => (
                     <div key={col.id} className="space-y-1">
@@ -343,7 +343,7 @@ export function DataTable<T extends { id?: string }>({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="p-12 text-center text-safe-light bg-calm border border-[0.5px] border-safe">
+          <div className="p-12 text-center text-safe-light bg-calm border border-[0.5px] border-safe/30">
             {emptyMessage}
           </div>
         ) : (
@@ -354,7 +354,7 @@ export function DataTable<T extends { id?: string }>({
             return (
               <div
                 key={rowId}
-                className={`bg-calm border border-[0.5px] border-safe p-4 ${
+                className={`bg-calm border border-[0.5px] border-safe/30 p-4 ${
                   isSelected ? 'bg-calm-dark' : ''
                 }`}
               >
@@ -364,7 +364,7 @@ export function DataTable<T extends { id?: string }>({
                       type="checkbox"
                       checked={isSelected}
                       onChange={(e) => handleSelectRow(rowId, e.target.checked)}
-                      className="rounded-none border-[0.5px] border-safe"
+                      className="rounded-none border-[0.5px] border-safe/30"
                     />
                   </div>
                 )}
