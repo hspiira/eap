@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react'
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { Pagination } from './Pagination'
 import { TableFilters, type FilterOption, type CustomFilter } from './TableFilters'
 import { StatusBadge } from './StatusBadge'
@@ -26,6 +26,8 @@ export interface DataTableProps<T> {
   data: T[]
   columns: Column<T>[]
   loading?: boolean
+  error?: string | null
+  onRetry?: () => void
   pagination?: {
     currentPage: number
     pageSize: number
@@ -69,6 +71,8 @@ export function DataTable<T extends { id?: string }>({
   data,
   columns,
   loading = false,
+  error = null,
+  onRetry,
   pagination,
   sorting,
   filters,
@@ -213,7 +217,31 @@ export function DataTable<T extends { id?: string }>({
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {error ? (
+              <tr>
+                <td
+                  colSpan={columns.length + (rowSelection ? 1 : 0)}
+                  className="px-4 py-12 bg-calm"
+                >
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex items-center gap-2 text-nurturing">
+                      <AlertCircle size={20} />
+                      <span className="font-medium">Error loading data</span>
+                    </div>
+                    <p className="text-safe-light text-sm text-center max-w-md">{error}</p>
+                    {onRetry && (
+                      <button
+                        onClick={onRetry}
+                        className="mt-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
+                      >
+                        <RefreshCw size={16} />
+                        Retry
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : data.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
@@ -262,7 +290,26 @@ export function DataTable<T extends { id?: string }>({
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {data.length === 0 ? (
+        {error ? (
+          <div className="p-12 bg-calm border border-[0.5px] border-nurturing">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex items-center gap-2 text-nurturing">
+                <AlertCircle size={20} />
+                <span className="font-medium">Error loading data</span>
+              </div>
+              <p className="text-safe-light text-sm text-center max-w-md">{error}</p>
+              {onRetry && (
+                <button
+                  onClick={onRetry}
+                  className="mt-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw size={16} />
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
+        ) : data.length === 0 ? (
           <div className="p-12 text-center text-safe-light bg-calm border border-[0.5px] border-safe">
             {emptyMessage}
           </div>

@@ -4,12 +4,11 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, SetStateAction } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { personsApi } from '@/api/endpoints/persons'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Person } from '@/types/entities'
@@ -22,10 +21,10 @@ export const Route = createFileRoute('/persons/')({
 
 function PersonsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [persons, setPersons] = useState<Person[]>([])
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -53,6 +52,7 @@ function PersonsPage() {
   const fetchPersons = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -82,9 +82,10 @@ function PersonsPage() {
       const response = await personsApi.list(params)
       setPersons(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load persons')
-      console.error('Error fetching persons:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load persons'
+      setError(errorMessage)
+      console.error('Error fetching persons:', err)
     } finally {
       setLoading(false)
     }
@@ -231,6 +232,8 @@ function PersonsPage() {
             data={persons}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchPersons}
             pagination={{
               currentPage,
               pageSize,
@@ -279,7 +282,7 @@ function PersonsPage() {
                         label: 'Client',
                         value: clientFilter,
                         options: clientOptions,
-                        onChange: (value) => {
+                        onChange: (value: SetStateAction<string>) => {
                           setClientFilter(value)
                           setCurrentPage(1)
                         },

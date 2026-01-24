@@ -9,7 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { servicesApi } from '@/api/endpoints/services'
 import type { Service } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -21,9 +20,9 @@ export const Route = createFileRoute('/services/')({
 
 function ServicesPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -36,6 +35,7 @@ function ServicesPage() {
   const fetchServices = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -57,9 +57,10 @@ function ServicesPage() {
       const response = await servicesApi.list(params)
       setServices(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load services')
-      console.error('Error fetching services:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load services'
+      setError(errorMessage)
+      console.error('Error fetching services:', err)
     } finally {
       setLoading(false)
     }
@@ -129,7 +130,7 @@ function ServicesPage() {
       header: 'Type',
       accessor: 'service_type',
       sortable: true,
-      render: (value) => <span>{value || '-'}</span>,
+      render: (value) => <span>{value as string || '-'}</span>,
     },
     {
       id: 'category',
@@ -196,6 +197,8 @@ function ServicesPage() {
             data={services}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchServices}
             pagination={{
               currentPage,
               pageSize,

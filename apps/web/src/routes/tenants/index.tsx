@@ -9,8 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { EmptyState } from '@/components/common/EmptyState'
-import { useToast } from '@/contexts/ToastContext'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { Tenant } from '@/types/entities'
 import type { TenantStatus } from '@/types/enums'
@@ -22,9 +20,9 @@ export const Route = createFileRoute('/tenants/')({
 
 function TenantsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -37,6 +35,7 @@ function TenantsPage() {
   const fetchTenants = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -58,9 +57,10 @@ function TenantsPage() {
       const response = await tenantsApi.list(params)
       setTenants(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load tenants')
-      console.error('Error fetching tenants:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load tenants'
+      setError(errorMessage)
+      console.error('Error fetching tenants:', err)
     } finally {
       setLoading(false)
     }
@@ -163,6 +163,8 @@ function TenantsPage() {
             data={tenants}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchTenants}
             pagination={{
               currentPage,
               pageSize,

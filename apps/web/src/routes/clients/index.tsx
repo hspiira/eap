@@ -9,7 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Client } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -21,9 +20,9 @@ export const Route = createFileRoute('/clients/')({
 
 function ClientsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -36,6 +35,7 @@ function ClientsPage() {
   const fetchClients = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -57,9 +57,10 @@ function ClientsPage() {
       const response = await clientsApi.list(params)
       setClients(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load clients')
-      console.error('Error fetching clients:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load clients'
+      setError(errorMessage)
+      console.error('Error fetching clients:', err)
     } finally {
       setLoading(false)
     }
@@ -177,6 +178,8 @@ function ClientsPage() {
             data={clients}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchClients}
             pagination={{
               currentPage,
               pageSize,

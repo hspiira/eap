@@ -9,10 +9,9 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { documentsApi } from '@/api/endpoints/documents'
 import type { Document } from '@/types/entities'
-import type { DocumentType, DocumentStatus } from '@/types/enums'
+import type { DocumentStatus } from '@/types/enums'
 import { Plus, FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/documents/')({
@@ -21,9 +20,9 @@ export const Route = createFileRoute('/documents/')({
 
 function DocumentsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -38,6 +37,7 @@ function DocumentsPage() {
   const fetchDocuments = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -67,9 +67,10 @@ function DocumentsPage() {
       const response = await documentsApi.list(params)
       setDocuments(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load documents')
-      console.error('Error fetching documents:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load documents'
+      setError(errorMessage)
+      console.error('Error fetching documents:', err)
     } finally {
       setLoading(false)
     }
@@ -182,7 +183,7 @@ function DocumentsPage() {
       header: 'Confidentiality',
       accessor: 'confidentiality_level',
       sortable: true,
-      render: (value) => <span className="text-safe-light text-sm">{value || '-'}</span>,
+      render: (value) => <span className="text-safe-light text-sm">{value as string || '-'}</span>,
     },
     {
       id: 'published_at',
@@ -230,6 +231,8 @@ function DocumentsPage() {
             data={documents}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchDocuments}
             pagination={{
               currentPage,
               pageSize,

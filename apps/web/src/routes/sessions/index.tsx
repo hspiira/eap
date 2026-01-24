@@ -9,7 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { serviceSessionsApi } from '@/api/endpoints/service-sessions'
 import { personsApi } from '@/api/endpoints/persons'
 import { servicesApi } from '@/api/endpoints/services'
@@ -23,11 +22,11 @@ export const Route = createFileRoute('/sessions/')({
 
 function SessionsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [sessions, setSessions] = useState<ServiceSession[]>([])
   const [persons, setPersons] = useState<Array<{ id: string; name: string }>>([])
   const [services, setServices] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -64,6 +63,7 @@ function SessionsPage() {
   const fetchSessions = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -101,9 +101,10 @@ function SessionsPage() {
       const response = await serviceSessionsApi.list(params)
       setSessions(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load sessions')
-      console.error('Error fetching sessions:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load sessions'
+      setError(errorMessage)
+      console.error('Error fetching sessions:', err)
     } finally {
       setLoading(false)
     }
@@ -237,6 +238,8 @@ function SessionsPage() {
             data={sessions}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchSessions}
             pagination={{
               currentPage,
               pageSize,

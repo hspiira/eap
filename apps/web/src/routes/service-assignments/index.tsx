@@ -9,13 +9,12 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { serviceAssignmentsApi } from '@/api/endpoints/service-assignments'
 import { contractsApi } from '@/api/endpoints/contracts'
 import { servicesApi } from '@/api/endpoints/services'
 import type { ServiceAssignment } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Plus, Link } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/service-assignments/')({
   component: ServiceAssignmentsPage,
@@ -23,11 +22,11 @@ export const Route = createFileRoute('/service-assignments/')({
 
 function ServiceAssignmentsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [assignments, setAssignments] = useState<ServiceAssignment[]>([])
   const [contracts, setContracts] = useState<Array<{ id: string; name: string }>>([])
   const [services, setServices] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -62,6 +61,7 @@ function ServiceAssignmentsPage() {
   const fetchAssignments = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -91,9 +91,10 @@ function ServiceAssignmentsPage() {
       const response = await serviceAssignmentsApi.list(params)
       setAssignments(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load service assignments')
-      console.error('Error fetching assignments:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load service assignments'
+      setError(errorMessage)
+      console.error('Error fetching assignments:', err)
     } finally {
       setLoading(false)
     }
@@ -148,7 +149,7 @@ function ServiceAssignmentsPage() {
       header: 'Contract',
       accessor: 'contract_id',
       sortable: true,
-      render: (value, row) => {
+      render: (_value, row) => {
         const contract = contracts.find(c => c.id === row.contract_id)
         return (
           <button
@@ -165,7 +166,7 @@ function ServiceAssignmentsPage() {
       header: 'Service',
       accessor: 'service_id',
       sortable: true,
-      render: (value, row) => {
+      render: (_value, row) => {
         const service = services.find(s => s.id === row.service_id)
         return <span>{service?.name || row.service_id}</span>
       },
@@ -233,6 +234,8 @@ function ServiceAssignmentsPage() {
             data={assignments}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchAssignments}
             pagination={{
               currentPage,
               pageSize,
@@ -263,6 +266,36 @@ function ServiceAssignmentsPage() {
                   setCurrentPage(1)
                 },
               },
+              customFilters: [
+                ...(contracts.length > 0
+                  ? [
+                      {
+                        id: 'contract-filter',
+                        label: 'Contract',
+                        value: contractFilter,
+                        options: contractOptions,
+                        onChange: (value: string) => {
+                          setContractFilter(value)
+                          setCurrentPage(1)
+                        },
+                      },
+                    ]
+                  : []),
+                ...(services.length > 0
+                  ? [
+                      {
+                        id: 'service-filter',
+                        label: 'Service',
+                        value: serviceFilter,
+                        options: serviceOptions,
+                        onChange: (value: string) => {
+                          setServiceFilter(value)
+                          setCurrentPage(1)
+                        },
+                      },
+                    ]
+                  : []),
+              ],
               onClearFilters: () => {
                 setSearchValue('')
                 setStatusFilter('')
@@ -274,50 +307,6 @@ function ServiceAssignmentsPage() {
             emptyMessage="No service assignments found"
           />
         )}
-
-        {/* Additional Filters */}
-        <div className="mt-4 flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <label htmlFor="contract-filter" className="text-sm text-safe">
-              Contract:
-            </label>
-            <select
-              id="contract-filter"
-              value={contractFilter}
-              onChange={(e) => {
-                setContractFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-4 py-2 bg-calm border border-[0.5px] border-safe text-safe rounded-none focus:outline-none focus:border-natural"
-            >
-              {contractOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="service-filter" className="text-sm text-safe">
-              Service:
-            </label>
-            <select
-              id="service-filter"
-              value={serviceFilter}
-              onChange={(e) => {
-                setServiceFilter(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-4 py-2 bg-calm border border-[0.5px] border-safe text-safe rounded-none focus:outline-none focus:border-natural"
-            >
-              {serviceOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
     </AppLayout>
   )

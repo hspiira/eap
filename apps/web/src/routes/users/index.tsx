@@ -9,7 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { usersApi } from '@/api/endpoints/users'
 import type { User } from '@/types/entities'
 import type { UserStatus } from '@/types/enums'
@@ -21,9 +20,9 @@ export const Route = createFileRoute('/users/')({
 
 function UsersPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -36,6 +35,7 @@ function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -57,9 +57,10 @@ function UsersPage() {
       const response = await usersApi.list(params)
       setUsers(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load users')
-      console.error('Error fetching users:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load users'
+      setError(errorMessage)
+      console.error('Error fetching users:', err)
     } finally {
       setLoading(false)
     }
@@ -191,6 +192,8 @@ function UsersPage() {
             data={users}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchUsers}
             pagination={{
               currentPage,
               pageSize,

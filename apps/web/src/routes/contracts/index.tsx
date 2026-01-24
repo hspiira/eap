@@ -9,7 +9,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
 import { contractsApi } from '@/api/endpoints/contracts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contract } from '@/types/entities'
@@ -22,10 +21,10 @@ export const Route = createFileRoute('/contracts/')({
 
 function ContractsPage() {
   const navigate = useNavigate()
-  const { showError } = useToast()
   const [contracts, setContracts] = useState<Contract[]>([])
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [totalItems, setTotalItems] = useState(0)
@@ -54,6 +53,7 @@ function ContractsPage() {
   const fetchContracts = async () => {
     try {
       setLoading(true)
+      setError(null)
       const params: any = {
         page: currentPage,
         limit: pageSize,
@@ -87,9 +87,10 @@ function ContractsPage() {
       const response = await contractsApi.list(params)
       setContracts(response.items)
       setTotalItems(response.total)
-    } catch (error) {
-      showError('Failed to load contracts')
-      console.error('Error fetching contracts:', error)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to load contracts'
+      setError(errorMessage)
+      console.error('Error fetching contracts:', err)
     } finally {
       setLoading(false)
     }
@@ -235,6 +236,8 @@ function ContractsPage() {
             data={contracts}
             columns={columns}
             loading={loading}
+            error={error}
+            onRetry={fetchContracts}
             pagination={{
               currentPage,
               pageSize,
