@@ -23,6 +23,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ContactsIndexRouteImport } from './routes/contacts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as ClientTagsIndexRouteImport } from './routes/client-tags/index'
 import { Route as AuditIndexRouteImport } from './routes/audit/index'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities/index'
 import { Route as UsersNewRouteImport } from './routes/users/new'
@@ -50,11 +51,15 @@ import { Route as ContactsNewRouteImport } from './routes/contacts/new'
 import { Route as ContactsContactIdRouteImport } from './routes/contacts/$contactId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
+import { Route as ClientTagsNewRouteImport } from './routes/client-tags/new'
+import { Route as ClientTagsTagIdRouteImport } from './routes/client-tags/$tagId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuditLogIdRouteImport } from './routes/audit/$logId'
 import { Route as ActivitiesNewRouteImport } from './routes/activities/new'
 import { Route as ActivitiesActivityIdRouteImport } from './routes/activities/$activityId'
 import { Route as TenantsTenantIdEditRouteImport } from './routes/tenants/$tenantId.edit'
+import { Route as AuditEntityEntityTypeEntityIdRouteImport } from './routes/audit/entity/$entityType/$entityId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +129,11 @@ const ContactsIndexRoute = ContactsIndexRouteImport.update({
 const ClientsIndexRoute = ClientsIndexRouteImport.update({
   id: '/clients/',
   path: '/clients/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientTagsIndexRoute = ClientTagsIndexRouteImport.update({
+  id: '/client-tags/',
+  path: '/client-tags/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditIndexRoute = AuditIndexRouteImport.update({
@@ -262,6 +272,16 @@ const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   path: '/clients/$clientId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientTagsNewRoute = ClientTagsNewRouteImport.update({
+  id: '/client-tags/new',
+  path: '/client-tags/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientTagsTagIdRoute = ClientTagsTagIdRouteImport.update({
+  id: '/client-tags/$tagId',
+  path: '/client-tags/$tagId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/auth/signup',
   path: '/auth/signup',
@@ -270,6 +290,11 @@ const AuthSignupRoute = AuthSignupRouteImport.update({
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditLogIdRoute = AuditLogIdRouteImport.update({
+  id: '/audit/$logId',
+  path: '/audit/$logId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesNewRoute = ActivitiesNewRouteImport.update({
@@ -287,13 +312,22 @@ const TenantsTenantIdEditRoute = TenantsTenantIdEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => TenantsTenantIdRoute,
 } as any)
+const AuditEntityEntityTypeEntityIdRoute =
+  AuditEntityEntityTypeEntityIdRouteImport.update({
+    id: '/audit/entity/$entityType/$entityId',
+    path: '/audit/entity/$entityType/$entityId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activities/$activityId': typeof ActivitiesActivityIdRoute
   '/activities/new': typeof ActivitiesNewRoute
+  '/audit/$logId': typeof AuditLogIdRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/client-tags/$tagId': typeof ClientTagsTagIdRoute
+  '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contacts/$contactId': typeof ContactsContactIdRoute
@@ -321,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/users/new': typeof UsersNewRoute
   '/activities/': typeof ActivitiesIndexRoute
   '/audit/': typeof AuditIndexRoute
+  '/client-tags/': typeof ClientTagsIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contacts/': typeof ContactsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -335,13 +370,17 @@ export interface FileRoutesByFullPath {
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activities/$activityId': typeof ActivitiesActivityIdRoute
   '/activities/new': typeof ActivitiesNewRoute
+  '/audit/$logId': typeof AuditLogIdRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/client-tags/$tagId': typeof ClientTagsTagIdRoute
+  '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contacts/$contactId': typeof ContactsContactIdRoute
@@ -369,6 +408,7 @@ export interface FileRoutesByTo {
   '/users/new': typeof UsersNewRoute
   '/activities': typeof ActivitiesIndexRoute
   '/audit': typeof AuditIndexRoute
+  '/client-tags': typeof ClientTagsIndexRoute
   '/clients': typeof ClientsIndexRoute
   '/contacts': typeof ContactsIndexRoute
   '/contracts': typeof ContractsIndexRoute
@@ -383,14 +423,18 @@ export interface FileRoutesByTo {
   '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activities/$activityId': typeof ActivitiesActivityIdRoute
   '/activities/new': typeof ActivitiesNewRoute
+  '/audit/$logId': typeof AuditLogIdRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/client-tags/$tagId': typeof ClientTagsTagIdRoute
+  '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contacts/$contactId': typeof ContactsContactIdRoute
@@ -418,6 +462,7 @@ export interface FileRoutesById {
   '/users/new': typeof UsersNewRoute
   '/activities/': typeof ActivitiesIndexRoute
   '/audit/': typeof AuditIndexRoute
+  '/client-tags/': typeof ClientTagsIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contacts/': typeof ContactsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -432,6 +477,7 @@ export interface FileRoutesById {
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -439,8 +485,11 @@ export interface FileRouteTypes {
     | '/'
     | '/activities/$activityId'
     | '/activities/new'
+    | '/audit/$logId'
     | '/auth/login'
     | '/auth/signup'
+    | '/client-tags/$tagId'
+    | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contacts/$contactId'
@@ -468,6 +517,7 @@ export interface FileRouteTypes {
     | '/users/new'
     | '/activities/'
     | '/audit/'
+    | '/client-tags/'
     | '/clients/'
     | '/contacts/'
     | '/contracts/'
@@ -482,13 +532,17 @@ export interface FileRouteTypes {
     | '/tenants/'
     | '/users/'
     | '/tenants/$tenantId/edit'
+    | '/audit/entity/$entityType/$entityId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/activities/$activityId'
     | '/activities/new'
+    | '/audit/$logId'
     | '/auth/login'
     | '/auth/signup'
+    | '/client-tags/$tagId'
+    | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contacts/$contactId'
@@ -516,6 +570,7 @@ export interface FileRouteTypes {
     | '/users/new'
     | '/activities'
     | '/audit'
+    | '/client-tags'
     | '/clients'
     | '/contacts'
     | '/contracts'
@@ -530,13 +585,17 @@ export interface FileRouteTypes {
     | '/tenants'
     | '/users'
     | '/tenants/$tenantId/edit'
+    | '/audit/entity/$entityType/$entityId'
   id:
     | '__root__'
     | '/'
     | '/activities/$activityId'
     | '/activities/new'
+    | '/audit/$logId'
     | '/auth/login'
     | '/auth/signup'
+    | '/client-tags/$tagId'
+    | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contacts/$contactId'
@@ -564,6 +623,7 @@ export interface FileRouteTypes {
     | '/users/new'
     | '/activities/'
     | '/audit/'
+    | '/client-tags/'
     | '/clients/'
     | '/contacts/'
     | '/contracts/'
@@ -578,14 +638,18 @@ export interface FileRouteTypes {
     | '/tenants/'
     | '/users/'
     | '/tenants/$tenantId/edit'
+    | '/audit/entity/$entityType/$entityId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivitiesActivityIdRoute: typeof ActivitiesActivityIdRoute
   ActivitiesNewRoute: typeof ActivitiesNewRoute
+  AuditLogIdRoute: typeof AuditLogIdRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  ClientTagsTagIdRoute: typeof ClientTagsTagIdRoute
+  ClientTagsNewRoute: typeof ClientTagsNewRoute
   ClientsClientIdRoute: typeof ClientsClientIdRoute
   ClientsNewRoute: typeof ClientsNewRoute
   ContactsContactIdRoute: typeof ContactsContactIdRoute
@@ -613,6 +677,7 @@ export interface RootRouteChildren {
   UsersNewRoute: typeof UsersNewRoute
   ActivitiesIndexRoute: typeof ActivitiesIndexRoute
   AuditIndexRoute: typeof AuditIndexRoute
+  ClientTagsIndexRoute: typeof ClientTagsIndexRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
   ContactsIndexRoute: typeof ContactsIndexRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
@@ -626,6 +691,7 @@ export interface RootRouteChildren {
   SessionsIndexRoute: typeof SessionsIndexRoute
   TenantsIndexRoute: typeof TenantsIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
+  AuditEntityEntityTypeEntityIdRoute: typeof AuditEntityEntityTypeEntityIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -726,6 +792,13 @@ declare module '@tanstack/react-router' {
       path: '/clients'
       fullPath: '/clients/'
       preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client-tags/': {
+      id: '/client-tags/'
+      path: '/client-tags'
+      fullPath: '/client-tags/'
+      preLoaderRoute: typeof ClientTagsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit/': {
@@ -917,6 +990,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/client-tags/new': {
+      id: '/client-tags/new'
+      path: '/client-tags/new'
+      fullPath: '/client-tags/new'
+      preLoaderRoute: typeof ClientTagsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client-tags/$tagId': {
+      id: '/client-tags/$tagId'
+      path: '/client-tags/$tagId'
+      fullPath: '/client-tags/$tagId'
+      preLoaderRoute: typeof ClientTagsTagIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/signup': {
       id: '/auth/signup'
       path: '/auth/signup'
@@ -929,6 +1016,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/login'
       fullPath: '/auth/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit/$logId': {
+      id: '/audit/$logId'
+      path: '/audit/$logId'
+      fullPath: '/audit/$logId'
+      preLoaderRoute: typeof AuditLogIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activities/new': {
@@ -952,6 +1046,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantsTenantIdEditRouteImport
       parentRoute: typeof TenantsTenantIdRoute
     }
+    '/audit/entity/$entityType/$entityId': {
+      id: '/audit/entity/$entityType/$entityId'
+      path: '/audit/entity/$entityType/$entityId'
+      fullPath: '/audit/entity/$entityType/$entityId'
+      preLoaderRoute: typeof AuditEntityEntityTypeEntityIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -971,8 +1072,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivitiesActivityIdRoute: ActivitiesActivityIdRoute,
   ActivitiesNewRoute: ActivitiesNewRoute,
+  AuditLogIdRoute: AuditLogIdRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
+  ClientTagsTagIdRoute: ClientTagsTagIdRoute,
+  ClientTagsNewRoute: ClientTagsNewRoute,
   ClientsClientIdRoute: ClientsClientIdRoute,
   ClientsNewRoute: ClientsNewRoute,
   ContactsContactIdRoute: ContactsContactIdRoute,
@@ -1000,6 +1104,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersNewRoute: UsersNewRoute,
   ActivitiesIndexRoute: ActivitiesIndexRoute,
   AuditIndexRoute: AuditIndexRoute,
+  ClientTagsIndexRoute: ClientTagsIndexRoute,
   ClientsIndexRoute: ClientsIndexRoute,
   ContactsIndexRoute: ContactsIndexRoute,
   ContractsIndexRoute: ContractsIndexRoute,
@@ -1013,6 +1118,7 @@ const rootRouteChildren: RootRouteChildren = {
   SessionsIndexRoute: SessionsIndexRoute,
   TenantsIndexRoute: TenantsIndexRoute,
   UsersIndexRoute: UsersIndexRoute,
+  AuditEntityEntityTypeEntityIdRoute: AuditEntityEntityTypeEntityIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

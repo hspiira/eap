@@ -12,9 +12,10 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorDisplay } from '@/components/common/ErrorDisplay'
 import { useToast } from '@/contexts/ToastContext'
 import { clientsApi } from '@/api/endpoints/clients'
-import type { Client } from '@/types/entities'
+import { clientTagsApi } from '@/api/endpoints/client-tags'
+import type { Client, ClientTag } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Edit, Building2, MapPin, Phone, Mail, Calendar } from 'lucide-react'
+import { Edit, Building2, MapPin, Phone, Mail, Calendar, Tag, Plus, X } from 'lucide-react'
 
 export const Route = createFileRoute('/clients/$clientId')({
   component: ClientDetailPage,
@@ -25,8 +26,13 @@ function ClientDetailPage() {
   const navigate = useNavigate()
   const { showSuccess, showError } = useToast()
   const [client, setClient] = useState<Client | null>(null)
+  const [tags, setTags] = useState<ClientTag[]>([])
+  const [allTags, setAllTags] = useState<ClientTag[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [tagAssignLoading, setTagAssignLoading] = useState(false)
+  const [tagUnassignId, setTagUnassignId] = useState<string | null>(null)
+  const [addTagId, setAddTagId] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
   const fetchClient = async () => {
@@ -46,6 +52,61 @@ function ClientDetailPage() {
   useEffect(() => {
     fetchClient()
   }, [clientId])
+
+  useEffect(() => {
+    if (!clientId) return
+    const loadTags = async () => {
+      try {
+        const [clientTags, list] = await Promise.all([
+          clientsApi.getTags(clientId).catch(() => []),
+          clientTagsApi.list({ limit: 200 }).catch(() => ({ items: [] })),
+        ])
+        setTags(clientTags)
+        setAllTags(list.items)
+      } catch (err) {
+        console.error('Error fetching tags:', err)
+      }
+    }
+    loadTags()
+  }, [clientId])
+
+  const handleAssignTag = async () => {
+    if (!addTagId) return
+    try {
+      setTagAssignLoading(true)
+      await clientTagsApi.assign(addTagId, clientId)
+      const tag = allTags.find((t) => t.id === addTagId)
+      if (tag) setTags((prev) => [...prev, tag])
+      setAddTagId('')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to assign tag'
+      showError(msg)
+    } finally {
+      setTagAssignLoading(false)
+    }
+  }
+
+  const handleUnassignTag = async (tagId: string) => {
+    try {
+      setTagUnassignId(tagId)
+      await clientTagsApi.unassign(tagId, clientId)
+      setTags((prev) => prev.filter((t) => t.id !== tagId))
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to remove tag'
+      showError(msg)
+    } finally {
+      setTagUnassignId(null)
+    }
+  }
+
+  const assignableTags = allTags.filter((t) => !tags.some((a) => a.id === t.id))
+  const addTagOptions = [
+    { value: '', label: 'Select tag to add' },
+    ...assignableTags.map((t) => ({
+      value: t.id,
+      label: t.color ? `${t.name} (${t.color})` : t.name,
+    })),
+  ]
 
   const handleAction = async (action: string) => {
     try {
@@ -262,6 +323,77 @@ function ClientDetailPage() {
                 </dd>
               </div>
             </dl>
+          </div>
+
+          {/* Tags */}
+          <div className="bg-calm border border-[0.5px] border-safe p-6">
+            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+              <Tag size={20} />
+              Tags
+            </h2>
+            {tags.length > 0 && (
+              <ul className="space-y-2 mb-4">
+                {tags.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex items-center justify-between py-2 px-3 rounded-none hover:bg-safe-light/5 group"
+                  >
+                    <button
+                      onClick={() => navigate({ to: `/client-tags/${t.id}` })}
+                      className="flex items-center gap-2 text-left text-natural hover:text-natural-dark font-medium"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: t.color ?? '#94a3b8' }}
+                        aria-hidden
+                      />
+                      <Tag size={14} />
+                      {t.name}
+                    </button>
+                    <button
+                      onClick={() => handleUnassignTag(t.id)}
+                      disabled={tagUnassignId === t.id}
+                      className="p-1 text-nurturing hover:text-nurturing-dark opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      aria-label={`Remove tag ${t.name}`}
+                    >
+                      <X size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {tags.length === 0 && (
+              <p className="text-safe-light text-sm mb-4">No tags assigned.</p>
+            )}
+            {assignableTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label htmlFor="addTag" className="block text-sm font-medium text-safe-light mb-1">
+                    Add tag
+                  </label>
+                  <select
+                    id="addTag"
+                    value={addTagId}
+                    onChange={(e) => setAddTagId(e.target.value)}
+                    className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe rounded-none focus:outline-none focus:border-natural text-safe"
+                  >
+                    {addTagOptions.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handleAssignTag}
+                  disabled={!addTagId || tagAssignLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+                >
+                  {tagAssignLoading ? <LoadingSpinner size="sm" color="white" /> : <Plus size={18} />}
+                  <span>Add</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -27,6 +27,7 @@ import {
   Phone,
   History,
   Building2,
+  Tag,
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -68,10 +69,11 @@ const navigationCategories: NavCategory[] = [
   {
     id: 'people',
     label: 'People',
-    description: 'Manage clients, their contacts, and all persons in your system including employees, dependents, and service providers.',
+    description: 'Manage clients, their contacts, tags, and all persons in your system including employees, dependents, and service providers.',
     items: [
       { path: '/clients', label: 'Clients', icon: UserCircle },
       { path: '/contacts', label: 'Contacts', icon: Phone },
+      { path: '/client-tags', label: 'Client Tags', icon: Tag },
       { path: '/persons', label: 'Persons', icon: UserCircle },
     ],
   },
@@ -214,7 +216,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-calm flex flex-col">
       {/* Fixed Top Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-calm">
+      <header className={`fixed top-0 left-0 right-0 z-50 bg-calm transition-shadow duration-200 ease-in-out ${
+        activeDropdown ? 'nav-shadow' : ''
+      }`}>
         <div ref={navRef} className="relative">
           {/* Main Nav Bar */}
           <div className="flex items-center justify-between px-6 h-16">
@@ -322,7 +326,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Full-Width Dropdowns */}
           {activeDropdown && (
             <div
-              className="nav-dropdown absolute left-0 right-0 top-full bg-calm transition-all duration-200 ease-in-out"
+              className="nav-dropdown nav-shadow absolute left-0 right-0 top-full bg-calm transition-all duration-200 ease-in-out"
               onMouseEnter={handleDropdownEnter}
               onMouseLeave={handleDropdownLeave}
             >

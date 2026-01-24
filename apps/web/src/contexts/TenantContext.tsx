@@ -1,19 +1,22 @@
 /**
  * Tenant Context
- * Provides tenant state and management throughout the application
+ * Provides tenant state and management. Uses Zustand tenant store as source of truth.
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import apiClient from '@/api/client'
-import type { Tenant, TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
+import { useTenantStore } from '@/store/slices/tenantSlice'
+import { useEntityCacheStore } from '@/store/slices/entityCacheSlice'
+import type { TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
+import type { Tenant as TenantEntity } from '@/types/entities'
 
 interface TenantContextType {
-  currentTenant: Tenant | null
-  availableTenants: Tenant[]
+  currentTenant: TenantEntity | null
+  availableTenants: TenantEntity[]
   isLoading: boolean
-  setCurrentTenant: (tenant: Tenant | null) => void
+  setCurrentTenant: (tenant: TenantEntity | null) => void
   createTenant: (tenantData: TenantCreate) => Promise<TenantCreateResponse>
   refreshTenant: () => Promise<void>
   refreshTenantsList: () => Promise<void>
@@ -21,122 +24,116 @@ interface TenantContextType {
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined)
 
+function syncTenantToApiAndStorage(tenant: TenantEntity | null) {
+  if (tenant) {
+    apiClient.setTenantId(tenant.id)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('current_tenant_id', tenant.id)
+    }
+  } else {
+    apiClient.setTenantId(null)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('current_tenant_id')
+    }
+  }
+}
+
 export function TenantProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, token } = useAuth()
-  const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null)
-  const [availableTenants, setAvailableTenants] = useState<Tenant[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const {
+    currentTenant,
+    availableTenants,
+    isLoading,
+    setCurrentTenant: setStoreTenant,
+    setAvailableTenants,
+    setLoading,
+  } = useTenantStore()
+  const invalidateAll = useEntityCacheStore((s) => s.invalidateAll)
 
-  // Load tenant from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedTenantId = localStorage.getItem('current_tenant_id')
-      if (storedTenantId) {
-        loadTenant(storedTenantId)
-      } else {
-        setIsLoading(false)
+  const loadTenant = useCallback(
+    async (tenantId: string) => {
+      try {
+        setLoading(true)
+        const tenant = await tenantsApi.getById(tenantId)
+        setStoreTenant(tenant as TenantEntity)
+      } catch (error) {
+        console.error('Failed to load tenant:', error)
+        setStoreTenant(null)
+        if (typeof window !== 'undefined') localStorage.removeItem('current_tenant_id')
+      } finally {
+        setLoading(false)
       }
-    }
-  }, [])
+    },
+    [setStoreTenant, setLoading]
+  )
 
-  // Update API client when tenant changes
   useEffect(() => {
-    if (currentTenant) {
-      apiClient.setTenantId(currentTenant.id)
-      localStorage.setItem('current_tenant_id', currentTenant.id)
+    if (typeof window === 'undefined') return
+    const storedTenantId = localStorage.getItem('current_tenant_id')
+    if (storedTenantId) {
+      loadTenant(storedTenantId)
     } else {
-      apiClient.setTenantId(null)
-      localStorage.removeItem('current_tenant_id')
+      setLoading(false)
     }
+  }, [loadTenant, setLoading])
+
+  useEffect(() => {
+    syncTenantToApiAndStorage(currentTenant)
   }, [currentTenant])
 
-  // Load tenant details
-  const loadTenant = async (tenantId: string) => {
-    try {
-      setIsLoading(true)
-      const tenant = await tenantsApi.getById(tenantId)
-      setCurrentTenant(tenant)
-    } catch (error) {
-      console.error('Failed to load tenant:', error)
-      // Clear invalid tenant
-      setCurrentTenant(null)
-      localStorage.removeItem('current_tenant_id')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const setCurrentTenant = useCallback(
+    (tenant: TenantEntity | null) => {
+      setStoreTenant(tenant)
+      syncTenantToApiAndStorage(tenant)
+      invalidateAll()
+    },
+    [setStoreTenant, invalidateAll]
+  )
 
-  // Set current tenant
-  const setCurrentTenant = (tenant: Tenant | null) => {
-    setCurrentTenantState(tenant)
-    if (tenant) {
-      apiClient.setTenantId(tenant.id)
-      localStorage.setItem('current_tenant_id', tenant.id)
-    } else {
-      apiClient.setTenantId(null)
-      localStorage.removeItem('current_tenant_id')
-    }
-  }
-
-  // Create new tenant (returns tenant + admin password)
-  const createTenant = async (tenantData: TenantCreate): Promise<TenantCreateResponse> => {
-    try {
-      setIsLoading(true)
-      const response = await tenantsApi.create(tenantData)
-      
-      // Convert response to Tenant format and set as current
-      // The response structure from the API matches TenantCreateResponse
-      const tenant: Tenant = {
-        id: response.id,
-        tenant_id: response.id, // For multi-tenant context
-        name: response.name,
-        status: response.status as any,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+  const createTenant = useCallback(
+    async (tenantData: TenantCreate): Promise<TenantCreateResponse> => {
+      try {
+        setLoading(true)
+        const response = await tenantsApi.create(tenantData)
+        const tenant: TenantEntity = {
+          id: response.id,
+          tenant_id: response.id,
+          name: response.name,
+          status: response.status as TenantEntity['status'],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        setCurrentTenant(tenant)
+        return response
+      } finally {
+        setLoading(false)
       }
-      setCurrentTenant(tenant)
-      
-      return response
-    } catch (error) {
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    },
+    [setLoading, setCurrentTenant]
+  )
 
-  // Refresh current tenant details
-  const refreshTenant = async () => {
-    if (currentTenant) {
-      await loadTenant(currentTenant.id)
-    }
-  }
+  const refreshTenant = useCallback(async () => {
+    if (currentTenant) await loadTenant(currentTenant.id)
+  }, [currentTenant, loadTenant])
 
-  // Refresh list of available tenants
-  const refreshTenantsList = async () => {
-    if (!isAuthenticated) {
-      return
-    }
-
+  const refreshTenantsList = useCallback(async () => {
+    if (!isAuthenticated || !token) return
     try {
-      setIsLoading(true)
+      setLoading(true)
       const response = await tenantsApi.list()
-      setAvailableTenants(response.items)
+      setAvailableTenants(response.items as TenantEntity[])
     } catch (error) {
       console.error('Failed to load tenants list:', error)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
-  }
+  }, [isAuthenticated, token, setAvailableTenants, setLoading])
 
-  // Load available tenants when authenticated
   useEffect(() => {
     if (isAuthenticated && token) {
       refreshTenantsList()
     }
-  }, [isAuthenticated, token])
-
-  // Note: createTenant can be called without authentication
-  // The backend should allow public tenant creation
+  }, [isAuthenticated, token, refreshTenantsList])
 
   return (
     <TenantContext.Provider

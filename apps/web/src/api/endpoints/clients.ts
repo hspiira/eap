@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { Client, PaginatedResponse, ListParams } from '../types'
+import type { Client, ClientTag, PaginatedResponse, ListParams } from '../types'
 
 export interface ClientCreate {
   name: string
@@ -54,5 +54,13 @@ export const clientsApi = {
    */
   async update(clientId: string, data: Partial<ClientCreate>): Promise<Client> {
     return apiClient.patch<Client>(`/clients/${clientId}`, data)
+  },
+
+  /**
+   * Get tags assigned to a client
+   */
+  async getTags(clientId: string): Promise<ClientTag[]> {
+    const res = await apiClient.get<{ items: ClientTag[] } | ClientTag[]>(`/clients/${clientId}/tags`)
+    return Array.isArray(res) ? res : (res.items ?? [])
   },
 }

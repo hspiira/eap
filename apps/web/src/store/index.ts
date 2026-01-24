@@ -1,10 +1,21 @@
 /**
  * State Management
- * Central store configuration
- * 
- * Note: We'll use Zustand for state management (to be installed in Phase 8)
- * For now, this is a placeholder for future implementation
+ * Zustand store slices: auth, tenant, entity cache, UI.
+ * Use hooks (useAuthStore, useTenantStore, etc.) in components.
  */
 
-// Placeholder - will be implemented in Phase 8
-export {}
+export { useAuthStore } from './slices/authSlice'
+export type { AuthStore, AuthState, AuthActions } from './slices/authSlice'
+
+export { useTenantStore } from './slices/tenantSlice'
+export type { TenantStore, TenantState, TenantActions } from './slices/tenantSlice'
+
+export { useEntityCacheStore } from './slices/entityCacheSlice'
+export type {
+  EntityCacheStore,
+  EntityCacheState,
+  EntityCacheActions,
+} from './slices/entityCacheSlice'
+
+export { useUIStore } from './slices/uiSlice'
+export type { UIStore, UIState, UIActions } from './slices/uiSlice'

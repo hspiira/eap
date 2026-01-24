@@ -1,11 +1,12 @@
 /**
  * Authentication Context
- * Provides authentication state and methods throughout the application
+ * Provides authentication state and methods. Uses Zustand auth store as source of truth.
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { authApi } from '@/api/endpoints/auth'
+import { useAuthStore } from '@/store/slices/authSlice'
 import { useToast } from './ToastContext'
 import type { LoginRequest, AuthResponse } from '@/api/types'
 
@@ -20,50 +21,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [token, setToken] = useState<string | null>(null)
+  const { token, isAuthenticated, isLoading, setAuth, setLoading, clearAuth } = useAuthStore()
   const navigate = useNavigate()
   const { showSuccess, showError } = useToast()
 
-  // Check authentication status on mount
   useEffect(() => {
     const checkAuth = () => {
       const storedToken = authApi.getToken()
       if (storedToken) {
-        setToken(storedToken)
-        setIsAuthenticated(true)
+        setAuth(storedToken)
       }
-      setIsLoading(false)
+      setLoading(false)
     }
-
     checkAuth()
-  }, [])
+  }, [setAuth, setLoading])
 
   const login = async (credentials: LoginRequest) => {
     try {
-      setIsLoading(true)
+      setLoading(true)
       const response: AuthResponse = await authApi.login(credentials)
-      
-      setToken(response.access_token)
-      setIsAuthenticated(true)
+      setAuth(response.access_token)
       showSuccess('Successfully signed in')
-      
-      // Redirect to dashboard or home after successful login
       navigate({ to: '/', search: {} })
     } catch (error) {
-      setIsAuthenticated(false)
-      setToken(null)
+      clearAuth()
       throw error
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   const logout = () => {
     authApi.logout()
-    setToken(null)
-    setIsAuthenticated(false)
+    clearAuth()
     showSuccess('Successfully signed out')
     navigate({ to: '/auth/login', search: {} })
   }
