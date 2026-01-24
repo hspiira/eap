@@ -11,7 +11,6 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     JSON,
     String,
@@ -22,6 +21,7 @@ from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -43,7 +43,7 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
             name="contract_status_check",
         ),
         CheckConstraint(
-            f"payment_frequency IN ({', '.join([e.value for e in PaymentFrequency])})",
+            "payment_frequency IN (" + ", ".join(f"'{e.value}'" for e in PaymentFrequency) + ")",
             name="contract_payment_frequency_check",
         ),
         CheckConstraint(
@@ -65,15 +65,15 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
 
     # Payment configuration
     payment_frequency: Mapped[PaymentFrequency] = mapped_column(
-        SQLEnum(PaymentFrequency, native_enum=False), nullable=False
+        EnumValueType(PaymentFrequency), nullable=False
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        SQLEnum(PaymentStatus, native_enum=False), nullable=False, default=PaymentStatus.PENDING
+        EnumValueType(PaymentStatus), nullable=False, default=PaymentStatus.PENDING
     )
 
     # Status
     status: Mapped[ContractStatus] = mapped_column(
-        SQLEnum(ContractStatus, native_enum=False), nullable=False, default=ContractStatus.DRAFT
+        EnumValueType(ContractStatus), nullable=False, default=ContractStatus.DRAFT
     )
     is_auto_renew: Mapped[bool] = mapped_column(default=False, nullable=False)
 

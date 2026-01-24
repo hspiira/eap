@@ -8,7 +8,7 @@ They are used to communicate state changes between bounded contexts.
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from app.domain.value_objects.core import (
-    TenantId, PersonId, UserId, ContractId, ClientId, SessionId
+    TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId
 )
 from app.domain.enums import PersonType
 
@@ -169,6 +169,13 @@ class ClientActivated(DomainEvent):
 
 
 @dataclass(frozen=True)
+class ClientDeactivated(DomainEvent):
+    """Event raised when a client is deactivated."""
+    client_id: ClientId
+    reason: str
+
+
+@dataclass(frozen=True)
 class ClientSuspended(DomainEvent):
     """Event raised when a client is suspended."""
     client_id: ClientId
@@ -213,3 +220,24 @@ class SessionRescheduled(DomainEvent):
             raise ValueError("new_scheduled_at must be timezone-aware")
         if self.new_scheduled_at.tzinfo != UTC:
             raise ValueError(f"new_scheduled_at must be UTC, got {self.new_scheduled_at.tzinfo}")
+
+
+# === Document Events ===
+
+@dataclass(frozen=True)
+class DocumentPublished(DomainEvent):
+    """Event raised when a document is published."""
+    document_id: DocumentId
+
+
+@dataclass(frozen=True)
+class DocumentArchived(DomainEvent):
+    """Event raised when a document is archived."""
+    document_id: DocumentId
+
+
+@dataclass(frozen=True)
+class DocumentVersionCreated(DomainEvent):
+    """Event raised when a new document version is created."""
+    document_id: DocumentId
+    new_version_id: DocumentId

@@ -39,7 +39,11 @@ class TenantEntity:
         """Activate tenant for operation"""
         if self._status == TenantStatus.TERMINATED:
             raise DomainError("Cannot activate terminated tenant")
+        if self._status == TenantStatus.ACTIVE and self._deleted_at is None:
+            raise DomainError("Tenant is already active")
         self._status = TenantStatus.ACTIVE
+        if self._deleted_at:
+            self._deleted_at = None
         self._updated_at = utc_now()
         self._events.append(TenantActivated(occurred_at=utc_now(), tenant_id=self._id))
     
@@ -47,6 +51,10 @@ class TenantEntity:
         """Suspend tenant (e.g., payment issues)"""
         if not reason:
             raise DomainError("Suspension requires reason")
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot suspend terminated tenant")
+        if self._status == TenantStatus.SUSPENDED:
+            raise DomainError("Tenant is already suspended")
         self._status = TenantStatus.SUSPENDED
         self._updated_at = utc_now()
         self._events.append(TenantSuspended(occurred_at=utc_now(), tenant_id=self._id, reason=reason))
@@ -55,6 +63,8 @@ class TenantEntity:
         """Permanently terminate tenant"""
         if not reason:
             raise DomainError("Termination requires reason")
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Tenant is already terminated")
         self._status = TenantStatus.TERMINATED
         self._deleted_at = utc_now()
         self._updated_at = utc_now()
@@ -62,7 +72,52 @@ class TenantEntity:
     
     def update_settings(self, settings: TenantSettings) -> None:
         """Update tenant configuration"""
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot update settings for terminated tenant")
         self._settings = settings
+        self._updated_at = utc_now()
+    
+    def update_name(self, name: str) -> None:
+        """Update tenant name"""
+        if not name:
+            raise DomainError("Tenant name cannot be empty")
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot update name for terminated tenant")
+        self._name = name
+        self._updated_at = utc_now()
+    
+    def update_subscription_tier(self, tier: SubscriptionTier) -> None:
+        """Update subscription tier"""
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot update subscription tier for terminated tenant")
+        self._subscription_tier = tier
+        self._updated_at = utc_now()
+    
+    def archive(self) -> None:
+        """Archive tenant (softer than terminate)"""
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot archive terminated tenant")
+        if self._status == TenantStatus.ARCHIVED:
+            raise DomainError("Tenant is already archived")
+        self._status = TenantStatus.ARCHIVED
+        self._updated_at = utc_now()
+    
+    def restore(self) -> None:
+        """Restore archived or soft-deleted tenant.
+        
+        Only restores from ARCHIVED to ACTIVE. Terminated tenants (TERMINATED status)
+        cannot be restored as termination is permanent.
+        """
+        if self._status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot restore terminated tenant")
+        if self._status not in (TenantStatus.ARCHIVED, TenantStatus.ACTIVE) and self._deleted_at is None:
+             raise DomainError("Tenant is not archived or deleted")
+        if self._status == TenantStatus.ACTIVE and not self._deleted_at:
+            raise DomainError("Tenant is already active and does not need restoration")
+        if self._deleted_at:
+            self._deleted_at = None
+        if self._status == TenantStatus.ARCHIVED:
+            self._status = TenantStatus.ACTIVE
         self._updated_at = utc_now()
     
     def is_active(self) -> bool:
@@ -92,3 +147,44 @@ class TenantEntity:
             raise InvariantViolation("Tenant must have a code")
         if not self._name:
             raise InvariantViolation("Tenant must have a name")
+
+    # === Public Properties ===
+
+    @property
+    def id(self) -> TenantId:
+        return self._id
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def code(self) -> TenantCode:
+        return self._code
+
+    @property
+    def status(self) -> TenantStatus:
+        return self._status
+
+    @property
+    def settings(self) -> TenantSettings:
+        return self._settings
+
+    @property
+    def subscription_tier(self) -> SubscriptionTier:
+        return self._subscription_tier
+
+    @property
+    def deleted_at(self) -> datetime | None:
+        return self._deleted_at
+
+    @property
+    def updated_at(self) -> datetime | None:
+        return self._updated_at
+
+    @property
+    def events(self) -> list[DomainEvent]:
+        return list(self._events)
+
+    def clear_events(self) -> None:
+        self._events.clear()

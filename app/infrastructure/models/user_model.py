@@ -7,13 +7,14 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum as SQLEnum, String
+from sqlalchemy import CheckConstraint, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import Language, UserStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -51,7 +52,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     # Status
     status: Mapped[UserStatus] = mapped_column(
-        SQLEnum(UserStatus, native_enum=False), nullable=False, default=UserStatus.PENDING_VERIFICATION
+        EnumValueType(UserStatus), nullable=False, default=UserStatus.PENDING_VERIFICATION
     )
     status_changed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -59,7 +60,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     # Preferences
     preferred_language: Mapped[Language | None] = mapped_column(
-        SQLEnum(Language, native_enum=False), nullable=True
+        EnumValueType(Language), nullable=True
     )
     timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 

@@ -1,0 +1,308 @@
+"""
+Security Module
+
+Handles authentication, JWT tokens, and password hashing.
+"""
+
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import bcrypt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel
+
+from app.core.config import settings
+from app.domain.exceptions import AuthenticationException
+
+# OAuth2 scheme for bearer token authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+# =============================================================================
+# TOKEN MODELS
+# =============================================================================
+
+
+class TokenData(BaseModel):
+    """Data extracted from JWT token."""
+
+    user_id: str
+    tenant_id: str
+    email: str | None = None
+    exp: datetime | None = None
+
+
+class Token(BaseModel):
+    """Token response model."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+# =============================================================================
+# PASSWORD HASHING
+# =============================================================================
+
+
+def hash_password(password: str) -> str:
+    """
+    Hash a password using bcrypt.
+
+    Args:
+        password: Plain text password
+
+    Returns:
+        Hashed password string
+    """
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verify a password against its hash.
+
+    Args:
+        plain_password: Plain text password to verify
+        hashed_password: Hashed password to compare against
+
+    Returns:
+        True if password matches, False otherwise
+    """
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
+
+
+# =============================================================================
+# JWT TOKEN FUNCTIONS
+# =============================================================================
+
+
+def create_access_token(
+    user_id: str,
+    tenant_id: str,
+    email: str | None = None,
+    additional_claims: dict[str, Any] | None = None,
+    expires_delta: timedelta | None = None,
+) -> str:
+    """
+    Create a JWT access token.
+
+    Args:
+        user_id: User identifier
+        tenant_id: Tenant identifier
+        email: User email (optional)
+        additional_claims: Extra claims to include in the token
+        expires_delta: Custom expiration time
+
+    Returns:
+        Encoded JWT token string
+    """
+    if expires_delta:
+        expire = datetime.now(UTC) + expires_delta
+    else:
+        expire = datetime.now(UTC) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
+    to_encode: dict[str, Any] = {
+        "sub": user_id,
+        "tenant_id": tenant_id,
+        "exp": expire,
+        "iat": datetime.now(UTC),
+    }
+
+    if email:
+        to_encode["email"] = email
+
+    if additional_claims:
+        to_encode.update(additional_claims)
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+    return encoded_jwt
+
+
+def decode_token(token: str) -> TokenData:
+    """
+    Decode and validate a JWT token.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        TokenData with extracted claims
+
+    Raises:
+        AuthenticationException: If token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        user_id: str = payload.get("sub")
+        tenant_id: str = payload.get("tenant_id")
+        email: str | None = payload.get("email")
+        exp: datetime | None = payload.get("exp")
+
+        if user_id is None or tenant_id is None:
+            raise AuthenticationException("Invalid token: missing required claims")
+
+        return TokenData(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            email=email,
+            exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
+        )
+    except JWTError as e:
+        raise AuthenticationException(f"Invalid token: {str(e)}")
+
+
+# =============================================================================
+# AUTHENTICATION DEPENDENCIES
+# =============================================================================
+
+
+async def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+) -> TokenData | None:
+    """
+    Get current user from token if provided.
+
+    This dependency does not require authentication - returns None
+    if no token is provided.
+
+    Args:
+        token: Optional JWT token from Authorization header
+
+    Returns:
+        TokenData if authenticated, None otherwise
+    """
+    if token is None:
+        return None
+
+    try:
+        return decode_token(token)
+    except AuthenticationException:
+        return None
+
+
+async def get_current_user(
+    token: str | None = Depends(oauth2_scheme),
+) -> TokenData:
+    """
+    Get current authenticated user.
+
+    This dependency requires authentication - raises HTTPException
+    if not authenticated.
+
+    Args:
+        token: JWT token from Authorization header
+
+    Returns:
+        TokenData for authenticated user
+
+    Raises:
+        HTTPException: If not authenticated
+    """
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        return decode_token(token)
+    except AuthenticationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+async def get_current_active_user(
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
+    """
+    Get current active user.
+
+    Additional checks can be added here (e.g., check if user is banned).
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        TokenData for active user
+    """
+    # Additional active user checks can be added here
+    # For example, checking against database if user is still active
+    return current_user
+
+
+def require_tenant(tenant_id: str):
+    """
+    Create a dependency that requires a specific tenant.
+
+    Args:
+        tenant_id: Required tenant ID
+
+    Returns:
+        Dependency function that validates tenant
+    """
+
+    async def tenant_validator(
+        current_user: TokenData = Depends(get_current_user),
+    ) -> TokenData:
+        if current_user.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this tenant",
+            )
+        return current_user
+
+    return tenant_validator
+
+
+# =============================================================================
+# UTILITY FUNCTIONS
+# =============================================================================
+
+
+def create_token_response(
+    user_id: str,
+    tenant_id: str,
+    email: str | None = None,
+) -> Token:
+    """
+    Create a token response for API endpoints.
+
+    Args:
+        user_id: User identifier
+        tenant_id: Tenant identifier
+        email: User email
+
+    Returns:
+        Token response with access token and metadata
+    """
+    access_token = create_access_token(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+    )
+
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )

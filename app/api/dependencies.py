@@ -8,8 +8,51 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.activity_repository import ActivityRepository
+from app.domain.repositories.client_tag_repository import ClientTagRepository
+from app.domain.repositories.contact_repository import ContactRepository
+from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.industry_repository import IndustryRepository
+from app.domain.repositories.kpi_repository import (
+    KPIAssignmentRepository,
+    KPIRepository,
+)
+from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.service_assignment_repository import (
+    ServiceAssignmentRepository,
+)
+from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.service_session_repository import (
+    ServiceSessionRepository,
+)
 from app.domain.repositories.tenant_repository import TenantRepository
+from app.domain.repositories.user_repository import UserRepository
+from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
+from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
+from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
+from app.infrastructure.repositories.contact_repository import ContactRepositoryImpl
+from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
+from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
+from app.infrastructure.repositories.kpi_repository import (
+    KPIAssignmentRepositoryImpl,
+    KPIRepositoryImpl,
+)
+from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
+from app.infrastructure.repositories.service_assignment_repository import (
+    ServiceAssignmentRepositoryImpl,
+)
+from app.infrastructure.repositories.service_repository import ServiceRepositoryImpl
+from app.infrastructure.repositories.service_session_repository import (
+    ServiceSessionRepositoryImpl,
+)
 from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+from app.infrastructure.repositories.user_repository import UserRepositoryImpl
+from app.shared.handlers.audit_event_handler import AuditEventHandler
 
 
 async def get_tenant_repository(
@@ -25,3 +68,308 @@ async def get_tenant_repository(
         TenantRepository implementation
     """
     return TenantRepositoryImpl(db)
+
+
+async def get_user_repository(
+    db: AsyncSession = Depends(get_db),
+) -> UserRepository:
+    """
+    Dependency for getting user repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        UserRepository implementation
+    """
+    return UserRepositoryImpl(db)
+
+
+async def get_client_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ClientRepository:
+    """
+    Dependency for getting client repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ClientRepository implementation
+    """
+    return ClientRepositoryImpl(db)
+
+
+async def get_person_repository(
+    db: AsyncSession = Depends(get_db),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> PersonRepository:
+    """
+    Dependency for getting person repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+        user_repo: User repository (injected dependency)
+
+    Returns:
+        PersonRepository implementation
+    """
+    return PersonRepositoryImpl(db, user_repo)
+
+
+async def get_contract_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ContractRepository:
+    """
+    Dependency for getting contract repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ContractRepository implementation
+    """
+    return ContractRepositoryImpl(db)
+
+
+async def get_audit_repository(
+    db: AsyncSession = Depends(get_db),
+) -> AuditRepository:
+    """
+    Dependency for getting audit repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        AuditRepository implementation
+    """
+    return AuditRepositoryImpl(db)
+
+
+async def get_service_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceRepository:
+    """
+    Dependency for getting service repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceRepository implementation
+    """
+    return ServiceRepositoryImpl(db)
+
+
+async def get_service_session_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceSessionRepository:
+    """
+    Dependency for getting service session repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceSessionRepository implementation
+    """
+    return ServiceSessionRepositoryImpl(db)
+
+
+async def get_document_repository(
+    db: AsyncSession = Depends(get_db),
+) -> DocumentRepository:
+    """
+    Dependency for getting document repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        DocumentRepository implementation
+    """
+    return DocumentRepositoryImpl(db)
+
+
+async def get_kpi_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPIRepository:
+    """
+    Dependency for getting KPI repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        KPIRepository implementation
+    """
+    return KPIRepositoryImpl(db)
+
+
+async def get_kpi_assignment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPIAssignmentRepository:
+    """
+    Dependency for getting KPI assignment repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        KPIAssignmentRepository implementation
+    """
+    return KPIAssignmentRepositoryImpl(db)
+
+
+async def get_industry_repository(
+    db: AsyncSession = Depends(get_db),
+) -> IndustryRepository:
+    """
+    Dependency for getting industry repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        IndustryRepository implementation
+    """
+    return IndustryRepositoryImpl(db)
+
+
+async def get_client_tag_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ClientTagRepository:
+    """
+    Dependency for getting client tag repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ClientTagRepository implementation
+    """
+    return ClientTagRepositoryImpl(db)
+
+
+async def get_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ContactRepository:
+    """
+    Dependency for getting contact repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ContactRepository implementation
+    """
+    return ContactRepositoryImpl(db)
+
+
+async def get_activity_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ActivityRepository:
+    """
+    Dependency for getting activity repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ActivityRepository implementation
+    """
+    return ActivityRepositoryImpl(db)
+
+
+async def get_service_assignment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceAssignmentRepository:
+    """
+    Dependency for getting service assignment repository.
+
+    Args:
+        db: Database session (injected by FastAPI)
+
+    Returns:
+        ServiceAssignmentRepository implementation
+    """
+    return ServiceAssignmentRepositoryImpl(db)
+
+
+async def get_audit_event_handler(
+    audit_repo: AuditRepository = Depends(get_audit_repository),
+) -> AuditEventHandler:
+    """
+    Dependency for getting audit event handler.
+
+    Args:
+        audit_repo: Audit repository (injected dependency)
+
+    Returns:
+        AuditEventHandler instance
+    """
+    return AuditEventHandler(audit_repo)
+
+
+# =============================================================================
+# VALIDATION SERVICE
+# =============================================================================
+
+
+from app.application.services.validation_service import ValidationService
+
+
+async def get_validation_service(
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    person_repo: PersonRepository = Depends(get_person_repository),
+    service_repo: ServiceRepository = Depends(get_service_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> ValidationService:
+    """
+    Dependency for getting validation service.
+
+    The validation service provides cross-entity validation
+    that spans multiple aggregates.
+
+    Args:
+        tenant_repo: Tenant repository
+        client_repo: Client repository
+        contract_repo: Contract repository
+        person_repo: Person repository
+        service_repo: Service repository
+        user_repo: User repository
+
+    Returns:
+        ValidationService instance
+    """
+    return ValidationService(
+        tenant_repo=tenant_repo,
+        client_repo=client_repo,
+        contract_repo=contract_repo,
+        person_repo=person_repo,
+        service_repo=service_repo,
+        user_repo=user_repo,
+    )
+
+
+# =============================================================================
+# EVENT BUS
+# =============================================================================
+
+
+from app.shared.events.event_bus import EventBus, event_bus
+
+
+def get_event_bus() -> EventBus:
+    """
+    Dependency for getting the event bus.
+
+    Returns the global event bus instance.
+
+    Returns:
+        EventBus instance
+    """
+    return event_bus

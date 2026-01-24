@@ -5,7 +5,7 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.domain.enums import SubscriptionTier, TenantStatus
 
@@ -73,8 +73,7 @@ class TenantResponse(BaseModel):
     settings: TenantSettingsResponse = Field(..., description="Tenant settings")
     is_active: bool = Field(..., description="Whether tenant is active")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TenantUpdateSettings(BaseModel):
@@ -100,3 +99,38 @@ class TenantTerminateRequest(BaseModel):
     """Request schema for terminating a tenant."""
 
     reason: str = Field(..., min_length=1, description="Termination reason")
+
+
+class TenantUpdate(BaseModel):
+    """Request schema for updating tenant basic information."""
+
+    name: str | None = Field(None, min_length=1, max_length=255, description="Tenant name")
+
+
+class SubscriptionUpdateRequest(BaseModel):
+    """Request schema for updating subscription tier."""
+
+    subscription_tier: SubscriptionTier = Field(..., description="New subscription tier")
+
+
+class TenantStatsResponse(BaseModel):
+    """Response schema for tenant statistics."""
+
+    tenant_id: str = Field(..., description="Tenant identifier")
+    current_user_count: int = Field(..., description="Current number of users")
+    current_client_count: int = Field(..., description="Current number of clients")
+    max_users: int = Field(..., description="Maximum users allowed")
+    max_clients: int = Field(..., description="Maximum clients allowed")
+    user_quota_usage: float = Field(..., description="User quota usage percentage")
+    client_quota_usage: float = Field(..., description="Client quota usage percentage")
+    subscription_tier: SubscriptionTier = Field(..., description="Subscription tier")
+
+
+class TenantListResponse(BaseModel):
+    """Response schema for tenant list."""
+
+    items: list[TenantResponse] = Field(..., description="List of tenants")
+    total: int = Field(..., description="Total number of tenants matching filters")
+    page: int = Field(..., description="Current page number")
+    limit: int = Field(..., description="Items per page")
+    has_more: bool = Field(..., description="Whether there are more items")
