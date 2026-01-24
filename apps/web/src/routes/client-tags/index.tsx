@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateClientTagForm } from '@/components/forms/CreateClientTagForm'
 import { clientTagsApi } from '@/api/endpoints/client-tags'
 import type { ClientTag } from '@/types/entities'
 import { Tag } from 'lucide-react'
@@ -27,6 +29,8 @@ function ClientTagsPage() {
   const [searchValue, setSearchValue] = useState('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   const fetchTags = async () => {
     try {
@@ -167,13 +171,29 @@ function ClientTagsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/client-tags/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Add Tag',
               },
             }}
             emptyMessage="No tags found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Add Tag"
+          loading={createLoading}
+        >
+          <CreateClientTagForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchTags()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

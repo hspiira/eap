@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateSessionForm } from '@/components/forms/CreateSessionForm'
 import { serviceSessionsApi } from '@/api/endpoints/service-sessions'
 import { personsApi } from '@/api/endpoints/persons'
 import { servicesApi } from '@/api/endpoints/services'
@@ -38,6 +40,8 @@ function SessionsPage() {
   const [endDateFilter, setEndDateFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch persons and services for filters
   useEffect(() => {
@@ -311,13 +315,29 @@ function SessionsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/sessions/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Schedule Session',
               },
             }}
             emptyMessage="No sessions found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Schedule Session"
+          loading={createLoading}
+        >
+          <CreateSessionForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchSessions()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

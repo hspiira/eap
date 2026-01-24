@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { IndustryTree } from '@/components/common/IndustryTree'
 import { TableFilters } from '@/components/common/TableFilters'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateIndustryForm } from '@/components/forms/CreateIndustryForm'
 import { industriesApi } from '@/api/endpoints/industries'
 import type { Industry } from '@/types/entities'
 
@@ -23,6 +25,8 @@ function IndustriesPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   const fetchIndustries = async () => {
     try {
@@ -83,11 +87,27 @@ function IndustriesPage() {
             setSearchValue('')
           }}
           createAction={{
-            onClick: () => navigate({ to: '/industries/new' }),
+            onClick: () => setCreateModalOpen(true),
             label: 'Add Industry',
           }}
           className="mb-4"
         />
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Add Industry"
+          loading={createLoading}
+        >
+          <CreateIndustryForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchIndustries()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
 
         {loading ? (
           <div className="flex items-center justify-center p-12 border border-[0.5px] border-safe bg-calm">

@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateUserForm } from '@/components/forms/CreateUserForm'
 import { usersApi } from '@/api/endpoints/users'
 import type { User } from '@/types/entities'
 import type { UserStatus } from '@/types/enums'
@@ -28,6 +30,8 @@ function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch users (tenant-scoped automatically via API client)
   const fetchUsers = async () => {
@@ -212,12 +216,28 @@ function UsersPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/users/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create User',
               },
             }}
             emptyMessage="No users found"
           />
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create User"
+          loading={createLoading}
+        >
+          <CreateUserForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchUsers()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateActivityForm } from '@/components/forms/CreateActivityForm'
 import { activitiesApi } from '@/api/endpoints/activities'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Activity } from '@/types/entities'
@@ -40,6 +42,8 @@ function ActivitiesPage() {
   const [endDateFilter, setEndDateFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -258,13 +262,29 @@ function ActivitiesPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/activities/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Log Activity',
               },
             }}
             emptyMessage="No activities found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Log Activity"
+          loading={createLoading}
+        >
+          <CreateActivityForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchActivities()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

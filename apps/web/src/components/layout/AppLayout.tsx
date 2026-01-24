@@ -8,7 +8,7 @@ import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTenant } from '@/contexts/TenantContext'
 import {
-  LayoutDashboard,
+  PieChart,
   Users,
   UserCircle,
   FileText,
@@ -63,7 +63,7 @@ const navigationCategories: NavCategory[] = [
     label: 'Overview',
     description: 'High-level dashboard and analytics for your organization.',
     items: [
-      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, comingSoon: true },
+      { path: '/dashboard', label: 'Overview', icon: PieChart, comingSoon: true },
       { path: '/settings', label: 'Settings', icon: Settings },
     ],
   },

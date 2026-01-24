@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateKpiForm } from '@/components/forms/CreateKpiForm'
 import { kpisApi } from '@/api/endpoints/kpis'
 import type { KPI } from '@/types/entities'
 import { Target } from 'lucide-react'
@@ -29,6 +31,8 @@ function KPIsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch KPIs (tenant-scoped automatically via API client)
   const fetchKPIs = async () => {
@@ -249,13 +253,29 @@ function KPIsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/kpis/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create KPI',
               },
             }}
             emptyMessage="No KPIs found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create KPI"
+          loading={createLoading}
+        >
+          <CreateKpiForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchKPIs()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

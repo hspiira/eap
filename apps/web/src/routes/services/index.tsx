@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateServiceForm } from '@/components/forms/CreateServiceForm'
 import { servicesApi } from '@/api/endpoints/services'
 import type { Service } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -29,6 +31,8 @@ function ServicesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch services (tenant-scoped automatically via API client)
   const fetchServices = async () => {
@@ -223,13 +227,29 @@ function ServicesPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/services/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create Service',
               },
             }}
             emptyMessage="No services found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create Service"
+          loading={createLoading}
+        >
+          <CreateServiceForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchServices()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateContractForm } from '@/components/forms/CreateContractForm'
 import { contractsApi } from '@/api/endpoints/contracts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contract } from '@/types/entities'
@@ -34,6 +36,8 @@ function ContractsPage() {
   const [endDateFilter, setEndDateFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch clients for filter
   useEffect(() => {
@@ -145,7 +149,7 @@ function ContractsPage() {
           onClick={() => handleRowClick(row)}
           className="text-left text-natural hover:text-natural-dark font-medium"
         >
-          {value || `#${row.id.slice(0, 8)}`}
+          {(value as string) || `#${row.id.slice(0, 8)}`}
         </button>
       ),
     },
@@ -154,7 +158,7 @@ function ContractsPage() {
       header: 'Client',
       accessor: 'client_id',
       sortable: true,
-      render: (value, row) => {
+      render: (_value, row) => {
         const client = clients.find(c => c.id === row.client_id)
         return <span>{client?.name || row.client_id}</span>
       },
@@ -276,7 +280,7 @@ function ContractsPage() {
                         label: 'Client',
                         value: clientFilter,
                         options: clientOptions,
-                        onChange: (value) => {
+                        onChange: (value: string) => {
                           setClientFilter(value)
                           setCurrentPage(1)
                         },
@@ -293,13 +297,29 @@ function ContractsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/contracts/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create Contract',
               },
             }}
             emptyMessage="No contracts found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create Contract"
+          loading={createLoading}
+        >
+          <CreateContractForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchContracts()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

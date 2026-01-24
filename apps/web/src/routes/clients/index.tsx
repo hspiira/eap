@@ -4,10 +4,13 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateClientForm } from '@/components/forms/CreateClientForm'
+import { useTenant } from '@/contexts/TenantContext'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Client } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -18,6 +21,7 @@ export const Route = createFileRoute('/clients/')({
 
 function ClientsPage() {
   const navigate = useNavigate()
+  const { currentTenant, isLoading: tenantLoading } = useTenant()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -28,9 +32,11 @@ function ClientsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   // Fetch clients (tenant-scoped automatically via API client)
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -62,11 +68,18 @@ function ClientsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
 
   useEffect(() => {
-    fetchClients()
-  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
+    // Wait for tenant to be loaded before fetching
+    if (!tenantLoading && currentTenant) {
+      fetchClients()
+    } else if (!tenantLoading && !currentTenant) {
+      // Tenant loading is complete but no tenant selected
+      setLoading(false)
+      setError('No tenant selected')
+    }
+  }, [tenantLoading, currentTenant, fetchClients])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
@@ -198,12 +211,28 @@ function ClientsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/clients/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create Client',
               },
             }}
             emptyMessage="No clients found"
           />
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create Client"
+          loading={createLoading}
+        >
+          <CreateClientForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchClients()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )

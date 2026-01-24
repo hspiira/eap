@@ -9,6 +9,8 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { CreateModal } from '@/components/common/CreateModal'
+import { CreateContactForm } from '@/components/forms/CreateContactForm'
 import { contactsApi } from '@/api/endpoints/contacts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contact } from '@/types/entities'
@@ -33,6 +35,8 @@ function ContactsPage() {
   const [clientFilter, setClientFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -238,13 +242,29 @@ function ContactsPage() {
                 setCurrentPage(1)
               },
               createAction: {
-                onClick: () => navigate({ to: '/contacts/new' }),
+                onClick: () => setCreateModalOpen(true),
                 label: 'Create Contact',
               },
             }}
             emptyMessage="No contacts found"
           />
         )}
+
+        <CreateModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          title="Create Contact"
+          loading={createLoading}
+        >
+          <CreateContactForm
+            onSuccess={() => {
+              setCreateModalOpen(false)
+              fetchContacts()
+            }}
+            onCancel={() => setCreateModalOpen(false)}
+            onLoadingChange={setCreateLoading}
+          />
+        </CreateModal>
       </div>
     </AppLayout>
   )
