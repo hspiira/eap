@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Client } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -169,12 +168,7 @@ function ClientsPage() {
           </button>
         </div>
 
-        {loading && clients.length === 0 ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : (
-          <DataTable
+        <DataTable
             data={clients}
             columns={columns}
             loading={loading}
@@ -218,7 +212,6 @@ function ClientsPage() {
             }}
             emptyMessage="No clients found"
           />
-        )}
       </div>
     </AppLayout>
   )

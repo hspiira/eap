@@ -69,23 +69,24 @@ const navigationCategories: NavCategory[] = [
   {
     id: 'people',
     label: 'People',
-    description: 'Manage clients, their contacts, tags, and all persons in your system including employees, dependents, and service providers.',
+    description: 'Manage clients, their contacts, tags, and client people (employees and dependents).',
     items: [
       { path: '/clients', label: 'Clients', icon: UserCircle },
       { path: '/contacts', label: 'Contacts', icon: Phone },
       { path: '/client-tags', label: 'Client Tags', icon: Tag },
-      { path: '/persons', label: 'Persons', icon: UserCircle },
+      { path: '/people/client-people', label: 'Client people', icon: UserCircle },
     ],
   },
   {
     id: 'engagement',
     label: 'Engagement & Delivery',
-    description: 'Contracts, service catalog, assignments, delivery sessions, and client activity tracking.',
+    description: 'Contracts, service catalog, assignments, delivery sessions, service providers, and client activity tracking.',
     items: [
       { path: '/contracts', label: 'Contracts', icon: FileText },
       { path: '/services', label: 'Services', icon: ClipboardList },
       { path: '/service-assignments', label: 'Service Assignments', icon: LinkIcon },
       { path: '/sessions', label: 'Sessions', icon: Calendar },
+      { path: '/service-providers', label: 'Service providers', icon: UserCircle },
       { path: '/activities', label: 'Activities', icon: History },
     ],
   },

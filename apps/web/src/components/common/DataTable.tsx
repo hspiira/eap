@@ -3,11 +3,12 @@
  * Powerful, reusable data table with pagination, sorting, and filtering
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import { ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { Pagination } from './Pagination'
 import { TableFilters, type FilterOption, type CustomFilter } from './TableFilters'
 import { StatusBadge } from './StatusBadge'
+import { TableRowSkeleton } from './LoadingSkeleton'
 import type { PaginatedResponse } from '@/types/api'
 
 export type SortDirection = 'asc' | 'desc' | null
@@ -85,30 +86,36 @@ export function DataTable<T extends { id?: string }>({
   )
 
   // Handle row selection
-  const handleSelectAll = (checked: boolean) => {
-    if (!rowSelection) return
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (!rowSelection) return
 
-    const newSelection = checked
-      ? new Set(data.map((row) => rowSelection.getRowId(row)))
-      : new Set<string>()
+      const newSelection = checked
+        ? new Set(data.map((row) => rowSelection.getRowId(row)))
+        : new Set<string>()
 
-    setSelectedRows(newSelection)
-    rowSelection.onSelectionChange(newSelection)
-  }
+      setSelectedRows(newSelection)
+      rowSelection.onSelectionChange(newSelection)
+    },
+    [rowSelection, data]
+  )
 
-  const handleSelectRow = (rowId: string, checked: boolean) => {
-    if (!rowSelection) return
+  const handleSelectRow = useCallback(
+    (rowId: string, checked: boolean) => {
+      if (!rowSelection) return
 
-    const newSelection = new Set(selectedRows)
-    if (checked) {
-      newSelection.add(rowId)
-    } else {
-      newSelection.delete(rowId)
-    }
+      const newSelection = new Set(selectedRows)
+      if (checked) {
+        newSelection.add(rowId)
+      } else {
+        newSelection.delete(rowId)
+      }
 
-    setSelectedRows(newSelection)
-    rowSelection.onSelectionChange(newSelection)
-  }
+      setSelectedRows(newSelection)
+      rowSelection.onSelectionChange(newSelection)
+    },
+    [rowSelection, selectedRows]
+  )
 
   const isAllSelected =
     rowSelection && data.length > 0 && selectedRows.size === data.length
@@ -116,50 +123,57 @@ export function DataTable<T extends { id?: string }>({
     rowSelection && selectedRows.size > 0 && selectedRows.size < data.length
 
   // Render cell content
-  const renderCell = (column: Column<T>, row: T) => {
-    if (column.render) {
-      const value = column.accessor
-        ? typeof column.accessor === 'function'
-          ? column.accessor(row)
-          : row[column.accessor]
-        : undefined
-      return column.render(value, row)
-    }
-
-    if (column.accessor) {
-      if (typeof column.accessor === 'function') {
-        return column.accessor(row)
+  const renderCell = useCallback(
+    (column: Column<T>, row: T) => {
+      if (column.render) {
+        const value = column.accessor
+          ? typeof column.accessor === 'function'
+            ? column.accessor(row)
+            : row[column.accessor]
+          : undefined
+        return column.render(value, row)
       }
-      return row[column.accessor] as React.ReactNode
-    }
 
-    return null
-  }
+      if (column.accessor) {
+        if (typeof column.accessor === 'function') {
+          return column.accessor(row)
+        }
+        return row[column.accessor] as React.ReactNode
+      }
+
+      return null
+    },
+    []
+  )
 
   // Get sort icon
-  const getSortIcon = (columnId: string) => {
-    if (!sorting || columnId !== sorting.sortBy) {
+  const getSortIcon = useCallback(
+    (columnId: string) => {
+      if (!sorting || columnId !== sorting.sortBy) {
+        return <ArrowUpDown size={14} className="text-safe-light" />
+      }
+
+      if (sorting.sortDirection === 'asc') {
+        return <ArrowUp size={14} className="text-natural" />
+      }
+
+      if (sorting.sortDirection === 'desc') {
+        return <ArrowDown size={14} className="text-natural" />
+      }
+
       return <ArrowUpDown size={14} className="text-safe-light" />
-    }
+    },
+    [sorting]
+  )
 
-    if (sorting.sortDirection === 'asc') {
-      return <ArrowUp size={14} className="text-natural" />
-    }
-
-    if (sorting.sortDirection === 'desc') {
-      return <ArrowDown size={14} className="text-natural" />
-    }
-
-    return <ArrowUpDown size={14} className="text-safe-light" />
-  }
-
-  if (loading) {
-    return (
-      <div className={`flex items-center justify-center p-12 bg-calm ${className}`}>
-        <div className="text-safe">Loading...</div>
-      </div>
-    )
-  }
+  // Memoize skeleton rows
+  const skeletonRows = useMemo(
+    () =>
+      Array.from({ length: pagination?.pageSize || 10 }).map((_, i) => (
+        <TableRowSkeleton key={`skeleton-${i}`} columns={columns.length + (rowSelection ? 1 : 0)} />
+      )),
+    [columns.length, rowSelection, pagination?.pageSize]
+  )
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
@@ -217,7 +231,9 @@ export function DataTable<T extends { id?: string }>({
             </tr>
           </thead>
           <tbody>
-            {error ? (
+            {loading ? (
+              skeletonRows
+            ) : error ? (
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
@@ -290,7 +306,22 @@ export function DataTable<T extends { id?: string }>({
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {error ? (
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
+              <div key={`skeleton-${i}`} className="bg-calm border border-[0.5px] border-safe p-4">
+                <div className="space-y-2">
+                  {columns.map((col) => (
+                    <div key={col.id} className="space-y-1">
+                      <div className="h-3 w-20 bg-safe-light animate-pulse" />
+                      <div className="h-4 w-full bg-safe-light animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
           <div className="p-12 bg-calm border border-[0.5px] border-nurturing">
             <div className="flex flex-col items-center justify-center gap-3">
               <div className="flex items-center gap-2 text-nurturing">

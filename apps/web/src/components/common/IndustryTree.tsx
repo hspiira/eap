@@ -3,7 +3,7 @@
  * Hierarchical tree view for industries with expand/collapse
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react'
 import type { Industry } from '@/types/entities'
 
@@ -21,7 +21,7 @@ function buildTree(items: Industry[], parentId: string | null = null): Industry[
     .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
 }
 
-export function IndustryTree({
+export const IndustryTree = memo(function IndustryTree({
   industries,
   onSelect,
   selectedId,
@@ -32,14 +32,14 @@ export function IndustryTree({
 
   const roots = useMemo(() => buildTree(industries, null), [industries])
 
-  const toggle = (id: string) => {
+  const toggle = useCallback((id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
   const renderNode = (node: Industry, depth: number) => {
     const children = buildTree(industries, node.id)
@@ -109,4 +109,4 @@ export function IndustryTree({
       {roots.map((node) => renderNode(node, 0))}
     </div>
   )
-}
+})

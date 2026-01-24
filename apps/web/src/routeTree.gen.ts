@@ -14,6 +14,7 @@ import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServiceProvidersIndexRouteImport } from './routes/service-providers/index'
 import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as KpisIndexRouteImport } from './routes/kpis/index'
@@ -35,6 +36,7 @@ import { Route as SessionsNewRouteImport } from './routes/sessions/new'
 import { Route as SessionsSessionIdRouteImport } from './routes/sessions/$sessionId'
 import { Route as ServicesNewRouteImport } from './routes/services/new'
 import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
+import { Route as ServiceProvidersNewRouteImport } from './routes/service-providers/new'
 import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
 import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
@@ -58,7 +60,9 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuditLogIdRouteImport } from './routes/audit/$logId'
 import { Route as ActivitiesNewRouteImport } from './routes/activities/new'
 import { Route as ActivitiesActivityIdRouteImport } from './routes/activities/$activityId'
+import { Route as PeopleClientPeopleIndexRouteImport } from './routes/people/client-people/index'
 import { Route as TenantsTenantIdEditRouteImport } from './routes/tenants/$tenantId.edit'
+import { Route as PeopleClientPeopleNewRouteImport } from './routes/people/client-people/new'
 import { Route as AuditEntityEntityTypeEntityIdRouteImport } from './routes/audit/entity/$entityType/$entityId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -84,6 +88,11 @@ const SessionsIndexRoute = SessionsIndexRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceProvidersIndexRoute = ServiceProvidersIndexRouteImport.update({
+  id: '/service-providers/',
+  path: '/service-providers/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
@@ -189,6 +198,11 @@ const ServicesNewRoute = ServicesNewRouteImport.update({
 const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
   id: '/services/$serviceId',
   path: '/services/$serviceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceProvidersNewRoute = ServiceProvidersNewRouteImport.update({
+  id: '/service-providers/new',
+  path: '/service-providers/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServiceAssignmentsNewRoute = ServiceAssignmentsNewRouteImport.update({
@@ -307,10 +321,20 @@ const ActivitiesActivityIdRoute = ActivitiesActivityIdRouteImport.update({
   path: '/activities/$activityId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PeopleClientPeopleIndexRoute = PeopleClientPeopleIndexRouteImport.update({
+  id: '/people/client-people/',
+  path: '/people/client-people/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TenantsTenantIdEditRoute = TenantsTenantIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
   getParentRoute: () => TenantsTenantIdRoute,
+} as any)
+const PeopleClientPeopleNewRoute = PeopleClientPeopleNewRouteImport.update({
+  id: '/people/client-people/new',
+  path: '/people/client-people/new',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuditEntityEntityTypeEntityIdRoute =
   AuditEntityEntityTypeEntityIdRouteImport.update({
@@ -344,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/persons/new': typeof PersonsNewRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-providers/new': typeof ServiceProvidersNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
@@ -365,11 +390,14 @@ export interface FileRoutesByFullPath {
   '/kpis/': typeof KpisIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
+  '/service-providers/': typeof ServiceProvidersIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/people/client-people/new': typeof PeopleClientPeopleNewRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/people/client-people/': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRoutesByTo {
@@ -397,6 +425,7 @@ export interface FileRoutesByTo {
   '/persons/new': typeof PersonsNewRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-providers/new': typeof ServiceProvidersNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
@@ -418,11 +447,14 @@ export interface FileRoutesByTo {
   '/kpis': typeof KpisIndexRoute
   '/persons': typeof PersonsIndexRoute
   '/service-assignments': typeof ServiceAssignmentsIndexRoute
+  '/service-providers': typeof ServiceProvidersIndexRoute
   '/services': typeof ServicesIndexRoute
   '/sessions': typeof SessionsIndexRoute
   '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
+  '/people/client-people/new': typeof PeopleClientPeopleNewRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/people/client-people': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRoutesById {
@@ -451,6 +483,7 @@ export interface FileRoutesById {
   '/persons/new': typeof PersonsNewRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-providers/new': typeof ServiceProvidersNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
@@ -472,11 +505,14 @@ export interface FileRoutesById {
   '/kpis/': typeof KpisIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
+  '/service-providers/': typeof ServiceProvidersIndexRoute
   '/services/': typeof ServicesIndexRoute
   '/sessions/': typeof SessionsIndexRoute
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/people/client-people/new': typeof PeopleClientPeopleNewRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
+  '/people/client-people/': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
 }
 export interface FileRouteTypes {
@@ -506,6 +542,7 @@ export interface FileRouteTypes {
     | '/persons/new'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
+    | '/service-providers/new'
     | '/services/$serviceId'
     | '/services/new'
     | '/sessions/$sessionId'
@@ -527,11 +564,14 @@ export interface FileRouteTypes {
     | '/kpis/'
     | '/persons/'
     | '/service-assignments/'
+    | '/service-providers/'
     | '/services/'
     | '/sessions/'
     | '/tenants/'
     | '/users/'
+    | '/people/client-people/new'
     | '/tenants/$tenantId/edit'
+    | '/people/client-people/'
     | '/audit/entity/$entityType/$entityId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -559,6 +599,7 @@ export interface FileRouteTypes {
     | '/persons/new'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
+    | '/service-providers/new'
     | '/services/$serviceId'
     | '/services/new'
     | '/sessions/$sessionId'
@@ -580,11 +621,14 @@ export interface FileRouteTypes {
     | '/kpis'
     | '/persons'
     | '/service-assignments'
+    | '/service-providers'
     | '/services'
     | '/sessions'
     | '/tenants'
     | '/users'
+    | '/people/client-people/new'
     | '/tenants/$tenantId/edit'
+    | '/people/client-people'
     | '/audit/entity/$entityType/$entityId'
   id:
     | '__root__'
@@ -612,6 +656,7 @@ export interface FileRouteTypes {
     | '/persons/new'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
+    | '/service-providers/new'
     | '/services/$serviceId'
     | '/services/new'
     | '/sessions/$sessionId'
@@ -633,11 +678,14 @@ export interface FileRouteTypes {
     | '/kpis/'
     | '/persons/'
     | '/service-assignments/'
+    | '/service-providers/'
     | '/services/'
     | '/sessions/'
     | '/tenants/'
     | '/users/'
+    | '/people/client-people/new'
     | '/tenants/$tenantId/edit'
+    | '/people/client-people/'
     | '/audit/entity/$entityType/$entityId'
   fileRoutesById: FileRoutesById
 }
@@ -666,6 +714,7 @@ export interface RootRouteChildren {
   PersonsNewRoute: typeof PersonsNewRoute
   ServiceAssignmentsAssignmentIdRoute: typeof ServiceAssignmentsAssignmentIdRoute
   ServiceAssignmentsNewRoute: typeof ServiceAssignmentsNewRoute
+  ServiceProvidersNewRoute: typeof ServiceProvidersNewRoute
   ServicesServiceIdRoute: typeof ServicesServiceIdRoute
   ServicesNewRoute: typeof ServicesNewRoute
   SessionsSessionIdRoute: typeof SessionsSessionIdRoute
@@ -687,10 +736,13 @@ export interface RootRouteChildren {
   KpisIndexRoute: typeof KpisIndexRoute
   PersonsIndexRoute: typeof PersonsIndexRoute
   ServiceAssignmentsIndexRoute: typeof ServiceAssignmentsIndexRoute
+  ServiceProvidersIndexRoute: typeof ServiceProvidersIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   SessionsIndexRoute: typeof SessionsIndexRoute
   TenantsIndexRoute: typeof TenantsIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
+  PeopleClientPeopleNewRoute: typeof PeopleClientPeopleNewRoute
+  PeopleClientPeopleIndexRoute: typeof PeopleClientPeopleIndexRoute
   AuditEntityEntityTypeEntityIdRoute: typeof AuditEntityEntityTypeEntityIdRoute
 }
 
@@ -729,6 +781,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-providers/': {
+      id: '/service-providers/'
+      path: '/service-providers'
+      fullPath: '/service-providers/'
+      preLoaderRoute: typeof ServiceProvidersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/service-assignments/': {
@@ -876,6 +935,13 @@ declare module '@tanstack/react-router' {
       path: '/services/$serviceId'
       fullPath: '/services/$serviceId'
       preLoaderRoute: typeof ServicesServiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-providers/new': {
+      id: '/service-providers/new'
+      path: '/service-providers/new'
+      fullPath: '/service-providers/new'
+      preLoaderRoute: typeof ServiceProvidersNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/service-assignments/new': {
@@ -1039,12 +1105,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivitiesActivityIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/people/client-people/': {
+      id: '/people/client-people/'
+      path: '/people/client-people'
+      fullPath: '/people/client-people/'
+      preLoaderRoute: typeof PeopleClientPeopleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tenants/$tenantId/edit': {
       id: '/tenants/$tenantId/edit'
       path: '/edit'
       fullPath: '/tenants/$tenantId/edit'
       preLoaderRoute: typeof TenantsTenantIdEditRouteImport
       parentRoute: typeof TenantsTenantIdRoute
+    }
+    '/people/client-people/new': {
+      id: '/people/client-people/new'
+      path: '/people/client-people/new'
+      fullPath: '/people/client-people/new'
+      preLoaderRoute: typeof PeopleClientPeopleNewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/audit/entity/$entityType/$entityId': {
       id: '/audit/entity/$entityType/$entityId'
@@ -1093,6 +1173,7 @@ const rootRouteChildren: RootRouteChildren = {
   PersonsNewRoute: PersonsNewRoute,
   ServiceAssignmentsAssignmentIdRoute: ServiceAssignmentsAssignmentIdRoute,
   ServiceAssignmentsNewRoute: ServiceAssignmentsNewRoute,
+  ServiceProvidersNewRoute: ServiceProvidersNewRoute,
   ServicesServiceIdRoute: ServicesServiceIdRoute,
   ServicesNewRoute: ServicesNewRoute,
   SessionsSessionIdRoute: SessionsSessionIdRoute,
@@ -1114,10 +1195,13 @@ const rootRouteChildren: RootRouteChildren = {
   KpisIndexRoute: KpisIndexRoute,
   PersonsIndexRoute: PersonsIndexRoute,
   ServiceAssignmentsIndexRoute: ServiceAssignmentsIndexRoute,
+  ServiceProvidersIndexRoute: ServiceProvidersIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   SessionsIndexRoute: SessionsIndexRoute,
   TenantsIndexRoute: TenantsIndexRoute,
   UsersIndexRoute: UsersIndexRoute,
+  PeopleClientPeopleNewRoute: PeopleClientPeopleNewRoute,
+  PeopleClientPeopleIndexRoute: PeopleClientPeopleIndexRoute,
   AuditEntityEntityTypeEntityIdRoute: AuditEntityEntityTypeEntityIdRoute,
 }
 export const routeTree = rootRouteImport

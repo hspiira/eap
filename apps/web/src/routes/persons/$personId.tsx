@@ -14,7 +14,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { personsApi } from '@/api/endpoints/persons'
 import type { Person } from '@/types/entities'
 import type { BaseStatus, PersonType } from '@/types/enums'
-import { Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users } from 'lucide-react'
+import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users } from 'lucide-react'
 
 export const Route = createFileRoute('/persons/$personId')({
   component: PersonDetailPage,
@@ -68,11 +68,10 @@ function PersonDetailPage() {
   }
 
   const getPersonTypeLabel = (type: PersonType) => {
-    const labels: Record<PersonType, string> = {
+    const labels: Record<string, string> = {
       ClientEmployee: 'Client Employee',
       Dependent: 'Dependent',
       ServiceProvider: 'Service Provider',
-      PlatformStaff: 'Platform Staff',
     }
     return labels[type] || type
   }
@@ -102,9 +101,19 @@ function PersonDetailPage() {
     )
   }
 
+  const backTo = person.person_type === 'ServiceProvider' ? '/service-providers' : '/people/client-people'
+  const backLabel = person.person_type === 'ServiceProvider' ? 'Back to Service providers' : 'Back to Client people'
+
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
+        <button
+          onClick={() => navigate({ to: backTo })}
+          className="flex items-center gap-2 text-safe hover:text-natural mb-6 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span>{backLabel}</span>
+        </button>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>

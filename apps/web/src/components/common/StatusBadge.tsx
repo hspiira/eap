@@ -3,6 +3,7 @@
  * Displays status with color coding based on status type
  */
 
+import { memo } from 'react'
 import { getStatusColors, getStatusLabel } from '@/utils/statusColors'
 import type {
   BaseStatus,
@@ -47,7 +48,7 @@ const iconSizeClasses = {
   lg: 16,
 }
 
-export function StatusBadge({
+export const StatusBadge = memo(function StatusBadge({
   status,
   size = 'md',
   icon: Icon,
@@ -65,4 +66,4 @@ export function StatusBadge({
       {label}
     </span>
   )
-}
+})

@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { usersApi } from '@/api/endpoints/users'
 import type { User } from '@/types/entities'
 import type { UserStatus } from '@/types/enums'
@@ -183,12 +182,7 @@ function UsersPage() {
           </button>
         </div>
 
-        {loading && users.length === 0 ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : (
-          <DataTable
+        <DataTable
             data={users}
             columns={columns}
             loading={loading}
@@ -232,7 +226,6 @@ function UsersPage() {
             }}
             emptyMessage="No users found"
           />
-        )}
       </div>
     </AppLayout>
   )
