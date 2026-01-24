@@ -11,10 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
     get_client_repository,
+    get_industry_repository,
     get_tenant_repository,
     get_user_repository,
 )
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.api.schemas.tenant_schemas import (
     SubscriptionUpdateRequest,
@@ -95,10 +97,13 @@ async def create_tenant(
     data: TenantCreate,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
+    industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Create a new tenant and an admin user.
+    Create a new tenant, seed default industries, and create an admin user.
+    
+    Default industries are automatically created for the tenant.
     
     An admin user is automatically created with:
     - Email: admin_{tenant_code}@evexia.test
@@ -109,7 +114,7 @@ async def create_tenant(
     Store it securely as it cannot be retrieved later.
     """
     tenant, admin_password = await CreateTenantUseCase(
-        tenant_repo, user_repo
+        tenant_repo, user_repo, industry_repo
     ).execute(
         tenant_id=TenantId(generate_cuid()),
         name=data.name,

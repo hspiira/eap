@@ -160,7 +160,9 @@ class UpdateServiceGroupSettingsUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     ) -> ServiceEntity:
         """Update service group settings."""
         service = await self._get_entity_or_raise(service_id, "Service")
-        service.update_group_settings(is_group_service, max_participants)
+        service.update_group_settings(
+            is_group_service=is_group_service, max_participants=max_participants
+        )
         return await self._save_and_publish_events(service)
 
 
