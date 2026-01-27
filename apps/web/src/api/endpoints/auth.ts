@@ -15,11 +15,13 @@ export const authApi = {
       credentials
     )
     
-    // Store token in API client
     if (response.access_token) {
       apiClient.setToken(response.access_token)
     }
-    
+    if (response.refresh_token) {
+      apiClient.setRefreshToken(response.refresh_token)
+    }
+
     return response
   },
 

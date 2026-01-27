@@ -16,19 +16,32 @@ const DEFAULT_TIMEOUT = 30000 // 30 seconds
 const DEFAULT_RETRY_ATTEMPTS = 3
 const DEFAULT_RETRY_DELAY = 1000 // 1 second
 
+type AuthErrorCallback = () => void
+
 class ApiClient {
   private baseUrl: string
   private token: string | null = null
+  private refreshToken: string | null = null
   private tenantId: string | null = null
   private timeout: number
   private retryAttempts: number
   private retryDelay: number
+  private onAuthError: AuthErrorCallback | null = null
+  private refreshPromise: Promise<boolean> | null = null
 
   constructor(config: ApiClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '') // Remove trailing slash
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT
     this.retryAttempts = config.retryAttempts ?? DEFAULT_RETRY_ATTEMPTS
     this.retryDelay = config.retryDelay ?? DEFAULT_RETRY_DELAY
+  }
+
+  /**
+   * Set callback for auth errors (401). Called after clearing auth.
+   * Use this to handle navigation in React context.
+   */
+  setAuthErrorCallback(callback: AuthErrorCallback | null): void {
+    this.onAuthError = callback
   }
 
   /**
@@ -43,19 +56,61 @@ class ApiClient {
     }
   }
 
-  /**
-   * Get authentication token
-   */
   getToken(): string | null {
-    if (!this.token) {
+    if (!this.token && typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token')
     }
     return this.token
   }
 
-  /**
-   * Set tenant ID
-   */
+  setRefreshToken(token: string | null): void {
+    this.refreshToken = token
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('refresh_token', token)
+      } else {
+        localStorage.removeItem('refresh_token')
+      }
+    }
+  }
+
+  getRefreshToken(): string | null {
+    if (!this.refreshToken && typeof window !== 'undefined') {
+      this.refreshToken = localStorage.getItem('refresh_token')
+    }
+    return this.refreshToken
+  }
+
+  private async tryRefreshToken(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise
+
+    this.refreshPromise = (async () => {
+      const refreshToken = this.getRefreshToken()
+      if (!refreshToken) return false
+
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+
+        if (!response.ok) return false
+
+        const data = await response.json()
+        this.setToken(data.access_token)
+        this.setRefreshToken(data.refresh_token)
+        return true
+      } catch {
+        return false
+      } finally {
+        this.refreshPromise = null
+      }
+    })()
+
+    return this.refreshPromise
+  }
+
   setTenantId(tenantId: string | null): void {
     this.tenantId = tenantId
     if (tenantId) {
@@ -85,9 +140,11 @@ class ApiClient {
    */
   clearAuth(): void {
     this.token = null
+    this.refreshToken = null
     this.tenantId = null
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('tenant_id')
       localStorage.removeItem('current_tenant_id')
     }
@@ -202,12 +259,9 @@ class ApiClient {
    */
   private handleAuthError(status: number): void {
     if (status === 401) {
-      // Clear auth and redirect to login
       this.clearAuth()
-      // Note: In TanStack Start, we'll handle redirects via router
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login'
-      }
+      // Notify React context to handle navigation (avoids hard redirect)
+      this.onAuthError?.()
     }
   }
 
@@ -281,9 +335,30 @@ class ApiClient {
 
       clearTimeout(timeoutId)
 
-      // Handle authentication errors
-      if (response.status === 401 || response.status === 403) {
-        this.handleAuthError(response.status)
+      // Handle 401 - try refresh token before giving up
+      if (response.status === 401 && !endpoint.includes('/auth/')) {
+        const refreshed = await this.tryRefreshToken()
+        if (refreshed) {
+          // Retry with new token
+          const retryHeaders = this.buildHeaders(
+            headers as Record<string, string>,
+            endpoint.startsWith('http') ? new URL(endpoint).pathname : endpoint
+          )
+          const retryResponse = await fetch(url, {
+            ...fetchOptions,
+            headers: retryHeaders,
+          })
+          if (retryResponse.ok) {
+            const ct = retryResponse.headers.get('content-type')
+            if (!ct || !ct.includes('application/json')) return {} as T
+            return (await retryResponse.json()) as T
+          }
+        }
+        this.handleAuthError(401)
+      }
+
+      if (response.status === 403) {
+        this.handleAuthError(403)
       }
 
       // Handle errors

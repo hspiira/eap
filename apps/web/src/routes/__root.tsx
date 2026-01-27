@@ -8,6 +8,7 @@ import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 import { ToastContainer } from '../components/common/ToastContainer'
+import { SessionTimeoutManager } from '../components/common/SessionTimeoutManager'
 import { useToast } from '../contexts/ToastContext'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 import appCss from '../styles.css?url'
@@ -52,9 +53,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <ToastProvider>
             <AuthProvider>
               <TenantProvider>
-                <ToastWrapper>
-                  {children}
-                </ToastWrapper>
+                <SessionTimeoutManager>
+                  <ToastWrapper>
+                    {children}
+                  </ToastWrapper>
+                </SessionTimeoutManager>
               </TenantProvider>
             </AuthProvider>
           </ToastProvider>

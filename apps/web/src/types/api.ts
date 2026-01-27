@@ -3,8 +3,6 @@
  * Types for API communication
  */
 
-import type { BaseEntity } from './entities'
-
 /**
  * Standard API error response
  */
@@ -95,13 +93,16 @@ export interface RequestOptions {
 
 /**
  * Authentication response.
- * These simple pieces of detail (e.g. tenant_id) are picked from the user
+ * These simple pieces of detail (e.g. tenant_id, user_id, email) are picked from the user
  * on successful authentication and used for session/tenant context.
  */
 export interface AuthResponse {
   access_token: string
+  refresh_token: string
   token_type: 'bearer'
   expires_in: number // seconds
+  user_id: string
+  email: string
   tenant_id?: string
 }
 

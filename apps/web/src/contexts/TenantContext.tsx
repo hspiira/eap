@@ -78,8 +78,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     [setStoreTenant, invalidateAll]
   )
 
+  // Sync tenant to apiClient and localStorage when tenant is SET (not cleared).
+  // Clearing is handled explicitly in logout and the clear effect below.
   useEffect(() => {
-    syncTenantToApiAndStorage(currentTenant)
+    if (currentTenant) {
+      syncTenantToApiAndStorage(currentTenant)
+    }
   }, [currentTenant])
 
   // Restore current tenant by ID only (see docs: GET /tenants/{tenant_id}). No list fetch on bootstrap.

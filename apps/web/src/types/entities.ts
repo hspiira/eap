@@ -59,7 +59,9 @@ export interface ContactInfo {
  */
 export interface Tenant extends BaseEntity {
   name: string
+  code?: string | null // Tenant code (e.g., "acme-corp")
   status: TenantStatus
+  subscription_tier?: string | null // Subscription tier (e.g., "Free", "Pro", "Enterprise")
   industry_id?: string | null
   tax_id?: string | null
   registration_number?: string | null
@@ -80,6 +82,12 @@ export interface User extends BaseEntity {
   is_two_factor_enabled: boolean
   preferred_language?: Language | null
   timezone?: string | null
+  date_format?: string | null
+  week_starts_on?: string | null
+  email_notifications?: boolean | null
+  assignment_alerts?: boolean | null
+  session_reminders?: boolean | null
+  weekly_digest?: boolean | null
   last_login_at?: string | null
   status_changed_at?: string | null
   is_active: boolean
