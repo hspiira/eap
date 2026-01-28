@@ -6,9 +6,11 @@ Follows hybrid approach: Commands use use cases, Queries use repositories direct
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_client_repository, get_contract_repository
 from app.api.schemas.client_schemas import (
@@ -105,10 +107,13 @@ def _to_client_response(client: ClientEntity) -> ClientResponse:
 async def create_client(
     data: ClientCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new client."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contact_info = ContactInfo(
         phone=data.contact_info.phone,
         email=Email(data.contact_info.email) if data.contact_info.email else None,
@@ -146,6 +151,7 @@ async def create_client(
 async def verify_client(
     client_id: str,
     verified_by: str = Query(..., description="User ID who verified the client"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -164,6 +170,7 @@ async def verify_client(
 @transactional()
 async def activate_client(
     client_id: str,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -181,6 +188,7 @@ async def activate_client(
 async def deactivate_client(
     client_id: str,
     request: ClientDeactivateRequest,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -200,6 +208,7 @@ async def deactivate_client(
 async def suspend_client(
     client_id: str,
     request: ClientSuspendRequest,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -219,6 +228,7 @@ async def suspend_client(
 async def terminate_client(
     client_id: str,
     request: ClientTerminateRequest,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -237,6 +247,7 @@ async def terminate_client(
 @transactional()
 async def archive_client(
     client_id: str,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -253,6 +264,7 @@ async def archive_client(
 @transactional()
 async def restore_client(
     client_id: str,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -270,6 +282,7 @@ async def restore_client(
 async def update_client(
     client_id: str,
     data: ClientUpdate,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -291,6 +304,7 @@ async def update_client(
 async def update_client_contact_info(
     client_id: str,
     request: ClientUpdateContactInfo,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -316,6 +330,7 @@ async def update_client_contact_info(
 async def update_client_billing_address(
     client_id: str,
     request: ClientUpdateBillingAddress,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -353,10 +368,13 @@ async def list_clients(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List clients with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     clients = await client_repo.list_all(
@@ -394,6 +412,7 @@ async def list_clients(
 @readonly()
 async def get_client(
     client_id: str,
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -413,10 +432,13 @@ async def get_client(
 async def get_client_by_name(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get client by name within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     client = await client_repo.get_by_name(TenantId(tenant_id), name)
     if not client:
         raise ValueError("Client not found")
@@ -431,10 +453,13 @@ async def get_client_by_name(
 async def check_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a client name is available within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     client = await client_repo.get_by_name(TenantId(tenant_id), name)
     return {"available": client is None, "name": name, "tenant_id": tenant_id}
 
@@ -448,11 +473,14 @@ async def check_name_availability(
 async def get_client_stats(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get client statistics including child clients and contracts."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     client = await client_repo.get_by_id(ClientId(client_id))
     if not client:
         raise ValueError("Client not found")
@@ -499,10 +527,13 @@ async def get_child_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child clients of a parent client."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     # Verify parent client exists
     parent = await client_repo.get_by_id(ClientId(client_id))
     if not parent:

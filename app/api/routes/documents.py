@@ -5,8 +5,10 @@ FastAPI routes for Document operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_document_repository
 from app.api.schemas.document_schemas import (
@@ -88,10 +90,13 @@ async def create_document(
     data: DocumentCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
     uploaded_by: str | None = Query(None, description="User ID who uploaded"),
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new document."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     document = await CreateDocumentUseCase(document_repo).execute(
         document_id=DocumentId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -245,6 +250,7 @@ async def set_document_expiry(
 @readonly()
 async def list_documents(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     document_type: DocumentType | None = Query(None, description="Filter by document type"),
     status: DocumentStatus | None = Query(None, description="Filter by document status"),
     client_id: str | None = Query(None, description="Filter by associated client"),
@@ -260,6 +266,8 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
 ):
     """List documents with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     documents = await document_repo.list_all(
@@ -324,10 +332,13 @@ async def get_document(
 async def get_document_versions(
     document_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all versions of a document."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     versions = await document_repo.get_versions(
         DocumentId(document_id), TenantId(tenant_id)
     )
@@ -346,10 +357,13 @@ async def get_document_versions(
 async def get_latest_document_version(
     document_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get the latest version of a document."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     latest = await document_repo.get_latest_version(
         DocumentId(document_id), TenantId(tenant_id)
     )

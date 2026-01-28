@@ -8,10 +8,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_tenant_repository, get_user_repository
-from app.api.schemas.auth_schemas import LoginRequest, LoginResponse
+from app.api.schemas.auth_schemas import (
+    LoginRequest,
+    LoginResponse,
+    RefreshRequest,
+    RefreshResponse,
+)
 from app.application.use_cases.user_use_cases import RecordUserLoginUseCase
 from app.core.database import get_db
-from app.core.security import create_token_response, verify_password
+from app.core.security import (
+    create_token_response,
+    decode_refresh_token,
+    verify_password,
+)
 from app.domain.enums import TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -118,9 +127,36 @@ async def login(
 
     return LoginResponse(
         access_token=token.access_token,
+        refresh_token=token.refresh_token,
         token_type=token.token_type,
         expires_in=token.expires_in,
         user_id=user.id.value,
         tenant_id=tenant.id.value,
         email=user.email.value,
+    )
+
+
+@router.post("/refresh", response_model=RefreshResponse, summary="Refresh access token")
+async def refresh_token(request: RefreshRequest):
+    """Exchange refresh token for new access and refresh tokens."""
+    try:
+        token_data = decode_refresh_token(request.refresh_token)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = create_token_response(
+        user_id=token_data.user_id,
+        tenant_id=token_data.tenant_id,
+        email=token_data.email,
+    )
+
+    return RefreshResponse(
+        access_token=token.access_token,
+        refresh_token=token.refresh_token,
+        token_type=token.token_type,
+        expires_in=token.expires_in,
     )

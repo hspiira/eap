@@ -5,8 +5,10 @@ FastAPI routes for Service Session operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_service_session_repository
 from app.api.schemas.service_session_schemas import (
@@ -85,10 +87,13 @@ def _to_service_session_response(
 async def create_service_session(
     data: ServiceSessionCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service session."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     session = await CreateServiceSessionUseCase(session_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -261,6 +266,7 @@ async def restore_service_session(
 @readonly()
 async def list_service_sessions(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     person_id: str | None = Query(None, description="Filter by person identifier"),
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
@@ -273,6 +279,8 @@ async def list_service_sessions(
     db: AsyncSession = Depends(get_db),
 ):
     """List service sessions with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     sessions = await session_repo.list_all(
@@ -331,10 +339,13 @@ async def get_service_session(
 async def get_sessions_by_person(
     person_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a person."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_person(
         TenantId(tenant_id), PersonId(person_id)
     )
@@ -350,10 +361,13 @@ async def get_sessions_by_person(
 async def get_sessions_by_provider(
     provider_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a provider."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), PersonId(provider_id)
     )
@@ -369,10 +383,13 @@ async def get_sessions_by_provider(
 async def get_sessions_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a service."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )

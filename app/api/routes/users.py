@@ -6,8 +6,10 @@ Follows hybrid approach: Commands use use cases, Queries use repositories direct
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_user_repository
 from app.api.schemas.user_schemas import (
@@ -84,10 +86,13 @@ def _to_user_response(user: UserEntity) -> UserResponse:
 async def create_user(
     data: UserCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new user."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     password_hash = _hash_password(data.password) if data.password else None
 
     user = await CreateUserUseCase(user_repo).execute(
@@ -115,6 +120,7 @@ async def create_user(
 @transactional()
 async def verify_user_email(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -131,6 +137,7 @@ async def verify_user_email(
 @transactional()
 async def activate_user(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -148,6 +155,7 @@ async def activate_user(
 async def suspend_user(
     user_id: str,
     request: UserSuspendRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -165,6 +173,7 @@ async def suspend_user(
 async def ban_user(
     user_id: str,
     request: UserBanRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -182,6 +191,7 @@ async def ban_user(
 async def deactivate_user(
     user_id: str,
     request: UserDeactivateRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -199,6 +209,7 @@ async def deactivate_user(
 async def terminate_user(
     user_id: str,
     request: UserTerminateRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -216,6 +227,7 @@ async def terminate_user(
 async def update_user_password(
     user_id: str,
     request: UserUpdatePasswordRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -234,6 +246,7 @@ async def update_user_password(
 async def update_user_preferences(
     user_id: str,
     request: UserUpdatePreferencesRequest,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -254,6 +267,7 @@ async def update_user_preferences(
 @transactional()
 async def enable_two_factor(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -270,6 +284,7 @@ async def enable_two_factor(
 @transactional()
 async def disable_two_factor(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -286,6 +301,7 @@ async def disable_two_factor(
 @transactional()
 async def record_user_login(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -312,10 +328,13 @@ async def list_users(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List users with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     users = await user_repo.list_all(
@@ -353,6 +372,7 @@ async def list_users(
 @readonly()
 async def get_user(
     user_id: str,
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -372,10 +392,13 @@ async def get_user(
 async def get_user_by_email(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get user by email within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     if not user:
         raise ValueError("User not found")
@@ -390,9 +413,12 @@ async def get_user_by_email(
 async def check_email_availability(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a user email is available within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     return {"available": user is None, "email": email, "tenant_id": tenant_id}

@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         description="JWT token expiration in minutes"
     )
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default=7, description="Refresh token expiration in days"
+    )
 
     # CORS
     CORS_ORIGINS: str = Field(

@@ -38,6 +38,7 @@ class Token(BaseModel):
     """Token response model."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
 
@@ -130,6 +131,36 @@ def create_access_token(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+
+def create_refresh_token(user_id: str, tenant_id: str) -> str:
+    """Create a refresh token with longer expiry."""
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode = {
+        "sub": user_id,
+        "tenant_id": tenant_id,
+        "exp": expire,
+        "iat": datetime.now(UTC),
+        "type": "refresh",
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_refresh_token(token: str) -> TokenData:
+    """Decode refresh token and validate it's a refresh token."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        if payload.get("type") != "refresh":
+            raise AuthenticationException("Invalid token type")
+        user_id = payload.get("sub")
+        tenant_id = payload.get("tenant_id")
+        if not user_id or not tenant_id:
+            raise AuthenticationException("Invalid token: missing claims")
+        return TokenData(user_id=user_id, tenant_id=tenant_id)
+    except JWTError as e:
+        raise AuthenticationException(f"Invalid refresh token: {str(e)}")
 
 
 def decode_token(token: str) -> TokenData:
@@ -284,25 +315,17 @@ def create_token_response(
     tenant_id: str,
     email: str | None = None,
 ) -> Token:
-    """
-    Create a token response for API endpoints.
-
-    Args:
-        user_id: User identifier
-        tenant_id: Tenant identifier
-        email: User email
-
-    Returns:
-        Token response with access token and metadata
-    """
+    """Create access and refresh tokens."""
     access_token = create_access_token(
         user_id=user_id,
         tenant_id=tenant_id,
         email=email,
     )
+    refresh_token = create_refresh_token(user_id=user_id, tenant_id=tenant_id)
 
     return Token(
         access_token=access_token,
+        refresh_token=refresh_token,
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
