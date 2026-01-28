@@ -8,6 +8,8 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import TokenData, get_current_user
+
 from app.api.dependencies import get_person_repository
 from app.api.schemas.person_schemas import (
     AddSecondaryRoleRequest,
@@ -411,6 +413,7 @@ async def restore_person(
 @readonly()
 async def list_persons(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     status: BaseStatus | None = Query(None, description="Filter by person status"),
     person_type: PersonType | None = Query(None, description="Filter by person type"),
     search: str | None = Query(None, description="Search in user email"),
@@ -422,6 +425,8 @@ async def list_persons(
     db: AsyncSession = Depends(get_db),
 ):
     """List persons with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     persons = await person_repo.list_all(
@@ -496,9 +501,12 @@ async def get_person_by_user_id(
 async def get_persons_by_type(
     tenant_id: str,
     person_type: PersonType,
+    current_user: TokenData = Depends(get_current_user),
     person_repo: PersonRepository = Depends(get_person_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all persons of a specific type within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     persons = await person_repo.get_by_type(TenantId(tenant_id), person_type)
     return [_to_person_response(person) for person in persons]

@@ -5,8 +5,10 @@ FastAPI routes for Service operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_service_repository
 from app.api.schemas.service_schemas import (
@@ -65,10 +67,13 @@ def _to_service_response(service: ServiceEntity) -> ServiceResponse:
 async def create_service(
     data: ServiceCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     service = await CreateServiceUseCase(service_repo).execute(
         service_id=ServiceId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -204,6 +209,7 @@ async def update_service_group_settings(
 @readonly()
 async def list_services(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     status: BaseStatus | None = Query(None, description="Filter by service status"),
     search: str | None = Query(None, description="Search in service name"),
     category: str | None = Query(None, description="Filter by category"),
@@ -216,6 +222,8 @@ async def list_services(
     db: AsyncSession = Depends(get_db),
 ):
     """List services with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     services = await service_repo.list_all(
@@ -274,10 +282,13 @@ async def get_service(
 async def get_service_by_name(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service by name within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     service = await service_repo.get_by_name(TenantId(tenant_id), name)
     if not service:
         raise ValueError("Service not found")
@@ -292,9 +303,12 @@ async def get_service_by_name(
 async def check_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a service name is available within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     service = await service_repo.get_by_name(TenantId(tenant_id), name)
     return {"available": service is None, "name": name, "tenant_id": tenant_id}

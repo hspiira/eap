@@ -7,8 +7,10 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 
 import decimal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_contract_repository
 from app.api.schemas.contract_schemas import (
@@ -96,10 +98,13 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
 async def create_contract(
     data: ContractCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contract."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     billing_rate = Money(
         amount=decimal.Decimal(data.billing_rate.amount),
         currency=data.billing_rate.currency,
@@ -298,6 +303,7 @@ async def update_contract_payment_status(
 @readonly()
 async def list_contracts(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     client_id: str | None = Query(None, description="Filter by client identifier"),
     status: ContractStatus | None = Query(None, description="Filter by contract status"),
     payment_status: PaymentStatus | None = Query(
@@ -311,6 +317,8 @@ async def list_contracts(
     db: AsyncSession = Depends(get_db),
 ):
     """List contracts with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     contracts = await contract_repo.list_all(
@@ -367,10 +375,13 @@ async def get_contract(
 async def get_contracts_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all contracts for a client."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contracts = await GetContractUseCase(contract_repo).execute_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
@@ -386,10 +397,13 @@ async def get_contracts_by_client(
 async def get_active_contract_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get active contract for a client."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contract = await GetContractUseCase(contract_repo).execute_active_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )

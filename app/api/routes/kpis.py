@@ -5,8 +5,10 @@ FastAPI routes for KPI operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import (
     get_kpi_assignment_repository,
@@ -97,10 +99,13 @@ def _to_kpi_assignment_response(
 async def create_kpi(
     data: KPICreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new KPI."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     kpi = await CreateKPIUseCase(kpi_repo).execute(
         kpi_id=KPIId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -184,6 +189,7 @@ async def deactivate_kpi(
 @readonly()
 async def list_kpis(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     category: KPICategory | None = Query(None, description="Filter by KPI category"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in KPI name or description"),
@@ -195,6 +201,8 @@ async def list_kpis(
     db: AsyncSession = Depends(get_db),
 ):
     """List KPIs with filtering, searching, and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     kpis = await kpi_repo.list_all(
@@ -232,10 +240,13 @@ async def list_kpis(
 async def check_kpi_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a KPI name is available within a tenant."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
     return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
 
@@ -271,11 +282,14 @@ async def get_kpi(
 async def create_kpi_assignment(
     data: KPIAssignmentCreate,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new KPI assignment."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignment = await CreateKPIAssignmentUseCase(kpi_repo, assignment_repo).execute(
         assignment_id=KPIAssignmentId(generate_cuid()),
         kpi_id=KPIId(data.kpi_id),
@@ -353,6 +367,7 @@ async def deactivate_kpi_assignment(
 @readonly()
 async def list_kpi_assignments(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     kpi_id: str | None = Query(None, description="Filter by KPI"),
     client_id: str | None = Query(None, description="Filter by client"),
     contract_id: str | None = Query(None, description="Filter by contract"),
@@ -365,6 +380,8 @@ async def list_kpi_assignments(
     db: AsyncSession = Depends(get_db),
 ):
     """List KPI assignments with filtering and pagination."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
@@ -425,10 +442,13 @@ async def get_kpi_assignment(
 async def get_kpi_assignments_by_kpi(
     kpi_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific KPI."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignments = await assignment_repo.get_by_kpi_id(
         KPIId(kpi_id), TenantId(tenant_id)
     )
@@ -450,10 +470,13 @@ async def get_kpi_assignments_by_kpi(
 async def get_kpi_assignments_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific client."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignments = await assignment_repo.get_by_client_id(
         client_id, TenantId(tenant_id)
     )
@@ -475,10 +498,13 @@ async def get_kpi_assignments_by_client(
 async def get_kpi_assignments_by_contract(
     contract_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific contract."""
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignments = await assignment_repo.get_by_contract_id(
         contract_id, TenantId(tenant_id)
     )

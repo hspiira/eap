@@ -56,8 +56,24 @@ class LoginResponse(BaseModel):
     """Response schema for successful login."""
 
     access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
     user_id: str = Field(..., description="User identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
     email: str = Field(..., description="User email address")
+
+
+class RefreshRequest(BaseModel):
+    """Request schema for token refresh."""
+
+    refresh_token: str = Field(..., description="JWT refresh token")
+
+
+class RefreshResponse(BaseModel):
+    """Response schema for token refresh."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
