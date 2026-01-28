@@ -41,6 +41,7 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(5), nullable=False, index=True)  # 3-5 character unique code
     contact_info: Mapped[dict] = mapped_column(JSON, nullable=False)
     billing_address: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 

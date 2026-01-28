@@ -15,13 +15,17 @@ class EmploymentInfoDict(TypedDict):
     Represents employment information for CLIENT_EMPLOYEE person types.
     
     Fields:
+        client_id: Client identifier (required)
+        employee_code: Employee code in format CLIENT-FAMILY-MEMBER (e.g., "MNT-00-00") (required)
         role: Job title or role name (required)
         start_date: Employment start date in ISO format (YYYY-MM-DD) (required)
         status: Work status enum value (e.g., "Active", "Inactive") (required)
         department: Department name (optional)
-        employee_id: Employee identifier (optional)
+        employee_id: External employee identifier (optional)
         end_date: Employment end date in ISO format (YYYY-MM-DD) (optional)
     """
+    client_id: str
+    employee_code: str  # Format: CLIENT-FAMILY-MEMBER (e.g., "MNT-00-00")
     role: str
     start_date: str  # ISO date format: YYYY-MM-DD
     status: str  # WorkStatus enum value

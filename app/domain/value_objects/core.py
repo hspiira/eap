@@ -210,7 +210,41 @@ class LicenseInfo:
         return self.expiry_date >= utc_now().date()
 
 @dataclass(frozen=True)
+class ClientEmployeeCode:
+    client_code: str
+    family_code: str
+    member_code: str
+    
+    def __post_init__(self):
+        if not self.client_code or len(self.client_code) < 3 or len(self.client_code) > 5:
+            raise ValueError("Client code must be 3-5 characters")
+        if not self.family_code or len(self.family_code) != 2:
+            raise ValueError("Family code must be 2 digits")
+        if not self.member_code or len(self.member_code) != 2:
+            raise ValueError("Member code must be 2 digits")
+        if not self.family_code.isdigit():
+            raise ValueError("Family code must be numeric")
+        if not self.member_code.isdigit():
+            raise ValueError("Member code must be numeric")
+    
+    def __str__(self) -> str:
+        return f"{self.client_code}-{self.family_code}-{self.member_code}"
+    
+    @classmethod
+    def from_string(cls, code_str: str) -> 'ClientEmployeeCode':
+        parts = code_str.split('-')
+        if len(parts) != 3:
+            raise ValueError(f"Invalid code format: {code_str}. Expected format: CLIENT-FAMILY-MEMBER")
+        return cls(
+            client_code=parts[0],
+            family_code=parts[1],
+            member_code=parts[2]
+        )
+
+@dataclass(frozen=True)
 class EmploymentInfo:
+    client_id: ClientId
+    employee_code: ClientEmployeeCode
     role: str
     start_date: date
     status: WorkStatus

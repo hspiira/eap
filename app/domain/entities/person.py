@@ -69,6 +69,7 @@ class PersonEntity:
     _staff_info: StaffInfo | None = None  # PLATFORM_STAFF
     _dependent_info: DependentInfo | None = None  # DEPENDENT
     _emergency_contact: EmergencyContact | None = None
+    _family_id: PersonId | None = None  # Points to primary employee in family (for family code grouping)
     _last_service_date: date | None = None
     _deleted_at: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list)
@@ -149,10 +150,11 @@ class PersonEntity:
         if role == self._person_type:
             raise DomainError(f"Cannot add {role.value} as secondary role when it is already the primary role")
         
-        # Map role to appropriate info attribute
+        # Check max 2 clients rule for CLIENT_EMPLOYEE roles
         if role == PersonType.CLIENT_EMPLOYEE:
             if not isinstance(info, EmploymentInfo):
                 raise DomainError(f"CLIENT_EMPLOYEE role requires EmploymentInfo, got {type(info).__name__}")
+            self._check_max_clients_rule(info.client_id)
             self._employment_info = info
         elif role == PersonType.SERVICE_PROVIDER:
             if not isinstance(info, LicenseInfo):
@@ -213,9 +215,29 @@ class PersonEntity:
         """Update employment information."""
         if self._status == BaseStatus.DELETED:
             raise DomainError("Cannot update employment info for deleted person")
+        if self._employment_info and self._employment_info.client_id != info.client_id:
+            self._check_max_clients_rule(info.client_id)
         self._employment_info = info
         self._updated_at = utc_now()
         self._ensure_invariants()
+    
+    def _check_max_clients_rule(self, new_client_id: ClientId) -> None:
+        """Check that person is not already employee/dependent for more than 1 client."""
+        clients = set()
+        
+        if self._person_type == PersonType.CLIENT_EMPLOYEE and self._employment_info:
+            clients.add(self._employment_info.client_id)
+        elif self._person_type == PersonType.DEPENDENT and self._dependent_info:
+            pass
+        
+        if self._secondary_person_type == PersonType.CLIENT_EMPLOYEE and self._employment_info:
+            clients.add(self._employment_info.client_id)
+        
+        if new_client_id in clients:
+            return
+        
+        if len(clients) >= 2:
+            raise DomainError("Person cannot be employee or dependent for more than 2 clients")
     
     def update_license_info(self, info: LicenseInfo) -> None:
         """Update license information."""
@@ -264,8 +286,17 @@ class PersonEntity:
     # === Factory Methods ===
     
     @classmethod
-    def create_client_employee(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, employment_info: EmploymentInfo) -> 'PersonEntity':
-        """Factory for CLIENT_EMPLOYEE type"""
+    def create_client_employee(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, employment_info: EmploymentInfo, family_id: PersonId | None = None) -> 'PersonEntity':
+        """Factory for CLIENT_EMPLOYEE type
+        
+        Args:
+            id: Person identifier
+            tenant_id: Tenant identifier
+            user_id: User identifier
+            profile: User profile entity
+            employment_info: Employment information (includes client_id and employee_code)
+            family_id: Optional family identifier (points to primary employee in family)
+        """
         now = utc_now()
         person = cls(
             _id=id,
@@ -275,6 +306,7 @@ class PersonEntity:
             _user_id=user_id,
             _profile=profile,
             _employment_info=employment_info,
+            _family_id=family_id,  # Set family_id if part of existing family
             _status=BaseStatus.PENDING,
             _created_at=now,
             _updated_at=now
@@ -399,6 +431,10 @@ class PersonEntity:
     @property
     def last_service_date(self) -> date | None:
         return self._last_service_date
+
+    @property
+    def family_id(self) -> PersonId | None:
+        return self._family_id
 
     @property
     def created_at(self) -> datetime:

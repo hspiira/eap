@@ -10,6 +10,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.entities.user import UserEntity
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.domain.value_objects.core import (
+    ClientEmployeeCode,
     ClientId,
     DependentInfo,
     Email,
@@ -58,7 +59,18 @@ class PersonMapper:
         employment_info = None
         if model.employment_info:
             emp_dict = model.employment_info
+            # Reconstruct ClientEmployeeCode
+            employee_code_str = emp_dict.get("employee_code")
+            if employee_code_str:
+                employee_code = ClientEmployeeCode.from_string(employee_code_str)
+            else:
+                # Legacy support: if no employee_code, create a default one
+                # This should not happen in production but helps with migration
+                raise ValueError("Employment info missing employee_code")
+            
             employment_info = EmploymentInfo(
+                client_id=ClientId(emp_dict["client_id"]),
+                employee_code=employee_code,
                 role=emp_dict["role"],
                 start_date=date.fromisoformat(emp_dict["start_date"])
                 if isinstance(emp_dict["start_date"], str)
@@ -127,6 +139,9 @@ class PersonMapper:
 
         # Note: profile is required and should be loaded separately via UserRepository
 
+        # Reconstruct family_id
+        family_id = PersonId(model.family_id) if model.family_id else None
+
         # Create entity
         return PersonEntity(
             _id=person_id,
@@ -142,6 +157,7 @@ class PersonMapper:
             _dependent_info=dependent_info,
             _status=status,
             _emergency_contact=emergency_contact,
+            _family_id=family_id,
             _last_service_date=model.last_service_date,
             _created_at=ensure_utc(model.created_at),
             _updated_at=ensure_utc(model.updated_at),
@@ -163,6 +179,8 @@ class PersonMapper:
         employment_info = None
         if entity._employment_info:
             employment_info = {
+                "client_id": entity._employment_info.client_id.value,
+                "employee_code": str(entity._employment_info.employee_code),
                 "role": entity._employment_info.role,
                 "start_date": entity._employment_info.start_date.isoformat(),
                 "status": entity._employment_info.status.value,
@@ -230,6 +248,7 @@ class PersonMapper:
             dependent_info=dependent_info,
             status=entity._status.value,
             emergency_contact=emergency_contact,
+            family_id=entity._family_id.value if entity._family_id else None,
             last_service_date=entity._last_service_date,
             deleted_at=entity._deleted_at,
         )
