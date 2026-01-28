@@ -18,6 +18,7 @@ class ClientEntity:
     _id: ClientId
     _tenant_id: TenantId
     _name: str
+    _code: str  # 3-5 character unique code per tenant (e.g., "MNT")
     _contact_info: ContactInfo
     _status: BaseStatus
     _is_verified: bool
@@ -157,6 +158,11 @@ class ClientEntity:
     def name(self) -> str:
         """Get client name."""
         return self._name
+
+    @property
+    def code(self) -> str:
+        """Get client code."""
+        return self._code
 
     @property
     def contact_info(self) -> ContactInfo:

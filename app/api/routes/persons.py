@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_person_repository
+from app.api.dependencies import get_person_repository, get_client_repository
 from app.api.schemas.person_schemas import (
     AddSecondaryRoleRequest,
     DependentInfoSchema,
@@ -44,6 +44,7 @@ from app.core.database import get_db
 from app.domain.enums import BaseStatus, PersonType
 from app.domain.entities.person import PersonEntity
 from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import (
     ClientId,
     Email,
@@ -65,6 +66,8 @@ def _to_person_response(person: PersonEntity) -> PersonResponse:
     employment_info = None
     if person.employment_info:
         employment_info = EmploymentInfoSchema(
+            client_id=person.employment_info.client_id.value,
+            employee_code=str(person.employment_info.employee_code),
             role=person.employment_info.role,
             start_date=person.employment_info.start_date,
             status=person.employment_info.status,
@@ -123,6 +126,7 @@ def _to_person_response(person: PersonEntity) -> PersonResponse:
         staff_info=staff_info,
         dependent_info=dependent_info,
         emergency_contact=emergency_contact,
+        family_id=person.family_id.value if person.family_id else None,
         last_service_date=person.last_service_date,
         is_eligible_for_services=person.is_eligible_for_services(),
     )
@@ -194,18 +198,30 @@ async def terminate_person(
 async def add_secondary_role(
     person_id: str,
     request: AddSecondaryRoleRequest,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(get_current_user),
     person_repo: PersonRepository = Depends(get_person_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Add a secondary role to a person."""
-    # Convert schema to value object based on role
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
+    
     if request.role == PersonType.CLIENT_EMPLOYEE:
         if not request.employment_info:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Employment info required for CLIENT_EMPLOYEE role",
             )
+        from app.domain.value_objects.core import ClientEmployeeCode, EmploymentInfo
+        employee_code = None
+        if request.employment_info.employee_code:
+            employee_code = ClientEmployeeCode.from_string(request.employment_info.employee_code)
+        
         info = EmploymentInfo(
+            client_id=ClientId(request.employment_info.client_id),
+            employee_code=employee_code,
             role=request.employment_info.role,
             start_date=request.employment_info.start_date,
             status=request.employment_info.status,
@@ -244,8 +260,8 @@ async def add_secondary_role(
             detail=f"Invalid role: {request.role}",
         )
 
-    person = await AddSecondaryRoleUseCase(person_repo).execute(
-        PersonId(person_id), request.role, info
+    person = await AddSecondaryRoleUseCase(person_repo, client_repo).execute(
+        PersonId(person_id), request.role, info, TenantId(tenant_id)
     )
     return _to_person_response(person)
 
@@ -305,7 +321,14 @@ async def update_employment_info(
     db: AsyncSession = Depends(get_db),
 ):
     """Update employment information for a person."""
+    from app.domain.value_objects.core import ClientEmployeeCode, EmploymentInfo
+    employee_code = None
+    if request.employment_info.employee_code:
+        employee_code = ClientEmployeeCode.from_string(request.employment_info.employee_code)
+    
     info = EmploymentInfo(
+        client_id=ClientId(request.employment_info.client_id),
+        employee_code=employee_code,
         role=request.employment_info.role,
         start_date=request.employment_info.start_date,
         status=request.employment_info.status,

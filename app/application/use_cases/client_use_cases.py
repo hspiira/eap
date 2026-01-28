@@ -37,6 +37,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         client_id: ClientId,
         tenant_id: TenantId,
         name: str,
+        code: str,
         contact_info: ContactInfo,
         billing_address: Address | None = None,
         industry_id: IndustryId | None = None,
@@ -49,6 +50,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             client_id: Unique client identifier
             tenant_id: Tenant identifier
             name: Client name
+            code: Client code (3-5 characters, unique per tenant)
             contact_info: Contact information
             billing_address: Billing address (optional)
             industry_id: Industry identifier (optional)
@@ -58,18 +60,20 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             Created ClientEntity
 
         Raises:
-            ValueError: If client with name already exists
+            ValueError: If client with name or code already exists
         """
-        # Check if client already exists
+        if not code or len(code) < 3 or len(code) > 5:
+            raise ValueError("Client code must be 3-5 characters")
+        
         existing = await self.client_repository.get_by_name(tenant_id, name)
         if existing:
             raise ValueError(f"Client with name '{name}' already exists")
 
-        # Create client entity
         client = ClientEntity(
             _id=client_id,
             _tenant_id=tenant_id,
             _name=name,
+            _code=code,
             _contact_info=contact_info,
             _billing_address=billing_address,
             _industry_id=industry_id,

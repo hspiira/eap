@@ -68,6 +68,12 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         nullable=False,
         index=True,
     )
+    family_id: Mapped[str | None] = mapped_column(
+        String(25),
+        ForeignKey("persons.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Type-specific info (stored as JSON value objects)
     employment_info: Mapped[EmploymentInfoDict | None] = mapped_column(
@@ -77,6 +83,8 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     Employment information for CLIENT_EMPLOYEE person types.
     
     Schema: {
+        "client_id": str,
+        "employee_code": str (format: CLIENT-FAMILY-MEMBER, e.g., "MNT-00-00"),
         "role": str,
         "start_date": str (ISO date: YYYY-MM-DD),
         "status": str (WorkStatus enum value),

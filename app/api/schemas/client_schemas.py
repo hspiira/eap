@@ -52,6 +52,7 @@ class ClientCreate(BaseModel):
     """Request schema for creating a client."""
 
     name: str = Field(..., min_length=1, max_length=255, description="Client name")
+    code: str = Field(..., min_length=3, max_length=5, description="Client code (3-5 characters, unique per tenant)")
     contact_info: ContactInfoCreate = Field(..., description="Contact information")
     billing_address: AddressCreate | None = Field(None, description="Billing address")
     industry_id: str | None = Field(None, description="Industry identifier")
@@ -108,6 +109,7 @@ class ClientResponse(BaseModel):
     id: str = Field(..., description="Client identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
     name: str = Field(..., description="Client name")
+    code: str = Field(..., description="Client code (3-5 characters)")
     status: BaseStatus = Field(..., description="Client status")
     is_verified: bool = Field(..., description="Whether client is verified")
     contact_info: ContactInfoSchema = Field(..., description="Contact information")

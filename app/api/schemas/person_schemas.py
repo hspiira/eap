@@ -17,11 +17,13 @@ from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, Wo
 class EmploymentInfoSchema(BaseModel):
     """Employment information schema."""
 
+    client_id: str = Field(..., description="Client identifier")
+    employee_code: str = Field(..., description="Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)")
     role: str = Field(..., description="Job role")
     start_date: date = Field(..., description="Employment start date")
     status: WorkStatus = Field(..., description="Work status")
     department: str | None = Field(None, description="Department")
-    employee_id: str | None = Field(None, description="Employee ID")
+    employee_id: str | None = Field(None, description="External employee ID (optional)")
     end_date: date | None = Field(None, description="Employment end date")
 
     model_config = ConfigDict(extra="forbid")
@@ -163,6 +165,7 @@ class PersonResponse(BaseModel):
     emergency_contact: EmergencyContactSchema | None = Field(
         None, description="Emergency contact"
     )
+    family_id: str | None = Field(None, description="Family identifier (points to primary employee)")
     last_service_date: date | None = Field(None, description="Last service date")
     is_eligible_for_services: bool = Field(..., description="Eligible for services")
 
