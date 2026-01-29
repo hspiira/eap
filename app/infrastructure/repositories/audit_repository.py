@@ -45,7 +45,7 @@ class AuditRepositoryImpl(AuditRepository):
         Audit logs are immutable - this only inserts.
         """
         model = AuditMapper.to_audit_log_model(audit_log)
-        await self.session.add(model)
+        self.session.add(model)
         # Note: commit is typically handled by the application service/unit of work
 
     async def save_entity_change(self, entity_change: EntityChange) -> None:
@@ -55,7 +55,7 @@ class AuditRepositoryImpl(AuditRepository):
         Entity changes are immutable - this only inserts.
         """
         model = AuditMapper.to_entity_change_model(entity_change)
-        await self.session.add(model)
+        self.session.add(model)
         # Note: commit is typically handled by the application service/unit of work
 
     async def get_audit_log_by_id(
@@ -198,3 +198,24 @@ class AuditRepositoryImpl(AuditRepository):
         models = result.scalars().all()
 
         return [AuditMapper.to_entity_change_entity(model) for model in models]
+
+    async def count_entity_changes(
+        self,
+        tenant_id: TenantId,
+        entity_type: str,
+        entity_id: str,
+    ) -> int:
+        """Count entity changes for a specific entity."""
+        # Join with audit_logs to filter by tenant
+        stmt = (
+            select(func.count(EntityChangeModel.id))
+            .join(AuditLogModel, EntityChangeModel.audit_log_id == AuditLogModel.id)
+            .where(
+                AuditLogModel.tenant_id == tenant_id.value,
+                EntityChangeModel.entity_type == entity_type,
+                EntityChangeModel.entity_id == entity_id,
+            )
+        )
+
+        result = await self.session.execute(stmt)
+        return int(result.scalar() or 0)

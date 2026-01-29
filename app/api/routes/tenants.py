@@ -5,11 +5,14 @@ FastAPI routes for Tenant operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import TokenData, get_current_user
+
 from app.api.dependencies import (
+    get_audit_event_handler,
     get_client_repository,
     get_industry_repository,
     get_tenant_repository,
@@ -50,6 +53,7 @@ from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.user_model import UserModel
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
@@ -95,9 +99,11 @@ def _to_tenant_response(
 @transactional()
 async def create_tenant(
     data: TenantCreate,
+    request: Request,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -125,6 +131,13 @@ async def create_tenant(
         features_enabled=tuple(data.settings.features_enabled),
         custom_branding=data.settings.custom_branding,
     )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=None,
+        request=request,
+    )
     return _to_tenant_response(tenant, admin_password)
 
 
@@ -136,11 +149,21 @@ async def create_tenant(
 @transactional()
 async def activate_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a tenant."""
     tenant = await ActivateTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 
@@ -152,13 +175,23 @@ async def activate_tenant(
 @transactional()
 async def suspend_tenant(
     tenant_id: str,
-    request: TenantSuspendRequest,
+    request: Request,
+    body: TenantSuspendRequest,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a tenant."""
     tenant = await SuspendTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), request.reason
+        TenantId(tenant_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -171,13 +204,23 @@ async def suspend_tenant(
 @transactional()
 async def terminate_tenant(
     tenant_id: str,
-    request: TenantTerminateRequest,
+    request: Request,
+    body: TenantTerminateRequest,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a tenant."""
     tenant = await TerminateTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), request.reason
+        TenantId(tenant_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -191,7 +234,10 @@ async def terminate_tenant(
 async def update_tenant_settings(
     tenant_id: str,
     settings: TenantUpdateSettings,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant settings."""
@@ -203,6 +249,13 @@ async def update_tenant_settings(
         if settings.features_enabled is not None
         else None,
         custom_branding=settings.custom_branding,
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -216,13 +269,23 @@ async def update_tenant_settings(
 async def update_tenant(
     tenant_id: str,
     data: TenantUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant basic information."""
     tenant = await UpdateTenantUseCase(tenant_repo).execute(
         TenantId(tenant_id),
         name=data.name,
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -236,13 +299,23 @@ async def update_tenant(
 async def update_subscription(
     tenant_id: str,
     data: SubscriptionUpdateRequest,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant subscription tier."""
     tenant = await UpdateSubscriptionUseCase(tenant_repo).execute(
         TenantId(tenant_id),
         data.subscription_tier,
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -255,11 +328,21 @@ async def update_subscription(
 @transactional()
 async def archive_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a tenant."""
     tenant = await ArchiveTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 
@@ -271,11 +354,21 @@ async def archive_tenant(
 @transactional()
 async def restore_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted tenant."""
     tenant = await RestoreTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 

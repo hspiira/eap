@@ -22,6 +22,7 @@ from app.domain.repositories.client_repository import ClientRepository
 from app.domain.services.employee_code_generator import EmployeeCodeGenerator
 from app.domain.value_objects.core import (
     ClientId,
+    DependentInfo,
     EmploymentInfo,
     LicenseInfo,
     PersonId,
@@ -179,6 +180,71 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
             profile=profile,
             employment_info=employment_info,
             family_id=actual_family_id,
+        )
+
+        return await self._save_and_publish_events(person)
+
+
+class CreateDependentUseCase(BaseUseCase[PersonEntity, PersonId]):
+    """Use case for creating a dependent person."""
+
+    def __init__(self, person_repository: PersonRepository):
+        super().__init__(person_repository)
+        self.person_repository = person_repository
+
+    async def execute(
+        self,
+        person_id: PersonId,
+        tenant_id: TenantId,
+        user_id: UserId,
+        profile: "UserEntity",
+        dependent_info: "DependentInfo",
+    ) -> PersonEntity:
+        """
+        Create a new dependent person.
+        
+        Args:
+            person_id: Person identifier
+            tenant_id: Tenant identifier
+            user_id: User identifier
+            profile: User profile entity
+            dependent_info: Dependent information (includes primary_employee_id)
+            
+        Returns:
+            Created PersonEntity
+            
+        Raises:
+            ValueError: If person already exists for user or primary employee not found/invalid
+        """
+        existing = await self.person_repository.get_by_user_id(user_id)
+        if existing:
+            raise ValueError(f"Person already exists for user {user_id.value}")
+
+        primary_employee = await self.person_repository.get_by_id(
+            dependent_info.primary_employee_id
+        )
+        if not primary_employee:
+            raise ValueError(
+                f"Primary employee {dependent_info.primary_employee_id.value} not found"
+            )
+
+        if primary_employee.person_type != PersonType.CLIENT_EMPLOYEE:
+            raise ValueError(
+                f"Primary employee must be a CLIENT_EMPLOYEE, got {primary_employee.person_type.value}"
+            )
+
+        if primary_employee.tenant_id != tenant_id:
+            raise ValueError(
+                "Primary employee must belong to the same tenant as the dependent"
+            )
+
+        person = PersonEntity.create_dependent(
+            id=person_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            profile=profile,
+            dependent_info=dependent_info,
+            primary_employee=primary_employee,
         )
 
         return await self._save_and_publish_events(person)

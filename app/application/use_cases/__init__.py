@@ -19,6 +19,7 @@ from app.application.use_cases.contract_use_cases import (
 from app.application.use_cases.person_use_cases import (
     ActivatePersonUseCase,
     CreateClientEmployeeUseCase,
+    CreateDependentUseCase,
     GetPersonUseCase,
     GetPersonsByTypeUseCase,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "CreateClientUseCase",
     "CreateClientEmployeeUseCase",
     "CreateContractUseCase",
+    "CreateDependentUseCase",
     "CreateTenantUseCase",
     "CreateUserUseCase",
     "GetClientUseCase",

@@ -71,6 +71,7 @@ class TestCreateClient:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Subsidiary Company",
+                "code": "SUB",
                 "contact_info": {"phone": "+1-555-777-8888"},
                 "parent_client_id": test_parent_client["id"],
             },
@@ -90,6 +91,7 @@ class TestCreateClient:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": test_client["name"],  # Same name as existing client
+                "code": "DUP",
                 "contact_info": {"phone": "+1-555-000-0000"},
             },
         )
@@ -119,6 +121,7 @@ class TestCreateClient:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "",
+                "code": "EMPT",
                 "contact_info": {"phone": "+1-555-000-0000"},
             },
         )

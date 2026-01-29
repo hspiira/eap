@@ -7,12 +7,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 
 import decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_contract_repository
+from app.api.dependencies import get_audit_event_handler, get_contract_repository
 from app.api.schemas.contract_schemas import (
     ContractCreate,
     ContractListResponse,
@@ -49,6 +49,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
 
@@ -97,9 +98,11 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
 @transactional()
 async def create_contract(
     data: ContractCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contract."""
@@ -120,6 +123,13 @@ async def create_contract(
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contract_response(contract)
 
 
@@ -131,12 +141,22 @@ async def create_contract(
 @transactional()
 async def activate_contract(
     contract_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contract."""
     contract = await ActivateContractUseCase(contract_repo).execute(
         ContractId(contract_id)
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -149,13 +169,23 @@ async def activate_contract(
 @transactional()
 async def sign_contract(
     contract_id: str,
-    request: ContractSignRequest,
+    request: Request,
+    body: ContractSignRequest,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Sign a contract."""
     contract = await SignContractUseCase(contract_repo).execute(
-        ContractId(contract_id), request.signed_by
+        ContractId(contract_id), body.signed_by
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -168,23 +198,33 @@ async def sign_contract(
 @transactional()
 async def renew_contract(
     contract_id: str,
-    request: ContractRenewRequest,
+    request: Request,
+    body: ContractRenewRequest,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Renew a contract."""
     new_rate = None
-    if request.new_rate:
+    if body.new_rate:
         new_rate = Money(
-            amount=decimal.Decimal(request.new_rate.amount),
-            currency=request.new_rate.currency,
+            amount=decimal.Decimal(body.new_rate.amount),
+            currency=body.new_rate.currency,
         )
 
     # Convert datetime to date for renew method
-    new_end_date = request.new_end_date.date()
+    new_end_date = body.new_end_date.date()
 
     contract = await RenewContractUseCase(contract_repo).execute(
         ContractId(contract_id), new_end_date, new_rate
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -197,13 +237,23 @@ async def renew_contract(
 @transactional()
 async def terminate_contract(
     contract_id: str,
-    request: ContractTerminateRequest,
+    request: Request,
+    body: ContractTerminateRequest,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a contract."""
     contract = await TerminateContractUseCase(contract_repo).execute(
-        ContractId(contract_id), request.reason
+        ContractId(contract_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -216,12 +266,22 @@ async def terminate_contract(
 @transactional()
 async def archive_contract(
     contract_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a contract."""
     contract = await ArchiveContractUseCase(contract_repo).execute(
         ContractId(contract_id)
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -234,12 +294,22 @@ async def archive_contract(
 @transactional()
 async def restore_contract(
     contract_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore a terminated or expired contract."""
     contract = await RestoreContractUseCase(contract_repo).execute(
         ContractId(contract_id)
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 
@@ -253,7 +323,10 @@ async def restore_contract(
 async def update_contract(
     contract_id: str,
     data: ContractUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update contract information."""
@@ -270,6 +343,13 @@ async def update_contract(
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contract_response(contract)
 
 
@@ -281,13 +361,23 @@ async def update_contract(
 @transactional()
 async def update_contract_payment_status(
     contract_id: str,
-    request: ContractUpdatePaymentStatus,
+    request: Request,
+    body: ContractUpdatePaymentStatus,
+    current_user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update contract payment status."""
     contract = await UpdateContractPaymentStatusUseCase(contract_repo).execute(
-        ContractId(contract_id), request.payment_status
+        ContractId(contract_id), body.payment_status
+    )
+    await audit_entity_operation(
+        entity=contract,
+        audit_handler=audit_handler,
+        tenant_id=contract.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_contract_response(contract)
 

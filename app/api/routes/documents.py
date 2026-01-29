@@ -5,12 +5,12 @@ FastAPI routes for Document operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_document_repository
+from app.api.dependencies import get_audit_event_handler, get_document_repository
 from app.api.schemas.document_schemas import (
     DocumentCreate,
     DocumentCreateVersion,
@@ -38,6 +38,7 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -88,10 +89,12 @@ def _to_document_response(document: DocumentEntity) -> DocumentResponse:
 @transactional()
 async def create_document(
     data: DocumentCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     uploaded_by: str | None = Query(None, description="User ID who uploaded"),
     current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new document."""
@@ -114,6 +117,13 @@ async def create_document(
         expires_at=data.expires_at,
         is_confidential=data.is_confidential,
     )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_document_response(document)
 
 
@@ -125,12 +135,22 @@ async def create_document(
 @transactional()
 async def publish_document(
     document_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a document (make it available)."""
     document = await PublishDocumentUseCase(document_repo).execute(
         DocumentId(document_id)
+    )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_document_response(document)
 
@@ -143,12 +163,22 @@ async def publish_document(
 @transactional()
 async def archive_document(
     document_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a document."""
     document = await ArchiveDocumentUseCase(document_repo).execute(
         DocumentId(document_id)
+    )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_document_response(document)
 
@@ -163,7 +193,10 @@ async def archive_document(
 async def create_document_version(
     document_id: str,
     data: DocumentCreateVersion,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new version of a document."""
@@ -177,6 +210,13 @@ async def create_document_version(
         file_size=data.file_size,
         mime_type=data.mime_type,
     )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_document_response(document)
 
 
@@ -189,7 +229,10 @@ async def create_document_version(
 async def update_document(
     document_id: str,
     data: DocumentUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update document metadata."""
@@ -197,6 +240,13 @@ async def update_document(
         DocumentId(document_id),
         name=data.name,
         description=data.description,
+    )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_document_response(document)
 
@@ -210,12 +260,22 @@ async def update_document(
 async def set_document_confidentiality(
     document_id: str,
     data: DocumentSetConfidentiality,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Set document confidentiality."""
     document = await SetDocumentConfidentialityUseCase(document_repo).execute(
         DocumentId(document_id), data.is_confidential
+    )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_document_response(document)
 
@@ -229,12 +289,22 @@ async def set_document_confidentiality(
 async def set_document_expiry(
     document_id: str,
     data: DocumentSetExpiry,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Set document expiry date."""
     document = await SetDocumentExpiryUseCase(document_repo).execute(
         DocumentId(document_id), data.expires_at
+    )
+    await audit_entity_operation(
+        entity=document,
+        audit_handler=audit_handler,
+        tenant_id=document.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_document_response(document)
 

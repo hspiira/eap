@@ -2,12 +2,12 @@
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_activity_repository
+from app.api.dependencies import get_audit_event_handler, get_activity_repository
 from app.api.schemas.activity_schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -25,6 +25,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -57,10 +58,12 @@ def _to_activity_response(activity: ActivityEntity) -> ActivityResponse:
 @transactional()
 async def create_activity(
     data: ActivityCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     created_by: str = Query(..., description="User ID who created the activity"),
     current_user: TokenData = Depends(get_current_user),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new activity."""
@@ -79,6 +82,13 @@ async def create_activity(
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
     )
+    await audit_entity_operation(
+        entity=activity,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_activity_response(activity)
 
 
@@ -91,7 +101,10 @@ async def create_activity(
 async def update_activity(
     activity_id: str,
     data: ActivityUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update an activity."""
@@ -101,6 +114,13 @@ async def update_activity(
         outcome=data.outcome,
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
+    )
+    await audit_entity_operation(
+        entity=activity,
+        audit_handler=audit_handler,
+        tenant_id=activity.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_activity_response(activity)
 

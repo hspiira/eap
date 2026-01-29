@@ -6,13 +6,13 @@ Follows hybrid approach: Commands use use cases, Queries use repositories direct
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_client_repository, get_contract_repository
+from app.api.dependencies import get_audit_event_handler, get_client_repository, get_contract_repository
 from app.api.schemas.client_schemas import (
     AddressSchema,
     ClientCreate,
@@ -58,6 +58,7 @@ from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -107,9 +108,11 @@ def _to_client_response(client: ClientEntity) -> ClientResponse:
 @transactional()
 async def create_client(
     data: ClientCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new client."""
@@ -141,6 +144,13 @@ async def create_client(
         parent_client_id=ClientId(data.parent_client_id) if data.parent_client_id else None,
     )
 
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_client_response(client)
 
 
@@ -152,14 +162,23 @@ async def create_client(
 @transactional()
 async def verify_client(
     client_id: str,
+    request: Request,
     verified_by: str = Query(..., description="User ID who verified the client"),
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a client."""
     client = await VerifyClientUseCase(client_repo).execute(
         ClientId(client_id), UserId(verified_by)
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -172,12 +191,21 @@ async def verify_client(
 @transactional()
 async def activate_client(
     client_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a client."""
     client = await ActivateClientUseCase(client_repo).execute(ClientId(client_id))
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_client_response(client)
 
 
@@ -189,14 +217,23 @@ async def activate_client(
 @transactional()
 async def deactivate_client(
     client_id: str,
-    request: ClientDeactivateRequest,
+    request: Request,
+    body: ClientDeactivateRequest,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a client."""
     client = await DeactivateClientUseCase(client_repo).execute(
-        ClientId(client_id), request.reason
+        ClientId(client_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -209,14 +246,23 @@ async def deactivate_client(
 @transactional()
 async def suspend_client(
     client_id: str,
-    request: ClientSuspendRequest,
+    request: Request,
+    body: ClientSuspendRequest,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a client."""
     client = await SuspendClientUseCase(client_repo).execute(
-        ClientId(client_id), request.reason
+        ClientId(client_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -229,14 +275,23 @@ async def suspend_client(
 @transactional()
 async def terminate_client(
     client_id: str,
-    request: ClientTerminateRequest,
+    request: Request,
+    body: ClientTerminateRequest,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a client."""
     client = await TerminateClientUseCase(client_repo).execute(
-        ClientId(client_id), request.reason
+        ClientId(client_id), body.reason
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -249,12 +304,21 @@ async def terminate_client(
 @transactional()
 async def archive_client(
     client_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a client."""
     client = await ArchiveClientUseCase(client_repo).execute(ClientId(client_id))
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_client_response(client)
 
 
@@ -266,12 +330,21 @@ async def archive_client(
 @transactional()
 async def restore_client(
     client_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted client."""
     client = await RestoreClientUseCase(client_repo).execute(ClientId(client_id))
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_client_response(client)
 
 
@@ -284,8 +357,10 @@ async def restore_client(
 async def update_client(
     client_id: str,
     data: ClientUpdate,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update client basic information."""
@@ -293,6 +368,13 @@ async def update_client(
         ClientId(client_id),
         name=data.name,
         preferred_contact_method=data.preferred_contact_method,
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -305,20 +387,29 @@ async def update_client(
 @transactional()
 async def update_client_contact_info(
     client_id: str,
-    request: ClientUpdateContactInfo,
+    data: ClientUpdateContactInfo,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update client contact information."""
     contact_info = ContactInfo(
-        phone=request.contact_info.phone,
-        email=Email(request.contact_info.email) if request.contact_info.email else None,
-        address=request.contact_info.address,
+        phone=data.contact_info.phone,
+        email=Email(data.contact_info.email) if data.contact_info.email else None,
+        address=data.contact_info.address,
     )
 
     client = await UpdateClientContactInfoUseCase(client_repo).execute(
         ClientId(client_id), contact_info
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 
@@ -331,23 +422,32 @@ async def update_client_contact_info(
 @transactional()
 async def update_client_billing_address(
     client_id: str,
-    request: ClientUpdateBillingAddress,
+    data: ClientUpdateBillingAddress,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update client billing address."""
     billing_address = None
-    if request.billing_address:
+    if data.billing_address:
         billing_address = Address(
-            street=request.billing_address.street,
-            city=request.billing_address.city,
-            country=request.billing_address.country,
-            postal_code=request.billing_address.postal_code,
+            street=data.billing_address.street,
+            city=data.billing_address.city,
+            country=data.billing_address.country,
+            postal_code=data.billing_address.postal_code,
         )
 
     client = await UpdateClientBillingAddressUseCase(client_repo).execute(
         ClientId(client_id), billing_address
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_client_response(client)
 

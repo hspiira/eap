@@ -6,12 +6,12 @@ Follows hybrid approach: Commands use use cases, Queries use repositories direct
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_user_repository
+from app.api.dependencies import get_audit_event_handler, get_user_repository
 from app.api.schemas.user_schemas import (
     UserBanRequest,
     UserCreate,
@@ -45,6 +45,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -85,9 +86,11 @@ def _to_user_response(user: UserEntity) -> UserResponse:
 @transactional()
 async def create_user(
     data: UserCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new user."""
@@ -109,6 +112,13 @@ async def create_user(
             timezone=data.timezone,
         )
 
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -120,12 +130,21 @@ async def create_user(
 @transactional()
 async def verify_user_email(
     user_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify user email address."""
     user = await VerifyUserEmailUseCase(user_repo).execute(UserId(user_id))
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -137,12 +156,21 @@ async def verify_user_email(
 @transactional()
 async def activate_user(
     user_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a user."""
     user = await ActivateUserUseCase(user_repo).execute(UserId(user_id))
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -154,13 +182,22 @@ async def activate_user(
 @transactional()
 async def suspend_user(
     user_id: str,
-    request: UserSuspendRequest,
+    request: Request,
+    body: UserSuspendRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a user."""
-    user = await SuspendUserUseCase(user_repo).execute(UserId(user_id), request.reason)
+    user = await SuspendUserUseCase(user_repo).execute(UserId(user_id), body.reason)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -172,13 +209,22 @@ async def suspend_user(
 @transactional()
 async def ban_user(
     user_id: str,
-    request: UserBanRequest,
+    request: Request,
+    body: UserBanRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Ban a user."""
-    user = await BanUserUseCase(user_repo).execute(UserId(user_id), request.reason)
+    user = await BanUserUseCase(user_repo).execute(UserId(user_id), body.reason)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -190,13 +236,22 @@ async def ban_user(
 @transactional()
 async def deactivate_user(
     user_id: str,
-    request: UserDeactivateRequest,
+    request: Request,
+    body: UserDeactivateRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a user."""
-    user = await DeactivateUserUseCase(user_repo).execute(UserId(user_id), request.reason)
+    user = await DeactivateUserUseCase(user_repo).execute(UserId(user_id), body.reason)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -208,13 +263,22 @@ async def deactivate_user(
 @transactional()
 async def terminate_user(
     user_id: str,
-    request: UserTerminateRequest,
+    request: Request,
+    body: UserTerminateRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a user."""
-    user = await TerminateUserUseCase(user_repo).execute(UserId(user_id), request.reason)
+    user = await TerminateUserUseCase(user_repo).execute(UserId(user_id), body.reason)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -226,14 +290,23 @@ async def terminate_user(
 @transactional()
 async def update_user_password(
     user_id: str,
-    request: UserUpdatePasswordRequest,
+    request: Request,
+    body: UserUpdatePasswordRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update user password."""
-    password_hash = _hash_password(request.password)
+    password_hash = _hash_password(body.password)
     user = await UpdateUserPasswordUseCase(user_repo).execute(UserId(user_id), password_hash)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -245,16 +318,25 @@ async def update_user_password(
 @transactional()
 async def update_user_preferences(
     user_id: str,
-    request: UserUpdatePreferencesRequest,
+    request: Request,
+    body: UserUpdatePreferencesRequest,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update user preferences."""
     user = await UpdateUserPreferencesUseCase(user_repo).execute(
         UserId(user_id),
-        preferred_language=request.preferred_language,
-        timezone=request.timezone,
+        preferred_language=body.preferred_language,
+        timezone=body.timezone,
+    )
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_user_response(user)
 
@@ -267,12 +349,21 @@ async def update_user_preferences(
 @transactional()
 async def enable_two_factor(
     user_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Enable two-factor authentication for a user."""
     user = await EnableTwoFactorUseCase(user_repo).execute(UserId(user_id))
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -284,12 +375,21 @@ async def enable_two_factor(
 @transactional()
 async def disable_two_factor(
     user_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Disable two-factor authentication for a user."""
     user = await DisableTwoFactorUseCase(user_repo).execute(UserId(user_id))
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -301,12 +401,21 @@ async def disable_two_factor(
 @transactional()
 async def record_user_login(
     user_id: str,
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Record user login (updates last_login_at)."""
     user = await RecordUserLoginUseCase(user_repo).execute(UserId(user_id))
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
