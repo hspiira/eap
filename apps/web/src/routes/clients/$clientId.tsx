@@ -47,6 +47,7 @@ import {
   UserCircle,
   Calendar,
   Star,
+  CheckCircle,
 } from 'lucide-react'
 
 const TABS = [
@@ -107,6 +108,10 @@ function ClientDetailPage() {
   const [sessions, setSessions] = useState<ServiceSession[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionsError, setSessionsError] = useState<string | null>(null)
+  const [clientStats, setClientStats] = useState<{ child_count?: number; contract_count?: number; is_verified?: boolean } | null>(null)
+  const [childClients, setChildClients] = useState<Client[]>([])
+  const [childClientsLoading, setChildClientsLoading] = useState(false)
+  const [lifecycleReasonModal, setLifecycleReasonModal] = useState<{ action: 'suspend' | 'terminate'; reason: string } | null>(null)
 
   const [activityModalOpen, setActivityModalOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
@@ -135,6 +140,41 @@ function ClientDetailPage() {
   useEffect(() => {
     fetchClient()
   }, [fetchClient])
+
+  const fetchStats = useCallback(async () => {
+    if (!clientId) return
+    try {
+      const stats = await clientsApi.getStats(clientId)
+      setClientStats(stats)
+    } catch {
+      setClientStats(null)
+    }
+  }, [clientId])
+
+  const fetchChildClients = useCallback(async () => {
+    if (!clientId) return
+    try {
+      setChildClientsLoading(true)
+      const res = await clientsApi.getChildren(clientId, { limit: 50 })
+      setChildClients(res.items ?? [])
+    } catch {
+      setChildClients([])
+    } finally {
+      setChildClientsLoading(false)
+    }
+  }, [clientId])
+
+  useEffect(() => {
+    if (clientId) fetchStats()
+  }, [clientId, fetchStats])
+
+  useEffect(() => {
+    if (client?.id && clientStats?.child_count && clientStats.child_count > 0) {
+      fetchChildClients()
+    } else {
+      setChildClients([])
+    }
+  }, [client?.id, clientStats?.child_count, fetchChildClients])
 
   useEffect(() => {
     if (!clientId) return
@@ -342,10 +382,63 @@ function ClientDetailPage() {
   ]
 
   const handleAction = async (action: string) => {
+    if (!clientId) return
     try {
       setActionLoading(true)
-      showSuccess(`Client ${action} action initiated`)
+      switch (action) {
+        case 'verify':
+          await clientsApi.verify(clientId)
+          showSuccess('Client marked as verified')
+          break
+        case 'activate':
+          await clientsApi.activate(clientId)
+          showSuccess('Client activated')
+          break
+        case 'deactivate':
+          await clientsApi.deactivate(clientId)
+          showSuccess('Client deactivated')
+          break
+        case 'archive':
+          await clientsApi.archive(clientId)
+          showSuccess('Client archived')
+          break
+        case 'restore':
+        case 'unarchive':
+          await clientsApi.restore(clientId)
+          showSuccess('Client restored')
+          break
+        case 'suspend':
+        case 'terminate':
+          setLifecycleReasonModal({ action: action as 'suspend' | 'terminate', reason: '' })
+          setActionLoading(false)
+          return
+        default:
+          showSuccess(`Client ${action} action initiated`)
+      }
       await fetchClient()
+      await fetchStats()
+    } catch (err: unknown) {
+      showError(err instanceof Error ? err.message : `Failed to ${action} client`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleLifecycleReasonConfirm = async () => {
+    if (!clientId || !lifecycleReasonModal || !lifecycleReasonModal.reason.trim()) return
+    const { action, reason } = lifecycleReasonModal
+    try {
+      setActionLoading(true)
+      if (action === 'suspend') {
+        await clientsApi.suspend(clientId, reason.trim())
+        showSuccess('Client suspended')
+      } else {
+        await clientsApi.terminate(clientId, reason.trim())
+        showSuccess('Client terminated')
+      }
+      setLifecycleReasonModal(null)
+      await fetchClient()
+      await fetchStats()
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : `Failed to ${action} client`)
     } finally {
@@ -417,13 +510,30 @@ function ClientDetailPage() {
             <h1 className="text-xl font-bold text-safe">{client.name}</h1>
             <button
               onClick={() => setEditClientModalOpen(true)}
-              className="p-1.5 text-safe hover:text-natural hover:bg-calm rounded-none transition-colors"
+              className="p-1.5 text-safe hover:text-natural hover:bg-gray-100 rounded-none transition-colors"
               aria-label="Edit client"
             >
               <Edit size={18} />
             </button>
           </div>
+          {client.is_verified && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-natural/10 border border-[0.5px] border-natural/30 text-natural text-sm">
+              <CheckCircle size={16} />
+              Verified
+            </span>
+          )}
           <StatusBadge status={client.status as BaseStatus} />
+          {!client.is_verified && (
+            <button
+              type="button"
+              onClick={() => handleAction('verify')}
+              disabled={actionLoading}
+              className="flex items-center gap-2 px-4 py-2 border border-[0.5px] border-natural rounded-none bg-safe hover:bg-safe-dark text-white transition-colors disabled:opacity-50"
+            >
+              <CheckCircle size={16} />
+              Verify
+            </button>
+          )}
           <LifecycleActions
             currentStatus={client.status}
             onAction={handleAction}
@@ -483,6 +593,9 @@ function ClientDetailPage() {
             peopleCount={people.length}
             contactsCount={contacts.length}
             contractsCount={contracts.length}
+            clientStats={clientStats}
+            childClients={childClients}
+            childClientsLoading={childClientsLoading}
             activities={activities}
             activitiesLoading={activitiesLoading}
             primaryContact={primaryContact}
@@ -493,6 +606,7 @@ function ClientDetailPage() {
             onLogActivity={() => setActivityModalOpen(true)}
             onViewActivity={(id) => navigate({ to: `/activities/${id}` })}
             onViewAllActivities={() => navigate({ to: '/activities' })}
+            onViewClient={(id) => navigate({ to: `/clients/${id}` })}
           />
         )}
 
@@ -518,7 +632,7 @@ function ClientDetailPage() {
             loading={contactsLoading}
             error={contactsError}
             onRetry={fetchContacts}
-            onRowClick={(c) => navigate({ to: `/contacts/${c.id}` })}
+            onRowClick={(c) => navigate({ to: '/settings/contacts/$contactId', params: { contactId: c.id } })}
             onAddContact={() => setContactModalOpen(true)}
           />
         )}
@@ -608,6 +722,48 @@ function ClientDetailPage() {
             onLoadingChange={setEditClientModalLoading}
           />
         </CreateModal>
+
+        {lifecycleReasonModal && (
+          <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-[0.5px] border-safe/30 max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-safe mb-2">
+                {lifecycleReasonModal.action === 'suspend' ? 'Suspend client' : 'Terminate client'}
+              </h3>
+              <p className="text-safe text-sm mb-4">
+                {lifecycleReasonModal.action === 'suspend'
+                  ? 'A reason is required to suspend this client.'
+                  : 'A reason is required to terminate this client. This action is permanent.'}
+              </p>
+              <textarea
+                value={lifecycleReasonModal.reason}
+                onChange={(e) =>
+                  setLifecycleReasonModal({ ...lifecycleReasonModal, reason: e.target.value })
+                }
+                placeholder="Enter reason..."
+                className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe mb-4 min-h-[80px]"
+                rows={3}
+              />
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setLifecycleReasonModal(null)}
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-white hover:bg-gray-100 text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLifecycleReasonConfirm}
+                  disabled={actionLoading || !lifecycleReasonModal.reason.trim()}
+                  className="px-4 py-2 bg-natural-dark hover:bg-natural text-white rounded-none transition-colors disabled:opacity-50"
+                >
+                  {actionLoading ? 'Processing...' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   )
@@ -628,6 +784,9 @@ function OverviewTab({
   peopleCount,
   contactsCount,
   contractsCount,
+  clientStats,
+  childClients,
+  childClientsLoading,
   activities,
   activitiesLoading,
   primaryContact,
@@ -638,6 +797,7 @@ function OverviewTab({
   onLogActivity,
   onViewActivity,
   onViewAllActivities,
+  onViewClient,
 }: {
   client: Client
   tags: ClientTag[]
@@ -653,6 +813,9 @@ function OverviewTab({
   peopleCount: number
   contactsCount: number
   contractsCount: number
+  clientStats: { child_count?: number; contract_count?: number; is_verified?: boolean } | null
+  childClients: Client[]
+  childClientsLoading: boolean
   activities: Activity[]
   activitiesLoading: boolean
   primaryContact: Contact | null
@@ -663,6 +826,7 @@ function OverviewTab({
   onLogActivity: () => void
   onViewActivity: (id: string) => void
   onViewAllActivities: () => void
+  onViewClient: (id: string) => void
 }) {
   return (
     <div className="space-y-6">
@@ -671,7 +835,7 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'people' }}
-          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <Users size={20} />
@@ -683,7 +847,7 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'contacts' }}
-          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <UserCircle size={20} />
@@ -694,20 +858,63 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'contracts' }}
-          className="bg-calm border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
         >
           <div className="flex items-center gap-2 text-safe mb-1">
             <FileText size={20} />
             <span className="text-sm font-medium">Contracts</span>
           </div>
-          <p className="text-2xl font-bold text-safe">{contractsCount}</p>
+          <p className="text-2xl font-bold text-safe">{clientStats?.contract_count ?? contractsCount}</p>
         </Link>
+        {(clientStats?.child_count ?? 0) > 0 && (
+          <div className="bg-white border border-[0.5px] border-safe/30 p-4">
+            <div className="flex items-center gap-2 text-safe mb-1">
+              <Building2 size={20} />
+              <span className="text-sm font-medium">Child clients</span>
+            </div>
+            <p className="text-2xl font-bold text-safe">{clientStats?.child_count ?? 0}</p>
+            <p className="text-xs text-safe-light">Sub-clients</p>
+          </div>
+        )}
       </div>
+
+      {/* Child clients list (when parent) */}
+      {(childClients.length > 0 || childClientsLoading) && (
+        <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+          <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+            <Building2 size={20} />
+            Child clients
+          </h2>
+          {childClientsLoading ? (
+            <div className="flex justify-center py-6">
+              <LoadingSpinner size="sm" />
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {childClients.map((c) => (
+                <li key={c.id} className="flex items-center justify-between py-2 border-b border-safe/20 last:border-0">
+                  <div>
+                    <p className="text-safe font-medium">{c.name}</p>
+                    {c.code && <p className="text-sm text-safe-light">Code: {c.code}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onViewClient(c.id)}
+                    className="text-natural hover:text-natural-dark text-sm font-medium"
+                  >
+                    View
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Summary + Primary contact + Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Building2 size={20} />
               Summary
@@ -719,6 +926,12 @@ function OverviewTab({
                   <StatusBadge status={client.status as BaseStatus} size="sm" />
                 </dd>
               </div>
+              {client.code && (
+                <div className="flex gap-2">
+                  <dt className="text-safe-light w-28">Code</dt>
+                  <dd className="text-safe">{client.code}</dd>
+                </div>
+              )}
               {(industryName || client.industry_id) && (
                 <div className="flex gap-2">
                   <dt className="text-safe-light w-28">Industry</dt>
@@ -741,15 +954,30 @@ function OverviewTab({
                   <dd className="text-safe">{client.contact_info.phone}</dd>
                 </div>
               )}
-              {client.address?.city && (
+              {client.contact_info?.address && (
                 <div className="flex gap-2">
                   <dt className="text-safe-light w-28 flex items-center gap-1">
-                    <MapPin size={14} /> Location
+                    <MapPin size={14} /> Contact address
+                  </dt>
+                  <dd className="text-safe">{client.contact_info.address}</dd>
+                </div>
+              )}
+              {client.billing_address && (client.billing_address.city || client.billing_address.country || client.billing_address.street) && (
+                <div className="flex gap-2">
+                  <dt className="text-safe-light w-28 flex items-center gap-1">
+                    <MapPin size={14} /> Billing address
                   </dt>
                   <dd className="text-safe">
-                    {client.address.city}
-                    {client.address.country ? `, ${client.address.country}` : ''}
+                    {[client.billing_address.street, client.billing_address.city, client.billing_address.postal_code, client.billing_address.country]
+                      .filter(Boolean)
+                      .join(', ')}
                   </dd>
+                </div>
+              )}
+              {client.preferred_contact_method && (
+                <div className="flex gap-2">
+                  <dt className="text-safe-light w-28">Preferred contact</dt>
+                  <dd className="text-safe capitalize">{client.preferred_contact_method}</dd>
                 </div>
               )}
               <div className="flex gap-2">
@@ -762,7 +990,7 @@ function OverviewTab({
           </div>
 
           {primaryContact && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Star size={20} className="text-nurturing" />
                 Primary contact
@@ -783,7 +1011,8 @@ function OverviewTab({
                   )}
                 </div>
                 <Link
-                  to={`/contacts/${primaryContact.id}`}
+                  to="/settings/contacts/$contactId"
+                  params={{ contactId: primaryContact.id }}
                   className="text-natural hover:text-natural-dark text-sm font-medium flex-shrink-0"
                 >
                   View
@@ -794,7 +1023,7 @@ function OverviewTab({
         </div>
 
         <div className="space-y-6">
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-safe flex items-center gap-2">
                 <ActivityIcon size={20} />
@@ -864,7 +1093,7 @@ function OverviewTab({
           </div>
 
           {hasContracts && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Calendar size={20} />
                 Upcoming sessions
@@ -911,7 +1140,7 @@ function OverviewTab({
       </div>
 
       {/* Tags */}
-      <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+      <div className="bg-white border border-[0.5px] border-safe/30 p-6">
         <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
           <Tag size={20} />
           Tags
@@ -960,7 +1189,7 @@ function OverviewTab({
                 id="addTag"
                 value={addTagId}
                 onChange={(e) => setAddTagId(e.target.value)}
-                className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe"
+                className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe"
               >
                 {addTagOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1003,11 +1232,15 @@ function PeopleTab({
   onRowClick: (p: Person) => void
   onAddPerson: () => void
 }) {
-  const getParentName = (parentId: string | null | undefined) => {
-    if (!parentId) return '—'
-    const parent = people.find((p) => p.id === parentId)
-    if (!parent) return '—'
-    return [parent.first_name, parent.last_name].filter(Boolean).join(' ')
+  const getFullName = (p: Person) => {
+    return [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')
+  }
+
+  const getPrimaryEmployeeName = (depInfo: Person['dependent_info']) => {
+    if (!depInfo?.primary_employee_id) return '—'
+    const primary = people.find((p) => p.id === depInfo.primary_employee_id)
+    if (!primary) return '—'
+    return getFullName(primary)
   }
 
   const columns: Column<Person>[] = [
@@ -1016,7 +1249,7 @@ function PeopleTab({
       header: 'Name',
       accessor: 'first_name',
       render: (_, row) => {
-        const name = [row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ')
+        const name = getFullName(row)
         return (
           <button
             onClick={() => onRowClick(row)}
@@ -1038,24 +1271,44 @@ function PeopleTab({
       ),
     },
     {
+      id: 'employee_code',
+      header: 'Employee Code',
+      accessor: 'employment_info',
+      render: (value, row) => {
+        if (row.person_type !== 'ClientEmployee') return '—'
+        const empInfo = value as Person['employment_info']
+        return <span className="text-safe">{empInfo?.employee_code || '—'}</span>
+      },
+    },
+    {
       id: 'dependent_of',
       header: 'Dependent of',
-      accessor: 'parent_person_id',
+      accessor: 'dependent_info',
       render: (v, row) => {
         if (row.person_type !== 'Dependent') return '—'
-        const name = getParentName(row.parent_person_id)
-        if (name === '—') return '—'
-        const parent = people.find((p) => p.id === row.parent_person_id)
-        return parent ? (
+        const depInfo = v as Person['dependent_info']
+        if (!depInfo?.primary_employee_id) return '—'
+        const primary = people.find((p) => p.id === depInfo.primary_employee_id)
+        if (!primary) return '—'
+        const name = getFullName(primary)
+        return (
           <button
-            onClick={() => onRowClick(parent)}
+            onClick={() => onRowClick(primary)}
             className="text-left text-natural hover:text-natural-dark font-medium"
           >
             {name}
           </button>
-        ) : (
-          <span className="text-safe">{name}</span>
         )
+      },
+    },
+    {
+      id: 'relationship',
+      header: 'Relationship',
+      accessor: 'dependent_info',
+      render: (v, row) => {
+        if (row.person_type !== 'Dependent') return '—'
+        const depInfo = v as Person['dependent_info']
+        return <span className="text-safe">{depInfo?.relationship || '—'}</span>
       },
     },
     {

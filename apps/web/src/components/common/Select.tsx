@@ -142,7 +142,7 @@ export function Select({
           type="button"
           onClick={handleToggle}
           disabled={disabled}
-          className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+          className={`w-full px-4 py-2 bg-white border-[0.5px] ${
             error ? 'border-nurturing' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural flex items-center justify-between ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
@@ -170,7 +170,7 @@ export function Select({
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-calm border border-[0.5px] border-safe/30 shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-[0.5px] border-safe/30 shadow-lg max-h-60 overflow-auto">
             {searchable && (
               <div className="p-2">
                 <input
@@ -179,7 +179,7 @@ export function Select({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full px-3 py-1.5 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+                  className="w-full px-3 py-1.5 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
                 />
               </div>
             )}
@@ -195,14 +195,14 @@ export function Select({
                       type="button"
                       onClick={() => !option.disabled && handleSelect(option.value)}
                       disabled={option.disabled}
-                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-calm transition-colors ${
+                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-100 transition-colors ${
                         selected ? 'bg-natural/10 text-natural' : 'text-safe'
                       } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {multiple && (
                         <div
                           className={`w-4 h-4 border border-[0.5px] border-safe/30 flex items-center justify-center ${
-                            selected ? 'bg-natural border-natural-dark' : 'bg-calm'
+                            selected ? 'bg-natural border-natural-dark' : 'bg-white'
                           }`}
                         >
                           {selected && <Check size={12} className="text-white" />}

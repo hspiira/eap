@@ -1,5 +1,5 @@
 /**
- * Create Client Person Page
+ * Add Person to Roster
  * Employee or Dependent only. PlatformStaff / ServiceProvider excluded.
  */
 
@@ -13,7 +13,8 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useToast } from '@/contexts/ToastContext'
 import { personsApi } from '@/api/endpoints/persons'
 import { clientsApi } from '@/api/endpoints/clients'
-import type { PersonType } from '@/types/enums'
+import type { PersonType, RelationType } from '@/types/enums'
+import type { Person } from '@/types/entities'
 import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/people/client-people/new')({
@@ -28,12 +29,23 @@ const personTypeOptions = [
   { value: 'Dependent', label: 'Dependent' },
 ]
 
+const relationshipOptions: Array<{ value: RelationType; label: string }> = [
+  { value: 'Child', label: 'Child' },
+  { value: 'Spouse', label: 'Spouse' },
+  { value: 'Parent', label: 'Parent' },
+  { value: 'Sibling', label: 'Sibling' },
+  { value: 'Grandparent', label: 'Grandparent' },
+  { value: 'Guardian', label: 'Guardian' },
+  { value: 'Other', label: 'Other' },
+]
+
 function CreateClientPersonPage() {
   const navigate = useNavigate()
   const { client_id: initialClientId } = Route.useSearch()
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; employee_code?: string | null }>>([])
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -50,10 +62,11 @@ function CreateClientPersonPage() {
     state: '',
     postal_code: '',
     country: '',
-    employee_id: '',
     department: '',
     position: '',
     hire_date: '',
+    primary_employee_id: '',
+    relationship: '' as RelationType | '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -73,11 +86,44 @@ function CreateClientPersonPage() {
     if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
   }, [initialClientId])
 
+  // Fetch employees when client is selected and person type is Dependent
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!formData.client_id || formData.person_type !== 'Dependent') {
+        setEmployees([])
+        return
+      }
+      try {
+        const res = await personsApi.list({
+          client_id: formData.client_id,
+          person_type: 'ClientEmployee',
+          limit: 200,
+        } as Record<string, unknown>)
+        const employeeList = res.items
+          .filter((p: Person) => p.person_type === 'ClientEmployee')
+          .map((p: Person) => ({
+            id: p.id,
+            name: [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' '),
+            employee_code: p.employment_info?.employee_code,
+          }))
+        setEmployees(employeeList)
+      } catch (err) {
+        console.error('Error fetching employees:', err)
+        setEmployees([])
+      }
+    }
+    fetchEmployees()
+  }, [formData.client_id, formData.person_type])
+
   const validate = () => {
     const next: Record<string, string> = {}
     if (!formData.first_name.trim()) next.first_name = 'First name is required'
     if (!formData.last_name.trim()) next.last_name = 'Last name is required'
     if (!formData.client_id) next.client_id = 'Client is required'
+    if (formData.person_type === 'Dependent') {
+      if (!formData.primary_employee_id) next.primary_employee_id = 'Primary employee is required'
+      if (!formData.relationship) next.relationship = 'Relationship is required'
+    }
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -113,20 +159,27 @@ function CreateClientPersonPage() {
           country: formData.country.trim() || null,
         }
       }
-      if (formData.person_type === 'ClientEmployee' && (formData.employee_id || formData.department || formData.position || formData.hire_date)) {
+      if (formData.person_type === 'ClientEmployee' && (formData.department || formData.position || formData.hire_date)) {
         ;(personData as any).employment_info = {
-          employee_id: formData.employee_id.trim() || null,
           department: formData.department.trim() || null,
           position: formData.position.trim() || null,
           hire_date: formData.hire_date || null,
         }
       }
 
+      if (formData.person_type === 'Dependent' && formData.primary_employee_id && formData.relationship) {
+        ;(personData as any).dependent_info = {
+          primary_employee_id: formData.primary_employee_id,
+          relationship: formData.relationship,
+          guardian_id: null,
+        }
+      }
+
       await personsApi.create(personData as any)
-      showSuccess('Client person created')
+      showSuccess('Person added to roster')
       navigate({ to: '/people/client-people' })
     } catch (err: any) {
-      showError(err?.message || 'Failed to create client person')
+      showError(err?.message || 'Failed to add person')
       if (err?.details) {
         const map: Record<string, string> = {}
         err.details.forEach((d: any) => { if (d.field) map[d.field] = d.message })
@@ -150,12 +203,12 @@ function CreateClientPersonPage() {
           className="flex items-center gap-2 text-safe hover:text-natural mb-6 transition-colors"
         >
           <ArrowLeft size={18} />
-          <span>Back to Client people</span>
+          <span>Back to Roster</span>
         </button>
 
-        <h1 className="text-3xl font-bold text-safe mb-6">Add client person</h1>
+        <h1 className="text-3xl font-bold text-safe mb-6">Add person to roster</h1>
 
-        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe/30 p-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-[0.5px] border-safe/30 p-6">
           <h2 className="text-lg font-semibold text-safe mb-4">Basic</h2>
 
           <Select
@@ -238,12 +291,48 @@ function CreateClientPersonPage() {
           {formData.person_type === 'ClientEmployee' && (
             <>
               <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Employment (optional)</h2>
-              <FormField label="Employee ID" name="employee_id" value={formData.employee_id} onChange={(e) => setFormData((p) => ({ ...p, employee_id: e.target.value }))} />
+              <p className="text-sm text-safe-light mb-4">Employee code will be auto-generated by the system.</p>
               <div className="grid grid-cols-2 gap-4">
                 <FormField label="Department" name="department" value={formData.department} onChange={(e) => setFormData((p) => ({ ...p, department: e.target.value }))} />
                 <FormField label="Position" name="position" value={formData.position} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} />
               </div>
               <DatePicker label="Hire date" name="hire_date" value={formData.hire_date} onChange={(v) => setFormData((p) => ({ ...p, hire_date: v }))} />
+            </>
+          )}
+
+          {formData.person_type === 'Dependent' && (
+            <>
+              <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Dependent Information</h2>
+              <Select
+                label="Primary Employee"
+                name="primary_employee_id"
+                value={formData.primary_employee_id}
+                onChange={(v) => { setFormData((p) => ({ ...p, primary_employee_id: v as string })); if (errors.primary_employee_id) setErrors((e) => ({ ...e, primary_employee_id: '' })) }}
+                options={[
+                  { value: '', label: 'Select primary employee (required)' },
+                  ...employees.map((e) => ({
+                    value: e.id,
+                    label: e.employee_code ? `${e.name} (${e.employee_code})` : e.name,
+                  })),
+                ]}
+                error={errors.primary_employee_id}
+                required
+                placeholder="Select primary employee"
+                disabled={!formData.client_id}
+              />
+              <Select
+                label="Relationship"
+                name="relationship"
+                value={formData.relationship}
+                onChange={(v) => { setFormData((p) => ({ ...p, relationship: v as RelationType })); if (errors.relationship) setErrors((e) => ({ ...e, relationship: '' })) }}
+                options={[
+                  { value: '', label: 'Select relationship (required)' },
+                  ...relationshipOptions,
+                ]}
+                error={errors.relationship}
+                required
+                placeholder="Select relationship"
+              />
             </>
           )}
 

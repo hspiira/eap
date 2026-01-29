@@ -6,7 +6,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/clients/new')({
   beforeLoad: () => {
-    throw redirect({ to: '/clients' })
+    throw redirect({ to: '/clients', replace: true })
   },
   component: () => null,
 })

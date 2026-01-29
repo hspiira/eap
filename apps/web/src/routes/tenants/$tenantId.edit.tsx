@@ -134,7 +134,7 @@ function EditTenantPage() {
 
         <h1 className="text-3xl font-bold text-safe mb-6">Edit Tenant</h1>
 
-        <form onSubmit={handleSubmit} className="bg-calm border border-[0.5px] border-safe/30 p-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-[0.5px] border-safe/30 p-6">
           <FormField
             label="Tenant Name"
             name="name"
@@ -152,7 +152,7 @@ function EditTenantPage() {
             <label className="block text-safe text-sm font-medium mb-2">
               Tenant Code
             </label>
-            <div className="px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe-light">
+            <div className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe-light">
               {tenant.code || 'N/A'}
             </div>
             <p className="mt-1 text-xs text-safe-light">

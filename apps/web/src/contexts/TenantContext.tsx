@@ -1,10 +1,3 @@
-/**
- * Tenant Context
- * Provides tenant state and management. Uses Zustand tenant store as source of truth.
- * @see docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context, GET /tenants/{tenant_id}, store tenant_id
- * @see docs/IMPLEMENTATION_PLAN.md – Phase 1.2 Tenant Context Management
- */
-
 import { createContext, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { tenantsApi } from '@/api/endpoints/tenants'

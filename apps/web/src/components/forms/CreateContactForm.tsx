@@ -1,8 +1,3 @@
-/**
- * Create Contact Form
- * Used inside CreateModal on contacts list page
- */
-
 import { useState, useEffect } from 'react'
 import { FormField } from '@/components/common/FormField'
 import { FormAccordionSection } from '@/components/common/FormAccordionSection'

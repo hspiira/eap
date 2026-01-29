@@ -56,9 +56,8 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-calm border border-[0.5px] border-safe/30 max-w-md w-full">
+      <div className="bg-white border border-[0.5px] border-safe/30 max-w-md w-full">
         <div className="p-6">
-          {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <AlertTriangle
@@ -70,22 +69,20 @@ export function ConfirmDialog({
             <button
               onClick={onClose}
               disabled={loading}
-              className="p-1 hover:bg-calm transition-colors rounded-none text-safe"
+              className="p-1 hover:bg-gray-100 transition-colors rounded-none text-safe"
               aria-label="Close"
             >
               <X size={20} />
             </button>
           </div>
 
-          {/* Message */}
           <p className="text-safe mb-6">{message}</p>
 
-          {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 bg-calm hover:bg-calm-dark text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-white hover:bg-gray-100 text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
             >
               {cancelLabel}
             </button>

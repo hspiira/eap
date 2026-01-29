@@ -46,8 +46,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-screen bg-calm flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-calm p-8 rounded-none border border-[0.5px] border-safe/30">
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-white p-8 rounded-none border border-[0.5px] border-safe/30">
             <div className="text-center">
               <AlertCircle size={48} className="text-nurturing mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-safe mb-2">Something went wrong</h1>
@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </p>
               
               {this.state.error && import.meta.env.DEV && (
-                <div className="mb-6 p-3 bg-calm border-[0.5px] border-safe/30 rounded-none text-left">
+                <div className="mb-6 p-3 bg-white border-[0.5px] border-safe/30 rounded-none text-left">
                   <p className="text-safe text-xs font-mono break-all">
                     {this.state.error.message}
                   </p>

@@ -14,7 +14,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { personsApi } from '@/api/endpoints/persons'
 import type { Person } from '@/types/entities'
 import type { BaseStatus, PersonType } from '@/types/enums'
-import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users } from 'lucide-react'
+import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users, Link as LinkIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/persons/$personId')({
   component: PersonDetailPage,
@@ -25,6 +25,7 @@ function PersonDetailPage() {
   const navigate = useNavigate()
   const { showSuccess, showError } = useToast()
   const [person, setPerson] = useState<Person | null>(null)
+  const [primaryEmployee, setPrimaryEmployee] = useState<Person | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,6 +36,18 @@ function PersonDetailPage() {
       setError(null)
       const data = await personsApi.getById(personId)
       setPerson(data)
+      
+      // If this is a dependent, fetch the primary employee
+      if (data.person_type === 'Dependent' && data.dependent_info?.primary_employee_id) {
+        try {
+          const primary = await personsApi.getById(data.dependent_info.primary_employee_id)
+          setPrimaryEmployee(primary)
+        } catch (err) {
+          console.error('Failed to load primary employee:', err)
+        }
+      } else {
+        setPrimaryEmployee(null)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load person')
       showError('Failed to load person')
@@ -102,7 +115,7 @@ function PersonDetailPage() {
   }
 
   const backTo = person.person_type === 'ServiceProvider' ? '/service-providers' : '/people/client-people'
-  const backLabel = person.person_type === 'ServiceProvider' ? 'Back to Service providers' : 'Back to Client people'
+  const backLabel = person.person_type === 'ServiceProvider' ? 'Back to Service providers' : 'Back to Roster'
 
   return (
     <AppLayout>
@@ -142,7 +155,7 @@ function PersonDetailPage() {
         {/* Person Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Basic Information */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <User size={20} />
               Basic Information
@@ -181,7 +194,7 @@ function PersonDetailPage() {
 
           {/* Contact Information */}
           {person.contact_info && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Phone size={20} />
                 Contact Information
@@ -217,12 +230,18 @@ function PersonDetailPage() {
 
           {/* Employment Information */}
           {person.employment_info && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Briefcase size={20} />
                 Employment Information
               </h2>
               <dl className="space-y-3">
+                {person.employment_info.employee_code && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Employee Code</dt>
+                    <dd className="text-safe mt-1">{person.employment_info.employee_code}</dd>
+                  </div>
+                )}
                 {person.employment_info.employee_id && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Employee ID</dt>
@@ -249,6 +268,14 @@ function PersonDetailPage() {
                     </dd>
                   </div>
                 )}
+                {person.employment_info.end_date && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">End Date</dt>
+                    <dd className="text-safe mt-1">
+                      {new Date(person.employment_info.end_date).toLocaleDateString()}
+                    </dd>
+                  </div>
+                )}
                 {person.employment_info.work_status && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Work Status</dt>
@@ -259,9 +286,50 @@ function PersonDetailPage() {
             </div>
           )}
 
+          {/* Dependent Information */}
+          {person.person_type === 'Dependent' && person.dependent_info && (
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+              <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+                <LinkIcon size={20} />
+                Dependent Information
+              </h2>
+              <dl className="space-y-3">
+                {person.dependent_info.primary_employee_id && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Primary Employee</dt>
+                    <dd className="text-safe mt-1">
+                      {primaryEmployee ? (
+                        <button
+                          onClick={() => navigate({ to: `/persons/${person.dependent_info?.primary_employee_id}` })}
+                          className="text-natural hover:text-natural-dark font-medium"
+                        >
+                          {getFullName(primaryEmployee)}
+                        </button>
+                      ) : (
+                        <span>Loading...</span>
+                      )}
+                    </dd>
+                  </div>
+                )}
+                {person.dependent_info.relationship && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Relationship</dt>
+                    <dd className="text-safe mt-1">{person.dependent_info.relationship}</dd>
+                  </div>
+                )}
+                {person.dependent_info.guardian_id && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Guardian</dt>
+                    <dd className="text-safe mt-1">{person.dependent_info.guardian_id}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
+
           {/* License Information */}
           {person.license_info && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Shield size={20} />
                 License Information
@@ -307,7 +375,7 @@ function PersonDetailPage() {
 
           {/* Emergency Contact */}
           {person.emergency_contact && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Users size={20} />
                 Emergency Contact
@@ -337,7 +405,7 @@ function PersonDetailPage() {
 
           {/* Address */}
           {person.address && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <MapPin size={20} />
                 Address
@@ -378,7 +446,7 @@ function PersonDetailPage() {
           )}
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata

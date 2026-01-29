@@ -199,7 +199,7 @@ function ActivityDetailPage() {
         </div>
 
         {editing ? (
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6 max-w-2xl">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6 max-w-2xl">
             <h2 className="text-lg font-semibold text-safe mb-4">Edit Activity</h2>
             <div className="space-y-4">
               <Select
@@ -234,7 +234,7 @@ function ActivityDetailPage() {
                   type="datetime-local"
                   value={formData.occurred_at}
                   onChange={(e) => setFormData((p) => ({ ...p, occurred_at: e.target.value }))}
-                  className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural"
+                  className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural"
                 />
               </div>
               <FormField
@@ -250,7 +250,7 @@ function ActivityDetailPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4">Details</h2>
               <dl className="space-y-3">
                 <div>
@@ -290,7 +290,7 @@ function ActivityDetailPage() {
               </dl>
             </div>
             {(activity.description || activity.created_at) && (
-              <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+              <div className="bg-white border border-[0.5px] border-safe/30 p-6">
                 <h2 className="text-lg font-semibold text-safe mb-4">Description &amp; meta</h2>
                 {activity.description && (
                   <p className="text-safe mb-4 whitespace-pre-wrap">{activity.description}</p>

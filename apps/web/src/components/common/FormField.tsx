@@ -76,7 +76,7 @@ export function FormField({
                   placeholder={placeholder}
                   disabled={disabled}
                   required={required}
-                  className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+                  className={`w-full px-4 py-2 bg-white border-[0.5px] ${
                     error ? 'border-nurturing' : 'border-safe/30'
                   } rounded-none focus:outline-none focus:border-natural ${
                     disabled ? 'opacity-50 cursor-not-allowed' : ''
@@ -95,7 +95,7 @@ export function FormField({
                 required={required}
                 min={min}
                 max={max}
-                className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+                className={`w-full px-4 py-2 bg-white border-[0.5px] ${
                   error ? 'border-nurturing' : 'border-safe/30'
                 } rounded-none focus:outline-none focus:border-natural ${
                   disabled ? 'opacity-50 cursor-not-allowed' : ''
@@ -129,7 +129,7 @@ export function FormField({
           required={required}
           disabled={disabled}
           rows={rows}
-          className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+          className={`w-full px-4 py-2 bg-white border-[0.5px] ${
             error ? 'border-nurturing' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
@@ -161,7 +161,7 @@ export function FormField({
         disabled={disabled}
         min={min}
         max={max}
-        className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+        className={`w-full px-4 py-2 bg-white border-[0.5px] ${
           error ? 'border-nurturing' : 'border-safe/30'
         } rounded-none focus:outline-none focus:border-natural ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''

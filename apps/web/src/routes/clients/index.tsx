@@ -13,7 +13,8 @@ import { CreateModal } from '@/components/common/CreateModal'
 import { CreateClientForm } from '@/components/forms/CreateClientForm'
 import { useTenant } from '@/hooks/useTenant'
 import { clientsApi } from '@/api/endpoints/clients'
-import type { Client } from '@/types/entities'
+import { industriesApi } from '@/api/endpoints/industries'
+import type { Client, Industry } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
 
 export const Route = createFileRoute('/clients/')({
@@ -35,6 +36,8 @@ function ClientsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
+  const [industries, setIndustries] = useState<Industry[]>([])
+  const [industriesMap, setIndustriesMap] = useState<Map<string, Industry>>(new Map())
 
   const fetchClients = useCallback(async () => {
     try {
@@ -83,6 +86,37 @@ function ClientsPage() {
     }
     fetchClients()
   }, [tenantLoading, currentTenant, fetchClients])
+
+  // Fetch industries for lookup
+  useEffect(() => {
+    const fetchIndustries = async () => {
+      if (!currentTenant) {
+        setIndustries([])
+        setIndustriesMap(new Map())
+        return
+      }
+      try {
+        const res = await industriesApi.list({
+          tenant_id: currentTenant.id,
+          page: 1,
+          limit: 500,
+        })
+        const industriesList = res.items || []
+        setIndustries(industriesList)
+        // Create a map for quick lookup
+        const map = new Map<string, Industry>()
+        industriesList.forEach((ind) => {
+          map.set(ind.id, ind)
+        })
+        setIndustriesMap(map)
+      } catch (err) {
+        console.error('Error fetching industries:', err)
+      }
+    }
+    if (!tenantLoading && currentTenant) {
+      fetchIndustries()
+    }
+  }, [tenantLoading, currentTenant])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
@@ -136,7 +170,15 @@ function ClientsPage() {
       header: 'Industry',
       accessor: 'industry_id',
       sortable: true,
-      render: (value) => (value ? <span>{value as string}</span> : <span className="text-safe-light">-</span>),
+      render: (value) => {
+        if (!value) return <span className="text-safe-light">-</span>
+        const industry = industriesMap.get(value as string)
+        return industry ? (
+          <span className="text-safe">{industry.name}</span>
+        ) : (
+          <span className="text-safe-light">-</span>
+        )
+      },
     },
     {
       id: 'contact_info',
@@ -170,7 +212,7 @@ function ClientsPage() {
     return (
       <AppLayout>
         <div className="max-w-7xl mx-auto">
-          <div className="p-6 bg-calm border border-[0.5px] border-safe/30 text-safe">
+          <div className="p-6 bg-white border border-[0.5px] border-safe/30 text-safe">
             <p className="font-medium">No organization selected</p>
             <p className="text-sm text-safe-light mt-1">
               Log in with a tenant code to view clients, or create a tenant first.

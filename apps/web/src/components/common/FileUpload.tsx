@@ -122,7 +122,7 @@ export function FileUpload({
           ${isDragging ? 'border-natural bg-natural/10' : 'border-safe/30'}
           ${error || dragError ? 'border-nurturing' : ''}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-natural'}
-          ${value ? 'bg-calm' : 'bg-calm/50'}
+          ${value ? 'bg-white' : 'bg-gray-50'}
         `}
       >
         <input

@@ -144,7 +144,7 @@ function ContractDetailPage() {
         {/* Contract Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Contract Details */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <FileText size={20} />
               Contract Details
@@ -193,7 +193,7 @@ function ContractDetailPage() {
           </div>
 
           {/* Billing Information */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <DollarSign size={20} />
               Billing Information
@@ -231,7 +231,7 @@ function ContractDetailPage() {
           </div>
 
           {/* Renewal History */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6 md:col-span-2">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6 md:col-span-2">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <RefreshCw size={20} />
               Renewal History
@@ -243,7 +243,7 @@ function ContractDetailPage() {
           </div>
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata

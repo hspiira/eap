@@ -1,11 +1,7 @@
-/**
- * Contact Detail Page
- * Displays contact information, lifecycle actions, and set-as-primary
- */
-
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LifecycleActions } from '@/components/common/LifecycleActions'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -15,9 +11,9 @@ import { contactsApi } from '@/api/endpoints/contacts'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Contact } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
-import { Edit, UserCircle, Building2, Mail, Phone, Star } from 'lucide-react'
+import { UserCircle, Building2, Mail, Phone, Star } from 'lucide-react'
 
-export const Route = createFileRoute('/contacts/$contactId')({
+export const Route = createFileRoute('/settings/contacts/$contactId')({
   component: ContactDetailPage,
 })
 
@@ -120,15 +116,24 @@ function ContactDetailPage() {
   }
 
   const ci = contact.contact_info
+  const contactName = `${contact.first_name} ${contact.last_name}`.trim()
 
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto">
+        <Breadcrumb
+          items={[
+            { label: 'Settings', href: '/settings' },
+            { label: 'Contacts', href: '/settings?tab=contacts' },
+            { label: contactName },
+          ]}
+          className="mb-2"
+        />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-safe mb-2 flex items-center gap-2">
               <UserCircle size={28} />
-              {`${contact.first_name} ${contact.last_name}`.trim()}
+              {contactName}
               {contact.is_primary && (
                 <Star size={20} className="text-natural" fill="currentColor" title="Primary contact" />
               )}
@@ -160,18 +165,11 @@ function ContactDetailPage() {
                 <span>Set as Primary</span>
               </button>
             )}
-            <button
-              onClick={() => navigate({ to: `/contacts/${contactId}/edit` })}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
-            >
-              <Edit size={18} />
-              <span>Edit</span>
-            </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <UserCircle size={20} />
               Contact Details
@@ -179,7 +177,7 @@ function ContactDetailPage() {
             <dl className="space-y-3">
               <div>
                 <dt className="text-sm font-medium text-safe-light">Name</dt>
-                <dd className="text-safe mt-1">{`${contact.first_name} ${contact.last_name}`.trim()}</dd>
+                <dd className="text-safe mt-1">{contactName}</dd>
               </div>
               {contact.title && (
                 <div>
@@ -201,12 +199,13 @@ function ContactDetailPage() {
                 <dt className="text-sm font-medium text-safe-light">Client</dt>
                 <dd className="text-safe mt-1">
                   {client ? (
-                    <button
-                      onClick={() => navigate({ to: `/clients/${contact.client_id}` })}
+                    <Link
+                      to="/clients/$clientId"
+                      params={{ clientId: contact.client_id }}
                       className="text-natural hover:text-natural-dark font-medium"
                     >
                       {client.name}
-                    </button>
+                    </Link>
                   ) : (
                     contact.client_id
                   )}
@@ -215,7 +214,7 @@ function ContactDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Mail size={20} />
               Contact Info
@@ -258,7 +257,7 @@ function ContactDetailPage() {
             )}
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Metadata</h2>
             <dl className="space-y-3">
               <div>

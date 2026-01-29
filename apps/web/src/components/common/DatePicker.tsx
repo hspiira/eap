@@ -55,7 +55,7 @@ export function DatePicker({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className={`w-full px-4 py-2 bg-calm border-[0.5px] ${
+          className={`w-full px-4 py-2 bg-white border-[0.5px] ${
             error ? 'border-nurturing' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''

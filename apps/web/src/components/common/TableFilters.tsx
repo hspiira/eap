@@ -95,7 +95,7 @@ export function TableFilters({
             value={localSearch}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
           />
         </div>
       )}
@@ -105,7 +105,7 @@ export function TableFilters({
         <select
           value={statusFilter.value}
           onChange={(e) => statusFilter.onChange(e.target.value)}
-          className="px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural shrink-0"
+          className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural shrink-0"
         >
           <option value="">All Statuses</option>
           {statusFilter.options.map((option) => (
@@ -123,14 +123,14 @@ export function TableFilters({
             type="date"
             value={dateRangeFilter.startDate || ''}
             onChange={(e) => dateRangeFilter.onStartDateChange(e.target.value)}
-            className="px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
             placeholder="Start date"
           />
           <input
             type="date"
             value={dateRangeFilter.endDate || ''}
             onChange={(e) => dateRangeFilter.onEndDateChange(e.target.value)}
-            className="px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
             placeholder="End date"
           />
         </div>
@@ -146,7 +146,7 @@ export function TableFilters({
             id={filter.id}
             value={filter.value}
             onChange={(e) => filter.onChange(e.target.value)}
-            className="px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
           >
             {filter.options.map((option) => (
               <option key={option.value} value={option.value}>

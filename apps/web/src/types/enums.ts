@@ -184,6 +184,18 @@ export enum ActivityType {
 }
 
 /**
+ * Relationship types for dependents
+ */
+export type RelationType =
+  | 'Child'
+  | 'Spouse'
+  | 'Parent'
+  | 'Sibling'
+  | 'Grandparent'
+  | 'Guardian'
+  | 'Other'
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {

@@ -1,8 +1,3 @@
-/**
- * Application Layout
- * Sidebar navigation layout with dark theme
- */
-
 import { useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,7 +16,6 @@ import {
   LogOut,
   Settings,
   Link as LinkIcon,
-  Phone,
   History,
   Building2,
 } from 'lucide-react'
@@ -45,14 +39,6 @@ type NavCategory = {
   items: NavItem[]
 }
 
-/**
- * Grouped navigation – not everything is a top-level module.
- * Overview: entry point
- * People: clients, contacts, persons (who we serve / who works for us)
- * Engagement & Delivery: contracts → services → assignments → sessions, activities
- * Content & Insights: documents, KPIs
- * Administration: users, audit (tenant management is in a separate app)
- */
 const navigationCategories: NavCategory[] = [
   {
     id: 'overview',
@@ -66,11 +52,10 @@ const navigationCategories: NavCategory[] = [
   {
     id: 'people',
     label: 'People',
-    description: 'Manage clients, their contacts, tags, and client people (employees and dependents).',
+    description: 'Manage clients, their contacts, tags, and roster (employees and dependents).',
     items: [
       { path: '/clients', label: 'Clients', icon: UserCircle },
-      { path: '/contacts', label: 'Contacts', icon: Phone },
-      { path: '/people/client-people', label: 'Client people', icon: UserCircle },
+      { path: '/people/client-people', label: 'Roster', icon: UserCircle },
     ],
   },
   {
@@ -142,9 +127,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigationItems = getNavigationItems()
 
   return (
-    <div className="min-h-screen bg-calm flex flex-col">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-calm border-b border-[0.5px] border-safe/30">
+    <div className="bg-white flex flex-col">
+      <header className="sticky top-0 z-30 bg-white border-b border-[0.5px] border-safe/30">
         <div className="flex items-center justify-between px-6 h-16">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -161,7 +145,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Menu size={20} />
           </button>
           <div className="flex-1" />
-          {/* Tenant indicator */}
           <div className="flex items-center gap-2 mr-4">
             {tenantLoading ? (
               <span className="text-sm text-safe-light">Loading…</span>
@@ -173,7 +156,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     const t = availableTenants.find((x) => x.id === e.target.value)
                     if (t) setCurrentTenant(t)
                   }}
-                  className="text-sm bg-calm border border-[0.5px] border-safe/30 text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
+                  className="text-sm bg-white border border-[0.5px] border-safe/30 text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
                   aria-label="Current organization"
                 >
                   {availableTenants.map((tenant) => (
@@ -201,20 +184,17 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content Area with Sidebar */}
       <div className="flex flex-1">
-        {/* Sidebar */}
         <aside
           className={`${
             sidebarOpen ? 'w-64' : 'w-0'
-          } hidden lg:block bg-calm transition-all duration-300 ease-in-out overflow-hidden`}
+          } hidden lg:block bg-white transition-all duration-300 ease-in-out overflow-hidden`}
         >
-          <div className="flex flex-col h-[calc(100vh-4rem)] ml-4">
+          <div className="flex flex-col ml-4">
             <div className="p-4">
               <h2 className="text-base font-semibold text-safe">Evexía</h2>
             </div>
 
-            {/* Navigation */}
             <nav className="flex-1 overflow-y-auto py-1">
               {navigationItems.map((item) => {
                 if ('type' in item && item.type === 'divider') {
@@ -263,15 +243,14 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </aside>
 
-      {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
         <>
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <aside className="fixed left-0 top-16 h-full w-64 bg-calm z-50 lg:hidden overflow-y-auto">
-            <div className="flex flex-col h-full">
+          <aside className="fixed left-0 top-16 h-full w-64 bg-white z-50 lg:hidden overflow-y-auto">
+              <div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-4">
                 <h2 className="text-base font-semibold text-safe">Evexía</h2>
                 <button
@@ -283,7 +262,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </button>
               </div>
 
-              {/* Navigation */}
               <nav className="flex-1 py-1 ml-4">
                 {navigationItems.map((item) => {
                   if ('type' in item && item.type === 'divider') {
@@ -335,7 +313,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         </>
       )}
 
-        {/* Main Content Area */}
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>

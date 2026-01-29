@@ -157,7 +157,7 @@ function ServiceAssignmentDetailPage() {
         {/* Assignment Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Assignment Details */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Link size={20} />
               Assignment Details
@@ -203,7 +203,7 @@ function ServiceAssignmentDetailPage() {
           </div>
 
           {/* Date Information */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Date Information
@@ -231,7 +231,7 @@ function ServiceAssignmentDetailPage() {
           </div>
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Package size={20} />
               Metadata

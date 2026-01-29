@@ -28,7 +28,7 @@ export function IndustryDetailPanel({
 }: IndustryDetailPanelProps) {
   if (loading) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-calm p-6">
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
         <div className="flex items-center justify-center flex-1">
           <LoadingSpinner size="lg" />
         </div>
@@ -38,7 +38,7 @@ export function IndustryDetailPanel({
 
   if (error) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-calm p-6">
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
         <p className="text-nurturing font-medium mb-2">Error loading industry</p>
         <p className="text-safe-light text-sm mb-4">{error}</p>
         <button
@@ -53,17 +53,17 @@ export function IndustryDetailPanel({
 
   if (!industry) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-calm p-6">
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
         <p className="text-safe-light text-sm">Select an industry to view details.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 border border-[0.5px] border-safe/30 bg-calm overflow-auto">
+    <div className="flex flex-col h-full min-h-0 border border-[0.5px] border-safe/30 bg-white overflow-auto">
       <div className="p-4 border-b border-safe/20">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-calm border border-[0.5px] border-safe/30">
+          <div className="p-2 bg-white border border-[0.5px] border-safe/30">
             <Folder size={22} className="text-natural" />
           </div>
           <div>

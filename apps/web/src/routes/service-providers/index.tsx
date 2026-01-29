@@ -1,6 +1,6 @@
 /**
  * Service Providers List Page
- * ServiceProvider only. PlatformStaff excluded (users). Client people → /people/client-people.
+ * ServiceProvider only. PlatformStaff excluded (users). Roster → /people/client-people.
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'

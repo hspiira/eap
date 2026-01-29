@@ -254,7 +254,7 @@ function DocumentDetailPage() {
         {/* Document Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Document Details */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <FileText size={20} />
               Document Details
@@ -296,7 +296,7 @@ function DocumentDetailPage() {
           </div>
 
           {/* Security & Dates */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Lock size={20} />
               Security & Dates
@@ -363,7 +363,7 @@ function DocumentDetailPage() {
 
           {/* Version History */}
           {versions.length > 0 && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6 md:col-span-2">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6 md:col-span-2">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <History size={20} />
                 Version History

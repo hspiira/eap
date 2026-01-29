@@ -23,7 +23,6 @@ import { Route as IndustriesIndexRouteImport } from './routes/industries/index'
 import { Route as DocumentsIndexRouteImport } from './routes/documents/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
-import { Route as ContactsIndexRouteImport } from './routes/contacts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as ClientTagsIndexRouteImport } from './routes/client-tags/index'
 import { Route as AuditIndexRouteImport } from './routes/audit/index'
@@ -50,8 +49,6 @@ import { Route as DocumentsNewRouteImport } from './routes/documents/new'
 import { Route as DocumentsDocumentIdRouteImport } from './routes/documents/$documentId'
 import { Route as ContractsNewRouteImport } from './routes/contracts/new'
 import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
-import { Route as ContactsNewRouteImport } from './routes/contacts/new'
-import { Route as ContactsContactIdRouteImport } from './routes/contacts/$contactId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as ClientTagsNewRouteImport } from './routes/client-tags/new'
@@ -63,6 +60,7 @@ import { Route as ActivitiesNewRouteImport } from './routes/activities/new'
 import { Route as ActivitiesActivityIdRouteImport } from './routes/activities/$activityId'
 import { Route as PeopleClientPeopleIndexRouteImport } from './routes/people/client-people/index'
 import { Route as TenantsTenantIdEditRouteImport } from './routes/tenants/$tenantId.edit'
+import { Route as SettingsContactsContactIdRouteImport } from './routes/settings/contacts/$contactId'
 import { Route as PeopleClientPeopleNewRouteImport } from './routes/people/client-people/new'
 import { Route as AuditEntityEntityTypeEntityIdRouteImport } from './routes/audit/entity/$entityType/$entityId'
 
@@ -134,11 +132,6 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const ContractsIndexRoute = ContractsIndexRouteImport.update({
   id: '/contracts/',
   path: '/contracts/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactsIndexRoute = ContactsIndexRouteImport.update({
-  id: '/contacts/',
-  path: '/contacts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientsIndexRoute = ClientsIndexRouteImport.update({
@@ -272,16 +265,6 @@ const ContractsContractIdRoute = ContractsContractIdRouteImport.update({
   path: '/contracts/$contractId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContactsNewRoute = ContactsNewRouteImport.update({
-  id: '/contacts/new',
-  path: '/contacts/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactsContactIdRoute = ContactsContactIdRouteImport.update({
-  id: '/contacts/$contactId',
-  path: '/contacts/$contactId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ClientsNewRoute = ClientsNewRouteImport.update({
   id: '/clients/new',
   path: '/clients/new',
@@ -337,6 +320,12 @@ const TenantsTenantIdEditRoute = TenantsTenantIdEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => TenantsTenantIdRoute,
 } as any)
+const SettingsContactsContactIdRoute =
+  SettingsContactsContactIdRouteImport.update({
+    id: '/settings/contacts/$contactId',
+    path: '/settings/contacts/$contactId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PeopleClientPeopleNewRoute = PeopleClientPeopleNewRouteImport.update({
   id: '/people/client-people/new',
   path: '/people/client-people/new',
@@ -360,8 +349,6 @@ export interface FileRoutesByFullPath {
   '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
-  '/contacts/$contactId': typeof ContactsContactIdRoute
-  '/contacts/new': typeof ContactsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
   '/documents/$documentId': typeof DocumentsDocumentIdRoute
@@ -388,7 +375,6 @@ export interface FileRoutesByFullPath {
   '/audit/': typeof AuditIndexRoute
   '/client-tags/': typeof ClientTagsIndexRoute
   '/clients/': typeof ClientsIndexRoute
-  '/contacts/': typeof ContactsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/documents/': typeof DocumentsIndexRoute
@@ -403,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
+  '/settings/contacts/$contactId': typeof SettingsContactsContactIdRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
   '/people/client-people/': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
@@ -418,8 +405,6 @@ export interface FileRoutesByTo {
   '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
-  '/contacts/$contactId': typeof ContactsContactIdRoute
-  '/contacts/new': typeof ContactsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
   '/documents/$documentId': typeof DocumentsDocumentIdRoute
@@ -446,7 +431,6 @@ export interface FileRoutesByTo {
   '/audit': typeof AuditIndexRoute
   '/client-tags': typeof ClientTagsIndexRoute
   '/clients': typeof ClientsIndexRoute
-  '/contacts': typeof ContactsIndexRoute
   '/contracts': typeof ContractsIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/documents': typeof DocumentsIndexRoute
@@ -461,6 +445,7 @@ export interface FileRoutesByTo {
   '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
+  '/settings/contacts/$contactId': typeof SettingsContactsContactIdRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
   '/people/client-people': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
@@ -477,8 +462,6 @@ export interface FileRoutesById {
   '/client-tags/new': typeof ClientTagsNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
-  '/contacts/$contactId': typeof ContactsContactIdRoute
-  '/contacts/new': typeof ContactsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
   '/documents/$documentId': typeof DocumentsDocumentIdRoute
@@ -505,7 +488,6 @@ export interface FileRoutesById {
   '/audit/': typeof AuditIndexRoute
   '/client-tags/': typeof ClientTagsIndexRoute
   '/clients/': typeof ClientsIndexRoute
-  '/contacts/': typeof ContactsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/documents/': typeof DocumentsIndexRoute
@@ -520,6 +502,7 @@ export interface FileRoutesById {
   '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/people/client-people/new': typeof PeopleClientPeopleNewRoute
+  '/settings/contacts/$contactId': typeof SettingsContactsContactIdRoute
   '/tenants/$tenantId/edit': typeof TenantsTenantIdEditRoute
   '/people/client-people/': typeof PeopleClientPeopleIndexRoute
   '/audit/entity/$entityType/$entityId': typeof AuditEntityEntityTypeEntityIdRoute
@@ -537,8 +520,6 @@ export interface FileRouteTypes {
     | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
-    | '/contacts/$contactId'
-    | '/contacts/new'
     | '/contracts/$contractId'
     | '/contracts/new'
     | '/documents/$documentId'
@@ -565,7 +546,6 @@ export interface FileRouteTypes {
     | '/audit/'
     | '/client-tags/'
     | '/clients/'
-    | '/contacts/'
     | '/contracts/'
     | '/dashboard/'
     | '/documents/'
@@ -580,6 +560,7 @@ export interface FileRouteTypes {
     | '/tenants/'
     | '/users/'
     | '/people/client-people/new'
+    | '/settings/contacts/$contactId'
     | '/tenants/$tenantId/edit'
     | '/people/client-people/'
     | '/audit/entity/$entityType/$entityId'
@@ -595,8 +576,6 @@ export interface FileRouteTypes {
     | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
-    | '/contacts/$contactId'
-    | '/contacts/new'
     | '/contracts/$contractId'
     | '/contracts/new'
     | '/documents/$documentId'
@@ -623,7 +602,6 @@ export interface FileRouteTypes {
     | '/audit'
     | '/client-tags'
     | '/clients'
-    | '/contacts'
     | '/contracts'
     | '/dashboard'
     | '/documents'
@@ -638,6 +616,7 @@ export interface FileRouteTypes {
     | '/tenants'
     | '/users'
     | '/people/client-people/new'
+    | '/settings/contacts/$contactId'
     | '/tenants/$tenantId/edit'
     | '/people/client-people'
     | '/audit/entity/$entityType/$entityId'
@@ -653,8 +632,6 @@ export interface FileRouteTypes {
     | '/client-tags/new'
     | '/clients/$clientId'
     | '/clients/new'
-    | '/contacts/$contactId'
-    | '/contacts/new'
     | '/contracts/$contractId'
     | '/contracts/new'
     | '/documents/$documentId'
@@ -681,7 +658,6 @@ export interface FileRouteTypes {
     | '/audit/'
     | '/client-tags/'
     | '/clients/'
-    | '/contacts/'
     | '/contracts/'
     | '/dashboard/'
     | '/documents/'
@@ -696,6 +672,7 @@ export interface FileRouteTypes {
     | '/tenants/'
     | '/users/'
     | '/people/client-people/new'
+    | '/settings/contacts/$contactId'
     | '/tenants/$tenantId/edit'
     | '/people/client-people/'
     | '/audit/entity/$entityType/$entityId'
@@ -712,8 +689,6 @@ export interface RootRouteChildren {
   ClientTagsNewRoute: typeof ClientTagsNewRoute
   ClientsClientIdRoute: typeof ClientsClientIdRoute
   ClientsNewRoute: typeof ClientsNewRoute
-  ContactsContactIdRoute: typeof ContactsContactIdRoute
-  ContactsNewRoute: typeof ContactsNewRoute
   ContractsContractIdRoute: typeof ContractsContractIdRoute
   ContractsNewRoute: typeof ContractsNewRoute
   DocumentsDocumentIdRoute: typeof DocumentsDocumentIdRoute
@@ -740,7 +715,6 @@ export interface RootRouteChildren {
   AuditIndexRoute: typeof AuditIndexRoute
   ClientTagsIndexRoute: typeof ClientTagsIndexRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
-  ContactsIndexRoute: typeof ContactsIndexRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DocumentsIndexRoute: typeof DocumentsIndexRoute
@@ -755,6 +729,7 @@ export interface RootRouteChildren {
   TenantsIndexRoute: typeof TenantsIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
   PeopleClientPeopleNewRoute: typeof PeopleClientPeopleNewRoute
+  SettingsContactsContactIdRoute: typeof SettingsContactsContactIdRoute
   PeopleClientPeopleIndexRoute: typeof PeopleClientPeopleIndexRoute
   AuditEntityEntityTypeEntityIdRoute: typeof AuditEntityEntityTypeEntityIdRoute
 }
@@ -857,13 +832,6 @@ declare module '@tanstack/react-router' {
       path: '/contracts'
       fullPath: '/contracts/'
       preLoaderRoute: typeof ContractsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contacts/': {
-      id: '/contacts/'
-      path: '/contacts'
-      fullPath: '/contacts/'
-      preLoaderRoute: typeof ContactsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clients/': {
@@ -1048,20 +1016,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContractsContractIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/contacts/new': {
-      id: '/contacts/new'
-      path: '/contacts/new'
-      fullPath: '/contacts/new'
-      preLoaderRoute: typeof ContactsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contacts/$contactId': {
-      id: '/contacts/$contactId'
-      path: '/contacts/$contactId'
-      fullPath: '/contacts/$contactId'
-      preLoaderRoute: typeof ContactsContactIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/clients/new': {
       id: '/clients/new'
       path: '/clients/new'
@@ -1139,6 +1093,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TenantsTenantIdEditRouteImport
       parentRoute: typeof TenantsTenantIdRoute
     }
+    '/settings/contacts/$contactId': {
+      id: '/settings/contacts/$contactId'
+      path: '/settings/contacts/$contactId'
+      fullPath: '/settings/contacts/$contactId'
+      preLoaderRoute: typeof SettingsContactsContactIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/people/client-people/new': {
       id: '/people/client-people/new'
       path: '/people/client-people/new'
@@ -1179,8 +1140,6 @@ const rootRouteChildren: RootRouteChildren = {
   ClientTagsNewRoute: ClientTagsNewRoute,
   ClientsClientIdRoute: ClientsClientIdRoute,
   ClientsNewRoute: ClientsNewRoute,
-  ContactsContactIdRoute: ContactsContactIdRoute,
-  ContactsNewRoute: ContactsNewRoute,
   ContractsContractIdRoute: ContractsContractIdRoute,
   ContractsNewRoute: ContractsNewRoute,
   DocumentsDocumentIdRoute: DocumentsDocumentIdRoute,
@@ -1207,7 +1166,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuditIndexRoute: AuditIndexRoute,
   ClientTagsIndexRoute: ClientTagsIndexRoute,
   ClientsIndexRoute: ClientsIndexRoute,
-  ContactsIndexRoute: ContactsIndexRoute,
   ContractsIndexRoute: ContractsIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DocumentsIndexRoute: DocumentsIndexRoute,
@@ -1222,6 +1180,7 @@ const rootRouteChildren: RootRouteChildren = {
   TenantsIndexRoute: TenantsIndexRoute,
   UsersIndexRoute: UsersIndexRoute,
   PeopleClientPeopleNewRoute: PeopleClientPeopleNewRoute,
+  SettingsContactsContactIdRoute: SettingsContactsContactIdRoute,
   PeopleClientPeopleIndexRoute: PeopleClientPeopleIndexRoute,
   AuditEntityEntityTypeEntityIdRoute: AuditEntityEntityTypeEntityIdRoute,
 }

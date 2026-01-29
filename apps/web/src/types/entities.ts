@@ -20,6 +20,7 @@ import type {
   KPICategory,
   MeasurementUnit,
   ActivityType,
+  RelationType,
 } from './enums'
 
 /**
@@ -52,6 +53,15 @@ export interface ContactInfo {
   phone?: string | null
   mobile?: string | null
   preferred_method?: ContactMethod | null
+}
+
+/**
+ * Dependent information
+ */
+export interface DependentInfo {
+  primary_employee_id: string
+  relationship: RelationType
+  guardian_id?: string | null
 }
 
 /**
@@ -105,7 +115,9 @@ export interface Person extends BaseEntity {
   gender?: string | null
   status: BaseStatus
   client_id?: string | null // For ClientEmployee and Dependent
-  parent_person_id?: string | null // For Dependent
+  parent_person_id?: string | null // DEPRECATED: For Dependent - use dependent_info instead
+  family_id?: string | null
+  dependent_info?: DependentInfo | null // For Dependent - replaces parent_person_id usage
   contact_info?: ContactInfo | null
   address?: Address | null
   emergency_contact?: {
@@ -114,11 +126,14 @@ export interface Person extends BaseEntity {
     phone?: string | null
   } | null
   employment_info?: {
+    client_id?: string | null
+    employee_code?: string | null
     employee_id?: string | null
     department?: string | null
     position?: string | null
     hire_date?: string | null
     work_status?: WorkStatus | null
+    end_date?: string | null
   } | null
   license_info?: {
     license_number?: string | null
@@ -136,18 +151,47 @@ export interface Person extends BaseEntity {
 }
 
 /**
+ * Client contact info (phone, email, address line)
+ */
+export interface ClientContactInfo {
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+}
+
+/**
+ * Client billing address
+ */
+export interface ClientBillingAddress {
+  street?: string | null
+  city?: string | null
+  country?: string | null
+  postal_code?: string | null
+}
+
+/**
  * Client organization
  */
 export interface Client extends BaseEntity {
   name: string
+  code: string // Required, 3-5 chars (e.g. used for employee codes like MNT)
+  is_verified: boolean
   status: BaseStatus
+  contact_info: ClientContactInfo // Required for creation
+  billing_address?: ClientBillingAddress | null
   industry_id?: string | null
-  tax_id?: string | null
-  registration_number?: string | null
-  address?: Address | null
-  contact_info?: ContactInfo | null
-  parent_client_id?: string | null // For client hierarchy
+  parent_client_id?: string | null
+  preferred_contact_method?: string | null
   metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Client stats (child count, contracts, verification)
+ */
+export interface ClientStats {
+  child_count?: number
+  contract_count?: number
+  is_verified?: boolean
 }
 
 /**

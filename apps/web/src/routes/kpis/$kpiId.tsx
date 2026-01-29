@@ -187,7 +187,7 @@ function KPIDetailPage() {
         {/* KPI Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* KPI Details */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Target size={20} />
               KPI Details
@@ -215,7 +215,7 @@ function KPIDetailPage() {
           </div>
 
           {/* Performance Metrics */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <TrendingUp size={20} />
               Performance
@@ -255,7 +255,7 @@ function KPIDetailPage() {
           </div>
 
           {/* Assignments */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6 md:col-span-2">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6 md:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-safe flex items-center gap-2">
                 <FileText size={20} />

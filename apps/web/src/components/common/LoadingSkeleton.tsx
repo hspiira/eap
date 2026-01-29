@@ -109,7 +109,7 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
  */
 export function CardSkeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div className="border border-[0.5px] border-safe/30 p-6 bg-calm">
+    <div className="border border-[0.5px] border-safe/30 p-6 bg-white">
       <LoadingSkeleton variant="text" lines={lines} />
     </div>
   )

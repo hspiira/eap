@@ -269,7 +269,7 @@ function SessionDetailPage() {
         {/* Session Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Session Details */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Session Details
@@ -307,7 +307,7 @@ function SessionDetailPage() {
           </div>
 
           {/* Participants */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <FileText size={20} />
               Participants
@@ -332,7 +332,7 @@ function SessionDetailPage() {
 
           {/* Notes */}
           {session.notes && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6 md:col-span-2">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6 md:col-span-2">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <FileText size={20} />
                 Notes
@@ -343,7 +343,7 @@ function SessionDetailPage() {
 
           {/* Feedback */}
           {session.feedback && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6 md:col-span-2">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6 md:col-span-2">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <MessageSquare size={20} />
                 Feedback

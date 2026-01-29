@@ -3,7 +3,7 @@
  * Wrapper component that redirects to login if user is not authenticated
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -14,16 +14,20 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
+  const hasRedirected = useRef(false)
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: '/auth/login', search: {} })
+    if (!isLoading && !isAuthenticated && !hasRedirected.current) {
+      hasRedirected.current = true
+      navigate({ to: '/auth/login', search: {}, replace: true })
+    } else if (isAuthenticated) {
+      hasRedirected.current = false
     }
   }, [isAuthenticated, isLoading, navigate])
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-calm flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-safe">Loading...</div>
       </div>
     )

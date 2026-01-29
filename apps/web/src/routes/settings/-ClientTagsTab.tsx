@@ -1,8 +1,3 @@
-/**
- * Client Tags Settings Tab
- * Tag list with DataTable, filters, and create modal
- */
-
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { DataTable, type Column } from '@/components/common/DataTable'

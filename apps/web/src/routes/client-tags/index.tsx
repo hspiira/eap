@@ -6,7 +6,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/client-tags/')({
   beforeLoad: () => {
-    throw redirect({ to: '/settings', search: { tab: 'client-tags' } })
+    throw redirect({ to: '/settings', search: { tab: 'client-tags' }, replace: true })
   },
   component: () => null,
 })

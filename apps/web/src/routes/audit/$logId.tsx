@@ -96,7 +96,7 @@ function AuditLogDetailPage() {
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <div className="p-3 bg-calm border border-[0.5px] border-safe/30">
+          <div className="p-3 bg-white border border-[0.5px] border-safe/30">
             <Shield size={28} className="text-natural" />
           </div>
           <div>
@@ -110,7 +110,7 @@ function AuditLogDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <FileText size={20} />
               Details
@@ -172,7 +172,7 @@ function AuditLogDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4">Entity Changes</h2>
             {changeList && changeList.length > 0 ? (
               <div className="space-y-3">

@@ -117,7 +117,7 @@ export const IndustryTree = memo(function IndustryTree({
   }
 
   return (
-    <div className={`border border-[0.5px] border-safe/30 bg-calm ${className}`}>
+    <div className={`border border-[0.5px] border-safe/30 bg-white ${className}`}>
       {roots.map((node) => renderNode(node, 0))}
     </div>
   )

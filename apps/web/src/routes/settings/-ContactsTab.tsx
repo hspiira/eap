@@ -1,15 +1,8 @@
-/**
- * Contacts List Page
- * Displays all contacts within the current tenant with filtering, search, and pagination
- */
-
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
-import { AppLayout } from '@/components/layout/AppLayout'
+import { useNavigate } from '@tanstack/react-router'
 import { DataTable, type Column } from '@/components/common/DataTable'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { CreateModal } from '@/components/common/CreateModal'
+import { StatusBadge } from '@/components/common/StatusBadge'
 import { CreateContactForm } from '@/components/forms/CreateContactForm'
 import { contactsApi } from '@/api/endpoints/contacts'
 import { clientsApi } from '@/api/endpoints/clients'
@@ -17,11 +10,7 @@ import type { Contact } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
 import { UserCircle, Star } from 'lucide-react'
 
-export const Route = createFileRoute('/contacts/')({
-  component: ContactsPage,
-})
-
-function ContactsPage() {
+export function ContactsTab() {
   const navigate = useNavigate()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
@@ -96,7 +85,7 @@ function ContactsPage() {
   }
 
   const handleRowClick = (contact: Contact) => {
-    navigate({ to: `/contacts/${contact.id}` })
+    navigate({ to: '/settings/contacts/$contactId', params: { contactId: contact.id } })
   }
 
   const statusOptions = [
@@ -180,92 +169,86 @@ function ContactsPage() {
   ]
 
   return (
-    <AppLayout>
-      <div className="max-w-7xl mx-auto">
-        {loading && contacts.length === 0 ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : (
-          <DataTable
-            data={contacts}
-            columns={columns}
-            loading={loading}
-            error={error}
-            onRetry={fetchContacts}
-            pagination={{
-              currentPage,
-              pageSize,
-              totalItems,
-              onPageChange: setCurrentPage,
-              onPageSizeChange: (size) => {
-                setPageSize(size)
+    <div className="space-y-0">
+      <h2 className="text-sm font-semibold text-safe mb-1.5">Contacts</h2>
+      <p className="text-xs text-safe-light mb-2">Contact records across clients.</p>
+      <DataTable
+        data={contacts}
+        columns={columns}
+        loading={loading}
+        error={error}
+        onRetry={fetchContacts}
+        pagination={{
+          currentPage,
+          pageSize,
+          totalItems,
+          onPageChange: setCurrentPage,
+          onPageSizeChange: (size) => {
+            setPageSize(size)
+            setCurrentPage(1)
+          },
+        }}
+        sorting={{
+          sortBy,
+          sortDirection,
+          onSort: handleSort,
+        }}
+        filters={{
+          searchValue,
+          onSearchChange: (v) => {
+            setSearchValue(v)
+            setCurrentPage(1)
+          },
+          searchPlaceholder: 'Search contacts by name...',
+          statusFilter: {
+            value: statusFilter,
+            options: statusOptions,
+            onChange: (v) => {
+              setStatusFilter(v)
+              setCurrentPage(1)
+            },
+          },
+          customFilters: [
+            {
+              id: 'client-filter',
+              label: 'Client',
+              value: clientFilter,
+              options: clientOptions,
+              onChange: (v) => {
+                setClientFilter(v)
                 setCurrentPage(1)
               },
-            }}
-            sorting={{
-              sortBy,
-              sortDirection,
-              onSort: handleSort,
-            }}
-            filters={{
-              searchValue,
-              onSearchChange: (v) => {
-                setSearchValue(v)
-                setCurrentPage(1)
-              },
-              searchPlaceholder: 'Search contacts by name...',
-              statusFilter: {
-                value: statusFilter,
-                options: statusOptions,
-                onChange: (v) => {
-                  setStatusFilter(v)
-                  setCurrentPage(1)
-                },
-              },
-              customFilters: [
-                {
-                  id: 'client-filter',
-                  label: 'Client',
-                  value: clientFilter,
-                  options: clientOptions,
-                  onChange: (v) => {
-                    setClientFilter(v)
-                    setCurrentPage(1)
-                  },
-                },
-              ],
-              onClearFilters: () => {
-                setSearchValue('')
-                setStatusFilter('')
-                setClientFilter('')
-                setCurrentPage(1)
-              },
-              createAction: {
-                onClick: () => setCreateModalOpen(true),
-                label: 'Create Contact',
-              },
-            }}
-            emptyMessage="No contacts found"
-          />
-        )}
+            },
+          ],
+          onClearFilters: () => {
+            setSearchValue('')
+            setStatusFilter('')
+            setClientFilter('')
+            setCurrentPage(1)
+          },
+          createAction: {
+            onClick: () => setCreateModalOpen(true),
+            label: 'Create Contact',
+          },
+        }}
+        emptyMessage="No contacts found"
+      />
 
-        <CreateModal
-          isOpen={createModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          title="Create Contact"
-          loading={createLoading}
-        >
-          <CreateContactForm
-            onSuccess={() => {
-              setCreateModalOpen(false)
-              fetchContacts()
-            }}
-            onCancel={() => setCreateModalOpen(false)}
-            onLoadingChange={setCreateLoading}
-          />
-        </CreateModal>
-      </div>
-    </AppLayout>
+      <CreateModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Create Contact"
+        loading={createLoading}
+      >
+        <CreateContactForm
+          onSuccess={() => {
+            setCreateModalOpen(false)
+            fetchContacts()
+          }}
+          onCancel={() => setCreateModalOpen(false)}
+          onLoadingChange={setCreateLoading}
+        />
+      </CreateModal>
+    </div>
   )
 }

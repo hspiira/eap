@@ -1,15 +1,14 @@
-/**
- * Edit Client Form
- * Used inside CreateModal on client detail page
- */
-
 import { useState, useEffect } from 'react'
+import { CheckCircle } from 'lucide-react'
 import { FormField } from '@/components/common/FormField'
+import { Select } from '@/components/common/Select'
 import { FormAccordionSection } from '@/components/common/FormAccordionSection'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useToast } from '@/contexts/ToastContext'
+import { useTenant } from '@/hooks/useTenant'
 import { clientsApi } from '@/api/endpoints/clients'
-import type { Client } from '@/types/entities'
+import { industriesApi } from '@/api/endpoints/industries'
+import type { Client, Industry } from '@/types/entities'
 
 export interface EditClientFormProps {
   client: Client
@@ -18,6 +17,12 @@ export interface EditClientFormProps {
   onLoadingChange?: (loading: boolean) => void
 }
 
+const PREFERRED_CONTACT_OPTIONS = [
+  { value: '', label: 'Select (optional)' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+]
+
 export function EditClientForm({
   client,
   onSuccess,
@@ -25,39 +30,94 @@ export function EditClientForm({
   onLoadingChange,
 }: EditClientFormProps) {
   const { showSuccess, showError } = useToast()
+  const { currentTenant, isLoading: tenantLoading } = useTenant()
   const [loading, setLoading] = useState(false)
+  const [industries, setIndustries] = useState<Industry[]>([])
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
+  const [industriesLoading, setIndustriesLoading] = useState(true)
+  const [clientsLoading, setClientsLoading] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
+    code: '',
     industry_id: '',
-    tax_id: '',
-    registration_number: '',
-    street: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: '',
-    email: '',
-    phone: '',
-    mobile: '',
+    parent_client_id: '',
+    preferred_contact_method: '',
+    contact_phone: '',
+    contact_email: '',
+    contact_address: '',
+    billing_street: '',
+    billing_city: '',
+    billing_country: '',
+    billing_postal_code: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     setFormData({
       name: client.name ?? '',
+      code: client.code ?? '',
       industry_id: client.industry_id ?? '',
-      tax_id: client.tax_id ?? '',
-      registration_number: client.registration_number ?? '',
-      street: client.address?.street ?? '',
-      city: client.address?.city ?? '',
-      state: client.address?.state ?? '',
-      postal_code: client.address?.postal_code ?? '',
-      country: client.address?.country ?? '',
-      email: client.contact_info?.email ?? '',
-      phone: client.contact_info?.phone ?? '',
-      mobile: client.contact_info?.mobile ?? '',
+      parent_client_id: client.parent_client_id ?? '',
+      preferred_contact_method: client.preferred_contact_method ?? '',
+      contact_phone: client.contact_info?.phone ?? '',
+      contact_email: client.contact_info?.email ?? '',
+      contact_address: client.contact_info?.address ?? '',
+      billing_street: client.billing_address?.street ?? '',
+      billing_city: client.billing_address?.city ?? '',
+      billing_country: client.billing_address?.country ?? '',
+      billing_postal_code: client.billing_address?.postal_code ?? '',
     })
   }, [client])
+
+  useEffect(() => {
+    const fetchIndustries = async () => {
+      if (tenantLoading) {
+        setIndustriesLoading(true)
+        return
+      }
+      if (!currentTenant) {
+        setIndustriesLoading(false)
+        setIndustries([])
+        return
+      }
+      try {
+        setIndustriesLoading(true)
+        const res = await industriesApi.list({
+          tenant_id: currentTenant.id,
+          page: 1,
+          limit: 500,
+        })
+        setIndustries(res.items || [])
+      } catch (err) {
+        console.error('Error fetching industries:', err)
+        showError('Failed to load industries')
+      } finally {
+        setIndustriesLoading(false)
+      }
+    }
+    fetchIndustries()
+  }, [tenantLoading, currentTenant, showError])
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      if (!currentTenant) {
+        setClientsLoading(false)
+        setClients([])
+        return
+      }
+      try {
+        setClientsLoading(true)
+        const res = await clientsApi.list({ limit: 500 })
+        setClients(res.items.filter((c) => c.id !== client.id).map((c) => ({ id: c.id, name: c.name })))
+      } catch (err) {
+        console.error('Error fetching clients:', err)
+        setClients([])
+      } finally {
+        setClientsLoading(false)
+      }
+    }
+    fetchClients()
+  }, [currentTenant, client.id])
 
   const setLoadingState = (v: boolean) => {
     setLoading(v)
@@ -78,47 +138,33 @@ export function EditClientForm({
 
     try {
       setLoadingState(true)
-      const clientData: Record<string, unknown> = { name: formData.name.trim() }
-      if (formData.industry_id) (clientData as any).industry_id = formData.industry_id.trim() || null
-      if (formData.tax_id) (clientData as any).tax_id = formData.tax_id.trim() || null
-      if (formData.registration_number)
-        (clientData as any).registration_number = formData.registration_number.trim() || null
-      if (
-        formData.street ||
-        formData.city ||
-        formData.state ||
-        formData.postal_code ||
-        formData.country
-      ) {
-        ;(clientData as any).address = {
-          street: formData.street.trim() || null,
-          city: formData.city.trim() || null,
-          state: formData.state.trim() || null,
-          postal_code: formData.postal_code.trim() || null,
-          country: formData.country.trim() || null,
-        }
+      const payload: Parameters<typeof clientsApi.update>[1] = {
+        name: formData.name.trim(),
       }
-      if (formData.email || formData.phone || formData.mobile) {
-        ;(clientData as any).contact_info = {
-          email: formData.email.trim() || null,
-          phone: formData.phone.trim() || null,
-          mobile: formData.mobile.trim() || null,
-        }
+      if (formData.code.trim()) payload.code = formData.code.trim() || null
+      if (formData.industry_id.trim()) payload.industry_id = formData.industry_id.trim() || null
+      if (formData.parent_client_id.trim()) payload.parent_client_id = formData.parent_client_id.trim() || null
+      if (formData.preferred_contact_method) payload.preferred_contact_method = formData.preferred_contact_method || null
+      payload.contact_info = {
+        phone: formData.contact_phone.trim() || null,
+        email: formData.contact_email.trim() || null,
+        address: formData.contact_address.trim() || null,
       }
-      await clientsApi.update(client.id, clientData as any)
+      payload.billing_address = {
+        street: formData.billing_street.trim() || null,
+        city: formData.billing_city.trim() || null,
+        country: formData.billing_country.trim() || null,
+        postal_code: formData.billing_postal_code.trim() || null,
+      }
+      await clientsApi.update(client.id, payload)
       showSuccess('Client updated successfully')
       onSuccess()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update client'
-      showError(msg)
-      if (
-        err &&
-        typeof err === 'object' &&
-        'details' in err &&
-        Array.isArray((err as { details: unknown[] }).details)
-      ) {
+      const e = err as { message?: string; details?: Array<{ field?: string; message?: string }> }
+      showError(e?.message || 'Failed to update client')
+      if (e?.details?.length) {
         const map: Record<string, string> = {}
-        ;(err as { details: Array<{ field?: string; message?: string }> }).details.forEach((d) => {
+        e.details.forEach((d) => {
           if (d.field) map[d.field] = d.message ?? ''
         })
         setErrors(map)
@@ -130,9 +176,15 @@ export function EditClientForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <h3 className="text-sm font-semibold text-safe">Basic Information</h3>
+      <h3 className="text-sm font-semibold text-safe">Basic information</h3>
+      {client.is_verified && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-natural/10 border border-[0.5px] border-natural/30 text-natural text-sm">
+          <CheckCircle size={18} />
+          <span>Verified client</span>
+        </div>
+      )}
       <FormField
-        label="Client Name"
+        label="Client name"
         name="name"
         value={formData.name}
         onChange={(e) => {
@@ -145,103 +197,112 @@ export function EditClientForm({
         compact
       />
       <FormField
-        label="Industry ID"
+        label="Code"
+        name="code"
+        value={formData.code}
+        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+        placeholder="3–5 character code"
+        compact
+      />
+      <Select
+        label="Industry"
         name="industry_id"
         value={formData.industry_id}
-        onChange={(e) => setFormData({ ...formData, industry_id: e.target.value })}
-        placeholder="Optional"
+        onChange={(v) => setFormData({ ...formData, industry_id: v as string })}
+        options={[
+          { value: '', label: 'Select industry (optional)' },
+          ...industries.map((ind) => ({ value: ind.id, label: ind.name })),
+        ]}
+        placeholder="Select industry"
+        disabled={industriesLoading}
+        searchable
         compact
       />
-      <FormField
-        label="Tax ID"
-        name="tax_id"
-        value={formData.tax_id}
-        onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
-        placeholder="Optional"
+      <Select
+        label="Parent client"
+        name="parent_client_id"
+        value={formData.parent_client_id}
+        onChange={(v) => setFormData({ ...formData, parent_client_id: v as string })}
+        options={[
+          { value: '', label: 'None' },
+          ...clients.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+        placeholder="None"
+        disabled={clientsLoading}
+        searchable
         compact
       />
-      <FormField
-        label="Registration Number"
-        name="registration_number"
-        value={formData.registration_number}
-        onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
-        placeholder="Optional"
+      <Select
+        label="Preferred contact method"
+        name="preferred_contact_method"
+        value={formData.preferred_contact_method}
+        onChange={(v) => setFormData({ ...formData, preferred_contact_method: v as string })}
+        options={PREFERRED_CONTACT_OPTIONS}
         compact
       />
 
-      <FormAccordionSection title="Address (Optional)">
+      <FormAccordionSection title="Contact (optional)">
+        <FormField
+          label="Phone"
+          name="contact_phone"
+          type="tel"
+          value={formData.contact_phone}
+          onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+          placeholder="Phone"
+          compact
+        />
+        <FormField
+          label="Email"
+          name="contact_email"
+          type="email"
+          value={formData.contact_email}
+          onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+          placeholder="Email"
+          compact
+        />
+        <FormField
+          label="Address (line)"
+          name="contact_address"
+          value={formData.contact_address}
+          onChange={(e) => setFormData({ ...formData, contact_address: e.target.value })}
+          placeholder="Contact address"
+          compact
+        />
+      </FormAccordionSection>
+
+      <FormAccordionSection title="Billing address (optional)">
         <FormField
           label="Street"
-          name="street"
-          value={formData.street}
-          onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+          name="billing_street"
+          value={formData.billing_street}
+          onChange={(e) => setFormData({ ...formData, billing_street: e.target.value })}
           placeholder="Street"
           compact
         />
         <div className="grid grid-cols-2 gap-2">
           <FormField
             label="City"
-            name="city"
-            value={formData.city}
-            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            name="billing_city"
+            value={formData.billing_city}
+            onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
             placeholder="City"
             compact
           />
           <FormField
-            label="State"
-            name="state"
-            value={formData.state}
-            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-            placeholder="State"
-            compact
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <FormField
-            label="Postal Code"
-            name="postal_code"
-            value={formData.postal_code}
-            onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-            placeholder="Postal code"
-            compact
-          />
-          <FormField
             label="Country"
-            name="country"
-            value={formData.country}
-            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+            name="billing_country"
+            value={formData.billing_country}
+            onChange={(e) => setFormData({ ...formData, billing_country: e.target.value })}
             placeholder="Country"
             compact
           />
         </div>
-      </FormAccordionSection>
-
-      <FormAccordionSection title="Contact (Optional)">
         <FormField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="Email"
-          compact
-        />
-        <FormField
-          label="Phone"
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          placeholder="Phone"
-          compact
-        />
-        <FormField
-          label="Mobile"
-          name="mobile"
-          type="tel"
-          value={formData.mobile}
-          onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-          placeholder="Mobile"
+          label="Postal code"
+          name="billing_postal_code"
+          value={formData.billing_postal_code}
+          onChange={(e) => setFormData({ ...formData, billing_postal_code: e.target.value })}
+          placeholder="Postal code"
           compact
         />
       </FormAccordionSection>

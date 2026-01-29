@@ -117,7 +117,7 @@ export function CreateActivityForm({
           type="datetime-local"
           value={formData.occurred_at}
           onChange={(e) => { setFormData((p) => ({ ...p, occurred_at: e.target.value })); if (errors.occurred_at) setErrors((e) => ({ ...e, occurred_at: '' })) }}
-          className="w-full px-4 py-2 bg-calm border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+          className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
         />
         {errors.occurred_at && <p className="text-nurturing text-sm mt-1">{errors.occurred_at}</p>}
       </div>

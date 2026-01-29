@@ -194,9 +194,9 @@ export function DataTable<T extends { id?: string }>({
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse bg-calm">
+        <table className="w-full border-collapse bg-white">
           <thead>
-            <tr className="bg-calm border-b border-[0.5px] border-safe/30">
+            <tr className="bg-white border-b border-[0.5px] border-safe/30">
               {rowSelection && (
                 <th className="px-4 py-3 text-left">
                   <input
@@ -239,7 +239,7 @@ export function DataTable<T extends { id?: string }>({
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 bg-calm"
+                  className="px-4 py-12 bg-white"
                 >
                   <div className="flex flex-col items-center justify-center gap-3">
                     <div className="flex items-center gap-2 text-nurturing">
@@ -263,7 +263,7 @@ export function DataTable<T extends { id?: string }>({
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 text-center text-safe-light bg-calm"
+                  className="px-4 py-12 text-center text-safe-light bg-white"
                 >
                   {emptyMessage}
                 </td>
@@ -277,7 +277,7 @@ export function DataTable<T extends { id?: string }>({
                   <tr
                     key={rowId}
                     className={`border-b border-[0.5px] border-safe/30 ${
-                      isSelected ? 'bg-calm-dark' : 'bg-calm hover:bg-calm-dark/50'
+                      isSelected ? 'bg-gray-100' : 'bg-white hover:bg-gray-50'
                     } transition-colors`}
                   >
                     {rowSelection && (
@@ -311,7 +311,7 @@ export function DataTable<T extends { id?: string }>({
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
-              <div key={`skeleton-${i}`} className="bg-calm border border-[0.5px] border-safe/30 p-4">
+              <div key={`skeleton-${i}`} className="bg-white border border-[0.5px] border-safe/30 p-4">
                 <div className="space-y-2">
                   {columns.map((col) => (
                     <div key={col.id} className="space-y-1">
@@ -324,7 +324,7 @@ export function DataTable<T extends { id?: string }>({
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 bg-calm border border-[0.5px] border-nurturing">
+          <div className="p-12 bg-white border border-[0.5px] border-nurturing">
             <div className="flex flex-col items-center justify-center gap-3">
               <div className="flex items-center gap-2 text-nurturing">
                 <AlertCircle size={20} />
@@ -343,7 +343,7 @@ export function DataTable<T extends { id?: string }>({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="p-12 text-center text-safe-light bg-calm border border-[0.5px] border-safe/30">
+          <div className="p-12 text-center text-safe-light bg-white border border-[0.5px] border-safe/30">
             {emptyMessage}
           </div>
         ) : (
@@ -354,8 +354,8 @@ export function DataTable<T extends { id?: string }>({
             return (
               <div
                 key={rowId}
-                className={`bg-calm border border-[0.5px] border-safe/30 p-4 ${
-                  isSelected ? 'bg-calm-dark' : ''
+                className={`bg-white border border-[0.5px] border-safe/30 p-4 ${
+                  isSelected ? 'bg-gray-100' : ''
                 }`}
               >
                 {rowSelection && (

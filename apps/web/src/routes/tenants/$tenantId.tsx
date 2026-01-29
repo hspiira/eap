@@ -118,7 +118,7 @@ function TenantDetailPage() {
         {/* Tenant Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Basic Information */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Building2 size={20} />
               Basic Information
@@ -149,7 +149,7 @@ function TenantDetailPage() {
 
           {/* Contact Information */}
           {tenant.contact_info && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <Phone size={20} />
                 Contact Information
@@ -185,7 +185,7 @@ function TenantDetailPage() {
 
           {/* Address */}
           {tenant.address && (
-            <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
               <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
                 <MapPin size={20} />
                 Address
@@ -226,7 +226,7 @@ function TenantDetailPage() {
           )}
 
           {/* Metadata */}
-          <div className="bg-calm border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
             <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata

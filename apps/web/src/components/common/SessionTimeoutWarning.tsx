@@ -22,7 +22,7 @@ export function SessionTimeoutWarning({
 
   return (
     <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-calm p-6 rounded-none border border-[0.5px] border-safe/30 max-w-md w-full">
+      <div className="bg-white p-6 rounded-none border border-[0.5px] border-safe/30 max-w-md w-full">
         <div className="flex items-start gap-4 mb-4">
           <div className="flex-shrink-0">
             <Clock size={24} className="text-nurturing" />

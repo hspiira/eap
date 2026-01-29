@@ -3,28 +3,33 @@
  */
 
 import apiClient from '../client'
-import type { Client, ClientTag, PaginatedResponse, ListParams } from '../types'
+import type {
+  Client,
+  ClientTag,
+  ClientContactInfo,
+  ClientBillingAddress,
+  ClientStats,
+  PaginatedResponse,
+  ListParams,
+} from '../types'
 
 export interface ClientCreate {
   name: string
-  industry_id?: string | null
-  tax_id?: string | null
-  registration_number?: string | null
-  address?: {
+  code: string // Required, 3-5 chars
+  contact_info: {
+    phone?: string | null
+    email?: string | null
+    address?: string | null
+  }
+  billing_address?: {
     street?: string | null
     city?: string | null
-    state?: string | null
-    postal_code?: string | null
     country?: string | null
+    postal_code?: string | null
   } | null
-  contact_info?: {
-    email?: string | null
-    phone?: string | null
-    mobile?: string | null
-    preferred_method?: string | null
-  } | null
+  industry_id?: string | null
   parent_client_id?: string | null
-  metadata?: Record<string, unknown> | null
+  preferred_contact_method?: string | null
 }
 
 export const clientsApi = {
@@ -54,6 +59,93 @@ export const clientsApi = {
    */
   async update(clientId: string, data: Partial<ClientCreate>): Promise<Client> {
     return apiClient.patch<Client>(`/clients/${clientId}`, data)
+  },
+
+  /**
+   * Update contact info only
+   */
+  async updateContactInfo(clientId: string, data: ClientContactInfo): Promise<Client> {
+    return apiClient.patch<Client>(`/clients/${clientId}/contact-info`, data)
+  },
+
+  /**
+   * Update billing address only
+   */
+  async updateBillingAddress(clientId: string, data: ClientBillingAddress): Promise<Client> {
+    return apiClient.patch<Client>(`/clients/${clientId}/billing-address`, data)
+  },
+
+  /**
+   * Mark client as verified
+   */
+  async verify(clientId: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/verify`)
+  },
+
+  /**
+   * Activate client (requires contact_info)
+   */
+  async activate(clientId: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/activate`)
+  },
+
+  /**
+   * Deactivate client
+   */
+  async deactivate(clientId: string, reason?: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/deactivate`, reason != null ? { reason } : undefined)
+  },
+
+  /**
+   * Suspend client (reason required)
+   */
+  async suspend(clientId: string, reason: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/suspend`, { reason })
+  },
+
+  /**
+   * Terminate client (reason required, permanent)
+   */
+  async terminate(clientId: string, reason: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/terminate`, { reason })
+  },
+
+  /**
+   * Soft archive client
+   */
+  async archive(clientId: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/archive`)
+  },
+
+  /**
+   * Restore client from archive
+   */
+  async restore(clientId: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/restore`)
+  },
+
+  /**
+   * Get client stats (child count, contracts, verification)
+   */
+  async getStats(clientId: string): Promise<ClientStats> {
+    return apiClient.get<ClientStats>(`/clients/${clientId}/stats`)
+  },
+
+  /**
+   * Get paginated child clients
+   */
+  async getChildren(
+    clientId: string,
+    params?: ListParams
+  ): Promise<PaginatedResponse<Client>> {
+    return apiClient.get<PaginatedResponse<Client>>(`/clients/${clientId}/children`, params as Record<string, unknown>)
+  },
+
+  /**
+   * Check client name availability
+   */
+  async checkNameAvailability(name: string): Promise<{ available: boolean }> {
+    return apiClient.get<{ available: boolean }>(`/clients/check-name/${encodeURIComponent(name)}`)
   },
 
   /**

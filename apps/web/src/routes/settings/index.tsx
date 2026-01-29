@@ -1,9 +1,3 @@
-/**
- * Settings Page
- * Tabbed: Account, Industries, Users, Client tags, Contacts, Preferences, Security, Notifications, About.
- * Industries, Users, and Client tags have embedded list UIs with create modals. URL-based tabs, max-w-7xl.
- */
-
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -19,6 +13,7 @@ import { QRCode } from '@/components/common/QRCode'
 import { IndustriesTab } from '@/routes/settings/-IndustriesTab'
 import { UsersTab } from '@/routes/settings/-UsersTab'
 import { ClientTagsTab } from '@/routes/settings/-ClientTagsTab'
+import { ContactsTab } from '@/routes/settings/-ContactsTab'
 import { usersApi, type TwoFactorSetupResponse, type TwoFactorVerifyResponse } from '@/api/endpoints/users'
 import type { ApiError } from '@/types/api'
 import type { User } from '@/types/entities'
@@ -355,7 +350,7 @@ function SettingsPage() {
 
   if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-calm flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -385,7 +380,7 @@ function SettingsPage() {
           </nav>
         </div>
 
-        <div className="bg-calm border border-[0.5px] border-safe/30 p-4">
+        <div className="bg-white border border-[0.5px] border-safe/30 p-4">
           {tab === 'account' && (
             <AccountTab
               onLogout={logout}
@@ -396,7 +391,7 @@ function SettingsPage() {
           {tab === 'industries' && <IndustriesTab />}
           {tab === 'users' && <UsersTab />}
           {tab === 'client-tags' && <ClientTagsTab />}
-          {tab === 'contacts' && <ManageLinkTab label="Contacts" path="/contacts" description="Contact records across clients." />}
+          {tab === 'contacts' && <ContactsTab />}
           {tab === 'preferences' && (
             <PreferencesTab
               language={language}
@@ -494,7 +489,7 @@ function Switch({
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       className={`relative inline-block h-5 w-9 flex-shrink-0 !rounded-full border-[0.5px] transition-colors ${
-        checked ? 'bg-natural border-natural' : 'bg-calm border-safe/30'
+        checked ? 'bg-natural border-natural' : 'bg-white border-safe/30'
       }`}
       style={{ borderRadius: '9999px' }}
     >
@@ -990,14 +985,14 @@ function SecurityTab({
       )}
 
       {showRecoveryCodes && recoveryCodes && (
-        <div className="mb-4 p-3 bg-calm border border-[0.5px] border-safe/30">
+        <div className="mb-4 p-3 bg-white border border-[0.5px] border-safe/30">
           <h3 className="text-sm font-semibold text-safe mb-2">Recovery Codes</h3>
           <p className="text-xs text-safe-light mb-2">
             Save these codes in a safe place. You can use them to access your account if you lose access to your authenticator app.
           </p>
           <div className="grid grid-cols-2 gap-2 mb-2">
             {recoveryCodes.map((code, idx) => (
-              <div key={idx} className="p-2 bg-calm border border-[0.5px] border-safe/20 font-mono text-xs text-safe">
+              <div key={idx} className="p-2 bg-white border border-[0.5px] border-safe/20 font-mono text-xs text-safe">
                 {code}
               </div>
             ))}
@@ -1028,7 +1023,7 @@ function SecurityTab({
       )}
 
       {!is2FAEnabled && twoFactorSetup && (
-        <div className="space-y-3 p-3 bg-calm border border-[0.5px] border-safe/30">
+        <div className="space-y-3 p-3 bg-white border border-[0.5px] border-safe/30">
           <h3 className="text-sm font-semibold text-safe">Setup Two-Factor Authentication</h3>
           <p className="text-xs text-safe-light">
             1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)

@@ -48,7 +48,7 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       case 'error':
         return 'bg-nurturing-light border-nurturing'
       case 'info':
-        return 'bg-calm border-safe'
+        return 'bg-white border-safe'
     }
   }
 

@@ -29,7 +29,7 @@ export function TenantSelector() {
         id="tenant-select"
         value={currentTenant?.id || ''}
         onChange={(e) => handleTenantChange(e.target.value)}
-        className="w-full px-4 py-2 bg-calm border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural"
+        className="w-full px-4 py-2 bg-white border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural"
       >
         {availableTenants.map((tenant) => (
           <option key={tenant.id} value={tenant.id}>

@@ -1,8 +1,3 @@
-/**
- * Authentication Context
- * Provides authentication state and methods. Uses Zustand auth store as source of truth.
- */
-
 import { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { authApi } from '@/api/endpoints/auth'
@@ -48,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {
       clearAuth()
-      navigate({ to: '/auth/login', search: {} })
+      navigate({ to: '/auth/login', search: {}, replace: true })
     })
     return () => apiClient.setAuthErrorCallback(null)
   }, [clearAuth, navigate])

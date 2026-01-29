@@ -1,8 +1,3 @@
-/**
- * Industries Settings Tab
- * Tree (left): parents with expand/collapse to reveal children. Detail panel (right).
- */
-
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { IndustryTree } from '@/components/common/IndustryTree'
 import { IndustryDetailPanel } from '@/components/common/IndustryDetailPanel'
@@ -189,11 +184,11 @@ export function IndustriesTab() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 flex flex-col min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center p-12 border border-[0.5px] border-safe/30 bg-calm">
+            <div className="flex items-center justify-center p-12 border border-[0.5px] border-safe/30 bg-white">
               <LoadingSpinner size="lg" />
             </div>
           ) : error ? (
-            <div className="border border-[0.5px] border-safe/30 bg-calm px-4 py-12 text-center">
+            <div className="border border-[0.5px] border-safe/30 bg-white px-4 py-12 text-center">
               <p className="text-nurturing font-medium mb-2">Error loading industries</p>
               <p className="text-safe-light text-sm mb-4">{error}</p>
               <button
@@ -205,7 +200,7 @@ export function IndustriesTab() {
             </div>
           ) : (
             <>
-              <div className="border border-[0.5px] border-safe/30 bg-calm flex-1 min-h-[200px] overflow-auto">
+              <div className="border border-[0.5px] border-safe/30 bg-white flex-1 min-h-[200px] overflow-auto">
                 <IndustryTree
                   industries={filtered}
                   onSelect={handleSelect}

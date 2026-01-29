@@ -1,5 +1,5 @@
 /**
- * Client People List Page
+ * Roster List Page
  * Employees + Dependents only. PlatformStaff excluded (users). ServiceProvider → /service-providers.
  */
 
@@ -22,6 +22,7 @@ export const Route = createFileRoute('/people/client-people/')({
 function ClientPeoplePage() {
   const navigate = useNavigate()
   const [persons, setPersons] = useState<Person[]>([])
+  const [allEmployees, setAllEmployees] = useState<Person[]>([]) // For looking up primary employees
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,9 +72,9 @@ function ClientPeoplePage() {
       setPersons(filtered)
       setTotalItems(res.total)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load client people'
+      const msg = err instanceof Error ? err.message : 'Failed to load roster'
       setError(msg)
-      console.error('Error fetching client people:', err)
+      console.error('Error fetching roster:', err)
     } finally {
       setLoading(false)
     }
@@ -82,6 +83,30 @@ function ClientPeoplePage() {
   useEffect(() => {
     fetchPersons()
   }, [currentPage, pageSize, searchValue, statusFilter, personTypeFilter, clientFilter, sortBy, sortDirection])
+
+  // Fetch all employees when we need to display dependents (for looking up primary employees)
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      // Only fetch if we're showing dependents or all types
+      if (personTypeFilter === 'Dependent' || !personTypeFilter) {
+        try {
+          const params: Record<string, unknown> = {
+            person_type: 'ClientEmployee',
+            limit: 500, // Get a reasonable number
+          }
+          if (clientFilter) params.client_id = clientFilter
+          const res = await personsApi.list(params)
+          setAllEmployees(res.items.filter((p) => p.person_type === 'ClientEmployee'))
+        } catch (err) {
+          console.error('Error fetching employees for lookup:', err)
+          setAllEmployees([])
+        }
+      } else {
+        setAllEmployees([])
+      }
+    }
+    fetchEmployees()
+  }, [personTypeFilter, clientFilter])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
@@ -149,6 +174,50 @@ function ClientPeoplePage() {
       accessor: 'person_type',
       sortable: true,
       render: (value) => <span>{typeLabels[value as string] ?? value}</span>,
+    },
+    {
+      id: 'employee_code',
+      header: 'Employee Code',
+      accessor: 'employment_info',
+      sortable: false,
+      render: (value, row) => {
+        if (row.person_type !== 'ClientEmployee') return '—'
+        const empInfo = value as Person['employment_info']
+        return <span className="text-safe">{empInfo?.employee_code || '—'}</span>
+      },
+    },
+    {
+      id: 'dependent_of',
+      header: 'Dependent of',
+      accessor: 'dependent_info',
+      sortable: false,
+      render: (value, row) => {
+        if (row.person_type !== 'Dependent') return '—'
+        const depInfo = value as Person['dependent_info']
+        if (!depInfo?.primary_employee_id) return '—'
+        const primary = allEmployees.find((p) => p.id === depInfo.primary_employee_id)
+        if (!primary) return <span className="text-safe-light">{depInfo.primary_employee_id.slice(0, 8)}...</span>
+        const name = getFullName(primary)
+        return (
+          <button
+            onClick={() => handleRowClick(primary)}
+            className="text-left text-natural hover:text-natural-dark font-medium"
+          >
+            {name}
+          </button>
+        )
+      },
+    },
+    {
+      id: 'relationship',
+      header: 'Relationship',
+      accessor: 'dependent_info',
+      sortable: false,
+      render: (value, row) => {
+        if (row.person_type !== 'Dependent') return '—'
+        const depInfo = value as Person['dependent_info']
+        return <span className="text-safe">{depInfo?.relationship || '—'}</span>
+      },
     },
     {
       id: 'status',
@@ -261,10 +330,10 @@ function ClientPeoplePage() {
             },
             createAction: {
               onClick: () => navigate({ to: '/people/client-people/new' }),
-              label: 'Add client person',
+              label: 'Add person',
             },
           }}
-          emptyMessage="No client people found"
+          emptyMessage="No people in roster"
         />
       </div>
     </AppLayout>
