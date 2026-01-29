@@ -1,20 +1,28 @@
 # Design System Rules
 
+## Theme system
+
+Colors live in **`src/theme/`**: palette → tokens → themes. See `src/theme/README.md` for switching themes and adding new ones. Tailwind utilities come from there (`bg-safe`, `text-natural`, `bg-page`, `bg-surface`, etc.).
+
 ## Color Palette
 
 Use ONLY these colors from the approved palette:
 
-- **SAFE** (`#5A626A`) - Dark grayish-blue
+- **SAFE** (`#4f5860`) - Dark gray
   - Use for: Primary text, borders, dark backgrounds
   - Tailwind class: `safe` or `text-safe`, `bg-safe`, `border-safe`
 
-- **NATURAL** (`#8BA88B`) - Sage green
+- **NATURAL** (`#4a7a4a`) - Green
   - Use for: Primary actions, success states, accents
   - Tailwind class: `natural` or `text-natural`, `bg-natural`, `border-natural`
 
-- **NURTURING** (`#D0B5B3`) - Dusty rose/pink
-  - Use for: Secondary actions, highlights, warm accents
+- **NURTURING** (`#a06858`) - Warm clay/amber
+  - Use for: Secondary actions, highlights, pending states
   - Tailwind class: `nurturing` or `text-nurturing`, `bg-nurturing`, `border-nurturing`
+
+- **DANGER** (`#b84848`) - Red
+  - Use for: Errors, failed states, validation, destructive actions
+  - Tailwind class: `danger` or `text-danger`, `bg-danger`, `border-danger`
 
 - **CALM** (`#E6E0D7`) - Warm beige/cream
   - Use for: Backgrounds, light surfaces, subtle highlights
@@ -71,3 +79,4 @@ All components must follow these rules. When creating or updating components:
 3. Remove any gradients or shadows
 4. Maintain flat, minimal design
 5. Remove any blue/cyan/teal colors
+6. **Do not add comments unnecessarily** – avoid decorative or redundant comments in code

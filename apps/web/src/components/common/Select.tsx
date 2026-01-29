@@ -134,7 +134,7 @@ export function Select({
           className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
-          {required && <span className="text-nurturing ml-1">*</span>}
+          {required && <span className="text-danger ml-1">*</span>}
         </label>
       )}
       <div ref={selectRef} className="relative">
@@ -143,7 +143,7 @@ export function Select({
           onClick={handleToggle}
           disabled={disabled}
           className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-            error ? 'border-nurturing' : 'border-safe/30'
+            error ? 'border-danger' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural flex items-center justify-between ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}
@@ -217,7 +217,7 @@ export function Select({
           </div>
         )}
       </div>
-      {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+      {error && <p className="mt-1 text-sm text-danger">{error}</p>}
     </div>
   )
 }

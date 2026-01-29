@@ -119,7 +119,7 @@ export function CreateActivityForm({
           onChange={(e) => { setFormData((p) => ({ ...p, occurred_at: e.target.value })); if (errors.occurred_at) setErrors((e) => ({ ...e, occurred_at: '' })) }}
           className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
         />
-        {errors.occurred_at && <p className="text-nurturing text-sm mt-1">{errors.occurred_at}</p>}
+        {errors.occurred_at && <p className="text-danger text-sm mt-1">{errors.occurred_at}</p>}
       </div>
 
       <div className="flex gap-2 pt-2">

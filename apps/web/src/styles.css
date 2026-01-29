@@ -1,23 +1,42 @@
 @import "tailwindcss";
+@import "./theme/index.css";
 
-/* Evexía Color Palette - Flat Design System */
 @theme {
-  --color-safe: #5A626A;
-  --color-safe-light: #7A828A;
-  --color-safe-dark: #3A424A;
-  
-  --color-natural: #8BA88B;
-  --color-natural-light: #ABD0AB;
-  --color-natural-dark: #6B886B;
-  
-  --color-nurturing: #D0B5B3;
-  --color-nurturing-light: #F0D5D3;
-  --color-nurturing-dark: #B09593;
-  
-  --color-calm: #E6E0D7;
-  --color-calm-light: #F6F0E7;
-  --color-calm-dark: #D6D0C7;
-  
+  --color-safe: var(--palette-safe);
+  --color-safe-light: var(--palette-safe-light);
+  --color-safe-dark: var(--palette-safe-dark);
+  --color-natural: var(--palette-natural);
+  --color-natural-light: var(--palette-natural-light);
+  --color-natural-dark: var(--palette-natural-dark);
+  --color-nurturing: var(--palette-nurturing);
+  --color-nurturing-light: var(--palette-nurturing-light);
+  --color-nurturing-dark: var(--palette-nurturing-dark);
+  --color-danger: var(--palette-danger);
+  --color-danger-light: var(--palette-danger-light);
+  --color-danger-dark: var(--palette-danger-dark);
+  --color-calm: var(--palette-calm);
+  --color-calm-light: var(--palette-calm-light);
+  --color-calm-dark: var(--palette-calm-dark);
+
+  --color-page: var(--token-page);
+  --color-surface: var(--token-surface);
+  --color-surface-hover: var(--token-surface-hover);
+  --color-surface-muted: var(--token-surface-muted);
+  --color-border: var(--token-border);
+  --color-border-focus: var(--token-border-focus);
+  --color-text: var(--token-text);
+  --color-text-muted: var(--token-text-muted);
+  --color-primary: var(--token-primary);
+  --color-primary-hover: var(--token-primary-hover);
+  --color-secondary: var(--token-secondary);
+  --color-secondary-hover: var(--token-secondary-hover);
+  --color-neutral: var(--token-neutral);
+  --color-neutral-light: var(--token-neutral-light);
+  --color-neutral-dark: var(--token-neutral-dark);
+
+  --color-gray-50: var(--palette-neutral-50);
+  --color-gray-100: var(--palette-neutral-100);
+
   --radius-none: 0;
 }
 
@@ -32,8 +51,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #fff;
-  color: var(--color-safe);
+  background-color: var(--token-page);
+  color: var(--token-text);
 }
 
 code {
@@ -41,12 +60,10 @@ code {
     monospace;
 }
 
-/* Ensure no rounded corners by default */
 * {
   border-radius: 0;
 }
 
-/* Smooth dropdown animations */
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -62,7 +79,6 @@ code {
   animation: fadeInDown 0.2s ease-in-out;
 }
 
-/* Subtle shadow for navbar separation using design system colors */
 .nav-shadow {
   box-shadow: 0 2px 8px rgba(90, 98, 106, 0.08), 0 1px 2px rgba(90, 98, 106, 0.04);
 }

@@ -233,7 +233,7 @@ export function CreateClientForm({ onSuccess, onCancel, onLoadingChange }: Creat
 
       <FormAccordionSection title="Contact (required – at least one)">
         {errors.contact_info && (
-          <p className="text-sm text-nurturing mb-2">{errors.contact_info}</p>
+          <p className="text-sm text-danger mb-2">{errors.contact_info}</p>
         )}
         <FormField
           label="Phone"

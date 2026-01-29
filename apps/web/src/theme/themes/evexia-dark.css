@@ -1,0 +1,8 @@
+[data-theme="dark"] {
+  --palette-white: #111827;
+  --palette-neutral-50: #1f2937;
+  --palette-neutral-100: #374151;
+  --palette-safe: #e5e7eb;
+  --palette-safe-light: #d1d5db;
+  --palette-safe-dark: #f3f4f6;
+}

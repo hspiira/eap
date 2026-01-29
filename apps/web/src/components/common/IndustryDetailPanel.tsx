@@ -39,7 +39,7 @@ export function IndustryDetailPanel({
   if (error) {
     return (
       <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
-        <p className="text-nurturing font-medium mb-2">Error loading industry</p>
+        <p className="text-danger font-medium mb-2">Error loading industry</p>
         <p className="text-safe-light text-sm mb-4">{error}</p>
         <button
           onClick={onRetry}

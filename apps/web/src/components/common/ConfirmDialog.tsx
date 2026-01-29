@@ -32,9 +32,9 @@ export function ConfirmDialog({
 
   const variantColors = {
     danger: {
-      bg: 'bg-natural-dark',
+      bg: 'bg-danger',
       text: 'text-white',
-      border: 'border-natural-dark',
+      border: 'border-danger-dark',
     },
     warning: {
       bg: 'bg-nurturing',
@@ -62,7 +62,7 @@ export function ConfirmDialog({
             <div className="flex items-center gap-3">
               <AlertTriangle
                 size={24}
-                className={variant === 'danger' ? 'text-natural-dark' : 'text-nurturing'}
+                className={variant === 'danger' ? 'text-danger' : 'text-nurturing'}
               />
               <h3 className="text-lg font-semibold text-safe">{title}</h3>
             </div>

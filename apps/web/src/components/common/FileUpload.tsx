@@ -108,7 +108,7 @@ export function FileUpload({
       {label && (
         <label className="block text-safe text-sm font-medium mb-2">
           {label}
-          {required && <span className="text-nurturing ml-1">*</span>}
+          {required && <span className="text-danger ml-1">*</span>}
         </label>
       )}
 
@@ -120,7 +120,7 @@ export function FileUpload({
         className={`
           relative border-2 border-dashed rounded-none transition-colors cursor-pointer
           ${isDragging ? 'border-natural bg-natural/10' : 'border-safe/30'}
-          ${error || dragError ? 'border-nurturing' : ''}
+          ${error || dragError ? 'border-danger' : ''}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-natural'}
           ${value ? 'bg-white' : 'bg-gray-50'}
         `}
@@ -174,7 +174,7 @@ export function FileUpload({
       </div>
 
       {(error || dragError) && (
-        <p className="mt-1 text-sm text-nurturing">{error || dragError}</p>
+        <p className="mt-1 text-sm text-danger">{error || dragError}</p>
       )}
     </div>
   )

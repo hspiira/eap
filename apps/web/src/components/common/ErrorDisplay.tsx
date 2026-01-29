@@ -18,9 +18,9 @@ export function ErrorDisplay({ error, onRetry, fieldErrors, className = '' }: Er
   const formatted = formatError(error)
 
   return (
-    <div className={`p-4 bg-nurturing-light border-[0.5px] border-nurturing rounded-none ${className}`}>
+    <div className={`p-4 bg-danger-light border-[0.5px] border-danger rounded-none ${className}`}>
       <div className="flex items-start gap-3">
-        <AlertCircle size={20} className="text-nurturing flex-shrink-0 mt-0.5" />
+        <AlertCircle size={20} className="text-danger flex-shrink-0 mt-0.5" />
         <div className="flex-1">
           <h3 className="text-safe font-semibold mb-1">{formatted.title}</h3>
           <p className="text-safe text-sm mb-2">{formatted.message}</p>

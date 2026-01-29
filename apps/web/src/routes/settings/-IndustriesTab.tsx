@@ -189,7 +189,7 @@ export function IndustriesTab() {
             </div>
           ) : error ? (
             <div className="border border-[0.5px] border-safe/30 bg-white px-4 py-12 text-center">
-              <p className="text-nurturing font-medium mb-2">Error loading industries</p>
+              <p className="text-danger font-medium mb-2">Error loading industries</p>
               <p className="text-safe-light text-sm mb-4">{error}</p>
               <button
                 onClick={fetchIndustries}

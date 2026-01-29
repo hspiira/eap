@@ -242,7 +242,7 @@ export function DataTable<T extends { id?: string }>({
                   className="px-4 py-12 bg-white"
                 >
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="flex items-center gap-2 text-nurturing">
+                    <div className="flex items-center gap-2 text-danger">
                       <AlertCircle size={20} />
                       <span className="font-medium">Error loading data</span>
                     </div>
@@ -324,9 +324,9 @@ export function DataTable<T extends { id?: string }>({
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 bg-white border border-[0.5px] border-nurturing">
+          <div className="p-12 bg-white border border-[0.5px] border-danger">
             <div className="flex flex-col items-center justify-center gap-3">
-              <div className="flex items-center gap-2 text-nurturing">
+              <div className="flex items-center gap-2 text-danger">
                 <AlertCircle size={20} />
                 <span className="font-medium">Error loading data</span>
               </div>

@@ -32,6 +32,7 @@
 3. Remove any gradients or shadows
 4. Remove any blue/cyan/teal colors
 5. Maintain flat, minimal design
+6. Do not add comments unnecessarily
 
 ## Reference Files
 - Design system: `.cursor/rules/DESIGN_SYSTEM.md`

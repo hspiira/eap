@@ -61,7 +61,7 @@ export function FormField({
           className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
-          {required && <span className="text-nurturing ml-1">*</span>}
+          {required && <span className="text-danger ml-1">*</span>}
         </label>
         <Controller
           name={name}
@@ -77,7 +77,7 @@ export function FormField({
                   disabled={disabled}
                   required={required}
                   className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-                    error ? 'border-nurturing' : 'border-safe/30'
+                    error ? 'border-danger' : 'border-safe/30'
                   } rounded-none focus:outline-none focus:border-natural ${
                     disabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
@@ -96,7 +96,7 @@ export function FormField({
                 min={min}
                 max={max}
                 className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-                  error ? 'border-nurturing' : 'border-safe/30'
+                  error ? 'border-danger' : 'border-safe/30'
                 } rounded-none focus:outline-none focus:border-natural ${
                   disabled ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -104,7 +104,7 @@ export function FormField({
             )
           }}
         />
-        {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     )
   }
@@ -118,7 +118,7 @@ export function FormField({
           className={`block text-safe text-sm font-medium ${labelSpace}`}
         >
           {label}
-          {required && <span className="text-nurturing ml-1">*</span>}
+          {required && <span className="text-danger ml-1">*</span>}
         </label>
         <textarea
           id={name}
@@ -130,12 +130,12 @@ export function FormField({
           disabled={disabled}
           rows={rows}
           className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-            error ? 'border-nurturing' : 'border-safe/30'
+            error ? 'border-danger' : 'border-safe/30'
           } rounded-none focus:outline-none focus:border-natural ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
-        {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     )
   }
@@ -147,7 +147,7 @@ export function FormField({
         className={`block text-safe text-sm font-medium ${labelSpace}`}
       >
         {label}
-        {required && <span className="text-nurturing ml-1">*</span>}
+        {required && <span className="text-danger ml-1">*</span>}
       </label>
       <input
         type={type}
@@ -162,12 +162,12 @@ export function FormField({
         min={min}
         max={max}
         className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-          error ? 'border-nurturing' : 'border-safe/30'
+          error ? 'border-danger' : 'border-safe/30'
         } rounded-none focus:outline-none focus:border-natural ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         }`}
       />
-      {error && <p className="mt-1 text-sm text-nurturing">{error}</p>}
+      {error && <p className="mt-1 text-sm text-danger">{error}</p>}
     </div>
   )
 }

@@ -206,7 +206,7 @@ function DocumentDetailPage() {
             <div className="flex items-center gap-4">
               <StatusBadge status={document.status as DocumentStatus} />
               {isExpired && (
-                <span className="text-nurturing text-sm font-medium">Expired</span>
+                <span className="text-danger text-sm font-medium">Expired</span>
               )}
             </div>
           </div>
@@ -320,7 +320,7 @@ function DocumentDetailPage() {
               {document.expiry_date && (
                 <div>
                   <dt className="text-sm font-medium text-safe-light">Expiry Date</dt>
-                  <dd className={`mt-1 flex items-center gap-2 ${isExpired ? 'text-nurturing' : 'text-safe'}`}>
+                  <dd className={`mt-1 flex items-center gap-2 ${isExpired ? 'text-danger' : 'text-safe'}`}>
                     <Calendar size={16} />
                     {formatDate(document.expiry_date)}
                     {isExpired && <span className="text-xs">(Expired)</span>}

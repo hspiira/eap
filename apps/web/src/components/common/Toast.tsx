@@ -35,7 +35,7 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       case 'success':
         return <CheckCircle size={20} className="text-natural" />
       case 'error':
-        return <AlertCircle size={20} className="text-nurturing" />
+        return <AlertCircle size={20} className="text-danger" />
       case 'info':
         return <Info size={20} className="text-safe" />
     }
@@ -46,7 +46,7 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       case 'success':
         return 'bg-natural-light border-natural'
       case 'error':
-        return 'bg-nurturing-light border-nurturing'
+        return 'bg-danger-light border-danger'
       case 'info':
         return 'bg-white border-safe'
     }

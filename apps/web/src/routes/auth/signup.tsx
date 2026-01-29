@@ -220,7 +220,7 @@ Generated: ${new Date().toISOString()}
 
             <form onSubmit={handleSubmit}>
               {errors.general && (
-                <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-safe">
+                <div className="mb-4 p-3 bg-danger-light border-[0.5px] border-danger text-safe">
                   {errors.general}
                 </div>
               )}
@@ -242,7 +242,7 @@ Generated: ${new Date().toISOString()}
                   className="block text-safe text-sm font-medium mb-2"
                 >
                   Tenant Code
-                  <span className="text-nurturing ml-1">*</span>
+                  <span className="text-danger ml-1">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -255,7 +255,7 @@ Generated: ${new Date().toISOString()}
                     placeholder="e.g., acme-corp"
                     className={`w-full px-4 py-2 bg-white border-[0.5px] ${
                       errors.code 
-                        ? 'border-nurturing' 
+                        ? 'border-danger' 
                         : codeAvailability.available === true
                         ? 'border-natural'
                         : 'border-safe'
@@ -268,16 +268,16 @@ Generated: ${new Date().toISOString()}
                       ) : codeAvailability.available === true ? (
                         <Check size={20} className="text-natural" />
                       ) : codeAvailability.available === false ? (
-                        <X size={20} className="text-nurturing" />
+                        <X size={20} className="text-danger" />
                       ) : null}
                     </div>
                   )}
                 </div>
                 {errors.code && (
-                  <p className="mt-1 text-sm text-nurturing">{errors.code}</p>
+                  <p className="mt-1 text-sm text-danger">{errors.code}</p>
                 )}
                 {code && !validateCode(code) && code.length > 0 && !errors.code && (
-                  <p className="mt-1 text-sm text-nurturing">
+                  <p className="mt-1 text-sm text-danger">
                     Code must be 3-15 characters, lowercase alphanumeric with optional hyphens
                   </p>
                 )}

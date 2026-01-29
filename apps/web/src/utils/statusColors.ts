@@ -97,7 +97,6 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
     }
   }
 
-  // Error/Failed states - Red (using natural-dark for contrast)
   if (
     statusLower === 'failed' ||
     statusLower === 'error' ||
@@ -105,9 +104,9 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
     statusLower === 'overdue'
   ) {
     return {
-      bg: 'bg-natural-dark',
+      bg: 'bg-danger',
       text: 'text-white',
-      border: 'border-natural-dark',
+      border: 'border-danger-dark',
     }
   }
 
