@@ -13,8 +13,11 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from fastapi import Request
+
 from app.infrastructure.models.base import Base
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.main import app
 from app.shared.utils.generators import generate_cuid
 
@@ -57,13 +60,24 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
-    Create an async test client with overridden database dependency.
+    Create an async test client with overridden database and authentication dependencies.
     """
     
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
     
+    async def override_get_current_user(request: Request) -> TokenData:
+        """Mock authentication for tests - returns a test user token with tenant_id from request."""
+        # Extract tenant_id from query parameters to match the test tenant
+        tenant_id = request.query_params.get("tenant_id", "test-tenant-id")
+        return TokenData(
+            user_id="test-user-id",
+            tenant_id=tenant_id,
+            email="test@example.com",
+        )
+    
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
     
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
@@ -388,6 +402,7 @@ def sample_client_data() -> dict[str, Any]:
     """Sample client creation data."""
     return {
         "name": "Acme Corporation",
+        "code": "ACME",
         "contact_info": {
             "phone": "+1-555-100-2000",
             "email": "contact@acme.com",
@@ -407,6 +422,7 @@ def sample_client_data_minimal() -> dict[str, Any]:
     """Minimal client creation data."""
     return {
         "name": "Simple Client",
+        "code": "SIMP",
         "contact_info": {
             "phone": "+1-555-999-8888",
         },
@@ -439,6 +455,7 @@ async def test_client_active(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Active Test Client",
+            "code": "ACTV",
             "contact_info": {
                 "phone": "+1-555-111-2222",
                 "email": "active@testclient.com",
@@ -465,6 +482,7 @@ async def test_client_2(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Second Client Corp",
+            "code": "SEC2",
             "contact_info": {
                 "phone": "+1-555-333-4444",
                 "email": "info@secondclient.com",
@@ -485,6 +503,7 @@ async def test_parent_client(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Parent Organization",
+            "code": "PRNT",
             "contact_info": {
                 "phone": "+1-555-000-0001",
                 "email": "parent@organization.com",
@@ -505,6 +524,7 @@ async def test_child_client(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Child Division",
+            "code": "CHLD",
             "contact_info": {
                 "phone": "+1-555-000-0002",
                 "email": "child@organization.com",
@@ -578,6 +598,7 @@ async def contract_test_client(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Contract Test Client",
+            "code": "CTRC",
             "contact_info": {
                 "phone": "+1-555-CONTRACT",
                 "email": "contracts@testclient.com",
@@ -605,6 +626,7 @@ async def contract_test_client_2(
         f"/clients/?tenant_id={tenant_id}",
         json={
             "name": "Second Contract Client",
+            "code": "CTR2",
             "contact_info": {
                 "phone": "+1-555-CONTRACT2",
                 "email": "contracts2@testclient.com",

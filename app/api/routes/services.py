@@ -5,12 +5,12 @@ FastAPI routes for Service operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_service_repository
+from app.api.dependencies import get_audit_event_handler, get_service_repository
 from app.api.schemas.service_schemas import (
     ServiceCreate,
     ServiceListResponse,
@@ -34,6 +34,7 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -66,9 +67,11 @@ def _to_service_response(service: ServiceEntity) -> ServiceResponse:
 @transactional()
 async def create_service(
     data: ServiceCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service."""
@@ -84,6 +87,13 @@ async def create_service(
         is_group_service=data.is_group_service,
         max_participants=data.max_participants,
     )
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_service_response(service)
 
 
@@ -95,11 +105,21 @@ async def create_service(
 @transactional()
 async def activate_service(
     service_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service."""
     service = await ActivateServiceUseCase(service_repo).execute(ServiceId(service_id))
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_service_response(service)
 
 
@@ -111,13 +131,23 @@ async def activate_service(
 @transactional()
 async def deactivate_service(
     service_id: str,
+    request: Request,
     reason: str | None = Query(None, description="Deactivation reason"),
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service."""
     service = await DeactivateServiceUseCase(service_repo).execute(
         ServiceId(service_id), reason
+    )
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_response(service)
 
@@ -130,11 +160,21 @@ async def deactivate_service(
 @transactional()
 async def archive_service(
     service_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service."""
     service = await ArchiveServiceUseCase(service_repo).execute(ServiceId(service_id))
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_service_response(service)
 
 
@@ -146,11 +186,21 @@ async def archive_service(
 @transactional()
 async def restore_service(
     service_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted service."""
     service = await RestoreServiceUseCase(service_repo).execute(ServiceId(service_id))
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_service_response(service)
 
 
@@ -163,7 +213,10 @@ async def restore_service(
 async def update_service(
     service_id: str,
     data: ServiceUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service basic information."""
@@ -173,6 +226,13 @@ async def update_service(
         description=data.description,
         category=data.category,
         duration_minutes=data.duration_minutes,
+    )
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_response(service)
 
@@ -186,7 +246,10 @@ async def update_service(
 async def update_service_group_settings(
     service_id: str,
     settings: ServiceUpdateGroupSettings,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service group settings."""
@@ -194,6 +257,13 @@ async def update_service_group_settings(
         ServiceId(service_id),
         is_group_service=settings.is_group_service,
         max_participants=settings.max_participants,
+    )
+    await audit_entity_operation(
+        entity=service,
+        audit_handler=audit_handler,
+        tenant_id=service.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_response(service)
 

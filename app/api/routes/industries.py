@@ -5,12 +5,12 @@ FastAPI routes for Industry operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_industry_repository
+from app.api.dependencies import get_audit_event_handler, get_industry_repository
 from app.api.schemas.industry_schemas import (
     IndustryCreate,
     IndustryListResponse,
@@ -30,6 +30,7 @@ from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/industries", tags=["industries"])
 
@@ -61,9 +62,11 @@ def _to_industry_response(industry: IndustryEntity) -> IndustryResponse:
 @transactional()
 async def create_industry(
     data: IndustryCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new industry."""
@@ -77,6 +80,13 @@ async def create_industry(
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
     )
+    await audit_entity_operation(
+        entity=industry,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_industry_response(industry)
 
 
@@ -89,7 +99,10 @@ async def create_industry(
 async def update_industry(
     industry_id: str,
     data: IndustryUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update an industry."""
@@ -99,6 +112,13 @@ async def update_industry(
         description=data.description,
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
+    )
+    await audit_entity_operation(
+        entity=industry,
+        audit_handler=audit_handler,
+        tenant_id=industry.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_industry_response(industry)
 
@@ -111,11 +131,21 @@ async def update_industry(
 @transactional()
 async def activate_industry(
     industry_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate an industry."""
     industry = await ActivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    await audit_entity_operation(
+        entity=industry,
+        audit_handler=audit_handler,
+        tenant_id=industry.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_industry_response(industry)
 
 
@@ -127,11 +157,21 @@ async def activate_industry(
 @transactional()
 async def deactivate_industry(
     industry_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate an industry."""
     industry = await DeactivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    await audit_entity_operation(
+        entity=industry,
+        audit_handler=audit_handler,
+        tenant_id=industry.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_industry_response(industry)
 
 
@@ -151,7 +191,7 @@ async def list_industries(
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in industry name"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Items per page"),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):

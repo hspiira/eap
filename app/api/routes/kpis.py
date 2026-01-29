@@ -5,12 +5,13 @@ FastAPI routes for KPI operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import (
+    get_audit_event_handler,
     get_kpi_assignment_repository,
     get_kpi_repository,
 )
@@ -46,6 +47,7 @@ from app.domain.repositories.kpi_repository import (
 from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/kpis", tags=["kpis"])
 
@@ -98,9 +100,11 @@ def _to_kpi_assignment_response(
 @transactional()
 async def create_kpi(
     data: KPICreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new KPI."""
@@ -118,6 +122,13 @@ async def create_kpi(
         threshold_max=data.threshold_max,
         formula=data.formula,
     )
+    await audit_entity_operation(
+        entity=kpi,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_kpi_response(kpi)
 
 
@@ -130,7 +141,10 @@ async def create_kpi(
 async def update_kpi(
     kpi_id: str,
     data: KPIUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a KPI."""
@@ -143,6 +157,13 @@ async def update_kpi(
         threshold_max=data.threshold_max,
         formula=data.formula,
     )
+    await audit_entity_operation(
+        entity=kpi,
+        audit_handler=audit_handler,
+        tenant_id=kpi.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_kpi_response(kpi)
 
 
@@ -154,11 +175,21 @@ async def update_kpi(
 @transactional()
 async def activate_kpi(
     kpi_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI."""
     kpi = await ActivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    await audit_entity_operation(
+        entity=kpi,
+        audit_handler=audit_handler,
+        tenant_id=kpi.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_kpi_response(kpi)
 
 
@@ -170,11 +201,21 @@ async def activate_kpi(
 @transactional()
 async def deactivate_kpi(
     kpi_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI."""
     kpi = await DeactivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    await audit_entity_operation(
+        entity=kpi,
+        audit_handler=audit_handler,
+        tenant_id=kpi.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_kpi_response(kpi)
 
 
@@ -281,10 +322,12 @@ async def get_kpi(
 @transactional()
 async def create_kpi_assignment(
     data: KPIAssignmentCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new KPI assignment."""
@@ -298,6 +341,13 @@ async def create_kpi_assignment(
         contract_id=data.contract_id,
         target_value=data.target_value,
     )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_kpi_assignment_response(assignment)
 
 
@@ -310,12 +360,22 @@ async def create_kpi_assignment(
 async def update_kpi_assignment(
     assignment_id: str,
     data: KPIAssignmentUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a KPI assignment."""
     assignment = await UpdateKPIAssignmentUseCase(assignment_repo).execute(
         KPIAssignmentId(assignment_id), data.target_value
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_kpi_assignment_response(assignment)
 
@@ -328,12 +388,22 @@ async def update_kpi_assignment(
 @transactional()
 async def activate_kpi_assignment(
     assignment_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI assignment."""
     assignment = await ActivateKPIAssignmentUseCase(assignment_repo).execute(
         KPIAssignmentId(assignment_id)
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_kpi_assignment_response(assignment)
 
@@ -346,12 +416,22 @@ async def activate_kpi_assignment(
 @transactional()
 async def deactivate_kpi_assignment(
     assignment_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI assignment."""
     assignment = await DeactivateKPIAssignmentUseCase(assignment_repo).execute(
         KPIAssignmentId(assignment_id)
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_kpi_assignment_response(assignment)
 

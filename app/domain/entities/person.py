@@ -32,7 +32,7 @@ Design Notes:
 from dataclasses import dataclass, field
 from datetime import datetime, date
 from typing import Union
-from app.domain.value_objects.core import PersonId, TenantId, UserId, EmploymentInfo, LicenseInfo, StaffInfo, DependentInfo, EmergencyContact
+from app.domain.value_objects.core import PersonId, TenantId, UserId, ClientId, EmploymentInfo, LicenseInfo, StaffInfo, DependentInfo, EmergencyContact
 from app.domain.entities.user import UserEntity
 from app.domain.enums import PersonType, BaseStatus
 from app.domain.events import (
@@ -333,6 +333,48 @@ class PersonEntity:
         person._ensure_invariants()
         return person
     
+    @classmethod
+    def create_dependent(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, dependent_info: DependentInfo, primary_employee: 'PersonEntity') -> 'PersonEntity':
+        """
+        Factory for DEPENDENT type.
+        
+        Args:
+            id: Person identifier
+            tenant_id: Tenant identifier
+            user_id: User identifier
+            profile: User profile entity
+            dependent_info: Dependent information (includes primary_employee_id)
+            primary_employee: The primary employee person entity (must be CLIENT_EMPLOYEE)
+            
+        Raises:
+            DomainError: If primary employee is not a CLIENT_EMPLOYEE
+        """
+        if primary_employee._person_type != PersonType.CLIENT_EMPLOYEE:
+            raise DomainError("Primary employee must be a CLIENT_EMPLOYEE")
+        
+        if not primary_employee._employment_info:
+            raise DomainError("Primary employee must have employment info")
+        
+        if dependent_info.primary_employee_id != primary_employee._id:
+            raise DomainError("Dependent info primary_employee_id must match provided primary_employee")
+        
+        now = utc_now()
+        person = cls(
+            _id=id,
+            _tenant_id=tenant_id,
+            _person_type=PersonType.DEPENDENT,
+            _is_dual_role=False,
+            _user_id=user_id,
+            _profile=profile,
+            _dependent_info=dependent_info,
+            _family_id=primary_employee._family_id or primary_employee._id,
+            _status=BaseStatus.PENDING,
+            _created_at=now,
+            _updated_at=now
+        )
+        person._ensure_invariants()
+        return person
+    
     
     def _ensure_invariants(self) -> None:
         """Ensure person invariants are met"""
@@ -343,12 +385,13 @@ class PersonEntity:
         if not self._user_id:
             raise InvariantViolation("Person must have a user ID")
         
-        # Type-specific invariants for primary role
         if self._person_type == PersonType.DEPENDENT:
             if not self._dependent_info:
                 raise InvariantViolation("Dependents must have dependent info")
             if self._is_dual_role:
                 raise InvariantViolation("Dependents cannot have dual roles")
+            if not self._family_id:
+                raise InvariantViolation("Dependents must have a family_id (primary employee)")
         
         if self._person_type == PersonType.SERVICE_PROVIDER:
             if not self._license_info:

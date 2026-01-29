@@ -65,6 +65,10 @@ class AuditMapper:
         Returns:
             AuditLogModel for persistence
         """
+        # Create model - convert metadata to plain dict for JSON serialization
+        # (entity stores it as MappingProxyType for immutability, which is not JSON-serializable)
+        metadata_dict = dict(entity._metadata) if entity._metadata else None
+
         # Create model
         return AuditLogModel(
             id=entity._id.value,
@@ -77,7 +81,7 @@ class AuditMapper:
             ip_address=entity._ip_address,
             user_agent=entity._user_agent,
             occurred_at=ensure_utc(entity._occurred_at),
-            extra_metadata=entity._metadata,
+            extra_metadata=metadata_dict,
             created_at=ensure_utc(entity._occurred_at),  # Use occurred_at for created_at
             updated_at=ensure_utc(entity._occurred_at),  # Immutable, so same as created_at
         )

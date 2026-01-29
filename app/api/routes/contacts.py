@@ -1,11 +1,11 @@
 """Contact API Routes - FastAPI routes for Contact operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_contact_repository
+from app.api.dependencies import get_audit_event_handler, get_contact_repository
 from app.api.schemas.contact_schemas import (
     ContactCreate,
     ContactListResponse,
@@ -25,6 +25,7 @@ from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, TenantId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
@@ -57,9 +58,11 @@ def _to_contact_response(contact: ContactEntity) -> ContactResponse:
 @transactional()
 async def create_contact(
     data: ContactCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contact."""
@@ -77,6 +80,13 @@ async def create_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
+    await audit_entity_operation(
+        entity=contact,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contact_response(contact)
 
 
@@ -89,7 +99,10 @@ async def create_contact(
 async def update_contact(
     contact_id: str,
     data: ContactUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a contact."""
@@ -103,6 +116,13 @@ async def update_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
+    await audit_entity_operation(
+        entity=contact,
+        audit_handler=audit_handler,
+        tenant_id=contact.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contact_response(contact)
 
 
@@ -114,11 +134,21 @@ async def update_contact(
 @transactional()
 async def activate_contact(
     contact_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contact."""
     contact = await ActivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    await audit_entity_operation(
+        entity=contact,
+        audit_handler=audit_handler,
+        tenant_id=contact.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contact_response(contact)
 
 
@@ -130,11 +160,21 @@ async def activate_contact(
 @transactional()
 async def deactivate_contact(
     contact_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     contact_repo: ContactRepository = Depends(get_contact_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a contact."""
     contact = await DeactivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    await audit_entity_operation(
+        entity=contact,
+        audit_handler=audit_handler,
+        tenant_id=contact.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_contact_response(contact)
 
 

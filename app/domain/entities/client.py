@@ -50,7 +50,7 @@ class ClientEntity:
         self._updated_at = utc_now()
         self._events.append(ClientActivated(occurred_at=utc_now(), client_id=self._id))
     
-    def deactivate(self) -> None:
+    def deactivate(self, reason: str | None = None) -> None:
         """Deactivate client"""
         if self._status == BaseStatus.DELETED:
             raise DomainError("Cannot deactivate deleted client")
@@ -58,7 +58,7 @@ class ClientEntity:
             raise DomainError("Client is already inactive")
         self._status = BaseStatus.INACTIVE
         self._updated_at = utc_now()
-        self._events.append(ClientDeactivated(occurred_at=utc_now(), client_id=self._id))
+        self._events.append(ClientDeactivated(occurred_at=utc_now(), client_id=self._id, reason=reason or "Deactivated"))
     
     def suspend(self, reason: str) -> None:
         """Suspend client (e.g., payment issues)"""

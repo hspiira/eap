@@ -43,6 +43,7 @@ class TestCreateActivity:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Activity Client",
+                "code": "ACTV",
                 "contact_info": {"email": "info@activity.com"},
             },
         )
