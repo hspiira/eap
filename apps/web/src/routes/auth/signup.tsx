@@ -210,27 +210,15 @@ Generated: ${new Date().toISOString()}
 
   return (
     <>
-      <div className="relative min-h-screen flex items-center justify-center px-4 py-8 overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="fixed inset-0 w-full h-full object-cover z-0"
-          aria-hidden
-        >
-          <source src="/videos/wellness.webm" type="video/webm" />
-        </video>
-        <div className="relative z-10 w-full max-w-md">
-          <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-none border border-[0.5px] border-white/10">
+      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5 [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border [&_input]:border-white/5 [&_input]:text-white [&_input::placeholder]:text-white/50 [&_input]:focus-visible:ring-white/20 [&_p.text-danger]:text-nurturing-light">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-text mb-2">Evexía</h1>
-              <p className="text-text-muted">Register as a new tenant</p>
+              <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
+              <p className="text-white/70">Register as a new tenant</p>
             </div>
 
             <form onSubmit={handleSubmit}>
               {errors.general && (
-                <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-text">
+                <div className="mb-4 p-3 bg-nurturing/20 border border-nurturing/30 text-white">
                   {errors.general}
                 </div>
               )}
@@ -249,7 +237,7 @@ Generated: ${new Date().toISOString()}
               <div className="mb-4">
                 <label
                   htmlFor="code"
-                  className="block text-text text-sm font-medium mb-2"
+                  className="block text-white/90 text-sm font-medium mb-2"
                 >
                   Tenant Code
                   <span className="text-danger ml-1">*</span>
@@ -263,13 +251,7 @@ Generated: ${new Date().toISOString()}
                     onChange={handleCodeChange}
                     required
                     placeholder="e.g., acme-corp"
-                    className={`w-full px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] ${
-                      errors.code 
-                        ? 'border-danger' 
-                        : codeAvailability.available === true
-                        ? 'border-natural'
-                        : 'border-border'
-                    } rounded-none focus:outline-none focus:border-border-focus text-text placeholder:text-text-muted pr-10`}
+                    className="w-full px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/5 rounded-none focus:outline-none focus:ring-1 focus:ring-white/20 text-white placeholder:text-white/50 pr-10"
                   />
                   {code && validateCode(code) && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -284,10 +266,10 @@ Generated: ${new Date().toISOString()}
                   )}
                 </div>
                 {errors.code && (
-                  <p className="mt-1 text-sm text-danger">{errors.code}</p>
+                  <p className="mt-1 text-sm text-nurturing-light">{errors.code}</p>
                 )}
                 {code && !validateCode(code) && code.length > 0 && !errors.code && (
-                  <p className="mt-1 text-sm text-danger">
+                  <p className="mt-1 text-sm text-nurturing-light">
                     Code must be 3-15 characters, lowercase alphanumeric with optional hyphens
                   </p>
                 )}
@@ -313,26 +295,24 @@ Generated: ${new Date().toISOString()}
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-text-muted text-sm mb-2">
+              <p className="text-white/70 text-sm mb-2">
                 Already have an account?{' '}
                 <Link
                   to="/auth/login"
                   search={{ tenant_code: '', email: '' }}
-                  className="text-primary hover:text-primary-hover transition-colors"
+                  className="text-natural hover:text-natural-light transition-colors"
                 >
                   Sign in
                 </Link>
               </p>
               <Link
                 to="/"
-                className="text-text hover:text-primary text-sm transition-colors"
+                className="text-white/80 hover:text-white text-sm transition-colors"
               >
                 ← Back to Home
               </Link>
             </div>
           </div>
-        </div>
-      </div>
 
       {adminCredentials && (
         <AdminPasswordDisplay

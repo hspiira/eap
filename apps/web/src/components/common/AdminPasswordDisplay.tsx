@@ -38,33 +38,33 @@ export function AdminPasswordDisplay({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface/90 backdrop-blur-xl p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[0.5px] border-white/10">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/5">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-text mb-2">✓ Tenant Created Successfully!</h2>
-          <div className="mb-4 p-3 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none">
-            <p className="text-text text-sm font-medium mb-1">Tenant: {tenant.name}</p>
-            <p className="text-text-muted text-sm">Code: {tenant.code}</p>
+          <h2 className="text-2xl font-bold text-white mb-2">✓ Tenant Created Successfully!</h2>
+          <div className="mb-4 p-3 bg-white/10 backdrop-blur-sm border border-white/5 rounded-none">
+            <p className="text-white text-sm font-medium mb-1">Tenant: {tenant.name}</p>
+            <p className="text-white/70 text-sm">Code: {tenant.code}</p>
           </div>
         </div>
         
         <div className="mb-6">
-          <div className="p-3 bg-nurturing-light border-[0.5px] border-nurturing rounded-none mb-4">
-            <p className="text-text text-sm font-medium">
+          <div className="p-3 bg-nurturing/20 border border-nurturing/30 rounded-none mb-4">
+            <p className="text-white text-sm font-medium">
               ⚠️ IMPORTANT: Save These Credentials
             </p>
-            <p className="text-text-muted text-xs mt-1">
+            <p className="text-white/70 text-xs mt-1">
               These credentials cannot be retrieved later. Please save them securely.
             </p>
           </div>
           
           <div className="mb-4">
-            <label className="block text-text text-sm font-medium mb-2">
+            <label className="block text-white/90 text-sm font-medium mb-2">
               Admin Email
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none">
-                <code className="text-text">{tenant.admin_email}</code>
+              <div className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/5 rounded-none">
+                <code className="text-white">{tenant.admin_email}</code>
               </div>
               <button
                 onClick={copyEmail}
@@ -78,17 +78,17 @@ export function AdminPasswordDisplay({
           </div>
 
           <div className="mb-4">
-            <label className="block text-text text-sm font-medium mb-2">
+            <label className="block text-white/90 text-sm font-medium mb-2">
               Admin Password
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none flex items-center">
-                <code className="text-text font-mono flex-1">
+              <div className="flex-1 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/5 rounded-none flex items-center">
+                <code className="text-white font-mono flex-1">
                   {showPassword ? tenant.admin_password : '•'.repeat(16)}
                 </code>
                 <button
                   onClick={() => setShowPassword(!showPassword)}
-                  className="ml-2 text-text-muted hover:text-primary transition-colors"
+                  className="ml-2 text-white/70 hover:text-natural transition-colors"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

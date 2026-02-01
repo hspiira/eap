@@ -59,27 +59,15 @@ function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="fixed inset-0 w-full h-full object-cover z-0"
-        aria-hidden
-      >
-        <source src="/videos/wellness.webm" type="video/webm" />
-      </video>
-      <div className="relative z-10 w-full max-w-md">
-        <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-none border border-[0.5px] border-white/10">
+    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5 [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border [&_input]:border-white/5 [&_input]:text-white [&_input::placeholder]:text-white/50 [&_input]:focus-visible:ring-white/20 [&_p.text-danger]:text-nurturing-light">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-text mb-2">Evexía</h1>
-            <p className="text-text-muted">Sign in to your account</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
+            <p className="text-white/70">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             {errors.general && (
-              <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-text">
+              <div className="mb-4 p-3 bg-nurturing/20 border border-nurturing/30 text-white">
                 {errors.general}
               </div>
             )}
@@ -130,24 +118,22 @@ function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-text-muted text-sm mb-2">
+            <p className="text-white/70 text-sm mb-2">
               Don't have an account?{' '}
               <Link
                 to="/auth/signup"
-                className="text-primary hover:text-primary-hover transition-colors"
+                className="text-natural hover:text-natural-light transition-colors"
               >
                 Sign up
               </Link>
             </p>
             <Link
               to="/"
-              className="text-text hover:text-primary text-sm transition-colors"
+              className="text-white/80 hover:text-white text-sm transition-colors"
             >
               ← Back to Home
             </Link>
           </div>
         </div>
-      </div>
-    </div>
   )
 }
