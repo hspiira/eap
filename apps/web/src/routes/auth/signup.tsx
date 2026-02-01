@@ -210,17 +210,27 @@ Generated: ${new Date().toISOString()}
 
   return (
     <>
-      <div className="min-h-screen bg-white flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">
-          <div className="bg-white p-8 rounded-none border border-[0.5px] border-safe/30">
+      <div className="relative min-h-screen flex items-center justify-center px-4 py-8 overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 w-full h-full object-cover z-0"
+          aria-hidden
+        >
+          <source src="/videos/wellness.webm" type="video/webm" />
+        </video>
+        <div className="relative z-10 w-full max-w-md">
+          <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-none border border-[0.5px] border-white/10">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-safe mb-2">Evexía</h1>
-              <p className="text-safe-light">Register as a new tenant</p>
+              <h1 className="text-3xl font-bold text-text mb-2">Evexía</h1>
+              <p className="text-text-muted">Register as a new tenant</p>
             </div>
 
             <form onSubmit={handleSubmit}>
               {errors.general && (
-                <div className="mb-4 p-3 bg-danger-light border-[0.5px] border-danger text-safe">
+                <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-text">
                   {errors.general}
                 </div>
               )}
@@ -239,7 +249,7 @@ Generated: ${new Date().toISOString()}
               <div className="mb-4">
                 <label
                   htmlFor="code"
-                  className="block text-safe text-sm font-medium mb-2"
+                  className="block text-text text-sm font-medium mb-2"
                 >
                   Tenant Code
                   <span className="text-danger ml-1">*</span>
@@ -253,13 +263,13 @@ Generated: ${new Date().toISOString()}
                     onChange={handleCodeChange}
                     required
                     placeholder="e.g., acme-corp"
-                    className={`w-full px-4 py-2 bg-white border-[0.5px] ${
+                    className={`w-full px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] ${
                       errors.code 
                         ? 'border-danger' 
                         : codeAvailability.available === true
                         ? 'border-natural'
-                        : 'border-safe'
-                    } rounded-none focus:outline-none focus:border-natural pr-10`}
+                        : 'border-border'
+                    } rounded-none focus:outline-none focus:border-border-focus text-text placeholder:text-text-muted pr-10`}
                   />
                   {code && validateCode(code) && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -296,26 +306,26 @@ Generated: ${new Date().toISOString()}
                   codeAvailability.checking ||
                   codeAvailability.available === false
                 }
-                className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
               </button>
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-safe-light text-sm mb-2">
+              <p className="text-text-muted text-sm mb-2">
                 Already have an account?{' '}
                 <Link
                   to="/auth/login"
                   search={{ tenant_code: '', email: '' }}
-                  className="text-natural hover:text-natural-dark transition-colors"
+                  className="text-primary hover:text-primary-hover transition-colors"
                 >
                   Sign in
                 </Link>
               </p>
               <Link
                 to="/"
-                className="text-safe hover:text-natural text-sm transition-colors"
+                className="text-text hover:text-primary text-sm transition-colors"
               >
                 ← Back to Home
               </Link>

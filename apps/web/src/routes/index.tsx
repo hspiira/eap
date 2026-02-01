@@ -18,49 +18,7 @@ function HomePage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-page">
-        <div className="max-w-4xl mx-auto px-6 py-16">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-text mb-4">Evexía</h1>
-            <p className="text-xl text-text-muted">Management Platform</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            <div className="bg-surface border border-[0.5px] border-border p-8">
-              <h2 className="text-2xl font-semibold text-text mb-4">Sign In</h2>
-              <p className="text-text-muted mb-6">
-                Access your account to manage your organization, users, and services.
-              </p>
-              <Link
-                to="/auth/login"
-                search={{}}
-                className="inline-block w-full px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold text-center rounded-none transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-
-            <div className="bg-surface border border-[0.5px] border-border p-8">
-              <h2 className="text-2xl font-semibold text-text mb-4">Get Started</h2>
-              <p className="text-text-muted mb-6">
-                Create an organization and start managing your services today.
-              </p>
-              <Link
-                to="/auth/signup"
-                className="inline-block w-full px-6 py-3 bg-nurturing hover:bg-nurturing-dark text-white font-semibold text-center rounded-none transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          </div>
-
-          <div className="text-center text-sm text-text-muted">
-            <p>Platform for service management and delivery</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <LandingPage />
   }
 
   return (
@@ -72,5 +30,76 @@ function HomePage() {
         </p>
       </div>
     </AppLayout>
+  )
+}
+
+function LandingPage() {
+  return (
+    <div className="h-screen bg-black flex relative overflow-hidden">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 z-0 w-full h-full object-cover"
+        aria-hidden
+      >
+        <source src="/videos/bg_landing.webm" type="video/webm" />
+      </video>
+      <div className="absolute inset-0 z-0 bg-black/50" aria-hidden />
+
+      <div className="relative z-10 flex flex-col w-full">
+        <nav className="px-8 py-8">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="text-2xl font-semibold text-white tracking-wide">Evexía</div>
+            <Link
+              to="/auth/login"
+              search={{}}
+              className="text-white/60 hover:text-white transition-colors text-sm"
+            >
+              Sign In
+            </Link>
+          </div>
+        </nav>
+
+        <main className="flex-1 flex items-center px-8">
+          <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-6">
+              <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight">
+                Manage with
+                <br />
+                <span className="text-natural">clarity</span>
+              </h1>
+              <p className="text-lg text-white/50 leading-relaxed max-w-md tracking-wider">
+                A comprehensive platform for managing clients, services, and delivery
+              </p>
+            </div>
+
+            <div className="flex flex-col items-start lg:items-end gap-4">
+              <Link
+                to="/auth/signup"
+                className="group flex items-center gap-4 px-8 py-5 bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all"
+              >
+                <span className="text-lg font-medium">Get Started</span>
+                <span className="text-white/40 group-hover:text-white/70 group-hover:translate-x-1 transition-all">→</span>
+              </Link>
+              <Link
+                to="/auth/login"
+                search={{}}
+                className="text-white/40 hover:text-white/70 transition-colors text-sm"
+              >
+                Already have an account?
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <footer className="px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-white/30 text-xs">© 2026 Evexía</p>
+          </div>
+        </footer>
+      </div>
+    </div>
   )
 }

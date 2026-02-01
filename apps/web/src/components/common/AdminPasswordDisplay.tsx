@@ -38,37 +38,37 @@ export function AdminPasswordDisplay({
   }
 
   return (
-    <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-surface/90 backdrop-blur-xl p-8 rounded-none max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[0.5px] border-white/10">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-safe mb-2">✓ Tenant Created Successfully!</h2>
-          <div className="mb-4 p-3 bg-white border-[0.5px] border-safe/30 rounded-none">
-            <p className="text-safe text-sm font-medium mb-1">Tenant: {tenant.name}</p>
-            <p className="text-safe-light text-sm">Code: {tenant.code}</p>
+          <h2 className="text-2xl font-bold text-text mb-2">✓ Tenant Created Successfully!</h2>
+          <div className="mb-4 p-3 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none">
+            <p className="text-text text-sm font-medium mb-1">Tenant: {tenant.name}</p>
+            <p className="text-text-muted text-sm">Code: {tenant.code}</p>
           </div>
         </div>
         
         <div className="mb-6">
           <div className="p-3 bg-nurturing-light border-[0.5px] border-nurturing rounded-none mb-4">
-            <p className="text-safe text-sm font-medium">
+            <p className="text-text text-sm font-medium">
               ⚠️ IMPORTANT: Save These Credentials
             </p>
-            <p className="text-safe-light text-xs mt-1">
+            <p className="text-text-muted text-xs mt-1">
               These credentials cannot be retrieved later. Please save them securely.
             </p>
           </div>
           
           <div className="mb-4">
-            <label className="block text-safe text-sm font-medium mb-2">
+            <label className="block text-text text-sm font-medium mb-2">
               Admin Email
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-white border-[0.5px] border-safe/30 rounded-none">
-                <code className="text-safe">{tenant.admin_email}</code>
+              <div className="flex-1 px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none">
+                <code className="text-text">{tenant.admin_email}</code>
               </div>
               <button
                 onClick={copyEmail}
-                className="px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors flex items-center gap-2"
                 title="Copy email"
               >
                 <Copy size={16} />
@@ -78,17 +78,17 @@ export function AdminPasswordDisplay({
           </div>
 
           <div className="mb-4">
-            <label className="block text-safe text-sm font-medium mb-2">
+            <label className="block text-text text-sm font-medium mb-2">
               Admin Password
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-4 py-2 bg-white border-[0.5px] border-safe/30 rounded-none flex items-center">
-                <code className="text-safe font-mono flex-1">
+              <div className="flex-1 px-4 py-2 bg-white/5 backdrop-blur-sm border-[0.5px] border-white/10 rounded-none flex items-center">
+                <code className="text-text font-mono flex-1">
                   {showPassword ? tenant.admin_password : '•'.repeat(16)}
                 </code>
                 <button
                   onClick={() => setShowPassword(!showPassword)}
-                  className="ml-2 text-safe hover:text-natural transition-colors"
+                  className="ml-2 text-text-muted hover:text-primary transition-colors"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -96,7 +96,7 @@ export function AdminPasswordDisplay({
               </div>
               <button
                 onClick={copyPassword}
-                className="px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors flex items-center gap-2"
                 title="Copy password"
               >
                 <Copy size={16} />
@@ -107,7 +107,7 @@ export function AdminPasswordDisplay({
 
           <button
             onClick={onDownload}
-            className="w-full py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors flex items-center justify-center gap-2"
           >
             <Download size={16} />
             Download Credentials
@@ -117,7 +117,7 @@ export function AdminPasswordDisplay({
         <div className="flex gap-3">
           <button
             onClick={onLogin}
-            className="flex-1 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
+            className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-none transition-colors"
           >
             Login Now
           </button>

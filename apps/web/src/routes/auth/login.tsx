@@ -59,9 +59,19 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-page flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-surface p-8 rounded-none border border-[0.5px] border-border">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover z-0"
+        aria-hidden
+      >
+        <source src="/videos/wellness.webm" type="video/webm" />
+      </video>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="bg-surface/80 backdrop-blur-xl p-8 rounded-none border border-[0.5px] border-white/10">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-text mb-2">Evexía</h1>
             <p className="text-text-muted">Sign in to your account</p>
