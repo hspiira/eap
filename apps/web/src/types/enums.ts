@@ -92,6 +92,17 @@ export enum WorkStatus {
 }
 
 /**
+ * Staff role (platform staff)
+ */
+export enum StaffRole {
+  ADMIN = 'Admin',
+  MANAGER = 'Manager',
+  COORDINATOR = 'Coordinator',
+  SUPPORT = 'Support',
+  VIEWER = 'Viewer',
+}
+
+/**
  * Contact methods
  */
 export enum ContactMethod {
@@ -182,6 +193,18 @@ export enum ActivityType {
   MEETING = 'MEETING',
   NOTE = 'NOTE',
 }
+
+/**
+ * Relationship types for dependents
+ */
+export type RelationType =
+  | 'Child'
+  | 'Spouse'
+  | 'Parent'
+  | 'Sibling'
+  | 'Grandparent'
+  | 'Guardian'
+  | 'Other'
 
 /**
  * Action types for audit logs

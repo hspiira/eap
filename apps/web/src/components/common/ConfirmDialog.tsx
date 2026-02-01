@@ -1,0 +1,101 @@
+/**
+ * Confirm Dialog Component
+ * Reusable confirmation modal for destructive actions
+ */
+
+import { X, AlertTriangle } from 'lucide-react'
+
+export interface ConfirmDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  variant?: 'danger' | 'warning' | 'info'
+  loading?: boolean
+}
+
+export function ConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'danger',
+  loading = false,
+}: ConfirmDialogProps) {
+  if (!isOpen) return null
+
+  const variantColors = {
+    danger: {
+      bg: 'bg-danger',
+      text: 'text-white',
+      border: 'border-danger-dark',
+    },
+    warning: {
+      bg: 'bg-nurturing',
+      text: 'text-white',
+      border: 'border-nurturing-dark',
+    },
+    info: {
+      bg: 'bg-neutral',
+      text: 'text-white',
+      border: 'border-neutral-dark',
+    },
+  }
+
+  const colors = variantColors[variant]
+
+  const handleConfirm = () => {
+    onConfirm()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface border border-[0.5px] border-border max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle
+                size={24}
+                className={variant === 'danger' ? 'text-danger' : 'text-nurturing'}
+              />
+              <h3 className="text-lg font-semibold text-text">{title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="p-1 hover:bg-surface-hover transition-colors rounded-none text-text"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <p className="text-text mb-6">{message}</p>
+
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 bg-surface hover:bg-surface-hover text-text border border-[0.5px] border-border rounded-none transition-colors disabled:opacity-50"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              className={`px-4 py-2 ${colors.bg} hover:opacity-90 ${colors.text} rounded-none transition-colors disabled:opacity-50`}
+            >
+              {loading ? 'Processing...' : confirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

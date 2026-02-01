@@ -12,6 +12,7 @@ import type {
   DocumentStatus,
   PersonType,
   WorkStatus,
+  StaffRole,
   ContactMethod,
   Language,
   PaymentStatus,
@@ -20,6 +21,7 @@ import type {
   KPICategory,
   MeasurementUnit,
   ActivityType,
+  RelationType,
 } from './enums'
 
 /**
@@ -55,11 +57,66 @@ export interface ContactInfo {
 }
 
 /**
+ * Dependent information
+ */
+export interface DependentInfo {
+  primary_employee_id: string
+  relationship: RelationType
+  guardian_id?: string | null
+}
+
+/**
+ * Employment information (client employee)
+ */
+export interface EmploymentInfo {
+  client_id?: string | null
+  employee_code?: string | null
+  employee_id?: string | null
+  department?: string | null
+  role?: string | null
+  start_date?: string | null
+  status?: WorkStatus | null
+  end_date?: string | null
+}
+
+/**
+ * License information
+ */
+export interface LicenseInfo {
+  number?: string | null
+  issuing_authority?: string | null
+  expiry_date?: string | null
+}
+
+/**
+ * Staff information (platform staff)
+ */
+export interface StaffInfo {
+  role?: StaffRole | null
+  client_id?: string | null
+  department?: string | null
+  can_manage_clients?: boolean
+  can_manage_services?: boolean
+  can_view_reports?: boolean
+}
+
+/**
+ * Emergency contact
+ */
+export interface EmergencyContact {
+  name?: string | null
+  phone?: string | null
+  email?: string | null
+}
+
+/**
  * Tenant/Organization
  */
 export interface Tenant extends BaseEntity {
   name: string
+  code?: string | null // Tenant code (e.g., "acme-corp")
   status: TenantStatus
+  subscription_tier?: string | null // Subscription tier (e.g., "Free", "Pro", "Enterprise")
   industry_id?: string | null
   tax_id?: string | null
   registration_number?: string | null
@@ -80,6 +137,12 @@ export interface User extends BaseEntity {
   is_two_factor_enabled: boolean
   preferred_language?: Language | null
   timezone?: string | null
+  date_format?: string | null
+  week_starts_on?: string | null
+  email_notifications?: boolean | null
+  assignment_alerts?: boolean | null
+  session_reminders?: boolean | null
+  weekly_digest?: boolean | null
   last_login_at?: string | null
   status_changed_at?: string | null
   is_active: boolean
@@ -96,35 +159,42 @@ export interface Person extends BaseEntity {
   date_of_birth?: string | null
   gender?: string | null
   status: BaseStatus
+  user_id: string
+  is_dual_role?: boolean
+  secondary_person_type?: PersonType | null
+  last_service_date?: string | null
+  is_eligible_for_services?: boolean
   client_id?: string | null // For ClientEmployee and Dependent
-  parent_person_id?: string | null // For Dependent
+  parent_person_id?: string | null // DEPRECATED: For Dependent - use dependent_info instead
+  family_id?: string | null
+  dependent_info?: DependentInfo | null // For Dependent - replaces parent_person_id usage
   contact_info?: ContactInfo | null
   address?: Address | null
-  emergency_contact?: {
-    name?: string | null
-    relationship?: string | null
-    phone?: string | null
-  } | null
-  employment_info?: {
-    employee_id?: string | null
-    department?: string | null
-    position?: string | null
-    hire_date?: string | null
-    work_status?: WorkStatus | null
-  } | null
-  license_info?: {
-    license_number?: string | null
-    license_type?: string | null
-    issuing_authority?: string | null
-    issue_date?: string | null
-    expiry_date?: string | null
-  } | null
-  staff_info?: {
-    role?: string | null
-    department?: string | null
-  } | null
+  emergency_contact?: EmergencyContact | null
+  employment_info?: EmploymentInfo | null
+  license_info?: LicenseInfo | null
+  staff_info?: StaffInfo | null
   secondary_roles?: PersonType[]
   metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Client contact info (phone, email, address line)
+ */
+export interface ClientContactInfo {
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+}
+
+/**
+ * Client billing address
+ */
+export interface ClientBillingAddress {
+  street?: string | null
+  city?: string | null
+  country?: string | null
+  postal_code?: string | null
 }
 
 /**
@@ -132,14 +202,24 @@ export interface Person extends BaseEntity {
  */
 export interface Client extends BaseEntity {
   name: string
+  code: string // Required, 3-5 chars (e.g. used for employee codes like MNT)
+  is_verified?: boolean // Backend may omit; treat as false when absent
   status: BaseStatus
+  contact_info: ClientContactInfo // Required for creation
+  billing_address?: ClientBillingAddress | null
   industry_id?: string | null
-  tax_id?: string | null
-  registration_number?: string | null
-  address?: Address | null
-  contact_info?: ContactInfo | null
-  parent_client_id?: string | null // For client hierarchy
+  parent_client_id?: string | null
+  preferred_contact_method?: string | null
   metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Client stats (child count, contracts, verification)
+ */
+export interface ClientStats {
+  child_count?: number
+  contract_count?: number
+  is_verified?: boolean
 }
 
 /**

@@ -2,6 +2,16 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
+import { useEffect } from 'react'
+import { AuthProvider } from '../contexts/AuthContext'
+import { ThemeProvider } from '../contexts/ThemeContext'
+import { TenantProvider } from '../contexts/TenantContext'
+import { ToastProvider } from '../contexts/ToastContext'
+import { ErrorBoundary } from '../components/common/ErrorBoundary'
+import { ToastContainer } from '../components/common/ToastContainer'
+import { SessionTimeoutManager } from '../components/common/SessionTimeoutManager'
+import { useToast } from '../contexts/ToastContext'
+import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -30,13 +40,31 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    setupGlobalErrorHandlers()
+  }, [])
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        <ErrorBoundary>
+          <ThemeProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <TenantProvider>
+                  <SessionTimeoutManager>
+                  <ToastWrapper>
+                    {children}
+                  </ToastWrapper>
+                  </SessionTimeoutManager>
+                </TenantProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
@@ -51,5 +79,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function ToastWrapper({ children }: { children: React.ReactNode }) {
+  const { toasts, removeToast } = useToast()
+  return (
+    <>
+      {children}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+    </>
   )
 }
