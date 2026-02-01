@@ -8,12 +8,14 @@ import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { CreatePersonModal } from '@/components/forms/CreatePersonModal'
 import { personsApi } from '@/api/endpoints/persons'
 import { clientsApi } from '@/api/endpoints/clients'
 import type { Person } from '@/types/entities'
-import type { BaseStatus, PersonType } from '@/types/enums'
+import { PersonType } from '@/types/enums'
+import type { BaseStatus } from '@/types/enums'
 
-const ALLOWED_TYPES: PersonType[] = ['ClientEmployee', 'Dependent']
+const ALLOWED_TYPES: PersonType[] = [PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT]
 
 export const Route = createFileRoute('/people/client-people/')({
   component: ClientPeoplePage,
@@ -35,6 +37,7 @@ function ClientPeoplePage() {
   const [clientFilter, setClientFilter] = useState<string>('')
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -329,13 +332,19 @@ function ClientPeoplePage() {
               setCurrentPage(1)
             },
             createAction: {
-              onClick: () => navigate({ to: '/people/client-people/new' }),
+              onClick: () => setCreateModalOpen(true),
               label: 'Add person',
             },
           }}
           emptyMessage="No people in roster"
         />
       </div>
+
+      <CreatePersonModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={() => fetchPersons()}
+      />
     </AppLayout>
   )
 }

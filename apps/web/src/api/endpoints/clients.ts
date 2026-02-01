@@ -76,10 +76,12 @@ export const clientsApi = {
   },
 
   /**
-   * Mark client as verified
+   * Mark client as verified (backend requires verified_by query param = current user ID)
    */
-  async verify(clientId: string): Promise<Client> {
-    return apiClient.post<Client>(`/clients/${clientId}/verify`)
+  async verify(clientId: string, verifiedBy: string): Promise<Client> {
+    return apiClient.post<Client>(
+      `/clients/${clientId}/verify?verified_by=${encodeURIComponent(verifiedBy)}`
+    )
   },
 
   /**

@@ -92,6 +92,17 @@ export enum WorkStatus {
 }
 
 /**
+ * Staff role (platform staff)
+ */
+export enum StaffRole {
+  ADMIN = 'Admin',
+  MANAGER = 'Manager',
+  COORDINATOR = 'Coordinator',
+  SUPPORT = 'Support',
+  VIEWER = 'Viewer',
+}
+
+/**
  * Contact methods
  */
 export enum ContactMethod {

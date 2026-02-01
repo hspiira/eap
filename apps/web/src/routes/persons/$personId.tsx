@@ -14,7 +14,8 @@ import { useToast } from '@/contexts/ToastContext'
 import { personsApi } from '@/api/endpoints/persons'
 import type { Person } from '@/types/entities'
 import type { BaseStatus, PersonType } from '@/types/enums'
-import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users, Link as LinkIcon } from 'lucide-react'
+import type { LifecycleAction } from '@/components/common/LifecycleActions'
+import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users, Link as LinkIcon, CheckCircle, XCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/persons/$personId')({
   component: PersonDetailPage,
@@ -60,14 +61,34 @@ function PersonDetailPage() {
     fetchPerson()
   }, [personId])
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: LifecycleAction) => {
     try {
       setActionLoading(true)
-      // TODO: Implement actual API calls for lifecycle actions
-      showSuccess(`Person ${action} action initiated`)
+      switch (action) {
+        case 'activate':
+          await personsApi.activate(personId)
+          showSuccess('Person activated')
+          break
+        case 'deactivate':
+          await personsApi.deactivate(personId)
+          showSuccess('Person deactivated')
+          break
+        case 'archive':
+          await personsApi.archive(personId)
+          showSuccess('Person archived')
+          break
+        case 'restore':
+        case 'unarchive':
+          await personsApi.restore(personId)
+          showSuccess('Person restored')
+          break
+        default:
+          setActionLoading(false)
+          return
+      }
       await fetchPerson()
     } catch (err: any) {
-      showError(`Failed to ${action} person`)
+      showError(err?.message ?? `Failed to ${action} person`)
     } finally {
       setActionLoading(false)
     }
@@ -85,6 +106,7 @@ function PersonDetailPage() {
       ClientEmployee: 'Client Employee',
       Dependent: 'Dependent',
       ServiceProvider: 'Service Provider',
+      PlatformStaff: 'Platform Staff',
     }
     return labels[type] || type
   }
@@ -189,6 +211,34 @@ function PersonDetailPage() {
                   <dd className="text-safe mt-1">{person.gender}</dd>
                 </div>
               )}
+              {person.is_eligible_for_services != null && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Eligible for services</dt>
+                  <dd className="text-safe mt-1 flex items-center gap-2">
+                    {person.is_eligible_for_services ? (
+                      <><CheckCircle size={16} className="text-natural" /> Yes</>
+                    ) : (
+                      <><XCircle size={16} className="text-safe-light" /> No</>
+                    )}
+                  </dd>
+                </div>
+              )}
+              {person.last_service_date && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Last service date</dt>
+                  <dd className="text-safe mt-1">
+                    {new Date(person.last_service_date).toLocaleDateString()}
+                  </dd>
+                </div>
+              )}
+              {person.is_dual_role && person.secondary_person_type && (
+                <div>
+                  <dt className="text-sm font-medium text-safe-light">Dual role</dt>
+                  <dd className="text-safe mt-1">
+                    Also: {getPersonTypeLabel(person.secondary_person_type)}
+                  </dd>
+                </div>
+              )}
             </dl>
           </div>
 
@@ -254,17 +304,17 @@ function PersonDetailPage() {
                     <dd className="text-safe mt-1">{person.employment_info.department}</dd>
                   </div>
                 )}
-                {person.employment_info.position && (
+                {person.employment_info.role && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Position</dt>
-                    <dd className="text-safe mt-1">{person.employment_info.position}</dd>
+                    <dt className="text-sm font-medium text-safe-light">Role</dt>
+                    <dd className="text-safe mt-1">{person.employment_info.role}</dd>
                   </div>
                 )}
-                {person.employment_info.hire_date && (
+                {person.employment_info.start_date && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Hire Date</dt>
+                    <dt className="text-sm font-medium text-safe-light">Start Date</dt>
                     <dd className="text-safe mt-1">
-                      {new Date(person.employment_info.hire_date).toLocaleDateString()}
+                      {new Date(person.employment_info.start_date).toLocaleDateString()}
                     </dd>
                   </div>
                 )}
@@ -276,10 +326,10 @@ function PersonDetailPage() {
                     </dd>
                   </div>
                 )}
-                {person.employment_info.work_status && (
+                {person.employment_info.status && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Work Status</dt>
-                    <dd className="text-safe mt-1">{person.employment_info.work_status}</dd>
+                    <dt className="text-sm font-medium text-safe-light">Status</dt>
+                    <dd className="text-safe mt-1">{person.employment_info.status}</dd>
                   </div>
                 )}
               </dl>
@@ -335,16 +385,10 @@ function PersonDetailPage() {
                 License Information
               </h2>
               <dl className="space-y-3">
-                {person.license_info.license_number && (
+                {person.license_info.number && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">License Number</dt>
-                    <dd className="text-safe mt-1">{person.license_info.license_number}</dd>
-                  </div>
-                )}
-                {person.license_info.license_type && (
-                  <div>
-                    <dt className="text-sm font-medium text-safe-light">License Type</dt>
-                    <dd className="text-safe mt-1">{person.license_info.license_type}</dd>
+                    <dd className="text-safe mt-1">{person.license_info.number}</dd>
                   </div>
                 )}
                 {person.license_info.issuing_authority && (
@@ -353,20 +397,60 @@ function PersonDetailPage() {
                     <dd className="text-safe mt-1">{person.license_info.issuing_authority}</dd>
                   </div>
                 )}
-                {person.license_info.issue_date && (
-                  <div>
-                    <dt className="text-sm font-medium text-safe-light">Issue Date</dt>
-                    <dd className="text-safe mt-1">
-                      {new Date(person.license_info.issue_date).toLocaleDateString()}
-                    </dd>
-                  </div>
-                )}
                 {person.license_info.expiry_date && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Expiry Date</dt>
                     <dd className="text-safe mt-1">
                       {new Date(person.license_info.expiry_date).toLocaleDateString()}
                     </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
+
+          {/* Staff Information */}
+          {person.staff_info && (
+            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+              <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+                <Briefcase size={20} />
+                Staff Information
+              </h2>
+              <dl className="space-y-3">
+                {person.staff_info.role && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Role</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.role}</dd>
+                  </div>
+                )}
+                {person.staff_info.department && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Department</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.department}</dd>
+                  </div>
+                )}
+                {person.staff_info.client_id && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Client</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.client_id}</dd>
+                  </div>
+                )}
+                {person.staff_info.can_manage_clients != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Can manage clients</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.can_manage_clients ? 'Yes' : 'No'}</dd>
+                  </div>
+                )}
+                {person.staff_info.can_manage_services != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Can manage services</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.can_manage_services ? 'Yes' : 'No'}</dd>
+                  </div>
+                )}
+                {person.staff_info.can_view_reports != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Can view reports</dt>
+                    <dd className="text-safe mt-1">{person.staff_info.can_view_reports ? 'Yes' : 'No'}</dd>
                   </div>
                 )}
               </dl>
@@ -387,16 +471,16 @@ function PersonDetailPage() {
                     <dd className="text-safe mt-1">{person.emergency_contact.name}</dd>
                   </div>
                 )}
-                {person.emergency_contact.relationship && (
-                  <div>
-                    <dt className="text-sm font-medium text-safe-light">Relationship</dt>
-                    <dd className="text-safe mt-1">{person.emergency_contact.relationship}</dd>
-                  </div>
-                )}
                 {person.emergency_contact.phone && (
                   <div>
                     <dt className="text-sm font-medium text-safe-light">Phone</dt>
                     <dd className="text-safe mt-1">{person.emergency_contact.phone}</dd>
+                  </div>
+                )}
+                {person.emergency_contact.email && (
+                  <div>
+                    <dt className="text-sm font-medium text-safe-light">Email</dt>
+                    <dd className="text-safe mt-1">{person.emergency_contact.email}</dd>
                   </div>
                 )}
               </dl>

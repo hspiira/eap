@@ -1,20 +1,11 @@
 /**
- * Add Person to Roster
- * Employee or Dependent only. PlatformStaff / ServiceProvider excluded.
+ * Add Person to Roster (standalone page)
+ * For direct URL access. Primary flow is via CreatePersonModal on roster and client detail.
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { FormField } from '@/components/common/FormField'
-import { Select } from '@/components/common/Select'
-import { DatePicker } from '@/components/common/DatePicker'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
-import { personsApi } from '@/api/endpoints/persons'
-import { clientsApi } from '@/api/endpoints/clients'
-import type { PersonType, RelationType } from '@/types/enums'
-import type { Person } from '@/types/entities'
+import { CreatePersonForm } from '@/components/forms/CreatePersonForm'
 import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/people/client-people/new')({
@@ -24,176 +15,9 @@ export const Route = createFileRoute('/people/client-people/new')({
   component: CreateClientPersonPage,
 })
 
-const personTypeOptions = [
-  { value: 'ClientEmployee', label: 'Client Employee' },
-  { value: 'Dependent', label: 'Dependent' },
-]
-
-const relationshipOptions: Array<{ value: RelationType; label: string }> = [
-  { value: 'Child', label: 'Child' },
-  { value: 'Spouse', label: 'Spouse' },
-  { value: 'Parent', label: 'Parent' },
-  { value: 'Sibling', label: 'Sibling' },
-  { value: 'Grandparent', label: 'Grandparent' },
-  { value: 'Guardian', label: 'Guardian' },
-  { value: 'Other', label: 'Other' },
-]
-
 function CreateClientPersonPage() {
   const navigate = useNavigate()
   const { client_id: initialClientId } = Route.useSearch()
-  const { showSuccess, showError } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string; employee_code?: string | null }>>([])
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    middle_name: '',
-    person_type: 'ClientEmployee' as PersonType,
-    date_of_birth: '',
-    gender: '',
-    client_id: initialClientId ?? '',
-    email: '',
-    phone: '',
-    mobile: '',
-    street: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: '',
-    department: '',
-    position: '',
-    hire_date: '',
-    primary_employee_id: '',
-    relationship: '' as RelationType | '',
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const res = await clientsApi.list({ limit: 100 })
-        setClients(res.items.map((c) => ({ id: c.id, name: c.name })))
-      } catch (err) {
-        console.error('Error fetching clients:', err)
-      }
-    }
-    fetchClients()
-  }, [])
-
-  useEffect(() => {
-    if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
-  }, [initialClientId])
-
-  // Fetch employees when client is selected and person type is Dependent
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!formData.client_id || formData.person_type !== 'Dependent') {
-        setEmployees([])
-        return
-      }
-      try {
-        const res = await personsApi.list({
-          client_id: formData.client_id,
-          person_type: 'ClientEmployee',
-          limit: 200,
-        } as Record<string, unknown>)
-        const employeeList = res.items
-          .filter((p: Person) => p.person_type === 'ClientEmployee')
-          .map((p: Person) => ({
-            id: p.id,
-            name: [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' '),
-            employee_code: p.employment_info?.employee_code,
-          }))
-        setEmployees(employeeList)
-      } catch (err) {
-        console.error('Error fetching employees:', err)
-        setEmployees([])
-      }
-    }
-    fetchEmployees()
-  }, [formData.client_id, formData.person_type])
-
-  const validate = () => {
-    const next: Record<string, string> = {}
-    if (!formData.first_name.trim()) next.first_name = 'First name is required'
-    if (!formData.last_name.trim()) next.last_name = 'Last name is required'
-    if (!formData.client_id) next.client_id = 'Client is required'
-    if (formData.person_type === 'Dependent') {
-      if (!formData.primary_employee_id) next.primary_employee_id = 'Primary employee is required'
-      if (!formData.relationship) next.relationship = 'Relationship is required'
-    }
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-
-    try {
-      setLoading(true)
-      const personData: Record<string, unknown> = {
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
-        person_type: formData.person_type,
-        middle_name: formData.middle_name.trim() || null,
-        date_of_birth: formData.date_of_birth || null,
-        gender: formData.gender.trim() || null,
-        client_id: formData.client_id || null,
-      }
-      if (formData.email || formData.phone || formData.mobile) {
-        ;(personData as any).contact_info = {
-          email: formData.email.trim() || null,
-          phone: formData.phone.trim() || null,
-          mobile: formData.mobile.trim() || null,
-        }
-      }
-      if (formData.street || formData.city || formData.state || formData.postal_code || formData.country) {
-        ;(personData as any).address = {
-          street: formData.street.trim() || null,
-          city: formData.city.trim() || null,
-          state: formData.state.trim() || null,
-          postal_code: formData.postal_code.trim() || null,
-          country: formData.country.trim() || null,
-        }
-      }
-      if (formData.person_type === 'ClientEmployee' && (formData.department || formData.position || formData.hire_date)) {
-        ;(personData as any).employment_info = {
-          department: formData.department.trim() || null,
-          position: formData.position.trim() || null,
-          hire_date: formData.hire_date || null,
-        }
-      }
-
-      if (formData.person_type === 'Dependent' && formData.primary_employee_id && formData.relationship) {
-        ;(personData as any).dependent_info = {
-          primary_employee_id: formData.primary_employee_id,
-          relationship: formData.relationship,
-          guardian_id: null,
-        }
-      }
-
-      await personsApi.create(personData as any)
-      showSuccess('Person added to roster')
-      navigate({ to: '/people/client-people' })
-    } catch (err: any) {
-      showError(err?.message || 'Failed to add person')
-      if (err?.details) {
-        const map: Record<string, string> = {}
-        err.details.forEach((d: any) => { if (d.field) map[d.field] = d.message })
-        setErrors(map)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const clientOptions = [
-    { value: '', label: 'Select client (required)' },
-    ...clients.map((c) => ({ value: c.id, label: c.name })),
-  ]
 
   return (
     <AppLayout>
@@ -208,147 +32,13 @@ function CreateClientPersonPage() {
 
         <h1 className="text-3xl font-bold text-safe mb-6">Add person to roster</h1>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-[0.5px] border-safe/30 p-6">
-          <h2 className="text-lg font-semibold text-safe mb-4">Basic</h2>
-
-          <Select
-            label="Type"
-            name="person_type"
-            value={formData.person_type}
-            onChange={(v) => setFormData((p) => ({ ...p, person_type: v as PersonType }))}
-            options={personTypeOptions}
+        <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+          <CreatePersonForm
+            initialClientId={initialClientId}
+            onSuccess={() => navigate({ to: '/people/client-people' })}
+            onCancel={() => navigate({ to: '/people/client-people' })}
           />
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <FormField
-              label="First name"
-              name="first_name"
-              value={formData.first_name}
-              onChange={(e) => { setFormData((p) => ({ ...p, first_name: e.target.value })); if (errors.first_name) setErrors((e2) => ({ ...e2, first_name: '' })) }}
-              error={errors.first_name}
-              required
-            />
-            <FormField
-              label="Last name"
-              name="last_name"
-              value={formData.last_name}
-              onChange={(e) => { setFormData((p) => ({ ...p, last_name: e.target.value })); if (errors.last_name) setErrors((e2) => ({ ...e2, last_name: '' })) }}
-              error={errors.last_name}
-              required
-            />
-          </div>
-
-          <FormField
-            label="Middle name"
-            name="middle_name"
-            value={formData.middle_name}
-            onChange={(e) => setFormData((p) => ({ ...p, middle_name: e.target.value }))}
-          />
-
-          <DatePicker
-            label="Date of birth"
-            name="date_of_birth"
-            value={formData.date_of_birth}
-            onChange={(v) => setFormData((p) => ({ ...p, date_of_birth: v }))}
-          />
-
-          <FormField
-            label="Gender"
-            name="gender"
-            value={formData.gender}
-            onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
-          />
-
-          {!initialClientId && (
-            <Select
-              label="Client"
-              name="client_id"
-              value={formData.client_id}
-              onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }}
-              options={clientOptions}
-              error={errors.client_id}
-              required
-              placeholder="Select client"
-            />
-          )}
-
-          <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Contact (optional)</h2>
-          <FormField label="Email" name="email" type="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} />
-          <FormField label="Phone" name="phone" type="tel" value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} />
-          <FormField label="Mobile" name="mobile" type="tel" value={formData.mobile} onChange={(e) => setFormData((p) => ({ ...p, mobile: e.target.value }))} />
-
-          <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Address (optional)</h2>
-          <FormField label="Street" name="street" value={formData.street} onChange={(e) => setFormData((p) => ({ ...p, street: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="City" name="city" value={formData.city} onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))} />
-            <FormField label="State" name="state" value={formData.state} onChange={(e) => setFormData((p) => ({ ...p, state: e.target.value }))} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Postal code" name="postal_code" value={formData.postal_code} onChange={(e) => setFormData((p) => ({ ...p, postal_code: e.target.value }))} />
-            <FormField label="Country" name="country" value={formData.country} onChange={(e) => setFormData((p) => ({ ...p, country: e.target.value }))} />
-          </div>
-
-          {formData.person_type === 'ClientEmployee' && (
-            <>
-              <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Employment (optional)</h2>
-              <p className="text-sm text-safe-light mb-4">Employee code will be auto-generated by the system.</p>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Department" name="department" value={formData.department} onChange={(e) => setFormData((p) => ({ ...p, department: e.target.value }))} />
-                <FormField label="Position" name="position" value={formData.position} onChange={(e) => setFormData((p) => ({ ...p, position: e.target.value }))} />
-              </div>
-              <DatePicker label="Hire date" name="hire_date" value={formData.hire_date} onChange={(v) => setFormData((p) => ({ ...p, hire_date: v }))} />
-            </>
-          )}
-
-          {formData.person_type === 'Dependent' && (
-            <>
-              <h2 className="text-lg font-semibold text-safe mb-4 mt-6">Dependent Information</h2>
-              <Select
-                label="Primary Employee"
-                name="primary_employee_id"
-                value={formData.primary_employee_id}
-                onChange={(v) => { setFormData((p) => ({ ...p, primary_employee_id: v as string })); if (errors.primary_employee_id) setErrors((e) => ({ ...e, primary_employee_id: '' })) }}
-                options={[
-                  { value: '', label: 'Select primary employee (required)' },
-                  ...employees.map((e) => ({
-                    value: e.id,
-                    label: e.employee_code ? `${e.name} (${e.employee_code})` : e.name,
-                  })),
-                ]}
-                error={errors.primary_employee_id}
-                required
-                placeholder="Select primary employee"
-                disabled={!formData.client_id}
-              />
-              <Select
-                label="Relationship"
-                name="relationship"
-                value={formData.relationship}
-                onChange={(v) => { setFormData((p) => ({ ...p, relationship: v as RelationType })); if (errors.relationship) setErrors((e) => ({ ...e, relationship: '' })) }}
-                options={[
-                  { value: '', label: 'Select relationship (required)' },
-                  ...relationshipOptions,
-                ]}
-                error={errors.relationship}
-                required
-                placeholder="Select relationship"
-              />
-            </>
-          )}
-
-          <div className="flex gap-3 mt-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50"
-            >
-              {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" /> Creating...</span> : 'Create'}
-            </button>
-            <button type="button" onClick={() => navigate({ to: '/people/client-people' })} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors">
-              Cancel
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </AppLayout>
   )

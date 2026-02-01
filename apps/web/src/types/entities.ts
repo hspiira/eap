@@ -12,6 +12,7 @@ import type {
   DocumentStatus,
   PersonType,
   WorkStatus,
+  StaffRole,
   ContactMethod,
   Language,
   PaymentStatus,
@@ -65,6 +66,50 @@ export interface DependentInfo {
 }
 
 /**
+ * Employment information (client employee)
+ */
+export interface EmploymentInfo {
+  client_id?: string | null
+  employee_code?: string | null
+  employee_id?: string | null
+  department?: string | null
+  role?: string | null
+  start_date?: string | null
+  status?: WorkStatus | null
+  end_date?: string | null
+}
+
+/**
+ * License information
+ */
+export interface LicenseInfo {
+  number?: string | null
+  issuing_authority?: string | null
+  expiry_date?: string | null
+}
+
+/**
+ * Staff information (platform staff)
+ */
+export interface StaffInfo {
+  role?: StaffRole | null
+  client_id?: string | null
+  department?: string | null
+  can_manage_clients?: boolean
+  can_manage_services?: boolean
+  can_view_reports?: boolean
+}
+
+/**
+ * Emergency contact
+ */
+export interface EmergencyContact {
+  name?: string | null
+  phone?: string | null
+  email?: string | null
+}
+
+/**
  * Tenant/Organization
  */
 export interface Tenant extends BaseEntity {
@@ -114,38 +159,21 @@ export interface Person extends BaseEntity {
   date_of_birth?: string | null
   gender?: string | null
   status: BaseStatus
+  user_id: string
+  is_dual_role?: boolean
+  secondary_person_type?: PersonType | null
+  last_service_date?: string | null
+  is_eligible_for_services?: boolean
   client_id?: string | null // For ClientEmployee and Dependent
   parent_person_id?: string | null // DEPRECATED: For Dependent - use dependent_info instead
   family_id?: string | null
   dependent_info?: DependentInfo | null // For Dependent - replaces parent_person_id usage
   contact_info?: ContactInfo | null
   address?: Address | null
-  emergency_contact?: {
-    name?: string | null
-    relationship?: string | null
-    phone?: string | null
-  } | null
-  employment_info?: {
-    client_id?: string | null
-    employee_code?: string | null
-    employee_id?: string | null
-    department?: string | null
-    position?: string | null
-    hire_date?: string | null
-    work_status?: WorkStatus | null
-    end_date?: string | null
-  } | null
-  license_info?: {
-    license_number?: string | null
-    license_type?: string | null
-    issuing_authority?: string | null
-    issue_date?: string | null
-    expiry_date?: string | null
-  } | null
-  staff_info?: {
-    role?: string | null
-    department?: string | null
-  } | null
+  emergency_contact?: EmergencyContact | null
+  employment_info?: EmploymentInfo | null
+  license_info?: LicenseInfo | null
+  staff_info?: StaffInfo | null
   secondary_roles?: PersonType[]
   metadata?: Record<string, unknown> | null
 }
@@ -175,7 +203,7 @@ export interface ClientBillingAddress {
 export interface Client extends BaseEntity {
   name: string
   code: string // Required, 3-5 chars (e.g. used for employee codes like MNT)
-  is_verified: boolean
+  is_verified?: boolean // Backend may omit; treat as false when absent
   status: BaseStatus
   contact_info: ClientContactInfo // Required for creation
   billing_address?: ClientBillingAddress | null

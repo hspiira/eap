@@ -5,6 +5,7 @@
 
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useState, useEffect, useCallback } from 'react'
+import { useModal } from '@/hooks/useModal'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -14,6 +15,7 @@ import { ErrorDisplay } from '@/components/common/ErrorDisplay'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { EmptyState } from '@/components/common/EmptyState'
 import { useToast } from '@/contexts/ToastContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { clientsApi } from '@/api/endpoints/clients'
 import { clientTagsApi } from '@/api/endpoints/client-tags'
 import { contactsApi } from '@/api/endpoints/contacts'
@@ -23,9 +25,11 @@ import { activitiesApi } from '@/api/endpoints/activities'
 import { industriesApi } from '@/api/endpoints/industries'
 import { serviceSessionsApi } from '@/api/endpoints/service-sessions'
 import { CreateModal } from '@/components/common/CreateModal'
+import { ConfirmationModal } from '@/components/common/ConfirmationModal'
 import { CreateActivityForm } from '@/components/forms/CreateActivityForm'
 import { CreateContactForm } from '@/components/forms/CreateContactForm'
 import { CreateContractForm } from '@/components/forms/CreateContractForm'
+import { CreatePersonModal } from '@/components/forms/CreatePersonModal'
 import { EditClientForm } from '@/components/forms/EditClientForm'
 import type { Client, ClientTag, Contact, Person, Contract, Activity, ServiceSession } from '@/types/entities'
 import type { BaseStatus, ContractStatus } from '@/types/enums'
@@ -77,6 +81,7 @@ function ClientDetailPage() {
   const { tab } = Route.useSearch()
   const navigate = useNavigate()
   const { showSuccess, showError } = useToast()
+  const { user_id } = useAuth()
 
   const [client, setClient] = useState<Client | null>(null)
   const [tags, setTags] = useState<ClientTag[]>([])
@@ -111,16 +116,13 @@ function ClientDetailPage() {
   const [clientStats, setClientStats] = useState<{ child_count?: number; contract_count?: number; is_verified?: boolean } | null>(null)
   const [childClients, setChildClients] = useState<Client[]>([])
   const [childClientsLoading, setChildClientsLoading] = useState(false)
-  const [lifecycleReasonModal, setLifecycleReasonModal] = useState<{ action: 'suspend' | 'terminate'; reason: string } | null>(null)
+  const [lifecycleReasonAction, setLifecycleReasonAction] = useState<'suspend' | 'terminate' | null>(null)
 
-  const [activityModalOpen, setActivityModalOpen] = useState(false)
-  const [contactModalOpen, setContactModalOpen] = useState(false)
-  const [contractModalOpen, setContractModalOpen] = useState(false)
-  const [editClientModalOpen, setEditClientModalOpen] = useState(false)
-  const [activityModalLoading, setActivityModalLoading] = useState(false)
-  const [contactModalLoading, setContactModalLoading] = useState(false)
-  const [contractModalLoading, setContractModalLoading] = useState(false)
-  const [editClientModalLoading, setEditClientModalLoading] = useState(false)
+  const activityModal = useModal()
+  const contactModal = useModal()
+  const contractModal = useModal()
+  const [createPersonModalOpen, setCreatePersonModalOpen] = useState(false)
+  const editClientModal = useModal()
 
   const fetchClient = useCallback(async () => {
     try {
@@ -387,7 +389,12 @@ function ClientDetailPage() {
       setActionLoading(true)
       switch (action) {
         case 'verify':
-          await clientsApi.verify(clientId)
+          if (!user_id) {
+            showError('You must be signed in to verify a client')
+            setActionLoading(false)
+            return
+          }
+          await clientsApi.verify(clientId, user_id)
           showSuccess('Client marked as verified')
           break
         case 'activate':
@@ -409,7 +416,7 @@ function ClientDetailPage() {
           break
         case 'suspend':
         case 'terminate':
-          setLifecycleReasonModal({ action: action as 'suspend' | 'terminate', reason: '' })
+          setLifecycleReasonAction(action as 'suspend' | 'terminate')
           setActionLoading(false)
           return
         default:
@@ -424,9 +431,9 @@ function ClientDetailPage() {
     }
   }
 
-  const handleLifecycleReasonConfirm = async () => {
-    if (!clientId || !lifecycleReasonModal || !lifecycleReasonModal.reason.trim()) return
-    const { action, reason } = lifecycleReasonModal
+  const handleLifecycleReasonConfirm = async (reason: string) => {
+    if (!clientId || !lifecycleReasonAction || !reason.trim()) return
+    const action = lifecycleReasonAction
     try {
       setActionLoading(true)
       if (action === 'suspend') {
@@ -436,7 +443,7 @@ function ClientDetailPage() {
         await clientsApi.terminate(clientId, reason.trim())
         showSuccess('Client terminated')
       }
-      setLifecycleReasonModal(null)
+      setLifecycleReasonAction(null)
       await fetchClient()
       await fetchStats()
     } catch (err: unknown) {
@@ -451,22 +458,22 @@ function ClientDetailPage() {
   }
 
   const handleActivityCreated = () => {
-    setActivityModalOpen(false)
+    activityModal.close()
     fetchActivities()
   }
 
   const handleContactCreated = () => {
-    setContactModalOpen(false)
+    contactModal.close()
     fetchContacts()
   }
 
   const handleContractCreated = () => {
-    setContractModalOpen(false)
+    contractModal.close()
     fetchContracts()
   }
 
   const handleClientUpdated = () => {
-    setEditClientModalOpen(false)
+    editClientModal.close()
     fetchClient()
   }
 
@@ -505,33 +512,46 @@ function ClientDetailPage() {
       <div className="max-w-7xl mx-auto">
         <Breadcrumb items={breadcrumbItems} className="mb-2" />
 
-        <div className="flex items-center gap-4 flex-wrap mb-4">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-safe">{client.name}</h1>
-            <button
-              onClick={() => setEditClientModalOpen(true)}
-              className="p-1.5 text-safe hover:text-natural hover:bg-gray-100 rounded-none transition-colors"
-              aria-label="Edit client"
-            >
-              <Edit size={18} />
-            </button>
+        <div className="flex items-center gap-2 flex-wrap mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-xl font-bold text-safe truncate">{client.name}</h1>
+            {client.is_verified && (
+              <span
+                className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-natural/15 border border-[0.5px] border-natural/40 text-natural rounded-none"
+                title="Verified"
+                aria-label="Verified"
+              >
+                <CheckCircle size={14} strokeWidth={2.5} />
+              </span>
+            )}
+            {client.status?.toLowerCase() === 'active' && (
+              <span
+                className="status-blink-dot flex-shrink-0 w-2.5 h-2.5 rounded-full bg-natural"
+                title="Active"
+                aria-label="Active"
+              />
+            )}
           </div>
-          {client.is_verified && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-natural/10 border border-[0.5px] border-natural/30 text-natural text-sm">
-              <CheckCircle size={16} />
-              Verified
-            </span>
+          <button
+            onClick={() => editClientModal.open()}
+            className="p-1.5 text-safe hover:text-natural hover:bg-gray-100 rounded-none transition-colors flex-shrink-0"
+            aria-label="Edit client"
+          >
+            <Edit size={18} />
+          </button>
+          {client.status?.toLowerCase() !== 'active' && (
+            <StatusBadge status={client.status as BaseStatus} />
           )}
-          <StatusBadge status={client.status as BaseStatus} />
           {!client.is_verified && (
             <button
               type="button"
               onClick={() => handleAction('verify')}
-              disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2 border border-[0.5px] border-natural rounded-none bg-safe hover:bg-safe-dark text-white transition-colors disabled:opacity-50"
+              disabled={actionLoading || !user_id}
+              className="flex items-center justify-center p-1.5 border border-[0.5px] border-safe rounded-none bg-safe hover:bg-safe-dark text-white transition-colors disabled:opacity-50"
+              title={!user_id ? 'You must be signed in to verify' : 'Verify client'}
+              aria-label="Verify client"
             >
-              <CheckCircle size={16} />
-              Verify
+              <CheckCircle size={14} />
             </button>
           )}
           <LifecycleActions
@@ -543,7 +563,7 @@ function ClientDetailPage() {
 
         {/* Tabs */}
         <div className="border-b border-safe/30 mb-4">
-          <nav className="flex gap-1" aria-label="Client sections">
+          <nav className="flex" aria-label="Client sections">
             {TABS.map(({ id, label, icon: Icon }) => {
               const count =
                 id === 'people'
@@ -559,10 +579,10 @@ function ClientDetailPage() {
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors rounded-none ${
+                  className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors rounded-none ${
                     tab === id
-                      ? 'border-natural text-natural'
-                      : 'border-transparent text-safe hover:text-natural hover:border-safe'
+                      ? 'bg-calm-dark text-natural'
+                      : 'text-safe hover:bg-calm hover:text-natural'
                   }`}
                 >
                   <Icon size={18} />
@@ -603,7 +623,7 @@ function ClientDetailPage() {
             sessions={sessions}
             sessionsLoading={sessionsLoading}
             hasContracts={contracts.length > 0}
-            onLogActivity={() => setActivityModalOpen(true)}
+            onLogActivity={() => activityModal.open()}
             onViewActivity={(id) => navigate({ to: `/activities/${id}` })}
             onViewAllActivities={() => navigate({ to: '/activities' })}
             onViewClient={(id) => navigate({ to: `/clients/${id}` })}
@@ -617,12 +637,7 @@ function ClientDetailPage() {
             error={peopleError}
             onRetry={fetchPeople}
             onRowClick={(p) => navigate({ to: `/persons/${p.id}` })}
-            onAddPerson={() =>
-              navigate({
-                to: '/people/client-people/new',
-                search: { client_id: clientId },
-              })
-            }
+            onAddPerson={() => setCreatePersonModalOpen(true)}
           />
         )}
 
@@ -633,7 +648,7 @@ function ClientDetailPage() {
             error={contactsError}
             onRetry={fetchContacts}
             onRowClick={(c) => navigate({ to: '/settings/contacts/$contactId', params: { contactId: c.id } })}
-            onAddContact={() => setContactModalOpen(true)}
+            onAddContact={() => contactModal.open()}
           />
         )}
 
@@ -644,7 +659,7 @@ function ClientDetailPage() {
             error={contractsError}
             onRetry={fetchContracts}
             onRowClick={(c) => navigate({ to: `/contracts/${c.id}` })}
-            onAddContract={() => setContractModalOpen(true)}
+            onAddContract={() => contractModal.open()}
           />
         )}
 
@@ -654,7 +669,7 @@ function ClientDetailPage() {
             loading={sessionsLoading}
             error={sessionsError}
             onRetry={fetchSessions}
-            onRowClick={(s) => navigate({ to: `/sessions/${s.id}` })}
+            onRowClick={(s) => navigate({ to: '/sessions/$sessionId', params: { sessionId: s.id } })}
           />
         )}
 
@@ -668,102 +683,85 @@ function ClientDetailPage() {
         )}
 
         <CreateModal
-          isOpen={activityModalOpen}
-          onClose={() => setActivityModalOpen(false)}
+          isOpen={activityModal.isOpen}
+          onClose={activityModal.close}
           title="Log activity"
-          loading={activityModalLoading}
+          loading={activityModal.loading}
         >
           <CreateActivityForm
             initialClientId={clientId}
             onSuccess={handleActivityCreated}
-            onCancel={() => setActivityModalOpen(false)}
-            onLoadingChange={setActivityModalLoading}
+            onCancel={activityModal.close}
+            onLoadingChange={activityModal.setLoading}
           />
         </CreateModal>
 
         <CreateModal
-          isOpen={contactModalOpen}
-          onClose={() => setContactModalOpen(false)}
+          isOpen={contactModal.isOpen}
+          onClose={contactModal.close}
           title="Add contact"
-          loading={contactModalLoading}
+          loading={contactModal.loading}
         >
           <CreateContactForm
             initialClientId={clientId}
             onSuccess={handleContactCreated}
-            onCancel={() => setContactModalOpen(false)}
-            onLoadingChange={setContactModalLoading}
+            onCancel={contactModal.close}
+            onLoadingChange={contactModal.setLoading}
           />
         </CreateModal>
 
         <CreateModal
-          isOpen={contractModalOpen}
-          onClose={() => setContractModalOpen(false)}
+          isOpen={contractModal.isOpen}
+          onClose={contractModal.close}
           title="Add contract"
-          loading={contractModalLoading}
+          loading={contractModal.loading}
         >
           <CreateContractForm
             initialClientId={clientId}
             onSuccess={handleContractCreated}
-            onCancel={() => setContractModalOpen(false)}
-            onLoadingChange={setContractModalLoading}
+            onCancel={contractModal.close}
+            onLoadingChange={contractModal.setLoading}
           />
         </CreateModal>
 
+        <CreatePersonModal
+          isOpen={createPersonModalOpen}
+          onClose={() => setCreatePersonModalOpen(false)}
+          initialClientId={clientId}
+          onCreated={() => fetchPeople()}
+        />
+
         <CreateModal
-          isOpen={editClientModalOpen}
-          onClose={() => setEditClientModalOpen(false)}
+          isOpen={editClientModal.isOpen}
+          onClose={editClientModal.close}
           title="Edit client"
-          loading={editClientModalLoading}
+          loading={editClientModal.loading}
         >
           <EditClientForm
             client={client}
             onSuccess={handleClientUpdated}
-            onCancel={() => setEditClientModalOpen(false)}
-            onLoadingChange={setEditClientModalLoading}
+            onCancel={editClientModal.close}
+            onLoadingChange={editClientModal.setLoading}
           />
         </CreateModal>
 
-        {lifecycleReasonModal && (
-          <div className="fixed inset-0 bg-safe/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white border border-[0.5px] border-safe/30 max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold text-safe mb-2">
-                {lifecycleReasonModal.action === 'suspend' ? 'Suspend client' : 'Terminate client'}
-              </h3>
-              <p className="text-safe text-sm mb-4">
-                {lifecycleReasonModal.action === 'suspend'
-                  ? 'A reason is required to suspend this client.'
-                  : 'A reason is required to terminate this client. This action is permanent.'}
-              </p>
-              <textarea
-                value={lifecycleReasonModal.reason}
-                onChange={(e) =>
-                  setLifecycleReasonModal({ ...lifecycleReasonModal, reason: e.target.value })
-                }
-                placeholder="Enter reason..."
-                className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe mb-4 min-h-[80px]"
-                rows={3}
-              />
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setLifecycleReasonModal(null)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 bg-white hover:bg-gray-100 text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLifecycleReasonConfirm}
-                  disabled={actionLoading || !lifecycleReasonModal.reason.trim()}
-                  className="px-4 py-2 bg-natural-dark hover:bg-natural text-white rounded-none transition-colors disabled:opacity-50"
-                >
-                  {actionLoading ? 'Processing...' : 'Confirm'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmationModal
+          isOpen={!!lifecycleReasonAction}
+          onClose={() => setLifecycleReasonAction(null)}
+          onConfirm={(reason) => { if (reason !== undefined) void handleLifecycleReasonConfirm(reason) }}
+          title={lifecycleReasonAction === 'suspend' ? 'Suspend client' : 'Terminate client'}
+          message={
+            lifecycleReasonAction === 'suspend'
+              ? 'A reason is required to suspend this client.'
+              : 'A reason is required to terminate this client. This action is permanent.'
+          }
+          requireReason
+          reasonPlaceholder="Enter reason..."
+          loading={actionLoading}
+          confirmLabel="Confirm"
+          cancelLabel="Cancel"
+          variant="warning"
+        />
       </div>
     </AppLayout>
   )
@@ -1124,7 +1122,8 @@ function OverviewTab({
                         )}
                       </div>
                       <Link
-                        to={`/sessions/${s.id}`}
+                        to="/sessions/$sessionId"
+                        params={{ sessionId: s.id }}
                         className="text-natural hover:text-natural-dark text-sm font-medium"
                       >
                         View
@@ -1204,7 +1203,7 @@ function OverviewTab({
               className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
             >
               {tagAssignLoading ? (
-                <LoadingSpinner size="sm" color="white" />
+                <LoadingSpinner size="sm" color="safe" />
               ) : (
                 <Plus size={18} />
               )}
@@ -1234,13 +1233,6 @@ function PeopleTab({
 }) {
   const getFullName = (p: Person) => {
     return [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' ')
-  }
-
-  const getPrimaryEmployeeName = (depInfo: Person['dependent_info']) => {
-    if (!depInfo?.primary_employee_id) return '—'
-    const primary = people.find((p) => p.id === depInfo.primary_employee_id)
-    if (!primary) return '—'
-    return getFullName(primary)
   }
 
   const columns: Column<Person>[] = [
@@ -1337,7 +1329,12 @@ function PeopleTab({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-safe">Employees & dependants</h2>
         <button
-          onClick={onAddPerson}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onAddPerson()
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
         >
           <Plus size={18} />
@@ -1349,7 +1346,12 @@ function PeopleTab({
           title="No employees or dependants"
           message="Add employees and their dependants for this client."
           variant="no-data"
-          action={{ label: 'Add first person', onClick: onAddPerson }}
+          action={{
+            label: 'Add first person',
+            onClick: () => {
+              onAddPerson()
+            },
+          }}
         />
       ) : (
         <DataTable<Person>
@@ -1541,7 +1543,7 @@ function ContractsTab({
       id: 'billing',
       header: 'Billing',
       accessor: 'billing_amount',
-      render: (v, row) => {
+      render: (_v, row) => {
         const amt = row.billing_amount
         if (amt == null) return '—'
         const cur = row.currency ?? 'USD'

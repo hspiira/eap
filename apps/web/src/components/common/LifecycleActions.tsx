@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { Power, Archive, Trash2, RotateCcw, CheckCircle, XCircle } from 'lucide-react'
+import { Power, Archive, Trash2, RotateCcw } from 'lucide-react'
 import { ConfirmDialog } from './ConfirmDialog'
 import type { BaseStatus } from '@/types/enums'
 
@@ -15,8 +15,6 @@ export type LifecycleAction =
   | 'unarchive'
   | 'delete'
   | 'restore'
-  | 'approve'
-  | 'reject'
 
 export interface LifecycleActionsProps {
   currentStatus: BaseStatus | string
@@ -37,8 +35,6 @@ const defaultLabels: Record<LifecycleAction, string> = {
   unarchive: 'Unarchive',
   delete: 'Delete',
   restore: 'Restore',
-  approve: 'Approve',
-  reject: 'Reject',
 }
 
 const defaultConfirmations: Record<LifecycleAction, { title: string; message: string }> = {
@@ -66,14 +62,6 @@ const defaultConfirmations: Record<LifecycleAction, { title: string; message: st
     title: 'Restore Item',
     message: 'Are you sure you want to restore this item?',
   },
-  approve: {
-    title: 'Approve Item',
-    message: 'Are you sure you want to approve this item?',
-  },
-  reject: {
-    title: 'Reject Item',
-    message: 'Are you sure you want to reject this item?',
-  },
 }
 
 const actionIcons: Record<LifecycleAction, typeof Power> = {
@@ -83,8 +71,16 @@ const actionIcons: Record<LifecycleAction, typeof Power> = {
   unarchive: RotateCcw,
   delete: Trash2,
   restore: RotateCcw,
-  approve: CheckCircle,
-  reject: XCircle,
+}
+
+/** Per-action colors: natural=positive (green), safe=neutral, danger=destructive (red) */
+const actionColors: Record<LifecycleAction, string> = {
+  activate: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
+  deactivate: 'bg-danger hover:bg-danger-dark text-white border-danger-dark',
+  archive: 'bg-safe hover:bg-safe-dark text-white border-safe-dark',
+  unarchive: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
+  delete: 'bg-danger hover:bg-danger-dark text-white border-danger-dark',
+  restore: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
 }
 
 /**
@@ -118,7 +114,7 @@ function getAvailableActions(
   }
 
   if (status === 'pending') {
-    return ['approve', 'reject']
+    return ['activate', 'archive']
   }
 
   // Default: allow activate and archive
@@ -133,7 +129,6 @@ function requiresConfirmation(action: LifecycleAction): boolean {
     'delete',
     'deactivate',
     'archive',
-    'reject',
   ]
   return destructiveActions.includes(action)
 }
@@ -187,25 +182,23 @@ export function LifecycleActions({
 
   return (
     <>
-      <div className={`flex flex-wrap gap-2 ${className}`}>
+      <div className={`flex flex-wrap items-center gap-1 ${className}`}>
         {actions.map((action) => {
           const Icon = actionIcons[action]
           const label = labels[action] || defaultLabels[action]
-          const isDestructive = requiresConfirmation(action)
+          const colors = actionColors[action]
 
           return (
             <button
               key={action}
+              type="button"
               onClick={() => handleAction(action)}
               disabled={loading}
-              className={`flex items-center gap-2 px-4 py-2 border border-[0.5px] rounded-none transition-colors disabled:opacity-50 ${
-                isDestructive
-                  ? 'bg-natural-dark hover:bg-natural text-white border-natural-dark'
-                  : 'bg-safe hover:bg-safe-dark text-white border-safe-dark'
-              }`}
+              title={label}
+              aria-label={label}
+              className={`flex items-center justify-center p-1.5 border border-[0.5px] rounded-none transition-colors disabled:opacity-50 ${colors}`}
             >
-              <Icon size={16} />
-              <span>{label}</span>
+              <Icon size={14} />
             </button>
           )
         })}

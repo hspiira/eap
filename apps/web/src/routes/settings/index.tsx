@@ -362,15 +362,15 @@ function SettingsPage() {
         <Breadcrumb items={[{ label: 'Settings' }]} className="mb-2" />
 
         <div className="border-b border-safe/30 mb-4">
-          <nav className="flex gap-1" aria-label="Settings tabs">
+          <nav className="flex" aria-label="Settings tabs">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors rounded-none ${
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors rounded-none ${
                   tab === id
-                    ? 'border-natural text-natural'
-                    : 'border-transparent text-safe hover:text-natural hover:border-safe'
+                    ? 'bg-calm-dark text-natural'
+                    : 'text-safe hover:bg-calm hover:text-natural'
                 }`}
               >
                 <Icon size={18} />

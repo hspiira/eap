@@ -30,6 +30,7 @@ type NavItem = {
   icon: React.ComponentType<{ size?: number }>
   comingSoon?: boolean
   platformAdminOnly?: boolean
+  disabled?: boolean
 }
 
 type NavCategory = {
@@ -63,12 +64,12 @@ const navigationCategories: NavCategory[] = [
     label: 'Engagement & Delivery',
     description: 'Contracts, service catalog, assignments, delivery sessions, service providers, and client activity tracking.',
     items: [
-      { path: '/contracts', label: 'Contracts', icon: FileText },
-      { path: '/services', label: 'Services', icon: ClipboardList },
-      { path: '/service-assignments', label: 'Service Assignments', icon: LinkIcon },
-      { path: '/sessions', label: 'Sessions', icon: Calendar },
-      { path: '/service-providers', label: 'Service providers', icon: UserCircle },
-      { path: '/activities', label: 'Activities', icon: History },
+      { path: '/contracts', label: 'Contracts', icon: FileText, disabled: true },
+      { path: '/services', label: 'Services', icon: ClipboardList, disabled: true },
+      { path: '/service-assignments', label: 'Service Assignments', icon: LinkIcon, disabled: true },
+      { path: '/sessions', label: 'Sessions', icon: Calendar, disabled: true },
+      { path: '/service-providers', label: 'Service providers', icon: UserCircle, disabled: true },
+      { path: '/activities', label: 'Activities', icon: History, disabled: true },
     ],
   },
   {
@@ -76,8 +77,8 @@ const navigationCategories: NavCategory[] = [
     label: 'Content & Insights',
     description: 'Document management, industry classification, and key performance indicators for tracking organizational metrics.',
     items: [
-      { path: '/documents', label: 'Documents', icon: FolderOpen },
-      { path: '/kpis', label: 'KPIs', icon: BarChart3 },
+      { path: '/documents', label: 'Documents', icon: FolderOpen, disabled: true },
+      { path: '/kpis', label: 'KPIs', icon: BarChart3, disabled: true },
     ],
   },
   {
@@ -85,7 +86,7 @@ const navigationCategories: NavCategory[] = [
     label: 'Administration',
     description: 'User management and audit logs.',
     items: [
-      { path: '/audit', label: 'Audit', icon: Shield },
+      { path: '/audit', label: 'Audit', icon: Shield, disabled: true },
     ],
   },
 ]
@@ -223,6 +224,18 @@ export function AppLayout({ children }: AppLayoutProps) {
                   )
                 }
 
+                if (navItem.disabled) {
+                  return (
+                    <div
+                      key={navItem.path}
+                      className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm">{navItem.label}</span>
+                    </div>
+                  )
+                }
+
                 return (
                   <Link
                     key={navItem.path}
@@ -286,6 +299,18 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <Icon size={18} />
                         <span className="text-sm">{navItem.label}</span>
                         <span className="ml-auto text-xs">Soon</span>
+                      </div>
+                    )
+                  }
+
+                  if (navItem.disabled) {
+                    return (
+                      <div
+                        key={navItem.path}
+                        className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                      >
+                        <Icon size={18} />
+                        <span className="text-sm">{navItem.label}</span>
                       </div>
                     )
                   }

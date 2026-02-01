@@ -172,7 +172,11 @@ export function TableFilters({
       {createAction && (
         <button
           type="button"
-          onClick={createAction.onClick}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            createAction.onClick()
+          }}
           title={createAction.label}
           aria-label={createAction.label}
           className="p-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors shrink-0"
