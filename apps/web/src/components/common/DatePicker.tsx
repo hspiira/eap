@@ -72,6 +72,7 @@ export function DatePicker({
       <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             id={name}
             variant="outline"
             disabled={disabled}

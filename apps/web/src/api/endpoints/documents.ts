@@ -49,35 +49,7 @@ export const documentsApi = {
       formData.append('metadata', JSON.stringify(documentData.metadata))
     }
 
-    // For FormData, we need to make a custom fetch request to avoid Content-Type header
-    const baseUrl = (apiClient as any).baseUrl || 'http://localhost:8000'
-    const tenantId = (apiClient as any).getTenantId()
-    const token = (apiClient as any).getToken()
-    const url = new URL('/documents', baseUrl)
-    if (tenantId) {
-      url.searchParams.set('tenant_id', tenantId)
-    }
-
-    const headers: HeadersInit = {}
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    if (tenantId) {
-      headers['x-tenant-id'] = tenantId
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      body: formData,
-      headers,
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to create document' }))
-      throw new Error(error.message || 'Failed to create document')
-    }
-
-    return response.json()
+    return apiClient.postFormData<Document>('/documents', formData)
   },
 
   /**
@@ -118,35 +90,10 @@ export const documentsApi = {
       formData.append('notes', versionData.notes)
     }
 
-    // For FormData, we need to make a custom fetch request
-    const baseUrl = (apiClient as any).baseUrl || 'http://localhost:8000'
-    const tenantId = (apiClient as any).getTenantId()
-    const token = (apiClient as any).getToken()
-    const url = new URL(`/documents/${documentId}/version`, baseUrl)
-    if (tenantId) {
-      url.searchParams.set('tenant_id', tenantId)
-    }
-
-    const headers: HeadersInit = {}
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    if (tenantId) {
-      headers['x-tenant-id'] = tenantId
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      body: formData,
-      headers,
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to create version' }))
-      throw new Error(error.message || 'Failed to create version')
-    }
-
-    return response.json()
+    return apiClient.postFormData<Document>(
+      `/documents/${documentId}/version`,
+      formData
+    )
   },
 
   /**
@@ -188,15 +135,6 @@ export const documentsApi = {
    * Download document file
    */
   async download(documentId: string): Promise<Blob> {
-    const response = await fetch(`${apiClient['baseUrl']}/documents/${documentId}/download`, {
-      headers: {
-        'Authorization': `Bearer ${apiClient.getToken()}`,
-        'x-tenant-id': apiClient.getTenantId() || '',
-      },
-    })
-    if (!response.ok) {
-      throw new Error('Failed to download document')
-    }
-    return response.blob()
+    return apiClient.getBlob(`/documents/${documentId}/download`)
   },
 }

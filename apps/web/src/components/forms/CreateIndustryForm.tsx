@@ -80,9 +80,33 @@ export function CreateIndustryForm({ onSuccess, onCancel, onLoadingChange }: Cre
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <FormField label="Name" name="name" value={formData.name} onChange={(e) => { setFormData((p) => ({ ...p, name: e.target.value })); if (errors.name) setErrors((e) => ({ ...e, name: '' })) }} error={errors.name} required placeholder="Industry name" />
-      <FormField label="Code" name="code" value={formData.code} onChange={(e) => setFormData((p) => ({ ...p, code: e.target.value }))} placeholder="Optional (e.g. NAICS)" />
-      <Select label="Parent industry" name="parent_id" value={formData.parent_id} onChange={(v) => setFormData((p) => ({ ...p, parent_id: v as string }))} options={parentOptions} placeholder="Optional" />
+      <FormField
+        label="Name"
+        name="name"
+        value={formData.name}
+        onChange={(e) => {
+          setFormData((p) => ({ ...p, name: e.target.value }))
+          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }))
+        }}
+        error={errors.name}
+        required
+        placeholder="Industry name"
+      />
+      <FormField
+        label="Code"
+        name="code"
+        value={formData.code}
+        onChange={(e) => setFormData((p) => ({ ...p, code: e.target.value }))}
+        placeholder="Optional (e.g. NAICS)"
+      />
+      <Select
+        label="Parent industry"
+        name="parent_id"
+        value={formData.parent_id}
+        onChange={(v) => setFormData((p) => ({ ...p, parent_id: v as string }))}
+        options={parentOptions}
+        placeholder="Optional"
+      />
 
       <div className="flex gap-3 pt-4">
         <button type="submit" disabled={loading} className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">

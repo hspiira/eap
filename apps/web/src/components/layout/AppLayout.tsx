@@ -127,6 +127,67 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const navigationItems = getNavigationItems()
 
+  const renderNavItem = (
+    item: NavItem | { type: 'divider'; id: string },
+    onNavigate?: () => void
+  ) => {
+    if ('type' in item && item.type === 'divider') {
+      return (
+        <div
+          key={item.id}
+          className="h-px bg-border mx-2 my-1 opacity-50"
+        />
+      )
+    }
+    const navItem = item as NavItem
+    const Icon = navItem.icon
+    const pathname = location.pathname
+    const isActive =
+      pathname === navItem.path ||
+      pathname.startsWith(navItem.path + '/')
+
+    if (navItem.comingSoon) {
+      return (
+        <div
+          key={navItem.path}
+          className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
+        >
+          <Icon size={18} />
+          <span className="text-sm">{navItem.label}</span>
+          <span className="ml-auto text-xs">Soon</span>
+        </div>
+      )
+    }
+
+    if (navItem.disabled) {
+      return (
+        <div
+          key={navItem.path}
+          className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
+        >
+          <Icon size={18} />
+          <span className="text-sm">{navItem.label}</span>
+        </div>
+      )
+    }
+
+    return (
+      <Link
+        key={navItem.path}
+        to={navItem.path}
+        onClick={onNavigate}
+        className={`flex items-center gap-3 px-4 py-1.5 transition-colors rounded-none ${
+          isActive
+            ? 'bg-primary text-white'
+            : 'text-text hover:bg-surface-hover'
+        }`}
+      >
+        <Icon size={18} />
+        <span className="text-sm">{navItem.label}</span>
+      </Link>
+    )
+  }
+
   return (
     <div className="bg-page flex flex-col min-h-screen">
       <header className="sticky top-0 z-30 bg-surface border-b border-[0.5px] border-border">
@@ -197,60 +258,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             <nav className="flex-1 overflow-y-auto py-1">
-              {navigationItems.map((item) => {
-                if ('type' in item && item.type === 'divider') {
-                  return (
-                    <div
-                      key={item.id}
-                      className="h-px bg-border mx-2 my-1 opacity-50"
-                    />
-                  )
-                }
-
-                const navItem = item as NavItem
-                const Icon = navItem.icon
-                const isActive = location.pathname.startsWith(navItem.path)
-
-                if (navItem.comingSoon) {
-                  return (
-                    <div
-                      key={navItem.path}
-                      className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm">{navItem.label}</span>
-                      <span className="ml-auto text-xs">Soon</span>
-                    </div>
-                  )
-                }
-
-                if (navItem.disabled) {
-                  return (
-                    <div
-                      key={navItem.path}
-                      className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm">{navItem.label}</span>
-                    </div>
-                  )
-                }
-
-                return (
-                  <Link
-                    key={navItem.path}
-                    to={navItem.path}
-                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors rounded-none ${
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'text-text hover:bg-surface-hover'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-sm">{navItem.label}</span>
-                  </Link>
-                )
-              })}
+              {navigationItems.map((item) => renderNavItem(item))}
             </nav>
 
           </div>
@@ -276,61 +284,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
 
               <nav className="flex-1 py-1 ml-4">
-                {navigationItems.map((item) => {
-                  if ('type' in item && item.type === 'divider') {
-                    return (
-                      <div
-                        key={item.id}
-                        className="h-px bg-border mx-2 my-1 opacity-50"
-                      />
-                    )
-                  }
-
-                  const navItem = item as NavItem
-                  const Icon = navItem.icon
-                  const isActive = location.pathname.startsWith(navItem.path)
-
-                  if (navItem.comingSoon) {
-                    return (
-                      <div
-                        key={navItem.path}
-                        className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
-                      >
-                        <Icon size={18} />
-                        <span className="text-sm">{navItem.label}</span>
-                        <span className="ml-auto text-xs">Soon</span>
-                      </div>
-                    )
-                  }
-
-                  if (navItem.disabled) {
-                    return (
-                      <div
-                        key={navItem.path}
-                        className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
-                      >
-                        <Icon size={18} />
-                        <span className="text-sm">{navItem.label}</span>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <Link
-                      key={navItem.path}
-                      to={navItem.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors rounded-none ${
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'text-text hover:bg-surface-hover'
-                    }`}
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm">{navItem.label}</span>
-                    </Link>
-                  )
-                })}
+                {navigationItems.map((item) =>
+                  renderNavItem(item, () => setMobileMenuOpen(false))
+                )}
               </nav>
 
             </div>

@@ -13,15 +13,16 @@ export function useSessionTimeout() {
   const { isAuthenticated, logout } = useAuth()
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
   const warningShownAtRef = useRef<number | null>(null)
 
   const getTimeoutMinutes = useCallback(() => {
     if (typeof window === 'undefined') return 30
     const stored = localStorage.getItem(PREFERENCE_KEY)
-    return stored ? parseInt(stored, 10) : 30
+    const parsed = stored ? Number.parseInt(stored, 10) : NaN
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 30
   }, [])
 
   const resetTimer = useCallback(() => {

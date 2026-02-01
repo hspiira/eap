@@ -17,6 +17,13 @@ export interface EditClientFormProps {
   onLoadingChange?: (loading: boolean) => void
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_REGEX = /^[\d\s\-+().]{7,30}$/
+const MAX_TEXT_LENGTH = 255
+const MAX_POSTAL_CODE_LENGTH = 20
+const CODE_LENGTH_MIN = 3
+const CODE_LENGTH_MAX = 5
+
 const PREFERRED_CONTACT_OPTIONS = [
   { value: '', label: 'Select (optional)' },
   { value: 'email', label: 'Email' },
@@ -127,7 +134,20 @@ export function EditClientForm({
   const validateForm = () => {
     const next: Record<string, string> = {}
     if (!formData.name.trim()) next.name = 'Client name is required'
-    else if (formData.name.length > 255) next.name = 'Client name must be 255 characters or less'
+    else if (formData.name.length > MAX_TEXT_LENGTH) next.name = `Client name must be ${MAX_TEXT_LENGTH} characters or less`
+    const codeTrimmed = formData.code.trim()
+    if (codeTrimmed && (codeTrimmed.length < CODE_LENGTH_MIN || codeTrimmed.length > CODE_LENGTH_MAX)) {
+      next.code = `Code must be ${CODE_LENGTH_MIN}–${CODE_LENGTH_MAX} characters`
+    }
+    const emailTrimmed = formData.contact_email.trim()
+    if (emailTrimmed && !EMAIL_REGEX.test(emailTrimmed)) next.contact_email = 'Enter a valid email address'
+    const phoneTrimmed = formData.contact_phone.trim()
+    if (phoneTrimmed && !PHONE_REGEX.test(phoneTrimmed)) next.contact_phone = 'Enter a valid phone number'
+    if (formData.billing_street.trim().length > MAX_TEXT_LENGTH) next.billing_street = `Street must be ${MAX_TEXT_LENGTH} characters or less`
+    if (formData.billing_city.trim().length > MAX_TEXT_LENGTH) next.billing_city = `City must be ${MAX_TEXT_LENGTH} characters or less`
+    if (formData.billing_country.trim().length > MAX_TEXT_LENGTH) next.billing_country = `Country must be ${MAX_TEXT_LENGTH} characters or less`
+    if (formData.billing_postal_code.trim().length > MAX_POSTAL_CODE_LENGTH) next.billing_postal_code = `Postal code must be ${MAX_POSTAL_CODE_LENGTH} characters or less`
+    if (formData.contact_address.trim().length > MAX_TEXT_LENGTH) next.contact_address = `Address must be ${MAX_TEXT_LENGTH} characters or less`
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -189,7 +209,7 @@ export function EditClientForm({
         value={formData.name}
         onChange={(e) => {
           setFormData({ ...formData, name: e.target.value })
-          if (errors.name) setErrors({ ...errors, name: '' })
+          if (errors.name) setErrors((prev) => ({ ...prev, name: '' }))
         }}
         error={errors.name}
         required
@@ -200,7 +220,11 @@ export function EditClientForm({
         label="Code"
         name="code"
         value={formData.code}
-        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+        onChange={(e) => {
+          setFormData({ ...formData, code: e.target.value })
+          if (errors.code) setErrors((prev) => ({ ...prev, code: '' }))
+        }}
+        error={errors.code}
         placeholder="3–5 character code"
         compact
       />
@@ -247,7 +271,11 @@ export function EditClientForm({
           name="contact_phone"
           type="tel"
           value={formData.contact_phone}
-          onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, contact_phone: e.target.value })
+            if (errors.contact_phone) setErrors((prev) => ({ ...prev, contact_phone: '' }))
+          }}
+          error={errors.contact_phone}
           placeholder="Phone"
           compact
         />
@@ -256,7 +284,11 @@ export function EditClientForm({
           name="contact_email"
           type="email"
           value={formData.contact_email}
-          onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, contact_email: e.target.value })
+            if (errors.contact_email) setErrors((prev) => ({ ...prev, contact_email: '' }))
+          }}
+          error={errors.contact_email}
           placeholder="Email"
           compact
         />
@@ -264,7 +296,11 @@ export function EditClientForm({
           label="Address (line)"
           name="contact_address"
           value={formData.contact_address}
-          onChange={(e) => setFormData({ ...formData, contact_address: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, contact_address: e.target.value })
+            if (errors.contact_address) setErrors((prev) => ({ ...prev, contact_address: '' }))
+          }}
+          error={errors.contact_address}
           placeholder="Contact address"
           compact
         />
@@ -275,7 +311,11 @@ export function EditClientForm({
           label="Street"
           name="billing_street"
           value={formData.billing_street}
-          onChange={(e) => setFormData({ ...formData, billing_street: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, billing_street: e.target.value })
+            if (errors.billing_street) setErrors((prev) => ({ ...prev, billing_street: '' }))
+          }}
+          error={errors.billing_street}
           placeholder="Street"
           compact
         />
@@ -284,7 +324,11 @@ export function EditClientForm({
             label="City"
             name="billing_city"
             value={formData.billing_city}
-            onChange={(e) => setFormData({ ...formData, billing_city: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, billing_city: e.target.value })
+              if (errors.billing_city) setErrors((prev) => ({ ...prev, billing_city: '' }))
+            }}
+            error={errors.billing_city}
             placeholder="City"
             compact
           />
@@ -292,7 +336,11 @@ export function EditClientForm({
             label="Country"
             name="billing_country"
             value={formData.billing_country}
-            onChange={(e) => setFormData({ ...formData, billing_country: e.target.value })}
+            onChange={(e) => {
+              setFormData({ ...formData, billing_country: e.target.value })
+              if (errors.billing_country) setErrors((prev) => ({ ...prev, billing_country: '' }))
+            }}
+            error={errors.billing_country}
             placeholder="Country"
             compact
           />
@@ -301,7 +349,11 @@ export function EditClientForm({
           label="Postal code"
           name="billing_postal_code"
           value={formData.billing_postal_code}
-          onChange={(e) => setFormData({ ...formData, billing_postal_code: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, billing_postal_code: e.target.value })
+            if (errors.billing_postal_code) setErrors((prev) => ({ ...prev, billing_postal_code: '' }))
+          }}
+          error={errors.billing_postal_code}
           placeholder="Postal code"
           compact
         />

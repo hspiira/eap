@@ -3,7 +3,7 @@
  * Reusable confirm/cancel modal with optional reason textarea (e.g. lifecycle suspend/terminate).
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
@@ -42,11 +42,41 @@ export function ConfirmationModal({
   variant = 'warning',
 }: ConfirmationModalProps) {
   const [reason, setReason] = useState('')
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previousActiveElement = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (isOpen) setReason('')
   }, [isOpen])
 
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget && !loading) onClose()
+    },
+    [onClose, loading]
+  )
+
+  useEffect(() => {
+    if (!isOpen) return
+    previousActiveElement.current = document.activeElement as HTMLElement | null
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        if (!loading) onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    requestAnimationFrame(() => {
+      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled])'
+      )
+      firstFocusable?.focus()
+    })
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previousActiveElement.current?.focus()
+    }
+  }, [isOpen, onClose, loading])
 
   const handleConfirm = () => {
     if (requireReason && !reason.trim()) return
@@ -60,13 +90,16 @@ export function ConfirmationModal({
   const content = (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirmation-modal-title"
+      onClick={handleBackdropClick}
+      role="presentation"
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-modal-title"
+        aria-describedby="confirmation-modal-message"
         className="bg-surface border border-[0.5px] border-border max-w-md w-full rounded-none"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-[0.5px] border-border">
           <h3 id="confirmation-modal-title" className="text-base font-semibold text-text">
@@ -84,7 +117,7 @@ export function ConfirmationModal({
         </div>
 
         <div className="p-4">
-          <p className="text-text text-sm mb-4">{message}</p>
+          <p id="confirmation-modal-message" className="text-text text-sm mb-4">{message}</p>
 
           {requireReason && (
             <textarea

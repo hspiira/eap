@@ -52,7 +52,7 @@ function fromDateRange(range: DateRange | undefined): DateRangeValue {
   const m = String(range.from.getMonth() + 1).padStart(2, '0')
   const d = String(range.from.getDate()).padStart(2, '0')
   const from = `${y}-${m}-${d}`
-  if (!range.to) return { from, to: from }
+  if (!range.to) return { from, to: '' }
   const ty = range.to.getFullYear()
   const tm = String(range.to.getMonth() + 1).padStart(2, '0')
   const td = String(range.to.getDate()).padStart(2, '0')

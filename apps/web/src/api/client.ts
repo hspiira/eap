@@ -198,25 +198,134 @@ class ApiClient {
    */
   private buildHeaders(
     customHeaders?: Record<string, string>,
-    endpoint?: string
+    endpoint?: string,
+    excludeSensitiveHeaders?: boolean
   ): HeadersInit {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...customHeaders,
     }
 
+    if (!excludeSensitiveHeaders) {
+      const token = this.getToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const tenantId = this.getTenantId()
+      const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
+      if (tenantId && !skipTenant) {
+        headers['x-tenant-id'] = tenantId
+      }
+    }
+
+    return headers
+  }
+
+  /**
+   * Build auth-only headers (no Content-Type) for FormData/blob requests
+   */
+  private buildAuthHeaders(endpoint?: string): Record<string, string> {
+    const headers: Record<string, string> = {}
     const token = this.getToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
-
     const tenantId = this.getTenantId()
     const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
     if (tenantId && !skipTenant) {
       headers['x-tenant-id'] = tenantId
     }
-
     return headers
+  }
+
+  /**
+   * POST FormData with auth headers, returns parsed JSON
+   */
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const url = this.buildUrl(path)
+    const headers = this.buildAuthHeaders(path)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      headers,
+    })
+
+    if (response.status === 401 && !path.includes('/auth/')) {
+      const refreshed = await this.tryRefreshToken()
+      if (refreshed) {
+        const retryHeaders = this.buildAuthHeaders(path)
+        const retryResponse = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: retryHeaders,
+        })
+        if (retryResponse.ok) {
+          const ct = retryResponse.headers.get('content-type')
+          if (!ct || !ct.includes('application/json')) return {} as T
+          return (await retryResponse.json()) as T
+        }
+      }
+      this.handleAuthError(401)
+    }
+
+    if (response.status === 403) {
+      this.handleAuthError(403)
+    }
+
+    if (!response.ok) {
+      const error = await this.parseError(response)
+      throw error
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      return {} as T
+    }
+    return (await response.json()) as T
+  }
+
+  /**
+   * GET with blob response (e.g. file download)
+   */
+  async getBlob(path: string): Promise<Blob> {
+    const url = this.buildUrl(path)
+    const headers = this.buildAuthHeaders(path)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    })
+
+    if (response.status === 401) {
+      const refreshed = await this.tryRefreshToken()
+      if (refreshed) {
+        const retryHeaders = this.buildAuthHeaders(path)
+        const retryResponse = await fetch(url, {
+          method: 'GET',
+          headers: retryHeaders,
+        })
+        if (retryResponse.ok) {
+          return retryResponse.blob()
+        }
+      }
+      this.handleAuthError(401)
+    }
+
+    if (response.status === 403) {
+      this.handleAuthError(403)
+    }
+
+    if (!response.ok) {
+      throw new ApiError(
+        'Failed to download document',
+        'DOWNLOAD_ERROR',
+        response.status
+      )
+    }
+
+    return response.blob()
   }
 
   /**
@@ -314,13 +423,28 @@ class ApiClient {
       : controller.signal
 
     // endpoint may already be a full URL or a relative path
-    // If it starts with http, use it directly, otherwise build URL
-    const url = endpoint.startsWith('http') 
-      ? endpoint 
-      : this.buildUrl(endpoint)
+    const isAbsoluteUrl = endpoint.startsWith('http')
+    const isSameOrigin =
+      !isAbsoluteUrl ||
+      new URL(endpoint).origin === new URL(this.baseUrl).origin
+
+    const url = isAbsoluteUrl ? endpoint : this.buildUrl(endpoint)
+    const pathForHeaders = isAbsoluteUrl
+      ? new URL(endpoint).pathname + new URL(endpoint).search
+      : endpoint
+
+    const sanitizedHeaders = isSameOrigin
+      ? (headers as Record<string, string>)
+      : (() => {
+          const { Authorization, 'x-tenant-id': xTenantId, ...rest } =
+            (headers as Record<string, string>) || {}
+          return rest
+        })()
+
     const requestHeaders = this.buildHeaders(
-      headers as Record<string, string>,
-      endpoint.startsWith('http') ? new URL(endpoint).pathname + new URL(endpoint).search : endpoint
+      sanitizedHeaders,
+      pathForHeaders,
+      !isSameOrigin
     )
 
     const requestFn = () =>
@@ -339,19 +463,33 @@ class ApiClient {
       if (response.status === 401 && !endpoint.includes('/auth/')) {
         const refreshed = await this.tryRefreshToken()
         if (refreshed) {
-          // Retry with new token
+          const retryController = new AbortController()
+          const retryTimeoutId = timeout
+            ? setTimeout(() => retryController.abort(), timeout)
+            : setTimeout(() => retryController.abort(), this.timeout)
+          const retrySignal = signal
+            ? AbortSignal.any([signal, retryController.signal])
+            : retryController.signal
           const retryHeaders = this.buildHeaders(
-            headers as Record<string, string>,
-            endpoint.startsWith('http') ? new URL(endpoint).pathname : endpoint
+            sanitizedHeaders,
+            pathForHeaders,
+            !isSameOrigin
           )
-          const retryResponse = await fetch(url, {
-            ...fetchOptions,
-            headers: retryHeaders,
-          })
-          if (retryResponse.ok) {
-            const ct = retryResponse.headers.get('content-type')
-            if (!ct || !ct.includes('application/json')) return {} as T
-            return (await retryResponse.json()) as T
+          try {
+            const retryResponse = await fetch(url, {
+              ...fetchOptions,
+              headers: retryHeaders,
+              signal: retrySignal,
+            })
+            clearTimeout(retryTimeoutId)
+            if (retryResponse.ok) {
+              const ct = retryResponse.headers.get('content-type')
+              if (!ct || !ct.includes('application/json')) return {} as T
+              return (await retryResponse.json()) as T
+            }
+          } catch (retryError) {
+            clearTimeout(retryTimeoutId)
+            throw retryError
           }
         }
         this.handleAuthError(401)

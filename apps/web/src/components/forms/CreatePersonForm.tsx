@@ -31,6 +31,10 @@ const relationshipOptions: Array<{ value: RelationType; label: string }> = [
   { value: 'Other', label: 'Other' },
 ]
 
+const PAGE_SIZE = 100
+const DEFAULT_CLIENT_LIST_LIMIT = 500
+const DEFAULT_EMPLOYEE_LIST_LIMIT = 500
+
 const genderOptions = [
   { value: '', label: 'Select gender (optional)' },
   { value: 'Male', label: 'Male' },
@@ -43,6 +47,10 @@ const genderOptions = [
 export interface CreatePersonFormProps {
   /** Pre-fill client (e.g. when adding from client detail). Hides client selector when set. */
   initialClientId?: string
+  /** Max clients to load via pagination. Default 500. */
+  clientListLimit?: number
+  /** Max employees to load when selecting primary employee. Default 500. */
+  employeeListLimit?: number
   /** Called after successful create with the created person */
   onSuccess?: (person: Person) => void
   /** Called when user clicks Cancel. When provided, a Cancel button is shown. */
@@ -51,11 +59,15 @@ export interface CreatePersonFormProps {
 
 export function CreatePersonForm({
   initialClientId = '',
+  clientListLimit = DEFAULT_CLIENT_LIST_LIMIT,
+  employeeListLimit = DEFAULT_EMPLOYEE_LIST_LIMIT,
   onSuccess,
   onCancel,
 }: CreatePersonFormProps) {
   const { showSuccess, showError } = useToast()
   const [loading, setLoading] = useState(false)
+  const [clientsLoading, setClientsLoading] = useState(true)
+  const [employeesLoading, setEmployeesLoading] = useState(false)
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [employees, setEmployees] = useState<Array<{ id: string; name: string; employee_code?: string | null }>>([])
   const [formData, setFormData] = useState({
@@ -88,47 +100,75 @@ export function CreatePersonForm({
 
   useEffect(() => {
     const fetchClients = async () => {
+      setClientsLoading(true)
       try {
-        const res = await clientsApi.list({ limit: 100 })
-        setClients(res.items.map((c) => ({ id: c.id, name: c.name })))
+        const all: Array<{ id: string; name: string }> = []
+        let page = 1
+        let hasMore = true
+        while (hasMore && all.length < clientListLimit) {
+          const res = await clientsApi.list({
+            page,
+            limit: PAGE_SIZE,
+          })
+          all.push(...res.items.map((c) => ({ id: c.id, name: c.name })))
+          hasMore = res.has_more && all.length < clientListLimit
+          page += 1
+        }
+        setClients(all)
       } catch (err) {
         console.error('Error fetching clients:', err)
+        setClients([])
+      } finally {
+        setClientsLoading(false)
       }
     }
     fetchClients()
-  }, [])
+  }, [clientListLimit])
 
   useEffect(() => {
     if (initialClientId) setFormData((p) => ({ ...p, client_id: initialClientId }))
   }, [initialClientId])
 
   useEffect(() => {
+    if (!formData.client_id || formData.person_type !== 'Dependent') {
+      setEmployees([])
+      setEmployeesLoading(false)
+      return
+    }
     const fetchEmployees = async () => {
-      if (!formData.client_id || formData.person_type !== 'Dependent') {
-        setEmployees([])
-        return
-      }
+      setEmployeesLoading(true)
       try {
-        const res = await personsApi.list({
-          client_id: formData.client_id,
-          person_type: 'ClientEmployee',
-          limit: 200,
-        })
-        const employeeList = res.items
-          .filter((p: Person) => p.person_type === 'ClientEmployee')
-          .map((p: Person) => ({
-            id: p.id,
-            name: [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' '),
-            employee_code: p.employment_info?.employee_code,
-          }))
-        setEmployees(employeeList)
+        const all: Array<{ id: string; name: string; employee_code?: string | null }> = []
+        let page = 1
+        let hasMore = true
+        while (hasMore && all.length < employeeListLimit) {
+          const res = await personsApi.list({
+            client_id: formData.client_id,
+            person_type: 'ClientEmployee',
+            page,
+            limit: PAGE_SIZE,
+          })
+          const batch = res.items
+            .filter((p: Person) => p.person_type === 'ClientEmployee')
+            .map((p: Person) => ({
+              id: p.id,
+              name: [p.first_name, p.middle_name, p.last_name].filter(Boolean).join(' '),
+              employee_code: p.employment_info?.employee_code,
+            }))
+          all.push(...batch)
+          hasMore = res.has_more && all.length < employeeListLimit
+          page += 1
+        }
+        setEmployees(all)
       } catch (err) {
         console.error('Error fetching employees:', err)
         setEmployees([])
+      } finally {
+        setEmployeesLoading(false)
       }
     }
     fetchEmployees()
-  }, [formData.client_id, formData.person_type])
+  }, [formData.client_id, formData.person_type, employeeListLimit])
 
   const validate = () => {
     const next: Record<string, string> = {}
@@ -219,7 +259,7 @@ export function CreatePersonForm({
   }
 
   const clientOptions = [
-    { value: '', label: 'Select client (required)' },
+    { value: '', label: clientsLoading ? 'Loading clients...' : 'Select client (required)' },
     ...clients.map((c) => ({ value: c.id, label: c.name })),
   ]
 
@@ -252,7 +292,21 @@ export function CreatePersonForm({
       <DatePicker label="Date of birth" name="date_of_birth" value={formData.date_of_birth} onChange={(v) => setFormData((p) => ({ ...p, date_of_birth: v }))} />
       <Select label="Gender" name="gender" value={formData.gender} onChange={(v) => setFormData((p) => ({ ...p, gender: v }))} options={genderOptions} placeholder="Select gender (optional)" compact />
       {!initialClientId && (
-        <Select label="Client" name="client_id" value={formData.client_id} onChange={(v) => { setFormData((p) => ({ ...p, client_id: v as string })); if (errors.client_id) setErrors((e) => ({ ...e, client_id: '' })) }} options={clientOptions} error={errors.client_id} required placeholder="Select client" compact />
+        <Select
+          label="Client"
+          name="client_id"
+          value={formData.client_id}
+          onChange={(v) => {
+            setFormData((p) => ({ ...p, client_id: v as string }))
+            if (errors.client_id) setErrors((prev) => ({ ...prev, client_id: '' }))
+          }}
+          options={clientOptions}
+          error={errors.client_id}
+          required
+          placeholder={clientsLoading ? 'Loading clients...' : 'Select client'}
+          disabled={clientsLoading}
+          compact
+        />
       )}
 
       <FormAccordionSection title="Contact (optional)">
@@ -295,7 +349,24 @@ export function CreatePersonForm({
 
       {formData.person_type === 'Dependent' && (
         <FormAccordionSection title="Dependent information" defaultOpen>
-          <Select label="Primary Employee" name="primary_employee_id" value={formData.primary_employee_id} onChange={(v) => { setFormData((p) => ({ ...p, primary_employee_id: v as string })); if (errors.primary_employee_id) setErrors((e) => ({ ...e, primary_employee_id: '' })) }} options={[{ value: '', label: 'Select primary employee (required)' }, ...employees.map((e) => ({ value: e.id, label: e.employee_code ? `${e.name} (${e.employee_code})` : e.name }))]} error={errors.primary_employee_id} required placeholder="Select primary employee" disabled={!formData.client_id} compact />
+          <Select
+            label="Primary Employee"
+            name="primary_employee_id"
+            value={formData.primary_employee_id}
+            onChange={(v) => {
+              setFormData((p) => ({ ...p, primary_employee_id: v as string }))
+              if (errors.primary_employee_id) setErrors((prev) => ({ ...prev, primary_employee_id: '' }))
+            }}
+            options={[
+              { value: '', label: employeesLoading ? 'Loading employees...' : 'Select primary employee (required)' },
+              ...employees.map((emp) => ({ value: emp.id, label: emp.employee_code ? `${emp.name} (${emp.employee_code})` : emp.name })),
+            ]}
+            error={errors.primary_employee_id}
+            required
+            placeholder={employeesLoading ? 'Loading employees...' : 'Select primary employee'}
+            disabled={!formData.client_id || employeesLoading}
+            compact
+          />
           <Select label="Relationship" name="relationship" value={formData.relationship} onChange={(v) => { setFormData((p) => ({ ...p, relationship: v as RelationType })); if (errors.relationship) setErrors((e) => ({ ...e, relationship: '' })) }} options={[{ value: '', label: 'Select relationship (required)' }, ...relationshipOptions]} error={errors.relationship} required placeholder="Select relationship" compact />
         </FormAccordionSection>
       )}

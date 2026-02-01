@@ -519,17 +519,19 @@ function ClientDetailPage() {
               <span
                 className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-primary/15 border border-[0.5px] border-primary/40 text-primary rounded-none"
                 title="Verified"
-                aria-label="Verified"
               >
-                <CheckCircle size={14} strokeWidth={2.5} />
+                <CheckCircle size={14} strokeWidth={2.5} aria-hidden="true" />
+                <span className="sr-only">Verified</span>
               </span>
             )}
             {client.status?.toLowerCase() === 'active' && (
-              <span
-                className="status-blink-dot flex-shrink-0 w-2.5 h-2.5 rounded-full bg-primary"
-                title="Active"
-                aria-label="Active"
-              />
+              <span className="flex items-center flex-shrink-0" title="Active">
+                <span
+                  className="status-blink-dot flex-shrink-0 w-2.5 h-2.5 rounded-full bg-primary"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Active</span>
+              </span>
             )}
           </div>
           <button

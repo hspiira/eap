@@ -3,14 +3,14 @@
  * Wrapper component for React Hook Form integration
  */
 
-import { FormProvider, useForm, UseFormReturn, FieldValues, SubmitHandler } from 'react-hook-form'
+import { FormProvider, useForm, UseFormReturn, FieldValues, SubmitHandler, DefaultValues, Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ReactNode } from 'react'
 
 export interface FormProps<T extends FieldValues> {
   schema?: z.ZodSchema<T>
-  defaultValues?: Partial<T>
+  defaultValues?: DefaultValues<T>
   onSubmit: SubmitHandler<T>
   children: (methods: UseFormReturn<T>) => ReactNode
   loading?: boolean
@@ -26,16 +26,17 @@ export function Form<T extends FieldValues>({
   className = '',
 }: FormProps<T>) {
   const methods = useForm<T>({
-    resolver: schema ? zodResolver(schema) : undefined,
-    defaultValues: (defaultValues || {}) as any,
+    resolver: schema
+      ? (zodResolver(schema as Parameters<typeof zodResolver>[0]) as Resolver<T, any, T>)
+      : undefined,
+    defaultValues: (defaultValues ?? {}) as DefaultValues<T>,
   })
 
   const handleSubmit = methods.handleSubmit(async (data) => {
     try {
       await onSubmit(data)
     } catch (error) {
-      // Error handling is done by the form's error state
-      console.error('Form submission error:', error)
+      throw error // Allow caller's onSubmit to handle via its own try/catch
     }
   })
 

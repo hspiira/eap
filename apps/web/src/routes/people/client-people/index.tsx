@@ -11,11 +11,13 @@ import { StatusBadge } from '@/components/common/StatusBadge'
 import { CreatePersonModal } from '@/components/forms/CreatePersonModal'
 import { personsApi } from '@/api/endpoints/persons'
 import { clientsApi } from '@/api/endpoints/clients'
-import type { Person } from '@/types/entities'
+import type { Client, Person } from '@/types/entities'
 import { PersonType } from '@/types/enums'
 import type { BaseStatus } from '@/types/enums'
 
 const ALLOWED_TYPES: PersonType[] = [PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT]
+const CLIENT_PAGE_SIZE = 100
+const MAX_CLIENTS = 500
 
 export const Route = createFileRoute('/people/client-people/')({
   component: ClientPeoplePage,
@@ -24,7 +26,7 @@ export const Route = createFileRoute('/people/client-people/')({
 function ClientPeoplePage() {
   const navigate = useNavigate()
   const [persons, setPersons] = useState<Person[]>([])
-  const [allEmployees, setAllEmployees] = useState<Person[]>([]) // For looking up primary employees
+  const [employeeCache, setEmployeeCache] = useState<Map<string, Person>>(new Map())
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,10 +44,24 @@ function ClientPeoplePage() {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const res = await clientsApi.list({ limit: 100 })
-        setClients(res.items.map((c) => ({ id: c.id, name: c.name })))
+        const all: Array<{ id: string; name: string }> = []
+        let page = 1
+        let hasMore = true
+        while (hasMore && all.length < MAX_CLIENTS) {
+          const res = await clientsApi.list({ page, limit: CLIENT_PAGE_SIZE })
+          const items = Array.isArray(res?.items)
+            ? res.items
+            : Array.isArray((res as unknown as { data?: unknown[] })?.data)
+              ? (res as unknown as { data: unknown[] }).data
+              : []
+          all.push(...(items as Client[]).map((c) => ({ id: c.id, name: c.name })))
+          hasMore = res?.has_more === true && all.length < MAX_CLIENTS
+          page += 1
+        }
+        setClients(all)
       } catch (err) {
         console.error('Error fetching clients:', err)
+        setClients([])
       }
     }
     fetchClients()
@@ -87,29 +103,27 @@ function ClientPeoplePage() {
     fetchPersons()
   }, [currentPage, pageSize, searchValue, statusFilter, personTypeFilter, clientFilter, sortBy, sortDirection])
 
-  // Fetch all employees when we need to display dependents (for looking up primary employees)
+  // On-demand fetch primary employees by ID for "Dependent of" column
   useEffect(() => {
-    const fetchEmployees = async () => {
-      // Only fetch if we're showing dependents or all types
-      if (personTypeFilter === 'Dependent' || !personTypeFilter) {
+    const primaryIds = persons
+      .filter((p) => p.person_type === 'Dependent' && p.dependent_info?.primary_employee_id)
+      .map((p) => p.dependent_info!.primary_employee_id)
+    const idsToFetch = [...new Set(primaryIds)].filter((id) => !employeeCache.has(id))
+    if (idsToFetch.length === 0) return
+    const fetchMissing = async () => {
+      const next = new Map(employeeCache)
+      for (const id of idsToFetch) {
         try {
-          const params: Record<string, unknown> = {
-            person_type: 'ClientEmployee',
-            limit: 500, // Get a reasonable number
-          }
-          if (clientFilter) params.client_id = clientFilter
-          const res = await personsApi.list(params)
-          setAllEmployees(res.items.filter((p) => p.person_type === 'ClientEmployee'))
+          const person = await personsApi.getById(id)
+          if (person.person_type === 'ClientEmployee') next.set(id, person)
         } catch (err) {
-          console.error('Error fetching employees for lookup:', err)
-          setAllEmployees([])
+          console.error('Error fetching primary employee:', err)
         }
-      } else {
-        setAllEmployees([])
       }
+      setEmployeeCache(next)
     }
-    fetchEmployees()
-  }, [personTypeFilter, clientFilter])
+    fetchMissing()
+  }, [persons, employeeCache])
 
   const handleSort = (columnId: string) => {
     if (sortBy === columnId) {
@@ -198,7 +212,7 @@ function ClientPeoplePage() {
         if (row.person_type !== 'Dependent') return '—'
         const depInfo = value as Person['dependent_info']
         if (!depInfo?.primary_employee_id) return '—'
-        const primary = allEmployees.find((p) => p.id === depInfo.primary_employee_id)
+        const primary = employeeCache.get(depInfo.primary_employee_id)
         if (!primary) return <span className="text-text-muted">{depInfo.primary_employee_id.slice(0, 8)}...</span>
         const name = getFullName(primary)
         return (

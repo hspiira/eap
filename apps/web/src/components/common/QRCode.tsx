@@ -18,7 +18,7 @@ export function QRCode({ url, alt = 'QR Code', size = 200, className = '' }: QRC
         alt={alt}
         width={size}
         height={size}
-        className="border border-[0.5px] border-safe/30 rounded-none"
+        className="border-[0.5px] border-safe/30 rounded-none"
       />
     </div>
   )

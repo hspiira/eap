@@ -1,7 +1,7 @@
 /**
  * Select Component
- * Uses shadcn Select (Radix) or Popover+Command (searchable) with our API.
- * Searchable when searchable=true or options.length > 10.
+ * Uses shadcn Select (Radix) or Popover+Command (searchable/multi-select) with our API.
+ * Popover+Command when searchable=true, options.length > 10, or multiple=true.
  */
 
 "use client"
@@ -74,35 +74,70 @@ export function Select({
   compact = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false)
-  const selectedValue = Array.isArray(value) ? value[0] ?? '' : value ?? ''
+  const selectedValues: string[] = Array.isArray(value)
+    ? value.filter((v) => v != null)
+    : value != null && value !== ''
+      ? [value]
+      : []
+  const selectedValue = multiple ? selectedValues[0] ?? '' : selectedValues[0] ?? ''
   const hasEmptyOption = options.some((o) => o.value === '')
-  const useSearchable = searchable || options.length > SEARCHABLE_THRESHOLD
+  const usePopover =
+    searchable || options.length > SEARCHABLE_THRESHOLD || multiple
 
   const normalizedOptions = options.map((o) => ({
     ...o,
     value: o.value === '' ? EMPTY_VALUE : o.value,
   }))
 
-  const selectValue = selectedValue === '' && hasEmptyOption ? EMPTY_VALUE : selectedValue || undefined
+  const selectValue =
+    selectedValue === '' && hasEmptyOption ? EMPTY_VALUE : selectedValue || undefined
+  const selectValuesSet = new Set(
+    selectedValues.map((v) => (v === '' && hasEmptyOption ? EMPTY_VALUE : v))
+  )
 
   const handleValueChange = (val: string) => {
     const out = val === EMPTY_VALUE ? '' : val
-    onChange(multiple ? [out] : out)
-    setOpen(false)
+    if (multiple) {
+      if (val === EMPTY_VALUE) {
+        onChange([])
+        setOpen(false)
+        return
+      }
+      const next = selectValuesSet.has(val)
+        ? selectedValues.filter((v) => (v === '' ? EMPTY_VALUE : v) !== val)
+        : [...selectedValues, out]
+      onChange(next)
+    } else {
+      onChange(out)
+      setOpen(false)
+    }
   }
 
-  const selectedLabel = normalizedOptions.find((o) => o.value === selectValue)?.label ?? placeholder
+  const selectedLabel = multiple
+    ? selectedValues.length === 0
+      ? placeholder
+      : selectedValues.length <= 2
+        ? selectedValues
+            .map(
+              (v) =>
+                normalizedOptions.find((o) =>
+                  o.value === (v === '' && hasEmptyOption ? EMPTY_VALUE : v)
+                )?.label ?? v
+            )
+            .join(', ')
+        : `${selectedValues.length} items selected`
+    : normalizedOptions.find((o) => o.value === selectValue)?.label ?? placeholder
 
   const space = compact ? 'mb-2' : 'mb-4'
   const labelSpace = compact ? 'mb-1' : 'mb-2'
 
   const triggerClassName = cn(
     'w-full justify-between font-normal rounded-none',
-    !selectedValue && 'text-text-muted',
+    (multiple ? selectedValues.length === 0 : !selectedValue) && 'text-text-muted',
     error && 'border-danger'
   )
 
-  if (useSearchable) {
+  if (usePopover) {
     return (
       <div className={cn(space, className)}>
         {label && (
@@ -129,23 +164,30 @@ export function Select({
               <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
                 <CommandGroup>
-                  {normalizedOptions.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.label}
-                      disabled={option.disabled}
-                      onSelect={() => !option.disabled && handleValueChange(option.value)}
-                      className="rounded-none"
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          selectValue === option.value ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                      {option.label}
-                    </CommandItem>
-                  ))}
+                  {normalizedOptions.map((option) => {
+                    const isSelected = multiple
+                      ? selectValuesSet.has(option.value)
+                      : selectValue === option.value
+                    return (
+                      <CommandItem
+                        key={option.value}
+                        value={option.label}
+                        disabled={option.disabled}
+                        onSelect={() =>
+                          !option.disabled && handleValueChange(option.value)
+                        }
+                        className="rounded-none"
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4 flex-shrink-0',
+                            isSelected ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        {option.label}
+                      </CommandItem>
+                    )
+                  })}
                 </CommandGroup>
               </CommandList>
             </Command>

@@ -2,7 +2,7 @@
  * Login Page
  */
 
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { FormField } from '@/components/common/FormField'
@@ -13,12 +13,10 @@ export const Route = createFileRoute('/auth/login')({
   validateSearch: (search: Record<string, unknown>): {
     tenant_code?: string
     email?: string
-  } => {
-    return {
-      tenant_code: search.tenant_code as string | undefined,
-      email: search.email as string | undefined,
-    }
-  },
+  } => ({
+    tenant_code: typeof search.tenant_code === 'string' ? search.tenant_code : undefined,
+    email: typeof search.email === 'string' ? search.email : undefined,
+  }),
 })
 
 function LoginPage() {

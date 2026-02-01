@@ -62,11 +62,20 @@ export const IndustryTree = memo(function IndustryTree({
     return (
       <div key={node.id} className="select-none">
         <div
+          role="button"
+          tabIndex={0}
+          aria-selected={isSelected}
           style={{ paddingLeft: `${depth * 14 + 6}px` }}
           className={`flex items-center gap-1.5 py-1 px-1.5 rounded-none cursor-pointer transition-colors text-sm ${
             isSelected ? 'bg-primary text-white' : 'hover:bg-surface-hover'
           }`}
           onClick={() => onSelect?.(node)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onSelect?.(node)
+            }
+          }}
         >
           <button
             type="button"

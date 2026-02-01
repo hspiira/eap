@@ -106,7 +106,7 @@ export function DateTimePicker({
                 className={cn(
                   'w-full justify-between font-normal rounded-none',
                   !date && 'text-text-muted',
-                  (error || dateError) && 'border-danger'
+                  dateError && 'border-danger'
                 )}
               >
                 {displayDate}
@@ -130,7 +130,7 @@ export function DateTimePicker({
               />
             </PopoverContent>
           </Popover>
-          {(error || dateError) && <p className="mt-1 text-sm text-danger">{dateError || error}</p>}
+          {dateError && <p className="mt-1 text-sm text-danger">{dateError}</p>}
         </div>
         <div className="w-32 shrink-0">
           <Label htmlFor={name ? `${name}-time` : undefined} className="block text-text text-sm font-medium mb-1">
@@ -144,11 +144,14 @@ export function DateTimePicker({
             onChange={handleTimeChange}
             disabled={disabled}
             step="1"
-            className={cn('rounded-none', (error || timeError) && 'border-danger')}
+            className={cn('rounded-none', timeError && 'border-danger')}
           />
-          {(error || timeError) && <p className="mt-1 text-sm text-danger">{timeError || error}</p>}
+          {timeError && <p className="mt-1 text-sm text-danger">{timeError}</p>}
         </div>
       </div>
+      {error && !dateError && !timeError && (
+        <p className="mt-1 text-sm text-danger">{error}</p>
+      )}
     </div>
   )
 }

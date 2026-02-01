@@ -66,6 +66,13 @@ code {
     monospace;
 }
 
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
 * {
   border-radius: 0;
 }

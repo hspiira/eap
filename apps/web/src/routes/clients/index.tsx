@@ -101,7 +101,11 @@ function ClientsPage() {
           page: 1,
           limit: 500,
         })
-        const industriesList = res.items || []
+        const industriesList = Array.isArray(res?.items)
+          ? res.items
+          : Array.isArray((res as { data?: unknown[] })?.data)
+            ? (res as { data: unknown[] }).data
+            : []
         setIndustries(industriesList)
         // Create a map for quick lookup
         const map = new Map<string, Industry>()

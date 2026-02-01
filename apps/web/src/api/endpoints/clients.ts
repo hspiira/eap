@@ -16,17 +16,8 @@ import type {
 export interface ClientCreate {
   name: string
   code: string // Required, 3-5 chars
-  contact_info: {
-    phone?: string | null
-    email?: string | null
-    address?: string | null
-  }
-  billing_address?: {
-    street?: string | null
-    city?: string | null
-    country?: string | null
-    postal_code?: string | null
-  } | null
+  contact_info: ClientContactInfo
+  billing_address?: ClientBillingAddress | null
   industry_id?: string | null
   parent_client_id?: string | null
   preferred_contact_method?: string | null

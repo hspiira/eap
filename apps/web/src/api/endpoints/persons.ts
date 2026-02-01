@@ -6,6 +6,7 @@ import apiClient from '../client'
 import type { Person, PaginatedResponse, ListParams } from '../types'
 import type { PersonType, RelationType } from '@/types/enums'
 import type {
+  Address,
   EmploymentInfo,
   DependentInfo,
   LicenseInfo,
@@ -23,24 +24,15 @@ export interface PersonCreate {
   client_id?: string | null // For ClientEmployee and Dependent
   parent_person_id?: string | null // DEPRECATED: For Dependent - use dependent_info instead
   family_id?: string | null
-  dependent_info?: {
-    primary_employee_id: string
-    relationship: RelationType
-    guardian_id?: string | null
-  } | null
+  dependent_info?: DependentInfo | null
+  /** Inline to preserve backward compatibility: shared ContactInfo uses preferred_method: ContactMethod enum; PersonCreate keeps preferred_method?: string | null for form/API flexibility. */
   contact_info?: {
     email?: string | null
     phone?: string | null
     mobile?: string | null
     preferred_method?: string | null
   } | null
-  address?: {
-    street?: string | null
-    city?: string | null
-    state?: string | null
-    postal_code?: string | null
-    country?: string | null
-  } | null
+  address?: Address | null
   emergency_contact?: EmergencyContact | null
   employment_info?: EmploymentInfo | null
   license_info?: LicenseInfo | null

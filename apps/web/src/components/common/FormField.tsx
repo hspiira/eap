@@ -51,7 +51,8 @@ export function FormField({
   compact = false,
   useFormContext: useForm = false,
 }: FormFieldProps) {
-  const formContext = useForm ? useFormContext() : null
+  const rhfContext = useFormContext()
+  const formContext = useForm ? rhfContext : null
   const formError = formContext ? getFieldError(formContext.formState.errors, name) : null
   const error = externalError || formError
   const space = compact ? 'mb-2' : 'mb-4'
@@ -83,7 +84,7 @@ export function FormField({
                   disabled={disabled}
                   required={required}
                   className={cn(
-                    'flex w-full rounded-none border bg-surface px-3 py-2 text-base transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                    'flex w-full rounded-none border bg-surface px-3 py-2 text-base font-inherit transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                     error ? 'border-danger' : 'border-border'
                   )}
                 />
@@ -127,7 +128,7 @@ export function FormField({
           disabled={disabled}
           rows={rows}
           className={cn(
-            'flex w-full rounded-none border bg-surface px-3 py-2 text-base transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+            'flex w-full rounded-none border bg-surface px-3 py-2 text-base font-inherit transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
             error ? 'border-danger' : 'border-border'
           )}
         />
