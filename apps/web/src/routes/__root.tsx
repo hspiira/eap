@@ -8,6 +8,7 @@ import { ThemeProvider } from '../contexts/ThemeContext'
 import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
+import { NotFound } from '../components/common/NotFound'
 import { ToastContainer } from '../components/common/ToastContainer'
 import { SessionTimeoutManager } from '../components/common/SessionTimeoutManager'
 import { useToast } from '../contexts/ToastContext'
@@ -15,6 +16,7 @@ import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
+  notFoundComponent: () => <NotFound fullPage />,
   head: () => ({
     meta: [
       {
