@@ -3,7 +3,7 @@
  * Hierarchical tree view for industries with expand/collapse
  */
 
-import { useState, useMemo, useCallback, memo } from 'react'
+import { useState, useMemo, useCallback, memo, useEffect } from 'react'
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react'
 import type { Industry } from '@/types/entities'
 
@@ -15,6 +15,10 @@ export interface IndustryTreeProps {
   /** Paginate roots: show roots in [offset, offset+limit). Omit to show all. */
   rootOffset?: number
   rootLimit?: number
+  /** Ref to the scroll container; used to scroll the selected row into view. */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>
+  /** When set, ancestors of this industry are expanded so it is visible. */
+  expandToId?: string | null
   className?: string
 }
 
@@ -24,6 +28,17 @@ function buildTree(items: Industry[], parentId: string | null = null): Industry[
     .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
 }
 
+function getAncestorIds(industryId: string, industries: Industry[]): Set<string> {
+  const byId = new Map(industries.map((i) => [i.id, i]))
+  const ids = new Set<string>()
+  let current = byId.get(industryId)
+  while (current?.parent_id) {
+    ids.add(current.parent_id)
+    current = byId.get(current.parent_id)
+  }
+  return ids
+}
+
 export const IndustryTree = memo(function IndustryTree({
   industries,
   onSelect,
@@ -31,6 +46,8 @@ export const IndustryTree = memo(function IndustryTree({
   emptyMessage = 'No industries',
   rootOffset = 0,
   rootLimit,
+  scrollContainerRef,
+  expandToId,
   className = '',
 }: IndustryTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -40,6 +57,25 @@ export const IndustryTree = memo(function IndustryTree({
     if (rootLimit == null) return allRoots
     return allRoots.slice(rootOffset, rootOffset + rootLimit)
   }, [allRoots, rootOffset, rootLimit])
+
+  useEffect(() => {
+    if (!expandToId) return
+    const ancestorIds = getAncestorIds(expandToId, industries)
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      ancestorIds.forEach((id) => next.add(id))
+      return next
+    })
+  }, [expandToId, industries])
+
+  useEffect(() => {
+    if (!selectedId || !scrollContainerRef?.current) return
+    const container = scrollContainerRef.current
+    const el = container.querySelector<HTMLElement>(`[data-industry-id="${selectedId}"]`)
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [selectedId, scrollContainerRef, rootOffset])
 
   const toggle = useCallback((id: string) => {
     setExpanded((prev) => {
@@ -60,7 +96,7 @@ export const IndustryTree = memo(function IndustryTree({
     const codeCls = isSelected ? 'opacity-90' : 'text-text-muted'
 
     return (
-      <div key={node.id} className="select-none">
+      <div key={node.id} className="select-none" data-industry-id={node.id}>
         <div
           role="button"
           tabIndex={0}

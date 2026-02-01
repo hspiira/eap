@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { IndustryTree } from '@/components/common/IndustryTree'
 import { IndustryDetailPanel } from '@/components/common/IndustryDetailPanel'
 import { TableFilters } from '@/components/common/TableFilters'
@@ -27,6 +27,7 @@ export function IndustriesTab() {
   const [detailChildren, setDetailChildren] = useState<Industry[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const treeScrollContainerRef = useRef<HTMLDivElement>(null)
 
   const fetchIndustries = useCallback(async () => {
     if (!currentTenant) return
@@ -131,6 +132,25 @@ export function IndustriesTab() {
     return filtered.filter((i) => !i.parent_id)
   }, [filtered])
 
+  function getRootForIndustry(industryId: string, list: Industry[]): Industry | null {
+    const byId = new Map(list.map((i) => [i.id, i]))
+    let current = byId.get(industryId) ?? null
+    while (current?.parent_id) {
+      current = byId.get(current.parent_id) ?? null
+    }
+    return current
+  }
+
+  useEffect(() => {
+    if (!selectedId || roots.length === 0) return
+    const root = getRootForIndustry(selectedId, filtered)
+    if (!root) return
+    const rootIndex = roots.findIndex((r) => r.id === root.id)
+    if (rootIndex < 0) return
+    const pageForRoot = Math.floor(rootIndex / PAGE_SIZE) + 1
+    setCurrentPage((p) => (p === pageForRoot ? p : pageForRoot))
+  }, [selectedId, roots, filtered])
+
   const totalRoots = roots.length
   const totalPages = Math.max(1, Math.ceil(totalRoots / PAGE_SIZE))
   const safePage = Math.min(Math.max(1, currentPage), totalPages)
@@ -200,7 +220,10 @@ export function IndustriesTab() {
             </div>
           ) : (
             <>
-              <div className="border border-[0.5px] border-border bg-surface flex-1 min-h-[200px] overflow-auto">
+              <div
+                ref={treeScrollContainerRef}
+                className="border border-[0.5px] border-border bg-surface flex-1 min-h-[200px] overflow-auto"
+              >
                 <IndustryTree
                   industries={filtered}
                   onSelect={handleSelect}
@@ -208,6 +231,8 @@ export function IndustriesTab() {
                   emptyMessage={emptyMessage}
                   rootOffset={rootOffset}
                   rootLimit={PAGE_SIZE}
+                  scrollContainerRef={treeScrollContainerRef}
+                  expandToId={selectedId}
                 />
               </div>
               {totalRoots > 0 && (

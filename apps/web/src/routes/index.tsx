@@ -5,16 +5,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
-  head: () => ({
-    links: [
-      {
-        rel: 'preload',
-        href: '/videos/wellness.webm',
-        as: 'video',
-        type: 'video/webm',
-      },
-    ],
-  }),
 })
 
 function HomePage() {
