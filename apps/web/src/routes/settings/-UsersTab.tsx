@@ -92,7 +92,7 @@ export function UsersTab() {
       render: (value, row) => (
         <button
           onClick={() => handleRowClick(row)}
-          className="text-left text-natural hover:text-natural-dark font-medium"
+          className="text-left text-primary hover:text-primary-dark font-medium"
         >
           {value as string}
         </button>
@@ -111,7 +111,7 @@ export function UsersTab() {
       accessor: 'is_email_verified',
       sortable: true,
       render: (value) => (
-        <span className={value ? 'text-natural' : 'text-safe-light'}>
+        <span className={value ? 'text-primary' : 'text-text-light'}>
           {value ? 'Yes' : 'No'}
         </span>
       ),
@@ -122,7 +122,7 @@ export function UsersTab() {
       accessor: 'is_two_factor_enabled',
       sortable: true,
       render: (value) => (
-        <span className={value ? 'text-natural' : 'text-safe-light'}>
+        <span className={value ? 'text-primary' : 'text-text-light'}>
           {value ? 'Enabled' : 'Disabled'}
         </span>
       ),
@@ -133,7 +133,7 @@ export function UsersTab() {
       accessor: 'last_login_at',
       sortable: true,
       render: (value) => {
-        if (!value) return <span className="text-safe-light">Never</span>
+        if (!value) return <span className="text-text-light">Never</span>
         const date = new Date(value as string)
         return date.toLocaleDateString()
       },
@@ -153,8 +153,8 @@ export function UsersTab() {
 
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Users</h2>
-      <p className="text-xs text-safe-light mb-2">Users in your organization.</p>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Users</h2>
+      <p className="text-xs text-text-light mb-2">Users in your organization.</p>
       <DataTable
         data={users}
         columns={columns}

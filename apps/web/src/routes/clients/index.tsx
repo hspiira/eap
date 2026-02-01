@@ -152,7 +152,7 @@ function ClientsPage() {
       render: (value, row) => (
         <button
           onClick={() => handleRowClick(row)}
-          className="text-left text-natural hover:text-natural-dark font-medium"
+          className="text-left text-primary hover:text-primary-hover font-medium"
         >
           {value as string}
         </button>
@@ -171,12 +171,12 @@ function ClientsPage() {
       accessor: 'industry_id',
       sortable: true,
       render: (value) => {
-        if (!value) return <span className="text-safe-light">-</span>
+        if (!value) return <span className="text-text-muted">-</span>
         const industry = industriesMap.get(value as string)
         return industry ? (
-          <span className="text-safe">{industry.name}</span>
+          <span className="text-text">{industry.name}</span>
         ) : (
-          <span className="text-safe-light">-</span>
+          <span className="text-text-muted">-</span>
         )
       },
     },
@@ -191,7 +191,7 @@ function ClientsPage() {
         ) : contact?.phone ? (
           <span>{contact.phone}</span>
         ) : (
-          <span className="text-safe-light">-</span>
+          <span className="text-text-muted">-</span>
         )
       },
     },
@@ -212,9 +212,9 @@ function ClientsPage() {
     return (
       <AppLayout>
         <div className="max-w-7xl mx-auto">
-          <div className="p-6 bg-white border border-[0.5px] border-safe/30 text-safe">
+          <div className="p-6 bg-surface border border-[0.5px] border-border text-text">
             <p className="font-medium">No organization selected</p>
-            <p className="text-sm text-safe-light mt-1">
+            <p className="text-sm text-text-muted mt-1">
               Log in with a tenant code to view clients, or create a tenant first.
             </p>
           </div>

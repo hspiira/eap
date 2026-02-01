@@ -56,22 +56,22 @@ export const IndustryTree = memo(function IndustryTree({
     const isExpanded = expanded.has(node.id)
     const isSelected = selectedId === node.id
 
-    const iconCls = isSelected ? 'text-white opacity-90' : 'text-safe-light'
-    const codeCls = isSelected ? 'opacity-90' : 'text-safe-light'
+    const iconCls = isSelected ? 'text-white opacity-90' : 'text-text-muted'
+    const codeCls = isSelected ? 'opacity-90' : 'text-text-muted'
 
     return (
       <div key={node.id} className="select-none">
         <div
           style={{ paddingLeft: `${depth * 14 + 6}px` }}
           className={`flex items-center gap-1.5 py-1 px-1.5 rounded-none cursor-pointer transition-colors text-sm ${
-            isSelected ? 'bg-natural text-white' : 'hover:bg-safe-light/10'
+            isSelected ? 'bg-primary text-white' : 'hover:bg-surface-hover'
           }`}
           onClick={() => onSelect?.(node)}
         >
           <button
             type="button"
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            className="p-0.5 rounded-none hover:bg-safe-light/20 flex-shrink-0"
+            className="p-0.5 rounded-none hover:bg-surface-hover flex-shrink-0"
             onClick={(e) => {
               e.stopPropagation()
               if (hasChildren) toggle(node.id)
@@ -110,14 +110,14 @@ export const IndustryTree = memo(function IndustryTree({
 
   if (roots.length === 0) {
     return (
-      <div className={`py-8 text-center text-safe-light text-sm ${className}`}>
+      <div className={`py-8 text-center text-text-muted text-sm ${className}`}>
         {emptyMessage}
       </div>
     )
   }
 
   return (
-    <div className={`border border-[0.5px] border-safe/30 bg-white ${className}`}>
+    <div className={`border border-[0.5px] border-border bg-surface ${className}`}>
       {roots.map((node) => renderNode(node, 0))}
     </div>
   )

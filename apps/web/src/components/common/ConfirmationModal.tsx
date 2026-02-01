@@ -25,7 +25,7 @@ export interface ConfirmationModalProps {
 const variantColors = {
   danger: 'bg-danger hover:bg-danger-dark text-white border-danger-dark',
   warning: 'bg-nurturing hover:bg-nurturing-dark text-white border-nurturing-dark',
-  info: 'bg-safe hover:bg-safe-dark text-white border-safe-dark',
+  info: 'bg-neutral hover:bg-neutral-dark text-white border-neutral-dark',
 }
 
 export function ConfirmationModal({
@@ -71,7 +71,7 @@ export function ConfirmationModal({
 
   const content = (
     <div
-      className="fixed inset-0 bg-safe/50 flex items-center justify-center z-[100] p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirmation-modal-title"
@@ -80,18 +80,18 @@ export function ConfirmationModal({
       }}
     >
       <div
-        className="bg-white border border-[0.5px] border-safe/30 max-w-md w-full rounded-none"
+        className="bg-surface border border-[0.5px] border-border max-w-md w-full rounded-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[0.5px] border-safe/30">
-          <h3 id="confirmation-modal-title" className="text-base font-semibold text-safe">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[0.5px] border-border">
+          <h3 id="confirmation-modal-title" className="text-base font-semibold text-text">
             {title}
           </h3>
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="p-2 hover:bg-gray-100 text-safe rounded-none transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-surface-hover text-text rounded-none transition-colors disabled:opacity-50"
             aria-label="Close"
           >
             <X size={20} />
@@ -99,14 +99,14 @@ export function ConfirmationModal({
         </div>
 
         <div className="p-4">
-          <p className="text-safe text-sm mb-4">{message}</p>
+          <p className="text-text text-sm mb-4">{message}</p>
 
           {requireReason && (
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={reasonPlaceholder}
-              className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe mb-4 min-h-[80px]"
+              className="w-full px-4 py-2 bg-surface border border-[0.5px] border-border rounded-none focus:outline-none focus:border-border-focus text-text mb-4 min-h-[80px]"
               rows={3}
               disabled={loading}
             />
@@ -117,7 +117,7 @@ export function ConfirmationModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 bg-white hover:bg-gray-100 text-safe border border-[0.5px] border-safe/30 rounded-none transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-surface hover:bg-surface-hover text-text border border-[0.5px] border-border rounded-none transition-colors disabled:opacity-50"
             >
               {cancelLabel}
             </button>

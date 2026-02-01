@@ -106,7 +106,7 @@ export function FileUpload({
   return (
     <div className={`mb-4 ${className}`}>
       {label && (
-        <label className="block text-safe text-sm font-medium mb-2">
+        <label className="block text-text text-sm font-medium mb-2">
           {label}
           {required && <span className="text-danger ml-1">*</span>}
         </label>
@@ -119,10 +119,10 @@ export function FileUpload({
         onClick={handleClick}
         className={`
           relative border-2 border-dashed rounded-none transition-colors cursor-pointer
-          ${isDragging ? 'border-natural bg-natural/10' : 'border-safe/30'}
+          ${isDragging ? 'border-primary bg-primary/10' : 'border-border'}
           ${error || dragError ? 'border-danger' : ''}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-natural'}
-          ${value ? 'bg-white' : 'bg-gray-50'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary'}
+          ${value ? 'bg-surface' : 'bg-surface-muted'}
         `}
       >
         <input
@@ -139,10 +139,10 @@ export function FileUpload({
         {value ? (
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <File size={24} className="text-natural" />
+              <File size={24} className="text-primary" />
               <div>
-                <p className="text-safe font-medium">{value.name}</p>
-                <p className="text-safe-light text-sm">{formatFileSize(value.size)}</p>
+                <p className="text-text font-medium">{value.name}</p>
+                <p className="text-text-muted text-sm">{formatFileSize(value.size)}</p>
               </div>
             </div>
             {!disabled && (
@@ -152,7 +152,7 @@ export function FileUpload({
                   e.stopPropagation()
                   handleRemove()
                 }}
-                className="p-1 hover:bg-safe-light/20 rounded-none transition-colors"
+                className="p-1 hover:bg-surface-hover rounded-none transition-colors"
                 aria-label="Remove file"
               >
                 <X size={18} className="text-nurturing" />
@@ -161,11 +161,11 @@ export function FileUpload({
           </div>
         ) : (
           <div className="p-6 text-center">
-            <Upload size={32} className="mx-auto mb-2 text-safe-light" />
-            <p className="text-safe mb-1">
-              <span className="text-natural hover:text-natural-dark">Click to upload</span> or drag and drop
+            <Upload size={32} className="mx-auto mb-2 text-text-muted" />
+            <p className="text-text mb-1">
+              <span className="text-primary hover:text-primary-hover">Click to upload</span> or drag and drop
             </p>
-            <p className="text-safe-light text-sm">
+            <p className="text-text-muted text-sm">
               {accept ? `Accepted: ${accept}` : 'Any file type'}
               {maxSize && ` • Max size: ${formatFileSize(maxSize)}`}
             </p>

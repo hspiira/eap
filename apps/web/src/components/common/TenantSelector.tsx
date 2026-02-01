@@ -22,14 +22,14 @@ export function TenantSelector() {
 
   return (
     <div className="mb-4">
-      <label htmlFor="tenant-select" className="block text-safe text-sm font-medium mb-2">
+      <label htmlFor="tenant-select" className="block text-text text-sm font-medium mb-2">
         Current Tenant
       </label>
       <select
         id="tenant-select"
         value={currentTenant?.id || ''}
         onChange={(e) => handleTenantChange(e.target.value)}
-        className="w-full px-4 py-2 bg-white border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural"
+        className="w-full px-4 py-2 bg-surface border-[0.5px] border-border rounded-none focus:outline-none focus:border-border-focus"
       >
         {availableTenants.map((tenant) => (
           <option key={tenant.id} value={tenant.id}>

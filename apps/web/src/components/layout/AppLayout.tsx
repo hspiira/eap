@@ -128,19 +128,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigationItems = getNavigationItems()
 
   return (
-    <div className="bg-white flex flex-col">
-      <header className="sticky top-0 z-30 bg-white border-b border-[0.5px] border-safe/30">
+    <div className="bg-page flex flex-col min-h-screen">
+      <header className="sticky top-0 z-30 bg-surface border-b border-[0.5px] border-border">
         <div className="flex items-center justify-between px-6 h-16">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            className="hidden lg:flex p-2 text-text hover:bg-surface-hover transition-colors"
             aria-label="Toggle sidebar"
           >
             <Menu size={20} />
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            className="lg:hidden p-2 text-text hover:bg-surface-hover transition-colors"
             aria-label="Menu"
           >
             <Menu size={20} />
@@ -148,7 +148,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="flex-1" />
           <div className="flex items-center gap-2 mr-4">
             {tenantLoading ? (
-              <span className="text-sm text-safe-light">Loading…</span>
+              <span className="text-sm text-text-muted">Loading…</span>
             ) : currentTenant ? (
               availableTenants.length > 1 ? (
                 <select
@@ -157,7 +157,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     const t = availableTenants.find((x) => x.id === e.target.value)
                     if (t) setCurrentTenant(t)
                   }}
-                  className="text-sm bg-white border border-[0.5px] border-safe/30 text-safe px-3 py-1.5 rounded-none focus:outline-none focus:border-natural"
+                  className="text-sm bg-surface border border-[0.5px] border-border text-text px-3 py-1.5 rounded-none focus:outline-none focus:border-border-focus"
                   aria-label="Current organization"
                 >
                   {availableTenants.map((tenant) => (
@@ -167,7 +167,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   ))}
                 </select>
               ) : (
-                <span className="flex items-center gap-1.5 text-sm text-safe" title="Current organization">
+                <span className="flex items-center gap-1.5 text-sm text-text" title="Current organization">
                   <Building2 size={16} />
                   {currentTenant.name}
                 </span>
@@ -176,7 +176,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
           <button
             onClick={logout}
-            className="p-2 text-safe hover:bg-safe-light/10 transition-colors"
+            className="p-2 text-text hover:bg-surface-hover transition-colors"
             aria-label="Sign out"
             title="Sign out"
           >
@@ -189,11 +189,11 @@ export function AppLayout({ children }: AppLayoutProps) {
         <aside
           className={`${
             sidebarOpen ? 'w-64' : 'w-0'
-          } hidden lg:block bg-white transition-all duration-300 ease-in-out overflow-hidden`}
+          } hidden lg:block bg-surface transition-all duration-300 ease-in-out overflow-hidden`}
         >
           <div className="flex flex-col ml-4">
             <div className="p-4">
-              <h2 className="text-base font-semibold text-safe">Evexía</h2>
+              <h2 className="text-base font-semibold text-text">Evexía</h2>
             </div>
 
             <nav className="flex-1 overflow-y-auto py-1">
@@ -202,7 +202,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   return (
                     <div
                       key={item.id}
-                      className="h-px bg-safe-light/30 mx-2 my-1"
+                      className="h-px bg-border mx-2 my-1 opacity-50"
                     />
                   )
                 }
@@ -215,7 +215,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   return (
                     <div
                       key={navItem.path}
-                      className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                      className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
                     >
                       <Icon size={18} />
                       <span className="text-sm">{navItem.label}</span>
@@ -228,7 +228,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   return (
                     <div
                       key={navItem.path}
-                      className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                      className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
                     >
                       <Icon size={18} />
                       <span className="text-sm">{navItem.label}</span>
@@ -240,10 +240,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <Link
                     key={navItem.path}
                     to={navItem.path}
-                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors ${
-                      isActive
-                        ? 'bg-natural text-white'
-                        : 'text-safe hover:bg-safe-light/10'
+                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors rounded-none ${
+                        isActive
+                          ? 'bg-primary text-white'
+                          : 'text-text hover:bg-surface-hover'
                     }`}
                   >
                     <Icon size={18} />
@@ -262,13 +262,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <aside className="fixed left-0 top-16 h-full w-64 bg-white z-50 lg:hidden overflow-y-auto">
+          <aside className="fixed left-0 top-16 h-full w-64 bg-surface z-50 lg:hidden overflow-y-auto">
               <div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-4">
-                <h2 className="text-base font-semibold text-safe">Evexía</h2>
+                <h2 className="text-base font-semibold text-text">Evexía</h2>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 hover:bg-safe-light/10 rounded transition-colors"
+                  className="p-2 hover:bg-surface-hover transition-colors rounded-none"
                   aria-label="Close menu"
                 >
                   <X size={20} />
@@ -281,7 +281,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     return (
                       <div
                         key={item.id}
-                        className="h-px bg-safe-light/30 mx-2 my-1"
+                        className="h-px bg-border mx-2 my-1 opacity-50"
                       />
                     )
                   }
@@ -294,7 +294,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     return (
                       <div
                         key={navItem.path}
-                        className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                        className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
                       >
                         <Icon size={18} />
                         <span className="text-sm">{navItem.label}</span>
@@ -307,7 +307,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     return (
                       <div
                         key={navItem.path}
-                        className="flex items-center gap-3 px-4 py-1.5 text-safe-light cursor-not-allowed"
+                        className="flex items-center gap-3 px-4 py-1.5 text-text-muted cursor-not-allowed"
                       >
                         <Icon size={18} />
                         <span className="text-sm">{navItem.label}</span>
@@ -320,11 +320,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                       key={navItem.path}
                       to={navItem.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-1.5 transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-1.5 transition-colors rounded-none ${
                         isActive
-                          ? 'bg-natural text-white'
-                          : 'text-safe hover:bg-safe-light/10'
-                      }`}
+                          ? 'bg-primary text-white'
+                          : 'text-text hover:bg-surface-hover'
+                    }`}
                     >
                       <Icon size={18} />
                       <span className="text-sm">{navItem.label}</span>

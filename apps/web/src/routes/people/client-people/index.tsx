@@ -165,7 +165,7 @@ function ClientPeoplePage() {
       render: (value, row) => (
         <button
           onClick={() => handleRowClick(row)}
-          className="text-left text-natural hover:text-natural-dark font-medium"
+          className="text-left text-primary hover:text-primary-hover font-medium"
         >
           {value as string}
         </button>
@@ -186,7 +186,7 @@ function ClientPeoplePage() {
       render: (value, row) => {
         if (row.person_type !== 'ClientEmployee') return '—'
         const empInfo = value as Person['employment_info']
-        return <span className="text-safe">{empInfo?.employee_code || '—'}</span>
+        return <span className="text-text">{empInfo?.employee_code || '—'}</span>
       },
     },
     {
@@ -199,12 +199,12 @@ function ClientPeoplePage() {
         const depInfo = value as Person['dependent_info']
         if (!depInfo?.primary_employee_id) return '—'
         const primary = allEmployees.find((p) => p.id === depInfo.primary_employee_id)
-        if (!primary) return <span className="text-safe-light">{depInfo.primary_employee_id.slice(0, 8)}...</span>
+        if (!primary) return <span className="text-text-muted">{depInfo.primary_employee_id.slice(0, 8)}...</span>
         const name = getFullName(primary)
         return (
           <button
             onClick={() => handleRowClick(primary)}
-            className="text-left text-natural hover:text-natural-dark font-medium"
+            className="text-left text-primary hover:text-primary-hover font-medium"
           >
             {name}
           </button>
@@ -219,7 +219,7 @@ function ClientPeoplePage() {
       render: (value, row) => {
         if (row.person_type !== 'Dependent') return '—'
         const depInfo = value as Person['dependent_info']
-        return <span className="text-safe">{depInfo?.relationship || '—'}</span>
+        return <span className="text-text">{depInfo?.relationship || '—'}</span>
       },
     },
     {
@@ -250,7 +250,7 @@ function ClientPeoplePage() {
         ) : contact?.phone ? (
           <span>{contact.phone}</span>
         ) : (
-          <span className="text-safe-light">—</span>
+          <span className="text-text-muted">—</span>
         )
       },
     },

@@ -151,7 +151,7 @@ export function DataTable<T extends { id?: string }>({
   const getSortIcon = useCallback(
     (columnId: string) => {
       if (!sorting || columnId !== sorting.sortBy) {
-        return <ArrowUpDown size={14} className="text-safe-light" />
+        return <ArrowUpDown size={14} className="text-text-muted" />
       }
 
       if (sorting.sortDirection === 'asc') {
@@ -162,7 +162,7 @@ export function DataTable<T extends { id?: string }>({
         return <ArrowDown size={14} className="text-natural" />
       }
 
-      return <ArrowUpDown size={14} className="text-safe-light" />
+      return <ArrowUpDown size={14} className="text-text-muted" />
     },
     [sorting]
   )
@@ -194,9 +194,9 @@ export function DataTable<T extends { id?: string }>({
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse bg-white">
+        <table className="w-full border-collapse bg-surface">
           <thead>
-            <tr className="bg-white border-b border-[0.5px] border-safe/30">
+            <tr className="bg-surface border-b border-[0.5px] border-border">
               {rowSelection && (
                 <th className="px-4 py-3 text-left">
                   <input
@@ -206,20 +206,20 @@ export function DataTable<T extends { id?: string }>({
                       if (input) input.indeterminate = isIndeterminate || false
                     }}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded-none border-[0.5px] border-safe/30"
+                    className="rounded-none border-[0.5px] border-border"
                   />
                 </th>
               )}
               {columns.map((column) => (
                 <th
                   key={column.id}
-                  className={`px-4 py-3 text-left text-sm font-semibold text-safe ${column.headerClassName || ''}`}
+                  className={`px-4 py-3 text-left text-sm font-semibold text-text ${column.headerClassName || ''}`}
                 >
                   <div className="flex items-center gap-2">
                     {sorting && column.sortable !== false ? (
                       <button
                         onClick={() => sorting.onSort(column.id)}
-                        className="flex items-center gap-2 hover:text-natural transition-colors"
+                        className="flex items-center gap-2 hover:text-primary transition-colors"
                       >
                         <span>{column.header}</span>
                         {getSortIcon(column.id)}
@@ -239,18 +239,18 @@ export function DataTable<T extends { id?: string }>({
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 bg-white"
+                  className="px-4 py-12 bg-surface"
                 >
                   <div className="flex flex-col items-center justify-center gap-3">
                     <div className="flex items-center gap-2 text-danger">
                       <AlertCircle size={20} />
                       <span className="font-medium">Error loading data</span>
                     </div>
-                    <p className="text-safe-light text-sm text-center max-w-md">{error}</p>
+                    <p className="text-text-muted text-sm text-center max-w-md">{error}</p>
                     {onRetry && (
                       <button
                         onClick={onRetry}
-                        className="mt-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
+                        className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
                       >
                         <RefreshCw size={16} />
                         Retry
@@ -263,7 +263,7 @@ export function DataTable<T extends { id?: string }>({
               <tr>
                 <td
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
-                  className="px-4 py-12 text-center text-safe-light bg-white"
+                  className="px-4 py-12 text-center text-text-muted bg-surface"
                 >
                   {emptyMessage}
                 </td>
@@ -276,8 +276,8 @@ export function DataTable<T extends { id?: string }>({
                 return (
                   <tr
                     key={rowId}
-                    className={`border-b border-[0.5px] border-safe/30 ${
-                      isSelected ? 'bg-gray-100' : 'bg-white hover:bg-gray-50'
+                    className={`border-b border-[0.5px] border-border ${
+                      isSelected ? 'bg-surface-muted' : 'bg-surface hover:bg-surface-hover'
                     } transition-colors`}
                   >
                     {rowSelection && (
@@ -286,14 +286,14 @@ export function DataTable<T extends { id?: string }>({
                           type="checkbox"
                           checked={isSelected}
                           onChange={(e) => handleSelectRow(rowId, e.target.checked)}
-                          className="rounded-none border-[0.5px] border-safe/30"
+                          className="rounded-none border-[0.5px] border-border"
                         />
                       </td>
                     )}
                     {columns.map((column) => (
                       <td
                         key={column.id}
-                        className={`px-4 py-3 text-sm text-safe ${column.className || ''}`}
+                        className={`px-4 py-3 text-sm text-text ${column.className || ''}`}
                       >
                         {renderCell(column, row)}
                       </td>
@@ -311,12 +311,12 @@ export function DataTable<T extends { id?: string }>({
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: pagination?.pageSize || 5 }).map((_, i) => (
-              <div key={`skeleton-${i}`} className="bg-white border border-[0.5px] border-safe/30 p-4">
+              <div key={`skeleton-${i}`} className="bg-surface border border-[0.5px] border-border p-4">
                 <div className="space-y-2">
                   {columns.map((col) => (
                     <div key={col.id} className="space-y-1">
-                      <div className="h-3 w-20 bg-safe-light animate-pulse" />
-                      <div className="h-4 w-full bg-safe-light animate-pulse" />
+                      <div className="h-3 w-20 bg-border animate-pulse" />
+                      <div className="h-4 w-full bg-border animate-pulse" />
                     </div>
                   ))}
                 </div>
@@ -324,17 +324,17 @@ export function DataTable<T extends { id?: string }>({
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 bg-white border border-[0.5px] border-danger">
+          <div className="p-12 bg-surface border border-[0.5px] border-danger">
             <div className="flex flex-col items-center justify-center gap-3">
               <div className="flex items-center gap-2 text-danger">
                 <AlertCircle size={20} />
                 <span className="font-medium">Error loading data</span>
               </div>
-              <p className="text-safe-light text-sm text-center max-w-md">{error}</p>
+              <p className="text-text-muted text-sm text-center max-w-md">{error}</p>
               {onRetry && (
                 <button
                   onClick={onRetry}
-                  className="mt-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
+                  className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium rounded-none transition-colors flex items-center gap-2"
                 >
                   <RefreshCw size={16} />
                   Retry
@@ -343,7 +343,7 @@ export function DataTable<T extends { id?: string }>({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="p-12 text-center text-safe-light bg-white border border-[0.5px] border-safe/30">
+          <div className="p-12 text-center text-text-muted bg-surface border border-[0.5px] border-border">
             {emptyMessage}
           </div>
         ) : (
@@ -354,8 +354,8 @@ export function DataTable<T extends { id?: string }>({
             return (
               <div
                 key={rowId}
-                className={`bg-white border border-[0.5px] border-safe/30 p-4 ${
-                  isSelected ? 'bg-gray-100' : ''
+                className={`bg-surface border border-[0.5px] border-border p-4 ${
+                  isSelected ? 'bg-surface-muted' : ''
                 }`}
               >
                 {rowSelection && (
@@ -364,17 +364,17 @@ export function DataTable<T extends { id?: string }>({
                       type="checkbox"
                       checked={isSelected}
                       onChange={(e) => handleSelectRow(rowId, e.target.checked)}
-                      className="rounded-none border-[0.5px] border-safe/30"
+                      className="rounded-none border-[0.5px] border-border"
                     />
                   </div>
                 )}
                 <div className="space-y-2">
                   {columns.map((column) => (
                     <div key={column.id} className="flex flex-col">
-                      <span className="text-xs font-semibold text-safe-light mb-1">
+                      <span className="text-xs font-semibold text-text-muted mb-1">
                         {column.header}
                       </span>
-                      <span className="text-sm text-safe">{renderCell(column, row)}</span>
+                      <span className="text-sm text-text">{renderCell(column, row)}</span>
                     </div>
                   ))}
                 </div>

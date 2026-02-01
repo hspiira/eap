@@ -136,7 +136,7 @@ export function ContactsTab() {
       header: 'Title',
       accessor: 'title',
       sortable: true,
-      render: (value) => <span className="text-safe-light text-sm">{(value as string) || '-'}</span>,
+      render: (value) => <span className="text-text-muted text-sm">{(value as string) || '-'}</span>,
     },
     {
       id: 'contact_info',
@@ -144,7 +144,7 @@ export function ContactsTab() {
       accessor: 'contact_info',
       sortable: false,
       render: (value) => (
-        <span className="text-safe-light text-sm">
+        <span className="text-text-muted text-sm">
           {value && typeof value === 'object' && 'email' in value && (value as { email?: string }).email
             ? (value as { email?: string }).email
             : '-'}
@@ -170,8 +170,8 @@ export function ContactsTab() {
 
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Contacts</h2>
-      <p className="text-xs text-safe-light mb-2">Contact records across clients.</p>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Contacts</h2>
+      <p className="text-xs text-text-muted mb-2">Contact records across clients.</p>
       <DataTable
         data={contacts}
         columns={columns}

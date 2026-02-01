@@ -37,7 +37,7 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       case 'error':
         return <AlertCircle size={20} className="text-danger" />
       case 'info':
-        return <Info size={20} className="text-safe" />
+        return <Info size={20} className="text-text" />
     }
   }
 
@@ -48,7 +48,7 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       case 'error':
         return 'bg-danger-light border-danger'
       case 'info':
-        return 'bg-white border-safe'
+        return 'bg-surface border-border'
     }
   }
 
@@ -57,10 +57,10 @@ export function ToastItem({ toast, onClose }: ToastProps) {
       className={`p-4 border-[0.5px] rounded-none shadow-lg flex items-start gap-3 min-w-[300px] max-w-md ${getBgColor()}`}
     >
       <div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
-      <p className="flex-1 text-safe text-sm">{toast.message}</p>
+      <p className="flex-1 text-text text-sm">{toast.message}</p>
       <button
         onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 text-safe hover:text-natural transition-colors"
+        className="flex-shrink-0 text-text hover:text-primary transition-colors"
         aria-label="Close"
       >
         <X size={18} />

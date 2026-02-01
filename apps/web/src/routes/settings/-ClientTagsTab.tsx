@@ -98,10 +98,10 @@ export function ClientTagsTab() {
               className="w-4 h-4 rounded-full border border-[0.5px] border-safe/30"
               style={{ backgroundColor: value as string }}
             />
-            <span className="text-safe-light text-sm">{value as string}</span>
+            <span className="text-text-muted text-sm">{value as string}</span>
           </span>
         ) : (
-          <span className="text-safe-light">—</span>
+          <span className="text-text-muted">—</span>
         ),
     },
     {
@@ -110,7 +110,7 @@ export function ClientTagsTab() {
       accessor: 'description',
       sortable: false,
       render: (value) => (
-        <span className="text-safe-light text-sm line-clamp-2">{(value as string) || '—'}</span>
+        <span className="text-text-muted text-sm line-clamp-2">{(value as string) || '—'}</span>
       ),
     },
     {
@@ -124,8 +124,8 @@ export function ClientTagsTab() {
 
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Client tags</h2>
-      <p className="text-xs text-safe-light mb-2">Tags for grouping and filtering clients.</p>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Client tags</h2>
+      <p className="text-xs text-text-muted mb-2">Tags for grouping and filtering clients.</p>
       <DataTable
         data={tags}
         columns={columns}

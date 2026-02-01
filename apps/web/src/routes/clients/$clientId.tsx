@@ -514,10 +514,10 @@ function ClientDetailPage() {
 
         <div className="flex items-center gap-2 flex-wrap mb-4">
           <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-xl font-bold text-safe truncate">{client.name}</h1>
+            <h1 className="text-xl font-bold text-text truncate">{client.name}</h1>
             {client.is_verified && (
               <span
-                className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-natural/15 border border-[0.5px] border-natural/40 text-natural rounded-none"
+                className="flex items-center justify-center flex-shrink-0 w-6 h-6 bg-primary/15 border border-[0.5px] border-primary/40 text-primary rounded-none"
                 title="Verified"
                 aria-label="Verified"
               >
@@ -526,7 +526,7 @@ function ClientDetailPage() {
             )}
             {client.status?.toLowerCase() === 'active' && (
               <span
-                className="status-blink-dot flex-shrink-0 w-2.5 h-2.5 rounded-full bg-natural"
+                className="status-blink-dot flex-shrink-0 w-2.5 h-2.5 rounded-full bg-primary"
                 title="Active"
                 aria-label="Active"
               />
@@ -534,7 +534,7 @@ function ClientDetailPage() {
           </div>
           <button
             onClick={() => editClientModal.open()}
-            className="p-1.5 text-safe hover:text-natural hover:bg-gray-100 rounded-none transition-colors flex-shrink-0"
+            className="p-1.5 text-text hover:text-primary hover:bg-surface-hover rounded-none transition-colors flex-shrink-0"
             aria-label="Edit client"
           >
             <Edit size={18} />
@@ -547,7 +547,7 @@ function ClientDetailPage() {
               type="button"
               onClick={() => handleAction('verify')}
               disabled={actionLoading || !user_id}
-              className="flex items-center justify-center p-1.5 border border-[0.5px] border-safe rounded-none bg-safe hover:bg-safe-dark text-white transition-colors disabled:opacity-50"
+              className="flex items-center justify-center p-1.5 border border-[0.5px] border-border rounded-none bg-neutral hover:bg-neutral-dark text-white transition-colors disabled:opacity-50"
               title={!user_id ? 'You must be signed in to verify' : 'Verify client'}
               aria-label="Verify client"
             >
@@ -562,7 +562,7 @@ function ClientDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-safe/30 mb-4">
+        <div className="border-b border-border mb-4">
           <nav className="flex" aria-label="Client sections">
             {TABS.map(({ id, label, icon: Icon }) => {
               const count =
@@ -581,14 +581,14 @@ function ClientDetailPage() {
                   onClick={() => setTab(id)}
                   className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors rounded-none ${
                     tab === id
-                      ? 'bg-calm-dark text-natural'
-                      : 'text-safe hover:bg-calm hover:text-natural'
+                      ? 'bg-calm-dark text-primary'
+                      : 'text-text hover:bg-calm hover:text-primary'
                   }`}
                 >
                   <Icon size={18} />
                   {label}
                   {count !== null && (
-                    <span className="text-safe-light font-normal">({count})</span>
+                    <span className="text-text-muted font-normal">({count})</span>
                   )}
                 </button>
               )
@@ -833,53 +833,53 @@ function OverviewTab({
         <Link
           to="."
           search={{ tab: 'people' }}
-          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-surface border border-[0.5px] border-border p-4 hover:border-primary transition-colors block"
         >
-          <div className="flex items-center gap-2 text-safe mb-1">
+          <div className="flex items-center gap-2 text-text mb-1">
             <Users size={20} />
             <span className="text-sm font-medium">People</span>
           </div>
-          <p className="text-2xl font-bold text-safe">{peopleCount}</p>
-          <p className="text-xs text-safe-light">Employees & dependants</p>
+          <p className="text-2xl font-bold text-text">{peopleCount}</p>
+          <p className="text-xs text-text-muted">Employees & dependants</p>
         </Link>
         <Link
           to="."
           search={{ tab: 'contacts' }}
-          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-surface border border-[0.5px] border-border p-4 hover:border-primary transition-colors block"
         >
-          <div className="flex items-center gap-2 text-safe mb-1">
+          <div className="flex items-center gap-2 text-text mb-1">
             <UserCircle size={20} />
             <span className="text-sm font-medium">Contacts</span>
           </div>
-          <p className="text-2xl font-bold text-safe">{contactsCount}</p>
+          <p className="text-2xl font-bold text-text">{contactsCount}</p>
         </Link>
         <Link
           to="."
           search={{ tab: 'contracts' }}
-          className="bg-white border border-[0.5px] border-safe/30 p-4 hover:border-natural transition-colors block"
+          className="bg-surface border border-[0.5px] border-border p-4 hover:border-primary transition-colors block"
         >
-          <div className="flex items-center gap-2 text-safe mb-1">
+          <div className="flex items-center gap-2 text-text mb-1">
             <FileText size={20} />
             <span className="text-sm font-medium">Contracts</span>
           </div>
-          <p className="text-2xl font-bold text-safe">{clientStats?.contract_count ?? contractsCount}</p>
+          <p className="text-2xl font-bold text-text">{clientStats?.contract_count ?? contractsCount}</p>
         </Link>
         {(clientStats?.child_count ?? 0) > 0 && (
-          <div className="bg-white border border-[0.5px] border-safe/30 p-4">
-            <div className="flex items-center gap-2 text-safe mb-1">
+          <div className="bg-surface border border-[0.5px] border-border p-4">
+            <div className="flex items-center gap-2 text-text mb-1">
               <Building2 size={20} />
               <span className="text-sm font-medium">Child clients</span>
             </div>
-            <p className="text-2xl font-bold text-safe">{clientStats?.child_count ?? 0}</p>
-            <p className="text-xs text-safe-light">Sub-clients</p>
+            <p className="text-2xl font-bold text-text">{clientStats?.child_count ?? 0}</p>
+            <p className="text-xs text-text-muted">Sub-clients</p>
           </div>
         )}
       </div>
 
       {/* Child clients list (when parent) */}
       {(childClients.length > 0 || childClientsLoading) && (
-        <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-          <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+        <div className="bg-surface border border-[0.5px] border-border p-6">
+          <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
             <Building2 size={20} />
             Child clients
           </h2>
@@ -890,15 +890,15 @@ function OverviewTab({
           ) : (
             <ul className="space-y-2">
               {childClients.map((c) => (
-                <li key={c.id} className="flex items-center justify-between py-2 border-b border-safe/20 last:border-0">
+                <li key={c.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                   <div>
-                    <p className="text-safe font-medium">{c.name}</p>
-                    {c.code && <p className="text-sm text-safe-light">Code: {c.code}</p>}
+                    <p className="text-text font-medium">{c.name}</p>
+                    {c.code && <p className="text-sm text-text-muted">Code: {c.code}</p>}
                   </div>
                   <button
                     type="button"
                     onClick={() => onViewClient(c.id)}
-                    className="text-natural hover:text-natural-dark text-sm font-medium"
+                    className="text-primary hover:text-primary-hover text-sm font-medium"
                   >
                     View
                   </button>
@@ -912,60 +912,60 @@ function OverviewTab({
       {/* Summary + Primary contact + Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Building2 size={20} />
               Summary
             </h2>
             <dl className="space-y-2 text-sm">
               <div className="flex gap-2">
-                <dt className="text-safe-light w-28">Status</dt>
+                <dt className="text-text-muted w-28">Status</dt>
                 <dd>
                   <StatusBadge status={client.status as BaseStatus} size="sm" />
                 </dd>
               </div>
               {client.code && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28">Code</dt>
-                  <dd className="text-safe">{client.code}</dd>
+                  <dt className="text-text-muted w-28">Code</dt>
+                  <dd className="text-text">{client.code}</dd>
                 </div>
               )}
               {(industryName || client.industry_id) && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28">Industry</dt>
-                  <dd className="text-safe">{industryName ?? client.industry_id}</dd>
+                  <dt className="text-text-muted w-28">Industry</dt>
+                  <dd className="text-text">{industryName ?? client.industry_id}</dd>
                 </div>
               )}
               {client.contact_info?.email && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28 flex items-center gap-1">
+                  <dt className="text-text-muted w-28 flex items-center gap-1">
                     <Mail size={14} /> Email
                   </dt>
-                  <dd className="text-safe">{client.contact_info.email}</dd>
+                  <dd className="text-text">{client.contact_info.email}</dd>
                 </div>
               )}
               {client.contact_info?.phone && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28 flex items-center gap-1">
+                  <dt className="text-text-muted w-28 flex items-center gap-1">
                     <Phone size={14} /> Phone
                   </dt>
-                  <dd className="text-safe">{client.contact_info.phone}</dd>
+                  <dd className="text-text">{client.contact_info.phone}</dd>
                 </div>
               )}
               {client.contact_info?.address && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28 flex items-center gap-1">
+                  <dt className="text-text-muted w-28 flex items-center gap-1">
                     <MapPin size={14} /> Contact address
                   </dt>
-                  <dd className="text-safe">{client.contact_info.address}</dd>
+                  <dd className="text-text">{client.contact_info.address}</dd>
                 </div>
               )}
               {client.billing_address && (client.billing_address.city || client.billing_address.country || client.billing_address.street) && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28 flex items-center gap-1">
+                  <dt className="text-text-muted w-28 flex items-center gap-1">
                     <MapPin size={14} /> Billing address
                   </dt>
-                  <dd className="text-safe">
+                  <dd className="text-text">
                     {[client.billing_address.street, client.billing_address.city, client.billing_address.postal_code, client.billing_address.country]
                       .filter(Boolean)
                       .join(', ')}
@@ -974,13 +974,13 @@ function OverviewTab({
               )}
               {client.preferred_contact_method && (
                 <div className="flex gap-2">
-                  <dt className="text-safe-light w-28">Preferred contact</dt>
-                  <dd className="text-safe capitalize">{client.preferred_contact_method}</dd>
+                  <dt className="text-text-muted w-28">Preferred contact</dt>
+                  <dd className="text-text capitalize">{client.preferred_contact_method}</dd>
                 </div>
               )}
               <div className="flex gap-2">
-                <dt className="text-safe-light w-28">Updated</dt>
-                <dd className="text-safe">
+                <dt className="text-text-muted w-28">Updated</dt>
+                <dd className="text-text">
                   {new Date(client.updated_at).toLocaleString()}
                 </dd>
               </div>
@@ -988,30 +988,30 @@ function OverviewTab({
           </div>
 
           {primaryContact && (
-            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-              <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+            <div className="bg-surface border border-[0.5px] border-border p-6">
+              <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                 <Star size={20} className="text-nurturing" />
                 Primary contact
               </h2>
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="font-medium text-safe">
+                  <p className="font-medium text-text">
                     {[primaryContact.first_name, primaryContact.last_name].filter(Boolean).join(' ')}
                   </p>
                   {primaryContact.title && (
-                    <p className="text-sm text-safe-light">{primaryContact.title}</p>
+                    <p className="text-sm text-text-muted">{primaryContact.title}</p>
                   )}
                   {primaryContact.contact_info?.email && (
-                    <p className="text-sm text-safe-light">{primaryContact.contact_info.email}</p>
+                    <p className="text-sm text-text-muted">{primaryContact.contact_info.email}</p>
                   )}
                   {primaryContact.contact_info?.phone && !primaryContact.contact_info?.email && (
-                    <p className="text-sm text-safe-light">{primaryContact.contact_info.phone}</p>
+                    <p className="text-sm text-text-muted">{primaryContact.contact_info.phone}</p>
                   )}
                 </div>
                 <Link
                   to="/settings/contacts/$contactId"
                   params={{ contactId: primaryContact.id }}
-                  className="text-natural hover:text-natural-dark text-sm font-medium flex-shrink-0"
+                  className="text-primary hover:text-primary-hover text-sm font-medium flex-shrink-0"
                 >
                   View
                 </Link>
@@ -1021,15 +1021,15 @@ function OverviewTab({
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-safe flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-text flex items-center gap-2">
                 <ActivityIcon size={20} />
                 Recent events
               </h2>
               <button
                 onClick={onLogActivity}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
               >
                 <Plus size={16} />
                 Log activity
@@ -1041,10 +1041,10 @@ function OverviewTab({
               </div>
             ) : activities.length === 0 ? (
               <div>
-                <p className="text-safe-light text-sm">No recent activity.</p>
+                <p className="text-text-muted text-sm">No recent activity.</p>
                 <button
                   onClick={onLogActivity}
-                  className="mt-2 text-natural hover:text-natural-dark text-sm font-medium"
+                  className="mt-2 text-primary hover:text-primary-hover text-sm font-medium"
                 >
                   Log first activity
                 </button>
@@ -1055,25 +1055,25 @@ function OverviewTab({
                   {activities.map((a) => (
                     <li
                       key={a.id}
-                      className="flex items-start gap-2 py-2 border-b border-safe/20 last:border-0"
+                      className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0"
                     >
-                      <span className="text-safe-light text-xs uppercase font-medium mt-0.5">
+                      <span className="text-text-muted text-xs uppercase font-medium mt-0.5">
                         {a.activity_type}
                       </span>
                       <div className="flex-1 min-w-0">
                         {a.title && (
-                          <p className="text-safe font-medium truncate">{a.title}</p>
+                          <p className="text-text font-medium truncate">{a.title}</p>
                         )}
                         {a.description && (
-                          <p className="text-safe-light text-sm truncate">{a.description}</p>
+                          <p className="text-text-muted text-sm truncate">{a.description}</p>
                         )}
-                        <p className="text-safe-light text-xs mt-1">
+                        <p className="text-text-muted text-xs mt-1">
                           {new Date(a.occurred_at).toLocaleString()}
                         </p>
                       </div>
                       <button
                         onClick={() => onViewActivity(a.id)}
-                        className="text-natural hover:text-natural-dark text-sm font-medium flex-shrink-0"
+                        className="text-primary hover:text-primary-hover text-sm font-medium flex-shrink-0"
                       >
                         View
                       </button>
@@ -1082,7 +1082,7 @@ function OverviewTab({
                 </ul>
                 <button
                   onClick={onViewAllActivities}
-                  className="mt-3 text-natural hover:text-natural-dark text-sm font-medium"
+                  className="mt-3 text-primary hover:text-primary-hover text-sm font-medium"
                 >
                   View all activities
                 </button>
@@ -1091,8 +1091,8 @@ function OverviewTab({
           </div>
 
           {hasContracts && (
-            <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-              <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+            <div className="bg-surface border border-[0.5px] border-border p-6">
+              <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
                 <Calendar size={20} />
                 Upcoming sessions
               </h2>
@@ -1105,26 +1105,26 @@ function OverviewTab({
                   (s) => new Date(s.scheduled_at) >= new Date()
                 ).slice(0, 5)
                 return upcoming.length === 0 ? (
-                  <p className="text-safe-light text-sm">No upcoming sessions.</p>
+                  <p className="text-text-muted text-sm">No upcoming sessions.</p>
                 ) : (
                 <ul className="space-y-2">
                   {upcoming.map((s) => (
                     <li
                       key={s.id}
-                      className="flex items-center justify-between py-2 border-b border-safe/20 last:border-0"
+                      className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
                     >
                       <div>
-                        <p className="text-safe font-medium">
+                        <p className="text-text font-medium">
                           {new Date(s.scheduled_at).toLocaleString()}
                         </p>
                         {s.location && (
-                          <p className="text-sm text-safe-light">{s.location}</p>
+                          <p className="text-sm text-text-muted">{s.location}</p>
                         )}
                       </div>
                       <Link
                         to="/sessions/$sessionId"
                         params={{ sessionId: s.id }}
-                        className="text-natural hover:text-natural-dark text-sm font-medium"
+                        className="text-primary hover:text-primary-hover text-sm font-medium"
                       >
                         View
                       </Link>
@@ -1139,8 +1139,8 @@ function OverviewTab({
       </div>
 
       {/* Tags */}
-      <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-        <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+      <div className="bg-surface border border-[0.5px] border-border p-6">
+        <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
           <Tag size={20} />
           Tags
         </h2>
@@ -1149,11 +1149,11 @@ function OverviewTab({
             {tags.map((t) => (
               <li
                 key={t.id}
-                className="flex items-center justify-between py-2 px-3 rounded-none hover:bg-safe-light/5 group"
+                className="flex items-center justify-between py-2 px-3 rounded-none hover:bg-surface-hover group"
               >
                 <button
                   onClick={() => onTagClick(t.id)}
-                  className="flex items-center gap-2 text-left text-natural hover:text-natural-dark font-medium"
+                  className="flex items-center gap-2 text-left text-primary hover:text-primary-hover font-medium"
                 >
                   <span
                     className="w-3 h-3 flex-shrink-0 rounded-none"
@@ -1176,19 +1176,19 @@ function OverviewTab({
           </ul>
         )}
         {tags.length === 0 && (
-          <p className="text-safe-light text-sm mb-4">No tags assigned.</p>
+          <p className="text-text-muted text-sm mb-4">No tags assigned.</p>
         )}
         {assignableTags.length > 0 && (
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex-1 min-w-[200px]">
-              <label htmlFor="addTag" className="block text-sm font-medium text-safe-light mb-1">
+              <label htmlFor="addTag" className="block text-sm font-medium text-text-muted mb-1">
                 Add tag
               </label>
               <select
                 id="addTag"
                 value={addTagId}
                 onChange={(e) => setAddTagId(e.target.value)}
-                className="w-full px-4 py-2 bg-white border border-[0.5px] border-safe/30 rounded-none focus:outline-none focus:border-natural text-safe"
+                className="w-full px-4 py-2 bg-surface border border-[0.5px] border-border rounded-none focus:outline-none focus:border-border-focus text-text"
               >
                 {addTagOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1200,10 +1200,10 @@ function OverviewTab({
             <button
               onClick={onAssignTag}
               disabled={!addTagId || tagAssignLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50"
             >
               {tagAssignLoading ? (
-                <LoadingSpinner size="sm" color="safe" />
+                <LoadingSpinner size="sm" color="white" />
               ) : (
                 <Plus size={18} />
               )}
@@ -1245,7 +1245,7 @@ function PeopleTab({
         return (
           <button
             onClick={() => onRowClick(row)}
-            className="text-left text-natural hover:text-natural-dark font-medium"
+            className="text-left text-primary hover:text-primary-hover font-medium"
           >
             {name || '—'}
           </button>
@@ -1257,7 +1257,7 @@ function PeopleTab({
       header: 'Type',
       accessor: 'person_type',
       render: (v) => (
-        <span className="text-safe">
+        <span className="text-text">
           {(v as string) === 'ClientEmployee' ? 'Employee' : 'Dependent'}
         </span>
       ),
@@ -1269,7 +1269,7 @@ function PeopleTab({
       render: (value, row) => {
         if (row.person_type !== 'ClientEmployee') return '—'
         const empInfo = value as Person['employment_info']
-        return <span className="text-safe">{empInfo?.employee_code || '—'}</span>
+        return <span className="text-text">{empInfo?.employee_code || '—'}</span>
       },
     },
     {
@@ -1286,7 +1286,7 @@ function PeopleTab({
         return (
           <button
             onClick={() => onRowClick(primary)}
-            className="text-left text-natural hover:text-natural-dark font-medium"
+            className="text-left text-primary hover:text-primary-hover font-medium"
           >
             {name}
           </button>
@@ -1300,7 +1300,7 @@ function PeopleTab({
       render: (v, row) => {
         if (row.person_type !== 'Dependent') return '—'
         const depInfo = v as Person['dependent_info']
-        return <span className="text-safe">{depInfo?.relationship || '—'}</span>
+        return <span className="text-text">{depInfo?.relationship || '—'}</span>
       },
     },
     {
@@ -1310,7 +1310,7 @@ function PeopleTab({
       render: (v) => {
         const c = v as Person['contact_info']
         return (
-          <span className="text-safe">
+          <span className="text-text">
             {c?.email || c?.phone || '—'}
           </span>
         )
@@ -1327,7 +1327,7 @@ function PeopleTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-safe">Employees & dependants</h2>
+        <h2 className="text-lg font-semibold text-text">Employees & dependants</h2>
         <button
           type="button"
           onClick={(e) => {
@@ -1335,7 +1335,7 @@ function PeopleTab({
             e.stopPropagation()
             onAddPerson()
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
         >
           <Plus size={18} />
           Add person
@@ -1392,7 +1392,7 @@ function ContactsTab({
         return (
           <button
             onClick={() => onRowClick(row)}
-            className="text-left text-natural hover:text-natural-dark font-medium"
+            className="text-left text-primary hover:text-primary-hover font-medium"
           >
             {name || '—'}
           </button>
@@ -1403,7 +1403,7 @@ function ContactsTab({
       id: 'title',
       header: 'Title',
       accessor: 'title',
-      render: (v) => <span className="text-safe">{(v as string) || '—'}</span>,
+      render: (v) => <span className="text-text">{(v as string) || '—'}</span>,
     },
     {
       id: 'contact',
@@ -1412,7 +1412,7 @@ function ContactsTab({
       render: (v) => {
         const c = v as Contact['contact_info']
         return (
-          <span className="text-safe">
+          <span className="text-text">
             {c?.email || c?.phone || '—'}
           </span>
         )
@@ -1443,10 +1443,10 @@ function ContactsTab({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-safe">Contacts</h2>
+        <h2 className="text-lg font-semibold text-text">Contacts</h2>
         <button
           onClick={onAddContact}
-          className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
         >
           <Plus size={18} />
           Add contact
@@ -1507,7 +1507,7 @@ function ContractsTab({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onRowClick(row)}
-            className="text-left text-natural hover:text-natural-dark font-medium"
+            className="text-left text-primary hover:text-primary-hover font-medium"
           >
             {(v as string) || `#${row.id.slice(0, 8)}`}
           </button>
@@ -1548,13 +1548,13 @@ function ContractsTab({
         if (amt == null) return '—'
         const cur = row.currency ?? 'USD'
         return (
-          <span className="text-safe">
+          <span className="text-text">
             {new Intl.NumberFormat(undefined, {
               style: 'currency',
               currency: cur,
             }).format(amt)}
             {row.billing_frequency && (
-              <span className="text-safe-light text-xs"> / {row.billing_frequency}</span>
+              <span className="text-text-muted text-xs"> / {row.billing_frequency}</span>
             )}
           </span>
         )
@@ -1566,11 +1566,11 @@ function ContractsTab({
     <div>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-safe">Contracts</h2>
+          <h2 className="text-lg font-semibold text-text">Contracts</h2>
           {contracts.length > 0 && totalValue > 0 && (
-            <p className="text-sm text-safe-light">
+            <p className="text-sm text-text-muted">
               Total value:{' '}
-              <span className="font-medium text-safe">
+              <span className="font-medium text-text">
                 {new Intl.NumberFormat(undefined, {
                   style: 'currency',
                   currency: (contracts.find((c) => c.currency)?.currency ?? 'USD') as string,
@@ -1581,7 +1581,7 @@ function ContractsTab({
         </div>
         <button
           onClick={onAddContract}
-          className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
         >
           <Plus size={18} />
           Add contract
@@ -1629,7 +1629,7 @@ function SessionsTab({
       render: (v, row) => (
         <button
           onClick={() => onRowClick(row)}
-          className="text-left text-natural hover:text-natural-dark font-medium"
+          className="text-left text-primary hover:text-primary-hover font-medium"
         >
           {v ? new Date(v as string).toLocaleString() : '—'}
         </button>
@@ -1646,14 +1646,14 @@ function SessionsTab({
       header: 'Location',
       accessor: 'location',
       render: (v) => (
-        <span className="text-safe">{(v as string) || '—'}</span>
+        <span className="text-text">{(v as string) || '—'}</span>
       ),
     },
   ]
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-safe mb-4">Sessions</h2>
+      <h2 className="text-lg font-semibold text-text mb-4">Sessions</h2>
       <DataTable<ServiceSession>
         data={sessions}
         columns={columns}

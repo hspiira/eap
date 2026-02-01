@@ -5,6 +5,7 @@ import { Breadcrumb } from '@/components/common/Breadcrumb'
 import { FormField } from '@/components/common/FormField'
 import { Select } from '@/components/common/Select'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/contexts/ToastContext'
 import { useTenant } from '@/hooks/useTenant'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -350,7 +351,7 @@ function SettingsPage() {
 
   if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-page flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -361,7 +362,7 @@ function SettingsPage() {
       <div className="max-w-7xl mx-auto">
         <Breadcrumb items={[{ label: 'Settings' }]} className="mb-2" />
 
-        <div className="border-b border-safe/30 mb-4">
+        <div className="border-b border-border mb-4">
           <nav className="flex" aria-label="Settings tabs">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -369,8 +370,8 @@ function SettingsPage() {
                 onClick={() => setTab(id)}
                 className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors rounded-none ${
                   tab === id
-                    ? 'bg-calm-dark text-natural'
-                    : 'text-safe hover:bg-calm hover:text-natural'
+                    ? 'bg-calm-dark text-primary'
+                    : 'text-text hover:bg-calm hover:text-primary'
                 }`}
               >
                 <Icon size={18} />
@@ -380,7 +381,7 @@ function SettingsPage() {
           </nav>
         </div>
 
-        <div className="bg-white border border-[0.5px] border-safe/30 p-4">
+        <div className="bg-surface border border-[0.5px] border-border p-4">
           {tab === 'account' && (
             <AccountTab
               onLogout={logout}
@@ -460,11 +461,11 @@ function SettingsRow({
   description?: string
 }) {
   return (
-    <div className="py-1.5 border-b border-safe/20 last:border-0 first:pt-0">
+    <div className="py-1.5 border-b border-border last:border-0 first:pt-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-safe">{label}</div>
-          {description && <div className="text-xs text-safe-light mt-0.5">{description}</div>}
+          <div className="text-sm font-medium text-text">{label}</div>
+          {description && <div className="text-xs text-text-light mt-0.5">{description}</div>}
         </div>
         <div className="flex-shrink-0">{children}</div>
       </div>
@@ -489,12 +490,12 @@ function Switch({
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       className={`relative inline-block h-5 w-9 flex-shrink-0 !rounded-full border-[0.5px] transition-colors ${
-        checked ? 'bg-natural border-natural' : 'bg-white border-safe/30'
+        checked ? 'bg-primary border-primary' : 'bg-calm border-border'
       }`}
       style={{ borderRadius: '9999px' }}
     >
       <span
-        className={`absolute top-0.5 block h-4 w-4 !rounded-full bg-white border border-safe/30 transition-transform ${
+        className={`absolute top-0.5 block h-4 w-4 !rounded-full bg-surface border border-border transition-transform ${
           checked ? 'left-[18px]' : 'left-0.5'
         }`}
         style={{ borderRadius: '9999px' }}
@@ -547,7 +548,7 @@ function AccountTab({
 
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Tenant</h2>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Tenant</h2>
       {tenantLoading ? (
         <div className="py-2 flex items-center justify-center">
           <LoadingSpinner size="sm" />
@@ -555,11 +556,11 @@ function AccountTab({
       ) : currentTenant ? (
         <>
           <SettingsRow label="Name">
-            <span className="text-sm text-safe">{currentTenant.name}</span>
+            <span className="text-sm text-text">{currentTenant.name}</span>
           </SettingsRow>
           {currentTenant.code && (
             <SettingsRow label="Code" description="Unique identifier for this tenant.">
-              <span className="text-sm text-safe font-mono">{currentTenant.code}</span>
+              <span className="text-sm text-text font-mono">{currentTenant.code}</span>
             </SettingsRow>
           )}
           <SettingsRow label="Status">
@@ -567,7 +568,7 @@ function AccountTab({
           </SettingsRow>
           {currentTenant.subscription_tier && (
             <SettingsRow label="Subscription" description="Current subscription tier.">
-              <span className="text-sm text-safe">{currentTenant.subscription_tier}</span>
+              <span className="text-sm text-text">{currentTenant.subscription_tier}</span>
             </SettingsRow>
           )}
           {hasMultipleTenants && (
@@ -587,10 +588,10 @@ function AccountTab({
           )}
         </>
       ) : (
-        <div className="py-2 text-sm text-safe-light">No tenant information available</div>
+        <div className="py-2 text-sm text-text-light">No tenant information available</div>
       )}
 
-      <h2 className="text-sm font-semibold text-safe mt-4 mb-1.5">Profile</h2>
+      <h2 className="text-sm font-semibold text-text mt-4 mb-1.5">Profile</h2>
       {loading ? (
         <div className="py-4 flex items-center justify-center">
           <LoadingSpinner size="sm" />
@@ -598,35 +599,35 @@ function AccountTab({
       ) : user ? (
         <>
           <SettingsRow label="Email">
-            <span className="text-sm text-safe">{user.email}</span>
+            <span className="text-sm text-text">{user.email}</span>
           </SettingsRow>
           <SettingsRow label="Status">
             <StatusBadge status={user.status} size="sm" />
           </SettingsRow>
           <SettingsRow label="Email verified" description="Whether your email address has been verified.">
-            <span className="text-sm text-safe">
+            <span className="text-sm text-text">
               {user.is_email_verified ? 'Yes' : 'No'}
               {user.email_verified_at && (
-                <span className="text-xs text-safe-light ml-1">
+                <span className="text-xs text-text-light ml-1">
                   ({new Date(user.email_verified_at).toLocaleDateString()})
                 </span>
               )}
             </span>
           </SettingsRow>
           <SettingsRow label="Two-factor authentication" description="Additional security for your account.">
-            <span className="text-sm text-safe">
+            <span className="text-sm text-text">
               {user.is_two_factor_enabled ? 'Enabled' : 'Disabled'}
             </span>
           </SettingsRow>
           <SettingsRow label="Last login" description="When you last signed in.">
-            <span className="text-sm text-safe">{formatDate(user.last_login_at)}</span>
+            <span className="text-sm text-text">{formatDate(user.last_login_at)}</span>
           </SettingsRow>
         </>
       ) : (
-        <div className="py-2 text-sm text-safe-light">Unable to load user information</div>
+        <div className="py-2 text-sm text-text-light">Unable to load user information</div>
       )}
 
-      <h2 className="text-sm font-semibold text-safe mt-4 mb-1.5">Session</h2>
+      <h2 className="text-sm font-semibold text-text mt-4 mb-1.5">Session</h2>
       <SettingsRow label="Signed in" description="Sign out to end your session.">
         <button
           onClick={onLogout}
@@ -651,19 +652,19 @@ function ManageLinkTab({
 }) {
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">{label}</h2>
-      <p className="text-xs text-safe-light mb-2">{description}</p>
+      <h2 className="text-sm font-semibold text-text mb-1.5">{label}</h2>
+      <p className="text-xs text-text-light mb-2">{description}</p>
       <div className="flex flex-wrap gap-1.5">
         <Link
           to={path}
-          className="inline-flex items-center gap-1 px-2 py-1 text-sm border border-[0.5px] border-safe/30 text-safe hover:bg-safe-light/10 rounded-none transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-1 text-sm border border-[0.5px] border-border text-text hover:bg-surface-hover rounded-none transition-colors"
         >
           <ExternalLink size={14} />
           Manage {label}
         </Link>
         <Link
           to={`${path}/new`}
-          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
         >
           <Plus size={14} />
           Create new
@@ -729,10 +730,24 @@ function PreferencesTab({
     { value: '120', label: '2 hours' },
     { value: '480', label: '8 hours' },
   ]
+  const { preference, setPreference } = useTheme()
+  const themeOpts = [
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'system', label: 'System' },
+  ]
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Display & locale</h2>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Display & locale</h2>
       <form onSubmit={(e) => { e.preventDefault(); onSave(); }} className="space-y-1">
+        <Select
+          name="theme"
+          label="Theme"
+          value={preference}
+          onChange={(v) => setPreference(v as 'light' | 'dark' | 'system')}
+          options={themeOpts}
+          compact
+        />
         <Select
           name="language"
           label="Language"
@@ -765,7 +780,7 @@ function PreferencesTab({
           options={weekOpts}
           compact
         />
-        <h2 className="text-sm font-semibold text-safe mt-2 mb-1.5">Security</h2>
+        <h2 className="text-sm font-semibold text-text mt-2 mb-1.5">Security</h2>
         <Select
           name="sessionTimeout"
           label="Session timeout"
@@ -778,7 +793,7 @@ function PreferencesTab({
           <button
             type="submit"
             disabled={saving}
-            className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             {saving && <LoadingSpinner size="sm" color="white" />}
             Save
@@ -933,7 +948,7 @@ function SecurityTab({
 
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Password</h2>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Password</h2>
       <form onSubmit={onSubmit} className="space-y-1">
         <FormField
           label="Current password"
@@ -969,7 +984,7 @@ function SecurityTab({
           <button
             type="submit"
             disabled={saving}
-            className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             {saving && <LoadingSpinner size="sm" color="white" />}
             Update password
@@ -977,29 +992,29 @@ function SecurityTab({
         </div>
       </form>
 
-      <h2 className="text-sm font-semibold text-safe mt-4 mb-1.5">Two-Factor Authentication</h2>
+      <h2 className="text-sm font-semibold text-text mt-4 mb-1.5">Two-Factor Authentication</h2>
       {twoFactorError && (
-        <div className="mb-2 p-2 bg-nurturing-light border-[0.5px] border-nurturing text-safe text-xs">
+        <div className="mb-2 p-2 bg-nurturing-light border-[0.5px] border-nurturing text-text text-xs">
           {twoFactorError}
         </div>
       )}
 
       {showRecoveryCodes && recoveryCodes && (
-        <div className="mb-4 p-3 bg-white border border-[0.5px] border-safe/30">
-          <h3 className="text-sm font-semibold text-safe mb-2">Recovery Codes</h3>
-          <p className="text-xs text-safe-light mb-2">
+        <div className="mb-4 p-3 bg-surface border border-[0.5px] border-border">
+          <h3 className="text-sm font-semibold text-text mb-2">Recovery Codes</h3>
+          <p className="text-xs text-text-light mb-2">
             Save these codes in a safe place. You can use them to access your account if you lose access to your authenticator app.
           </p>
           <div className="grid grid-cols-2 gap-2 mb-2">
             {recoveryCodes.map((code, idx) => (
-              <div key={idx} className="p-2 bg-white border border-[0.5px] border-safe/20 font-mono text-xs text-safe">
+              <div key={idx} className="p-2 bg-surface border border-[0.5px] border-border font-mono text-xs text-text">
                 {code}
               </div>
             ))}
           </div>
           <button
             onClick={() => setShowRecoveryCodes(false)}
-            className="text-xs text-natural hover:underline"
+            className="text-xs text-primary hover:underline"
           >
             I've saved these codes
           </button>
@@ -1009,12 +1024,12 @@ function SecurityTab({
       {!is2FAEnabled && !twoFactorSetup && (
         <div className="space-y-2">
           <SettingsRow label="Status" description="Two-factor authentication is currently disabled.">
-            <span className="text-sm text-safe-light">Disabled</span>
+            <span className="text-sm text-text-light">Disabled</span>
           </SettingsRow>
           <button
             onClick={handleSetup2FA}
             disabled={twoFactorSettingUp}
-            className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             {twoFactorSettingUp && <LoadingSpinner size="sm" color="white" />}
             Enable Two-Factor Authentication
@@ -1023,18 +1038,18 @@ function SecurityTab({
       )}
 
       {!is2FAEnabled && twoFactorSetup && (
-        <div className="space-y-3 p-3 bg-white border border-[0.5px] border-safe/30">
-          <h3 className="text-sm font-semibold text-safe">Setup Two-Factor Authentication</h3>
-          <p className="text-xs text-safe-light">
+        <div className="space-y-3 p-3 bg-surface border border-[0.5px] border-border">
+          <h3 className="text-sm font-semibold text-text">Setup Two-Factor Authentication</h3>
+          <p className="text-xs text-text-light">
             1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
           </p>
           <div className="flex justify-center py-2">
             <QRCode url={twoFactorSetup.qr_code_url} size={200} />
           </div>
-          <p className="text-xs text-safe-light">
+          <p className="text-xs text-text-light">
             2. Or enter this code manually: <code className="font-mono bg-safe-light/10 px-1">{twoFactorSetup.manual_entry_key}</code>
           </p>
-          <p className="text-xs text-safe-light">
+          <p className="text-xs text-text-light">
             3. Enter the 6-digit code from your app to verify:
           </p>
           <form onSubmit={handleVerify2FA} className="space-y-2">
@@ -1057,7 +1072,7 @@ function SecurityTab({
               <button
                 type="submit"
                 disabled={twoFactorVerifying || twoFactorCode.length !== 6}
-                className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
               >
                 {twoFactorVerifying && <LoadingSpinner size="sm" color="white" />}
                 Verify and Enable
@@ -1066,7 +1081,7 @@ function SecurityTab({
                 type="button"
                 onClick={cancel2FASetup}
                 disabled={twoFactorVerifying}
-                className="px-2 py-1 text-sm border border-[0.5px] border-safe/30 text-safe hover:bg-safe-light/10 rounded-none transition-colors disabled:opacity-50"
+                className="px-2 py-1 text-sm border border-[0.5px] border-border text-text hover:bg-surface-hover rounded-none transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -1078,7 +1093,7 @@ function SecurityTab({
       {is2FAEnabled && (
         <div className="space-y-2">
           <SettingsRow label="Status" description="Two-factor authentication is enabled for your account.">
-            <span className="text-sm text-natural">Enabled</span>
+            <span className="text-sm text-primary">Enabled</span>
           </SettingsRow>
           <button
             onClick={handleDisable2FA}
@@ -1091,8 +1106,8 @@ function SecurityTab({
         </div>
       )}
 
-      <div className="mt-4 pt-2 border-t border-safe/20">
-        <Link to="/audit" className="text-xs text-natural hover:underline">
+      <div className="mt-4 pt-2 border-t border-border">
+        <Link to="/audit" className="text-xs text-primary hover:underline">
           View login history →
         </Link>
       </div>
@@ -1125,7 +1140,7 @@ function NotificationsTab({
 }) {
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Email</h2>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Email</h2>
       <SettingsRow label="Email notifications" description="General updates and alerts.">
         <Switch checked={emailNotifications} onChange={setEmailNotifications} ariaLabel="Email notifications" />
       </SettingsRow>
@@ -1142,7 +1157,7 @@ function NotificationsTab({
         <button
           onClick={onSave}
           disabled={saving}
-          className="px-2 py-1 text-sm bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
+          className="px-2 py-1 text-sm bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50 flex items-center gap-1"
         >
           {saving && <LoadingSpinner size="sm" color="white" />}
           Save
@@ -1155,17 +1170,17 @@ function NotificationsTab({
 function AboutTab() {
   return (
     <div className="space-y-0">
-      <h2 className="text-sm font-semibold text-safe mb-1.5">Evexía</h2>
+      <h2 className="text-sm font-semibold text-text mb-1.5">Evexía</h2>
       <SettingsRow label="Version">
-        <span className="text-xs text-safe-light">1.0.0</span>
+        <span className="text-xs text-text-light">1.0.0</span>
       </SettingsRow>
       <SettingsRow label="Platform" description="Service management and delivery.">
-        <span className="text-xs text-safe-light">Evexía</span>
+        <span className="text-xs text-text-light">Evexía</span>
       </SettingsRow>
-      <div className="mt-2 pt-2 border-t border-safe/20 flex flex-wrap gap-2">
-        <span className="text-xs text-safe-light">License</span>
-        <span className="text-xs text-safe-light">·</span>
-        <span className="text-xs text-safe-light">Privacy</span>
+      <div className="mt-2 pt-2 border-t border-border flex flex-wrap gap-2">
+        <span className="text-xs text-text-light">License</span>
+        <span className="text-xs text-text-light">·</span>
+        <span className="text-xs text-text-light">Privacy</span>
       </div>
     </div>
   )

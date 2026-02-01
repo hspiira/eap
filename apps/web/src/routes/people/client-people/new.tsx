@@ -24,15 +24,15 @@ function CreateClientPersonPage() {
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate({ to: '/people/client-people' })}
-          className="flex items-center gap-2 text-safe hover:text-natural mb-6 transition-colors"
+          className="flex items-center gap-2 text-text hover:text-primary mb-6 transition-colors"
         >
           <ArrowLeft size={18} />
           <span>Back to Roster</span>
         </button>
 
-        <h1 className="text-3xl font-bold text-safe mb-6">Add person to roster</h1>
+        <h1 className="text-3xl font-bold text-text mb-6">Add person to roster</h1>
 
-        <div className="bg-white border border-[0.5px] border-safe/30 p-6">
+        <div className="bg-surface border border-[0.5px] border-border p-6">
           <CreatePersonForm
             initialClientId={initialClientId}
             onSuccess={() => navigate({ to: '/people/client-people' })}

@@ -58,7 +58,7 @@ export function FormField({
       <div className={`${space} ${className}`}>
         <label
           htmlFor={name}
-          className={`block text-safe text-sm font-medium ${labelSpace}`}
+          className={`block text-text text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-danger ml-1">*</span>}
@@ -76,9 +76,9 @@ export function FormField({
                   placeholder={placeholder}
                   disabled={disabled}
                   required={required}
-                  className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-                    error ? 'border-danger' : 'border-safe/30'
-                  } rounded-none focus:outline-none focus:border-natural ${
+                  className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+                    error ? 'border-danger' : 'border-border'
+                  } rounded-none focus:outline-none focus:border-border-focus ${
                     disabled ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 />
@@ -95,9 +95,9 @@ export function FormField({
                 required={required}
                 min={min}
                 max={max}
-                className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-                  error ? 'border-danger' : 'border-safe/30'
-                } rounded-none focus:outline-none focus:border-natural ${
+                className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+                  error ? 'border-danger' : 'border-border'
+                } rounded-none focus:outline-none focus:border-border-focus ${
                   disabled ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               />
@@ -115,7 +115,7 @@ export function FormField({
       <div className={`${space} ${className}`}>
         <label
           htmlFor={name}
-          className={`block text-safe text-sm font-medium ${labelSpace}`}
+          className={`block text-text text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-danger ml-1">*</span>}
@@ -129,9 +129,9 @@ export function FormField({
           required={required}
           disabled={disabled}
           rows={rows}
-          className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-            error ? 'border-danger' : 'border-safe/30'
-          } rounded-none focus:outline-none focus:border-natural ${
+          className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+            error ? 'border-danger' : 'border-border'
+          } rounded-none focus:outline-none focus:border-border-focus ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
@@ -144,7 +144,7 @@ export function FormField({
     <div className={`${space} ${className}`}>
       <label
         htmlFor={name}
-        className={`block text-safe text-sm font-medium ${labelSpace}`}
+        className={`block text-text text-sm font-medium ${labelSpace}`}
       >
         {label}
         {required && <span className="text-danger ml-1">*</span>}
@@ -161,9 +161,9 @@ export function FormField({
         disabled={disabled}
         min={min}
         max={max}
-        className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-          error ? 'border-danger' : 'border-safe/30'
-        } rounded-none focus:outline-none focus:border-natural ${
+        className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+          error ? 'border-danger' : 'border-border'
+        } rounded-none focus:outline-none focus:border-border-focus ${
           disabled ? 'opacity-50 cursor-not-allowed' : ''
         }`}
       />

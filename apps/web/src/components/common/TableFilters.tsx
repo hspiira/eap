@@ -88,14 +88,14 @@ export function TableFilters({
         <div className="flex-1 min-w-[200px] relative">
           <Search
             size={18}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-safe-light"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted"
           />
           <input
             type="text"
             value={localSearch}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="w-full pl-10 pr-4 py-2 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
           />
         </div>
       )}
@@ -105,7 +105,7 @@ export function TableFilters({
         <select
           value={statusFilter.value}
           onChange={(e) => statusFilter.onChange(e.target.value)}
-          className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural shrink-0"
+          className="px-4 py-2 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus shrink-0"
         >
           <option value="">All Statuses</option>
           {statusFilter.options.map((option) => (
@@ -123,14 +123,14 @@ export function TableFilters({
             type="date"
             value={dateRangeFilter.startDate || ''}
             onChange={(e) => dateRangeFilter.onStartDateChange(e.target.value)}
-            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
             placeholder="Start date"
           />
           <input
             type="date"
             value={dateRangeFilter.endDate || ''}
             onChange={(e) => dateRangeFilter.onEndDateChange(e.target.value)}
-            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
             placeholder="End date"
           />
         </div>
@@ -139,14 +139,14 @@ export function TableFilters({
       {/* Custom Filters */}
       {customFilters.map((filter) => (
         <div key={filter.id} className="flex items-center gap-2 shrink-0">
-          <label htmlFor={filter.id} className="text-sm text-safe whitespace-nowrap">
+          <label htmlFor={filter.id} className="text-sm text-text whitespace-nowrap">
             {filter.label}:
           </label>
           <select
             id={filter.id}
             value={filter.value}
             onChange={(e) => filter.onChange(e.target.value)}
-            className="px-4 py-2 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+            className="px-4 py-2 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
           >
             {filter.options.map((option) => (
               <option key={option.value} value={option.value}>
@@ -161,7 +161,7 @@ export function TableFilters({
       {hasActiveFilters && onClearFilters && (
         <button
           onClick={handleClear}
-          className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors shrink-0"
         >
           <X size={16} />
           <span>Clear</span>
@@ -179,7 +179,7 @@ export function TableFilters({
           }}
           title={createAction.label}
           aria-label={createAction.label}
-          className="p-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors shrink-0"
+          className="p-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors shrink-0"
         >
           <Plus size={18} />
         </button>

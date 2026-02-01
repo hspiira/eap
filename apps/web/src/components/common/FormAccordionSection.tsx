@@ -27,13 +27,13 @@ export function FormAccordionSection({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between py-2 text-left text-sm font-semibold text-safe hover:text-natural transition-colors rounded-none"
+        className="flex w-full items-center justify-between py-2 text-left text-sm font-semibold text-text hover:text-primary transition-colors rounded-none"
       >
         <span>{title}</span>
         {open ? (
-          <Minus size={16} className="flex-shrink-0 text-safe" aria-hidden />
+          <Minus size={16} className="flex-shrink-0 text-text" aria-hidden />
         ) : (
-          <Plus size={16} className="flex-shrink-0 text-safe" aria-hidden />
+          <Plus size={16} className="flex-shrink-0 text-text" aria-hidden />
         )}
       </button>
       {open && <div className="pb-2 space-y-2">{children}</div>}

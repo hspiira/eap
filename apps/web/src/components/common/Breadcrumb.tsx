@@ -30,13 +30,13 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
             {showSeparator && (
               <ChevronRight
                 size={14}
-                className="flex-shrink-0 text-safe"
+                className="flex-shrink-0 text-text-muted"
                 aria-hidden
               />
             )}
             {isLast || !item.href ? (
               <span
-                className="text-safe font-medium"
+                className="text-text font-medium"
                 aria-current={isLast ? 'page' : undefined}
               >
                 {item.label}
@@ -44,7 +44,7 @@ export function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
             ) : (
               <Link
                 to={item.href}
-                className="text-safe hover:text-natural transition-colors"
+                className="text-text hover:text-primary transition-colors"
               >
                 {item.label}
               </Link>

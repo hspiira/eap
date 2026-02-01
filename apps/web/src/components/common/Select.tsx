@@ -131,7 +131,7 @@ export function Select({
       {label && (
         <label
           htmlFor={name}
-          className={`block text-safe text-sm font-medium ${labelSpace}`}
+          className={`block text-text text-sm font-medium ${labelSpace}`}
         >
           {label}
           {required && <span className="text-danger ml-1">*</span>}
@@ -142,13 +142,13 @@ export function Select({
           type="button"
           onClick={handleToggle}
           disabled={disabled}
-          className={`w-full px-4 py-2 bg-white border-[0.5px] ${
-            error ? 'border-danger' : 'border-safe/30'
-          } rounded-none focus:outline-none focus:border-natural flex items-center justify-between ${
+          className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+            error ? 'border-danger' : 'border-border'
+          } rounded-none focus:outline-none focus:border-border-focus flex items-center justify-between ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}
         >
-          <span className={`text-left flex-1 ${!value || (Array.isArray(value) && value.length === 0) ? 'text-safe-light' : 'text-safe'}`}>
+          <span className={`text-left flex-1 ${!value || (Array.isArray(value) && value.length === 0) ? 'text-text-muted' : 'text-text'}`}>
             {getDisplayValue()}
           </span>
           <div className="flex items-center gap-2">
@@ -156,21 +156,21 @@ export function Select({
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1 hover:bg-safe-light/20 rounded-none transition-colors"
+                className="p-1 hover:bg-surface-hover rounded-none transition-colors"
                 aria-label="Clear selection"
               >
-                <X size={16} className="text-safe" />
+                <X size={16} className="text-text" />
               </button>
             )}
             <ChevronDown
               size={18}
-              className={`text-safe transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              className={`text-text transition-transform ${isOpen ? 'rotate-180' : ''}`}
             />
           </div>
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-[0.5px] border-safe/30 shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-surface border border-[0.5px] border-border shadow-lg max-h-60 overflow-auto">
             {searchable && (
               <div className="p-2">
                 <input
@@ -179,13 +179,13 @@ export function Select({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
-                  className="w-full px-3 py-1.5 bg-white border border-[0.5px] border-safe/30 text-safe rounded-none focus:outline-none focus:border-natural"
+                  className="w-full px-3 py-1.5 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
                 />
               </div>
             )}
             <div className="py-1">
               {filteredOptions.length === 0 ? (
-                <div className="px-4 py-2 text-sm text-safe-light">No options found</div>
+                <div className="px-4 py-2 text-sm text-text-muted">No options found</div>
               ) : (
                 filteredOptions.map((option) => {
                   const selected = isSelected(option.value)
@@ -195,14 +195,14 @@ export function Select({
                       type="button"
                       onClick={() => !option.disabled && handleSelect(option.value)}
                       disabled={option.disabled}
-                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-100 transition-colors ${
-                        selected ? 'bg-natural/10 text-natural' : 'text-safe'
+                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-surface-hover transition-colors ${
+                        selected ? 'bg-primary/10 text-primary' : 'text-text'
                       } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {multiple && (
                         <div
-                          className={`w-4 h-4 border border-[0.5px] border-safe/30 flex items-center justify-center ${
-                            selected ? 'bg-natural border-natural-dark' : 'bg-white'
+                          className={`w-4 h-4 border border-[0.5px] border-border flex items-center justify-center ${
+                            selected ? 'bg-primary border-primary-hover' : 'bg-surface'
                           }`}
                         >
                           {selected && <Check size={12} className="text-white" />}

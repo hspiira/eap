@@ -1,8 +1,20 @@
 [data-theme="dark"] {
-  --palette-white: #111827;
-  --palette-neutral-50: #1f2937;
-  --palette-neutral-100: #374151;
-  --palette-safe: #e5e7eb;
-  --palette-safe-light: #d1d5db;
-  --palette-safe-dark: #f3f4f6;
+  --palette-white: #000000;
+  --palette-neutral-50: #0a0a0a;
+  --palette-neutral-100: #111111;
+  --palette-safe: #ededed;
+  --palette-safe-light: #a1a1a1;
+  --palette-safe-dark: #fafafa;
+  --palette-calm: #1f1f1f;
+  --palette-calm-light: #2e2e2e;
+  --palette-calm-dark: #262626;
+  --token-page: #000000;
+  --token-surface: #171717;
+  --token-surface-hover: #262626;
+  --token-surface-muted: #0f0f0f;
+  --token-border: #252525;
+
+  --palette-nurturing: #8b6b63;
+  --palette-nurturing-light: #3d2e2b;
+  --palette-nurturing-dark: #6b524a;
 }

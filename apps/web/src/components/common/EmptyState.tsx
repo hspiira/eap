@@ -65,15 +65,15 @@ export function EmptyState({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center p-12 text-center bg-white border border-[0.5px] border-safe/30 ${className}`}
+      className={`flex flex-col items-center justify-center p-12 text-center bg-surface border border-[0.5px] border-border ${className}`}
     >
-      <DisplayIcon size={48} className="text-safe-light mb-4" />
-      <h3 className="text-lg font-semibold text-safe mb-2">{displayTitle}</h3>
-      <p className="text-safe-light mb-6 max-w-md">{displayMessage}</p>
+      <DisplayIcon size={48} className="text-text-muted mb-4" />
+      <h3 className="text-lg font-semibold text-text mb-2">{displayTitle}</h3>
+      <p className="text-text-muted mb-6 max-w-md">{displayMessage}</p>
       {action && (
         <button
           onClick={action.onClick}
-          className="px-6 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors"
+          className="px-6 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors"
         >
           {action.label}
         </button>

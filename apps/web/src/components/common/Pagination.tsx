@@ -92,19 +92,19 @@ export function Pagination({
 
   const infoBlock = (
     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-4 min-w-0">
-      <span className="text-sm text-safe">
+      <span className="text-sm text-text">
         Showing {startItem} to {endItem} of {totalItems}
       </span>
       {showPageSizeSelector && (
         <div className="flex items-center gap-2">
-          <label htmlFor="page-size" className="text-sm text-safe">
+          <label htmlFor="page-size" className="text-sm text-text">
             Items per page:
           </label>
           <select
             id="page-size"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-2 py-1 bg-white border border-[0.5px] border-safe/30 text-safe text-sm rounded-none focus:outline-none focus:border-natural"
+            className="px-2 py-1 bg-surface border border-[0.5px] border-border text-text text-sm rounded-none focus:outline-none focus:border-border-focus"
           >
             {pageSizeOptions.map((size) => (
               <option key={size} value={size}>
@@ -122,7 +122,7 @@ export function Pagination({
       <button
         onClick={handleFirstPage}
         disabled={currentPage === 1}
-        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors rounded-none shrink-0"
+        className="p-1 border border-[0.5px] border-border text-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors rounded-none shrink-0"
         aria-label="First page"
       >
         <ChevronsLeft size={12} />
@@ -130,7 +130,7 @@ export function Pagination({
       <button
         onClick={handlePreviousPage}
         disabled={currentPage === 1}
-        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors rounded-none shrink-0"
+        className="p-1 border border-[0.5px] border-border text-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors rounded-none shrink-0"
         aria-label="Previous page"
       >
         <ChevronLeft size={12} />
@@ -140,7 +140,7 @@ export function Pagination({
         {getPageNumbers().map((page, index) => {
           if (page === '...') {
             return (
-              <span key={`ellipsis-${index}`} className="px-0.5 text-safe text-xs shrink-0">
+              <span key={`ellipsis-${index}`} className="px-0.5 text-text text-xs shrink-0">
                 …
               </span>
             )
@@ -155,8 +155,8 @@ export function Pagination({
               onClick={() => onPageChange(pageNum)}
               className={`min-w-[1.25rem] w-5 h-5 flex items-center justify-center border border-[0.5px] text-xs font-medium transition-colors rounded-none shrink-0 ${
                 isActive
-                  ? 'bg-natural text-white border-natural-dark'
-                  : 'bg-white text-safe border-safe hover:bg-gray-100'
+? 'bg-primary text-white border-primary-hover'
+                    : 'bg-surface text-text border-border hover:bg-surface-hover'
               }`}
             >
               {pageNum}
@@ -168,7 +168,7 @@ export function Pagination({
       <button
         onClick={handleNextPage}
         disabled={currentPage === totalPages}
-        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors rounded-none shrink-0"
+        className="p-1 border border-[0.5px] border-border text-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors rounded-none shrink-0"
         aria-label="Next page"
       >
         <ChevronRight size={12} />
@@ -176,7 +176,7 @@ export function Pagination({
       <button
         onClick={handleLastPage}
         disabled={currentPage === totalPages}
-        className="p-1 border border-[0.5px] border-safe/30 text-safe disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors rounded-none shrink-0"
+        className="p-1 border border-[0.5px] border-border text-text disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors rounded-none shrink-0"
         aria-label="Last page"
       >
         <ChevronsRight size={12} />

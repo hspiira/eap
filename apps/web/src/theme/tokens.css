@@ -4,7 +4,7 @@
   --token-surface-hover: var(--palette-neutral-100);
   --token-surface-muted: var(--palette-neutral-50);
 
-  --token-border: var(--palette-safe);
+  --token-border: #bfc4c9;
   --token-border-focus: var(--palette-natural);
   --token-text: var(--palette-safe);
   --token-text-muted: var(--palette-safe-light);

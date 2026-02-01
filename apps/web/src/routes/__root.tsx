@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import { useEffect } from 'react'
 import { AuthProvider } from '../contexts/AuthContext'
+import { ThemeProvider } from '../contexts/ThemeContext'
 import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
@@ -50,17 +51,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ErrorBoundary>
-          <ToastProvider>
-            <AuthProvider>
-              <TenantProvider>
-                <SessionTimeoutManager>
+          <ThemeProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <TenantProvider>
+                  <SessionTimeoutManager>
                   <ToastWrapper>
                     {children}
                   </ToastWrapper>
-                </SessionTimeoutManager>
-              </TenantProvider>
-            </AuthProvider>
-          </ToastProvider>
+                  </SessionTimeoutManager>
+                </TenantProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
         </ErrorBoundary>
         <TanStackDevtools
           config={{

@@ -46,18 +46,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-white p-8 rounded-none border border-[0.5px] border-safe/30">
+        <div className="min-h-screen bg-page flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-surface p-8 rounded-none border border-[0.5px] border-border">
             <div className="text-center">
               <AlertCircle size={48} className="text-danger mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-safe mb-2">Something went wrong</h1>
-              <p className="text-safe-light mb-6">
+              <h1 className="text-2xl font-bold text-text mb-2">Something went wrong</h1>
+              <p className="text-text-muted mb-6">
                 An unexpected error occurred. Please try refreshing the page or return to the home page.
               </p>
               
               {this.state.error && import.meta.env.DEV && (
-                <div className="mb-6 p-3 bg-white border-[0.5px] border-safe/30 rounded-none text-left">
-                  <p className="text-safe text-xs font-mono break-all">
+                <div className="mb-6 p-3 bg-surface border-[0.5px] border-border rounded-none text-left">
+                  <p className="text-text text-xs font-mono break-all">
                     {this.state.error.message}
                   </p>
                 </div>
@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               <div className="flex flex-col gap-3">
                 <button
                   onClick={this.handleReset}
-                  className="px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
+                  className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-none transition-colors"
                 >
                   Try Again
                 </button>

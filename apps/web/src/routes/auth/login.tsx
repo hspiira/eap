@@ -61,17 +61,17 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-page flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white p-8 rounded-none border border-[0.5px] border-safe/30">
+        <div className="bg-surface p-8 rounded-none border border-[0.5px] border-border">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-safe mb-2">Evexía</h1>
-            <p className="text-safe-light">Sign in to your account</p>
+            <h1 className="text-3xl font-bold text-text mb-2">Evexía</h1>
+            <p className="text-text-muted">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             {errors.general && (
-              <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-safe">
+              <div className="mb-4 p-3 bg-nurturing-light border-[0.5px] border-nurturing text-text">
                 {errors.general}
               </div>
             )}
@@ -115,25 +115,25 @@ function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-safe-light text-sm mb-2">
+            <p className="text-text-muted text-sm mb-2">
               Don't have an account?{' '}
               <Link
                 to="/auth/signup"
-                className="text-natural hover:text-natural-dark transition-colors"
+                className="text-primary hover:text-primary-hover transition-colors"
               >
                 Sign up
               </Link>
             </p>
             <Link
               to="/"
-              className="text-safe hover:text-natural text-sm transition-colors"
+              className="text-text hover:text-primary text-sm transition-colors"
             >
               ← Back to Home
             </Link>

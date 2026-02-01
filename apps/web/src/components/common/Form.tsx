@@ -43,7 +43,7 @@ export function Form<T extends FieldValues>({
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit} className={className}>
         {loading && (
-          <div className="mb-4 p-3 bg-nurturing-light border border-[0.5px] border-nurturing text-safe text-sm">
+          <div className="mb-4 p-3 bg-surface-muted border border-[0.5px] border-border text-text text-sm">
             Submitting...
           </div>
         )}

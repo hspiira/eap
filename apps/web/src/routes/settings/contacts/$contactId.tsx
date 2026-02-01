@@ -131,7 +131,7 @@ function ContactDetailPage() {
         />
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-safe mb-2 flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-text mb-2 flex items-center gap-2">
               <UserCircle size={28} />
               {contactName}
               {contact.is_primary && (
@@ -141,7 +141,7 @@ function ContactDetailPage() {
             <div className="flex items-center gap-4">
               <StatusBadge status={(contact.status as BaseStatus) ?? 'Active'} />
               {client && (
-                <span className="text-safe-light text-sm flex items-center gap-1">
+                <span className="text-text-light text-sm flex items-center gap-1">
                   <Building2 size={16} />
                   {client.name}
                 </span>
@@ -159,7 +159,7 @@ function ContactDetailPage() {
               <button
                 onClick={handleSetPrimary}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <Star size={18} />
                 <span>Set as Primary</span>
@@ -169,40 +169,40 @@ function ContactDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <UserCircle size={20} />
               Contact Details
             </h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-safe-light">Name</dt>
-                <dd className="text-safe mt-1">{contactName}</dd>
+                <dt className="text-sm font-medium text-text-light">Name</dt>
+                <dd className="text-text mt-1">{contactName}</dd>
               </div>
               {contact.title && (
                 <div>
-                  <dt className="text-sm font-medium text-safe-light">Title</dt>
-                  <dd className="text-safe mt-1">{contact.title}</dd>
+                  <dt className="text-sm font-medium text-text-light">Title</dt>
+                  <dd className="text-text mt-1">{contact.title}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-sm font-medium text-safe-light">Status</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-light">Status</dt>
+                <dd className="text-text mt-1">
                   <StatusBadge status={(contact.status as BaseStatus) ?? 'Active'} size="sm" />
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Primary</dt>
-                <dd className="text-safe mt-1">{contact.is_primary ? 'Yes' : 'No'}</dd>
+                <dt className="text-sm font-medium text-text-light">Primary</dt>
+                <dd className="text-text mt-1">{contact.is_primary ? 'Yes' : 'No'}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Client</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-light">Client</dt>
+                <dd className="text-text mt-1">
                   {client ? (
                     <Link
                       to="/clients/$clientId"
                       params={{ clientId: contact.client_id }}
-                      className="text-natural hover:text-natural-dark font-medium"
+                      className="text-primary hover:text-primary-hover font-medium"
                     >
                       {client.name}
                     </Link>
@@ -214,8 +214,8 @@ function ContactDetailPage() {
             </dl>
           </div>
 
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Mail size={20} />
               Contact Info
             </h2>
@@ -223,8 +223,8 @@ function ContactDetailPage() {
               <dl className="space-y-3">
                 {ci.email && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Email</dt>
-                    <dd className="text-safe mt-1 flex items-center gap-2">
+                    <dt className="text-sm font-medium text-text-light">Email</dt>
+                    <dd className="text-text mt-1 flex items-center gap-2">
                       <Mail size={16} />
                       {ci.email}
                     </dd>
@@ -232,8 +232,8 @@ function ContactDetailPage() {
                 )}
                 {ci.phone && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Phone</dt>
-                    <dd className="text-safe mt-1 flex items-center gap-2">
+                    <dt className="text-sm font-medium text-text-light">Phone</dt>
+                    <dd className="text-text mt-1 flex items-center gap-2">
                       <Phone size={16} />
                       {ci.phone}
                     </dd>
@@ -241,32 +241,32 @@ function ContactDetailPage() {
                 )}
                 {ci.mobile && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Mobile</dt>
-                    <dd className="text-safe mt-1">{ci.mobile}</dd>
+                    <dt className="text-sm font-medium text-text-light">Mobile</dt>
+                    <dd className="text-text mt-1">{ci.mobile}</dd>
                   </div>
                 )}
                 {ci.preferred_method && (
                   <div>
-                    <dt className="text-sm font-medium text-safe-light">Preferred method</dt>
-                    <dd className="text-safe mt-1">{ci.preferred_method}</dd>
+                    <dt className="text-sm font-medium text-text-light">Preferred method</dt>
+                    <dd className="text-text mt-1">{ci.preferred_method}</dd>
                   </div>
                 )}
               </dl>
             ) : (
-              <p className="text-safe-light text-sm">No contact info</p>
+              <p className="text-text-light text-sm">No contact info</p>
             )}
           </div>
 
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4">Metadata</h2>
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4">Metadata</h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-safe-light">Created</dt>
-                <dd className="text-safe mt-1">{new Date(contact.created_at).toLocaleString()}</dd>
+                <dt className="text-sm font-medium text-text-light">Created</dt>
+                <dd className="text-text mt-1">{new Date(contact.created_at).toLocaleString()}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Last updated</dt>
-                <dd className="text-safe mt-1">{new Date(contact.updated_at).toLocaleString()}</dd>
+                <dt className="text-sm font-medium text-text-light">Last updated</dt>
+                <dd className="text-text mt-1">{new Date(contact.updated_at).toLocaleString()}</dd>
               </div>
             </dl>
           </div>

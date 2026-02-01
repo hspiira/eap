@@ -28,7 +28,7 @@ export function IndustryDetailPanel({
 }: IndustryDetailPanelProps) {
   if (loading) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-border bg-surface p-6">
         <div className="flex items-center justify-center flex-1">
           <LoadingSpinner size="lg" />
         </div>
@@ -38,12 +38,12 @@ export function IndustryDetailPanel({
 
   if (error) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-border bg-surface p-6">
         <p className="text-danger font-medium mb-2">Error loading industry</p>
-        <p className="text-safe-light text-sm mb-4">{error}</p>
+        <p className="text-text-muted text-sm mb-4">{error}</p>
         <button
           onClick={onRetry}
-          className="self-start px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm rounded-none"
+          className="self-start px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm rounded-none"
         >
           Retry
         </button>
@@ -53,26 +53,26 @@ export function IndustryDetailPanel({
 
   if (!industry) {
     return (
-      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-safe/30 bg-white p-6">
-        <p className="text-safe-light text-sm">Select an industry to view details.</p>
+      <div className="flex flex-col h-full min-h-[240px] border border-[0.5px] border-border bg-surface p-6">
+        <p className="text-text-muted text-sm">Select an industry to view details.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 border border-[0.5px] border-safe/30 bg-white overflow-auto">
-      <div className="p-4 border-b border-safe/20">
+    <div className="flex flex-col h-full min-h-0 border border-[0.5px] border-border bg-surface overflow-auto">
+      <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white border border-[0.5px] border-safe/30">
-            <Folder size={22} className="text-natural" />
+          <div className="p-2 bg-surface border border-[0.5px] border-border">
+            <Folder size={22} className="text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-safe">{industry.name}</h2>
+            <h2 className="text-lg font-semibold text-text">{industry.name}</h2>
             {industry.code && (
-              <p className="text-safe-light text-sm">Code: {industry.code}</p>
+              <p className="text-text-muted text-sm">Code: {industry.code}</p>
             )}
             {industry.level != null && (
-              <p className="text-safe-light text-xs">Level {industry.level}</p>
+              <p className="text-text-muted text-xs">Level {industry.level}</p>
             )}
           </div>
         </div>
@@ -80,26 +80,26 @@ export function IndustryDetailPanel({
 
       <div className="p-4 space-y-4 flex-1 overflow-auto">
         <section>
-          <h3 className="text-sm font-semibold text-safe mb-3">Details</h3>
+          <h3 className="text-sm font-semibold text-text mb-3">Details</h3>
           <dl className="space-y-2 text-sm">
             <div>
-              <dt className="text-safe-light">Name</dt>
-              <dd className="text-safe">{industry.name}</dd>
+              <dt className="text-text-muted">Name</dt>
+              <dd className="text-text">{industry.name}</dd>
             </div>
             {industry.code && (
               <div>
-                <dt className="text-safe-light">Code</dt>
-                <dd className="text-safe">{industry.code}</dd>
+                <dt className="text-text-muted">Code</dt>
+                <dd className="text-text">{industry.code}</dd>
               </div>
             )}
             {industry.parent_id && (
               <div>
-                <dt className="text-safe-light">Parent</dt>
+                <dt className="text-text-muted">Parent</dt>
                 <dd>
                   <button
                     type="button"
                     onClick={() => onSelectParent(industry.parent_id!)}
-                    className="text-natural hover:text-natural-dark flex items-center gap-1"
+                    className="text-primary hover:text-primary-dark flex items-center gap-1"
                   >
                     <Building2 size={14} />
                     View parent industry
@@ -109,25 +109,25 @@ export function IndustryDetailPanel({
             )}
             {industry.level != null && (
               <div>
-                <dt className="text-safe-light">Level</dt>
-                <dd className="text-safe">{industry.level}</dd>
+                <dt className="text-text-muted">Level</dt>
+                <dd className="text-text">{industry.level}</dd>
               </div>
             )}
             <div>
-              <dt className="text-safe-light">Created</dt>
-              <dd className="text-safe">{new Date(industry.created_at).toLocaleString()}</dd>
+              <dt className="text-text-muted">Created</dt>
+              <dd className="text-text">{new Date(industry.created_at).toLocaleString()}</dd>
             </div>
             <div>
-              <dt className="text-safe-light">Updated</dt>
-              <dd className="text-safe">{new Date(industry.updated_at).toLocaleString()}</dd>
+              <dt className="text-text-muted">Updated</dt>
+              <dd className="text-text">{new Date(industry.updated_at).toLocaleString()}</dd>
             </div>
           </dl>
         </section>
 
         <section>
-          <h3 className="text-sm font-semibold text-safe mb-3">Child Industries</h3>
+          <h3 className="text-sm font-semibold text-text mb-3">Child Industries</h3>
           {children.length === 0 ? (
-            <p className="text-safe-light text-sm">No child industries</p>
+            <p className="text-text-muted text-sm">No child industries</p>
           ) : (
             <div className="space-y-1">
               {children.map((c) => (
@@ -135,12 +135,12 @@ export function IndustryDetailPanel({
                   key={c.id}
                   type="button"
                   onClick={() => onSelectChild(c.id)}
-                  className="flex items-center gap-2 w-full text-left py-2 px-3 rounded-none hover:bg-safe-light/10 transition-colors text-sm"
+                  className="flex items-center gap-2 w-full text-left py-2 px-3 rounded-none hover:bg-surface-hover transition-colors text-sm"
                 >
-                  <Folder size={14} className="text-safe-light flex-shrink-0" />
+                  <Folder size={14} className="text-text-muted flex-shrink-0" />
                   <span className="font-medium truncate">{c.name}</span>
                   {c.code && (
-                    <span className="text-safe-light truncate">({c.code})</span>
+                    <span className="text-text-muted truncate">({c.code})</span>
                   )}
                 </button>
               ))}

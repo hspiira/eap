@@ -18,7 +18,7 @@ export function LoadingSkeleton({
   lines = 1,
   className = '',
 }: LoadingSkeletonProps) {
-  const baseClasses = 'bg-safe-light animate-pulse'
+  const baseClasses = 'bg-border animate-pulse'
 
   if (variant === 'text') {
     return (
@@ -67,7 +67,7 @@ export function LoadingSkeleton({
 
   if (variant === 'card') {
     return (
-      <div className={`border border-[0.5px] border-safe/30 p-4 ${className}`}>
+      <div className={`border border-[0.5px] border-border p-4 ${className}`}>
         <div className={`${baseClasses} h-6 w-3/4 mb-3`} />
         <div className={`${baseClasses} h-4 w-full mb-2`} />
         <div className={`${baseClasses} h-4 w-5/6`} />
@@ -109,7 +109,7 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
  */
 export function CardSkeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div className="border border-[0.5px] border-safe/30 p-6 bg-white">
+    <div className="border border-[0.5px] border-border p-6 bg-surface">
       <LoadingSkeleton variant="text" lines={lines} />
     </div>
   )

@@ -76,7 +76,7 @@ export function CreateModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-safe/50 flex items-center justify-center z-[100] p-4 transition-opacity duration-200 ease-out opacity-100"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 transition-opacity duration-200 ease-out opacity-100"
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-modal-title"
@@ -86,18 +86,18 @@ export function CreateModal({
     >
       <div
         ref={panelRef}
-        className={`bg-white border border-[0.5px] border-safe/30 ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col rounded-none transition-all duration-200 ease-out opacity-100`}
+        className={`bg-surface border border-[0.5px] border-border ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col rounded-none transition-all duration-200 ease-out opacity-100`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[0.5px] border-safe/30 shrink-0">
-          <h2 id="create-modal-title" className="text-base font-semibold text-safe">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[0.5px] border-border shrink-0">
+          <h2 id="create-modal-title" className="text-base font-semibold text-text">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="p-2 hover:bg-gray-100 text-safe rounded-none transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-surface-hover text-text rounded-none transition-colors disabled:opacity-50"
             aria-label="Close"
           >
             <X size={20} />

@@ -5,7 +5,7 @@
 
 export interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
-  color?: 'safe' | 'natural' | 'nurturing'
+  color?: 'safe' | 'natural' | 'nurturing' | 'white'
   className?: string
 }
 
@@ -20,6 +20,7 @@ const colorClasses = {
   safe: 'border-safe border-t-transparent',
   natural: 'border-natural border-t-transparent',
   nurturing: 'border-nurturing border-t-transparent',
+  white: 'border-white border-t-transparent',
 }
 
 export function LoadingSpinner({

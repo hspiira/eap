@@ -184,23 +184,23 @@ export function IndustriesTab() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 flex flex-col min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center p-12 border border-[0.5px] border-safe/30 bg-white">
+            <div className="flex items-center justify-center p-12 border border-[0.5px] border-border bg-surface">
               <LoadingSpinner size="lg" />
             </div>
           ) : error ? (
-            <div className="border border-[0.5px] border-safe/30 bg-white px-4 py-12 text-center">
+            <div className="border border-[0.5px] border-border bg-surface px-4 py-12 text-center">
               <p className="text-danger font-medium mb-2">Error loading industries</p>
-              <p className="text-safe-light text-sm mb-4">{error}</p>
+              <p className="text-text-muted text-sm mb-4">{error}</p>
               <button
                 onClick={fetchIndustries}
-                className="px-4 py-2 bg-natural hover:bg-natural-dark text-white text-sm rounded-none"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm rounded-none"
               >
                 Retry
               </button>
             </div>
           ) : (
             <>
-              <div className="border border-[0.5px] border-safe/30 bg-white flex-1 min-h-[200px] overflow-auto">
+              <div className="border border-[0.5px] border-border bg-surface flex-1 min-h-[200px] overflow-auto">
                 <IndustryTree
                   industries={filtered}
                   onSelect={handleSelect}
