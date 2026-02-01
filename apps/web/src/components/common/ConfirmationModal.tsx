@@ -3,7 +3,7 @@
  * Reusable confirm/cancel modal with optional reason textarea (e.g. lifecycle suspend/terminate).
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
@@ -47,18 +47,6 @@ export function ConfirmationModal({
     if (isOpen) setReason('')
   }, [isOpen])
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) onClose()
-    },
-    [loading, onClose]
-  )
-
-  useEffect(() => {
-    if (!isOpen) return
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, handleKeyDown])
 
   const handleConfirm = () => {
     if (requireReason && !reason.trim()) return
@@ -75,9 +63,6 @@ export function ConfirmationModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirmation-modal-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !loading) onClose()
-      }}
     >
       <div
         className="bg-surface border border-[0.5px] border-border max-w-md w-full rounded-none"

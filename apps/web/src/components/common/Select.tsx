@@ -1,10 +1,40 @@
 /**
  * Select Component
- * Reusable select dropdown with search and multi-select support
+ * Uses shadcn Select (Radix) or Popover+Command (searchable) with our API.
+ * Searchable when searchable=true or options.length > 10.
  */
 
-import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, X, Check } from 'lucide-react'
+"use client"
+
+const EMPTY_VALUE = '__none__'
+const SEARCHABLE_THRESHOLD = 10
+
+import { useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import {
+  Select as ShadcnSelect,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 
 export interface SelectOption {
   value: string
@@ -25,7 +55,6 @@ export interface SelectProps {
   required?: boolean
   disabled?: boolean
   className?: string
-  /** Tighter spacing (e.g. in modals) */
   compact?: boolean
 }
 
@@ -44,179 +73,121 @@ export function Select({
   className = '',
   compact = false,
 }: SelectProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const selectRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  const selectedValue = Array.isArray(value) ? value[0] ?? '' : value ?? ''
+  const hasEmptyOption = options.some((o) => o.value === '')
+  const useSearchable = searchable || options.length > SEARCHABLE_THRESHOLD
 
-  const selectedValues = Array.isArray(value) ? value : value ? [value] : []
+  const normalizedOptions = options.map((o) => ({
+    ...o,
+    value: o.value === '' ? EMPTY_VALUE : o.value,
+  }))
 
-  // Filter options based on search term
-  const filteredOptions = searchable
-    ? options.filter((option) =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : options
+  const selectValue = selectedValue === '' && hasEmptyOption ? EMPTY_VALUE : selectedValue || undefined
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-        setSearchTerm('')
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      // Focus search input when opening
-      if (searchable && searchInputRef.current) {
-        setTimeout(() => searchInputRef.current?.focus(), 0)
-      }
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen, searchable])
-
-  const handleToggle = () => {
-    if (!disabled) {
-      setIsOpen(!isOpen)
-    }
+  const handleValueChange = (val: string) => {
+    const out = val === EMPTY_VALUE ? '' : val
+    onChange(multiple ? [out] : out)
+    setOpen(false)
   }
 
-  const handleSelect = (optionValue: string) => {
-    if (multiple) {
-      const newValues = selectedValues.includes(optionValue)
-        ? selectedValues.filter((v) => v !== optionValue)
-        : [...selectedValues, optionValue]
-      onChange(newValues)
-    } else {
-      onChange(optionValue)
-      setIsOpen(false)
-      setSearchTerm('')
-    }
-  }
-
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onChange(multiple ? [] : '')
-  }
-
-  const getDisplayValue = () => {
-    if (multiple) {
-      if (selectedValues.length === 0) {
-        return placeholder
-      }
-      if (selectedValues.length === 1) {
-        const option = options.find((opt) => opt.value === selectedValues[0])
-        return option?.label || placeholder
-      }
-      return `${selectedValues.length} selected`
-    }
-    const option = options.find((opt) => opt.value === value)
-    return option?.label || placeholder
-  }
-
-  const isSelected = (optionValue: string) => {
-    return selectedValues.includes(optionValue)
-  }
+  const selectedLabel = normalizedOptions.find((o) => o.value === selectValue)?.label ?? placeholder
 
   const space = compact ? 'mb-2' : 'mb-4'
   const labelSpace = compact ? 'mb-1' : 'mb-2'
 
+  const triggerClassName = cn(
+    'w-full justify-between font-normal rounded-none',
+    !selectedValue && 'text-text-muted',
+    error && 'border-danger'
+  )
+
+  if (useSearchable) {
+    return (
+      <div className={cn(space, className)}>
+        {label && (
+          <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
+            {label}
+            {required && <span className="text-danger ml-1">*</span>}
+          </Label>
+        )}
+        <Popover open={open} onOpenChange={setOpen} modal={false}>
+          <PopoverTrigger asChild>
+            <Button
+              id={name}
+              variant="outline"
+              disabled={disabled}
+              className={triggerClassName}
+            >
+              {selectedLabel}
+              <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[110]" align="start">
+            <Command>
+              <CommandInput placeholder="Search..." className="rounded-none border-0" />
+              <CommandList>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup>
+                  {normalizedOptions.map((option) => (
+                    <CommandItem
+                      key={option.value}
+                      value={option.label}
+                      disabled={option.disabled}
+                      onSelect={() => !option.disabled && handleValueChange(option.value)}
+                      className="rounded-none"
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          selectValue === option.value ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      {option.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+      </div>
+    )
+  }
+
   return (
-    <div className={`${space} ${className}`}>
+    <div className={cn(space, className)}>
       {label && (
-        <label
-          htmlFor={name}
-          className={`block text-text text-sm font-medium ${labelSpace}`}
-        >
+        <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
           {label}
           {required && <span className="text-danger ml-1">*</span>}
-        </label>
+        </Label>
       )}
-      <div ref={selectRef} className="relative">
-        <button
-          type="button"
-          onClick={handleToggle}
-          disabled={disabled}
-          className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
-            error ? 'border-danger' : 'border-border'
-          } rounded-none focus:outline-none focus:border-border-focus flex items-center justify-between ${
-            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-          }`}
+      <ShadcnSelect
+        value={selectValue}
+        onValueChange={handleValueChange}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          id={name}
+          className={cn('rounded-none', error && 'border-danger', !selectedValue && 'text-text-muted')}
         >
-          <span className={`text-left flex-1 ${!value || (Array.isArray(value) && value.length === 0) ? 'text-text-muted' : 'text-text'}`}>
-            {getDisplayValue()}
-          </span>
-          <div className="flex items-center gap-2">
-            {value && (Array.isArray(value) ? value.length > 0 : true) && !disabled && (
-              <button
-                type="button"
-                onClick={handleClear}
-                className="p-1 hover:bg-surface-hover rounded-none transition-colors"
-                aria-label="Clear selection"
-              >
-                <X size={16} className="text-text" />
-              </button>
-            )}
-            <ChevronDown
-              size={18}
-              className={`text-text transition-transform ${isOpen ? 'rotate-180' : ''}`}
-            />
-          </div>
-        </button>
-
-        {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-surface border border-[0.5px] border-border shadow-lg max-h-60 overflow-auto">
-            {searchable && (
-              <div className="p-2">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search..."
-                  className="w-full px-3 py-1.5 bg-surface border border-[0.5px] border-border text-text rounded-none focus:outline-none focus:border-border-focus"
-                />
-              </div>
-            )}
-            <div className="py-1">
-              {filteredOptions.length === 0 ? (
-                <div className="px-4 py-2 text-sm text-text-muted">No options found</div>
-              ) : (
-                filteredOptions.map((option) => {
-                  const selected = isSelected(option.value)
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => !option.disabled && handleSelect(option.value)}
-                      disabled={option.disabled}
-                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-surface-hover transition-colors ${
-                        selected ? 'bg-primary/10 text-primary' : 'text-text'
-                      } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      {multiple && (
-                        <div
-                          className={`w-4 h-4 border border-[0.5px] border-border flex items-center justify-center ${
-                            selected ? 'bg-primary border-primary-hover' : 'bg-surface'
-                          }`}
-                        >
-                          {selected && <Check size={12} className="text-white" />}
-                        </div>
-                      )}
-                      <span className="flex-1">{option.label}</span>
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="z-[110]">
+          {normalizedOptions.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className="rounded-none"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </ShadcnSelect>
       {error && <p className="mt-1 text-sm text-danger">{error}</p>}
     </div>
   )

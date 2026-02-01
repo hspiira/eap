@@ -37,9 +37,6 @@ export function CreateModal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) {
-        onClose()
-      }
       if (e.key !== 'Tab' || !panelRef.current) return
       const el = panelRef.current
       const focusable = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE))
@@ -57,7 +54,7 @@ export function CreateModal({
         }
       }
     },
-    [loading, onClose]
+    []
   )
 
   useEffect(() => {
@@ -80,9 +77,6 @@ export function CreateModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-modal-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !loading) onClose()
-      }}
     >
       <div
         ref={panelRef}

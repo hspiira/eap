@@ -1,10 +1,17 @@
 /**
  * Form Field Component
- * Reusable form field with label, input, and error display
- * Supports both controlled and React Hook Form integration
+ * Wrapper around shadcn Input + Label with our API.
+ * Supports both controlled and React Hook Form integration.
  */
 
+"use client"
+
+import * as React from 'react'
 import { useFormContext, Controller } from 'react-hook-form'
+
+import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { getFieldError } from '@/utils/validators'
 
 interface FormFieldProps {
@@ -22,9 +29,7 @@ interface FormFieldProps {
   max?: number
   rows?: number
   className?: string
-  /** Tighter spacing (e.g. in modals) */
   compact?: boolean
-  // React Hook Form integration
   useFormContext?: boolean
 }
 
@@ -52,17 +57,18 @@ export function FormField({
   const space = compact ? 'mb-2' : 'mb-4'
   const labelSpace = compact ? 'mb-1' : 'mb-2'
 
-  // If using React Hook Form, use Controller
+  const inputClassName = cn(
+    'rounded-none bg-surface border-border focus-visible:ring-border-focus',
+    error && 'border-danger'
+  )
+
   if (useForm && formContext) {
     return (
-      <div className={`${space} ${className}`}>
-        <label
-          htmlFor={name}
-          className={`block text-text text-sm font-medium ${labelSpace}`}
-        >
+      <div className={cn(space, className)}>
+        <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
           {label}
           {required && <span className="text-danger ml-1">*</span>}
-        </label>
+        </Label>
         <Controller
           name={name}
           control={formContext.control}
@@ -76,16 +82,15 @@ export function FormField({
                   placeholder={placeholder}
                   disabled={disabled}
                   required={required}
-                  className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+                  className={cn(
+                    'flex w-full rounded-none border bg-surface px-3 py-2 text-base transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
                     error ? 'border-danger' : 'border-border'
-                  } rounded-none focus:outline-none focus:border-border-focus ${
-                    disabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  )}
                 />
               )
             }
             return (
-              <input
+              <Input
                 {...field}
                 type={type}
                 id={name}
@@ -95,11 +100,7 @@ export function FormField({
                 required={required}
                 min={min}
                 max={max}
-                className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
-                  error ? 'border-danger' : 'border-border'
-                } rounded-none focus:outline-none focus:border-border-focus ${
-                  disabled ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={inputClassName}
               />
             )
           }}
@@ -109,31 +110,26 @@ export function FormField({
     )
   }
 
-  // Controlled component (non-React Hook Form)
   if (type === 'textarea') {
     return (
-      <div className={`${space} ${className}`}>
-        <label
-          htmlFor={name}
-          className={`block text-text text-sm font-medium ${labelSpace}`}
-        >
+      <div className={cn(space, className)}>
+        <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
           {label}
           {required && <span className="text-danger ml-1">*</span>}
-        </label>
+        </Label>
         <textarea
           id={name}
           name={name}
           value={controlledValue || ''}
-          onChange={controlledOnChange as any}
+          onChange={controlledOnChange as React.ChangeEventHandler<HTMLTextAreaElement>}
           placeholder={placeholder}
           required={required}
           disabled={disabled}
           rows={rows}
-          className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
+          className={cn(
+            'flex w-full rounded-none border bg-surface px-3 py-2 text-base transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
             error ? 'border-danger' : 'border-border'
-          } rounded-none focus:outline-none focus:border-border-focus ${
-            disabled ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          )}
         />
         {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
@@ -141,15 +137,12 @@ export function FormField({
   }
 
   return (
-    <div className={`${space} ${className}`}>
-      <label
-        htmlFor={name}
-        className={`block text-text text-sm font-medium ${labelSpace}`}
-      >
+    <div className={cn(space, className)}>
+      <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
         {label}
         {required && <span className="text-danger ml-1">*</span>}
-      </label>
-      <input
+      </Label>
+      <Input
         type={type}
         id={name}
         name={name}
@@ -161,11 +154,7 @@ export function FormField({
         disabled={disabled}
         min={min}
         max={max}
-        className={`w-full px-4 py-2 bg-surface border-[0.5px] ${
-          error ? 'border-danger' : 'border-border'
-        } rounded-none focus:outline-none focus:border-border-focus ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
+        className={inputClassName}
       />
       {error && <p className="mt-1 text-sm text-danger">{error}</p>}
     </div>
