@@ -5,14 +5,24 @@
  */
 
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { useEffect } from 'react'
 
 export const Route = createFileRoute('/auth')({
   component: AuthLayout,
 })
 
 function AuthLayout() {
+  useEffect(() => {
+    document.documentElement.style.background = '#000'
+    document.body.style.background = '#000'
+    return () => {
+      document.documentElement.style.background = ''
+      document.body.style.background = ''
+    }
+  }, [])
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+    <div className="relative min-h-screen min-h-[100dvh] flex items-center justify-center px-4 overflow-hidden bg-black">
       <video
         autoPlay
         loop

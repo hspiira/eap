@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { AppLayout } from '@/components/layout/AppLayout'
 
@@ -44,8 +45,17 @@ function HomePage() {
 }
 
 function LandingPage() {
+  useEffect(() => {
+    document.documentElement.style.background = '#000'
+    document.body.style.background = '#000'
+    return () => {
+      document.documentElement.style.background = ''
+      document.body.style.background = ''
+    }
+  }, [])
+
   return (
-    <div className="h-screen bg-black flex relative overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] bg-black flex relative overflow-hidden">
       <video
         autoPlay
         loop
