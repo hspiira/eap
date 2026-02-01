@@ -47,15 +47,19 @@ function HomePage() {
 function LandingPage() {
   useEffect(() => {
     document.documentElement.style.background = '#000'
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.background = '#000'
+    document.body.style.overflow = 'hidden'
     return () => {
       document.documentElement.style.background = ''
+      document.documentElement.style.overflow = ''
       document.body.style.background = ''
+      document.body.style.overflow = ''
     }
   }, [])
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-black flex relative overflow-hidden">
+    <div className="h-screen h-[100dvh] bg-black flex flex-col relative overflow-hidden">
       <video
         autoPlay
         loop
@@ -73,8 +77,8 @@ function LandingPage() {
         aria-hidden 
       />
 
-      <div className="relative z-10 flex flex-col w-full">
-        <nav className="px-8 py-8">
+      <div className="relative z-10 flex flex-col w-full flex-1 min-h-0 overflow-y-auto">
+        <nav className="px-8 py-8 flex-shrink-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="text-2xl font-semibold text-white tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">Evexía</div>
             <Link
@@ -119,7 +123,7 @@ function LandingPage() {
           </div>
         </main>
 
-        <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm">
+        <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm flex-shrink-0">
           <div className="max-w-7xl mx-auto">
             <p className="text-white/50 text-xs drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">© 2026 Evexía</p>
           </div>

@@ -14,15 +14,19 @@ export const Route = createFileRoute('/auth')({
 function AuthLayout() {
   useEffect(() => {
     document.documentElement.style.background = '#000'
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.background = '#000'
+    document.body.style.overflow = 'hidden'
     return () => {
       document.documentElement.style.background = ''
+      document.documentElement.style.overflow = ''
       document.body.style.background = ''
+      document.body.style.overflow = ''
     }
   }, [])
 
   return (
-    <div className="relative min-h-screen min-h-[100dvh] flex items-center justify-center px-4 overflow-hidden bg-black">
+    <div className="h-screen h-[100dvh] relative flex items-center justify-center px-4 overflow-hidden bg-black">
       <video
         autoPlay
         loop
@@ -39,7 +43,7 @@ function AuthLayout() {
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
         aria-hidden 
       />
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md max-h-full overflow-y-auto py-8">
         <Outlet />
       </div>
     </div>
