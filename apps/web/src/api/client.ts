@@ -49,10 +49,12 @@ class ApiClient {
    */
   setToken(token: string | null): void {
     this.token = token
-    if (token) {
-      localStorage.setItem('auth_token', token)
-    } else {
-      localStorage.removeItem('auth_token')
+    if (typeof window !== 'undefined') {
+      if (token) {
+        localStorage.setItem('auth_token', token)
+      } else {
+        localStorage.removeItem('auth_token')
+      }
     }
   }
 
@@ -113,10 +115,12 @@ class ApiClient {
 
   setTenantId(tenantId: string | null): void {
     this.tenantId = tenantId
-    if (tenantId) {
-      localStorage.setItem('tenant_id', tenantId)
-    } else {
-      localStorage.removeItem('tenant_id')
+    if (typeof window !== 'undefined') {
+      if (tenantId) {
+        localStorage.setItem('tenant_id', tenantId)
+      } else {
+        localStorage.removeItem('tenant_id')
+      }
     }
   }
 
@@ -377,7 +381,7 @@ class ApiClient {
   /**
    * Retry logic with exponential backoff
    */
-  private async retryRequest<T>(
+  private async retryRequest(
     requestFn: () => Promise<Response>,
     attempt = 1
   ): Promise<Response> {
@@ -549,12 +553,8 @@ class ApiClient {
     params?: Record<string, unknown>,
     options?: RequestOptions
   ): Promise<T> {
-    // Build full URL with params and pass as endpoint
     const fullUrl = this.buildUrl(endpoint, params)
-    // Extract relative path from full URL for request method
-    const urlObj = new URL(fullUrl)
-    const relativePath = urlObj.pathname + urlObj.search
-    return this.request<T>(relativePath, {
+    return this.request<T>(fullUrl, {
       method: 'GET',
       ...options,
     })

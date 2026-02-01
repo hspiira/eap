@@ -75,7 +75,7 @@ export const IndustryTree = memo(function IndustryTree({
     if (el) {
       el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
-  }, [selectedId, scrollContainerRef, rootOffset])
+  }, [selectedId, scrollContainerRef, rootOffset, expanded])
 
   const toggle = useCallback((id: string) => {
     setExpanded((prev) => {
