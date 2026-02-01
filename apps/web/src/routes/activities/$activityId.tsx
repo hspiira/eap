@@ -164,7 +164,7 @@ function ActivityDetailPage() {
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               <Edit size={18} />
               <span>Edit</span>
@@ -174,7 +174,7 @@ function ActivityDetailPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50"
               >
                 {saving ? <LoadingSpinner size="sm" color="white" /> : null}
                 <span>Save</span>
@@ -190,7 +190,7 @@ function ActivityDetailPage() {
                     client_id: activity.client_id,
                   })
                 }}
-                className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+                className="px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
               >
                 Cancel
               </button>

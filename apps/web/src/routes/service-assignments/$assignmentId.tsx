@@ -146,7 +146,7 @@ function ServiceAssignmentDetailPage() {
             />
             <button
               onClick={() => navigate({ to: `/service-assignments/${assignmentId}/edit` })}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               <FileText size={18} />
               <span>Edit</span>

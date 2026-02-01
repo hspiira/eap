@@ -225,7 +225,7 @@ function DocumentDetailPage() {
               <button
                 onClick={handlePublish}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <Eye size={18} />
                 <span>Publish</span>
@@ -235,7 +235,7 @@ function DocumentDetailPage() {
               <button
                 onClick={handleArchive}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <Archive size={18} />
                 <span>Archive</span>
@@ -243,7 +243,7 @@ function DocumentDetailPage() {
             )}
             <button
               onClick={() => navigate({ to: `/documents/${documentId}/edit` })}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               <Edit size={18} />
               <span>Edit</span>

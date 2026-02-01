@@ -75,12 +75,12 @@ const actionIcons: Record<LifecycleAction, typeof Power> = {
 
 /** Per-action colors: natural=positive (green), safe=neutral, danger=destructive (red) */
 const actionColors: Record<LifecycleAction, string> = {
-  activate: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
+  activate: 'bg-primary hover:bg-primary-hover text-white border-primary-hover',
   deactivate: 'bg-danger hover:bg-danger-dark text-white border-danger-dark',
-  archive: 'bg-safe hover:bg-safe-dark text-white border-safe-dark',
-  unarchive: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
+  archive: 'bg-neutral hover:bg-neutral-dark text-white border-neutral-dark',
+  unarchive: 'bg-primary hover:bg-primary-hover text-white border-primary-hover',
   delete: 'bg-danger hover:bg-danger-dark text-white border-danger-dark',
-  restore: 'bg-natural hover:bg-natural-dark text-white border-natural-dark',
+  restore: 'bg-primary hover:bg-primary-hover text-white border-primary-hover',
 }
 
 /**

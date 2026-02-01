@@ -217,7 +217,7 @@ function SessionDetailPage() {
               <button
                 onClick={() => setShowRescheduleDialog(true)}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <Edit size={18} />
                 <span>Reschedule</span>
@@ -227,7 +227,7 @@ function SessionDetailPage() {
               <button
                 onClick={handleComplete}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <CheckCircle size={18} />
                 <span>Complete</span>
@@ -247,7 +247,7 @@ function SessionDetailPage() {
               <button
                 onClick={handleNoShow}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <UserX size={18} />
                 <span>No Show</span>
@@ -257,7 +257,7 @@ function SessionDetailPage() {
               <button
                 onClick={() => setShowFeedbackDialog(true)}
                 disabled={actionLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-natural hover:bg-natural-dark text-white rounded-none transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-none transition-colors disabled:opacity-50"
               >
                 <MessageSquare size={18} />
                 <span>Add Feedback</span>

@@ -168,7 +168,7 @@ export function CreateUserForm({ onSuccess, onCancel, onLoadingChange }: CreateU
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+          className="px-6 py-3 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
         >
           Cancel
         </button>

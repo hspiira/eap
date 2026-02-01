@@ -93,17 +93,17 @@ function UserDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-safe mb-2">{user.email}</h1>
+            <h1 className="text-3xl font-bold text-text mb-2">{user.email}</h1>
             <div className="flex items-center gap-4">
               <StatusBadge status={user.status as UserStatus} />
               {user.is_email_verified && (
-                <span className="text-sm text-natural flex items-center gap-1">
+                <span className="text-sm text-primary flex items-center gap-1">
                   <Mail size={14} />
                   Email Verified
                 </span>
               )}
               {user.is_two_factor_enabled && (
-                <span className="text-sm text-natural flex items-center gap-1">
+                <span className="text-sm text-primary flex items-center gap-1">
                   <Shield size={14} />
                   2FA Enabled
                 </span>
@@ -118,7 +118,7 @@ function UserDetailPage() {
             />
             <button
               onClick={() => navigate({ to: `/users/${userId}/edit` })}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               <Edit size={18} />
               <span>Edit</span>
@@ -129,44 +129,44 @@ function UserDetailPage() {
         {/* User Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Account Information */}
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Mail size={20} />
               Account Information
             </h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-safe-light">Email</dt>
-                <dd className="text-safe mt-1">{user.email}</dd>
+                <dt className="text-sm font-medium text-text-muted">Email</dt>
+                <dd className="text-text mt-1">{user.email}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Status</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-muted">Status</dt>
+                <dd className="text-text mt-1">
                   <StatusBadge status={user.status as UserStatus} size="sm" />
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Email Verified</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-muted">Email Verified</dt>
+                <dd className="text-text mt-1">
                   {user.is_email_verified ? (
-                    <span className="text-natural">Yes</span>
+                    <span className="text-primary">Yes</span>
                   ) : (
-                    <span className="text-safe-light">No</span>
+                    <span className="text-text-muted">No</span>
                   )}
                   {user.email_verified_at && (
-                    <span className="text-xs text-safe-light ml-2">
+                    <span className="text-xs text-text-muted ml-2">
                       ({new Date(user.email_verified_at).toLocaleDateString()})
                     </span>
                   )}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Two-Factor Authentication</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-muted">Two-Factor Authentication</dt>
+                <dd className="text-text mt-1">
                   {user.is_two_factor_enabled ? (
-                    <span className="text-natural">Enabled</span>
+                    <span className="text-primary">Enabled</span>
                   ) : (
-                    <span className="text-safe-light">Disabled</span>
+                    <span className="text-text-muted">Disabled</span>
                   )}
                 </dd>
               </div>
@@ -174,46 +174,46 @@ function UserDetailPage() {
           </div>
 
           {/* Preferences */}
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Globe size={20} />
               Preferences
             </h2>
             <dl className="space-y-3">
               {user.preferred_language && (
                 <div>
-                  <dt className="text-sm font-medium text-safe-light">Preferred Language</dt>
-                  <dd className="text-safe mt-1">{user.preferred_language}</dd>
+                  <dt className="text-sm font-medium text-text-muted">Preferred Language</dt>
+                  <dd className="text-text mt-1">{user.preferred_language}</dd>
                 </div>
               )}
               {user.timezone && (
                 <div>
-                  <dt className="text-sm font-medium text-safe-light">Timezone</dt>
-                  <dd className="text-safe mt-1">{user.timezone}</dd>
+                  <dt className="text-sm font-medium text-text-muted">Timezone</dt>
+                  <dd className="text-text mt-1">{user.timezone}</dd>
                 </div>
               )}
             </dl>
           </div>
 
           {/* Activity */}
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Clock size={20} />
               Activity
             </h2>
             <dl className="space-y-3">
               {user.last_login_at && (
                 <div>
-                  <dt className="text-sm font-medium text-safe-light">Last Login</dt>
-                  <dd className="text-safe mt-1">
+                  <dt className="text-sm font-medium text-text-muted">Last Login</dt>
+                  <dd className="text-text mt-1">
                     {new Date(user.last_login_at).toLocaleString()}
                   </dd>
                 </div>
               )}
               {user.status_changed_at && (
                 <div>
-                  <dt className="text-sm font-medium text-safe-light">Status Changed</dt>
-                  <dd className="text-safe mt-1">
+                  <dt className="text-sm font-medium text-text-muted">Status Changed</dt>
+                  <dd className="text-text mt-1">
                     {new Date(user.status_changed_at).toLocaleString()}
                   </dd>
                 </div>
@@ -222,21 +222,21 @@ function UserDetailPage() {
           </div>
 
           {/* Metadata */}
-          <div className="bg-white border border-[0.5px] border-safe/30 p-6">
-            <h2 className="text-lg font-semibold text-safe mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-[0.5px] border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
               <Calendar size={20} />
               Metadata
             </h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-safe-light">Created</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-muted">Created</dt>
+                <dd className="text-text mt-1">
                   {new Date(user.created_at).toLocaleString()}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-safe-light">Last Updated</dt>
-                <dd className="text-safe mt-1">
+                <dt className="text-sm font-medium text-text-muted">Last Updated</dt>
+                <dd className="text-text mt-1">
                   {new Date(user.updated_at).toLocaleString()}
                 </dd>
               </div>

@@ -178,7 +178,7 @@ function EditTenantPage() {
             <button
               type="button"
               onClick={() => navigate({ to: `/tenants/${tenantId}` })}
-              className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="px-6 py-3 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               Cancel
             </button>

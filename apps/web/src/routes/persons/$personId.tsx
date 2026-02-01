@@ -351,7 +351,7 @@ function PersonDetailPage() {
                       {primaryEmployee ? (
                         <button
                           onClick={() => navigate({ to: `/persons/${person.dependent_info?.primary_employee_id}` })}
-                          className="text-primary hover:text-primary-dark font-medium"
+                          className="text-primary hover:text-primary-hover font-medium"
                         >
                           {getFullName(primaryEmployee)}
                         </button>

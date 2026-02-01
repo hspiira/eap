@@ -99,7 +99,7 @@ export function IndustryDetailPanel({
                   <button
                     type="button"
                     onClick={() => onSelectParent(industry.parent_id!)}
-                    className="text-primary hover:text-primary-dark flex items-center gap-1"
+                    className="text-primary hover:text-primary-hover flex items-center gap-1"
                   >
                     <Building2 size={14} />
                     View parent industry

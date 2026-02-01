@@ -96,7 +96,7 @@ export function CreateKpiForm({ onSuccess, onCancel, onLoadingChange }: CreateKp
         <button type="submit" disabled={loading} className="flex-1 px-6 py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
           {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" />Creating...</span> : 'Create KPI'}
         </button>
-        <button type="button" onClick={onCancel} disabled={loading} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
+        <button type="button" onClick={onCancel} disabled={loading} className="px-6 py-3 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
       </div>
     </form>
   )

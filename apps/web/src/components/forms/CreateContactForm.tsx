@@ -173,7 +173,7 @@ export function CreateContactForm({
         <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50">
           {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" />Creating...</span> : 'Create Contact'}
         </button>
-        <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
+        <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50">Cancel</button>
       </div>
     </form>
   )

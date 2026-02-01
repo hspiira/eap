@@ -326,7 +326,7 @@ export function EditClientForm({
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors disabled:opacity-50"
         >
           Cancel
         </button>

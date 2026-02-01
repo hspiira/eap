@@ -132,7 +132,7 @@ function ServiceDetailPage() {
             />
             <button
               onClick={() => navigate({ to: `/services/${serviceId}/edit` })}
-              className="flex items-center gap-2 px-4 py-2 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors"
             >
               <Edit size={18} />
               <span>Edit</span>

@@ -181,7 +181,7 @@ function CreateServiceProviderPage() {
             >
               {loading ? <span className="flex items-center justify-center gap-2"><LoadingSpinner size="sm" color="white" /> Creating...</span> : 'Create'}
             </button>
-            <button type="button" onClick={() => navigate({ to: '/service-providers' })} className="px-6 py-3 bg-safe hover:bg-safe-dark text-white rounded-none transition-colors">
+            <button type="button" onClick={() => navigate({ to: '/service-providers' })} className="px-6 py-3 bg-neutral hover:bg-neutral-dark text-white rounded-none transition-colors">
               Cancel
             </button>
           </div>
