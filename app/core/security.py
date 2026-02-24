@@ -9,15 +9,15 @@ from typing import Any
 
 import bcrypt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.domain.exceptions import AuthenticationException
 
-# OAuth2 scheme for bearer token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+# HTTP Bearer scheme for API docs and dependency injection (matches new_timeline style)
+http_bearer = HTTPBearer(auto_error=False)
 
 
 # =============================================================================
@@ -204,31 +204,31 @@ def decode_token(token: str) -> TokenData:
 
 
 async def get_current_user_optional(
-    token: str | None = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
 ) -> TokenData | None:
     """
-    Get current user from token if provided.
+    Get current user from Bearer token if provided.
 
     This dependency does not require authentication - returns None
     if no token is provided.
 
     Args:
-        token: Optional JWT token from Authorization header
+        credentials: Optional Bearer credentials from Authorization header
 
     Returns:
         TokenData if authenticated, None otherwise
     """
-    if token is None:
+    if not credentials:
         return None
 
     try:
-        return decode_token(token)
+        return decode_token(credentials.credentials)
     except AuthenticationException:
         return None
 
 
 async def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
+    current_user: TokenData | None = Depends(get_current_user_optional),
 ) -> TokenData:
     """
     Get current authenticated user.
@@ -237,7 +237,7 @@ async def get_current_user(
     if not authenticated.
 
     Args:
-        token: JWT token from Authorization header
+        current_user: Result of get_current_user_optional (None if not authenticated)
 
     Returns:
         TokenData for authenticated user
@@ -245,21 +245,13 @@ async def get_current_user(
     Raises:
         HTTPException: If not authenticated
     """
-    if token is None:
+    if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    try:
-        return decode_token(token)
-    except AuthenticationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return current_user
 
 
 async def get_current_active_user(

@@ -3,6 +3,14 @@ Person API Schemas (DTOs)
 
 Pydantic models for request/response validation.
 Separate from domain entities.
+
+Personal details (first_name, last_name, date_of_birth, gender):
+  These are NOT on PersonEntity. Person aggregates reference User (user_id) for
+  identity; the User entity currently holds only email, status, and auth-related
+  fields. If the frontend needs first_name, last_name, date_of_birth, or gender,
+  they should live on User or a dedicated Profile entity and are not yet
+  implemented in this backend. Add them to UserEntity (or a Profile model) and
+  expose via User/Profile APIs when required.
 """
 
 from datetime import date
@@ -19,6 +27,20 @@ class EmploymentInfoSchema(BaseModel):
 
     client_id: str = Field(..., description="Client identifier")
     employee_code: str = Field(..., description="Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)")
+    role: str = Field(..., description="Job role")
+    start_date: date = Field(..., description="Employment start date")
+    status: WorkStatus = Field(..., description="Work status")
+    department: str | None = Field(None, description="Department")
+    employee_id: str | None = Field(None, description="External employee ID (optional)")
+    end_date: date | None = Field(None, description="Employment end date")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class EmploymentInfoCreateSchema(BaseModel):
+    """Employment information for creating a person (employee_code is generated)."""
+
+    client_id: str = Field(..., description="Client identifier")
     role: str = Field(..., description="Job role")
     start_date: date = Field(..., description="Employment start date")
     status: WorkStatus = Field(..., description="Work status")
@@ -138,6 +160,50 @@ class UpdateStaffInfoRequest(BaseModel):
     """Request schema for updating staff information."""
 
     staff_info: StaffInfoSchema = Field(..., description="Staff information")
+
+
+class UpdateDependentInfoRequest(BaseModel):
+    """Request schema for updating dependent information."""
+
+    dependent_info: DependentInfoSchema = Field(
+        ..., description="Dependent information (primary_employee_id, relationship, guardian_id)"
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
+# === Create (discriminated by person_type) ===
+
+class PersonCreate(BaseModel):
+    """
+    Request schema for creating a person.
+
+    Persons are created after a User exists. Provide user_id and tenant_id;
+    then either employment_info (for CLIENT_EMPLOYEE) or dependent_info (for DEPENDENT).
+    """
+
+    person_type: PersonType = Field(..., description="Primary person type (CLIENT_EMPLOYEE or DEPENDENT)")
+    user_id: str = Field(..., description="User identifier (user must exist)")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    employment_info: EmploymentInfoCreateSchema | None = Field(
+        None, description="Required for CLIENT_EMPLOYEE"
+    )
+    dependent_info: DependentInfoSchema | None = Field(
+        None, description="Required for DEPENDENT"
+    )
+    family_id: str | None = Field(None, description="Family identifier (optional, for CLIENT_EMPLOYEE)")
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _validate_type_payload(self) -> "PersonCreate":
+        if self.person_type == PersonType.CLIENT_EMPLOYEE and self.employment_info is None:
+            raise ValueError("employment_info is required for CLIENT_EMPLOYEE")
+        if self.person_type == PersonType.DEPENDENT and self.dependent_info is None:
+            raise ValueError("dependent_info is required for DEPENDENT")
+        if self.person_type not in (PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT):
+            raise ValueError("person_type must be CLIENT_EMPLOYEE or DEPENDENT for create")
+        return self
 
 
 # === Response Schemas ===

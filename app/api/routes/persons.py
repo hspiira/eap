@@ -10,18 +10,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenData, get_current_user
 
-from app.api.dependencies import get_audit_event_handler, get_person_repository, get_client_repository
+from app.api.dependencies import (
+    get_audit_event_handler,
+    get_client_repository,
+    get_person_repository,
+    get_user_repository,
+)
 from app.api.schemas.person_schemas import (
     AddSecondaryRoleRequest,
     DependentInfoSchema,
     EmergencyContactSchema,
     EmploymentInfoSchema,
     LicenseInfoSchema,
+    PersonCreate,
     PersonDeactivateRequest,
     PersonListResponse,
     PersonResponse,
     PersonTerminateRequest,
     StaffInfoSchema,
+    UpdateDependentInfoRequest,
     UpdateEmergencyContactRequest,
     UpdateEmploymentInfoRequest,
     UpdateLicenseInfoRequest,
@@ -31,10 +38,13 @@ from app.application.use_cases.person_use_cases import (
     ActivatePersonUseCase,
     AddSecondaryRoleUseCase,
     ArchivePersonUseCase,
+    CreateClientEmployeeUseCase,
+    CreateDependentUseCase,
     DeactivatePersonUseCase,
     RemoveSecondaryRoleUseCase,
     RestorePersonUseCase,
     TerminatePersonUseCase,
+    UpdateDependentInfoUseCase,
     UpdateEmergencyContactUseCase,
     UpdateEmploymentInfoUseCase,
     UpdateLicenseInfoUseCase,
@@ -45,8 +55,10 @@ from app.domain.enums import BaseStatus, PersonType
 from app.domain.entities.person import PersonEntity
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     ClientId,
+    DependentInfo,
     Email,
     EmergencyContact,
     EmploymentInfo,
@@ -57,6 +69,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import transactional, readonly
+from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/persons", tags=["persons"])
@@ -134,6 +147,93 @@ def _to_person_response(person: PersonEntity) -> PersonResponse:
 
 
 # ==================== COMMANDS (Use Cases) ====================
+
+
+@router.post(
+    "/",
+    response_model=PersonResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new person",
+)
+@transactional()
+async def create_person(
+    data: PersonCreate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    person_repo: PersonRepository = Depends(get_person_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a new person (CLIENT_EMPLOYEE or DEPENDENT).
+
+    The user identified by user_id must already exist. Persons are created after
+    user registration; provide the existing user_id and type-specific payload.
+    """
+    if current_user.tenant_id != data.tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied to this tenant")
+
+    user_id_vo = UserId(data.user_id)
+    profile = await user_repo.get_by_id(user_id_vo)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    person_id = PersonId(generate_cuid())
+    tenant_id_vo = TenantId(data.tenant_id)
+
+    if data.person_type == PersonType.CLIENT_EMPLOYEE and data.employment_info:
+        emp = data.employment_info
+        family_id_vo = PersonId(data.family_id) if data.family_id else None
+        try:
+            person = await CreateClientEmployeeUseCase(person_repo, client_repo).execute(
+                person_id=person_id,
+                tenant_id=tenant_id_vo,
+                user_id=user_id_vo,
+                profile=profile,
+                client_id=ClientId(emp.client_id),
+                role=emp.role,
+                start_date=emp.start_date,
+                status=emp.status,
+                department=emp.department,
+                employee_id=emp.employee_id,
+                end_date=emp.end_date,
+                family_id=family_id_vo,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    elif data.person_type == PersonType.DEPENDENT and data.dependent_info:
+        dep = data.dependent_info
+        dependent_info_vo = DependentInfo(
+            primary_employee_id=PersonId(dep.primary_employee_id),
+            relationship=dep.relationship,
+            guardian_id=UserId(dep.guardian_id) if dep.guardian_id else None,
+        )
+        try:
+            person = await CreateDependentUseCase(person_repo).execute(
+                person_id=person_id,
+                tenant_id=tenant_id_vo,
+                user_id=user_id_vo,
+                profile=profile,
+                dependent_info=dependent_info_vo,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid person_type or missing type-specific payload",
+        )
+
+    await audit_entity_operation(
+        entity=person,
+        audit_handler=audit_handler,
+        tenant_id=data.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_person_response(person)
 
 
 @router.post(
@@ -483,6 +583,41 @@ async def update_staff_info(
     return _to_person_response(person)
 
 
+@router.patch(
+    "/{person_id}/dependent-info",
+    response_model=PersonResponse,
+    summary="Update dependent information",
+)
+@transactional()
+async def update_dependent_info(
+    person_id: str,
+    data: UpdateDependentInfoRequest,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    person_repo: PersonRepository = Depends(get_person_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update dependent information for a person (must be DEPENDENT type)."""
+    dep = data.dependent_info
+    dependent_info_vo = DependentInfo(
+        primary_employee_id=PersonId(dep.primary_employee_id),
+        relationship=dep.relationship,
+        guardian_id=UserId(dep.guardian_id) if dep.guardian_id else None,
+    )
+    person = await UpdateDependentInfoUseCase(person_repo).execute(
+        PersonId(person_id), dependent_info_vo
+    )
+    await audit_entity_operation(
+        entity=person,
+        audit_handler=audit_handler,
+        tenant_id=person.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_person_response(person)
+
+
 @router.post(
     "/{person_id}/archive",
     response_model=PersonResponse,
@@ -549,6 +684,7 @@ async def list_persons(
     current_user: TokenData = Depends(get_current_user),
     status: BaseStatus | None = Query(None, description="Filter by person status"),
     person_type: PersonType | None = Query(None, description="Filter by person type"),
+    client_id: str | None = Query(None, description="Filter by client ID (employment_info.client_id)"),
     search: str | None = Query(None, description="Search in user email"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -561,11 +697,13 @@ async def list_persons(
     if current_user.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
+    client_id_vo = ClientId(client_id) if client_id else None
 
     persons = await person_repo.list_all(
         tenant_id=TenantId(tenant_id),
         status=status,
         person_type=person_type,
+        client_id=client_id_vo,
         search=search,
         limit=limit,
         offset=offset,
@@ -577,6 +715,7 @@ async def list_persons(
         tenant_id=TenantId(tenant_id),
         status=status,
         person_type=person_type,
+        client_id=client_id_vo,
         search=search,
     )
 

@@ -390,6 +390,21 @@ class UpdateStaffInfoUseCase(BaseUseCase[PersonEntity, PersonId]):
         return await self._save_and_publish_events(person)
 
 
+class UpdateDependentInfoUseCase(BaseUseCase[PersonEntity, PersonId]):
+    """Use case for updating dependent information."""
+
+    def __init__(self, person_repository: PersonRepository):
+        super().__init__(person_repository)
+
+    async def execute(
+        self, person_id: PersonId, dependent_info: "DependentInfo"
+    ) -> PersonEntity:
+        """Update dependent information for a person (must be DEPENDENT type)."""
+        person = await self._get_entity_or_raise(person_id, "Person")
+        person.update_dependent_info(dependent_info)
+        return await self._save_and_publish_events(person)
+
+
 # =============================================================================
 # QUERY USE CASES
 # =============================================================================

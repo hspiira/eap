@@ -45,7 +45,7 @@ uvicorn app.main:app --reload
 Once running, the API is available at:
 
 - **API**: <http://localhost:8000>
-- **Documentation**: <http://localhost:8000/docs>  
+- **Landing**: <http://localhost:8000> · **API docs (Scalar)**: <http://localhost:8000/docs>  
 
 ## API Overview
 
