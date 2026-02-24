@@ -9,7 +9,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.domain.enums import Language, UserStatus
+from app.domain.enums import Language, TenantRole, UserStatus
 
 
 # === Request Schemas ===
@@ -83,6 +83,7 @@ class UserResponse(BaseModel):
     last_login_at: datetime | None = Field(None, description="Last login timestamp")
     status_changed_at: datetime | None = Field(None, description="Status change timestamp")
     is_active: bool = Field(..., description="Whether user is active")
+    role: TenantRole = Field(..., description="Tenant role (Admin, User, Viewer)")
 
     model_config = ConfigDict(from_attributes=True)
 

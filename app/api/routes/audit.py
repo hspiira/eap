@@ -9,6 +9,7 @@ Write operations (logging) are handled by use cases called from middleware/decor
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.core.authorization import get_audit_log_for_current_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_repository
@@ -140,23 +141,13 @@ async def list_audit_logs(
     summary="Get audit log by ID",
 )
 async def get_audit_log(
-    audit_log_id: str,
-    audit_repo: AuditRepository = Depends(get_audit_repository),
+    audit_log: AuditLog = Depends(get_audit_log_for_current_tenant),
 ):
     """
     Get audit log by ID.
 
     This is a QUERY operation - audit logs are immutable.
     """
-    get_use_case = GetAuditLogUseCase(audit_repo)
-
-    audit_log = await get_use_case.execute(AuditLogId(audit_log_id))
-
-    if not audit_log:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Audit log not found"
-        )
-
     return _to_audit_log_response(audit_log)
 
 
@@ -166,7 +157,7 @@ async def get_audit_log(
     summary="Get entity changes for an audit log",
 )
 async def get_audit_log_changes(
-    audit_log_id: str,
+    audit_log: AuditLog = Depends(get_audit_log_for_current_tenant),
     audit_repo: AuditRepository = Depends(get_audit_repository),
 ):
     """
@@ -175,11 +166,7 @@ async def get_audit_log_changes(
     This is a QUERY operation - entity changes are immutable.
     """
     get_use_case = GetAuditLogUseCase(audit_repo)
-
-    entity_changes = await get_use_case.execute_entity_changes(
-        AuditLogId(audit_log_id)
-    )
-
+    entity_changes = await get_use_case.execute_entity_changes(audit_log._id)
     return [_to_entity_change_response(ec) for ec in entity_changes]
 
 

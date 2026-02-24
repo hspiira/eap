@@ -8,6 +8,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import get_document_for_current_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_document_repository
@@ -134,25 +135,23 @@ async def create_document(
 )
 @transactional()
 async def publish_document(
-    document_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a document (make it available)."""
-    document = await PublishDocumentUseCase(document_repo).execute(
-        DocumentId(document_id)
-    )
+    updated = await PublishDocumentUseCase(document_repo).execute(document.id)
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 @router.post(
@@ -162,25 +161,23 @@ async def publish_document(
 )
 @transactional()
 async def archive_document(
-    document_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a document."""
-    document = await ArchiveDocumentUseCase(document_repo).execute(
-        DocumentId(document_id)
-    )
+    updated = await ArchiveDocumentUseCase(document_repo).execute(document.id)
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 @router.post(
@@ -191,17 +188,17 @@ async def archive_document(
 )
 @transactional()
 async def create_document_version(
-    document_id: str,
     data: DocumentCreateVersion,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new version of a document."""
-    document = await CreateDocumentVersionUseCase(document_repo).execute(
-        document_id=DocumentId(document_id),
+    updated = await CreateDocumentVersionUseCase(document_repo).execute(
+        document_id=document.id,
         new_version_id=DocumentId(generate_cuid()),
         name=data.name,
         description=data.description,
@@ -211,13 +208,13 @@ async def create_document_version(
         mime_type=data.mime_type,
     )
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 @router.patch(
@@ -227,28 +224,28 @@ async def create_document_version(
 )
 @transactional()
 async def update_document(
-    document_id: str,
     data: DocumentUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update document metadata."""
-    document = await UpdateDocumentMetadataUseCase(document_repo).execute(
-        DocumentId(document_id),
+    updated = await UpdateDocumentMetadataUseCase(document_repo).execute(
+        document.id,
         name=data.name,
         description=data.description,
     )
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 @router.patch(
@@ -258,26 +255,26 @@ async def update_document(
 )
 @transactional()
 async def set_document_confidentiality(
-    document_id: str,
     data: DocumentSetConfidentiality,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Set document confidentiality."""
-    document = await SetDocumentConfidentialityUseCase(document_repo).execute(
-        DocumentId(document_id), data.is_confidential
+    updated = await SetDocumentConfidentialityUseCase(document_repo).execute(
+        document.id, data.is_confidential
     )
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 @router.patch(
@@ -287,26 +284,26 @@ async def set_document_confidentiality(
 )
 @transactional()
 async def set_document_expiry(
-    document_id: str,
     data: DocumentSetExpiry,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     document_repo: DocumentRepository = Depends(get_document_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Set document expiry date."""
-    document = await SetDocumentExpiryUseCase(document_repo).execute(
-        DocumentId(document_id), data.expires_at
+    updated = await SetDocumentExpiryUseCase(document_repo).execute(
+        document.id, data.expires_at
     )
     await audit_entity_operation(
-        entity=document,
+        entity=updated,
         audit_handler=audit_handler,
-        tenant_id=document.tenant_id,
+        tenant_id=updated.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_document_response(document)
+    return _to_document_response(updated)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -382,14 +379,10 @@ async def list_documents(
 )
 @readonly()
 async def get_document(
-    document_id: str,
-    document_repo: DocumentRepository = Depends(get_document_repository),
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get document by ID."""
-    document = await GetDocumentUseCase(document_repo).execute(DocumentId(document_id))
-    if not document:
-        raise ValueError("Document not found")
     return _to_document_response(document)
 
 

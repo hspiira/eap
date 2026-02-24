@@ -7,7 +7,7 @@ Refactored to use base use case classes to eliminate boilerplate.
 
 from app.application.use_cases.base import BaseUseCase, EntityLifecycleUseCase
 from app.domain.entities.user import UserEntity
-from app.domain.enums import Language, UserStatus
+from app.domain.enums import Language, TenantRole, UserStatus
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
@@ -31,6 +31,7 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
         tenant_id: TenantId,
         email: Email,
         password_hash: str | None = None,
+        role: TenantRole = TenantRole.USER,
     ) -> UserEntity:
         """
         Create a new user.
@@ -40,6 +41,7 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
             tenant_id: Tenant identifier
             email: User email address
             password_hash: Hashed password (optional for OAuth users)
+            role: Tenant role (default USER; use ADMIN for tenant admin)
 
         Returns:
             Created UserEntity
@@ -60,6 +62,7 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
             _password_hash=password_hash,
             _status=UserStatus.PENDING_VERIFICATION,
             _is_two_factor_enabled=False,
+            _role=role,
             _created_at=utc_now(),
             _updated_at=utc_now(),
         )

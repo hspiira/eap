@@ -8,7 +8,7 @@ Scoped to a Tenant for multi-tenancy.
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.domain.enums import UserStatus, Language
+from app.domain.enums import UserStatus, Language, TenantRole
 from app.domain.events import DomainEvent, UserActivated, UserSuspended, UserBanned, UserEmailVerified, UserDeactivated, UserTerminated
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
@@ -32,6 +32,7 @@ class UserEntity:
     _timezone: str | None = None
     _last_login_at: datetime | None = None
     _deleted_at: datetime | None = None
+    _role: TenantRole = TenantRole.USER
     _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
@@ -222,7 +223,12 @@ class UserEntity:
     def deleted_at(self) -> datetime | None:
         """Get deletion timestamp."""
         return self._deleted_at
-    
+
+    @property
+    def role(self) -> TenantRole:
+        """Get tenant role for RBAC."""
+        return self._role
+
     @property
     def events(self) -> list[DomainEvent]:
         """Get domain events (read-only copy)."""

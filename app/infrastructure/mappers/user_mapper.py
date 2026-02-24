@@ -5,7 +5,7 @@ Converts between UserEntity (domain) and UserModel (persistence).
 """
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import Language, UserStatus
+from app.domain.enums import Language, TenantRole, UserStatus
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.models.user_model import UserModel
 from app.shared.utils.datetime import ensure_utc
@@ -35,6 +35,7 @@ class UserMapper:
         preferred_language = (
             Language(model.preferred_language) if model.preferred_language else None
         )
+        role = TenantRole(model.role) if getattr(model, "role", None) is not None else TenantRole.USER
 
         # Create entity
         return UserEntity(
@@ -49,6 +50,7 @@ class UserMapper:
             _timezone=model.timezone,
             _is_two_factor_enabled=model.is_two_factor_enabled,
             _last_login_at=ensure_utc(model.last_login_at),
+            _role=role,
             _created_at=ensure_utc(model.created_at),
             _updated_at=ensure_utc(model.updated_at),
             _deleted_at=ensure_utc(model.deleted_at),
@@ -81,6 +83,7 @@ class UserMapper:
             timezone=entity._timezone,
             is_two_factor_enabled=entity._is_two_factor_enabled,
             last_login_at=entity._last_login_at,
+            role=entity._role,
             deleted_at=entity._deleted_at,
         )
 

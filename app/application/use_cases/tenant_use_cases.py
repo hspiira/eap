@@ -175,13 +175,15 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         admin_email = Email(f"admin_{tenant.code.value}@evexia.test")
         user_id = UserId(generate_cuid())
 
-        # Create admin user
+        # Create admin user with ADMIN role
+        from app.domain.enums import TenantRole
         create_user_use_case = CreateUserUseCase(self.user_repository)
         admin_user = await create_user_use_case.execute(
             user_id=user_id,
             tenant_id=tenant.id,
             email=admin_email,
             password_hash=password_hash,
+            role=TenantRole.ADMIN,
         )
 
         # Activate and verify email for admin user (skip verification step)

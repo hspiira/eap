@@ -21,16 +21,27 @@ def setup_middleware(app: FastAPI) -> None:
     # Request body size limit (reject large payloads before reading)
     app.add_middleware(RequestSizeLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 
-    # Rate limiting (only in non-development)
-    if not settings.is_development:
-        app.add_middleware(
-            RateLimitMiddleware,
-            config=RateLimitConfig(
-                requests_per_minute=60,
-                requests_per_hour=1000,
-                burst_size=10,
-            ),
-        )
+    # Rate limiting (always on; 5x higher in development; very high in test so E2E won't 429)
+    rate_per_min = getattr(
+        settings, "RATE_LIMIT_REQUESTS_PER_MINUTE", 60
+    )
+    rate_per_hour = getattr(
+        settings, "RATE_LIMIT_REQUESTS_PER_HOUR", 1000
+    )
+    if getattr(settings, "ENVIRONMENT", "") == "test":
+        rate_per_min = 10_000
+        rate_per_hour = 100_000
+    elif settings.is_development:
+        rate_per_min = rate_per_min * 5
+        rate_per_hour = rate_per_hour * 5
+    app.add_middleware(
+        RateLimitMiddleware,
+        config=RateLimitConfig(
+            requests_per_minute=rate_per_min,
+            requests_per_hour=rate_per_hour,
+            burst_size=10,
+        ),
+    )
 
     app.add_middleware(
         CORSMiddleware,
