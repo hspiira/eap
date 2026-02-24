@@ -15,11 +15,14 @@ export interface AuthState {
   email: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  error: string | null
 }
 
 export interface AuthActions {
   setAuth: (token: string | null, user_id?: string | null, email?: string | null) => void
   setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  clearError: () => void
   clearAuth: () => void
 }
 
@@ -33,6 +36,7 @@ const initialState: AuthState = {
   email: null,
   isAuthenticated: false,
   isLoading: true,
+  error: null,
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -63,10 +67,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
       user_id: user_id ?? null,
       email: email ?? null,
       isAuthenticated: !!token,
+      error: null,
     })
   },
 
   setLoading: (isLoading) => set({ isLoading }),
+
+  setError: (error) => set({ error }),
+
+  clearError: () => set({ error: null }),
 
   clearAuth: () => {
     // Clear from localStorage
@@ -81,6 +90,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       user_id: null,
       email: null,
       isAuthenticated: false,
+      error: null,
     })
   },
 }))

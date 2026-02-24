@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState } from 'react'
 import { useTenant } from '@/hooks/useTenant'
 import { FormField } from '@/components/common/FormField'
@@ -12,6 +13,7 @@ import type { ApiError } from '@/api/types'
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 
 export const Route = createFileRoute('/tenants/create')({
+  beforeLoad: requireAuthBeforeLoad,
   component: CreateTenantPage,
 })
 

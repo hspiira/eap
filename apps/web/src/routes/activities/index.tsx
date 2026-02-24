@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -16,6 +17,7 @@ import type { Activity } from '@/types/entities'
 import { Calendar, Phone, Mail, Users, FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/activities/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ActivitiesPage,
 })
 

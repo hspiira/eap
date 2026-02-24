@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect, useCallback } from 'react'
 import { useModal } from '@/hooks/useModal'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -66,6 +67,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id']
 
 export const Route = createFileRoute('/clients/$clientId')({
+  beforeLoad: requireAuthBeforeLoad,
   validateSearch: (search: Record<string, unknown>) => ({
     tab: (
       ['overview', 'people', 'contacts', 'contracts', 'sessions', 'reports'] as const

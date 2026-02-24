@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -17,6 +18,7 @@ import type { TenantStatus } from '@/types/enums'
 import { Edit, Building2, Calendar, MapPin, Phone, Mail } from 'lucide-react'
 
 export const Route = createFileRoute('/tenants/$tenantId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: TenantDetailPage,
 })
 

@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { authApi } from '@/api/endpoints/auth'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useToast } from './ToastContext'
-import { getUserIdFromToken } from '@/utils/jwt'
+import { authActions } from '@/lib/auth-store'
 import type { LoginRequest } from '@/api/types'
 
 interface AuthContextType {
@@ -20,59 +19,38 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { token, user_id, email, isAuthenticated, isLoading, setAuth, setLoading, clearAuth } = useAuthStore()
+  const { token, user_id, email, isAuthenticated, isLoading, clearAuth } = useAuthStore()
   const navigate = useNavigate()
   const { showSuccess } = useToast()
 
   useEffect(() => {
-    // Hydrate from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token')
-      const storedUserId = localStorage.getItem('auth_user_id')
-      const storedEmail = localStorage.getItem('auth_email')
-
-      if (storedToken) {
-        // Prefer stored user_id/email, fallback to JWT extraction for user_id
-        const userId = storedUserId || getUserIdFromToken(storedToken)
-        setAuth(storedToken, userId, storedEmail)
-      }
-    }
-    setLoading(false)
-  }, [setAuth, setLoading])
+    authActions.initAuth()
+  }, [])
 
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {
       clearAuth()
-      navigate({ to: '/auth/login', search: {}, replace: true })
+      const path =
+        typeof window !== 'undefined' ? window.location.pathname : '/'
+      const redirectPath =
+        path && path !== '/auth/login' && path !== '/auth/signup' ? path : undefined
+      navigate({
+        to: '/auth/login',
+        search: redirectPath ? { redirect: redirectPath } : {},
+        replace: true,
+      })
     })
     return () => apiClient.setAuthErrorCallback(null)
   }, [clearAuth, navigate])
 
   const login = async (credentials: LoginRequest) => {
-    try {
-      setLoading(true)
-      const response = await authApi.login(credentials)
-      // Use user_id and email from response (backend provides these)
-      setAuth(response.access_token, response.user_id, response.email)
-      if (response.tenant_id) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('current_tenant_id', response.tenant_id)
-        }
-        apiClient.setTenantId(response.tenant_id)
-      }
-      showSuccess('Successfully signed in')
-      navigate({ to: '/', search: {} })
-    } catch (error) {
-      clearAuth()
-      throw error
-    } finally {
-      setLoading(false)
-    }
+    await authActions.login(credentials)
+    showSuccess('Successfully signed in')
+    navigate({ to: '/', search: {} })
   }
 
   const logout = () => {
-    authApi.logout()
-    clearAuth()
+    authActions.logout()
     showSuccess('Successfully signed out')
     navigate({ to: '/auth/login', search: {} })
   }

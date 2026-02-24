@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -20,6 +21,7 @@ import type { DocumentStatus, DocumentType } from '@/types/enums'
 import { FileText, Download, Eye, Lock, Calendar, Clock, History, Edit, Archive } from 'lucide-react'
 
 export const Route = createFileRoute('/documents/$documentId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: DocumentDetailPage,
 })
 

@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -14,6 +15,7 @@ import type { Industry } from '@/types/entities'
 import { ArrowLeft, Folder, Building2 } from 'lucide-react'
 
 export const Route = createFileRoute('/industries/$industryId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: IndustryDetailPage,
 })
 

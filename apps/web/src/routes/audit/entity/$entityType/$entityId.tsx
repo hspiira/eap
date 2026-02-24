@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -14,6 +15,7 @@ import type { AuditLog } from '@/types/entities'
 import { ArrowLeft, Shield, FileText, User, Calendar } from 'lucide-react'
 
 export const Route = createFileRoute('/audit/entity/$entityType/$entityId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: EntityHistoryPage,
 })
 

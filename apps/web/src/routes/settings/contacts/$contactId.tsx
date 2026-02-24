@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
@@ -14,6 +15,7 @@ import type { BaseStatus } from '@/types/enums'
 import { UserCircle, Building2, Mail, Phone, Star } from 'lucide-react'
 
 export const Route = createFileRoute('/settings/contacts/$contactId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ContactDetailPage,
 })
 

@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -14,6 +15,7 @@ import type { Tenant } from '@/types/entities'
 import type { TenantStatus } from '@/types/enums'
 
 export const Route = createFileRoute('/tenants/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: TenantsPage,
 })
 

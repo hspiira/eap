@@ -5,8 +5,10 @@
 
 import { createFileRoute } from '@tanstack/react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 
 export const Route = createFileRoute('/dashboard/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: DashboardPage,
 })
 

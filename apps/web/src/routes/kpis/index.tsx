@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -15,6 +16,7 @@ import type { KPI } from '@/types/entities'
 import { Target } from 'lucide-react'
 
 export const Route = createFileRoute('/kpis/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: KPIsPage,
 })
 

@@ -4,11 +4,13 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { CreatePersonForm } from '@/components/forms/CreatePersonForm'
 import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/people/client-people/new')({
+  beforeLoad: requireAuthBeforeLoad,
   validateSearch: (search: Record<string, unknown>) => ({
     client_id: typeof search?.client_id === 'string' ? search.client_id : undefined,
   }),

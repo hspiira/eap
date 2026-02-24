@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -17,6 +18,7 @@ import type { BaseStatus } from '@/types/enums'
 import { Edit, Package, Clock, Users, Settings } from 'lucide-react'
 
 export const Route = createFileRoute('/services/$serviceId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ServiceDetailPage,
 })
 

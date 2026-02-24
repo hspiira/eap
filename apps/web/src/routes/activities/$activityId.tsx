@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -18,6 +19,7 @@ import { ActivityType } from '@/types/enums'
 import { Edit, Calendar, Building2, Phone, Mail, Users, FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/activities/$activityId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ActivityDetailPage,
 })
 

@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -13,6 +14,7 @@ import type { Person } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
 
 export const Route = createFileRoute('/service-providers/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ServiceProvidersPage,
 })
 

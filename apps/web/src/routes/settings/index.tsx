@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Breadcrumb } from '@/components/common/Breadcrumb'
@@ -71,6 +72,7 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ size?: numbe
 ]
 
 export const Route = createFileRoute('/settings/')({
+  beforeLoad: requireAuthBeforeLoad,
   validateSearch: (search: Record<string, unknown>) => ({
     tab: TAB_IDS.includes(search?.tab as TabId) ? (search.tab as TabId) : 'account',
   }),

@@ -2,49 +2,64 @@
  * Login Page
  */
 
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
+import { authActions } from '@/lib/auth-store'
+import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
+import { useAuthStore } from '@/store/slices/authSlice'
 import { FormField } from '@/components/common/FormField'
 import type { ApiError } from '@/api/types'
 
+function safeRedirectPath(raw: unknown): string | undefined {
+  const s = typeof raw === 'string' ? raw.trim() : ''
+  if (!s || !s.startsWith('/') || s.startsWith('//')) return undefined
+  if (s === '/auth/login' || s === '/auth/signup') return undefined
+  return s
+}
+
 export const Route = createFileRoute('/auth/login')({
   component: LoginPage,
-  validateSearch: (search: Record<string, unknown>): {
-    tenant_code?: string
-    email?: string
-  } => ({
+  validateSearch: (search: Record<string, unknown>) => ({
     tenant_code: typeof search.tenant_code === 'string' ? search.tenant_code : undefined,
     email: typeof search.email === 'string' ? search.email : undefined,
+    redirect: safeRedirectPath(search.redirect),
   }),
 })
 
 function LoginPage() {
+  const navigate = useNavigate()
   const search = Route.useSearch()
+  const redirectTo = search.redirect ?? '/'
+  const isAuthenticated = useRedirectIfAuthenticated(redirectTo)
+
   const [email, setEmail] = useState(search.email || '')
   const [password, setPassword] = useState('')
   const [tenantCode, setTenantCode] = useState(search.tenant_code || '')
   const [errors, setErrors] = useState<{ email?: string; password?: string; tenant_code?: string; general?: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login } = useAuth()
+
+  const authError = useAuthStore((s) => s.error)
+
+  useEffect(() => {
+    if (authError) setErrors((e) => ({ ...e, general: authError }))
+  }, [authError])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
     setIsSubmitting(true)
+    authActions.clearError()
 
     try {
-      await login({ 
-        email, 
+      await authActions.login({
+        email,
         password,
-        tenant_code: tenantCode
+        tenant_code: tenantCode,
       })
-      // Navigation handled by AuthContext
+      navigate({ to: redirectTo, search: {} })
     } catch (error) {
       if (error instanceof Error && 'status' in error) {
         const apiError = error as ApiError
-        
-        // Handle field-specific errors
         if (apiError.fieldErrors) {
           setErrors(apiError.fieldErrors as { email?: string; password?: string; tenant_code?: string })
         } else {
@@ -57,6 +72,8 @@ function LoginPage() {
       setIsSubmitting(false)
     }
   }
+
+  if (isAuthenticated) return null
 
   return (
     <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5 [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border [&_input]:border-white/5 [&_input]:text-white [&_input::placeholder]:text-white/50 [&_input]:focus-visible:ring-white/20 [&_p.text-danger]:text-nurturing-light">

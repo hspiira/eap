@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -18,6 +19,7 @@ import type { Client, Industry } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
 
 export const Route = createFileRoute('/clients/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ClientsPage,
 })
 

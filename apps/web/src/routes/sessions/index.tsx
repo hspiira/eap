@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -19,6 +20,7 @@ import type { SessionStatus } from '@/types/enums'
 import { Calendar } from 'lucide-react'
 
 export const Route = createFileRoute('/sessions/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: SessionsPage,
 })
 

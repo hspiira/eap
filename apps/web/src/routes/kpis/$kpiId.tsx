@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -21,6 +22,7 @@ import type { MeasurementUnit } from '@/types/enums'
 import { Target, TrendingUp, Building2, FileText, Plus, Calendar } from 'lucide-react'
 
 export const Route = createFileRoute('/kpis/$kpiId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: KPIDetailPage,
 })
 

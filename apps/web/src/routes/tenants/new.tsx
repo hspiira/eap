@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { FormField } from '@/components/common/FormField'
@@ -15,6 +16,7 @@ import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { ArrowLeft } from 'lucide-react'
 
 export const Route = createFileRoute('/tenants/new')({
+  beforeLoad: requireAuthBeforeLoad,
   component: CreateTenantPage,
 })
 

@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { StatusBadge } from '@/components/common/StatusBadge'
@@ -18,6 +19,7 @@ import type { LifecycleAction } from '@/components/common/LifecycleActions'
 import { ArrowLeft, Edit, User, MapPin, Phone, Mail, Calendar, Briefcase, Shield, Users, Link as LinkIcon, CheckCircle, XCircle } from 'lucide-react'
 
 export const Route = createFileRoute('/persons/$personId')({
+  beforeLoad: requireAuthBeforeLoad,
   component: PersonDetailPage,
 })
 

@@ -4,6 +4,7 @@
  */
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireAuthBeforeLoad } from '@/lib/route-auth'
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
@@ -20,6 +21,7 @@ const CLIENT_PAGE_SIZE = 100
 const MAX_CLIENTS = 500
 
 export const Route = createFileRoute('/people/client-people/')({
+  beforeLoad: requireAuthBeforeLoad,
   component: ClientPeoplePage,
 })
 
