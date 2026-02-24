@@ -61,6 +61,20 @@ Once running, the API is available at:
 | `/documents` | Document storage |
 | `/kpis` | Performance metrics |
 
+## Limits
+
+- **Request body:** Maximum 10MB (requests with `Content-Length` above this return 413).
+
+## Testing and linting
+
+Run the same checks as CI locally:
+
+```bash
+uv sync --group dev
+uv run ruff check app tests
+uv run pytest tests -v
+```
+
 ## Documentation
 
 See the `/docs` folder for detailed documentation:
