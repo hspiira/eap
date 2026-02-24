@@ -254,7 +254,17 @@ class PersonEntity:
         self._staff_info = info
         self._updated_at = utc_now()
         self._ensure_invariants()
-    
+
+    def update_dependent_info(self, info: DependentInfo) -> None:
+        """Update dependent information. Only valid when person_type is DEPENDENT."""
+        if self._status == BaseStatus.DELETED:
+            raise DomainError("Cannot update dependent info for deleted person")
+        if self._person_type != PersonType.DEPENDENT:
+            raise DomainError("Only dependents have dependent info to update")
+        self._dependent_info = info
+        self._updated_at = utc_now()
+        self._ensure_invariants()
+
     def archive(self) -> None:
         """Archive person (softer than terminate).
         

@@ -16,7 +16,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.value_objects.core import PersonId, TenantId, UserId
+from app.domain.value_objects.core import ClientId, PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.user_model import UserModel
@@ -121,6 +121,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -140,6 +141,12 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             stmt = stmt.where(PersonModel.status == status)
         if person_type:
             stmt = stmt.where(PersonModel.person_type == person_type)
+        if client_id:
+            # Filter by employment_info.client_id (JSON column; SQLite json_extract)
+            stmt = stmt.where(
+                PersonModel.employment_info.isnot(None),
+                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+            )
         if search:
             search_pattern = f"%{search.lower()}%"
             stmt = stmt.where(
@@ -174,6 +181,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
     ) -> int:
         """Count persons matching filters."""
@@ -189,6 +197,11 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             stmt = stmt.where(PersonModel.status == status)
         if person_type:
             stmt = stmt.where(PersonModel.person_type == person_type)
+        if client_id:
+            stmt = stmt.where(
+                PersonModel.employment_info.isnot(None),
+                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+            )
         if search:
             search_pattern = f"%{search.lower()}%"
             stmt = stmt.where(

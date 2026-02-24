@@ -19,6 +19,7 @@ class EvexiaException(Exception):
         message: Human-readable error description
         error_code: Machine-readable error code for API responses
         details: Additional error context
+        http_status: HTTP status code for API responses (default 400)
     """
 
     def __init__(
@@ -26,10 +27,12 @@ class EvexiaException(Exception):
         message: str,
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
+        http_status: int = 400,
     ):
         self.message = message
         self.error_code = error_code or self.__class__.__name__
         self.details = details or {}
+        self.http_status = http_status
         super().__init__(self.message)
 
     def to_dict(self) -> dict[str, Any]:
@@ -40,20 +43,38 @@ class EvexiaException(Exception):
             "details": self.details,
         }
 
+    def to_api_response(self, path: str | None = None) -> dict[str, Any]:
+        """
+        Build API error body in the same shape as create_error_response.
+        Used by the single exception handler for consistent JSON responses.
+        """
+        details_list: list[dict[str, Any]] | None = None
+        if self.details:
+            details_list = [
+                {"field": k, "message": str(v), "code": None}
+                for k, v in self.details.items()
+            ]
+        return {
+            "error": self.error_code,
+            "message": self.message,
+            **({"details": details_list} if details_list else {}),
+            **({"path": path} if path is not None else {}),
+        }
+
 
 class ValidationException(EvexiaException):
     """Raised when input validation fails."""
 
     def __init__(self, message: str, field: str | None = None):
         details = {"field": field} if field else {}
-        super().__init__(message, "VALIDATION_ERROR", details)
+        super().__init__(message, "VALIDATION_ERROR", details, http_status=422)
 
 
 class AuthenticationException(EvexiaException):
     """Raised when authentication fails."""
 
     def __init__(self, message: str = "Authentication failed"):
-        super().__init__(message, "AUTHENTICATION_ERROR")
+        super().__init__(message, "AUTHENTICATION_ERROR", http_status=401)
 
 
 class AuthorizationException(EvexiaException):
@@ -61,7 +82,9 @@ class AuthorizationException(EvexiaException):
 
     def __init__(self, resource: str, action: str):
         message = f"Permission denied: {action} on {resource}"
-        super().__init__(message, "AUTHORIZATION_ERROR", {"resource": resource, "action": action})
+        super().__init__(
+            message, "AUTHORIZATION_ERROR", {"resource": resource, "action": action}, http_status=403
+        )
 
 
 class TenantNotFoundException(EvexiaException):
@@ -72,6 +95,7 @@ class TenantNotFoundException(EvexiaException):
             f"Tenant not found: {tenant_id}",
             "TENANT_NOT_FOUND",
             {"tenant_id": tenant_id},
+            http_status=404,
         )
 
 
@@ -83,6 +107,7 @@ class ResourceNotFoundException(EvexiaException):
             f"{resource_type} not found: {resource_id}",
             "RESOURCE_NOT_FOUND",
             {"resource_type": resource_type, "resource_id": resource_id},
+            http_status=404,
         )
 
 
@@ -122,7 +147,7 @@ class PermissionDeniedError(EvexiaException):
             details["resource"] = resource
         if action:
             details["action"] = action
-        super().__init__(message, "PERMISSION_DENIED", details)
+        super().__init__(message, "PERMISSION_DENIED", details, http_status=403)
 
 
 class DomainError(EvexiaException):

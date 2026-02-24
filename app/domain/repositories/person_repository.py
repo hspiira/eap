@@ -11,7 +11,7 @@ from typing import Sequence
 from app.domain.entities.person import PersonEntity
 from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import PersonId, TenantId, UserId
+from app.domain.value_objects.core import ClientId, PersonId, TenantId, UserId
 
 
 class PersonRepository(BaseRepository[PersonEntity, PersonId]):
@@ -55,6 +55,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -68,6 +69,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
             tenant_id: Tenant identifier
             status: Filter by person status
             person_type: Filter by person type
+            client_id: Filter by client ID (persons whose employment_info.client_id matches)
             search: Search in user profile (name, email)
             limit: Maximum number of results
             offset: Number of results to skip
@@ -84,6 +86,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
     ) -> int:
         """
@@ -93,6 +96,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
             tenant_id: Tenant identifier
             status: Filter by person status
             person_type: Filter by person type
+            client_id: Filter by client ID (persons whose employment_info.client_id matches)
             search: Search in user profile
             
         Returns:

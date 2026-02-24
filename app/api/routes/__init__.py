@@ -1,8 +1,10 @@
 """
 API Routes
 
-FastAPI route handlers.
+FastAPI route handlers and router registration.
 """
+
+from fastapi import FastAPI
 
 from app.api.routes.activities import router as activities_router
 from app.api.routes.audit import router as audit_router
@@ -21,6 +23,27 @@ from app.api.routes.service_sessions import router as service_sessions_router
 from app.api.routes.tenants import router as tenants_router
 from app.api.routes.users import router as users_router
 
+
+def register_routers(app: FastAPI) -> None:
+    """Register all API routers on the FastAPI app."""
+    app.include_router(auth_router)
+    app.include_router(tenants_router)
+    app.include_router(users_router)
+    app.include_router(persons_router)
+    app.include_router(clients_router)
+    app.include_router(industries_router)
+    app.include_router(client_tags_router)
+    app.include_router(contacts_router)
+    app.include_router(activities_router)
+    app.include_router(contracts_router)
+    app.include_router(services_router)
+    app.include_router(service_assignments_router)
+    app.include_router(service_sessions_router)
+    app.include_router(documents_router)
+    app.include_router(kpis_router)
+    app.include_router(audit_router)
+
+
 __all__ = [
     "activities_router",
     "audit_router",
@@ -33,6 +56,7 @@ __all__ = [
     "industries_router",
     "kpis_router",
     "persons_router",
+    "register_routers",
     "services_router",
     "service_assignments_router",
     "service_sessions_router",
