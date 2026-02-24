@@ -86,12 +86,11 @@ def transactional(
                     detail=str(e),
                 ) from e
                 
-            except EvexiaException as e:
+            except EvexiaException:
                 await session.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
+                # Let EvexiaException propagate so the global handler returns
+                # correct status code (404, 403, 422, etc.) and structured body.
+                raise
                 
             except HTTPException:
                 # Re-raise HTTP exceptions as-is
