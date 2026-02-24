@@ -2,6 +2,11 @@
 Audit Repository Implementation
 
 SQLAlchemy implementation of AuditRepository interface.
+
+Security: Audit logs are append-only. The application code never updates or deletes
+audit records. For defense in depth, the database user used by the app should have
+only INSERT and SELECT on audit tables (no UPDATE/DELETE) so audit data cannot
+be altered even if application code is compromised.
 """
 
 from collections.abc import Sequence

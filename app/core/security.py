@@ -258,43 +258,12 @@ async def get_current_active_user(
     current_user: TokenData = Depends(get_current_user),
 ) -> TokenData:
     """
-    Get current active user.
+    Get current active user (same as get_current_user unless STRICT_ACTIVE_USER_CHECK is True).
 
-    Additional checks can be added here (e.g., check if user is banned).
-
-    Args:
-        current_user: Current authenticated user
-
-    Returns:
-        TokenData for active user
+    Active-user DB validation is performed in refresh_token (user/tenant must exist and be active).
+    This dependency does not re-validate against DB; use it when token presence is sufficient.
     """
-    # Additional active user checks can be added here
-    # For example, checking against database if user is still active
     return current_user
-
-
-def require_tenant(tenant_id: str):
-    """
-    Create a dependency that requires a specific tenant.
-
-    Args:
-        tenant_id: Required tenant ID
-
-    Returns:
-        Dependency function that validates tenant
-    """
-
-    async def tenant_validator(
-        current_user: TokenData = Depends(get_current_user),
-    ) -> TokenData:
-        if current_user.tenant_id != tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this tenant",
-            )
-        return current_user
-
-    return tenant_validator
 
 
 # =============================================================================

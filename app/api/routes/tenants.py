@@ -9,7 +9,13 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import (
+    require_platform_admin_if_configured,
+    require_same_tenant,
+    require_tenant_role,
+)
 from app.core.security import TokenData, get_current_user
+from app.domain.enums import TenantRole
 
 from app.api.dependencies import (
     get_audit_event_handler,
@@ -100,6 +106,7 @@ def _to_tenant_response(
 async def create_tenant(
     data: TenantCreate,
     request: Request,
+    _tenant_creation_auth: None = Depends(require_platform_admin_if_configured),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
@@ -150,7 +157,8 @@ async def create_tenant(
 async def activate_tenant(
     tenant_id: str,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -177,7 +185,8 @@ async def suspend_tenant(
     tenant_id: str,
     request: Request,
     body: TenantSuspendRequest,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -206,7 +215,8 @@ async def terminate_tenant(
     tenant_id: str,
     request: Request,
     body: TenantTerminateRequest,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -235,7 +245,8 @@ async def update_tenant_settings(
     tenant_id: str,
     settings: TenantUpdateSettings,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -270,7 +281,8 @@ async def update_tenant(
     tenant_id: str,
     data: TenantUpdate,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -300,7 +312,8 @@ async def update_subscription(
     tenant_id: str,
     data: SubscriptionUpdateRequest,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -329,7 +342,8 @@ async def update_subscription(
 async def archive_tenant(
     tenant_id: str,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -355,7 +369,8 @@ async def archive_tenant(
 async def restore_tenant(
     tenant_id: str,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -445,6 +460,7 @@ async def check_code_availability(
 @readonly()
 async def get_tenant_stats(
     tenant_id: str,
+    current_user: TokenData = Depends(require_same_tenant),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
@@ -489,6 +505,7 @@ async def get_tenant_stats(
 @readonly()
 async def get_tenant(
     tenant_id: str,
+    current_user: TokenData = Depends(require_same_tenant),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):

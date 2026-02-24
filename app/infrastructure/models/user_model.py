@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import Language, UserStatus
+from app.domain.enums import Language, TenantRole, UserStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -39,6 +39,10 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
             "preferred_language IN (" + ", ".join(f"'{e.value}'" for e in Language) + ")",
             name="user_language_check",
         ),
+        CheckConstraint(
+            "role IN (" + ", ".join(f"'{e.value}'" for e in TenantRole) + ")",
+            name="user_role_check",
+        ),
     )
 
     # Authentication
@@ -63,6 +67,11 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         EnumValueType(Language), nullable=True
     )
     timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # RBAC: role within tenant
+    role: Mapped[TenantRole] = mapped_column(
+        EnumValueType(TenantRole), nullable=False, default=TenantRole.USER
+    )
 
     # Security
     is_two_factor_enabled: Mapped[bool] = mapped_column(

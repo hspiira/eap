@@ -16,6 +16,13 @@ class UserStatus(str, Enum):
     PENDING_VERIFICATION = "Pending Verification"
     INACTIVE = "Inactive"
 
+
+class TenantRole(str, Enum):
+    """Role within a tenant for RBAC. ADMIN can manage tenant and users."""
+    ADMIN = "Admin"
+    USER = "User"
+    VIEWER = "Viewer"
+
 class BaseStatus(str, Enum):
     ACTIVE = "Active"
     INACTIVE = "Inactive"

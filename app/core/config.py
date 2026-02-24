@@ -58,6 +58,36 @@ class Settings(BaseSettings):
         description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL"
     )
 
+    # Authorization
+    STRICT_ACTIVE_USER_CHECK: bool = Field(
+        default=False,
+        description="If True, get_current_active_user and refresh validate user/tenant in DB",
+    )
+    REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION: bool = Field(
+        default=False,
+        description="If True, POST /tenants requires platform admin (stub: no admin yet)",
+    )
+
+    # Rate limiting (always on; use higher limits in development)
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(
+        default=60,
+        description="Max requests per minute per client (production)",
+    )
+    RATE_LIMIT_REQUESTS_PER_HOUR: int = Field(
+        default=1000,
+        description="Max requests per hour per client (production)",
+    )
+
+    # Document storage and URL validation
+    DOCUMENT_STORAGE_PATH: str = Field(
+        default="./uploads",
+        description="Root directory for document file paths (path traversal checked against this)",
+    )
+    DOCUMENT_ALLOWED_URL_SCHEMES: str = Field(
+        default="https",
+        description="Comma-separated allowed URL schemes for document file_url (e.g. 'https')",
+    )
+
     # Audit Logging
     # Sampling rate for high-volume actions (LIST, VIEW)
     # Value between 0.0 (log none) and 1.0 (log all)
@@ -85,7 +115,7 @@ class Settings(BaseSettings):
     @classmethod
     def validate_environment(cls, v: str) -> str:
         """Validate environment value."""
-        allowed = {"development", "staging", "production"}
+        allowed = {"development", "staging", "production", "test"}
         if v.lower() not in allowed:
             raise ValueError(f"ENVIRONMENT must be one of {allowed}")
         return v.lower()

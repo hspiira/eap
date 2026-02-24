@@ -1,0 +1,197 @@
+"""
+Authorization Module
+
+Centralized tenant and resource ownership checks.
+
+Tenant from token: The canonical "current tenant" is always current_user.tenant_id
+(from the JWT). Any client-supplied tenant_id (path, query, or body) must be
+validated against it via require_same_tenant(tenant_id); never use client
+tenant_id alone for scoping. Prefer path design that does not require the client
+to send tenant_id (e.g. /me/... or /tenant/...) where feasible.
+
+Use require_same_tenant when the route already has tenant_id in path/query.
+Use get_*_for_current_tenant (or get_user_in_tenant) for by-ID routes so tenant
+is derived from the loaded entity.
+"""
+
+from fastapi import Depends, HTTPException, Request, status
+
+from app.api.dependencies import (
+    get_audit_repository,
+    get_document_repository,
+    get_user_repository,
+)
+from app.core.config import settings
+from app.core.security import TokenData, get_current_user, get_current_user_optional
+from app.domain.entities.audit import AuditLog
+from app.domain.entities.document import DocumentEntity
+from app.domain.entities.user import UserEntity
+from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.user_repository import UserRepository
+from app.domain.enums import TenantRole
+from app.domain.value_objects.core import AuditLogId, DocumentId, UserId
+
+
+async def get_current_user_entity(
+    current_user: TokenData = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> UserEntity:
+    """
+    Load the full current user entity (for RBAC role checks).
+    Use when you need current_user.tenant_id and the user's tenant role.
+    """
+    user = await user_repo.get_by_id(UserId(current_user.user_id))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if user.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this tenant",
+        )
+    return user
+
+
+def require_tenant_role(*allowed_roles: TenantRole):
+    """
+    Dependency factory: require that the current user's tenant role is in allowed_roles.
+    Use for tenant management (activate, suspend, terminate, settings) and user management (ban, terminate, etc.).
+    """
+
+    async def _require(
+        current_user_entity: UserEntity = Depends(get_current_user_entity),
+    ) -> UserEntity:
+        if current_user_entity.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient role for this action",
+            )
+        return current_user_entity
+
+    return _require
+
+
+async def require_same_tenant(
+    tenant_id: str,
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
+    """
+    Require that the current user belongs to the given tenant.
+    Use for routes that have tenant_id in path or query.
+    """
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this tenant",
+        )
+    return current_user
+
+
+async def require_platform_admin(
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
+    """
+    Require that the current user is a platform admin.
+    Stub: raises 403 until RBAC is implemented (e.g. role claim or platform tenant).
+    """
+    # Stub: no platform admin role yet; always deny.
+    # Future: check current_user.tenant_id == sentinel or role claim.
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Platform admin required",
+    )
+
+
+async def require_platform_admin_if_configured(
+    current_user: TokenData | None = Depends(get_current_user_optional),
+) -> None:
+    """
+    When REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION is True, require auth and platform admin (401/403).
+    When False, no-op. Use on POST /tenants to optionally restrict tenant creation.
+    """
+    if not settings.REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION:
+        return
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required for tenant creation",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    # Stub: no platform admin role yet; always deny when flag is set
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Platform admin required for tenant creation",
+    )
+
+
+async def get_user_in_tenant(
+    user_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> UserEntity:
+    """
+    Load user by ID and require that the user belongs to the current user's tenant.
+    Use for routes that take user_id in path (activate, suspend, terminate, etc.).
+    """
+    user = await user_repo.get_by_id(UserId(user_id))
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    if user.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this tenant",
+        )
+    return user
+
+
+async def get_audit_log_for_current_tenant(
+    audit_log_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    audit_repo: AuditRepository = Depends(get_audit_repository),
+) -> AuditLog:
+    """
+    Load audit log by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    audit_log = await audit_repo.get_audit_log_by_id(AuditLogId(audit_log_id))
+    if not audit_log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audit log not found",
+        )
+    if audit_log._tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audit log not found",
+        )
+    return audit_log
+
+
+async def get_document_for_current_tenant(
+    document_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    document_repo: DocumentRepository = Depends(get_document_repository),
+) -> DocumentEntity:
+    """
+    Load document by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    document = await document_repo.get_by_id(DocumentId(document_id))
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+    if document.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+    return document

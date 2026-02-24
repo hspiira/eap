@@ -81,6 +81,10 @@ See the `/docs` folder for detailed documentation:
 
 - [Module Summary](docs/MODULE_SUMMARY.md) - Platform architecture overview
 - [Audit Integration](docs/AUDIT_INTEGRATION_SUMMARY.md) - Audit logging guide
+- [Backup and Recovery](docs/BACKUP_AND_RECOVERY.md) - Backup, restore, and retention
+- [Rollback Runbook](docs/ROLLBACK_RUNBOOK.md) - Application and database rollback
+- [Monitoring and Alerting](docs/MONITORING_AND_ALERTING.md) - Health checks and alerts
+- [Deployment](docs/DEPLOYMENT.md) - Environment parity and release checklist
 
 ## License
 
