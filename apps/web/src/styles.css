@@ -85,3 +85,20 @@ button {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+.content-area-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--palette-safe) transparent;
+}
+.content-area-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.content-area-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content-area-scroll::-webkit-scrollbar-thumb {
+  background: var(--palette-safe);
+}
+.content-area-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--palette-safe-dark);
+}
