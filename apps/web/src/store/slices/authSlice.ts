@@ -43,11 +43,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
   ...initialState,
 
   setAuth: (token, user_id, email) => {
-    // Persist to localStorage
+    const useCookies = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
     if (typeof window !== 'undefined') {
-      if (token) {
+      if (token && !useCookies) {
         localStorage.setItem('auth_token', token)
-      } else {
+      } else if (!token || useCookies) {
         localStorage.removeItem('auth_token')
       }
       if (user_id) {
@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       token,
       user_id: user_id ?? null,
       email: email ?? null,
-      isAuthenticated: !!token,
+      isAuthenticated: !!token || !!(user_id ?? null),
       error: null,
     })
   },

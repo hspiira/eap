@@ -1,24 +1,29 @@
 /**
  * Global Error Handler
- * Handles unhandled errors and promise rejections
+ * Handles unhandled errors and promise rejections.
+ * In production, only a safe message is logged to avoid leaking sensitive data.
  */
 
-import { getErrorMessage } from './errorHandler'
+const isProd = typeof import.meta !== 'undefined' && import.meta.env?.PROD
 
 /**
  * Initialize global error handlers
  */
 export function setupGlobalErrorHandlers() {
-  // Handle unhandled errors
   window.addEventListener('error', (event) => {
-    console.error('Unhandled error:', event.error)
-    // In production, you might want to send this to an error reporting service
+    if (isProd) {
+      console.error('Unhandled error')
+    } else {
+      console.error('Unhandled error:', event.error)
+    }
   })
 
-  // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason)
-    // In production, you might want to send this to an error reporting service
+    if (isProd) {
+      console.error('Unhandled promise rejection')
+    } else {
+      console.error('Unhandled promise rejection:', event.reason)
+    }
   })
 }
 

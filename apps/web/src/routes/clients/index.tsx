@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { CreateModal } from '@/components/common/CreateModal'
 import { CreateClientForm } from '@/components/forms/CreateClientForm'
 import { useTenant } from '@/hooks/useTenant'
+import { normalizeErrorMessage } from '@/utils/errorHandler'
 import { clientsApi } from '@/api/endpoints/clients'
 import { industriesApi } from '@/api/endpoints/industries'
 import type { Client, Industry } from '@/types/entities'
@@ -66,8 +67,7 @@ function ClientsPage() {
       setClients(items as Client[])
       setTotalItems(total)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load clients'
-      setError(msg)
+      setError(normalizeErrorMessage(err, 'Failed to load clients'))
       console.error('Error fetching clients:', err)
     } finally {
       setLoading(false)

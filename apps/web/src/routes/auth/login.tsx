@@ -8,6 +8,7 @@ import { authActions } from '@/lib/auth-store'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { FormField } from '@/components/common/FormField'
+import { normalizeErrorMessage } from '@/utils/errorHandler'
 import type { ApiError } from '@/api/types'
 
 function safeRedirectPath(raw: unknown): string | undefined {
@@ -57,7 +58,7 @@ function LoginPage() {
         tenant_code: tenantCode,
       })
       navigate({ to: redirectTo, search: {} })
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof Error && 'status' in error) {
         const apiError = error as ApiError
         if (apiError.fieldErrors) {
@@ -66,7 +67,9 @@ function LoginPage() {
           setErrors({ general: apiError.message || 'Login failed. Please try again.' })
         }
       } else {
-        setErrors({ general: 'An unexpected error occurred. Please try again.' })
+        setErrors({
+          general: normalizeErrorMessage(error, 'Login failed. Please try again.'),
+        })
       }
     } finally {
       setIsSubmitting(false)

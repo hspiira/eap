@@ -5,13 +5,14 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { requireAuthBeforeLoad } from '@/lib/route-auth'
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { CreateModal } from '@/components/common/CreateModal'
 import { CreateServiceForm } from '@/components/forms/CreateServiceForm'
+import { useListResource } from '@/hooks/useListResource'
 import { servicesApi } from '@/api/endpoints/services'
 import type { Service } from '@/types/entities'
 import type { BaseStatus } from '@/types/enums'
@@ -23,73 +24,38 @@ export const Route = createFileRoute('/services/')({
 
 function ServicesPage() {
   const navigate = useNavigate()
-  const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
-  const [totalItems, setTotalItems] = useState(0)
-  const [searchValue, setSearchValue] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const [sortBy, setSortBy] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
 
-  // Fetch services (tenant-scoped automatically via API client)
-  const fetchServices = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const params: any = {
-        page: currentPage,
-        limit: pageSize,
-      }
+  const fetchList = useCallback(
+    (params: { page: number; limit: number; search?: string; status?: string; sort_by?: string; sort_desc?: boolean }) =>
+      servicesApi.list(params).then((r) => ({ items: r.items, total: r.total })),
+    []
+  )
 
-      if (searchValue) {
-        params.search = searchValue
-      }
-
-      if (statusFilter) {
-        params.status = statusFilter
-      }
-
-      if (sortBy) {
-        params.sort_by = sortBy
-        params.sort_desc = sortDirection === 'desc'
-      }
-
-      const response = await servicesApi.list(params)
-      setServices(response.items)
-      setTotalItems(response.total)
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to load services'
-      setError(errorMessage)
-      console.error('Error fetching services:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchServices()
-  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
-
-  const handleSort = (columnId: string) => {
-    if (sortBy === columnId) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc')
-      } else if (sortDirection === 'desc') {
-        setSortBy(null)
-        setSortDirection(null)
-      } else {
-        setSortDirection('asc')
-      }
-    } else {
-      setSortBy(columnId)
-      setSortDirection('asc')
-    }
-  }
+  const {
+    items: services,
+    loading,
+    error,
+    refetch: fetchServices,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    searchValue,
+    setSearchValue,
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    sortDirection,
+    handleSort,
+    clearFilters,
+  } = useListResource<Service>({
+    fetchList,
+    initialPageSize: 25,
+    errorFallback: 'Failed to load services',
+  })
 
   const handleRowClick = (service: Service) => {
     navigate({ to: `/services/${service.id}` })
@@ -198,10 +164,7 @@ function ServicesPage() {
               pageSize,
               totalItems,
               onPageChange: setCurrentPage,
-              onPageSizeChange: (size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              },
+              onPageSizeChange: setPageSize,
             }}
             sorting={{
               sortBy,
@@ -210,24 +173,14 @@ function ServicesPage() {
             }}
             filters={{
               searchValue,
-              onSearchChange: (value) => {
-                setSearchValue(value)
-                setCurrentPage(1)
-              },
+              onSearchChange: setSearchValue,
               searchPlaceholder: 'Search services by name...',
               statusFilter: {
                 value: statusFilter,
                 options: statusOptions,
-                onChange: (value) => {
-                  setStatusFilter(value)
-                  setCurrentPage(1)
-                },
+                onChange: setStatusFilter,
               },
-              onClearFilters: () => {
-                setSearchValue('')
-                setStatusFilter('')
-                setCurrentPage(1)
-              },
+              onClearFilters: clearFilters,
               createAction: {
                 onClick: () => setCreateModalOpen(true),
                 label: 'Create Service',

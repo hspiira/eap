@@ -62,6 +62,16 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * Normalize any thrown value to a string message for display.
+ * Use in catch blocks with a context-specific fallback (e.g. "Failed to load clients").
+ */
+export function normalizeErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message
+  if (typeof err === 'string') return err
+  return fallback
+}
+
+/**
  * Get field-specific errors
  */
 export function getFieldErrors(error: unknown): FieldErrors | undefined {

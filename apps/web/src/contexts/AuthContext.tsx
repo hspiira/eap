@@ -10,7 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (credentials: LoginRequest) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   token: string | null
   user_id: string | null
   email: string | null
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate({ to: '/', search: {} })
   }
 
-  const logout = () => {
-    authActions.logout()
+  const logout = async () => {
+    await authActions.logout()
     showSuccess('Successfully signed out')
     navigate({ to: '/auth/login', search: {} })
   }
