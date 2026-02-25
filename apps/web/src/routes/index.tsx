@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { AppLayout } from '@/components/layout/AppLayout'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -12,8 +11,8 @@ function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
-        <div className="text-text">Loading...</div>
+      <div className="min-h-screen bg-[#E6E0D7] flex items-center justify-center text-[#5A626A]">
+        <p>Loading...</p>
       </div>
     )
   }
@@ -23,14 +22,10 @@ function HomePage() {
   }
 
   return (
-    <AppLayout>
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-text mb-6">Dashboard</h1>
-        <p className="text-text-muted">
-          Welcome to Evexía. Select a section from the sidebar to get started.
-        </p>
-      </div>
-    </AppLayout>
+    <div className="min-h-screen bg-[#E6E0D7] p-8 text-[#5A626A]">
+      <h1 className="text-2xl font-semibold mb-4">Home</h1>
+      <p>Welcome. UI redesign starting with sidebar.</p>
+    </div>
   )
 }
 
@@ -61,20 +56,20 @@ function LandingPage() {
       >
         <source src="/videos/bg_landing.webm" type="video/webm" />
       </video>
-      <div 
-        className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[1px]" 
+      <div
+        className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[1px]"
         style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-        aria-hidden 
+        aria-hidden
       />
 
       <div className="relative z-10 flex flex-col w-full flex-1 min-h-0 overflow-y-auto">
         <nav className="px-8 py-8 flex-shrink-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="text-2xl font-semibold text-white tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">Evexía</div>
+            <div className="text-2xl font-semibold text-white tracking-wide">Evexía</div>
             <Link
               to="/auth/login"
               search={{}}
-              className="text-white/70 hover:text-white transition-colors text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+              className="text-white/70 hover:text-white transition-colors text-sm"
             >
               Sign In
             </Link>
@@ -84,12 +79,12 @@ function LandingPage() {
         <main className="flex-1 flex items-center px-8">
           <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-6">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+              <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight">
                 Manage with
                 <br />
-                <span className="text-natural">clarity</span>
+                <span className="text-[#8BA88B]">clarity</span>
               </h1>
-              <p className="text-lg text-white/80 leading-relaxed max-w-md tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+              <p className="text-lg text-white/80 leading-relaxed max-w-md tracking-wider">
                 A comprehensive platform for managing clients, services, and delivery
               </p>
             </div>
@@ -97,7 +92,7 @@ function LandingPage() {
             <div className="flex flex-col items-start lg:items-end gap-4">
               <Link
                 to="/auth/signup"
-                className="group flex items-center gap-4 px-8 py-5 bg-black/20 backdrop-blur-sm border border-white/15 hover:bg-black/30 hover:border-white/25 text-white transition-all"
+                className="group flex items-center gap-4 px-8 py-5 bg-black/20 backdrop-blur-sm border border-white/15 hover:bg-black/30 hover:border-white/25 text-white transition-all rounded-none"
               >
                 <span className="text-lg font-medium">Get Started</span>
                 <span className="text-white/50 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
@@ -105,7 +100,7 @@ function LandingPage() {
               <Link
                 to="/auth/login"
                 search={{}}
-                className="text-white/60 hover:text-white/90 transition-colors text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                className="text-white/60 hover:text-white/90 transition-colors text-sm"
               >
                 Already have an account?
               </Link>
@@ -115,7 +110,7 @@ function LandingPage() {
 
         <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm flex-shrink-0">
           <div className="max-w-7xl mx-auto">
-            <p className="text-white/50 text-xs drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">© 2026 Evexía</p>
+            <p className="text-white/50 text-xs">© 2026 Evexía</p>
           </div>
         </footer>
       </div>

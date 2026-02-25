@@ -1,43 +1,29 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-
 import { useEffect } from 'react'
 import { AuthProvider } from '../contexts/AuthContext'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
-import { ErrorBoundary } from '../components/common/ErrorBoundary'
-import { NotFound } from '../components/common/NotFound'
-import { ToastContainer } from '../components/common/ToastContainer'
-import { SessionTimeoutManager } from '../components/common/SessionTimeoutManager'
-import { useToast } from '../contexts/ToastContext'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
-  notFoundComponent: () => <NotFound fullPage />,
+  notFoundComponent: () => (
+    <div className="min-h-screen flex items-center justify-center bg-[#E6E0D7] text-[#5A626A]">
+      <p>Page not found</p>
+    </div>
+  ),
   head: () => ({
     meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Evexía',
-      },
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: 'Evexía' },
     ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
+    links: [{ rel: 'stylesheet', href: appCss }],
   }),
-
+  component: RootLayout,
   shellComponent: RootDocument,
 })
 
@@ -52,31 +38,18 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <TenantProvider>
-                  <SessionTimeoutManager>
-                  <ToastWrapper>
-                    {children}
-                  </ToastWrapper>
-                  </SessionTimeoutManager>
-                </TenantProvider>
-              </AuthProvider>
-            </ToastProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <TenantProvider>
+                {children}
+              </TenantProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
         <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
+          config={{ position: 'bottom-right' }}
+          plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
         />
         <Scripts />
       </body>
@@ -84,12 +57,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ToastWrapper({ children }: { children: React.ReactNode }) {
-  const { toasts, removeToast } = useToast()
-  return (
-    <>
-      {children}
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-    </>
-  )
+function RootLayout() {
+  return <Outlet />
 }

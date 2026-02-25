@@ -31,7 +31,9 @@ export interface TenantCreateResponse {
   }
   is_active: boolean // Always true on creation
   admin_email: string // ⚠️ ONLY present on creation: "admin@{code}.local"
-  admin_password: string // ⚠️ ONLY present on creation: 16-character secure password
+  admin_password?: string // Present when backend returns generated password
+  set_password_url?: string | null // When set, user is prompted to set password then login (ui.timeline-style)
+  set_password_expires_at?: string | null
 }
 
 export const tenantsApi = {

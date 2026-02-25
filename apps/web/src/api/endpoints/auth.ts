@@ -72,4 +72,15 @@ export const authApi = {
   getToken(): string | null {
     return apiClient.getToken()
   },
+
+  /**
+   * Set initial password using one-time token (from set_password_url after tenant creation).
+   */
+  async setInitialPassword(data: {
+    token: string
+    password: string
+    password_confirm: string
+  }): Promise<void> {
+    await apiClient.post<unknown>('/auth/set-initial-password', data)
+  },
 }

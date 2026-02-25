@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const path =
         typeof window !== 'undefined' ? window.location.pathname : '/'
       const redirectPath =
-        path && path !== '/auth/login' && path !== '/auth/signup' ? path : undefined
+        path && path !== '/auth/login' && path !== '/auth/signup' && path !== '/auth/set-password' ? path : undefined
       navigate({
         to: '/auth/login',
         search: redirectPath ? { redirect: redirectPath } : {},

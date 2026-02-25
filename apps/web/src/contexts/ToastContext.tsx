@@ -4,7 +4,14 @@
  */
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import type { Toast, ToastType } from '@/components/common/Toast'
+export type ToastType = 'success' | 'error' | 'info'
+
+export interface Toast {
+  id: string
+  message: string
+  type: ToastType
+  duration?: number
+}
 
 interface ToastContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void

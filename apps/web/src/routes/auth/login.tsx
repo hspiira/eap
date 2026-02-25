@@ -1,20 +1,15 @@
-/**
- * Login Page
- */
-
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { authActions } from '@/lib/auth-store'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 import { useAuthStore } from '@/store/slices/authSlice'
-import { FormField } from '@/components/common/FormField'
 import { normalizeErrorMessage } from '@/utils/errorHandler'
 import type { ApiError } from '@/api/types'
 
 function safeRedirectPath(raw: unknown): string | undefined {
   const s = typeof raw === 'string' ? raw.trim() : ''
   if (!s || !s.startsWith('/') || s.startsWith('//')) return undefined
-  if (s === '/auth/login' || s === '/auth/signup') return undefined
+  if (s === '/auth/login' || s === '/auth/signup' || s === '/auth/set-password') return undefined
   return s
 }
 
@@ -79,81 +74,93 @@ function LoginPage() {
   if (isAuthenticated) return null
 
   return (
-    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5 [&_label]:text-white/90 [&_input]:bg-white/10 [&_input]:border [&_input]:border-white/5 [&_input]:text-white [&_input::placeholder]:text-white/50 [&_input]:focus-visible:ring-white/20 [&_p.text-danger]:text-nurturing-light">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-            <p className="text-white/70">Sign in to your account</p>
+    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
+        <p className="text-white/70">Sign in to your account</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.general && (
+          <div className="p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
+            {errors.general}
           </div>
+        )}
 
-          <form onSubmit={handleSubmit}>
-            {errors.general && (
-              <div className="mb-4 p-3 bg-nurturing/20 border border-nurturing/30 text-white">
-                {errors.general}
-              </div>
-            )}
-
-            <FormField
-              label="Tenant Code"
-              name="tenant_code"
-              type="text"
-              value={tenantCode}
-              onChange={(e) => setTenantCode(e.target.value.toLowerCase())}
-              error={errors.tenant_code}
-              required
-              placeholder="Enter tenant code"
-              autoComplete="organization"
-            />
-
-            <FormField
-              label="Email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={errors.email}
-              required
-              placeholder="Enter your email"
-              autoComplete="email"
-            />
-
-            <FormField
-              label="Password"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={errors.password}
-              required
-              placeholder="Enter your password"
-              autoComplete="current-password"
-            />
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-white/70 text-sm mb-2">
-              Don't have an account?{' '}
-              <Link
-                to="/auth/signup"
-                className="text-natural hover:text-natural-light transition-colors"
-              >
-                Sign up
-              </Link>
-            </p>
-            <Link
-              to="/"
-              className="text-white/80 hover:text-white text-sm transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
+        <div>
+          <label htmlFor="tenant_code" className="block text-white/90 text-sm font-medium mb-1">
+            Tenant Code *
+          </label>
+          <input
+            id="tenant_code"
+            name="tenant_code"
+            type="text"
+            value={tenantCode}
+            onChange={(e) => setTenantCode(e.target.value.toLowerCase())}
+            required
+            placeholder="Enter tenant code"
+            autoComplete="organization"
+            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+          />
+          {errors.tenant_code && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.tenant_code}</p>}
         </div>
+
+        <div>
+          <label htmlFor="email" className="block text-white/90 text-sm font-medium mb-1">
+            Email *
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Enter your email"
+            autoComplete="email"
+            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+          />
+          {errors.email && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.email}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-white/90 text-sm font-medium mb-1">
+            Password *
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+          />
+          {errors.password && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.password}</p>}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+
+      <div className="mt-6 text-center space-y-2">
+        <p className="text-white/70 text-sm">
+          Don&apos;t have an account?{' '}
+          <Link to="/auth/signup" className="text-[#8BA88B] hover:underline">
+            Sign up
+          </Link>
+        </p>
+        <Link to="/" className="block text-white/80 hover:text-white text-sm">
+          ← Back to Home
+        </Link>
+      </div>
+    </div>
   )
 }
