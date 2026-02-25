@@ -1,15 +1,16 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
+import { DashboardMain } from "@/components/DashboardMain"
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="pt-[var(--sidebar-row-height)] pr-[var(--sidebar-row-height)] pl-0">
-        <div className="mb-5 border border-b-0 border-[#5A626A]/30 min-h-0 flex flex-col rounded-none">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex h-screen flex-col overflow-hidden border border-t border-l border-r border-[#bfc4c9]/30 bg-[#fafafa] pt-6 px-6">
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <DashboardMain>{children}</DashboardMain>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   )
 }

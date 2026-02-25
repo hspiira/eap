@@ -82,7 +82,7 @@ function PortfolioSection() {
         PORTFOLIO
       </SidebarGroupLabel>
       <SidebarMenu>
-        <SidebarMenuItem>
+        <SidebarMenuItem className="border-b border-[#5A626A]/15">
           <Collapsible defaultOpen className="group/collapsible">
             <CollapsibleTrigger asChild>
               <button
@@ -120,7 +120,7 @@ function PortfolioSection() {
             </CollapsibleContent>
           </Collapsible>
         </SidebarMenuItem>
-        <SidebarMenuItem>
+        <SidebarMenuItem className="border-b border-[#5A626A]/15">
           <Collapsible className="group/collapsible">
             <CollapsibleTrigger asChild>
               <button
@@ -196,15 +196,17 @@ export function AppSidebar() {
         <div className={cn(sidebarStyles.borderedRow, sidebarStyles.borderedRowBottom)}>
           <TenantDisplay />
         </div>
-        <Button variant="secondary" className="mt-2 w-full justify-center" size="sm">
-          NEW AGENT CHAT
-        </Button>
-        <div className={cn("relative", sidebarStyles.searchContainer)}>
-          <Search className={cn("absolute left-2.5 top-1/2 -translate-y-1/2", sidebarStyles.icon, sidebarStyles.textMuted)} />
-          <Input placeholder="Search" className="h-8 border-0 pl-8 pr-10 bg-transparent focus-visible:ring-0" />
-          <kbd className={cn("pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs", sidebarStyles.searchShortcut, sidebarStyles.textMuted)}>
-            ⌘K
-          </kbd>
+        <div className="space-y-2 px-2">
+          <Button variant="secondary" className="mt-2 w-full justify-center" size="sm">
+            NEW AGENT CHAT
+          </Button>
+          <div className={cn("relative", sidebarStyles.searchContainer)}>
+            <Search className={cn("absolute left-2.5 top-1/2 -translate-y-1/2", sidebarStyles.icon, sidebarStyles.textMuted)} />
+            <Input placeholder="Search" className="h-8 border-0 pl-8 pr-10 bg-transparent focus-visible:ring-0" />
+            <kbd className={cn("pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs", sidebarStyles.searchShortcut, sidebarStyles.textMuted)}>
+              ⌘K
+            </kbd>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>

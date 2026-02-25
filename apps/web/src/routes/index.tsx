@@ -25,14 +25,7 @@ function HomePage() {
     return <LandingPage />
   }
 
-  return (
-    <AppLayout>
-      <div className="p-8 text-black">
-        <h1 className="text-2xl font-semibold mb-4">Home</h1>
-        <p>Welcome. Select a section from the sidebar to get started.</p>
-      </div>
-    </AppLayout>
-  )
+  return <AppLayout>{null}</AppLayout>
 }
 
 function LandingPage() {

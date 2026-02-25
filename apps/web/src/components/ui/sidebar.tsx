@@ -8,22 +8,22 @@ export const sidebarStyles = {
   text: "text-black",
   textMuted: "text-black/80",
   textMutedHover: "text-black/80 hover:text-black",
-  hoverBg: "hover:bg-[#E0DAD2]",
-  activeBg: "bg-[#E0DAD2]",
+  hoverBg: "hover:bg-[#f0f0f0]",
+  activeBg: "bg-[#f0f0f0]",
   focusRing: "outline-none focus-visible:ring-1 focus-visible:ring-[#5A626A]",
   itemBase: "flex w-full items-center gap-1.5 px-2 py-1.5 text-sm font-medium transition-colors rounded-none",
   itemSub: "flex w-full items-center gap-1.5 px-2 py-1 text-sm transition-colors rounded-none",
   icon: "h-3.5 w-3.5 shrink-0",
   iconMuted: "opacity-70",
   contextIconBox: "flex h-6 w-6 shrink-0 items-center justify-center bg-[#D0B5B3] text-white text-sm font-bold",
-  groupAction: "p-0.5 hover:bg-[#E0DAD2] rounded-none",
-  border: "border-[#5A626A]/20",
-  borderedRow: "border-t border-[#5A626A]/30 rounded-none bg-[#E6E0D7] h-10 flex items-center",
-  borderedRowBottom: "border-b border-[#5A626A]/30",
-  searchContainer: "rounded-none bg-[#ebe8e3] px-2 py-1.5",
-  searchShortcut: "px-1.5 py-0.5 bg-[#5A626A]/20 rounded-none",
+  groupAction: "p-0.5 hover:bg-[#f0f0f0] rounded-none",
+  border: "border-[#5A626A]/15",
+  borderedRow: "border-t border-[#5A626A]/20 rounded-none bg-[#fafafa] h-10 flex items-center",
+  borderedRowBottom: "border-b border-[#5A626A]/20",
+  searchContainer: "rounded-none bg-[#f5f5f5] px-2 py-1.5",
+  searchShortcut: "px-1.5 py-0.5 bg-[#5A626A]/15 rounded-none",
   iconLg: "h-5 w-5 shrink-0",
-  bg: "bg-[#E6E0D7]",
+  bg: "bg-[#fafafa]",
 } as const
 
 const SidebarContext = React.createContext<{ open: boolean; setOpen: (v: boolean) => void } | null>(null)
@@ -45,7 +45,7 @@ const SidebarProvider = ({
   return (
     <SidebarContext.Provider value={{ open, setOpen }}>
       <div
-        className="flex flex-row min-h-svh w-full gap-0"
+        className="grid h-full min-h-0 flex-1 grid-cols-12 w-full gap-0 overflow-hidden"
         style={{
           "--sidebar-width": SIDEBAR_WIDTH,
           "--sidebar-row-height": "2.5rem",
@@ -65,7 +65,7 @@ const Sidebar = React.forwardRef<
     ref={ref}
     data-sidebar="sidebar"
     className={cn(
-      "flex h-svh w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex-col border-r rounded-none pl-[var(--sidebar-row-height)] pt-[var(--sidebar-row-height)]",
+      "col-span-3 flex min-h-0 w-full min-w-0 flex-col overflow-hidden border-l border-r border-[#bfc4c9]/30 rounded-none",
       sidebarStyles.border,
       sidebarStyles.bg,
       sidebarStyles.text,
@@ -82,7 +82,7 @@ const SidebarHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col gap-1 p-1.5", className)}
+    className={cn("flex flex-col gap-0", className)}
     {...props}
   />
 ))
@@ -120,7 +120,7 @@ const SidebarContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-1 flex-col gap-0.5 overflow-auto p-1.5", className)}
+    className={cn("mt-2 flex flex-1 flex-col gap-0.5 overflow-auto px-2", className)}
     {...props}
   />
 ))
@@ -241,7 +241,7 @@ const SidebarInset = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <main
     ref={ref}
-    className={cn("flex-1 overflow-auto min-w-0 bg-page", className)}
+    className={cn("col-span-9 flex min-h-0 flex-col overflow-hidden min-w-0 border-t border-r border-[#bfc4c9]/30 bg-[#fafafa]", className)}
     {...props}
   />
 ))
