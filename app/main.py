@@ -5,10 +5,16 @@ Main application entry point. Kept minimal: lifespan, app creation,
 registration of exception handlers, middleware, and routers; root endpoints only.
 """
 
+from __future__ import annotations
+
 import logging
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
-from fastapi import FastAPI
+if TYPE_CHECKING:
+    from app.core.security import TokenData
+
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy import text
@@ -27,10 +33,48 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _validate_active_user(request: Request, token_data: "TokenData") -> None:
+    """Validate that user and tenant exist and are active. Raises HTTP 401 if not."""
+    from fastapi import HTTPException
+    from starlette import status
+    from app.core.database import AsyncSessionLocal
+    from app.infrastructure.repositories.user_repository import UserRepositoryImpl
+    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+    from app.domain.value_objects.core import UserId, TenantId
+    from app.domain.enums import TenantStatus
+    async with AsyncSessionLocal() as session:
+        user_repo = UserRepositoryImpl(session)
+        tenant_repo = TenantRepositoryImpl(session)
+        user = await user_repo.get_by_id(UserId(token_data.user_id))
+        if not user or not user.is_active():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is not active",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        tenant = await tenant_repo.get_by_id(TenantId(token_data.tenant_id))
+        if not tenant or tenant.status != TenantStatus.ACTIVE:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Tenant is not active",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    from app.core.login_rate_limit import get_login_rate_limit_backend
+    app.state.login_rate_limit_backend = get_login_rate_limit_backend(
+        settings.LOGIN_RATE_LIMIT_BACKEND,
+        settings.REDIS_URL or "",
+    )
+    if getattr(settings, "STRICT_ACTIVE_USER_CHECK", False):
+        from app.core.security import TokenData
+        app.state.validate_active_user = _validate_active_user
+    else:
+        app.state.validate_active_user = None
     from app.shared.events.handlers import register_default_handlers
     register_default_handlers()
     logger.info("Event handlers registered")
@@ -83,3 +127,13 @@ async def health():
             status_code=503,
             content={"status": "not ready", "database": "disconnected"},
         )
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics(request: Request):
+    """
+    Metrics endpoint (request count, 5xx count, uptime, last request latency).
+    Returns JSON. For Prometheus, use an exporter or sidecar that consumes this.
+    """
+    from app.shared.middleware.metrics import get_metrics
+    return get_metrics(request.app.state)

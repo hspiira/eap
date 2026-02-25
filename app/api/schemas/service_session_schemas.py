@@ -9,6 +9,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import SessionStatus
 
 
@@ -21,20 +22,20 @@ class ServiceSessionCreate(BaseModel):
     provider_id: str = Field(..., description="Provider (person) identifier")
     person_id: str = Field(..., description="Person identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
-    location: str | None = Field(None, description="Session location")
+    location: OptionalSanitizedStr = Field(None, description="Session location")
 
 
 class ServiceSessionCompleteRequest(BaseModel):
     """Request schema for completing a session."""
 
     duration: int = Field(..., gt=0, description="Session duration in minutes")
-    notes: str = Field(..., min_length=1, description="Session notes")
+    notes: SanitizedStr = Field(..., min_length=1, description="Session notes")
 
 
 class ServiceSessionCancelRequest(BaseModel):
     """Request schema for cancelling a session."""
 
-    reason: str = Field(..., min_length=1, description="Cancellation reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Cancellation reason")
 
 
 class ServiceSessionRescheduleRequest(BaseModel):
@@ -46,8 +47,8 @@ class ServiceSessionRescheduleRequest(BaseModel):
 class ServiceSessionUpdate(BaseModel):
     """Request schema for updating session information."""
 
-    location: str | None = Field(None, description="Session location")
-    notes: str | None = Field(None, description="Session notes")
+    location: OptionalSanitizedStr = Field(None, description="Session location")
+    notes: OptionalSanitizedStr = Field(None, description="Session notes")
 
     @model_validator(mode="after")
     def _validate_location_or_notes(self) -> 'ServiceSessionUpdate':
@@ -59,7 +60,7 @@ class ServiceSessionUpdate(BaseModel):
 class ServiceSessionUpdateFeedback(BaseModel):
     """Request schema for updating session feedback."""
 
-    feedback: str = Field(..., min_length=1, description="Session feedback")
+    feedback: SanitizedStr = Field(..., min_length=1, description="Session feedback")
 
 
 # === Response Schemas ===

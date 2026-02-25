@@ -148,7 +148,7 @@ class TestUserActivation:
 
     def test_activate_banned_user_raises_error(self, banned_user):
         """Test that activating a banned user raises DomainError."""
-        with pytest.raises(DomainError, match="Cannot activate banned user"):
+        with pytest.raises(DomainError, match="Cannot activate banned or terminated user"):
             banned_user.activate()
 
 
@@ -213,7 +213,7 @@ class TestUserDeactivation:
 
     def test_deactivate_banned_user_raises_error(self, banned_user):
         """Test that deactivating a banned user raises DomainError."""
-        with pytest.raises(DomainError, match="Cannot deactivate banned user"):
+        with pytest.raises(DomainError, match="Cannot deactivate banned or terminated user"):
             banned_user.deactivate()
 
     def test_deactivate_already_inactive_raises_error(self, user_id, tenant_id, email, now):

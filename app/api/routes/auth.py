@@ -4,31 +4,64 @@ Authentication API Routes
 FastAPI routes for authentication operations.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_tenant_repository, get_user_repository
+from app.api.dependencies import (
+    get_refresh_token_repository,
+    get_tenant_repository,
+    get_user_repository,
+)
+from app.core.config import settings
 from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
 from app.api.schemas.auth_schemas import (
     LoginRequest,
     LoginResponse,
+    LogoutRequest,
+    MeResponse,
     RefreshRequest,
     RefreshResponse,
 )
 from app.application.use_cases.user_use_cases import RecordUserLoginUseCase
 from app.core.database import get_db
 from app.core.security import (
+    COOKIE_ACCESS_TOKEN,
+    COOKIE_REFRESH_TOKEN,
+    TokenData,
     create_token_response,
     decode_refresh_token,
+    get_current_user,
     verify_password,
 )
 from app.domain.enums import TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
+from app.infrastructure.repositories.refresh_token_repository import (
+    RefreshTokenRepository,
+)
 from app.shared.decorators import transactional
+from app.shared.utils.generators import generate_cuid
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+@router.get(
+    "/me",
+    response_model=MeResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get current user from token or cookie",
+)
+async def auth_me(
+    current_user: TokenData = Depends(get_current_user),
+):
+    """Return current user identity (user_id, tenant_id, email). Used for cookie-based auth init."""
+    return MeResponse(
+        user_id=current_user.user_id,
+        tenant_id=current_user.tenant_id,
+        email=current_user.email or "",
+    )
 
 
 @router.post(
@@ -43,6 +76,9 @@ async def login(
     request: Request,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
+    refresh_token_repo: RefreshTokenRepository = Depends(
+        get_refresh_token_repository
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -124,14 +160,29 @@ async def login(
     record_login_use_case = RecordUserLoginUseCase(user_repo)
     await record_login_use_case.execute(user.id)
 
-    # Create and return token
+    # Optionally revoke all previous refresh tokens for this user before issuing a new one
+    if (
+        getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False)
+        and refresh_token_repo
+    ):
+        await refresh_token_repo.revoke_all_for_user(user.id.value)
+
+    # Create and return token (store refresh jti when revocation is enabled)
+    refresh_jti = None
+    if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_repo:
+        refresh_jti = generate_cuid()
     token = create_token_response(
         user_id=user.id.value,
         tenant_id=tenant.id.value,
         email=user.email.value,
+        refresh_jti=refresh_jti,
     )
+    if refresh_jti:
+        await refresh_token_repo.save(
+            refresh_jti, user.id.value, tenant.id.value
+        )
 
-    return LoginResponse(
+    login_response = LoginResponse(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
         token_type=token.token_type,
@@ -141,24 +192,76 @@ async def login(
         email=user.email.value,
     )
 
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        secure = not settings.is_development
+        access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+        response = JSONResponse(content=login_response.model_dump())
+        response.set_cookie(
+            key=COOKIE_ACCESS_TOKEN,
+            value=token.access_token,
+            max_age=access_max_age,
+            path="/",
+            secure=secure,
+            httponly=True,
+            samesite="lax",
+        )
+        response.set_cookie(
+            key=COOKIE_REFRESH_TOKEN,
+            value=token.refresh_token,
+            max_age=refresh_max_age,
+            path="/",
+            secure=secure,
+            httponly=True,
+            samesite="lax",
+        )
+        return response
+
+    return login_response
+
 
 @router.post("/refresh", response_model=RefreshResponse, summary="Refresh access token")
 @transactional()
 async def refresh_token(
-    request: RefreshRequest,
+    request: Request,
+    body: RefreshRequest | None = Body(None),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
+    refresh_token_repo: RefreshTokenRepository = Depends(
+        get_refresh_token_repository
+    ),
     db: AsyncSession = Depends(get_db),
 ):
-    """Exchange refresh token for new access and refresh tokens."""
+    """Exchange refresh token for new access and refresh tokens. Optionally rotates refresh token."""
+    refresh_token_value = None
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        refresh_token_value = request.cookies.get(COOKIE_REFRESH_TOKEN)
+    if not refresh_token_value and body is not None:
+        refresh_token_value = body.refresh_token
+    if not refresh_token_value:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
-        token_data = decode_refresh_token(request.refresh_token)
+        token_data = decode_refresh_token(refresh_token_value)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # When revocation is enabled, require stored token and ensure it is not revoked
+    if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and token_data.jti:
+        valid = await refresh_token_repo.is_valid(token_data.jti)
+        if not valid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     # Validate user and tenant still exist and are active
     user = await user_repo.get_by_id(UserId(token_data.user_id))
@@ -182,15 +285,104 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Rotation: issue new refresh token and revoke old one; otherwise reuse same jti
+    rotation = getattr(settings, "REFRESH_TOKEN_ROTATION", True)
+    refresh_jti = token_data.jti  # reuse for same token when not rotating
+    if rotation:
+        refresh_jti = generate_cuid()
+        if token_data.jti:
+            await refresh_token_repo.revoke(token_data.jti)
     token = create_token_response(
         user_id=token_data.user_id,
         tenant_id=token_data.tenant_id,
         email=token_data.email,
+        refresh_jti=refresh_jti,
     )
+    if rotation:
+        await refresh_token_repo.save(
+            refresh_jti, token_data.user_id, token_data.tenant_id
+        )
 
-    return RefreshResponse(
+    refresh_response = RefreshResponse(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
         token_type=token.token_type,
         expires_in=token.expires_in,
     )
+
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        secure = not settings.is_development
+        access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+        response = JSONResponse(content=refresh_response.model_dump())
+        response.set_cookie(
+            key=COOKIE_ACCESS_TOKEN,
+            value=token.access_token,
+            max_age=access_max_age,
+            path="/",
+            secure=secure,
+            httponly=True,
+            samesite="lax",
+        )
+        response.set_cookie(
+            key=COOKIE_REFRESH_TOKEN,
+            value=token.refresh_token,
+            max_age=refresh_max_age,
+            path="/",
+            secure=secure,
+            httponly=True,
+            samesite="lax",
+        )
+        return response
+
+    return refresh_response
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Revoke refresh token (logout)",
+)
+@transactional()
+async def logout(
+    request: Request,
+    body: LogoutRequest | None = Body(None),
+    refresh_token_repo: RefreshTokenRepository = Depends(
+        get_refresh_token_repository
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke a refresh token so it can no longer be used. No-op if token has no jti or revocation is disabled."""
+    refresh_token_value = None
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        refresh_token_value = request.cookies.get(COOKIE_REFRESH_TOKEN)
+    if not refresh_token_value and body is not None:
+        refresh_token_value = body.refresh_token
+    if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_value:
+        try:
+            token_data = decode_refresh_token(refresh_token_value)
+            if token_data.jti:
+                await refresh_token_repo.revoke(token_data.jti)
+        except Exception:
+            pass
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        from fastapi.responses import Response
+
+        secure = not settings.is_development
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie(
+            key=COOKIE_ACCESS_TOKEN,
+            path="/",
+            secure=secure,
+            samesite="lax",
+            httponly=True,
+        )
+        response.delete_cookie(
+            key=COOKIE_REFRESH_TOKEN,
+            path="/",
+            secure=secure,
+            samesite="lax",
+            httponly=True,
+        )
+        return response
+    return None

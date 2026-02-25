@@ -127,6 +127,10 @@ class TenantEntity:
     def can_create_users(self, current_user_count: int) -> bool:
         """Check if tenant can create new users based on subscription and settings"""
         return self.is_active() and self._settings.allows_more_users(current_user_count)
+
+    def can_create_clients(self, current_client_count: int) -> bool:
+        """Check if tenant can create new clients based on settings"""
+        return self.is_active() and self._settings.allows_more_clients(current_client_count)
     
     # === Invariants ===
     

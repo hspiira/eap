@@ -47,6 +47,22 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
         default=7, description="Refresh token expiration in days"
     )
+    REFRESH_TOKEN_ROTATION: bool = Field(
+        default=True,
+        description="If True, issue new refresh token on refresh and revoke old one",
+    )
+    REFRESH_TOKEN_REVOCATION: bool = Field(
+        default=True,
+        description="If True, store refresh tokens and allow revocation (logout)",
+    )
+    REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN: bool = Field(
+        default=False,
+        description="If True, revoke all existing refresh tokens for the user on successful login",
+    )
+    AUTH_USE_HTTPONLY_COOKIES: bool = Field(
+        default=False,
+        description="If True, set httpOnly cookies for access/refresh tokens and accept token from cookie or Bearer",
+    )
 
     # CORS
     CORS_ORIGINS: str = Field(
@@ -65,7 +81,11 @@ class Settings(BaseSettings):
     )
     REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION: bool = Field(
         default=False,
-        description="If True, POST /tenants requires platform admin (stub: no admin yet)",
+        description="If True, POST /tenants requires platform admin",
+    )
+    PLATFORM_TENANT_ID: str = Field(
+        default="",
+        description="Tenant ID whose users are platform admins; empty means no platform admin",
     )
 
     # Rate limiting (always on; use higher limits in development)
@@ -76,6 +96,30 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS_PER_HOUR: int = Field(
         default=1000,
         description="Max requests per hour per client (production)",
+    )
+
+    # Login rate limit backend: "memory" (per-process) or "redis" (shared across instances)
+    LOGIN_RATE_LIMIT_BACKEND: str = Field(
+        default="memory",
+        description="Login rate limit backend: memory or redis",
+    )
+    REDIS_URL: str = Field(
+        default="",
+        description="Redis URL for login rate limit when LOGIN_RATE_LIMIT_BACKEND=redis",
+    )
+
+    # Security headers (middleware)
+    SECURITY_HEADERS_X_FRAME_OPTIONS: str = Field(
+        default="DENY",
+        description="X-Frame-Options value (e.g. DENY or SAMEORIGIN)",
+    )
+    SECURITY_HEADERS_CSP_REPORT_ONLY: bool = Field(
+        default=False,
+        description="If True, set Content-Security-Policy-Report-Only with a minimal directive",
+    )
+    SECURITY_HEADERS_CSP_REPORT_URI: str = Field(
+        default="",
+        description="Report URI for CSP report-only mode (optional)",
     )
 
     # Document storage and URL validation
@@ -129,6 +173,17 @@ class Settings(BaseSettings):
             raise ValueError(f"LOG_LEVEL must be one of {allowed}")
         return v.upper()
 
+    @field_validator("LOGIN_RATE_LIMIT_BACKEND")
+    @classmethod
+    def validate_login_rate_limit_backend(cls, v: str) -> str:
+        """Validate login rate limit backend."""
+        allowed = {"memory", "redis"}
+        if v.lower() not in allowed:
+            raise ValueError(
+                f"LOGIN_RATE_LIMIT_BACKEND must be one of {allowed}"
+            )
+        return v.lower()
+
     @field_validator("AUDIT_SAMPLE_RATE")
     @classmethod
     def validate_audit_sample_rate(cls, v: float) -> float:
@@ -163,7 +218,14 @@ class Settings(BaseSettings):
                     UserWarning,
                     stacklevel=2,
                 )
-        
+        if self.LOGIN_RATE_LIMIT_BACKEND == "redis" and not (self.REDIS_URL or "").strip():
+            warnings.warn(
+                "LOGIN_RATE_LIMIT_BACKEND is 'redis' but REDIS_URL is empty. "
+                "Falling back to memory backend.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         return self
 
     @property

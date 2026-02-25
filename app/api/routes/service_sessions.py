@@ -8,6 +8,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import get_service_session_for_current_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_service_session_repository
@@ -123,17 +124,17 @@ async def create_service_session(
 )
 @transactional()
 async def complete_service_session(
-    session_id: str,
     request: Request,
     body: ServiceSessionCompleteRequest,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Complete a service session."""
     session = await CompleteServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), body.duration, body.notes
+        session.id, body.duration, body.notes
     )
     await audit_entity_operation(
         entity=session,
@@ -152,17 +153,17 @@ async def complete_service_session(
 )
 @transactional()
 async def cancel_service_session(
-    session_id: str,
     request: Request,
     body: ServiceSessionCancelRequest,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Cancel a service session."""
     session = await CancelServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), body.reason
+        session.id, body.reason
     )
     await audit_entity_operation(
         entity=session,
@@ -181,17 +182,17 @@ async def cancel_service_session(
 )
 @transactional()
 async def reschedule_service_session(
-    session_id: str,
     request: Request,
     body: ServiceSessionRescheduleRequest,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Reschedule a service session."""
     session = await RescheduleServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), body.new_scheduled_at
+        session.id, body.new_scheduled_at
     )
     await audit_entity_operation(
         entity=session,
@@ -210,16 +211,16 @@ async def reschedule_service_session(
 )
 @transactional()
 async def mark_no_show_service_session(
-    session_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a service session as no-show."""
     session = await MarkNoShowServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+        session.id
     )
     await audit_entity_operation(
         entity=session,
@@ -238,17 +239,17 @@ async def mark_no_show_service_session(
 )
 @transactional()
 async def update_service_session(
-    session_id: str,
     data: ServiceSessionUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session information."""
     session = await UpdateServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), location=data.location, notes=data.notes
+        session.id, location=data.location, notes=data.notes
     )
     await audit_entity_operation(
         entity=session,
@@ -267,17 +268,17 @@ async def update_service_session(
 )
 @transactional()
 async def update_service_session_feedback(
-    session_id: str,
     request: Request,
     body: ServiceSessionUpdateFeedback,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session feedback."""
     session = await UpdateServiceSessionFeedbackUseCase(session_repo).execute(
-        SessionId(session_id), body.feedback
+        session.id, body.feedback
     )
     await audit_entity_operation(
         entity=session,
@@ -296,16 +297,16 @@ async def update_service_session_feedback(
 )
 @transactional()
 async def archive_service_session(
-    session_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service session."""
     session = await ArchiveServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+        session.id
     )
     await audit_entity_operation(
         entity=session,
@@ -324,16 +325,16 @@ async def archive_service_session(
 )
 @transactional()
 async def restore_service_session(
-    session_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived service session."""
     session = await RestoreServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+        session.id
     )
     await audit_entity_operation(
         entity=session,
@@ -409,14 +410,10 @@ async def list_service_sessions(
 )
 @readonly()
 async def get_service_session(
-    session_id: str,
-    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    session = await session_repo.get_by_id(SessionId(session_id))
-    if not session:
-        raise ValueError("Service session not found")
     return _to_service_session_response(session)
 
 

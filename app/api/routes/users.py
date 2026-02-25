@@ -13,7 +13,7 @@ from app.core.authorization import get_user_in_tenant, require_tenant_role
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import TenantRole
 
-from app.api.dependencies import get_audit_event_handler, get_user_repository
+from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
 from app.api.schemas.user_schemas import (
     UserBanRequest,
     UserCreate,
@@ -43,7 +43,9 @@ from app.application.use_cases.user_use_cases import (
 from app.core.database import get_db
 from app.domain.enums import UserStatus
 from app.domain.entities.user import UserEntity
+from app.domain.exceptions import EvexiaException
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
@@ -94,6 +96,7 @@ async def create_user(
     current_user: TokenData = Depends(get_current_user),
     _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -102,12 +105,15 @@ async def create_user(
         raise HTTPException(status_code=403, detail="Access denied to this tenant")
     password_hash = _hash_password(data.password) if data.password else None
 
-    user = await CreateUserUseCase(user_repo).execute(
-        user_id=UserId(generate_cuid()),
-        tenant_id=TenantId(tenant_id),
-        email=Email(data.email),
-        password_hash=password_hash,
-    )
+    try:
+        user = await CreateUserUseCase(user_repo, tenant_repo).execute(
+            user_id=UserId(generate_cuid()),
+            tenant_id=TenantId(tenant_id),
+            email=Email(data.email),
+            password_hash=password_hash,
+        )
+    except EvexiaException as e:
+        raise HTTPException(status_code=e.http_status, detail=e.message)
 
     if data.preferred_language or data.timezone:
         user = await UpdateUserPreferencesUseCase(user_repo).execute(

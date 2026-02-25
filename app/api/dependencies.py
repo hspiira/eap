@@ -34,6 +34,9 @@ from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.refresh_token_repository import (
+    RefreshTokenRepository,
+)
 from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
 from app.infrastructure.repositories.contact_repository import ContactRepositoryImpl
 from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
@@ -310,6 +313,13 @@ async def get_audit_event_handler(
         AuditEventHandler instance
     """
     return AuditEventHandler(audit_repo)
+
+
+async def get_refresh_token_repository(
+    db: AsyncSession = Depends(get_db),
+) -> RefreshTokenRepository:
+    """Dependency for refresh token repository (revocation/rotation)."""
+    return RefreshTokenRepository(db)
 
 
 # =============================================================================

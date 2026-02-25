@@ -8,7 +8,9 @@ Refactored to use base use case classes to eliminate boilerplate.
 from app.application.use_cases.base import BaseUseCase, EntityLifecycleUseCase
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.exceptions import SubscriptionLimitError
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -28,9 +30,14 @@ from app.shared.utils.datetime import utc_now
 class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
     """Use case for creating a new client."""
 
-    def __init__(self, client_repository: ClientRepository):
+    def __init__(
+        self,
+        client_repository: ClientRepository,
+        tenant_repository: TenantRepository | None = None,
+    ):
         super().__init__(client_repository)
         self.client_repository = client_repository
+        self.tenant_repository = tenant_repository
 
     async def execute(
         self,
@@ -61,7 +68,18 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
 
         Raises:
             ValueError: If client with name or code already exists
+            SubscriptionLimitError: If tenant client limit reached
         """
+        if self.tenant_repository:
+            tenant = await self.tenant_repository.get_by_id(tenant_id)
+            if not tenant:
+                raise ValueError(f"Tenant not found: {tenant_id.value}")
+            client_count = await self.client_repository.count(tenant_id=tenant_id)
+            if not tenant.can_create_clients(client_count):
+                raise SubscriptionLimitError(
+                    "Tenant client limit reached; upgrade subscription to add more clients."
+                )
+
         if not code or len(code) < 3 or len(code) > 5:
             raise ValueError("Client code must be 3-5 characters")
         

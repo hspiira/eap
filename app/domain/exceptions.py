@@ -43,7 +43,11 @@ class EvexiaException(Exception):
             "details": self.details,
         }
 
-    def to_api_response(self, path: str | None = None) -> dict[str, Any]:
+    def to_api_response(
+        self,
+        path: str | None = None,
+        request_id: str | None = None,
+    ) -> dict[str, Any]:
         """
         Build API error body in the same shape as create_error_response.
         Used by the single exception handler for consistent JSON responses.
@@ -59,6 +63,7 @@ class EvexiaException(Exception):
             "message": self.message,
             **({"details": details_list} if details_list else {}),
             **({"path": path} if path is not None else {}),
+            **({"request_id": request_id} if request_id is not None else {}),
         }
 
 
@@ -162,3 +167,10 @@ class InvariantViolation(EvexiaException):
     
     def __init__(self, message: str):
         super().__init__(message, "INVARIANT_VIOLATION")
+
+
+class SubscriptionLimitError(EvexiaException):
+    """Raised when tenant subscription limit is reached (e.g. max users or max clients)."""
+
+    def __init__(self, message: str = "Subscription limit reached"):
+        super().__init__(message, "SUBSCRIPTION_LIMIT", http_status=403)

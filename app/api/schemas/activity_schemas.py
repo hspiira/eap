@@ -4,15 +4,17 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+
 
 class ActivityCreate(BaseModel):
     """Request schema for creating an activity."""
 
     client_id: str = Field(..., description="Associated client ID")
     activity_type: str = Field(..., max_length=50, description="Activity type")
-    subject: str | None = Field(None, max_length=255, description="Activity subject")
-    description: str = Field(..., description="Activity description")
-    outcome: str | None = Field(None, description="Activity outcome")
+    subject: OptionalSanitizedStr = Field(None, max_length=255, description="Activity subject")
+    description: SanitizedStr = Field(..., description="Activity description")
+    outcome: OptionalSanitizedStr = Field(None, description="Activity outcome")
     occurred_at: datetime = Field(..., description="When the activity occurred")
     next_follow_up: datetime | None = Field(None, description="Next follow-up date")
     is_important: bool = Field(False, description="Whether activity is important")
@@ -21,8 +23,8 @@ class ActivityCreate(BaseModel):
 class ActivityUpdate(BaseModel):
     """Request schema for updating an activity."""
 
-    description: str | None = Field(None, description="Activity description")
-    outcome: str | None = Field(None, description="Activity outcome")
+    description: OptionalSanitizedStr = Field(None, description="Activity description")
+    outcome: OptionalSanitizedStr = Field(None, description="Activity outcome")
     next_follow_up: datetime | None = Field(None, description="Next follow-up date")
     is_important: bool | None = Field(None, description="Whether activity is important")
 

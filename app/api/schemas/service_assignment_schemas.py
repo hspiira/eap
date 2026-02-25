@@ -3,6 +3,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr
 from app.domain.enums import BaseStatus
 
 
@@ -11,13 +12,13 @@ class ServiceAssignmentCreate(BaseModel):
 
     service_id: str = Field(..., description="Service identifier")
     contract_id: str = Field(..., description="Contract identifier")
-    notes: str | None = Field(None, description="Assignment notes")
+    notes: OptionalSanitizedStr = Field(None, description="Assignment notes")
 
 
 class ServiceAssignmentUpdate(BaseModel):
     """Request schema for updating a service assignment."""
 
-    notes: str | None = Field(None, description="Assignment notes")
+    notes: OptionalSanitizedStr = Field(None, description="Assignment notes")
 
 
 class ServiceAssignmentResponse(BaseModel):

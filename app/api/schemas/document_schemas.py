@@ -9,6 +9,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import DocumentStatus, DocumentType
 from app.shared.utils.document_validation import (
     validate_document_file_path,
@@ -32,8 +33,8 @@ def _get_allowed_url_schemes() -> list[str]:
 class DocumentCreate(BaseModel):
     """Request schema for creating a document."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
     document_type: DocumentType = Field(..., description="Document type")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
@@ -73,8 +74,8 @@ class DocumentCreate(BaseModel):
 class DocumentCreateVersion(BaseModel):
     """Request schema for creating a new document version."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
     file_size: int | None = Field(None, ge=0, description="File size in bytes")
@@ -108,8 +109,8 @@ class DocumentCreateVersion(BaseModel):
 class DocumentUpdate(BaseModel):
     """Request schema for updating document metadata."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
 
 
 class DocumentSetConfidentiality(BaseModel):
