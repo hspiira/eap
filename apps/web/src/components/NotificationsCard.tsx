@@ -27,6 +27,7 @@ const notifications = [
 export function NotificationsCard() {
   return (
     <div
+      data-notifications-card
       className={cn(
         "flex flex-col rounded-lg border border-[#bfc4c9]/25 bg-white",
         "shadow-[0_1px_4px_rgba(0,0,0,0.06)]"

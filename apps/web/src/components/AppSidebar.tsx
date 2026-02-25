@@ -35,33 +35,59 @@ import {
   sidebarStyles,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import { useTenant } from "@/hooks/useTenant"
+
+function toProperCase(s: string): string {
+  return s
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ")
+}
+
+const PROJECT_LOGO = "/evexi%CC%81a.svg"
 
 function TenantDisplay() {
+  const { currentTenant } = useTenant()
+  const displayName = currentTenant?.name ? toProperCase(currentTenant.name) : ""
+
   return (
     <div className={cn("flex w-full items-center gap-1.5 px-2", sidebarStyles.text, "font-semibold")}>
-      <span className={sidebarStyles.contextIconBox}>G</span>
-      <span className="truncate">GULF GLOBAL</span>
+      <img src={PROJECT_LOGO} alt="" className="h-6 w-6 shrink-0 object-contain" />
+      <span className="truncate">{displayName || "—"}</span>
     </div>
   )
 }
 
+const navItems: Array<{
+  to: string
+  label: string
+  icon: typeof Home
+  iconClassName?: string
+}> = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "#inbox", label: "Inbox", icon: Inbox },
+  { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-[#D0B5B3]" },
+]
+
 function NavMain() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const navItems = [
-    { to: "/", label: "Home", icon: Home },
-    { to: "#inbox", label: "Inbox", icon: Inbox },
-    { to: "#at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-[#D0B5B3]" },
-  ] as const
 
   return (
     <SidebarMenu>
       {navItems.map(({ to, label, icon: Icon, iconClassName }) => (
         <SidebarMenuItem key={label}>
-          <SidebarMenuButton asChild isActive={to === "/" ? pathname === "/" : false}>
-            <Link to={to}>
-              <Icon className={cn(sidebarStyles.icon, iconClassName)} />
-              <span>{label}</span>
-            </Link>
+          <SidebarMenuButton asChild isActive={to.startsWith("/") ? pathname === to : false}>
+            {to.startsWith("/") ? (
+              <Link to={to}>
+                <Icon className={cn(sidebarStyles.icon, iconClassName)} />
+                <span>{label}</span>
+              </Link>
+            ) : (
+              <a href={to}>
+                <Icon className={cn(sidebarStyles.icon, iconClassName)} />
+                <span>{label}</span>
+              </a>
+            )}
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
@@ -102,18 +128,18 @@ function PortfolioSection() {
               <SidebarMenuSub>
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton asChild>
-                    <Link to="#global-brands">
+                    <a href="#global-brands">
                       <FileText className={sidebarStyles.icon} />
                       Global Brands
-                    </Link>
+                    </a>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton asChild>
-                    <Link to="#secondary-brands">
+                    <a href="#secondary-brands">
                       <FileText className={sidebarStyles.icon} />
                       Secondary Brands
-                    </Link>
+                    </a>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>
@@ -140,7 +166,7 @@ function PortfolioSection() {
               <SidebarMenuSub>
                 <SidebarMenuSubItem>
                   <SidebarMenuSubButton asChild>
-                    <Link to="#">Sub-item</Link>
+                    <a href="#">Sub-item</a>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               </SidebarMenuSub>
@@ -149,9 +175,9 @@ function PortfolioSection() {
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="#portfolio-all" className={sidebarStyles.textMutedHover}>
+            <a href="#portfolio-all" className={sidebarStyles.textMutedHover}>
               … See all
-            </Link>
+            </a>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -159,23 +185,23 @@ function PortfolioSection() {
   )
 }
 
-function AnalyticsSection() {
-  const items = [
-    { to: "#overview", label: "Overview & Forecast", icon: Clock },
-    { to: "#renewals", label: "Renewals", icon: Clock },
-  ] as const
+const analyticsItems = [
+  { to: "#overview", label: "Overview & Forecast", icon: Clock },
+  { to: "#renewals", label: "Renewals", icon: Clock },
+]
 
+function AnalyticsSection() {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>ANALYTICS</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map(({ to, label, icon: Icon }) => (
+        {analyticsItems.map(({ to, label, icon: Icon }) => (
           <SidebarMenuItem key={label}>
             <SidebarMenuButton asChild>
-              <Link to={to}>
+              <a href={to}>
                 <Icon className={sidebarStyles.icon} />
                 {label}
-              </Link>
+              </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

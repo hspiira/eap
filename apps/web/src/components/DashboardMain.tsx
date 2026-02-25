@@ -10,13 +10,10 @@ import { ErrorCard } from "@/components/ErrorCard"
 import { HRDashboard } from "@/components/HRDashboard"
 import { TransitionsCard } from "@/components/TransitionsCard"
 
-export function DashboardMain({ children }: { children: React.ReactNode }) {
+export function DashboardMain() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="sticky top-0 z-10 flex h-10 shrink-0 items-center justify-between gap-4 border-b border-[#bfc4c9]/30 bg-[#fafafa] px-3">
-      </header>
-
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col">
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 p-4 lg:grid-cols-2">
           <div className="min-w-0">
             <MapSettingsCard />
@@ -52,7 +49,6 @@ export function DashboardMain({ children }: { children: React.ReactNode }) {
             <OnboardingProgressCard />
           </div>
         </div>
-        {children}
       </div>
     </div>
   )

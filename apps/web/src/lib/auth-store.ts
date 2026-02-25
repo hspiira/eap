@@ -5,8 +5,11 @@
 
 import apiClient from '@/api/client'
 import { authApi } from '@/api/endpoints/auth'
+import { tenantsApi } from '@/api/endpoints/tenants'
 import { useAuthStore } from '@/store/slices/authSlice'
+import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { LoginRequest } from '@/api/types'
+import type { Tenant } from '@/types/entities'
 
 function useAuthCookies(): boolean {
   return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
@@ -25,10 +28,28 @@ export const authActions = {
       } else {
         setAuth(response.access_token, response.user_id, response.email)
       }
-      if (response.tenant_id) {
-        apiClient.setTenantId(response.tenant_id)
+      let tenantId = response.tenant_id
+      if (!tenantId && credentials.tenant_code) {
+        try {
+          const { items } = await tenantsApi.list()
+          const tenant = items.find(
+            (t: Tenant) => t.code?.toLowerCase() === credentials.tenant_code?.toLowerCase()
+          )
+          if (tenant) tenantId = tenant.id
+        } catch (e) {
+          console.warn('Could not resolve tenant by code after login:', e)
+        }
+      }
+      if (tenantId) {
+        apiClient.setTenantId(tenantId)
         if (typeof window !== 'undefined') {
-          localStorage.setItem('current_tenant_id', response.tenant_id)
+          localStorage.setItem('current_tenant_id', tenantId)
+        }
+        try {
+          const tenant = await tenantsApi.getById(tenantId)
+          useTenantStore.getState().setCurrentTenant(tenant as Tenant)
+        } catch (e) {
+          console.warn('Could not load tenant details after login:', e)
         }
       }
       useAuthStore.getState().setLoading(false)

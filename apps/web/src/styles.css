@@ -91,7 +91,7 @@ button {
   scrollbar-color: var(--palette-safe) transparent;
 }
 .content-area-scroll::-webkit-scrollbar {
-  width: 4px;
+  width: 2px;
 }
 .content-area-scroll::-webkit-scrollbar-track {
   background: transparent;
