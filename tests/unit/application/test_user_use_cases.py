@@ -293,7 +293,7 @@ class TestTerminateUserUseCase:
         use_case = TerminateUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id, "Account closed")
 
-        assert user._status == UserStatus.BANNED
+        assert user._status == UserStatus.TERMINATED
         assert user._deleted_at is not None
         mock_user_repo.save.assert_called_once()
 

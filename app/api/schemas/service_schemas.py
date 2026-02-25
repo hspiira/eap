@@ -7,6 +7,7 @@ Separate from domain entities.
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus
 
 
@@ -15,9 +16,9 @@ from app.domain.enums import BaseStatus
 class ServiceCreate(BaseModel):
     """Request schema for creating a service."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Service name")
-    description: str | None = Field(None, max_length=2000, description="Service description")
-    category: str | None = Field(None, max_length=100, description="Service category")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Service name")
+    description: OptionalSanitizedStr = Field(None, max_length=2000, description="Service description")
+    category: OptionalSanitizedStr = Field(None, max_length=100, description="Service category")
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
     is_group_service: bool = Field(False, description="Whether this is a group service")
     max_participants: int | None = Field(None, gt=0, description="Maximum participants for group services")
@@ -26,9 +27,9 @@ class ServiceCreate(BaseModel):
 class ServiceUpdate(BaseModel):
     """Request schema for updating service information."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Service name")
-    description: str | None = Field(None, max_length=2000, description="Service description")
-    category: str | None = Field(None, max_length=100, description="Service category")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Service name")
+    description: OptionalSanitizedStr = Field(None, max_length=2000, description="Service description")
+    category: OptionalSanitizedStr = Field(None, max_length=100, description="Service category")
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
 
 

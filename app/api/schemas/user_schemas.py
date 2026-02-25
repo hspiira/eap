@@ -9,6 +9,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import Language, TenantRole, UserStatus
 
 
@@ -26,25 +27,25 @@ class UserCreate(BaseModel):
 class UserSuspendRequest(BaseModel):
     """Request schema for suspending a user."""
 
-    reason: str = Field(..., min_length=1, description="Suspension reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Suspension reason")
 
 
 class UserBanRequest(BaseModel):
     """Request schema for banning a user."""
 
-    reason: str = Field(..., min_length=1, description="Ban reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Ban reason")
 
 
 class UserDeactivateRequest(BaseModel):
     """Request schema for deactivating a user."""
 
-    reason: str | None = Field(None, description="Deactivation reason")
+    reason: OptionalSanitizedStr = Field(None, description="Deactivation reason")
 
 
 class UserTerminateRequest(BaseModel):
     """Request schema for terminating a user."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class UserUpdatePasswordRequest(BaseModel):

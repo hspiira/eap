@@ -2,30 +2,32 @@
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+
 
 class ContactCreate(BaseModel):
     """Request schema for creating a contact."""
 
     client_id: str = Field(..., description="Associated client ID")
-    name: str = Field(..., min_length=1, max_length=255, description="Contact name")
-    title: str | None = Field(None, max_length=255, description="Job title")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Contact name")
+    title: OptionalSanitizedStr = Field(None, max_length=255, description="Job title")
     email: EmailStr | None = Field(None, description="Email address")
     phone: str | None = Field(None, max_length=50, description="Phone number")
-    department: str | None = Field(None, max_length=255, description="Department")
+    department: OptionalSanitizedStr = Field(None, max_length=255, description="Department")
     is_primary: bool = Field(False, description="Whether this is the primary contact")
-    notes: str | None = Field(None, description="Additional notes")
+    notes: OptionalSanitizedStr = Field(None, description="Additional notes")
 
 
 class ContactUpdate(BaseModel):
     """Request schema for updating a contact."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Contact name")
-    title: str | None = Field(None, max_length=255, description="Job title")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Contact name")
+    title: OptionalSanitizedStr = Field(None, max_length=255, description="Job title")
     email: EmailStr | None = Field(None, description="Email address")
     phone: str | None = Field(None, max_length=50, description="Phone number")
-    department: str | None = Field(None, max_length=255, description="Department")
+    department: OptionalSanitizedStr = Field(None, max_length=255, description="Department")
     is_primary: bool | None = Field(None, description="Whether this is the primary contact")
-    notes: str | None = Field(None, description="Additional notes")
+    notes: OptionalSanitizedStr = Field(None, description="Additional notes")
 
 
 class ContactResponse(BaseModel):

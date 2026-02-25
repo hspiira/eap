@@ -8,6 +8,8 @@ Refactored to use base use case classes to eliminate boilerplate.
 from app.application.use_cases.base import BaseUseCase, EntityLifecycleUseCase
 from app.domain.entities.user import UserEntity
 from app.domain.enums import Language, TenantRole, UserStatus
+from app.domain.exceptions import SubscriptionLimitError
+from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
@@ -21,9 +23,14 @@ from app.shared.utils.datetime import utc_now
 class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
     """Use case for creating a new user."""
 
-    def __init__(self, user_repository: UserRepository):
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        tenant_repository: TenantRepository | None = None,
+    ):
         super().__init__(user_repository)
         self.user_repository = user_repository
+        self.tenant_repository = tenant_repository
 
     async def execute(
         self,
@@ -48,7 +55,18 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
 
         Raises:
             ValueError: If user with email already exists
+            SubscriptionLimitError: If tenant user limit reached
         """
+        if self.tenant_repository:
+            tenant = await self.tenant_repository.get_by_id(tenant_id)
+            if not tenant:
+                raise ValueError(f"Tenant not found: {tenant_id.value}")
+            user_count = await self.user_repository.count(tenant_id=tenant_id)
+            if not tenant.can_create_users(user_count):
+                raise SubscriptionLimitError(
+                    "Tenant user limit reached; upgrade subscription to add more users."
+                )
+
         # Check if user already exists
         existing = await self.user_repository.get_by_email(email, tenant_id)
         if existing:

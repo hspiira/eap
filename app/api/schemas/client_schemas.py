@@ -7,6 +7,7 @@ Separate from domain entities.
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, ContactMethod
 
 
@@ -36,22 +37,22 @@ class ContactInfoCreate(BaseModel):
 
     phone: str | None = Field(None, description="Phone number")
     email: str | None = Field(None, description="Email address")
-    address: str | None = Field(None, description="Physical address")
+    address: OptionalSanitizedStr = Field(None, description="Physical address")
 
 
 class AddressCreate(BaseModel):
     """Address for creation."""
 
-    street: str = Field(..., description="Street address")
-    city: str = Field(..., description="City")
-    country: str = Field(..., description="Country")
-    postal_code: str | None = Field(None, description="Postal code")
+    street: SanitizedStr = Field(..., description="Street address")
+    city: SanitizedStr = Field(..., description="City")
+    country: SanitizedStr = Field(..., description="Country")
+    postal_code: OptionalSanitizedStr = Field(None, description="Postal code")
 
 
 class ClientCreate(BaseModel):
     """Request schema for creating a client."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Client name")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Client name")
     code: str = Field(..., min_length=3, max_length=5, description="Client code (3-5 characters, unique per tenant)")
     contact_info: ContactInfoCreate = Field(..., description="Contact information")
     billing_address: AddressCreate | None = Field(None, description="Billing address")
@@ -65,25 +66,25 @@ class ClientCreate(BaseModel):
 class ClientSuspendRequest(BaseModel):
     """Request schema for suspending a client."""
 
-    reason: str = Field(..., min_length=1, description="Suspension reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Suspension reason")
 
 
 class ClientTerminateRequest(BaseModel):
     """Request schema for terminating a client."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class ClientDeactivateRequest(BaseModel):
     """Request schema for deactivating a client."""
 
-    reason: str | None = Field(None, description="Deactivation reason")
+    reason: OptionalSanitizedStr = Field(None, description="Deactivation reason")
 
 
 class ClientUpdate(BaseModel):
     """Request schema for updating client basic information."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Client name")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Client name")
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )

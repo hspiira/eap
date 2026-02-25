@@ -65,9 +65,15 @@ class LoginResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    """Request schema for token refresh."""
+    """Request schema for token refresh. refresh_token optional when using cookie auth."""
 
-    refresh_token: str = Field(..., description="JWT refresh token")
+    refresh_token: str | None = Field(None, description="JWT refresh token")
+
+
+class LogoutRequest(BaseModel):
+    """Request schema for logout (revoke refresh token). refresh_token optional when using cookie auth."""
+
+    refresh_token: str | None = Field(None, description="JWT refresh token to revoke")
 
 
 class RefreshResponse(BaseModel):
@@ -77,3 +83,11 @@ class RefreshResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+
+class MeResponse(BaseModel):
+    """Response schema for GET /auth/me (current user from token or cookie)."""
+
+    user_id: str = Field(..., description="User identifier")
+    tenant_id: str = Field(..., description="Tenant identifier")
+    email: str = Field(..., description="User email address")

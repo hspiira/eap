@@ -10,6 +10,7 @@ import decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import get_contract_for_current_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_contract_repository
@@ -140,16 +141,16 @@ async def create_contract(
 )
 @transactional()
 async def activate_contract(
-    contract_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contract."""
     contract = await ActivateContractUseCase(contract_repo).execute(
-        ContractId(contract_id)
+        contract.id
     )
     await audit_entity_operation(
         entity=contract,
@@ -168,17 +169,17 @@ async def activate_contract(
 )
 @transactional()
 async def sign_contract(
-    contract_id: str,
     request: Request,
     body: ContractSignRequest,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Sign a contract."""
     contract = await SignContractUseCase(contract_repo).execute(
-        ContractId(contract_id), body.signed_by
+        contract.id, body.signed_by
     )
     await audit_entity_operation(
         entity=contract,
@@ -197,10 +198,10 @@ async def sign_contract(
 )
 @transactional()
 async def renew_contract(
-    contract_id: str,
     request: Request,
     body: ContractRenewRequest,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -217,7 +218,7 @@ async def renew_contract(
     new_end_date = body.new_end_date.date()
 
     contract = await RenewContractUseCase(contract_repo).execute(
-        ContractId(contract_id), new_end_date, new_rate
+        contract.id, new_end_date, new_rate
     )
     await audit_entity_operation(
         entity=contract,
@@ -236,17 +237,17 @@ async def renew_contract(
 )
 @transactional()
 async def terminate_contract(
-    contract_id: str,
     request: Request,
     body: ContractTerminateRequest,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a contract."""
     contract = await TerminateContractUseCase(contract_repo).execute(
-        ContractId(contract_id), body.reason
+        contract.id, body.reason
     )
     await audit_entity_operation(
         entity=contract,
@@ -265,16 +266,16 @@ async def terminate_contract(
 )
 @transactional()
 async def archive_contract(
-    contract_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a contract."""
     contract = await ArchiveContractUseCase(contract_repo).execute(
-        ContractId(contract_id)
+        contract.id
     )
     await audit_entity_operation(
         entity=contract,
@@ -293,16 +294,16 @@ async def archive_contract(
 )
 @transactional()
 async def restore_contract(
-    contract_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore a terminated or expired contract."""
     contract = await RestoreContractUseCase(contract_repo).execute(
-        ContractId(contract_id)
+        contract.id
     )
     await audit_entity_operation(
         entity=contract,
@@ -321,10 +322,10 @@ async def restore_contract(
 )
 @transactional()
 async def update_contract(
-    contract_id: str,
     data: ContractUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -338,7 +339,7 @@ async def update_contract(
         )
 
     contract = await UpdateContractUseCase(contract_repo).execute(
-        ContractId(contract_id),
+        contract.id,
         billing_rate=billing_rate,
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
@@ -360,17 +361,17 @@ async def update_contract(
 )
 @transactional()
 async def update_contract_payment_status(
-    contract_id: str,
     request: Request,
     body: ContractUpdatePaymentStatus,
     current_user: TokenData = Depends(get_current_user),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update contract payment status."""
     contract = await UpdateContractPaymentStatusUseCase(contract_repo).execute(
-        ContractId(contract_id), body.payment_status
+        contract.id, body.payment_status
     )
     await audit_entity_operation(
         entity=contract,
@@ -445,14 +446,10 @@ async def list_contracts(
 )
 @readonly()
 async def get_contract(
-    contract_id: str,
-    contract_repo: ContractRepository = Depends(get_contract_repository),
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get contract by ID."""
-    contract = await contract_repo.get_by_id(ContractId(contract_id))
-    if not contract:
-        raise ValueError("Contract not found")
     return _to_contract_response(contract)
 
 
@@ -498,5 +495,8 @@ async def get_active_contract_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
     if not contract:
-        raise ValueError("Active contract not found for this client")
+        raise HTTPException(
+            status_code=404,
+            detail="Active contract not found for this client",
+        )
     return _to_contract_response(contract)

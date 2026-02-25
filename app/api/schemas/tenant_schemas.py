@@ -7,6 +7,7 @@ Separate from domain entities.
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import SubscriptionTier, TenantStatus
 
 
@@ -26,7 +27,7 @@ class TenantSettingsCreate(BaseModel):
 class TenantCreate(BaseModel):
     """Request schema for creating a tenant."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Tenant name")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Tenant name")
     code: str = Field(
         ...,
         min_length=3,
@@ -98,19 +99,19 @@ class TenantUpdateSettings(BaseModel):
 class TenantSuspendRequest(BaseModel):
     """Request schema for suspending a tenant."""
 
-    reason: str = Field(..., min_length=1, description="Suspension reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Suspension reason")
 
 
 class TenantTerminateRequest(BaseModel):
     """Request schema for terminating a tenant."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class TenantUpdate(BaseModel):
     """Request schema for updating tenant basic information."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Tenant name")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Tenant name")
 
 
 class SubscriptionUpdateRequest(BaseModel):

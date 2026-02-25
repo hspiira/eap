@@ -163,6 +163,9 @@ class TenantSettings:
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
 
+    def allows_more_clients(self, current_count: int) -> bool:
+        return current_count < self.max_clients
+
 @dataclass(frozen=True)
 class ContactInfo:
     phone: str | None = None

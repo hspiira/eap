@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -18,6 +18,10 @@ from app.domain.exceptions import AuthenticationException
 
 # HTTP Bearer scheme for API docs and dependency injection (matches new_timeline style)
 http_bearer = HTTPBearer(auto_error=False)
+
+# Cookie names when AUTH_USE_HTTPONLY_COOKIES is enabled
+COOKIE_ACCESS_TOKEN = "evexia_access_token"
+COOKIE_REFRESH_TOKEN = "evexia_refresh_token"
 
 
 # =============================================================================
@@ -32,6 +36,7 @@ class TokenData(BaseModel):
     tenant_id: str
     email: str | None = None
     exp: datetime | None = None
+    jti: str | None = None  # refresh token id for revocation
 
 
 class Token(BaseModel):
@@ -133,8 +138,12 @@ def create_access_token(
     return encoded_jwt
 
 
-def create_refresh_token(user_id: str, tenant_id: str) -> str:
-    """Create a refresh token with longer expiry."""
+def create_refresh_token(
+    user_id: str,
+    tenant_id: str,
+    jti: str | None = None,
+) -> str:
+    """Create a refresh token with longer expiry. Optional jti for revocation."""
     expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {
         "sub": user_id,
@@ -143,6 +152,8 @@ def create_refresh_token(user_id: str, tenant_id: str) -> str:
         "iat": datetime.now(UTC),
         "type": "refresh",
     }
+    if jti:
+        to_encode["jti"] = jti
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
@@ -158,7 +169,12 @@ def decode_refresh_token(token: str) -> TokenData:
         tenant_id = payload.get("tenant_id")
         if not user_id or not tenant_id:
             raise AuthenticationException("Invalid token: missing claims")
-        return TokenData(user_id=user_id, tenant_id=tenant_id)
+        jti = payload.get("jti")
+        return TokenData(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            jti=jti,
+        )
     except JWTError as e:
         raise AuthenticationException(f"Invalid refresh token: {str(e)}")
 
@@ -203,26 +219,39 @@ def decode_token(token: str) -> TokenData:
 # =============================================================================
 
 
-async def get_current_user_optional(
+async def get_access_token_str(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
+) -> str | None:
+    """
+    Get access token from cookie (if AUTH_USE_HTTPONLY_COOKIES) or Bearer header.
+    """
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        token = request.cookies.get(COOKIE_ACCESS_TOKEN)
+        if token:
+            return token
+    if credentials:
+        return credentials.credentials
+    return None
+
+
+async def get_current_user_optional(
+    token_str: str | None = Depends(get_access_token_str),
 ) -> TokenData | None:
     """
-    Get current user from Bearer token if provided.
+    Get current user from Bearer token or cookie if provided.
 
     This dependency does not require authentication - returns None
     if no token is provided.
 
-    Args:
-        credentials: Optional Bearer credentials from Authorization header
-
     Returns:
         TokenData if authenticated, None otherwise
     """
-    if not credentials:
+    if not token_str:
         return None
 
     try:
-        return decode_token(credentials.credentials)
+        return decode_token(token_str)
     except AuthenticationException:
         return None
 
@@ -255,14 +284,18 @@ async def get_current_user(
 
 
 async def get_current_active_user(
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
 ) -> TokenData:
     """
     Get current active user (same as get_current_user unless STRICT_ACTIVE_USER_CHECK is True).
 
-    Active-user DB validation is performed in refresh_token (user/tenant must exist and be active).
-    This dependency does not re-validate against DB; use it when token presence is sufficient.
+    When STRICT_ACTIVE_USER_CHECK is True, re-validates user and tenant in DB and rejects if
+    user is not active or tenant is not active. Otherwise returns token data without DB check.
     """
+    validate = getattr(request.app.state, "validate_active_user", None)
+    if validate is not None:
+        await validate(request, current_user)
     return current_user
 
 
@@ -275,15 +308,19 @@ def create_token_response(
     user_id: str,
     tenant_id: str,
     email: str | None = None,
+    refresh_jti: str | None = None,
 ) -> Token:
-    """Create access and refresh tokens."""
+    """Create access and refresh tokens. Optional refresh_jti for revocation support."""
     access_token = create_access_token(
         user_id=user_id,
         tenant_id=tenant_id,
         email=email,
     )
-    refresh_token = create_refresh_token(user_id=user_id, tenant_id=tenant_id)
-
+    refresh_token = create_refresh_token(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        jti=refresh_jti,
+    )
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,

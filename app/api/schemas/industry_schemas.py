@@ -7,12 +7,14 @@ Pydantic models for request/response validation.
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+
 
 class IndustryCreate(BaseModel):
     """Request schema for creating an industry."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Industry name")
-    description: str | None = Field(None, description="Industry description")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Industry name")
+    description: OptionalSanitizedStr = Field(None, description="Industry description")
     code: str | None = Field(None, max_length=50, description="Industry code")
     parent_industry_id: str | None = Field(None, description="Parent industry ID")
 
@@ -20,8 +22,8 @@ class IndustryCreate(BaseModel):
 class IndustryUpdate(BaseModel):
     """Request schema for updating an industry."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Industry name")
-    description: str | None = Field(None, description="Industry description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Industry name")
+    description: OptionalSanitizedStr = Field(None, description="Industry description")
     code: str | None = Field(None, max_length=50, description="Industry code")
     parent_industry_id: str | None = Field(None, description="Parent industry ID")
 

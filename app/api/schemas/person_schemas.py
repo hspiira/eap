@@ -17,6 +17,7 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 
 
@@ -87,7 +88,7 @@ class DependentInfoSchema(BaseModel):
 class EmergencyContactSchema(BaseModel):
     """Emergency contact schema."""
 
-    name: str = Field(..., description="Contact name")
+    name: SanitizedStr = Field(..., description="Contact name")
     phone: str | None = Field(None, description="Phone number")
     email: str | None = Field(None, description="Email address")
 
@@ -99,7 +100,7 @@ class EmergencyContactSchema(BaseModel):
 class PersonDeactivateRequest(BaseModel):
     """Request schema for deactivating a person."""
 
-    reason: str | None = Field(None, description="Deactivation reason")
+    reason: OptionalSanitizedStr = Field(None, description="Deactivation reason")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -107,7 +108,7 @@ class PersonDeactivateRequest(BaseModel):
 class PersonTerminateRequest(BaseModel):
     """Request schema for terminating a person."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class AddSecondaryRoleRequest(BaseModel):

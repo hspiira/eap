@@ -8,6 +8,10 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import (
+    get_person_by_user_id_for_current_tenant,
+    get_person_for_current_tenant,
+)
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import (
@@ -243,15 +247,15 @@ async def create_person(
 )
 @transactional()
 async def activate_person(
-    person_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a person."""
-    person = await ActivatePersonUseCase(person_repo).execute(PersonId(person_id))
+    person = await ActivatePersonUseCase(person_repo).execute(person.id)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -269,17 +273,17 @@ async def activate_person(
 )
 @transactional()
 async def deactivate_person(
-    person_id: str,
     request: Request,
     body: PersonDeactivateRequest,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a person."""
     person = await DeactivatePersonUseCase(person_repo).execute(
-        PersonId(person_id), body.reason
+        person.id, body.reason
     )
     await audit_entity_operation(
         entity=person,
@@ -298,17 +302,17 @@ async def deactivate_person(
 )
 @transactional()
 async def terminate_person(
-    person_id: str,
     request: Request,
     body: PersonTerminateRequest,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a person."""
     person = await TerminatePersonUseCase(person_repo).execute(
-        PersonId(person_id), body.reason
+        person.id, body.reason
     )
     await audit_entity_operation(
         entity=person,
@@ -327,11 +331,11 @@ async def terminate_person(
 )
 @transactional()
 async def add_secondary_role(
-    person_id: str,
     data: AddSecondaryRoleRequest,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -394,12 +398,12 @@ async def add_secondary_role(
         )
 
     person = await AddSecondaryRoleUseCase(person_repo, client_repo).execute(
-        PersonId(person_id), data.role, info, TenantId(tenant_id)
+        person.id, data.role, info, person.tenant_id
     )
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
-        tenant_id=tenant_id,
+        tenant_id=person.tenant_id.value,
         user_id=current_user.user_id,
         request=request,
     )
@@ -413,15 +417,15 @@ async def add_secondary_role(
 )
 @transactional()
 async def remove_secondary_role(
-    person_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Remove secondary role from a person."""
-    person = await RemoveSecondaryRoleUseCase(person_repo).execute(PersonId(person_id))
+    person = await RemoveSecondaryRoleUseCase(person_repo).execute(person.id)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -439,10 +443,10 @@ async def remove_secondary_role(
 )
 @transactional()
 async def update_emergency_contact(
-    person_id: str,
     data: UpdateEmergencyContactRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -456,7 +460,7 @@ async def update_emergency_contact(
         else None,
     )
     person = await UpdateEmergencyContactUseCase(person_repo).execute(
-        PersonId(person_id), contact
+        person.id, contact
     )
     await audit_entity_operation(
         entity=person,
@@ -475,10 +479,10 @@ async def update_emergency_contact(
 )
 @transactional()
 async def update_employment_info(
-    person_id: str,
     data: UpdateEmploymentInfoRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -500,7 +504,7 @@ async def update_employment_info(
         end_date=data.employment_info.end_date,
     )
     person = await UpdateEmploymentInfoUseCase(person_repo).execute(
-        PersonId(person_id), info
+        person.id, info
     )
     await audit_entity_operation(
         entity=person,
@@ -519,10 +523,10 @@ async def update_employment_info(
 )
 @transactional()
 async def update_license_info(
-    person_id: str,
     data: UpdateLicenseInfoRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -534,7 +538,7 @@ async def update_license_info(
         expiry_date=data.license_info.expiry_date,
     )
     person = await UpdateLicenseInfoUseCase(person_repo).execute(
-        PersonId(person_id), info
+        person.id, info
     )
     await audit_entity_operation(
         entity=person,
@@ -553,10 +557,10 @@ async def update_license_info(
 )
 @transactional()
 async def update_staff_info(
-    person_id: str,
     data: UpdateStaffInfoRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -571,7 +575,7 @@ async def update_staff_info(
         can_view_reports=data.staff_info.can_view_reports,
     )
     person = await UpdateStaffInfoUseCase(person_repo).execute(
-        PersonId(person_id), info
+        person.id, info
     )
     await audit_entity_operation(
         entity=person,
@@ -590,10 +594,10 @@ async def update_staff_info(
 )
 @transactional()
 async def update_dependent_info(
-    person_id: str,
     data: UpdateDependentInfoRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -606,7 +610,7 @@ async def update_dependent_info(
         guardian_id=UserId(dep.guardian_id) if dep.guardian_id else None,
     )
     person = await UpdateDependentInfoUseCase(person_repo).execute(
-        PersonId(person_id), dependent_info_vo
+        person.id, dependent_info_vo
     )
     await audit_entity_operation(
         entity=person,
@@ -625,15 +629,15 @@ async def update_dependent_info(
 )
 @transactional()
 async def archive_person(
-    person_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a person."""
-    person = await ArchivePersonUseCase(person_repo).execute(PersonId(person_id))
+    person = await ArchivePersonUseCase(person_repo).execute(person.id)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -651,15 +655,15 @@ async def archive_person(
 )
 @transactional()
 async def restore_person(
-    person_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived person to active status."""
-    person = await RestorePersonUseCase(person_repo).execute(PersonId(person_id))
+    person = await RestorePersonUseCase(person_repo).execute(person.id)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -735,18 +739,10 @@ async def list_persons(
 )
 @readonly()
 async def get_person(
-    person_id: str,
-    person_repo: PersonRepository = Depends(get_person_repository),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get person by ID."""
-    try:
-        person_id_vo = PersonId(person_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid person ID: {str(e)}")
-    person = await person_repo.get_by_id(person_id_vo)
-    if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
     return _to_person_response(person)
 
 
@@ -757,18 +753,10 @@ async def get_person(
 )
 @readonly()
 async def get_person_by_user_id(
-    user_id: str,
-    person_repo: PersonRepository = Depends(get_person_repository),
+    person: PersonEntity = Depends(get_person_by_user_id_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get person by user ID."""
-    try:
-        user_id_vo = UserId(user_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid user ID: {str(e)}")
-    person = await person_repo.get_by_user_id(user_id_vo)
-    if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
     return _to_person_response(person)
 
 

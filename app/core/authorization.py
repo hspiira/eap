@@ -18,19 +18,43 @@ from fastapi import Depends, HTTPException, Request, status
 
 from app.api.dependencies import (
     get_audit_repository,
+    get_client_repository,
+    get_contract_repository,
     get_document_repository,
+    get_person_repository,
+    get_service_repository,
+    get_service_session_repository,
     get_user_repository,
 )
 from app.core.config import settings
 from app.core.security import TokenData, get_current_user, get_current_user_optional
 from app.domain.entities.audit import AuditLog
+from app.domain.entities.client import ClientEntity
+from app.domain.entities.contract import ContractEntity
 from app.domain.entities.document import DocumentEntity
+from app.domain.entities.person import PersonEntity
+from app.domain.entities.service import ServiceEntity
+from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.entities.user import UserEntity
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.enums import TenantRole
-from app.domain.value_objects.core import AuditLogId, DocumentId, UserId
+from app.domain.value_objects.core import (
+    AuditLogId,
+    ClientId,
+    ContractId,
+    DocumentId,
+    PersonId,
+    ServiceId,
+    SessionId,
+    UserId,
+)
 
 
 async def get_current_user_entity(
@@ -96,14 +120,22 @@ async def require_platform_admin(
 ) -> TokenData:
     """
     Require that the current user is a platform admin.
-    Stub: raises 403 until RBAC is implemented (e.g. role claim or platform tenant).
+    When PLATFORM_TENANT_ID is set, users in that tenant are platform admins.
     """
-    # Stub: no platform admin role yet; always deny.
-    # Future: check current_user.tenant_id == sentinel or role claim.
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Platform admin required",
-    )
+    platform_tenant_id = getattr(
+        settings, "PLATFORM_TENANT_ID", ""
+    ).strip()
+    if not platform_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform admin required",
+        )
+    if current_user.tenant_id != platform_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform admin required",
+        )
+    return current_user
 
 
 async def require_platform_admin_if_configured(
@@ -121,11 +153,12 @@ async def require_platform_admin_if_configured(
             detail="Authentication required for tenant creation",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # Stub: no platform admin role yet; always deny when flag is set
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Platform admin required for tenant creation",
-    )
+    platform_tenant_id = getattr(settings, "PLATFORM_TENANT_ID", "").strip()
+    if not platform_tenant_id or current_user.tenant_id != platform_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform admin required for tenant creation",
+        )
 
 
 async def get_user_in_tenant(
@@ -195,3 +228,147 @@ async def get_document_for_current_tenant(
             detail="Document not found",
         )
     return document
+
+
+async def get_client_for_current_tenant(
+    client_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    client_repo: ClientRepository = Depends(get_client_repository),
+) -> ClientEntity:
+    """
+    Load client by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    client = await client_repo.get_by_id(ClientId(client_id))
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found",
+        )
+    if client.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found",
+        )
+    return client
+
+
+async def get_contract_for_current_tenant(
+    contract_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+) -> ContractEntity:
+    """
+    Load contract by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    contract = await contract_repo.get_by_id(ContractId(contract_id))
+    if not contract:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contract not found",
+        )
+    if contract.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contract not found",
+        )
+    return contract
+
+
+async def get_service_for_current_tenant(
+    service_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    service_repo: ServiceRepository = Depends(get_service_repository),
+) -> ServiceEntity:
+    """
+    Load service by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    service = await service_repo.get_by_id(ServiceId(service_id))
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service not found",
+        )
+    if service.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service not found",
+        )
+    return service
+
+
+async def get_service_session_for_current_tenant(
+    session_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+) -> ServiceSessionEntity:
+    """
+    Load service session by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    session = await session_repo.get_by_id(SessionId(session_id))
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service session not found",
+        )
+    if session.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service session not found",
+        )
+    return session
+
+
+async def get_person_for_current_tenant(
+    person_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    person_repo: PersonRepository = Depends(get_person_repository),
+) -> PersonEntity:
+    """
+    Load person by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    try:
+        person = await person_repo.get_by_id(PersonId(person_id))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found",
+        )
+    if not person:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found",
+        )
+    if person.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found",
+        )
+    return person
+
+
+async def get_person_by_user_id_for_current_tenant(
+    user_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    person_repo: PersonRepository = Depends(get_person_repository),
+) -> PersonEntity:
+    """
+    Load person by user ID and require that the person belongs to the current user's tenant.
+    Returns 404 if not found or different tenant (fail closed).
+    """
+    person = await person_repo.get_by_user_id(UserId(user_id))
+    if not person:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found",
+        )
+    if person.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found",
+        )
+    return person
