@@ -74,13 +74,26 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
     ) -> int:
         """
         Count users matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by user status
             is_email_verified: Filter by email verification status
             search: Search in user email
-            
+
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def update_password(self, user_id: UserId, password_hash: str) -> bool:
+        """
+        Update a user's password hash (e.g. after set-initial-password).
+
+        Args:
+            user_id: User identifier
+            password_hash: New hashed password
+
+        Returns:
+            True if user was found and updated, False otherwise
         """

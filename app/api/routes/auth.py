@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    get_password_set_token_repository,
     get_refresh_token_repository,
     get_tenant_repository,
     get_user_repository,
@@ -22,6 +23,7 @@ from app.api.schemas.auth_schemas import (
     MeResponse,
     RefreshRequest,
     RefreshResponse,
+    SetInitialPasswordRequest,
 )
 from app.application.use_cases.user_use_cases import RecordUserLoginUseCase
 from app.core.database import get_db
@@ -32,12 +34,16 @@ from app.core.security import (
     create_token_response,
     decode_refresh_token,
     get_current_user,
+    hash_password,
     verify_password,
 )
 from app.domain.enums import TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
 from app.infrastructure.repositories.refresh_token_repository import (
     RefreshTokenRepository,
 )
@@ -45,6 +51,41 @@ from app.shared.decorators import transactional
 from app.shared.utils.generators import generate_cuid
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+@router.post(
+    "/set-initial-password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Set initial admin password using one-time token",
+)
+@transactional()
+async def set_initial_password(
+    body: SetInitialPasswordRequest,
+    password_set_token_repo: PasswordSetTokenRepository = Depends(
+        get_password_set_token_repository
+    ),
+    user_repo: UserRepository = Depends(get_user_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Set the initial admin password using the one-time token from the
+    set_password_url returned when creating a tenant (when SET_PASSWORD_BASE_URL is set).
+    After calling this, the user can log in with tenant code, admin email, and this password.
+    """
+    user_id = await password_set_token_repo.redeem(body.token)
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired link. Request a new link from your administrator.",
+        )
+    password_hash = hash_password(body.password)
+    updated = await user_repo.update_password(UserId(user_id), password_hash)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+    return None
 
 
 @router.get(

@@ -83,6 +83,12 @@ class Settings(BaseSettings):
         default=False,
         description="If True, POST /tenants requires platform admin",
     )
+    # Base URL for set-password link after tenant registration (e.g. https://app.example.com or http://localhost:3000).
+    # When set, tenant creation returns set_password_url instead of admin_password; user sets password then logs in.
+    SET_PASSWORD_BASE_URL: str = Field(
+        default="",
+        description="Base URL for set-password page; when set, new tenants get set_password_url instead of admin_password",
+    )
     PLATFORM_TENANT_ID: str = Field(
         default="",
         description="Tenant ID whose users are platform admins; empty means no platform admin",

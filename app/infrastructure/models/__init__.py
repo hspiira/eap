@@ -28,6 +28,7 @@ from app.infrastructure.models.json_schemas import (
     StaffInfoDict,
 )
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
+from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
 from app.infrastructure.models.service_model import ServiceModel
@@ -54,6 +55,7 @@ __all__ = [
     "KPIAssignmentModel",
     "KPIModel",
     "LicenseInfoDict",
+    "PasswordSetTokenModel",
     "PersonModel",
     "ServiceAssignmentModel",
     "ServiceModel",

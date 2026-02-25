@@ -7,7 +7,7 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import Language, TenantRole, UserStatus
@@ -54,17 +54,30 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    # Status
+    # Status - native PG enum (userstatus); use value not name
     status: Mapped[UserStatus] = mapped_column(
-        EnumValueType(UserStatus), nullable=False, default=UserStatus.PENDING_VERIFICATION
+        Enum(
+            UserStatus,
+            name="userstatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=UserStatus.PENDING_VERIFICATION,
     )
     status_changed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
-    # Preferences
+    # Preferences - native PG enum (language)
     preferred_language: Mapped[Language | None] = mapped_column(
-        EnumValueType(Language), nullable=True
+        Enum(
+            Language,
+            name="language",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=True,
     )
     timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
