@@ -9,16 +9,122 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
+import { Route as TagsRouteImport } from './routes/tags'
+import { Route as ServicesRouteImport } from './routes/services'
+import { Route as ServiceSessionsRouteImport } from './routes/service-sessions'
+import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
+import { Route as PersonsRouteImport } from './routes/persons'
+import { Route as KpisRouteImport } from './routes/kpis'
+import { Route as IndustriesRouteImport } from './routes/industries'
+import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as ContractsRouteImport } from './routes/contracts'
+import { Route as ContactsRouteImport } from './routes/contacts'
+import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as AtRiskRouteImport } from './routes/at-risk'
+import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
+import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
+import { Route as PersonsIndexRouteImport } from './routes/persons/index'
+import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
+import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as UsersNewRouteImport } from './routes/users/new'
+import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
+import { Route as ServicesNewRouteImport } from './routes/services/new'
+import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
+import { Route as ServiceSessionsNewRouteImport } from './routes/service-sessions/new'
+import { Route as ServiceSessionsSessionIdRouteImport } from './routes/service-sessions/$sessionId'
+import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
+import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
+import { Route as PersonsNewRouteImport } from './routes/persons/new'
+import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
+import { Route as ContractsNewRouteImport } from './routes/contracts/new'
+import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
+import { Route as ClientsNewRouteImport } from './routes/clients/new'
+import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagsRoute = TagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesRoute = ServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceSessionsRoute = ServiceSessionsRouteImport.update({
+  id: '/service-sessions',
+  path: '/service-sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceAssignmentsRoute = ServiceAssignmentsRouteImport.update({
+  id: '/service-assignments',
+  path: '/service-assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonsRoute = PersonsRouteImport.update({
+  id: '/persons',
+  path: '/persons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KpisRoute = KpisRouteImport.update({
+  id: '/kpis',
+  path: '/kpis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriesRoute = IndustriesRouteImport.update({
+  id: '/industries',
+  path: '/industries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsRoute = ContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsRoute = ClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtRiskRoute = AtRiskRouteImport.update({
@@ -26,10 +132,122 @@ const AtRiskRoute = AtRiskRouteImport.update({
   path: '/at-risk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivitiesRoute = ActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UsersRoute,
+} as any)
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServicesRoute,
+} as any)
+const ServiceSessionsIndexRoute = ServiceSessionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServiceSessionsRoute,
+} as any)
+const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServiceAssignmentsRoute,
+} as any)
+const PersonsIndexRoute = PersonsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const ContractsIndexRoute = ContractsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ContractsRoute,
+} as any)
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const UsersNewRoute = UsersNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => UsersRoute,
+} as any)
+const UsersUserIdRoute = UsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => UsersRoute,
+} as any)
+const ServicesNewRoute = ServicesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ServicesRoute,
+} as any)
+const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
+  id: '/$serviceId',
+  path: '/$serviceId',
+  getParentRoute: () => ServicesRoute,
+} as any)
+const ServiceSessionsNewRoute = ServiceSessionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ServiceSessionsRoute,
+} as any)
+const ServiceSessionsSessionIdRoute =
+  ServiceSessionsSessionIdRouteImport.update({
+    id: '/$sessionId',
+    path: '/$sessionId',
+    getParentRoute: () => ServiceSessionsRoute,
+  } as any)
+const ServiceAssignmentsNewRoute = ServiceAssignmentsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ServiceAssignmentsRoute,
+} as any)
+const ServiceAssignmentsAssignmentIdRoute =
+  ServiceAssignmentsAssignmentIdRouteImport.update({
+    id: '/$assignmentId',
+    path: '/$assignmentId',
+    getParentRoute: () => ServiceAssignmentsRoute,
+  } as any)
+const PersonsNewRoute = PersonsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const PersonsPersonIdRoute = PersonsPersonIdRouteImport.update({
+  id: '/$personId',
+  path: '/$personId',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const ContractsNewRoute = ContractsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ContractsRoute,
+} as any)
+const ContractsContractIdRoute = ContractsContractIdRouteImport.update({
+  id: '/$contractId',
+  path: '/$contractId',
+  getParentRoute: () => ContractsRoute,
+} as any)
+const ClientsNewRoute = ClientsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
+  id: '/$clientId',
+  path: '/$clientId',
+  getParentRoute: () => ClientsRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
@@ -49,69 +267,384 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRoute
   '/at-risk': typeof AtRiskRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
+  '/clients': typeof ClientsRouteWithChildren
+  '/contacts': typeof ContactsRoute
+  '/contracts': typeof ContractsRouteWithChildren
+  '/documents': typeof DocumentsRoute
+  '/inbox': typeof InboxRoute
+  '/industries': typeof IndustriesRoute
+  '/kpis': typeof KpisRoute
+  '/persons': typeof PersonsRouteWithChildren
+  '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
+  '/service-sessions': typeof ServiceSessionsRouteWithChildren
+  '/services': typeof ServicesRouteWithChildren
+  '/tags': typeof TagsRoute
+  '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
+  '/service-sessions/new': typeof ServiceSessionsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
+  '/clients/': typeof ClientsIndexRoute
+  '/contracts/': typeof ContractsIndexRoute
+  '/persons/': typeof PersonsIndexRoute
+  '/service-assignments/': typeof ServiceAssignmentsIndexRoute
+  '/service-sessions/': typeof ServiceSessionsIndexRoute
+  '/services/': typeof ServicesIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRoute
   '/at-risk': typeof AtRiskRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
+  '/contacts': typeof ContactsRoute
+  '/documents': typeof DocumentsRoute
+  '/inbox': typeof InboxRoute
+  '/industries': typeof IndustriesRoute
+  '/kpis': typeof KpisRoute
+  '/tags': typeof TagsRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
+  '/service-sessions/new': typeof ServiceSessionsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
+  '/clients': typeof ClientsIndexRoute
+  '/contracts': typeof ContractsIndexRoute
+  '/persons': typeof PersonsIndexRoute
+  '/service-assignments': typeof ServiceAssignmentsIndexRoute
+  '/service-sessions': typeof ServiceSessionsIndexRoute
+  '/services': typeof ServicesIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activities': typeof ActivitiesRoute
   '/at-risk': typeof AtRiskRoute
+  '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
+  '/clients': typeof ClientsRouteWithChildren
+  '/contacts': typeof ContactsRoute
+  '/contracts': typeof ContractsRouteWithChildren
+  '/documents': typeof DocumentsRoute
+  '/inbox': typeof InboxRoute
+  '/industries': typeof IndustriesRoute
+  '/kpis': typeof KpisRoute
+  '/persons': typeof PersonsRouteWithChildren
+  '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
+  '/service-sessions': typeof ServiceSessionsRouteWithChildren
+  '/services': typeof ServicesRouteWithChildren
+  '/tags': typeof TagsRoute
+  '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/clients/$clientId': typeof ClientsClientIdRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/contracts/$contractId': typeof ContractsContractIdRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/persons/$personId': typeof PersonsPersonIdRoute
+  '/persons/new': typeof PersonsNewRoute
+  '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
+  '/service-assignments/new': typeof ServiceAssignmentsNewRoute
+  '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
+  '/service-sessions/new': typeof ServiceSessionsNewRoute
+  '/services/$serviceId': typeof ServicesServiceIdRoute
+  '/services/new': typeof ServicesNewRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
+  '/clients/': typeof ClientsIndexRoute
+  '/contracts/': typeof ContractsIndexRoute
+  '/persons/': typeof PersonsIndexRoute
+  '/service-assignments/': typeof ServiceAssignmentsIndexRoute
+  '/service-sessions/': typeof ServiceSessionsIndexRoute
+  '/services/': typeof ServicesIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activities'
     | '/at-risk'
+    | '/audit'
     | '/auth'
+    | '/clients'
+    | '/contacts'
+    | '/contracts'
+    | '/documents'
+    | '/inbox'
+    | '/industries'
+    | '/kpis'
+    | '/persons'
+    | '/service-assignments'
+    | '/service-sessions'
+    | '/services'
+    | '/tags'
+    | '/users'
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
+    | '/service-sessions/$sessionId'
+    | '/service-sessions/new'
+    | '/services/$serviceId'
+    | '/services/new'
+    | '/users/$userId'
+    | '/users/new'
+    | '/clients/'
+    | '/contracts/'
+    | '/persons/'
+    | '/service-assignments/'
+    | '/service-sessions/'
+    | '/services/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activities'
     | '/at-risk'
+    | '/audit'
     | '/auth'
+    | '/contacts'
+    | '/documents'
+    | '/inbox'
+    | '/industries'
+    | '/kpis'
+    | '/tags'
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
+    | '/service-sessions/$sessionId'
+    | '/service-sessions/new'
+    | '/services/$serviceId'
+    | '/services/new'
+    | '/users/$userId'
+    | '/users/new'
+    | '/clients'
+    | '/contracts'
+    | '/persons'
+    | '/service-assignments'
+    | '/service-sessions'
+    | '/services'
+    | '/users'
   id:
     | '__root__'
     | '/'
+    | '/activities'
     | '/at-risk'
+    | '/audit'
     | '/auth'
+    | '/clients'
+    | '/contacts'
+    | '/contracts'
+    | '/documents'
+    | '/inbox'
+    | '/industries'
+    | '/kpis'
+    | '/persons'
+    | '/service-assignments'
+    | '/service-sessions'
+    | '/services'
+    | '/tags'
+    | '/users'
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/clients/$clientId'
+    | '/clients/new'
+    | '/contracts/$contractId'
+    | '/contracts/new'
+    | '/persons/$personId'
+    | '/persons/new'
+    | '/service-assignments/$assignmentId'
+    | '/service-assignments/new'
+    | '/service-sessions/$sessionId'
+    | '/service-sessions/new'
+    | '/services/$serviceId'
+    | '/services/new'
+    | '/users/$userId'
+    | '/users/new'
+    | '/clients/'
+    | '/contracts/'
+    | '/persons/'
+    | '/service-assignments/'
+    | '/service-sessions/'
+    | '/services/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivitiesRoute: typeof ActivitiesRoute
   AtRiskRoute: typeof AtRiskRoute
+  AuditRoute: typeof AuditRoute
   AuthRoute: typeof AuthRouteWithChildren
+  ClientsRoute: typeof ClientsRouteWithChildren
+  ContactsRoute: typeof ContactsRoute
+  ContractsRoute: typeof ContractsRouteWithChildren
+  DocumentsRoute: typeof DocumentsRoute
+  InboxRoute: typeof InboxRoute
+  IndustriesRoute: typeof IndustriesRoute
+  KpisRoute: typeof KpisRoute
+  PersonsRoute: typeof PersonsRouteWithChildren
+  ServiceAssignmentsRoute: typeof ServiceAssignmentsRouteWithChildren
+  ServiceSessionsRoute: typeof ServiceSessionsRouteWithChildren
+  ServicesRoute: typeof ServicesRouteWithChildren
+  TagsRoute: typeof TagsRoute
+  UsersRoute: typeof UsersRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tags': {
+      id: '/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services': {
+      id: '/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-sessions': {
+      id: '/service-sessions'
+      path: '/service-sessions'
+      fullPath: '/service-sessions'
+      preLoaderRoute: typeof ServiceSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-assignments': {
+      id: '/service-assignments'
+      path: '/service-assignments'
+      fullPath: '/service-assignments'
+      preLoaderRoute: typeof ServiceAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persons': {
+      id: '/persons'
+      path: '/persons'
+      fullPath: '/persons'
+      preLoaderRoute: typeof PersonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpis': {
+      id: '/kpis'
+      path: '/kpis'
+      fullPath: '/kpis'
+      preLoaderRoute: typeof KpisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industries': {
+      id: '/industries'
+      path: '/industries'
+      fullPath: '/industries'
+      preLoaderRoute: typeof IndustriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts': {
+      id: '/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof ContractsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients': {
+      id: '/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof ClientsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/at-risk': {
@@ -121,12 +654,166 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtRiskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activities': {
+      id: '/activities'
+      path: '/activities'
+      fullPath: '/activities'
+      preLoaderRoute: typeof ActivitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/services/': {
+      id: '/services/'
+      path: '/'
+      fullPath: '/services/'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/service-sessions/': {
+      id: '/service-sessions/'
+      path: '/'
+      fullPath: '/service-sessions/'
+      preLoaderRoute: typeof ServiceSessionsIndexRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/service-assignments/': {
+      id: '/service-assignments/'
+      path: '/'
+      fullPath: '/service-assignments/'
+      preLoaderRoute: typeof ServiceAssignmentsIndexRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/persons/': {
+      id: '/persons/'
+      path: '/'
+      fullPath: '/persons/'
+      preLoaderRoute: typeof PersonsIndexRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/contracts/': {
+      id: '/contracts/'
+      path: '/'
+      fullPath: '/contracts/'
+      preLoaderRoute: typeof ContractsIndexRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/clients/': {
+      id: '/clients/'
+      path: '/'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/users/new': {
+      id: '/users/new'
+      path: '/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof UsersNewRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/users/$userId': {
+      id: '/users/$userId'
+      path: '/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof UsersUserIdRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/services/new': {
+      id: '/services/new'
+      path: '/new'
+      fullPath: '/services/new'
+      preLoaderRoute: typeof ServicesNewRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/services/$serviceId': {
+      id: '/services/$serviceId'
+      path: '/$serviceId'
+      fullPath: '/services/$serviceId'
+      preLoaderRoute: typeof ServicesServiceIdRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/service-sessions/new': {
+      id: '/service-sessions/new'
+      path: '/new'
+      fullPath: '/service-sessions/new'
+      preLoaderRoute: typeof ServiceSessionsNewRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/service-sessions/$sessionId': {
+      id: '/service-sessions/$sessionId'
+      path: '/$sessionId'
+      fullPath: '/service-sessions/$sessionId'
+      preLoaderRoute: typeof ServiceSessionsSessionIdRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/service-assignments/new': {
+      id: '/service-assignments/new'
+      path: '/new'
+      fullPath: '/service-assignments/new'
+      preLoaderRoute: typeof ServiceAssignmentsNewRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/service-assignments/$assignmentId': {
+      id: '/service-assignments/$assignmentId'
+      path: '/$assignmentId'
+      fullPath: '/service-assignments/$assignmentId'
+      preLoaderRoute: typeof ServiceAssignmentsAssignmentIdRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/persons/new': {
+      id: '/persons/new'
+      path: '/new'
+      fullPath: '/persons/new'
+      preLoaderRoute: typeof PersonsNewRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/persons/$personId': {
+      id: '/persons/$personId'
+      path: '/$personId'
+      fullPath: '/persons/$personId'
+      preLoaderRoute: typeof PersonsPersonIdRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/contracts/new': {
+      id: '/contracts/new'
+      path: '/new'
+      fullPath: '/contracts/new'
+      preLoaderRoute: typeof ContractsNewRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/contracts/$contractId': {
+      id: '/contracts/$contractId'
+      path: '/$contractId'
+      fullPath: '/contracts/$contractId'
+      preLoaderRoute: typeof ContractsContractIdRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/clients/new': {
+      id: '/clients/new'
+      path: '/new'
+      fullPath: '/clients/new'
+      preLoaderRoute: typeof ClientsNewRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/clients/$clientId': {
+      id: '/clients/$clientId'
+      path: '/$clientId'
+      fullPath: '/clients/$clientId'
+      preLoaderRoute: typeof ClientsClientIdRouteImport
+      parentRoute: typeof ClientsRoute
     }
     '/auth/signup': {
       id: '/auth/signup'
@@ -166,10 +853,132 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface ClientsRouteChildren {
+  ClientsClientIdRoute: typeof ClientsClientIdRoute
+  ClientsNewRoute: typeof ClientsNewRoute
+  ClientsIndexRoute: typeof ClientsIndexRoute
+}
+
+const ClientsRouteChildren: ClientsRouteChildren = {
+  ClientsClientIdRoute: ClientsClientIdRoute,
+  ClientsNewRoute: ClientsNewRoute,
+  ClientsIndexRoute: ClientsIndexRoute,
+}
+
+const ClientsRouteWithChildren =
+  ClientsRoute._addFileChildren(ClientsRouteChildren)
+
+interface ContractsRouteChildren {
+  ContractsContractIdRoute: typeof ContractsContractIdRoute
+  ContractsNewRoute: typeof ContractsNewRoute
+  ContractsIndexRoute: typeof ContractsIndexRoute
+}
+
+const ContractsRouteChildren: ContractsRouteChildren = {
+  ContractsContractIdRoute: ContractsContractIdRoute,
+  ContractsNewRoute: ContractsNewRoute,
+  ContractsIndexRoute: ContractsIndexRoute,
+}
+
+const ContractsRouteWithChildren = ContractsRoute._addFileChildren(
+  ContractsRouteChildren,
+)
+
+interface PersonsRouteChildren {
+  PersonsPersonIdRoute: typeof PersonsPersonIdRoute
+  PersonsNewRoute: typeof PersonsNewRoute
+  PersonsIndexRoute: typeof PersonsIndexRoute
+}
+
+const PersonsRouteChildren: PersonsRouteChildren = {
+  PersonsPersonIdRoute: PersonsPersonIdRoute,
+  PersonsNewRoute: PersonsNewRoute,
+  PersonsIndexRoute: PersonsIndexRoute,
+}
+
+const PersonsRouteWithChildren =
+  PersonsRoute._addFileChildren(PersonsRouteChildren)
+
+interface ServiceAssignmentsRouteChildren {
+  ServiceAssignmentsAssignmentIdRoute: typeof ServiceAssignmentsAssignmentIdRoute
+  ServiceAssignmentsNewRoute: typeof ServiceAssignmentsNewRoute
+  ServiceAssignmentsIndexRoute: typeof ServiceAssignmentsIndexRoute
+}
+
+const ServiceAssignmentsRouteChildren: ServiceAssignmentsRouteChildren = {
+  ServiceAssignmentsAssignmentIdRoute: ServiceAssignmentsAssignmentIdRoute,
+  ServiceAssignmentsNewRoute: ServiceAssignmentsNewRoute,
+  ServiceAssignmentsIndexRoute: ServiceAssignmentsIndexRoute,
+}
+
+const ServiceAssignmentsRouteWithChildren =
+  ServiceAssignmentsRoute._addFileChildren(ServiceAssignmentsRouteChildren)
+
+interface ServiceSessionsRouteChildren {
+  ServiceSessionsSessionIdRoute: typeof ServiceSessionsSessionIdRoute
+  ServiceSessionsNewRoute: typeof ServiceSessionsNewRoute
+  ServiceSessionsIndexRoute: typeof ServiceSessionsIndexRoute
+}
+
+const ServiceSessionsRouteChildren: ServiceSessionsRouteChildren = {
+  ServiceSessionsSessionIdRoute: ServiceSessionsSessionIdRoute,
+  ServiceSessionsNewRoute: ServiceSessionsNewRoute,
+  ServiceSessionsIndexRoute: ServiceSessionsIndexRoute,
+}
+
+const ServiceSessionsRouteWithChildren = ServiceSessionsRoute._addFileChildren(
+  ServiceSessionsRouteChildren,
+)
+
+interface ServicesRouteChildren {
+  ServicesServiceIdRoute: typeof ServicesServiceIdRoute
+  ServicesNewRoute: typeof ServicesNewRoute
+  ServicesIndexRoute: typeof ServicesIndexRoute
+}
+
+const ServicesRouteChildren: ServicesRouteChildren = {
+  ServicesServiceIdRoute: ServicesServiceIdRoute,
+  ServicesNewRoute: ServicesNewRoute,
+  ServicesIndexRoute: ServicesIndexRoute,
+}
+
+const ServicesRouteWithChildren = ServicesRoute._addFileChildren(
+  ServicesRouteChildren,
+)
+
+interface UsersRouteChildren {
+  UsersUserIdRoute: typeof UsersUserIdRoute
+  UsersNewRoute: typeof UsersNewRoute
+  UsersIndexRoute: typeof UsersIndexRoute
+}
+
+const UsersRouteChildren: UsersRouteChildren = {
+  UsersUserIdRoute: UsersUserIdRoute,
+  UsersNewRoute: UsersNewRoute,
+  UsersIndexRoute: UsersIndexRoute,
+}
+
+const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivitiesRoute: ActivitiesRoute,
   AtRiskRoute: AtRiskRoute,
+  AuditRoute: AuditRoute,
   AuthRoute: AuthRouteWithChildren,
+  ClientsRoute: ClientsRouteWithChildren,
+  ContactsRoute: ContactsRoute,
+  ContractsRoute: ContractsRouteWithChildren,
+  DocumentsRoute: DocumentsRoute,
+  InboxRoute: InboxRoute,
+  IndustriesRoute: IndustriesRoute,
+  KpisRoute: KpisRoute,
+  PersonsRoute: PersonsRouteWithChildren,
+  ServiceAssignmentsRoute: ServiceAssignmentsRouteWithChildren,
+  ServiceSessionsRoute: ServiceSessionsRouteWithChildren,
+  ServicesRoute: ServicesRouteWithChildren,
+  TagsRoute: TagsRoute,
+  UsersRoute: UsersRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

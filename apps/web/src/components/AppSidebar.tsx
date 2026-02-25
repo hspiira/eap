@@ -3,16 +3,22 @@ import {
   Home,
   Inbox,
   AlertCircle,
-  Folder,
-  FileText,
-  Clock,
-  Plus,
-  ChevronDown,
+  Building2,
+  Users,
+  FileSignature,
+  Briefcase,
+  BarChart3,
+  FolderOpen,
+  ClipboardCheck,
   ChevronRight,
-  Search,
-  PanelLeft,
+  Tag,
+  UserCircle,
+  UserCog,
+  FileCheck,
+  LayoutList,
+  Calendar,
+  Activity,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Collapsible,
@@ -58,25 +64,20 @@ function TenantDisplay() {
   )
 }
 
-const navItems: Array<{
-  to: string
-  label: string
-  icon: typeof Home
-  iconClassName?: string
-}> = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "#inbox", label: "Inbox", icon: Inbox },
-  { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-[#D0B5B3]" },
-]
-
-function NavMain() {
+function NavTop() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+
+  const items = [
+    { to: "/", label: "Home", icon: Home },
+    { to: "/inbox", label: "Inbox", icon: Inbox },
+    { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-[#D0B5B3]" },
+  ] as const
 
   return (
     <SidebarMenu>
-      {navItems.map(({ to, label, icon: Icon, iconClassName }) => (
+      {items.map(({ to, label, icon: Icon, iconClassName }) => (
         <SidebarMenuItem key={label}>
-          <SidebarMenuButton asChild isActive={to.startsWith("/") ? pathname === to : false}>
+          <SidebarMenuButton asChild isActive={pathname === (to.startsWith("/") ? to : pathname)}>
             {to.startsWith("/") ? (
               <Link to={to}>
                 <Icon className={cn(sidebarStyles.icon, iconClassName)} />
@@ -95,117 +96,48 @@ function NavMain() {
   )
 }
 
-function PortfolioSection() {
+function SidebarSection({
+  label,
+  defaultOpen = false,
+  items,
+}: {
+  label: string
+  defaultOpen?: boolean
+  items: Array<{ to: string; label: string; icon: React.ElementType }>
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname }) as string
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel
-        action={
-          <button className={sidebarStyles.groupAction} aria-label="Add portfolio">
-            <Plus className={sidebarStyles.icon} />
+      <Collapsible defaultOpen={defaultOpen} className="group/collapsible">
+        <CollapsibleTrigger asChild>
+          <button
+            className={cn(
+              "flex w-full items-center gap-1.5 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider",
+              sidebarStyles.text,
+              sidebarStyles.hoverBg,
+              "outline-none rounded-none [&[data-state=open]>svg]:rotate-90"
+            )}
+          >
+            <ChevronRight className={cn(sidebarStyles.icon, "transition-transform")} />
+            {label}
           </button>
-        }
-      >
-        PORTFOLIO
-      </SidebarGroupLabel>
-      <SidebarMenu>
-        <SidebarMenuItem className="border-b border-[#5A626A]/15">
-          <Collapsible defaultOpen className="group/collapsible">
-            <CollapsibleTrigger asChild>
-              <button
-                className={cn(
-                  sidebarStyles.itemBase,
-                  sidebarStyles.text,
-                  sidebarStyles.hoverBg,
-                  "outline-none [&[data-state=open]>svg]:rotate-0"
-                )}
-              >
-                <Folder className={sidebarStyles.icon} />
-                <span className="flex-1 text-left">Gulf Oil Ltd.</span>
-                <ChevronDown className={cn(sidebarStyles.icon, "transition-transform group-data-[state=open]/collapsible:rotate-180")} />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <a href="#global-brands">
-                      <FileText className={sidebarStyles.icon} />
-                      Global Brands
-                    </a>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <a href="#secondary-brands">
-                      <FileText className={sidebarStyles.icon} />
-                      Secondary Brands
-                    </a>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </Collapsible>
-        </SidebarMenuItem>
-        <SidebarMenuItem className="border-b border-[#5A626A]/15">
-          <Collapsible className="group/collapsible">
-            <CollapsibleTrigger asChild>
-              <button
-                className={cn(
-                  sidebarStyles.itemBase,
-                  sidebarStyles.text,
-                  sidebarStyles.hoverBg,
-                  "outline-none"
-                )}
-              >
-                <Folder className={sidebarStyles.icon} />
-                <span className="flex-1 text-left">Gulf Oil Asia</span>
-                <ChevronRight className={cn(sidebarStyles.icon, "transition-transform group-data-[state=open]/collapsible:rotate-90")} />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <a href="#">Sub-item</a>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </Collapsible>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild>
-            <a href="#portfolio-all" className={sidebarStyles.textMutedHover}>
-              … See all
-            </a>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarGroup>
-  )
-}
-
-const analyticsItems = [
-  { to: "#overview", label: "Overview & Forecast", icon: Clock },
-  { to: "#renewals", label: "Renewals", icon: Clock },
-]
-
-function AnalyticsSection() {
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>ANALYTICS</SidebarGroupLabel>
-      <SidebarMenu>
-        {analyticsItems.map(({ to, label, icon: Icon }) => (
-          <SidebarMenuItem key={label}>
-            <SidebarMenuButton asChild>
-              <a href={to}>
-                <Icon className={sidebarStyles.icon} />
-                {label}
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenu>
+            {items.map(({ to, label: itemLabel, icon: Icon }) => (
+              <SidebarMenuItem key={itemLabel}>
+                <SidebarMenuButton asChild isActive={pathname === to}>
+                  <Link to={to}>
+                    <Icon className={sidebarStyles.icon} />
+                    <span>{itemLabel}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </CollapsibleContent>
+      </Collapsible>
     </SidebarGroup>
   )
 }
@@ -216,31 +148,75 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className={cn(sidebarStyles.borderedRow, "justify-between")}>
           <SidebarTrigger>
-            <PanelLeft className={sidebarStyles.iconLg} />
+            <LayoutList className={sidebarStyles.iconLg} />
           </SidebarTrigger>
         </div>
         <div className={cn(sidebarStyles.borderedRow, sidebarStyles.borderedRowBottom)}>
           <TenantDisplay />
         </div>
         <div className="space-y-2 px-2">
-          <Button variant="secondary" className="mt-2 w-full justify-center" size="sm">
-            NEW AGENT CHAT
-          </Button>
           <div className={cn("relative", sidebarStyles.searchContainer)}>
-            <Search className={cn("absolute left-2.5 top-1/2 -translate-y-1/2", sidebarStyles.icon, sidebarStyles.textMuted)} />
-            <Input placeholder="Search" className="h-8 border-0 pl-8 pr-10 bg-transparent focus-visible:ring-0" />
-            <kbd className={cn("pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs", sidebarStyles.searchShortcut, sidebarStyles.textMuted)}>
-              ⌘K
-            </kbd>
+            <Input placeholder="Search" className="h-8 border-0 pl-8 pr-10 bg-transparent focus-visible:ring-0 rounded-none" />
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <NavMain />
+          <NavTop />
         </SidebarGroup>
-        <PortfolioSection />
-        <AnalyticsSection />
+        <SidebarSection
+          label="Organization & Clients"
+          defaultOpen
+          items={[
+            { to: "/clients", label: "Clients", icon: Building2 },
+            { to: "/industries", label: "Industries", icon: BarChart3 },
+            { to: "/tags", label: "Tags", icon: Tag },
+          ]}
+        />
+        <SidebarSection
+          label="People"
+          items={[
+            { to: "/persons", label: "Persons", icon: Users },
+            { to: "/persons", label: "Client Employees", icon: UserCircle },
+            { to: "/persons", label: "Dependents", icon: Users },
+            { to: "/persons", label: "Platform Staff", icon: UserCog },
+            { to: "/persons", label: "Service Providers", icon: Briefcase },
+            { to: "/users", label: "Users", icon: UserCog },
+          ]}
+        />
+        <SidebarSection
+          label="Contracts & Billing"
+          items={[
+            { to: "/contracts", label: "Contracts", icon: FileSignature },
+            { to: "/service-assignments", label: "Service Assignments", icon: FileCheck },
+          ]}
+        />
+        <SidebarSection
+          label="Services & Delivery"
+          items={[
+            { to: "/services", label: "Services", icon: Briefcase },
+            { to: "/service-sessions", label: "Sessions", icon: Calendar },
+          ]}
+        />
+        <SidebarSection
+          label="Analytics & Performance"
+          items={[
+            { to: "/kpis", label: "KPIs", icon: BarChart3 },
+          ]}
+        />
+        <SidebarSection
+          label="Documents"
+          items={[
+            { to: "/documents", label: "Documents", icon: FolderOpen },
+          ]}
+        />
+        <SidebarSection
+          label="Audit & Compliance"
+          items={[
+            { to: "/audit", label: "Audits", icon: ClipboardCheck },
+            { to: "/activities", label: "Activity Logs", icon: Activity },
+          ]}
+        />
       </SidebarContent>
     </Sidebar>
   )

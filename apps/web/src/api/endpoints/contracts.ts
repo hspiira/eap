@@ -47,4 +47,16 @@ export const contractsApi = {
   async update(contractId: string, data: Partial<ContractCreate>): Promise<Contract> {
     return apiClient.patch<Contract>(`/contracts/${contractId}`, data)
   },
+
+  async activate(contractId: string): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/activate`, {})
+  },
+
+  async renew(contractId: string, data: { end_date?: string; renewal_date?: string }): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/renew`, data)
+  },
+
+  async terminate(contractId: string, reason: string): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/terminate`, { reason })
+  },
 }

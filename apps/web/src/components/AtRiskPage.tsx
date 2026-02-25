@@ -29,6 +29,7 @@ import { ApexIntroCard } from "@/components/ApexIntroCard"
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
 import { InviteToProjectCard } from "@/components/InviteToProjectCard"
 import { LoggedInDevicesCard } from "@/components/LoggedInDevicesCard"
+import { QueryTable } from "@/components/common/QueryTable"
 
 const BREADCRUMB = "Engineering > At Risk"
 
@@ -293,6 +294,9 @@ export function AtRiskPage() {
       <FilterBar />
 
       <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
+        <div className="mb-6">
+          <QueryTable title="At Risk" />
+        </div>
         <div className="mb-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <ApexIntroCard />
           <ActivityFeedCard />

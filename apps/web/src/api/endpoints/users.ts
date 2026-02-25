@@ -62,7 +62,7 @@ export const usersApi = {
    * List users
    */
   async list(params?: ListParams): Promise<PaginatedResponse<User>> {
-    return apiClient.get<PaginatedResponse<User>>('/users', params)
+    return apiClient.get<PaginatedResponse<User>>('/users', params as Record<string, unknown> | undefined)
   },
 
   /**
@@ -105,5 +105,29 @@ export const usersApi = {
    */
   async disable2FA(userId: string): Promise<void> {
     return apiClient.post<void>(`/users/${userId}/disable-2fa`, {})
+  },
+
+  async activate(userId: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/activate`, {})
+  },
+
+  async suspend(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/suspend`, reason != null ? { reason } : undefined)
+  },
+
+  async ban(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/ban`, reason != null ? { reason } : undefined)
+  },
+
+  async terminate(userId: string, reason: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/terminate`, { reason })
+  },
+
+  async deactivate(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/deactivate`, reason != null ? { reason } : undefined)
+  },
+
+  async verifyEmail(userId: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/verify-email`, {})
   },
 }
