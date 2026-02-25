@@ -5,6 +5,8 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
@@ -77,7 +79,16 @@ class TenantResponse(BaseModel):
         None, description="Admin user email (only returned on creation)"
     )
     admin_password: str | None = Field(
-        None, description="Admin user password (only returned on creation)"
+        None,
+        description="Admin password (only when SET_PASSWORD_BASE_URL is not set; otherwise use set_password_url)",
+    )
+    set_password_url: str | None = Field(
+        None,
+        description="URL for user to set initial password (when SET_PASSWORD_BASE_URL is set)",
+    )
+    set_password_expires_at: datetime | None = Field(
+        None,
+        description="When the set-password link expires",
     )
 
     model_config = ConfigDict(from_attributes=True)

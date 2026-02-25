@@ -26,9 +26,9 @@ class InputSanitizer:
         if not value:
             return value
         return nh3.clean(
-            value, 
+            value,
             tags=set(cls.ALLOWED_TAGS),
-            attributes=set(cls.ALLOWED_ATTRIBUTES),
+            attributes=cls.ALLOWED_ATTRIBUTES,
         )
 
     @classmethod

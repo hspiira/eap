@@ -21,6 +21,7 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
     get_industry_repository,
+    get_password_set_token_repository,
     get_tenant_repository,
     get_user_repository,
 )
@@ -50,12 +51,16 @@ from app.application.use_cases.tenant_use_cases import (
     UpdateTenantSettingsUseCase,
     UpdateTenantUseCase,
 )
+from app.core.config import settings
 from app.core.database import get_db
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.entities.tenant import TenantEntity
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import TenantId
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
 from app.infrastructure.models.user_model import UserModel
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
@@ -65,16 +70,22 @@ router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 
 def _to_tenant_response(
-    tenant: TenantEntity, admin_password: str | None = None
+    tenant: TenantEntity,
+    admin_email: str | None = None,
+    admin_password: str | None = None,
+    set_password_url: str | None = None,
+    set_password_expires_at=None,
 ) -> TenantResponse:
     """
     Map TenantEntity to API response using public properties.
-    
+
     Args:
         tenant: Tenant entity
-        admin_password: Admin password (only provided on creation)
+        admin_email: Admin email (on creation)
+        admin_password: Admin password (only when set-password flow not used)
+        set_password_url: URL for set-password page (when SET_PASSWORD_BASE_URL is set)
+        set_password_expires_at: When set-password link expires
     """
-    admin_email = f"admin_{tenant.code.value}@evexia.test" if admin_password else None
     return TenantResponse(
         id=tenant.id.value,
         name=tenant.name,
@@ -90,6 +101,8 @@ def _to_tenant_response(
         is_active=tenant.is_active(),
         admin_email=admin_email,
         admin_password=admin_password,
+        set_password_url=set_password_url,
+        set_password_expires_at=set_password_expires_at,
     )
 
 
@@ -110,33 +123,40 @@ async def create_tenant(
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
+    password_set_token_repo: PasswordSetTokenRepository
+    | None = Depends(get_password_set_token_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Create a new tenant, seed default industries, and create an admin user.
-    
-    Default industries are automatically created for the tenant.
-    
-    An admin user is automatically created with:
-    - Email: admin_{tenant_code}@evexia.test
-    - A secure randomly generated password (returned in response)
-    - Active status and verified email
-    
-    The admin password is only returned once during tenant creation.
-    Store it securely as it cannot be retrieved later.
+
+    When SET_PASSWORD_BASE_URL is set, the response includes set_password_url
+    (and set_password_expires_at). The admin must open that link to set a
+    password, then log in with tenant code, that email, and the new password.
+    Otherwise the response includes a one-time admin_password.
     """
-    tenant, admin_password = await CreateTenantUseCase(
-        tenant_repo, user_repo, industry_repo
-    ).execute(
-        tenant_id=TenantId(generate_cuid()),
-        name=data.name,
-        code=data.code,
-        subscription_tier=data.subscription_tier,
-        max_users=data.settings.max_users,
-        max_clients=data.settings.max_clients,
-        features_enabled=tuple(data.settings.features_enabled),
-        custom_branding=data.settings.custom_branding,
+    token_repo = (
+        password_set_token_repo
+        if getattr(settings, "SET_PASSWORD_BASE_URL", "")
+        else None
+    )
+    tenant, admin_email, admin_password, set_password_token, set_password_expires_at = (
+        await CreateTenantUseCase(
+            tenant_repo,
+            user_repo,
+            industry_repo,
+            password_set_token_repository=token_repo,
+        ).execute(
+            tenant_id=TenantId(generate_cuid()),
+            name=data.name,
+            code=data.code,
+            subscription_tier=data.subscription_tier,
+            max_users=data.settings.max_users,
+            max_clients=data.settings.max_clients,
+            features_enabled=tuple(data.settings.features_enabled),
+            custom_branding=data.settings.custom_branding,
+        )
     )
     await audit_entity_operation(
         entity=tenant,
@@ -145,7 +165,17 @@ async def create_tenant(
         user_id=None,
         request=request,
     )
-    return _to_tenant_response(tenant, admin_password)
+    set_password_url = None
+    if set_password_token and getattr(settings, "SET_PASSWORD_BASE_URL", ""):
+        base = settings.SET_PASSWORD_BASE_URL.rstrip("/")
+        set_password_url = f"{base}/set-password?token={set_password_token}"
+    return _to_tenant_response(
+        tenant,
+        admin_email=admin_email,
+        admin_password=admin_password,
+        set_password_url=set_password_url,
+        set_password_expires_at=set_password_expires_at,
+    )
 
 
 @router.post(

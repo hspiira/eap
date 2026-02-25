@@ -85,6 +85,17 @@ class RefreshResponse(BaseModel):
     expires_in: int
 
 
+class SetInitialPasswordRequest(BaseModel):
+    """Request schema for setting initial admin password (one-time token from set_password_url)."""
+
+    token: str = Field(..., min_length=1, description="One-time token from set-password link")
+    password: str = Field(
+        ...,
+        min_length=8,
+        description="New password (min 8 characters)",
+    )
+
+
 class MeResponse(BaseModel):
     """Response schema for GET /auth/me (current user from token or cookie)."""
 

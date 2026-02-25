@@ -34,6 +34,9 @@ from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
 from app.infrastructure.repositories.refresh_token_repository import (
     RefreshTokenRepository,
 )
@@ -86,6 +89,13 @@ async def get_user_repository(
         UserRepository implementation
     """
     return UserRepositoryImpl(db)
+
+
+async def get_password_set_token_repository(
+    db: AsyncSession = Depends(get_db),
+) -> PasswordSetTokenRepository:
+    """Dependency for password set token store (tenant creation set-password flow)."""
+    return PasswordSetTokenRepository(db)
 
 
 async def get_client_repository(

@@ -8,7 +8,7 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus
@@ -121,3 +121,14 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
 
         result = await self.session.execute(stmt)
         return int(result.scalar() or 0)
+
+    async def update_password(self, user_id: UserId, password_hash: str) -> bool:
+        """Update a user's password hash."""
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id.value)
+            .where(UserModel.deleted_at.is_(None))
+            .values(password_hash=password_hash)
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount > 0

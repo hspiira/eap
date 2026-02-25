@@ -5,6 +5,9 @@ Application services for Tenant aggregate operations.
 Refactored to use base use case classes.
 """
 
+from datetime import datetime
+from typing import TYPE_CHECKING
+
 from app.application.use_cases.base import (
     BaseUseCase,
     create_activate_use_case,
@@ -24,6 +27,11 @@ from app.domain.value_objects.core import Email, TenantCode, TenantId, TenantSet
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.password_generator import generate_secure_password
+
+if TYPE_CHECKING:
+    from app.infrastructure.repositories.password_set_token_repository import (
+        PasswordSetTokenRepository,
+    )
 
 
 # =============================================================================
@@ -94,11 +102,13 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         tenant_repository: TenantRepository,
         user_repository: UserRepository | None = None,
         industry_repository: IndustryRepository | None = None,
+        password_set_token_repository: "PasswordSetTokenRepository | None" = None,
     ):
         super().__init__(tenant_repository)
         self.tenant_repository = tenant_repository
         self.user_repository = user_repository
         self.industry_repository = industry_repository
+        self.password_set_token_repository = password_set_token_repository
 
     async def execute(
         self,
@@ -110,12 +120,25 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         max_clients: int = 5,
         features_enabled: tuple[str, ...] = (),
         custom_branding: bool = False,
-    ) -> tuple[TenantEntity, str]:
+    ) -> tuple[
+        TenantEntity,
+        str,
+        str | None,
+        str | None,
+        datetime | None,
+    ]:
         """
         Create a new tenant and an admin user.
-        
+
+        When password_set_token_repository is provided, admin is created with
+        an unusable placeholder password and a set-password token is issued;
+        the caller should redirect the user to set_password_url to set a
+        password and then log in. Otherwise a random admin password is
+        generated and returned (legacy behaviour).
+
         Returns:
-            Tuple of (TenantEntity, admin_password)
+            Tuple of (TenantEntity, admin_email, admin_password, set_password_token, set_password_expires_at).
+            admin_password is None when set_password_token is set; set_password_* are None otherwise.
         """
         # Check if tenant already exists
         existing = await self.tenant_repository.get_by_code(code)
@@ -151,32 +174,58 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             await seed_industries_for_tenant(tenant.id, self.industry_repository)
 
         # Create admin user if user_repository is provided
-        admin_password = ""
+        admin_email = f"admin_{tenant.code.value}@evexia.test"
+        admin_password: str | None = None
+        set_password_token: str | None = None
+        set_password_expires_at: datetime | None = None
+
         if self.user_repository:
-            admin_password = await self._create_admin_user(tenant)
+            (
+                admin_password,
+                set_password_token,
+                set_password_expires_at,
+            ) = await self._create_admin_user(tenant)
 
-        return tenant, admin_password
+        return (
+            tenant,
+            admin_email,
+            admin_password,
+            set_password_token,
+            set_password_expires_at,
+        )
 
-    async def _create_admin_user(self, tenant: TenantEntity) -> str:
+    async def _create_admin_user(
+        self, tenant: TenantEntity
+    ) -> tuple[str | None, str | None, datetime | None]:
         """
         Create an admin user for the tenant.
-        
-        Args:
-            tenant: The newly created tenant
-            
-        Returns:
-            The generated admin password
-        """
-        # Generate secure password
-        admin_password = generate_secure_password(length=16)
-        password_hash = hash_password(admin_password)
 
-        # Create admin email: admin_{tenant_code}@evexia.test
+        When password_set_token_repository is set, uses a placeholder
+        password and creates a set-password token. Otherwise generates
+        a secure password and returns it.
+
+        Returns:
+            (admin_password, set_password_token, set_password_expires_at).
+            Either admin_password is set or (set_password_token, set_password_expires_at) are set.
+        """
+        from app.domain.enums import TenantRole
+
+        use_set_password_flow = self.password_set_token_repository is not None
+        admin_password: str | None = None
+
+        if use_set_password_flow:
+            # Placeholder hash so user cannot log in until they set password
+            placeholder = hash_password(
+                generate_secure_password(length=32)  # never exposed
+            )
+            password_hash = placeholder
+        else:
+            admin_password = generate_secure_password(length=16)
+            password_hash = hash_password(admin_password)
+
         admin_email = Email(f"admin_{tenant.code.value}@evexia.test")
         user_id = UserId(generate_cuid())
 
-        # Create admin user with ADMIN role
-        from app.domain.enums import TenantRole
         create_user_use_case = CreateUserUseCase(self.user_repository)
         admin_user = await create_user_use_case.execute(
             user_id=user_id,
@@ -186,15 +235,25 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             role=TenantRole.ADMIN,
         )
 
-        # Activate and verify email for admin user (skip verification step)
         activate_use_case = ActivateUserUseCase(self.user_repository)
         await activate_use_case.execute(admin_user.id)
 
-        # Verify email automatically for admin
         verify_email_use_case = VerifyUserEmailUseCase(self.user_repository)
         await verify_email_use_case.execute(admin_user.id)
 
-        return admin_password
+        set_password_token_val: str | None = None
+        set_password_expires_at_val: datetime | None = None
+
+        if use_set_password_flow and self.password_set_token_repository:
+            set_password_token_val, set_password_expires_at_val = (
+                await self.password_set_token_repository.create(admin_user.id.value)
+            )
+
+        return (
+            admin_password,
+            set_password_token_val,
+            set_password_expires_at_val,
+        )
 
 
 # =============================================================================
