@@ -18,12 +18,12 @@ export const sidebarStyles = {
   contextIconBox: "flex h-6 w-6 shrink-0 items-center justify-center bg-[#D0B5B3] text-white text-sm font-bold",
   groupAction: "p-0.5 hover:bg-[#f0f0f0] rounded-none",
   border: "border-[#5A626A]/15",
-  borderedRow: "border-t border-[#5A626A]/20 rounded-none bg-[#fafafa] h-10 flex items-center",
+  borderedRow: "border-t border-[#5A626A]/20 rounded-none bg-white h-10 flex items-center",
   borderedRowBottom: "border-b border-[#5A626A]/20",
   searchContainer: "rounded-none bg-[#f5f5f5] px-2 py-1.5",
   searchShortcut: "px-1.5 py-0.5 bg-[#5A626A]/15 rounded-none",
   iconLg: "h-5 w-5 shrink-0",
-  bg: "bg-[#fafafa]",
+  bg: "bg-white",
 } as const
 
 const SidebarContext = React.createContext<{ open: boolean; setOpen: (v: boolean) => void } | null>(null)
@@ -241,7 +241,7 @@ const SidebarInset = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <main
     ref={ref}
-    className={cn("col-span-9 flex h-full min-h-0 flex-col overflow-hidden min-w-0 border-t border-r border-[#bfc4c9]/30 bg-[#fafafa]", className)}
+    className={cn("col-span-9 flex h-full min-h-0 flex-col overflow-hidden min-w-0 border-t border-r border-[#bfc4c9]/30 bg-white", className)}
     {...props}
   />
 ))

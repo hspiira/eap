@@ -3,11 +3,12 @@
 ## Design System Rules (CRITICAL - Always Follow)
 
 ### Color Palette
+- **Default theme:** White (`#ffffff`) for page and surface backgrounds; black for primary text.
 - **ONLY** use these colors:
-  - SAFE: `#5A626A` (dark grayish-blue) - for text, borders, dark backgrounds
-  - NATURAL: `#8BA88B` (sage green) - for primary actions, success states
+  - SAFE: `#5A626A` (dark gray) - for borders, secondary text
+  - NATURAL: `#103a10` (primary green), lighter: `#3fe844` - for primary actions, **selection highlight** (`bg-selection`), success states
   - NURTURING: `#D0B5B3` (dusty rose) - for secondary actions, highlights
-  - CALM: `#E6E0D7` (warm beige) - for backgrounds, light surfaces
+  - Use **white** for backgrounds; avoid cream/beige unless explicitly requested
 
 ### NO Rounded Corners
 - **CRITICAL**: All buttons, cards, inputs, and components MUST have sharp, square corners

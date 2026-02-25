@@ -231,7 +231,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
           <div className="flex gap-2">
             <Button
               type="button"
-              className="rounded-none bg-[#8BA88B] text-white hover:bg-[#7a9a7a]"
+              className="rounded-none bg-natural text-white hover:bg-natural-dark"
               onClick={() => setPage(1)}
             >
               <Search className="h-4 w-4 mr-1.5" />
@@ -252,7 +252,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Button className="rounded-none bg-[#8BA88B] text-white hover:bg-[#7a9a7a]">
+          <Button className="rounded-none bg-natural text-white hover:bg-natural-dark">
             <Plus className="h-4 w-4 mr-1.5" />
             New
           </Button>

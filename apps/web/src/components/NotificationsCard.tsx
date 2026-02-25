@@ -95,7 +95,7 @@ export function NotificationsCard() {
                   {n.expanded && n.link && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-medium text-[#8BA88B] hover:underline"
+                      className="mt-2 text-xs font-medium text-natural hover:underline"
                     >
                       {n.link}
                     </button>

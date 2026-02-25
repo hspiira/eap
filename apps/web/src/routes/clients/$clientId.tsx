@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
 import { clientsApi } from "@/api/endpoints/clients"
 import type { Client } from "@/types/entities"
+import { ClientsPageHeader } from "@/components/ClientsPageHeader"
+import { ClientDetailSkeleton } from "@/components/ClientsPageSkeletons"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
@@ -51,58 +53,70 @@ function ClientDetailPage() {
     [fetchClient]
   )
 
-  if (loading) return <div className="p-8 text-[#5A626A]">Loading…</div>
+  if (loading) {
+    return (
+      <ClientsPageHeader breadcrumb="Clients > …">
+        <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
+          <ClientDetailSkeleton />
+        </div>
+      </ClientsPageHeader>
+    )
+  }
   if (!client) {
     return (
-      <div className="p-8">
-        <p className="text-[#5A626A]">Client not found.</p>
-        <Button variant="secondary" className="mt-4 rounded-none" onClick={() => navigate({ to: "/clients" })}>
-          Back to clients
-        </Button>
+      <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
+        <div className="border border-[#5A626A]/20 rounded-none bg-[#f5f5f5] p-8 text-center">
+          <p className="text-[#5A626A]">Client not found.</p>
+          <Button
+            variant="secondary"
+            className="mt-4 rounded-none border-[#5A626A]/30 text-[#5A626A]"
+            onClick={() => navigate({ to: "/clients" })}
+          >
+            Back to clients
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <Button variant="ghost" size="sm" className="rounded-none" onClick={() => navigate({ to: "/clients" })}>
-        ← Clients
-      </Button>
-      <div className="border border-[#5A626A]/30 rounded-none p-6 bg-[#E6E0D7]/30">
-        <h1 className="text-xl font-semibold text-[#5A626A]">{client.name}</h1>
-        <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-          <div>
-            <dt className="text-sm text-[#5A626A]/80">Code</dt>
-            <dd>{client.code}</dd>
+    <ClientsPageHeader breadcrumb={`Clients > ${client.name}`}>
+      <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
+        <div className="border border-[#5A626A]/30 rounded-none bg-white overflow-hidden">
+          <div className="px-6 py-5 border-b border-[#5A626A]/20 bg-[#f5f5f5]">
+            <h1 className="text-xl font-semibold text-[#5A626A]">{client.name}</h1>
+            <p className="text-sm text-[#5A626A]/70 mt-0.5">{client.code}</p>
           </div>
-          <div>
-            <dt className="text-sm text-[#5A626A]/80">Status</dt>
-            <dd><StatusBadge status={client.status} /></dd>
+          <dl className="grid gap-4 sm:grid-cols-2 px-6 py-5">
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-[#5A626A]/70">Status</dt>
+              <dd className="mt-1"><StatusBadge status={client.status} /></dd>
+            </div>
+            {client.contact_info?.email && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#5A626A]/70">Email</dt>
+                <dd className="mt-1 text-[#5A626A]">{client.contact_info.email}</dd>
+              </div>
+            )}
+            {client.contact_info?.phone && (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#5A626A]/70">Phone</dt>
+                <dd className="mt-1 text-[#5A626A]">{client.contact_info.phone}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="px-6 py-5 border-t border-[#5A626A]/20 bg-[#f5f5f5]">
+            <h2 className="text-sm font-medium text-[#5A626A] mb-3">Actions</h2>
+            <LifecycleActions
+              entityId={client.id}
+              currentStatus={client.status}
+              kind="client"
+              onAction={handleAction}
+              loading={actionLoading}
+            />
           </div>
-          {client.contact_info?.email && (
-            <div>
-              <dt className="text-sm text-[#5A626A]/80">Email</dt>
-              <dd>{client.contact_info.email}</dd>
-            </div>
-          )}
-          {client.contact_info?.phone && (
-            <div>
-              <dt className="text-sm text-[#5A626A]/80">Phone</dt>
-              <dd>{client.contact_info.phone}</dd>
-            </div>
-          )}
-        </dl>
-        <div className="mt-6">
-          <h2 className="text-sm font-medium text-[#5A626A] mb-2">Actions</h2>
-          <LifecycleActions
-            entityId={client.id}
-            currentStatus={client.status}
-            kind="client"
-            onAction={handleAction}
-            loading={actionLoading}
-          />
         </div>
       </div>
-    </div>
+    </ClientsPageHeader>
   )
 }

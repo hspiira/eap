@@ -44,8 +44,8 @@ export function NotFound({
 
   if (fullPage) {
     return (
-      <div className={`min-h-screen bg-calm flex items-center justify-center px-4 ${className}`}>
-        <div className="max-w-md w-full bg-calm border border-safe p-8 rounded-none">
+      <div className={`min-h-screen bg-white flex items-center justify-center px-4 ${className}`}>
+        <div className="max-w-md w-full bg-white border border-safe p-8 rounded-none">
           <div className="text-center">
             <FileQuestion size={48} className="text-safe mx-auto mb-4" aria-hidden />
             <h1 className="text-2xl font-bold text-safe mb-2">{title}</h1>

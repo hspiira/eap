@@ -15,7 +15,7 @@ const columns = [
     accessorKey: "email" as keyof User,
     header: "Email",
     cell: (row: User) => (
-      <Link to="/users/$userId" params={{ userId: row.id }} className="text-[#8BA88B] hover:underline">
+      <Link to="/users/$userId" params={{ userId: row.id }} className="text-natural hover:underline">
         {row.email}
       </Link>
     ),
@@ -52,7 +52,7 @@ function UsersListPage() {
         <h1 className="text-xl font-semibold text-[#5A626A]">Users</h1>
         <Link
           to="/users/new"
-          className="inline-flex items-center justify-center h-9 px-4 bg-[#8BA88B] text-white font-medium rounded-none hover:bg-[#7a9a7a]"
+          className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark"
         >
           Add user
         </Link>

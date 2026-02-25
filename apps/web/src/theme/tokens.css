@@ -1,5 +1,5 @@
 :root {
-  --token-page: #f1f1f1;
+  --token-page: #ffffff;
   --token-surface: var(--palette-white);
   --token-surface-hover: var(--palette-neutral-100);
   --token-surface-muted: var(--palette-neutral-50);
@@ -8,6 +8,7 @@
   --token-border-focus: var(--palette-natural);
   --token-text: #000000;
   --token-text-muted: #333333;
+  --token-selection: rgba(16, 58, 16, 0.12);
 
   --token-primary: var(--palette-natural);
   --token-primary-hover: var(--palette-natural-dark);

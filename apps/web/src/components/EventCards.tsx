@@ -99,7 +99,7 @@ function EventCard({
           <span
             className={cn(
               "text-xl font-bold tabular-nums",
-              amountPositive ? "text-[#8BA88B]" : "text-[#5A626A]"
+              amountPositive ? "text-natural" : "text-[#5A626A]"
             )}
           >
             {amount}
@@ -107,7 +107,7 @@ function EventCard({
           <div className="flex items-center gap-1.5 text-sm text-[#5A626A]/70">
             <span>{dailyLabel}</span>
             {dailyChangePositive ? (
-              <span className="inline-flex items-center gap-0.5 rounded border border-[#8BA88B]/40 bg-[#8BA88B]/10 px-1.5 py-0.5 text-xs font-medium text-[#8BA88B]">
+              <span className="inline-flex items-center gap-0.5 rounded border border-natural/40 bg-natural/10 px-1.5 py-0.5 text-xs font-medium text-natural">
                 <TrendingUp className="h-3 w-3" />
                 {dailyChange}
               </span>

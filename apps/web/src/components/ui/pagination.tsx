@@ -48,11 +48,11 @@ export function Pagination({
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row items-center justify-between gap-2",
+        "flex flex-col sm:flex-row items-center justify-between gap-1.5",
         className
       )}
     >
-      <p className="text-sm text-[#5A626A]">
+      <p className="text-xs text-[#5A626A]">
         {total === 0 ? "0 items" : `${from}–${to} of ${total}`}
       </p>
       <nav className="flex items-center gap-1" aria-label="Pagination">

@@ -133,8 +133,8 @@ function SignupPage() {
           <p className="text-white/70">Register as a new tenant</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-[#8BA88B]/20 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-[#8BA88B]" />
+          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-natural" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Tenant created</h2>
@@ -174,7 +174,7 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToSetPassword}
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors flex items-center justify-center gap-2 mb-4"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors flex items-center justify-center gap-2 mb-4"
         >
           <KeyRound className="w-4 h-4" />
           Set your password
@@ -209,8 +209,8 @@ function SignupPage() {
           <p className="text-white/70">Tenant created</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-[#8BA88B]/20 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-[#8BA88B]" />
+          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-natural" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">{adminCredentials.name}</h2>
@@ -233,7 +233,7 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
         >
           Go to Sign in
         </button>
@@ -302,7 +302,7 @@ function SignupPage() {
                 {codeAvailability.checking ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-transparent rounded-full animate-spin" />
                 ) : codeAvailability.available === true ? (
-                  <Check size={20} className="text-[#8BA88B]" />
+                  <Check size={20} className="text-natural" />
                 ) : codeAvailability.available === false ? (
                   <X size={20} className="text-red-400" />
                 ) : null}
@@ -327,7 +327,7 @@ function SignupPage() {
             codeAvailability.checking ||
             codeAvailability.available === false
           }
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
         </button>
@@ -336,7 +336,7 @@ function SignupPage() {
       <div className="mt-6 text-center space-y-2">
         <p className="text-white/70 text-sm">
           Already have an account?{' '}
-          <Link to="/auth/login" search={{ tenant_code: '', email: '' }} className="text-[#8BA88B] hover:underline">
+          <Link to="/auth/login" search={{ tenant_code: '', email: '' }} className="text-natural hover:underline">
             Sign in
           </Link>
         </p>

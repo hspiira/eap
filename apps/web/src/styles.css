@@ -21,6 +21,7 @@
   --color-text-muted: var(--token-text-muted);
   --color-primary: var(--token-primary);
   --color-border: var(--token-border);
+  --color-selection: var(--token-selection);
   --radius-none: 0;
 }
 
@@ -54,11 +55,11 @@ button {
 }
 
 :root {
-  --sidebar: var(--palette-calm);
+  --sidebar: var(--palette-white);
   --sidebar-foreground: var(--palette-safe);
   --sidebar-primary: var(--palette-natural);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--palette-calm-dark);
+  --sidebar-accent: var(--palette-neutral-100);
   --sidebar-accent-foreground: var(--palette-safe);
   --sidebar-border: var(--palette-safe);
   --sidebar-ring: var(--palette-natural);

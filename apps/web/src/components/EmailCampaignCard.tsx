@@ -52,7 +52,7 @@ function MetricRow({
           <span
             className={cn(
               "h-1.5 w-1.5 shrink-0 rounded-full",
-              dot === "green" && "bg-[#8BA88B]",
+              dot === "green" && "bg-natural",
               dot === "warning" && "bg-[#b85c4a]"
             )}
           />
@@ -119,7 +119,7 @@ export function EmailCampaignCard() {
                   return (
                     <>
                       {before}
-                      <span className={type === "green" ? "text-[#8BA88B] font-medium" : "text-[#b85c4a] font-medium"}>
+                      <span className={type === "green" ? "text-natural font-medium" : "text-[#b85c4a] font-medium"}>
                         {text}
                       </span>
                       {after}

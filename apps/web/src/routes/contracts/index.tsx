@@ -15,7 +15,7 @@ const columns = [
     accessorKey: "contract_number" as keyof Contract,
     header: "Number",
     cell: (row: Contract) => (
-      <Link to="/contracts/$contractId" params={{ contractId: row.id }} className="text-[#8BA88B] hover:underline">
+      <Link to="/contracts/$contractId" params={{ contractId: row.id }} className="text-natural hover:underline">
         {row.contract_number ?? row.id.slice(0, 8)}
       </Link>
     ),
@@ -41,7 +41,7 @@ function ContractsListPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[#5A626A]">Contracts</h1>
-        <Link to="/contracts/new" className="inline-flex items-center justify-center h-9 px-4 bg-[#8BA88B] text-white font-medium rounded-none hover:bg-[#7a9a7a]">
+        <Link to="/contracts/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">
           Add contract
         </Link>
       </div>

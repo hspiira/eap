@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ChevronDown, Plus, Filter, ArrowUpDown, Info, ChevronLeft, ChevronRight, BellPlus, Search, Monitor, CalendarClock, Users, User } from "lucide-react"
+import { ChevronDown, Plus, Filter, ArrowUpDown, Info, ChevronLeft, ChevronRight, BellPlus, Search, Monitor, CalendarClock, Users, User, Infinity, Heart, ArrowLeftRight, Eye, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/inbox")({
@@ -89,6 +89,101 @@ const DEPT_FILTERS = [
   { id: "dept4", label: "CS Branch 3", count: 5 },
   { id: "dept5", label: "CS Branch 4", count: 9 },
 ]
+
+interface PlatformDetailsRow {
+  id: string
+  platformName: string
+  metric1: number
+  change1: string
+  change1Direction: "up" | "down"
+  metric2: string
+  change2: string
+  change2Direction: "up" | "down"
+  metric3: number
+  outlierScore: number
+  outlierMax: number
+}
+
+const MOCK_PLATFORM_DETAILS: PlatformDetailsRow[] = [
+  {
+    id: "meta",
+    platformName: "Meta",
+    metric1: 348,
+    change1: "3.87%",
+    change1Direction: "up",
+    metric2: "9K",
+    change2: "3.87%",
+    change2Direction: "down",
+    metric3: 309,
+    outlierScore: 8,
+    outlierMax: 10,
+  },
+]
+
+function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_1fr] gap-3 items-center text-sm">
+        <div className="font-medium text-gray-700">Platform</div>
+        <div className="flex items-center justify-center w-8 text-gray-500">
+          <Heart className="h-4 w-4" />
+        </div>
+        <div className="flex items-center justify-center w-8 text-gray-500">
+          <ArrowLeftRight className="h-4 w-4" />
+        </div>
+        <div className="flex items-center justify-center w-8 text-gray-500">
+          <Eye className="h-4 w-4" />
+        </div>
+        <div className="flex items-center justify-center w-8 text-gray-500">
+          <ArrowLeftRight className="h-4 w-4" />
+        </div>
+        <div className="flex items-center justify-center w-8 text-gray-500">
+          <Share2 className="h-4 w-4" />
+        </div>
+        <div className="col-span-2 text-right font-medium text-gray-700">Outlier Score</div>
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_1fr] gap-3 items-center">
+        <div className="flex items-center gap-2">
+          <Infinity className="h-5 w-5 text-gray-600" />
+          <span className="font-semibold text-gray-900">{row.platformName}</span>
+        </div>
+        <span className="font-bold text-gray-900">{row.metric1}</span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium",
+            "bg-green-100 text-green-700"
+          )}
+        >
+          {row.change1} {row.change1Direction === "up" ? "→" : "←"}
+        </span>
+        <span className="font-bold text-gray-900">{row.metric2}</span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium",
+            "bg-green-100 text-green-700"
+          )}
+        >
+          {row.change2Direction === "down" ? "←" : "→"} {row.change2}
+        </span>
+        <span className="font-bold text-gray-900">{row.metric3}</span>
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: row.outlierMax }).map((_, i) => (
+            <div
+              key={i}
+              className={cn(
+                "w-1.5 h-5 rounded-sm",
+                i < row.outlierScore ? "bg-purple-300" : "bg-gray-200"
+              )}
+            />
+          ))}
+        </div>
+        <span className="inline-flex items-center justify-end px-2 py-0.5 rounded-full text-xs font-medium bg-green-500 text-white">
+          {row.outlierScore}/{row.outlierMax}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 interface TrainingProgram {
   id: string
@@ -307,7 +402,7 @@ function InboxRoute() {
     return (
       <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-[#E6E0D7]">
         <p className="text-[#5A626A]">Sign in to view Inbox.</p>
-        <Link to="/auth/login" search={{ tenant_code: undefined, email: undefined, redirect: undefined }} className="text-[#8BA88B] hover:underline">
+        <Link to="/auth/login" search={{ tenant_code: undefined, email: undefined, redirect: undefined }} className="text-natural hover:underline">
           Sign in
         </Link>
       </div>
@@ -322,7 +417,7 @@ function InboxRoute() {
 }
 
 function InboxPage() {
-  const [view, setView] = useState<"inbox" | "training">("inbox")
+  const [view, setView] = useState<"inbox" | "training" | "details">("inbox")
   const [mainTab, setMainTab] = useState<MainTab>("training")
   const [deptFilter, setDeptFilter] = useState("all")
   const [trainingSearch, setTrainingSearch] = useState("")
@@ -403,7 +498,27 @@ function InboxPage() {
         >
           Training list
         </button>
+        <button
+          type="button"
+          onClick={() => setView("details")}
+          className={cn(
+            "pb-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+            view === "details"
+              ? "border-blue-500 text-blue-500"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          )}
+        >
+          Details
+        </button>
       </div>
+
+      {view === "details" ? (
+        <div className="space-y-3">
+          {MOCK_PLATFORM_DETAILS.map((row) => (
+            <PlatformDetailsCard key={row.id} row={row} />
+          ))}
+        </div>
+      ) : null}
 
       {view === "training" ? (
         <>

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 const speedRanges = [
   { label: "0 - 29 km/h", color: "bg-[#5A626A]" },
-  { label: "30 - 69 km/h", color: "bg-[#8BA88B]" },
+  { label: "30 - 69 km/h", color: "bg-natural" },
   { label: "69 - ∞ km/h", color: "bg-[#b85c4a]" },
 ]
 
@@ -68,7 +68,7 @@ export function MapSettingsCard() {
               { label: "@", className: "rounded-md bg-[#e5e5e5] text-[#5A626A] text-xs" },
               { label: "Y", className: "rounded-md bg-[#e5e5e5] text-[#5A626A] text-xs font-semibold" },
               { label: "", className: "rounded-sm bg-[#b85c4a]" },
-              { label: "B", className: "rounded-md bg-[#8BA88B] text-white text-xs font-bold" },
+              { label: "B", className: "rounded-md bg-natural text-white text-xs font-bold" },
               { label: "⚡", className: "rounded-md bg-[#9cad5c] text-white text-xs" },
               { label: "P", className: "rounded-md bg-[#D0B5B3] text-[#5A626A] text-xs font-bold" },
               { label: "", className: "rounded-sm border border-[#5A626A]/50 bg-white" },

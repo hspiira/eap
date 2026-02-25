@@ -26,7 +26,7 @@ function AtRiskRoute() {
     return (
       <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-[#E6E0D7]">
         <p className="text-[#5A626A]">Sign in to view At Risk.</p>
-        <Link to="/auth/login" className="text-[#8BA88B] hover:underline">
+        <Link to="/auth/login" className="text-natural hover:underline">
           Sign in
         </Link>
       </div>

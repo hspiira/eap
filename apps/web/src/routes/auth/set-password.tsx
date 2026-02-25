@@ -101,8 +101,8 @@ function SetPasswordPage() {
           <p className="text-white/70">Password set</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-[#8BA88B]/20 flex items-center justify-center shrink-0">
-            <Check className="w-5 h-5 text-[#8BA88B]" />
+          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
+            <Check className="w-5 h-5 text-natural" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">You can now log in</h2>
@@ -112,7 +112,7 @@ function SetPasswordPage() {
         <button
           type="button"
           onClick={goToLogin}
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
         >
           Go to Sign in
         </button>
@@ -181,7 +181,7 @@ function SetPasswordPage() {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="text-white/70 hover:text-[#8BA88B] text-sm"
+          className="text-white/70 hover:text-natural text-sm"
         >
           {showPassword ? 'Hide' : 'Show'} password
         </button>
@@ -205,7 +205,7 @@ function SetPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Setting password...' : 'Set password'}
         </button>

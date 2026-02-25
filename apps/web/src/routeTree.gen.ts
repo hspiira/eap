@@ -28,6 +28,7 @@ import { Route as AtRiskRouteImport } from './routes/at-risk'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
 import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
@@ -36,6 +37,8 @@ import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as UsersNewRouteImport } from './routes/users/new'
 import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
+import { Route as TagsNewRouteImport } from './routes/tags/new'
+import { Route as TagsTagIdRouteImport } from './routes/tags/$tagId'
 import { Route as ServicesNewRouteImport } from './routes/services/new'
 import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
 import { Route as ServiceSessionsNewRouteImport } from './routes/service-sessions/new'
@@ -147,6 +150,11 @@ const UsersIndexRoute = UsersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => UsersRoute,
 } as any)
+const TagsIndexRoute = TagsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TagsRoute,
+} as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -186,6 +194,16 @@ const UsersUserIdRoute = UsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
   getParentRoute: () => UsersRoute,
+} as any)
+const TagsNewRoute = TagsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => TagsRoute,
+} as any)
+const TagsTagIdRoute = TagsTagIdRouteImport.update({
+  id: '/$tagId',
+  path: '/$tagId',
+  getParentRoute: () => TagsRoute,
 } as any)
 const ServicesNewRoute = ServicesNewRouteImport.update({
   id: '/new',
@@ -282,7 +300,7 @@ export interface FileRoutesByFullPath {
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
-  '/tags': typeof TagsRoute
+  '/tags': typeof TagsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -299,6 +317,8 @@ export interface FileRoutesByFullPath {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/tags/$tagId': typeof TagsTagIdRoute
+  '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -307,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -320,7 +341,6 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxRoute
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
-  '/tags': typeof TagsRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -336,6 +356,8 @@ export interface FileRoutesByTo {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/tags/$tagId': typeof TagsTagIdRoute
+  '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/clients': typeof ClientsIndexRoute
@@ -344,6 +366,7 @@ export interface FileRoutesByTo {
   '/service-assignments': typeof ServiceAssignmentsIndexRoute
   '/service-sessions': typeof ServiceSessionsIndexRoute
   '/services': typeof ServicesIndexRoute
+  '/tags': typeof TagsIndexRoute
   '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
@@ -364,7 +387,7 @@ export interface FileRoutesById {
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
-  '/tags': typeof TagsRoute
+  '/tags': typeof TagsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
@@ -381,6 +404,8 @@ export interface FileRoutesById {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/tags/$tagId': typeof TagsTagIdRoute
+  '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -389,6 +414,7 @@ export interface FileRoutesById {
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -427,6 +453,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/tags/$tagId'
+    | '/tags/new'
     | '/users/$userId'
     | '/users/new'
     | '/clients/'
@@ -435,6 +463,7 @@ export interface FileRouteTypes {
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
+    | '/tags/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -448,7 +477,6 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/industries'
     | '/kpis'
-    | '/tags'
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
@@ -464,6 +492,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/tags/$tagId'
+    | '/tags/new'
     | '/users/$userId'
     | '/users/new'
     | '/clients'
@@ -472,6 +502,7 @@ export interface FileRouteTypes {
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
+    | '/tags'
     | '/users'
   id:
     | '__root__'
@@ -508,6 +539,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/tags/$tagId'
+    | '/tags/new'
     | '/users/$userId'
     | '/users/new'
     | '/clients/'
@@ -516,6 +549,7 @@ export interface FileRouteTypes {
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
+    | '/tags/'
     | '/users/'
   fileRoutesById: FileRoutesById
 }
@@ -536,7 +570,7 @@ export interface RootRouteChildren {
   ServiceAssignmentsRoute: typeof ServiceAssignmentsRouteWithChildren
   ServiceSessionsRoute: typeof ServiceSessionsRouteWithChildren
   ServicesRoute: typeof ServicesRouteWithChildren
-  TagsRoute: typeof TagsRoute
+  TagsRoute: typeof TagsRouteWithChildren
   UsersRoute: typeof UsersRouteWithChildren
 }
 
@@ -675,6 +709,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersIndexRouteImport
       parentRoute: typeof UsersRoute
     }
+    '/tags/': {
+      id: '/tags/'
+      path: '/'
+      fullPath: '/tags/'
+      preLoaderRoute: typeof TagsIndexRouteImport
+      parentRoute: typeof TagsRoute
+    }
     '/services/': {
       id: '/services/'
       path: '/'
@@ -730,6 +771,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/$userId'
       preLoaderRoute: typeof UsersUserIdRouteImport
       parentRoute: typeof UsersRoute
+    }
+    '/tags/new': {
+      id: '/tags/new'
+      path: '/new'
+      fullPath: '/tags/new'
+      preLoaderRoute: typeof TagsNewRouteImport
+      parentRoute: typeof TagsRoute
+    }
+    '/tags/$tagId': {
+      id: '/tags/$tagId'
+      path: '/$tagId'
+      fullPath: '/tags/$tagId'
+      preLoaderRoute: typeof TagsTagIdRouteImport
+      parentRoute: typeof TagsRoute
     }
     '/services/new': {
       id: '/services/new'
@@ -946,6 +1001,20 @@ const ServicesRouteWithChildren = ServicesRoute._addFileChildren(
   ServicesRouteChildren,
 )
 
+interface TagsRouteChildren {
+  TagsTagIdRoute: typeof TagsTagIdRoute
+  TagsNewRoute: typeof TagsNewRoute
+  TagsIndexRoute: typeof TagsIndexRoute
+}
+
+const TagsRouteChildren: TagsRouteChildren = {
+  TagsTagIdRoute: TagsTagIdRoute,
+  TagsNewRoute: TagsNewRoute,
+  TagsIndexRoute: TagsIndexRoute,
+}
+
+const TagsRouteWithChildren = TagsRoute._addFileChildren(TagsRouteChildren)
+
 interface UsersRouteChildren {
   UsersUserIdRoute: typeof UsersUserIdRoute
   UsersNewRoute: typeof UsersNewRoute
@@ -977,7 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServiceAssignmentsRoute: ServiceAssignmentsRouteWithChildren,
   ServiceSessionsRoute: ServiceSessionsRouteWithChildren,
   ServicesRoute: ServicesRouteWithChildren,
-  TagsRoute: TagsRoute,
+  TagsRoute: TagsRouteWithChildren,
   UsersRoute: UsersRouteWithChildren,
 }
 export const routeTree = rootRouteImport

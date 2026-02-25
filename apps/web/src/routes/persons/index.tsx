@@ -15,7 +15,7 @@ const columns = [
     accessorKey: "first_name" as keyof Person,
     header: "Name",
     cell: (row: Person) => (
-      <Link to="/persons/$personId" params={{ personId: row.id }} className="text-[#8BA88B] hover:underline">
+      <Link to="/persons/$personId" params={{ personId: row.id }} className="text-natural hover:underline">
         {row.first_name} {row.last_name}
       </Link>
     ),
@@ -30,7 +30,7 @@ function PersonsListPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[#5A626A]">Persons</h1>
-        <Link to="/persons/new" className="inline-flex items-center justify-center h-9 px-4 bg-[#8BA88B] text-white font-medium rounded-none hover:bg-[#7a9a7a]">Add person</Link>
+        <Link to="/persons/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">Add person</Link>
       </div>
       <DataTable<Person> columns={columns} data={items} loading={loading} error={error} page={page} total={total} limit={limit} onPageChange={setPage} emptyMessage="No persons yet." />
     </div>

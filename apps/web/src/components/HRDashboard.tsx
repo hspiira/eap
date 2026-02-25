@@ -8,7 +8,7 @@ function Card({ title, link, children, className }: { title: string; link?: stri
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[#5A626A]">{title}</h3>
         {link && (
-          <button type="button" className="text-xs text-[#5A626A]/70 hover:text-[#8BA88B]">
+          <button type="button" className="text-xs text-[#5A626A]/70 hover:text-natural">
             {link} <ChevronRight className="inline h-3 w-3" />
           </button>
         )}
@@ -129,7 +129,7 @@ export function HRDashboard() {
               "Smart collaborative office operations manual",
             ].map((text, i) => (
               <li key={i}>
-                <button type="button" className="text-left hover:text-[#8BA88B]">{text}</button>
+                <button type="button" className="text-left hover:text-natural">{text}</button>
               </li>
             ))}
           </ul>
@@ -178,7 +178,7 @@ export function HRDashboard() {
                 "6-18 Empower all staff, precise decisions, efficient management",
               ].map((text, i) => (
                 <li key={i} className="border-b border-[#bfc4c9]/15 pb-2 last:border-0 last:pb-0">
-                  <button type="button" className="text-left hover:text-[#8BA88B]">{text}</button>
+                  <button type="button" className="text-left hover:text-natural">{text}</button>
                 </li>
               ))}
             </ul>

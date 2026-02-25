@@ -47,7 +47,7 @@ const FILTER_OPTIONS = [
 const ASSIGNEE_CHIPS = [
   { initials: "MA", bg: "bg-[#5A626A]" },
   { initials: "HM", bg: "bg-[#D0B5B3]" },
-  { initials: "MR", bg: "bg-[#8BA88B]" },
+  { initials: "MR", bg: "bg-natural" },
   { initials: "AO", bg: "bg-[#5A626A]/80" },
 ]
 
@@ -74,8 +74,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "due-soon",
     label: "Due soon",
-    badgeClass: "bg-[#8BA88B]/80 text-[#5A626A]",
-    checkboxClass: "border-[#8BA88B]",
+    badgeClass: "bg-natural/80 text-[#5A626A]",
+    checkboxClass: "border-natural",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -92,8 +92,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "needs-review",
     label: "Needs review",
-    badgeClass: "bg-[#8BA88B] text-[#E6E0D7]",
-    checkboxClass: "border-[#8BA88B]",
+    badgeClass: "bg-natural text-[#E6E0D7]",
+    checkboxClass: "border-natural",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -194,7 +194,7 @@ function FilterBar() {
             MA Manik Aggarwal
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-[#8BA88B]/40 text-xs text-[#5A626A]">
+            <span className="flex h-6 w-6 items-center justify-center bg-natural/40 text-xs text-[#5A626A]">
               MR
             </span>
             MR Manoj Reddy
@@ -226,7 +226,7 @@ function TaskRow({
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center border-2 rounded-none",
           checkboxClass,
-          isDone && "bg-[#8BA88B] border-[#8BA88B]"
+          isDone && "bg-natural border-natural"
         )}
       >
         {isDone ? <Check className="h-2.5 w-2.5 text-[#E6E0D7]" /> : null}

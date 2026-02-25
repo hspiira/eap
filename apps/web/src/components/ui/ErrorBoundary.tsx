@@ -39,8 +39,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="min-h-screen bg-calm flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-calm border border-safe p-8 rounded-none">
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-white border border-safe p-8 rounded-none">
             <div className="text-center">
               <AlertCircle size={48} className="text-danger mx-auto mb-4" aria-hidden />
               <h1 className="text-2xl font-bold text-safe mb-2">Something went wrong</h1>

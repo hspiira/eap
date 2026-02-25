@@ -144,7 +144,7 @@ function LoginPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3 bg-[#8BA88B] hover:bg-[#7a9a7a] text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
@@ -153,7 +153,7 @@ function LoginPage() {
       <div className="mt-6 text-center space-y-2">
         <p className="text-white/70 text-sm">
           Don&apos;t have an account?{' '}
-          <Link to="/auth/signup" className="text-[#8BA88B] hover:underline">
+          <Link to="/auth/signup" className="text-natural hover:underline">
             Sign up
           </Link>
         </p>

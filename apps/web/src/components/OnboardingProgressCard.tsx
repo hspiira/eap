@@ -30,7 +30,7 @@ export function OnboardingProgressCard() {
         <div className="min-w-0 flex-1">
           <div className="h-2 w-full bg-[#E6E0D7]">
             <div
-              className="h-full bg-[#8BA88B]"
+              className="h-full bg-natural"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -44,7 +44,7 @@ export function OnboardingProgressCard() {
             <div
               className={`flex h-6 w-6 shrink-0 items-center justify-center text-xs font-medium ${
                 step.done
-                  ? "bg-[#8BA88B] text-white"
+                  ? "bg-natural text-white"
                   : "border border-[#bfc4c9]/50 bg-[#E6E0D7]/50 text-[#5A626A]"
               }`}
             >
@@ -76,7 +76,7 @@ export function OnboardingProgressCard() {
           className="flex w-full items-center justify-center gap-2 border border-[#bfc4c9]/30 bg-white py-2.5 text-sm font-medium text-[#5A626A] hover:bg-[#fafafa]"
         >
           Let&apos;s Start
-          <span className="flex h-5 w-5 items-center justify-center bg-[#8BA88B] text-xs font-medium text-white">
+          <span className="flex h-5 w-5 items-center justify-center bg-natural text-xs font-medium text-white">
             3
           </span>
         </button>

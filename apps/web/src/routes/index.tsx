@@ -13,7 +13,7 @@ function HomePage() {
   if (isLoading) {
     return (
       <div
-        className="min-h-svh w-full flex items-center justify-center bg-[#E6E0D7] text-black"
+        className="min-h-svh w-full flex items-center justify-center bg-white text-black"
         style={{ minHeight: '100dvh' }}
       >
         <p>Loading...</p>
@@ -81,7 +81,7 @@ function LandingPage() {
               <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight">
                 Manage with
                 <br />
-                <span className="text-[#8BA88B]">clarity</span>
+                <span className="text-natural">clarity</span>
               </h1>
               <p className="text-lg text-white/80 leading-relaxed max-w-md tracking-wider">
                 A comprehensive platform for managing clients, services, and delivery

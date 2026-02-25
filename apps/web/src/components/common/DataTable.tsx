@@ -28,6 +28,9 @@ export interface DataTableProps<T> {
   onPageChange?: (page: number) => void
   emptyMessage?: string
   className?: string
+  getRowId?: (row: T) => string | number
+  onRowClick?: (row: T) => void
+  selectedId?: string | number | null
 }
 
 function getCellValue<T>(row: T, accessorKey: keyof T | string): unknown {
@@ -46,12 +49,15 @@ export function DataTable<T extends object>({
   onPageChange,
   emptyMessage = "No results.",
   className,
+  getRowId,
+  onRowClick,
+  selectedId,
 }: DataTableProps<T>) {
   const showPagination =
     typeof onPageChange === "function" && total > 0 && limit > 0
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-2", className)}>
       <div className="rounded-none border border-[#5A626A]/30">
         <Table>
           <TableHeader>
@@ -66,7 +72,7 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-[#5A626A] py-8"
+                  className="text-center text-[#5A626A] py-4 text-sm"
                 >
                   {error}
                 </TableCell>
@@ -75,7 +81,7 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-[#5A626A] py-8"
+                  className="text-center text-[#5A626A] py-4 text-sm"
                 >
                   Loading…
                 </TableCell>
@@ -84,23 +90,35 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-[#5A626A] py-8"
+                  className="text-center text-[#5A626A] py-4 text-sm"
                 >
                   {emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
-                  {columns.map((col) => (
-                    <TableCell key={col.id}>
-                      {col.cell
-                        ? col.cell(row)
-                        : String(getCellValue(row, col.accessorKey) ?? "")}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              data.map((row, rowIndex) => {
+                const rowId = getRowId ? getRowId(row) : rowIndex
+                const isSelected =
+                  selectedId !== undefined && selectedId !== null && rowId === selectedId
+                return (
+                  <TableRow
+                    key={getRowId ? rowId : rowIndex}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    className={cn(
+                      onRowClick && "cursor-pointer",
+                      isSelected && "bg-selection"
+                    )}
+                  >
+                    {columns.map((col) => (
+                      <TableCell key={col.id}>
+                        {col.cell
+                          ? col.cell(row)
+                          : String(getCellValue(row, col.accessorKey) ?? "")}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

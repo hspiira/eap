@@ -21,8 +21,8 @@ export function OnSiteBehaviorCard() {
             <Info className="h-3 w-3" />
           </button>
         </div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-[#8BA88B]">
-          <span className="h-1.5 w-1.5 shrink-0 bg-[#8BA88B]" />
+        <div className="flex items-center gap-1.5 text-xs font-medium text-natural">
+          <span className="h-1.5 w-1.5 shrink-0 bg-natural" />
           Live
         </div>
       </div>

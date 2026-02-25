@@ -7,7 +7,7 @@ export function ErrorCard() {
       <div className="space-y-3 text-sm">
         <div className="leading-relaxed text-white/95">
           <span className="font-medium">TimeoutError:</span> Supplier API timed out after 30 s at
-          step &quot;Fetch <span className="text-[#8BA88B]">from API</span>&quot;
+          step &quot;Fetch <span className="text-natural">from API</span>&quot;
         </div>
         <div className="pt-2">
           <div className="mb-1.5 text-xs font-medium text-white/80">Stack trace excerpt:</div>
