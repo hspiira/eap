@@ -6,15 +6,13 @@ import { AuthProvider } from '../contexts/AuthContext'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
+import { NotFound } from '../components/ui/NotFound'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
-  notFoundComponent: () => (
-    <div className="min-h-screen flex items-center justify-center bg-[#E6E0D7] text-[#5A626A]">
-      <p>Page not found</p>
-    </div>
-  ),
+  notFoundComponent: () => <NotFound fullPage />,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -37,12 +35,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body style={{ minHeight: '100dvh' }}>
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
               <TenantProvider>
-                {children}
+                <ErrorBoundary>
+                  <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
+                    {children}
+                  </div>
+                </ErrorBoundary>
               </TenantProvider>
             </AuthProvider>
           </ToastProvider>

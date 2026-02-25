@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { AppLayout } from '@/components/AppLayout'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -11,7 +12,10 @@ function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#E6E0D7] flex items-center justify-center text-[#5A626A]">
+      <div
+        className="min-h-svh w-full flex items-center justify-center bg-[#E6E0D7] text-black"
+        style={{ minHeight: '100dvh' }}
+      >
         <p>Loading...</p>
       </div>
     )
@@ -22,10 +26,12 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E6E0D7] p-8 text-[#5A626A]">
-      <h1 className="text-2xl font-semibold mb-4">Home</h1>
-      <p>Welcome. UI redesign starting with sidebar.</p>
-    </div>
+    <AppLayout>
+      <div className="p-8 text-black">
+        <h1 className="text-2xl font-semibold mb-4">Home</h1>
+        <p>Welcome. Select a section from the sidebar to get started.</p>
+      </div>
+    </AppLayout>
   )
 }
 
