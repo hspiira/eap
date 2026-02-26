@@ -73,8 +73,7 @@ export function EmailCampaignCard() {
     <div className="w-full p-4">
       <div
         className={cn(
-          "overflow-hidden border border-[#bfc4c9]/25 bg-white",
-          "rounded-lg shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+          "overflow-hidden border border-[#5A626A]/20 bg-white rounded-none"
         )}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +89,7 @@ export function EmailCampaignCard() {
                 <h3 className="text-sm font-medium text-[#5A626A]">{section.title}</h3>
                 <button
                   type="button"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#5A626A]/30 text-[#5A626A]/70 hover:bg-[#5A626A]/10"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-[#5A626A]/30 text-[#5A626A]/70 hover:bg-[#5A626A]/10"
                   aria-label={`Info about ${section.title}`}
                 >
                   <Info className="h-2.5 w-2.5" />
