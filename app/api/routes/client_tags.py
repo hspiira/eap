@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import require_same_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_client_tag_repository
@@ -55,14 +56,12 @@ async def create_client_tag(
     data: ClientTagCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     tag_repo: ClientTagRepository = Depends(get_client_tag_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new client tag."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     tag = await CreateClientTagUseCase(tag_repo).execute(
         tag_id=ClientTagId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -172,7 +171,7 @@ async def deactivate_client_tag(
 @readonly()
 async def list_client_tags(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in tag name"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -181,8 +180,6 @@ async def list_client_tags(
     db: AsyncSession = Depends(get_db),
 ):
     """List client tags with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     tags = await tag_repo.list_all(
@@ -234,12 +231,10 @@ async def get_client_tag(
 async def check_client_tag_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     tag_repo: ClientTagRepository = Depends(get_client_tag_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a client tag name is available within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     tag = await tag_repo.get_by_name(name, TenantId(tenant_id))
     return {"available": tag is None, "name": name, "tenant_id": tenant_id}

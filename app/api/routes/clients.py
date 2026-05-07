@@ -10,7 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import get_client_for_current_tenant
+from app.core.authorization import (
+    get_client_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_client_repository, get_contract_repository, get_tenant_repository
@@ -113,15 +116,13 @@ async def create_client(
     data: ClientCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contact_info = ContactInfo(
         phone=data.contact_info.phone,
         email=Email(data.contact_info.email) if data.contact_info.email else None,
@@ -477,13 +478,11 @@ async def list_clients(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List clients with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     clients = await client_repo.list_all(
@@ -536,13 +535,11 @@ async def get_client(
 async def get_client_by_name(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get client by name within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     client = await client_repo.get_by_name(TenantId(tenant_id), name)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -557,13 +554,11 @@ async def get_client_by_name(
 async def check_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a client name is available within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     client = await client_repo.get_by_name(TenantId(tenant_id), name)
     return {"available": client is None, "name": name, "tenant_id": tenant_id}
 

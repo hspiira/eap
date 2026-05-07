@@ -156,15 +156,88 @@ class PermissionDeniedError(EvexiaException):
 
 
 class DomainError(EvexiaException):
-    """Raised when a domain rule is violated."""
-    
-    def __init__(self, message: str):
-        super().__init__(message, "DOMAIN_ERROR")
+    """Raised when a domain rule is violated.
+
+    HTTP status is carried by the exception class, not parsed from the
+    message. Subclasses (NotFoundError, ConflictError, InvalidStateError)
+    customise the status; raw `DomainError` defaults to 400.
+
+    See ADR-006: typed exceptions, no string-parsing.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "DOMAIN_ERROR",
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ):
+        super().__init__(message, error_code, details, http_status=http_status)
+
+
+class NotFoundError(DomainError):
+    """Raised when a domain entity is not found.
+
+    Maps to HTTP 404. Prefer raising this from use cases / repositories
+    rather than crafting `DomainError("X not found")` strings, which
+    relied on a deprecated message-parser.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ):
+        details: dict[str, Any] = {}
+        if resource_type:
+            details["resource_type"] = resource_type
+        if resource_id:
+            details["resource_id"] = resource_id
+        super().__init__(
+            message,
+            error_code="NOT_FOUND",
+            http_status=404,
+            details=details,
+        )
+
+
+class ConflictError(DomainError):
+    """Raised when an action conflicts with current state (e.g. duplicate, already-active).
+
+    Maps to HTTP 409.
+    """
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
+        super().__init__(
+            message,
+            error_code="CONFLICT",
+            http_status=409,
+            details=details,
+        )
+
+
+class InvalidStateError(DomainError):
+    """Raised when an action is rejected by the entity's current state / FSM.
+
+    Maps to HTTP 400. Use for transitions like activating an already-active
+    entity if you want HTTP 400 instead of 409 — choose 409 (ConflictError)
+    when the action is meaningful but the state collides; choose 400 here
+    when the action itself is invalid given the state.
+    """
+
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
+        super().__init__(
+            message,
+            error_code="INVALID_STATE",
+            http_status=400,
+            details=details,
+        )
 
 
 class InvariantViolation(EvexiaException):
     """Raised when an entity invariant is violated."""
-    
+
     def __init__(self, message: str):
         super().__init__(message, "INVARIANT_VIOLATION")
 

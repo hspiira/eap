@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.authorization import (
     get_person_by_user_id_for_current_tenant,
     get_person_for_current_tenant,
+    require_same_tenant,
 )
 from app.core.security import TokenData, get_current_user
 
@@ -334,7 +335,7 @@ async def add_secondary_role(
     data: AddSecondaryRoleRequest,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     person: PersonEntity = Depends(get_person_for_current_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
@@ -342,8 +343,6 @@ async def add_secondary_role(
     db: AsyncSession = Depends(get_db),
 ):
     """Add a secondary role to a person."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     
     if data.role == PersonType.CLIENT_EMPLOYEE:
         if not data.employment_info:
@@ -685,7 +684,7 @@ async def restore_person(
 @readonly()
 async def list_persons(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     status: BaseStatus | None = Query(None, description="Filter by person status"),
     person_type: PersonType | None = Query(None, description="Filter by person type"),
     client_id: str | None = Query(None, description="Filter by client ID (employment_info.client_id)"),
@@ -698,8 +697,6 @@ async def list_persons(
     db: AsyncSession = Depends(get_db),
 ):
     """List persons with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
     client_id_vo = ClientId(client_id) if client_id else None
 
@@ -769,12 +766,10 @@ async def get_person_by_user_id(
 async def get_persons_by_type(
     tenant_id: str,
     person_type: PersonType,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     person_repo: PersonRepository = Depends(get_person_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all persons of a specific type within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     persons = await person_repo.get_by_type(TenantId(tenant_id), person_type)
     return [_to_person_response(person) for person in persons]

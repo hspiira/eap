@@ -2,7 +2,10 @@
 Shared Utilities
 
 Common utility functions used across the application.
-Includes datetime helpers, generators, sanitization utilities, and HTTP error mapping.
+Includes datetime helpers, generators, and sanitization utilities.
+
+HTTP status codes are carried by typed exception classes (see
+`app.domain.exceptions`); there is no message-string parser.
 """
 
 from app.shared.utils.datetime import (
@@ -12,7 +15,6 @@ from app.shared.utils.datetime import (
     utc_now,
 )
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.http_errors import get_error_status_code
 from app.shared.utils.password_generator import generate_secure_password
 from app.shared.utils.sanitization import (
     InputSanitizer,
@@ -27,7 +29,6 @@ __all__ = [
     "from_timestamp_utc",
     "generate_cuid",
     "generate_secure_password",
-    "get_error_status_code",
     "sanitize_input",
     "utc_now",
     "validate_identifier",

@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import require_same_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_activity_repository
@@ -61,14 +62,12 @@ async def create_activity(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     created_by: str = Query(..., description="User ID who created the activity"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new activity."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     activity = await CreateActivityUseCase(activity_repo).execute(
         activity_id=ActivityId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -133,7 +132,7 @@ async def update_activity(
 @readonly()
 async def list_activities(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client"),
     activity_type: str | None = Query(None, description="Filter by activity type"),
     created_by: str | None = Query(None, description="Filter by creator"),
@@ -147,8 +146,6 @@ async def list_activities(
     db: AsyncSession = Depends(get_db),
 ):
     """List activities with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     activities = await activity_repo.list_all(
@@ -211,13 +208,11 @@ async def get_activity(
 async def get_activities_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all activities for a specific client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     activities = await activity_repo.get_by_client_id(client_id, TenantId(tenant_id))
     activity_responses = [_to_activity_response(activity) for activity in activities]
     return ActivityListResponse(

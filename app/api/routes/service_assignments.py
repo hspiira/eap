@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import require_same_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_service_assignment_repository
@@ -60,14 +61,12 @@ async def create_service_assignment(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     assigned_by: str | None = Query(None, description="User ID who assigned"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service assignment."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignment = await CreateServiceAssignmentUseCase(assignment_repo).execute(
         assignment_id=ServiceAssignmentId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -179,7 +178,7 @@ async def deactivate_service_assignment(
 @readonly()
 async def list_service_assignments(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     service_id: str | None = Query(None, description="Filter by service"),
     contract_id: str | None = Query(None, description="Filter by contract"),
     status: BaseStatus | None = Query(None, description="Filter by status"),
@@ -189,8 +188,6 @@ async def list_service_assignments(
     db: AsyncSession = Depends(get_db),
 ):
     """List service assignments with filtering and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
@@ -247,13 +244,11 @@ async def get_service_assignment(
 async def get_service_assignments_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific service."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignments = await assignment_repo.get_by_service_id(
         ServiceId(service_id), TenantId(tenant_id)
     )
@@ -275,13 +270,11 @@ async def get_service_assignments_by_service(
 async def get_service_assignments_by_contract(
     contract_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific contract."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     assignments = await assignment_repo.get_by_contract_id(
         ContractId(contract_id), TenantId(tenant_id)
     )

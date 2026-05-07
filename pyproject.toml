@@ -40,5 +40,94 @@ python_functions = ["test_*"]
 
 [dependency-groups]
 dev = [
+    "import-linter>=2.0",
     "ruff>=0.14.13",
+]
+
+# ----------------------------------------------------------------------------
+# Clean-architecture layering enforcement (Phase 0 #C2 / SAD §13.2).
+#
+# Layers (innermost first):
+#   1. domain         — pure entities, value objects, repository interfaces
+#   2. application    — use cases; depends on domain only
+#   3. infrastructure — SQLAlchemy models, mappers, concrete repos
+#   4. api            — FastAPI routes/schemas; orchestrates application layer
+#
+# Allowed: outer → inner. Forbidden: inner → outer.
+# `core` and `shared` are leaf utilities — no inbound restrictions in v1.
+#
+# Run: `uv run lint-imports`
+# ----------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "app"
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = [
+    "app.application",
+    "app.infrastructure",
+    "app.api",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application depends only on domain (and core/shared utilities)"
+type = "forbidden"
+source_modules = ["app.application"]
+forbidden_modules = [
+    "app.infrastructure",
+    "app.api",
+]
+# Tech debt — to remove in Phase 1 (lifecycle collapse) when the
+# password-set-token use case is restructured to depend on a domain repository
+# interface, with the concrete implementation injected from infrastructure.
+ignore_imports = [
+    "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
+]
+
+[[tool.importlinter.contracts]]
+name = "API routes do not import infrastructure directly"
+type = "forbidden"
+source_modules = ["app.api.routes"]
+forbidden_modules = [
+    "app.infrastructure",
+]
+# `app.api.dependencies` is the FastAPI composition root: by design it wires
+# infrastructure repositories into routes via Depends(...). The transitive
+# edge routes -> dependencies -> infrastructure is the intended pattern.
+# The grandfathered direct edges below are existing tech debt; remove them in
+# Phase 1 (entity boilerplate + lifecycle collapse) and Phase 2 alongside the
+# new entity work. Adding *new* direct edges must fail CI.
+ignore_imports = [
+    # Composition-root wiring (intentional pattern):
+    "app.api.dependencies -> app.infrastructure.repositories.activity_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.audit_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.client_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.contact_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.contract_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.document_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.industry_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.kpi_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.password_set_token_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.person_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.refresh_token_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_assignment_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_session_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.tenant_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.user_repository",
+    "app.core.authorization -> app.api.dependencies",
+    "app.core.database -> app.infrastructure.models.base",
+    # Tech debt (must be eliminated; track in IMPLEMENTATION_PLAN.md Phase 1):
+    "app.api.routes.auth -> app.infrastructure.repositories.password_set_token_repository",
+    "app.api.routes.auth -> app.infrastructure.repositories.refresh_token_repository",
+    "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
+    "app.api.routes.clients -> app.infrastructure.models.client_model",
+    "app.api.routes.tenants -> app.infrastructure.models.client_model",
+    "app.api.routes.tenants -> app.infrastructure.models.user_model",
+    "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",
+    "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
 ]

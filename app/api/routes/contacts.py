@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import require_same_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_contact_repository
@@ -60,14 +61,12 @@ async def create_contact(
     data: ContactCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contact."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contact = await CreateContactUseCase(contact_repo).execute(
         contact_id=ContactId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -186,7 +185,7 @@ async def deactivate_contact(
 @readonly()
 async def list_contacts(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     is_primary: bool | None = Query(None, description="Filter by primary status"),
@@ -197,8 +196,6 @@ async def list_contacts(
     db: AsyncSession = Depends(get_db),
 ):
     """List contacts with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     contacts = await contact_repo.list_all(
@@ -237,13 +234,11 @@ async def list_contacts(
 async def get_contacts_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all contacts for a specific client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contacts = await contact_repo.get_by_client_id(client_id, TenantId(tenant_id))
     contact_responses = [_to_contact_response(contact) for contact in contacts]
     return ContactListResponse(
@@ -264,13 +259,11 @@ async def get_contacts_by_client(
 async def get_primary_contact(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get primary contact for a specific client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contact = await contact_repo.get_primary_contact(client_id, TenantId(tenant_id))
     if not contact:
         raise ValueError("Primary contact not found")

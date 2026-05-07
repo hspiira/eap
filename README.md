@@ -58,6 +58,17 @@ uv run alembic upgrade head
 
 Replace `USER` and `PASSWORD` with your PostgreSQL user. Tests still use in-memory SQLite by default.
 
+### Seed data (testing)
+
+To load seed data (10+ records per table) for local testing:
+
+```bash
+uv run python scripts/load_seed_data.py          # load data
+uv run python scripts/load_seed_data.py --clear  # clear seed tables then load
+```
+
+Data lives in `data/seed_data.json`. See `data/README.md` for details.
+
 ### Access the API
 
 Once running, the API is available at:

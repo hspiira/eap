@@ -110,21 +110,36 @@ class PersonEntity:
         self._updated_at = now
         self._events.append(PersonTerminated(occurred_at=now, person_id=self._id, reason=reason))
     
-    def is_eligible_for_services(self) -> bool:
-        """Complex eligibility based on person type"""
+    def is_eligible_for_services(
+        self, primary_employee: "PersonEntity | None" = None
+    ) -> bool:
+        """Whether this person is eligible to receive services.
+
+        For DEPENDENT persons, eligibility is composed of:
+        - the dependent's own status is ACTIVE
+        - DependentInfo.is_eligible() (intrinsic relationship validity)
+        - the primary employee is also eligible
+
+        Callers in the application layer must load the primary employee and
+        pass it in for dependents. If omitted, eligibility fails closed
+        (returns False) rather than silently passing.
+        """
         if self._status != BaseStatus.ACTIVE:
             return False
-        
+
         if self._person_type == PersonType.CLIENT_EMPLOYEE:
             return self._employment_info is not None and self._employment_info.is_active()
-        
+
         if self._person_type == PersonType.DEPENDENT:
-            # Dependent eligibility via primary employee
-            return self._dependent_info is not None and self._dependent_info.is_eligible()
-        
+            if self._dependent_info is None or not self._dependent_info.is_eligible():
+                return False
+            if primary_employee is None:
+                return False
+            return primary_employee.is_eligible_for_services()
+
         if self._person_type == PersonType.SERVICE_PROVIDER:
             return self._license_info is not None and self._license_info.is_valid()
-        
+
         return True  # PLATFORM_STAFF
     
     def add_secondary_role(

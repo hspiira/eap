@@ -44,38 +44,111 @@ class TenantCode:
             )
 
 # === Identity Value Objects ===
+#
+# Each entity has its own ID subclass so the type checker can flag
+# cross-type misuse (e.g. passing a PersonId where a UserId is expected).
+# Runtime behaviour is identical to the base `Id`: same string validation,
+# same equality semantics. Subclasses exist purely for nominal typing.
+
 
 @dataclass(frozen=True)
 class Id:
-    """
-    Represents a unique identifier for an entity.
+    """Base identifier value object.
 
     Attributes:
-    - <25 characters
-    - immutable once activated
+    - 1..25 characters
+    - immutable
     """
     value: str
+
     def __post_init__(self):
         if not self.value or len(self.value) > 25:
-            raise ValueError("ID must be less than 25 characters")
+            raise ValueError("ID must be 1..25 characters")
 
-TenantId = Id
-PersonId = Id
-ContractId = Id
-ServiceId = Id
-SessionId = Id
-UserId = Id
-ClientId = Id
-IndustryId = Id
-AuditLogId = Id
-EntityChangeId = Id
-DocumentId = Id
-KPIId = Id
-KPIAssignmentId = Id
-ClientTagId = Id
-ContactId = Id
-ActivityId = Id
-ServiceAssignmentId = Id
+
+@dataclass(frozen=True)
+class TenantId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class PersonId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ContractId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ServiceId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SessionId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class UserId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClientId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class IndustryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class AuditLogId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EntityChangeId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DocumentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class KPIId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class KPIAssignmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClientTagId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ContactId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ActivityId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ServiceAssignmentId(Id):
+    pass
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)
@@ -274,5 +347,26 @@ class DependentInfo:
     primary_employee_id: PersonId
     relationship: RelationType
     guardian_id: UserId | None = None
+
+    def __post_init__(self):
+        if not self.primary_employee_id:
+            raise ValueError("DependentInfo requires primary_employee_id")
+        if not isinstance(self.relationship, RelationType):
+            raise ValueError("DependentInfo.relationship must be a RelationType")
+
     def is_eligible(self) -> bool:
-        return NotImplementedError("Dependent eligibility is not implemented")
+        """Intrinsic eligibility derived from the dependent's own data.
+
+        Cross-aggregate eligibility (the primary employee's active status)
+        is composed at PersonEntity.is_eligible_for_services. Here we check
+        only what this VO can know: the relationship type is one we accept,
+        and the linkage to a primary employee is present.
+        """
+        return self.relationship in {
+            RelationType.SPOUSE,
+            RelationType.CHILD,
+            RelationType.PARENT,
+            RelationType.SIBLING,
+            RelationType.GRANDPARENT,
+            RelationType.GUARDIAN,
+        }

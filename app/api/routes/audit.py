@@ -9,7 +9,10 @@ Write operations (logging) are handled by use cases called from middleware/decor
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.authorization import get_audit_log_for_current_tenant
+from app.core.authorization import (
+    get_audit_log_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_repository
@@ -76,7 +79,7 @@ def _to_entity_change_response(
 )
 async def list_audit_logs(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     user_id: str | None = Query(None, description="Filter by user identifier"),
     action_type: AuditActionType | None = Query(None, description="Filter by action type"),
     resource_type: str | None = Query(None, description="Filter by resource type"),
@@ -94,8 +97,6 @@ async def list_audit_logs(
 
     This is a QUERY operation - audit logs are immutable.
     """
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     audit_logs = await audit_repo.list_audit_logs(
@@ -179,7 +180,7 @@ async def get_entity_changes(
     entity_type: str,
     entity_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     audit_repo: AuditRepository = Depends(get_audit_repository),
@@ -189,8 +190,6 @@ async def get_entity_changes(
 
     This is a QUERY operation - entity changes are immutable.
     """
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     get_use_case = GetAuditLogUseCase(audit_repo)
