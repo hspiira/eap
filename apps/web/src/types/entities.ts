@@ -4,24 +4,24 @@
  */
 
 import type {
+  ActivityType,
   BaseStatus,
-  UserStatus,
-  TenantStatus,
-  ContractStatus,
-  SessionStatus,
-  DocumentStatus,
-  PersonType,
-  WorkStatus,
-  StaffRole,
   ContactMethod,
-  Language,
-  PaymentStatus,
-  PaymentFrequency,
+  ContractStatus,
+  DocumentStatus,
   DocumentType,
   KPICategory,
+  Language,
   MeasurementUnit,
-  ActivityType,
+  PaymentFrequency,
+  PaymentStatus,
+  PersonType,
   RelationType,
+  SessionStatus,
+  StaffRole,
+  TenantStatus,
+  UserStatus,
+  WorkStatus,
 } from './enums'
 
 /**

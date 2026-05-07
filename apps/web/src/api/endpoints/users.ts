@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { User, PaginatedResponse, ListParams, CreateRequest } from '../types'
+import type { CreateRequest,ListParams, PaginatedResponse, User } from '../types'
 
 export interface UserCreate extends CreateRequest {
   email: string

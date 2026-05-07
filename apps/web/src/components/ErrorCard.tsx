@@ -1,4 +1,5 @@
-import { RotateCcw, ChevronRight } from "lucide-react"
+import { ChevronRight,RotateCcw } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 export function ErrorCard() {

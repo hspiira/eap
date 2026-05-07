@@ -1,4 +1,5 @@
 import { Calendar, Clock, MapPin } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 export interface ClientUpcomingItem {

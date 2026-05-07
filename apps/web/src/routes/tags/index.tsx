@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useList } from "@/hooks/useList"
-import { clientTagsApi } from "@/api/endpoints/client-tags"
-import { TagsPageHeader } from "@/components/TagsPageHeader"
-import { DataTable } from "@/components/common/DataTable"
-import { Button } from "@/components/ui/button"
-import type { ClientTag } from "@/types/entities"
 import { Pencil } from "lucide-react"
+
+import { clientTagsApi } from "@/api/endpoints/client-tags"
+import { DataTable } from "@/components/common/DataTable"
+import { TagsPageHeader } from "@/components/TagsPageHeader"
+import { Button } from "@/components/ui/button"
+import { useList } from "@/hooks/useList"
+import type { ClientTag } from "@/types/entities"
 
 export const Route = createFileRoute("/tags/")({
   component: TagsListPage,

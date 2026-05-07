@@ -4,11 +4,11 @@
  */
 
 import apiClient from '@/api/client'
+import type { TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useEntityCacheStore } from '@/store/slices/entityCacheSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
-import type { TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
 import type { Tenant } from '@/types/entities'
 
 function syncToApiAndStorage(tenant: Tenant | null) {

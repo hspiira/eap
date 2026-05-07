@@ -5,12 +5,12 @@
 import apiClient from '../client'
 import type {
   Client,
-  ClientTag,
-  ClientContactInfo,
   ClientBillingAddress,
+  ClientContactInfo,
   ClientStats,
-  PaginatedResponse,
+  ClientTag,
   ListParams,
+  PaginatedResponse,
 } from '../types'
 
 export interface ClientCreate {

@@ -6,8 +6,8 @@
 
 import type {
   ApiClientConfig,
-  RequestOptions,
   FieldErrors,
+  RequestOptions,
 } from '@/types/api'
 import { ApiError } from '@/types/api'
 

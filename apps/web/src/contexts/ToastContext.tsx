@@ -3,7 +3,9 @@
  * Provides toast notification functionality throughout the application
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useCallback,useContext, useState } from 'react'
+
+import type { ReactNode } from 'react';
 export type ToastType = 'success' | 'error' | 'info'
 
 export interface Toast {

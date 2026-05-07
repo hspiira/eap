@@ -2,9 +2,9 @@
  * Services API Endpoints
  */
 
+
 import apiClient from '../client'
-import type { Service, PaginatedResponse, ListParams } from '../types'
-import type { BaseStatus } from '@/types/enums'
+import type { ListParams,PaginatedResponse, Service } from '../types'
 
 export interface ServiceCreate {
   name: string

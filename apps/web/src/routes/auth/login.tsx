@@ -1,10 +1,12 @@
+import { useEffect,useState } from 'react'
+
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { authActions } from '@/lib/auth-store'
+
+import type { ApiError } from '@/api/types'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
+import { authActions } from '@/lib/auth-store'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { normalizeErrorMessage } from '@/utils/errorHandler'
-import type { ApiError } from '@/api/types'
 
 function safeRedirectPath(raw: unknown): string | undefined {
   const s = typeof raw === 'string' ? raw.trim() : ''

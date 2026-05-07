@@ -2,9 +2,9 @@
  * Service Sessions API Endpoints
  */
 
+
 import apiClient from '../client'
-import type { ServiceSession, PaginatedResponse, ListParams } from '../types'
-import type { SessionStatus } from '@/types/enums'
+import type { ListParams,PaginatedResponse, ServiceSession } from '../types'
 
 export interface ServiceSessionCreate {
   service_id: string

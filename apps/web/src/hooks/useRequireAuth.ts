@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
+
 import { useNavigate } from '@tanstack/react-router'
+
 import { useAuthStore } from '@/store/slices/authSlice'
 
 export function useRequireAuth() {

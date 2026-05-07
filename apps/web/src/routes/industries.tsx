@@ -1,13 +1,15 @@
+import { useCallback,useEffect, useState } from "react"
+
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useEffect, useCallback } from "react"
-import { useAuthStore } from "@/store/slices/authSlice"
-import { AppLayout } from "@/components/AppLayout"
-import { useList } from "@/hooks/useList"
+
 import { industriesApi } from "@/api/endpoints/industries"
+import { AppLayout } from "@/components/AppLayout"
+import { DataTable } from "@/components/common/DataTable"
 import { IndustriesPageHeader } from "@/components/IndustriesPageHeader"
 import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
-import { DataTable } from "@/components/common/DataTable"
+import { useList } from "@/hooks/useList"
+import { useAuthStore } from "@/store/slices/authSlice"
 import type { Industry } from "@/types/entities"
 
 export const Route = createFileRoute("/industries")({

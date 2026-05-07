@@ -1,5 +1,5 @@
-import { ChevronDown, Plus, Mic, Send, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { ChevronDown, Mic, Plus, Send, X } from "lucide-react"
+
 
 export function QueryInputCard() {
   return (

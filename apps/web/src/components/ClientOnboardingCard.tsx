@@ -1,4 +1,5 @@
-import { Rocket, Check, ChevronRight } from "lucide-react"
+import { Check, ChevronRight,Rocket } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 export interface ClientOnboardingStep {

@@ -6,9 +6,9 @@
 import apiClient from '@/api/client'
 import { authApi } from '@/api/endpoints/auth'
 import { tenantsApi } from '@/api/endpoints/tenants'
+import type { LoginRequest } from '@/api/types'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
-import type { LoginRequest } from '@/api/types'
 import type { Tenant } from '@/types/entities'
 
 function useAuthCookies(): boolean {

@@ -5,12 +5,12 @@
 
 import type {
   BaseStatus,
-  UserStatus,
-  TenantStatus,
   ContractStatus,
-  SessionStatus,
   DocumentStatus,
   PaymentStatus,
+  SessionStatus,
+  TenantStatus,
+  UserStatus,
   WorkStatus,
 } from '@/types/enums'
 

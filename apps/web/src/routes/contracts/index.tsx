@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useList } from "@/hooks/useList"
+
 import { contractsApi } from "@/api/endpoints/contracts"
 import { DataTable } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { useList } from "@/hooks/useList"
 import type { Contract } from "@/types/entities"
 
 export const Route = createFileRoute("/contracts/")({

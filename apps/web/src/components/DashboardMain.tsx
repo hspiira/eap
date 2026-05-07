@@ -1,13 +1,13 @@
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
+import { ErrorCard } from "@/components/ErrorCard"
 import { EventCards } from "@/components/EventCards"
 import { FlightProgressCard } from "@/components/FlightProgressCard"
+import { HRDashboard } from "@/components/HRDashboard"
 import { MapSettingsCard } from "@/components/MapSettingsCard"
 import { NotificationsCard } from "@/components/NotificationsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { OnSiteBehaviorCard } from "@/components/OnSiteBehaviorCard"
 import { QueryInputCard } from "@/components/QueryInputCard"
-import { ErrorCard } from "@/components/ErrorCard"
-import { HRDashboard } from "@/components/HRDashboard"
 import { TransitionsCard } from "@/components/TransitionsCard"
 
 export function DashboardMain() {

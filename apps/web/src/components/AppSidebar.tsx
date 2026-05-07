@@ -1,44 +1,41 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Briefcase,
+  Building2,
+  Calendar,
+  ChevronRight,
+  ClipboardCheck,
+  FileCheck,
+  FileSignature,
+  FolderOpen,
   Home,
   Inbox,
-  AlertCircle,
-  Building2,
-  Users,
-  FileSignature,
-  Briefcase,
-  BarChart3,
-  FolderOpen,
-  ClipboardCheck,
-  ChevronRight,
+  LayoutList,
   Tag,
   UserCircle,
   UserCog,
-  FileCheck,
-  LayoutList,
-  Calendar,
-  Activity,
+  Users,
 } from "lucide-react"
-import { Input } from "@/components/ui/input"
+
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Input } from "@/components/ui/input"
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarTrigger,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   sidebarStyles,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"

@@ -2,17 +2,18 @@
  * Persons API Endpoints
  */
 
-import apiClient from '../client'
-import type { Person, PaginatedResponse, ListParams } from '../types'
-import type { PersonType, RelationType } from '@/types/enums'
 import type {
   Address,
-  EmploymentInfo,
   DependentInfo,
+  EmergencyContact,
+  EmploymentInfo,
   LicenseInfo,
   StaffInfo,
-  EmergencyContact,
 } from '@/types/entities'
+import type { PersonType } from '@/types/enums'
+
+import apiClient from '../client'
+import type { ListParams,PaginatedResponse, Person } from '../types'
 
 export interface PersonCreate {
   first_name: string

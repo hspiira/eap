@@ -1,4 +1,5 @@
-import { Calendar, Clock, MapPin, Pencil, ClipboardCopy, Check, TrendingUp } from "lucide-react"
+import { Calendar, Check, ClipboardCopy, Clock, MapPin, Pencil, TrendingUp } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 

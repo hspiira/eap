@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { useAuthStore } from '@/store/slices/authSlice'
+
+import { createFileRoute, Link } from '@tanstack/react-router'
+
 import { AppLayout } from '@/components/AppLayout'
+import { useAuthStore } from '@/store/slices/authSlice'
 
 export const Route = createFileRoute('/')({
   component: HomePage,

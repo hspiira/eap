@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
@@ -81,4 +82,4 @@ const TableCell = React.forwardRef<
 ))
 TableCell.displayName = "TableCell"
 
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell }
+export { Table, TableBody, TableCell,TableHead, TableHeader, TableRow }

@@ -2,9 +2,10 @@
  * Activities API Endpoints
  */
 
-import apiClient from '../client'
-import type { Activity, PaginatedResponse, ListParams } from '../types'
 import type { ActivityType } from '@/types/enums'
+
+import apiClient from '../client'
+import type { Activity, ListParams,PaginatedResponse } from '../types'
 
 export interface ActivityCreate {
   client_id: string

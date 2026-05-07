@@ -1,4 +1,6 @@
 import * as React from "react"
+
+import { Pagination } from "@/components/ui/pagination"
 import {
   Table,
   TableBody,
@@ -7,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Pagination } from "@/components/ui/pagination"
 import { cn } from "@/lib/utils"
 
 export interface DataTableColumn<T> {

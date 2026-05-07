@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react"
-import { X, Pencil, ChevronRight, Building2 } from "lucide-react"
+import { useEffect,useState } from "react"
+
+import { Building2,ChevronRight, Pencil, X } from "lucide-react"
+
+import { industriesApi } from "@/api/endpoints/industries"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { industriesApi } from "@/api/endpoints/industries"
 import type { Industry } from "@/types/entities"
 
 type IndustryDetailsCardProps = {

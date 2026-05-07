@@ -1,19 +1,22 @@
+import { useEffect, useRef } from "react"
+
 import { useRouterState } from "@tanstack/react-router"
-import {
-  Search,
-  Bell,
-  Sun,
-  Moon,
-  Monitor,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-  HelpCircle,
-} from "lucide-react"
 import { Link } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
+import {
+  Bell,
+  ChevronDown,
+  HelpCircle,
+  LogOut,
+  Monitor,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+  User,
+} from "lucide-react"
+
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,20 +25,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { sidebarStyles } from "@/components/ui/sidebar"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useNavigate } from "@tanstack/react-router"
-import { authActions } from "@/lib/auth-store"
-import { useAuthStore } from "@/store/slices/authSlice"
-import { useToast } from "@/contexts/ToastContext"
 import { useTheme } from "@/contexts/ThemeContext"
-import { useEffect, useRef } from "react"
-import { sidebarStyles } from "@/components/ui/sidebar"
+import { useToast } from "@/contexts/ToastContext"
+import { authActions } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/slices/authSlice"
 
 const routeTitles: Record<string, string> = {
   "/": "Home",

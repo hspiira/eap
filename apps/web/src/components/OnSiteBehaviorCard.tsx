@@ -1,4 +1,4 @@
-import { Link2, Lock, ShoppingCart, Receipt, Info, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight,Info, Link2, Lock, Receipt, ShoppingCart } from "lucide-react"
 
 const steps = [
   { icon: Link2, label: "Link", active: false },

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
-import { Phone, Mail, Users, FileText, Activity } from "lucide-react"
+
+import { Activity,FileText, Mail, Phone, Users } from "lucide-react"
+
 import { activitiesApi } from "@/api/endpoints/activities"
-import type { Activity as ActivityEntity } from "@/types/entities"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import type { Activity as ActivityEntity } from "@/types/entities"
 
 const skeletonClass = "rounded-none bg-[#5A626A]/15"
 

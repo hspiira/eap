@@ -7,6 +7,7 @@
  */
 
 import { redirect } from '@tanstack/react-router'
+
 import apiClient from '@/api/client'
 
 function safeRedirectPath(path: string): string {

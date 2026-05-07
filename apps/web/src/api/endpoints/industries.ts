@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { Industry, PaginatedResponse, ListParams } from '../types'
+import type { Industry, ListParams,PaginatedResponse } from '../types'
 
 export interface IndustryCreate {
   name: string

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useList } from "@/hooks/useList"
+
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { DataTable } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { useList } from "@/hooks/useList"
 import type { ServiceSession } from "@/types/entities"
 
 export const Route = createFileRoute("/service-sessions/")({

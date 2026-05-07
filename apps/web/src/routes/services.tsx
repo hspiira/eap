@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
-import { useAuthStore } from "@/store/slices/authSlice"
+
 import { AppLayout } from "@/components/AppLayout"
+import { useAuthStore } from "@/store/slices/authSlice"
 
 export const Route = createFileRoute("/services")({
   component: ServicesLayout,

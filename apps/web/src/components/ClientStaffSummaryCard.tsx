@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
+
 import { Link } from "@tanstack/react-router"
-import { personsApi } from "@/api/endpoints/persons"
-import { PersonType } from "@/types/enums"
-import type { Person } from "@/types/entities"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronRight } from "lucide-react"
+
+import { personsApi } from "@/api/endpoints/persons"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import type { Person } from "@/types/entities"
+import { PersonType } from "@/types/enums"
 
 const skeletonClass = "rounded-none bg-[#5A626A]/15"
 

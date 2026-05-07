@@ -1,10 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
+
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
-import type { ServiceSession } from "@/types/entities"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
+import type { ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/service-sessions/$sessionId")({

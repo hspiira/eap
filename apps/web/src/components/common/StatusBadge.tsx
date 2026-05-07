@@ -1,6 +1,6 @@
-import { getStatusConfig } from "@/utils/statusConfig"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { getStatusConfig } from "@/utils/statusConfig"
 
 export interface StatusBadgeProps {
   status: string

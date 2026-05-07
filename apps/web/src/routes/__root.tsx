@@ -1,14 +1,16 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useEffect } from 'react'
-import { ThemeProvider } from '../contexts/ThemeContext'
-import { ToastProvider } from '../contexts/ToastContext'
+
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { createRootRoute,HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+
 import { AppBootstrap } from '../components/AppBootstrap'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { NotFound } from '../components/ui/NotFound'
-import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
+import { ThemeProvider } from '../contexts/ThemeContext'
+import { ToastProvider } from '../contexts/ToastContext'
 import appCss from '../styles.css?url'
+import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 
 export const Route = createRootRoute({
   notFoundComponent: () => <NotFound fullPage />,

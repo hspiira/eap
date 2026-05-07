@@ -1,23 +1,24 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useMemo, useState } from "react"
+
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
-import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import { ClientActivityCard } from "@/components/ClientActivityCard"
-import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import type { ClientAlert } from "@/components/ClientAlertsCard"
-import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
+import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
-import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
-import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
-import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
-import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
-import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
-import { EmailCampaignCard } from "@/components/EmailCampaignCard"
+import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
 import { ClientsPageHeader } from "@/components/ClientsPageHeader"
 import { ClientDetailSkeleton } from "@/components/ClientsPageSkeletons"
+import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
+import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
+import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
+import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
+import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -29,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({

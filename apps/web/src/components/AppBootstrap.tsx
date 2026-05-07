@@ -7,7 +7,9 @@
  */
 
 import { useEffect } from 'react'
+
 import { useNavigate } from '@tanstack/react-router'
+
 import apiClient from '@/api/client'
 import { authActions } from '@/lib/auth-store'
 import { tenantActions } from '@/lib/tenant-actions'

@@ -4,8 +4,9 @@
  * Keeps video background mounted during navigation
  */
 
-import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
+
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/auth')({
   component: AuthLayout,

@@ -1,5 +1,7 @@
 import * as React from "react"
+
 import { Slot } from "@radix-ui/react-slot"
+
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_WIDTH = "18rem"
@@ -248,19 +250,19 @@ const SidebarInset = React.forwardRef<
 SidebarInset.displayName = "SidebarInset"
 
 export {
-  SidebarProvider,
-  useSidebar,
   Sidebar,
-  SidebarHeader,
-  SidebarTrigger,
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
+  SidebarHeader,
   SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
 }

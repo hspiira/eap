@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react'
-import { AlertCircle, Home } from 'lucide-react'
+
 import { Link } from '@tanstack/react-router'
+import { AlertCircle, Home } from 'lucide-react'
 
 interface ErrorBoundaryProps {
   children: ReactNode

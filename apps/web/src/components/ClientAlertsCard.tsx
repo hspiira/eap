@@ -1,5 +1,7 @@
 import { useState } from "react"
-import { Bell, ChevronDown, ChevronUp, AlertCircle } from "lucide-react"
+
+import { AlertCircle,Bell, ChevronDown, ChevronUp } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 
 export interface ClientAlert {

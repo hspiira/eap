@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useAuthStore } from "@/store/slices/authSlice"
+import { Link } from "@tanstack/react-router"
+
 import { AppLayout } from "@/components/AppLayout"
 import { AtRiskPage } from "@/components/AtRiskPage"
-import { Link } from "@tanstack/react-router"
+import { useAuthStore } from "@/store/slices/authSlice"
 
 export const Route = createFileRoute("/at-risk")({
   component: AtRiskRoute,

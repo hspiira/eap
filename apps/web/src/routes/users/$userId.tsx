@@ -1,11 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
+
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+
 import { usersApi } from "@/api/endpoints/users"
-import type { User } from "@/types/entities"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import type { LifecycleAction } from "@/utils/lifecycleConfig"
 import { Button } from "@/components/ui/button"
+import type { User } from "@/types/entities"
+import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/users/$userId")({
   component: UserDetailPage,

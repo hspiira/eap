@@ -1,21 +1,33 @@
+import { useEffect,useMemo, useState } from "react"
+
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
-import { useMemo, useState, useEffect } from "react"
-import { useList } from "@/hooks/useList"
+import {
+  Calendar,
+  Download,
+  ExternalLink,
+  Filter,
+  ListFilter,
+  Plus,
+  RotateCw,
+  Search,
+} from "lucide-react"
+
 import { clientsApi } from "@/api/endpoints/clients"
+import { ClientForm } from "@/components/ClientForm"
 import { ClientsPageHeader } from "@/components/ClientsPageHeader"
 import { ClientsListSkeleton } from "@/components/ClientsPageSkeletons"
-import { ClientForm } from "@/components/ClientForm"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogCloseButton,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogCloseButton,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Pagination } from "@/components/ui/pagination"
 import {
   Select,
   SelectContent,
@@ -31,17 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Pagination } from "@/components/ui/pagination"
-import {
-  Search,
-  Filter,
-  Calendar,
-  ListFilter,
-  RotateCw,
-  Plus,
-  Download,
-  ExternalLink,
-} from "lucide-react"
+import { useList } from "@/hooks/useList"
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
   validateSearch: (search: Record<string, unknown>) => ({

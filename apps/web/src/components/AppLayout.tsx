@@ -1,7 +1,7 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { DashboardHeader } from "@/components/DashboardHeader"
 import { DashboardMain } from "@/components/DashboardMain"
+import { SidebarInset,SidebarProvider } from "@/components/ui/sidebar"
 
 export function AppLayout({ children }: { children?: React.ReactNode }) {
   return (

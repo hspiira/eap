@@ -3,7 +3,7 @@
  * Comprehensive error handling for API responses and application errors
  */
 
-import type { ErrorResponse, ApiError, FieldErrors } from '@/types/api'
+import type { ApiError, FieldErrors } from '@/types/api'
 
 /**
  * Error code to user-friendly message mapping

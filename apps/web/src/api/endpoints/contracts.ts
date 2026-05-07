@@ -2,9 +2,10 @@
  * Contracts API Endpoints
  */
 
+import type { PaymentFrequency, PaymentStatus } from '@/types/enums'
+
 import apiClient from '../client'
-import type { Contract, PaginatedResponse, ListParams } from '../types'
-import type { ContractStatus, PaymentFrequency, PaymentStatus } from '@/types/enums'
+import type { Contract, ListParams,PaginatedResponse } from '../types'
 
 export interface ContractCreate {
   client_id: string

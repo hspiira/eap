@@ -1,15 +1,16 @@
 import { Link } from "@tanstack/react-router"
 import { Building2, MoreHorizontal, Plus, Search } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 import { sidebarStyles } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 type ClientsPageHeaderProps = {
   breadcrumb: string

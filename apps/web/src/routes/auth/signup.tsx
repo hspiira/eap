@@ -1,10 +1,12 @@
+import { useEffect, useRef,useState } from 'react'
+
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from 'react'
-import { tenantActions } from '@/lib/tenant-actions'
+import { ArrowLeft,Check, CheckCircle, Copy, KeyRound, X } from 'lucide-react'
+
+import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { ApiError } from '@/api/types'
-import type { TenantCreateResponse } from '@/api/endpoints/tenants'
-import { Check, X, CheckCircle, KeyRound, Copy, ArrowLeft } from 'lucide-react'
+import { tenantActions } from '@/lib/tenant-actions'
 
 export const Route = createFileRoute('/auth/signup')({
   component: SignupPage,

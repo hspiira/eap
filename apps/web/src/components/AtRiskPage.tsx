@@ -1,35 +1,37 @@
 import { useState } from "react"
+
 import {
-  Filter,
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  Ban,
+  Check,
   ChevronLeft,
   ChevronRight,
-  Code,
-  MoreHorizontal,
-  User,
-  Tag,
-  ArrowUp,
-  ArrowDown,
-  Ban,
-  AlertCircle,
-  Plus,
-  Check,
   Circle,
+  Code,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  Tag,
+  User,
 } from "lucide-react"
+
+import { ActivityFeedCard } from "@/components/ActivityFeedCard"
+import { ApexIntroCard } from "@/components/ApexIntroCard"
+import { QueryTable } from "@/components/common/QueryTable"
+import { InviteToProjectCard } from "@/components/InviteToProjectCard"
+import { LoggedInDevicesCard } from "@/components/LoggedInDevicesCard"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 import { sidebarStyles } from "@/components/ui/sidebar"
-import { ApexIntroCard } from "@/components/ApexIntroCard"
-import { ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { InviteToProjectCard } from "@/components/InviteToProjectCard"
-import { LoggedInDevicesCard } from "@/components/LoggedInDevicesCard"
-import { QueryTable } from "@/components/common/QueryTable"
+import { cn } from "@/lib/utils"
 
 const BREADCRUMB = "Engineering > At Risk"
 
