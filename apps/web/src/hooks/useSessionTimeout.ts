@@ -3,7 +3,7 @@
  * Manages session timeout based on user inactivity
  */
 
-import { useCallback,useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useNavigate } from '@tanstack/react-router'
 

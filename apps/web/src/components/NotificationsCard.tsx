@@ -1,4 +1,4 @@
-import { Bell, Car,ChevronDown, ChevronUp, Eye, Trash2, X } from "lucide-react"
+import { Bell, Car, ChevronDown, ChevronUp, Eye, Trash2, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { createRootRoute,HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
 import { AppBootstrap } from '../components/AppBootstrap'

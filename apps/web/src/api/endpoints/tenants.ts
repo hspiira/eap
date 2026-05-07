@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { ListParams,PaginatedResponse, Tenant } from '../types'
+import type { ListParams, PaginatedResponse, Tenant } from '../types'
 
 export interface TenantCreate {
   name: string // Required, 1-255 characters

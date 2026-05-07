@@ -1,7 +1,7 @@
-import { useEffect, useRef,useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft,Check, CheckCircle, Copy, KeyRound, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCircle, Copy, KeyRound, X } from 'lucide-react'
 
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { Activity,FileText, Mail, Phone, Users } from "lucide-react"
+import { Activity, FileText, Mail, Phone, Users } from "lucide-react"
 
 import { activitiesApi } from "@/api/endpoints/activities"
 import { Skeleton } from "@/components/ui/skeleton"

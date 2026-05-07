@@ -13,7 +13,7 @@ import type {
 import type { PersonType } from '@/types/enums'
 
 import apiClient from '../client'
-import type { ListParams,PaginatedResponse, Person } from '../types'
+import type { ListParams, PaginatedResponse, Person } from '../types'
 
 export interface PersonCreate {
   first_name: string

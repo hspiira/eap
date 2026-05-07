@@ -4,7 +4,7 @@
 
 
 import apiClient from '../client'
-import type { ListParams,PaginatedResponse, ServiceSession } from '../types'
+import type { ListParams, PaginatedResponse, ServiceSession } from '../types'
 
 export interface ServiceSessionCreate {
   service_id: string

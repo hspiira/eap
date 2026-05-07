@@ -5,7 +5,7 @@
 import type {DocumentType } from '@/types/enums'
 
 import apiClient from '../client'
-import type { Document, ListParams,PaginatedResponse } from '../types'
+import type { Document, ListParams, PaginatedResponse } from '../types'
 
 export interface DocumentCreate {
   name: string

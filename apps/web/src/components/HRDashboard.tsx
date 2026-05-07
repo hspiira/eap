@@ -1,4 +1,4 @@
-import { BarChart3, ChevronRight, FileText, Mail, Receipt, RefreshCw,User } from "lucide-react"
+import { BarChart3, ChevronRight, FileText, Mail, Receipt, RefreshCw, User } from "lucide-react"
 
 import { ChartAreaInteractive } from "@/components/ChartAreaInteractive"
 import { cn } from "@/lib/utils"

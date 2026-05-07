@@ -1,6 +1,6 @@
-import { useEffect,useState } from "react"
+import { useEffect, useState } from "react"
 
-import { Building2,ChevronRight, Pencil, X } from "lucide-react"
+import { Building2, ChevronRight, Pencil, X } from "lucide-react"
 
 import { industriesApi } from "@/api/endpoints/industries"
 import { Button } from "@/components/ui/button"

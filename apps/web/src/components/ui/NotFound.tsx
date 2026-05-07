@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, FileQuestion,Home } from 'lucide-react'
+import { ArrowLeft, FileQuestion, Home } from 'lucide-react'
 
 export interface NotFoundProps {
   title?: string

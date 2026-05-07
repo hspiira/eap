@@ -4,7 +4,7 @@
  */
 
 import apiClient from '../client'
-import type { AuditLog, ListParams,PaginatedResponse } from '../types'
+import type { AuditLog, ListParams, PaginatedResponse } from '../types'
 
 export type AuditListParams = ListParams & {
   action_type?: string

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { Download, FileUp,Plus, RotateCw, Search } from "lucide-react"
+import { Download, FileUp, Plus, RotateCw, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { Client, ClientTag, ListParams,PaginatedResponse } from '../types'
+import type { Client, ClientTag, ListParams, PaginatedResponse } from '../types'
 
 export interface ClientTagCreate {
   name: string

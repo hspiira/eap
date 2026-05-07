@@ -1,4 +1,4 @@
-import { Code, Copy, Download, GripVertical,UserPlus, X } from "lucide-react"
+import { Code, Copy, Download, GripVertical, UserPlus, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

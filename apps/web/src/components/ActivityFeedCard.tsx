@@ -1,4 +1,4 @@
-import { BarChart3, Check,Heart, Settings, User, X } from "lucide-react"
+import { BarChart3, Check, Heart, Settings, User, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"

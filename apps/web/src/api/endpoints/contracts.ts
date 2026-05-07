@@ -5,7 +5,7 @@
 import type { PaymentFrequency, PaymentStatus } from '@/types/enums'
 
 import apiClient from '../client'
-import type { Contract, ListParams,PaginatedResponse } from '../types'
+import type { Contract, ListParams, PaginatedResponse } from '../types'
 
 export interface ContractCreate {
   client_id: string

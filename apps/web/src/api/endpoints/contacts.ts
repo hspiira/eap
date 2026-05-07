@@ -5,7 +5,7 @@
 import type { ContactInfo } from '@/types/entities'
 
 import apiClient from '../client'
-import type { Contact, ListParams,PaginatedResponse } from '../types'
+import type { Contact, ListParams, PaginatedResponse } from '../types'
 
 export interface ContactCreate {
   client_id: string

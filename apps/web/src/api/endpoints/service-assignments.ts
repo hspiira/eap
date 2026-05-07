@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { ListParams,PaginatedResponse, ServiceAssignment } from '../types'
+import type { ListParams, PaginatedResponse, ServiceAssignment } from '../types'
 
 export interface ServiceAssignmentCreate {
   contract_id: string

@@ -1,7 +1,7 @@
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft,Check } from 'lucide-react'
+import { ArrowLeft, Check } from 'lucide-react'
 
 import { authApi } from '@/api/endpoints/auth'
 

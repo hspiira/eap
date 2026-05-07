@@ -1,4 +1,4 @@
-import { Check, ChevronRight,Rocket, X } from "lucide-react"
+import { Check, ChevronRight, Rocket, X } from "lucide-react"
 
 const steps = [
   { id: 1, label: "Set Up Company", done: true },
