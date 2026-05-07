@@ -96,9 +96,9 @@ class TestCreateTenant:
         # Try to create another with same code
         response = await client.post("/tenants/", json=sample_tenant_data)
 
-        # 409 Conflict for duplicate resource creation
+        # 409 Conflict for duplicate resource creation (standard error format uses "message")
         assert response.status_code == 409
-        assert "already exists" in response.json()["detail"].lower()
+        assert "already exists" in response.json().get("message", "").lower()
 
     async def test_create_tenant_invalid_code_format(self, client: AsyncClient):
         """Test that invalid code formats are rejected."""

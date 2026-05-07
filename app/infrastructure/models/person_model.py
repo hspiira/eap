@@ -7,14 +7,13 @@ This is a data container only - no business logic.
 
 from datetime import date
 
-from sqlalchemy import CheckConstraint, ForeignKey, JSON, String
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
-    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -52,13 +51,25 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         ),
     )
 
-    # Type discriminator
+    # Type discriminator - use native PG enum (create_type=False)
     person_type: Mapped[PersonType] = mapped_column(
-        EnumValueType(PersonType), nullable=False
+        Enum(
+            PersonType,
+            name="persontype",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
     )
     is_dual_role: Mapped[bool] = mapped_column(default=False, nullable=False)
     secondary_person_type: Mapped[PersonType | None] = mapped_column(
-        EnumValueType(PersonType), nullable=True
+        Enum(
+            PersonType,
+            name="persontype",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=True,
     )
 
     # Core relationships
@@ -132,7 +143,14 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Shared
     status: Mapped[BaseStatus] = mapped_column(
-        EnumValueType(BaseStatus), nullable=False, default=BaseStatus.PENDING
+        Enum(
+            BaseStatus,
+            name="basestatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=BaseStatus.PENDING,
     )
     
     emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(

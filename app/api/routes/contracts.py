@@ -10,7 +10,10 @@ import decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import get_contract_for_current_tenant
+from app.core.authorization import (
+    get_contract_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_contract_repository
@@ -101,14 +104,12 @@ async def create_contract(
     data: ContractCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new contract."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     billing_rate = Money(
         amount=decimal.Decimal(data.billing_rate.amount),
         currency=data.billing_rate.currency,
@@ -394,7 +395,7 @@ async def update_contract_payment_status(
 @readonly()
 async def list_contracts(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client identifier"),
     status: ContractStatus | None = Query(None, description="Filter by contract status"),
     payment_status: PaymentStatus | None = Query(
@@ -408,8 +409,6 @@ async def list_contracts(
     db: AsyncSession = Depends(get_db),
 ):
     """List contracts with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     contracts = await contract_repo.list_all(
@@ -462,13 +461,11 @@ async def get_contract(
 async def get_contracts_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all contracts for a client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contracts = await GetContractUseCase(contract_repo).execute_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
@@ -484,13 +481,11 @@ async def get_contracts_by_client(
 async def get_active_contract_by_client(
     client_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get active contract for a client."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     contract = await GetContractUseCase(contract_repo).execute_active_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )

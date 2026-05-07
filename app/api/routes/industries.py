@@ -8,6 +8,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import require_same_tenant
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_industry_repository
@@ -64,14 +65,12 @@ async def create_industry(
     data: IndustryCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new industry."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     industry = await CreateIndustryUseCase(industry_repo).execute(
         industry_id=IndustryId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -186,7 +185,7 @@ async def deactivate_industry(
 @readonly()
 async def list_industries(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     parent_id: str | None = Query(None, description="Filter by parent industry"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in industry name"),
@@ -196,8 +195,6 @@ async def list_industries(
     db: AsyncSession = Depends(get_db),
 ):
     """List industries with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     industries = await industry_repo.list_all(
@@ -252,13 +249,11 @@ async def get_industry(
 async def get_industry_children(
     industry_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child industries for a parent industry."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     children = await industry_repo.get_children(
         IndustryId(industry_id), TenantId(tenant_id)
     )
@@ -279,12 +274,10 @@ async def get_industry_children(
 async def check_industry_name_availability(
     name: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if an industry name is available within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     industry = await industry_repo.get_by_name(name, TenantId(tenant_id))
     return {"available": industry is None, "name": name, "tenant_id": tenant_id}

@@ -9,7 +9,11 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import get_user_in_tenant, require_tenant_role
+from app.core.authorization import (
+    get_user_in_tenant,
+    require_same_tenant,
+    require_tenant_role,
+)
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import TenantRole
 
@@ -93,7 +97,7 @@ async def create_user(
     data: UserCreate,
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
@@ -101,8 +105,6 @@ async def create_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new user."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     password_hash = _hash_password(data.password) if data.password else None
 
     try:
@@ -453,13 +455,11 @@ async def list_users(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List users with filtering, searching, and pagination."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     offset = (page - 1) * limit
 
     users = await user_repo.list_all(
@@ -512,13 +512,11 @@ async def get_user(
 async def get_user_by_email(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get user by email within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     if not user:
         raise ValueError("User not found")
@@ -533,12 +531,10 @@ async def get_user_by_email(
 async def check_email_availability(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Check if a user email is available within a tenant."""
-    if current_user.tenant_id != tenant_id:
-        raise HTTPException(status_code=403, detail="Access denied to this tenant")
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     return {"available": user is None, "email": email, "tenant_id": tenant_id}
