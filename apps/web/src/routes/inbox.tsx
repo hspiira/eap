@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuthStore } from "@/store/slices/authSlice"
 import { AppLayout } from "@/components/AppLayout"
 import { Link } from "@tanstack/react-router"
 import { useState, useMemo, useRef, useEffect } from "react"
@@ -385,7 +385,7 @@ function InboxPagination({
 }
 
 function InboxRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
-import { useTenant } from '@/hooks/useTenant'
+import { tenantActions } from '@/lib/tenant-actions'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { ApiError } from '@/api/types'
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
@@ -26,7 +26,7 @@ function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [adminCredentials, setAdminCredentials] = useState<TenantCreateResponse | null>(null)
   const [copiedSetPasswordLink, setCopiedSetPasswordLink] = useState(false)
-  const { createTenant } = useTenant()
+  const createTenant = tenantActions.createTenant
   const navigate = useNavigate()
   const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

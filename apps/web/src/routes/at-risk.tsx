@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuthStore } from "@/store/slices/authSlice"
 import { AppLayout } from "@/components/AppLayout"
 import { AtRiskPage } from "@/components/AtRiskPage"
 import { Link } from "@tanstack/react-router"
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/at-risk")({
 })
 
 function AtRiskRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (

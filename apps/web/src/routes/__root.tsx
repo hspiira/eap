@@ -2,10 +2,9 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useEffect } from 'react'
-import { AuthProvider } from '../contexts/AuthContext'
 import { ThemeProvider } from '../contexts/ThemeContext'
-import { TenantProvider } from '../contexts/TenantContext'
 import { ToastProvider } from '../contexts/ToastContext'
+import { AppBootstrap } from '../components/AppBootstrap'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { NotFound } from '../components/ui/NotFound'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
@@ -38,15 +37,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body style={{ minHeight: '100dvh' }}>
         <ThemeProvider>
           <ToastProvider>
-            <AuthProvider>
-              <TenantProvider>
-                <ErrorBoundary>
-                  <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
-                    {children}
-                  </div>
-                </ErrorBoundary>
-              </TenantProvider>
-            </AuthProvider>
+            <AppBootstrap />
+            <ErrorBoundary>
+              <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
+                {children}
+              </div>
+            </ErrorBoundary>
           </ToastProvider>
         </ThemeProvider>
         <TanStackDevtools

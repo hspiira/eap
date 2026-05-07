@@ -28,9 +28,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useAuth } from "@/contexts/AuthContext"
+import { useNavigate } from "@tanstack/react-router"
+import { authActions } from "@/lib/auth-store"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useToast } from "@/contexts/ToastContext"
 import { useTheme } from "@/contexts/ThemeContext"
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { sidebarStyles } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 
@@ -175,8 +178,19 @@ function ThemeToggle() {
 }
 
 function UserMenu() {
-  const { email, logout } = useAuth()
+  const email = useAuthStore((s) => s.email)
+  const navigate = useNavigate()
+  const { showSuccess } = useToast()
   const displayEmail = email ?? "Account"
+
+  const handleSignOut = async () => {
+    await authActions.logout()
+    showSuccess("Successfully signed out")
+    navigate({
+      to: "/auth/login",
+      search: { tenant_code: undefined, email: undefined, redirect: undefined },
+    })
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -221,7 +235,7 @@ function UserMenu() {
           className="cursor-pointer text-[#5A626A] focus:bg-[#E0DAD2]"
           onSelect={(e) => {
             e.preventDefault()
-            logout()
+            handleSignOut()
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />

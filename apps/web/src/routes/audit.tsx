@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuthStore } from "@/store/slices/authSlice"
 import { AppLayout } from "@/components/AppLayout"
 
 export const Route = createFileRoute("/audit")({
@@ -7,7 +7,7 @@ export const Route = createFileRoute("/audit")({
 })
 
 function AuditRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuthStore()
   if (isLoading) return <div className="p-8 text-[#5A626A]">Loading…</div>
   if (!isAuthenticated) return null
   return (

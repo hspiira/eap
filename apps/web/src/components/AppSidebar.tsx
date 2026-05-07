@@ -41,7 +41,7 @@ import {
   sidebarStyles,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import { useTenant } from "@/hooks/useTenant"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 
 function toProperCase(s: string): string {
   return s
@@ -53,7 +53,7 @@ function toProperCase(s: string): string {
 const PROJECT_LOGO = "/evexi%CC%81a.svg"
 
 function TenantDisplay() {
-  const { currentTenant } = useTenant()
+  const currentTenant = useTenantStore((s) => s.currentTenant)
   const displayName = currentTenant?.name ? toProperCase(currentTenant.name) : ""
 
   return (

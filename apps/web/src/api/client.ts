@@ -147,9 +147,8 @@ class ApiClient {
   }
 
   /**
-   * Get tenant ID.
-   * Uses in-memory value, then localStorage 'tenant_id', then 'current_tenant_id' (TenantContext).
-   * Ensures tenant is available even before TenantContext sync (e.g. after SSR hydrate).
+   * Get tenant ID. Uses in-memory value, then localStorage 'tenant_id', then 'current_tenant_id'.
+   * Ensures tenant is available even before AppBootstrap has restored it (e.g. after SSR hydrate).
    */
   getTenantId(): string | null {
     if (this.tenantId) return this.tenantId

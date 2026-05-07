@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthStore } from '@/store/slices/authSlice'
 import { AppLayout } from '@/components/AppLayout'
 
 export const Route = createFileRoute('/')({
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/')({
 })
 
 function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuthStore()
 
   if (isLoading) {
     return (

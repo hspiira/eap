@@ -1,10 +1,9 @@
 /**
  * Auth store slice
  * Single source of truth for authentication state.
- * AuthContext syncs with this store (read/write).
  *
- * IMPORTANT: Always starts in loading state to avoid SSR hydration mismatch.
- * AuthContext hydrates from localStorage after mount.
+ * Always starts in loading state to avoid SSR hydration mismatch.
+ * AppBootstrap calls authActions.initAuth() to hydrate from localStorage on mount.
  */
 
 import { create } from 'zustand'
@@ -28,8 +27,6 @@ export interface AuthActions {
 
 export type AuthStore = AuthState & AuthActions
 
-// Always start with loading state - both server and client render the same initially.
-// Client hydrates from localStorage in AuthContext useEffect after mount.
 const initialState: AuthState = {
   token: null,
   user_id: null,

@@ -1,7 +1,7 @@
 /**
  * Tenant store slice
  * Single source of truth for tenant state.
- * TenantContext syncs with this store (read/write).
+ * Side effects (apiClient sync, localStorage, cache invalidation) live in tenantActions.
  */
 
 import { create } from 'zustand'

@@ -64,8 +64,18 @@ export const authActions = {
   },
 
   async logout(): Promise<void> {
-    await authApi.logout()
+    try {
+      await authApi.logout()
+    } catch {
+      // server-side logout is best-effort; always tear down client state
+    }
+    apiClient.clearAuth()
     useAuthStore.getState().clearAuth()
+    useTenantStore.setState({
+      currentTenant: null,
+      availableTenants: [],
+      isLoading: false,
+    })
   },
 
   async initAuth(): Promise<void> {

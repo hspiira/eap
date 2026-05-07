@@ -4,13 +4,23 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useNavigate } from '@tanstack/react-router'
+import { authActions } from '@/lib/auth-store'
+import { useAuthStore } from '@/store/slices/authSlice'
 
 const PREFERENCE_KEY = 'evexia_pref_session_timeout'
 const WARNING_TIME = 60000 // Show warning 1 minute before timeout
 
 export function useSessionTimeout() {
-  const { isAuthenticated, logout } = useAuth()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const navigate = useNavigate()
+  const logout = useCallback(async () => {
+    await authActions.logout()
+    navigate({
+      to: '/auth/login',
+      search: { tenant_code: undefined, email: undefined, redirect: undefined },
+    })
+  }, [navigate])
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)

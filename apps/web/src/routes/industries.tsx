@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useState, useEffect, useCallback } from "react"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuthStore } from "@/store/slices/authSlice"
 import { AppLayout } from "@/components/AppLayout"
 import { useList } from "@/hooks/useList"
 import { industriesApi } from "@/api/endpoints/industries"
@@ -26,7 +26,7 @@ const columns = [
 ]
 
 function IndustriesPage() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuthStore()
   const { items, total, page, limit, setPage, loading, error, refetch } = useList({
     listFn: industriesApi.list,
     initialParams: { page: 1, limit: 20 },
