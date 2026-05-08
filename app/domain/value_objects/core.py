@@ -149,6 +149,11 @@ class ActivityId(Id):
 class ServiceAssignmentId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class CriticalIncidentId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

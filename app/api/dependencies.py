@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.critical_incident_repository import (
+    CriticalIncidentRepository,
+)
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.repositories.client_repository import ClientRepository
@@ -342,6 +345,16 @@ async def get_diagnosis_repository(
     )
 
     return DiagnosisRepositoryImpl(db)
+
+
+async def get_critical_incident_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CriticalIncidentRepository":
+    from app.infrastructure.repositories.critical_incident_repository import (
+        CriticalIncidentRepositoryImpl,
+    )
+
+    return CriticalIncidentRepositoryImpl(db)
 
 
 # =============================================================================

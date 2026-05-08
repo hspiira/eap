@@ -8,9 +8,10 @@ They are used to communicate state changes between bounded contexts.
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from app.domain.value_objects.core import (
-    TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId
+    TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId,
+    CriticalIncidentId,
 )
-from app.domain.enums import PersonType
+from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
 
 @dataclass(frozen=True)
@@ -265,3 +266,26 @@ class DocumentVersionCreated(DomainEvent):
     """Event raised when a new document version is created."""
     document_id: DocumentId
     new_version_id: DocumentId
+
+@dataclass(frozen=True)
+class CriticalIncidentLogged(DomainEvent):
+    """Raised when a critical incident is first logged."""
+
+    incident_id: CriticalIncidentId
+    severity: CriticalIncidentSeverity
+    affected_population_size: int
+
+
+@dataclass(frozen=True)
+class CriticalIncidentPhaseRecorded(DomainEvent):
+    """Raised when a CISM phase entry is added to the response timeline."""
+
+    incident_id: CriticalIncidentId
+    phase: CriticalIncidentPhase
+
+
+@dataclass(frozen=True)
+class CriticalIncidentClosed(DomainEvent):
+    """Raised when an incident response is closed and the after-action is final."""
+
+    incident_id: CriticalIncidentId

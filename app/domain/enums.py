@@ -100,6 +100,35 @@ class ClientTier(str, Enum):
     B = "B"
     C = "C"
 
+
+class CriticalIncidentSeverity(str, Enum):
+    """Operational severity used to triage critical-incident response."""
+
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
+    CATASTROPHIC = "Catastrophic"
+
+
+class CriticalIncidentStatus(str, Enum):
+    """Lifecycle of an incident response."""
+
+    OPEN = "Open"
+    IN_RESPONSE = "InResponse"
+    CLOSED = "Closed"
+
+
+class CriticalIncidentPhase(str, Enum):
+    """Mitchell-Everly CISM phases tracked on the response timeline (SAD §2.6)."""
+
+    DEMOBILISATION = "Demobilisation"
+    DEFUSING = "Defusing"
+    DEBRIEFING = "Debriefing"
+    ONE_ON_ONE = "OneOnOne"
+    FAMILY = "FamilyCISM"
+    PASTORAL = "Pastoral"
+    FOLLOW_UP = "FollowUp"
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"

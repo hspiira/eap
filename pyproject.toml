@@ -109,6 +109,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
     "app.api.dependencies -> app.infrastructure.repositories.contact_repository",
     "app.api.dependencies -> app.infrastructure.repositories.contract_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.critical_incident_repository",
     "app.api.dependencies -> app.infrastructure.repositories.diagnosis_repository",
     "app.api.dependencies -> app.infrastructure.repositories.document_repository",
     "app.api.dependencies -> app.infrastructure.repositories.industry_repository",
