@@ -2,6 +2,8 @@
  * Clients API Endpoints
  */
 
+import type { ClientTier } from '@/types/enums'
+
 import apiClient from '../client'
 import type {
   Client,
@@ -16,11 +18,16 @@ import type {
 export interface ClientCreate {
   name: string
   code: string // Required, 3-5 chars
+  tier?: ClientTier | null
   contact_info: ClientContactInfo
   billing_address?: ClientBillingAddress | null
   industry_id?: string | null
   parent_client_id?: string | null
   preferred_contact_method?: string | null
+}
+
+export interface ClientListParams extends ListParams {
+  tier?: ClientTier
 }
 
 export const clientsApi = {
@@ -41,7 +48,7 @@ export const clientsApi = {
   /**
    * List clients
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<Client>> {
+  async list(params?: ClientListParams): Promise<PaginatedResponse<Client>> {
     return apiClient.get<PaginatedResponse<Client>>('/clients', params as Record<string, unknown>)
   },
 

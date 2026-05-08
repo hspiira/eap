@@ -6,6 +6,7 @@
 import type {
   ActivityType,
   BaseStatus,
+  ClientTier,
   ContactMethod,
   ContractStatus,
   DocumentStatus,
@@ -205,6 +206,7 @@ export interface Client extends BaseEntity {
   code: string // Required, 3-5 chars (e.g. used for employee codes like MNT)
   is_verified?: boolean // Backend may omit; treat as false when absent
   status: BaseStatus
+  tier?: ClientTier | null
   contact_info: ClientContactInfo // Required for creation
   billing_address?: ClientBillingAddress | null
   industry_id?: string | null

@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
 import { useEntityMutation } from "@/lib/queries"
+import { ClientTier } from "@/types/enums"
 
 export interface ClientFormProps {
   onSuccess?: () => void
   onCancel?: () => void
   submitLabel?: string
 }
+
+const TIER_VALUES = [ClientTier.A, ClientTier.B, ClientTier.C] as const
 
 const clientCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -20,6 +23,7 @@ const clientCreateSchema = z.object({
     .trim()
     .min(3, "Code must be 3–5 characters")
     .max(5, "Code must be 3–5 characters"),
+  tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
   email: z
     .string()
     .trim()
@@ -40,12 +44,13 @@ export function ClientForm({
 
   const { register, formState, submit, serverError } = useApiForm<z.infer<typeof clientCreateSchema>>({
     schema: clientCreateSchema,
-    defaultValues: { name: "", code: "", email: "", phone: "" },
+    defaultValues: { name: "", code: "", tier: "", email: "", phone: "" },
     successToast: "Client created",
     onSubmit: async (values) => {
       await createClient.mutateAsync({
         name: values.name,
         code: values.code,
+        tier: values.tier ? (values.tier as ClientTier) : undefined,
         contact_info: {
           email: values.email || undefined,
           phone: values.phone || undefined,
@@ -87,6 +92,24 @@ export function ClientForm({
         htmlFor="client-code"
       >
         <Input id="client-code" className="rounded-none border-ink/30" {...register("code")} />
+      </FormField>
+      <FormField
+        label="Tier"
+        error={formState.errors.tier?.message as string | undefined}
+        htmlFor="client-tier"
+      >
+        <select
+          id="client-tier"
+          className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+          {...register("tier")}
+        >
+          <option value="">Unassigned</option>
+          {TIER_VALUES.map((t) => (
+            <option key={t} value={t}>
+              Tier {t}
+            </option>
+          ))}
+        </select>
       </FormField>
       <FormField label="Email" error={contactEmailError as string | undefined} htmlFor="client-email">
         <Input

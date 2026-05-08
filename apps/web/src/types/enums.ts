@@ -207,6 +207,16 @@ export type RelationType =
   | 'Other'
 
 /**
+ * Client tier — assigned by ops, drives reporting and SLA expectations.
+ * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.
+ */
+export enum ClientTier {
+  A = 'A',
+  B = 'B',
+  C = 'C',
+}
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {

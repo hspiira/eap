@@ -27,21 +27,21 @@ export function entityDetailKey(resource: string, id: string): QueryKey {
   return [resource, 'detail', id]
 }
 
-export interface UseEntityListOptions<T> {
+export interface UseEntityListOptions<T, P extends ListParams = ListParams> {
   resource: string
-  params: ListParams
-  listFn: (params: ListParams) => Promise<PaginatedResponse<T>>
+  params: P
+  listFn: (params: P) => Promise<PaginatedResponse<T>>
   enabled?: boolean
   staleTime?: number
 }
 
-export function useEntityList<T>({
+export function useEntityList<T, P extends ListParams = ListParams>({
   resource,
   params,
   listFn,
   enabled,
   staleTime,
-}: UseEntityListOptions<T>) {
+}: UseEntityListOptions<T, P>) {
   return useQuery({
     queryKey: entityListKey(resource, params),
     queryFn: () => listFn(params),

@@ -14,6 +14,7 @@ import { Route as TagsRouteImport } from './routes/tags'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as ServiceSessionsRouteImport } from './routes/service-sessions'
 import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PersonsRouteImport } from './routes/persons'
 import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as IndustriesRouteImport } from './routes/industries'
@@ -32,6 +33,7 @@ import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
 import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
+import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
@@ -45,6 +47,7 @@ import { Route as ServiceSessionsNewRouteImport } from './routes/service-session
 import { Route as ServiceSessionsSessionIdRouteImport } from './routes/service-sessions/$sessionId'
 import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
 import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
+import { Route as ReportsTemplateSlugRouteImport } from './routes/reports/$templateSlug'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
 import { Route as ContractsNewRouteImport } from './routes/contracts/new'
@@ -78,6 +81,11 @@ const ServiceSessionsRoute = ServiceSessionsRouteImport.update({
 const ServiceAssignmentsRoute = ServiceAssignmentsRouteImport.update({
   id: '/service-assignments',
   path: '/service-assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonsRoute = PersonsRouteImport.update({
@@ -170,6 +178,11 @@ const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ServiceAssignmentsRoute,
 } as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ReportsRoute,
+} as any)
 const PersonsIndexRoute = PersonsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -237,6 +250,11 @@ const ServiceAssignmentsAssignmentIdRoute =
     path: '/$assignmentId',
     getParentRoute: () => ServiceAssignmentsRoute,
   } as any)
+const ReportsTemplateSlugRoute = ReportsTemplateSlugRouteImport.update({
+  id: '/$templateSlug',
+  path: '/$templateSlug',
+  getParentRoute: () => ReportsRoute,
+} as any)
 const PersonsNewRoute = PersonsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -297,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
   '/persons': typeof PersonsRouteWithChildren
+  '/reports': typeof ReportsRouteWithChildren
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
@@ -311,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/contracts/new': typeof ContractsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
@@ -324,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/reports/': typeof ReportsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -350,6 +371,7 @@ export interface FileRoutesByTo {
   '/contracts/new': typeof ContractsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
@@ -363,6 +385,7 @@ export interface FileRoutesByTo {
   '/clients': typeof ClientsIndexRoute
   '/contracts': typeof ContractsIndexRoute
   '/persons': typeof PersonsIndexRoute
+  '/reports': typeof ReportsIndexRoute
   '/service-assignments': typeof ServiceAssignmentsIndexRoute
   '/service-sessions': typeof ServiceSessionsIndexRoute
   '/services': typeof ServicesIndexRoute
@@ -384,6 +407,7 @@ export interface FileRoutesById {
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
   '/persons': typeof PersonsRouteWithChildren
+  '/reports': typeof ReportsRouteWithChildren
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
@@ -398,6 +422,7 @@ export interface FileRoutesById {
   '/contracts/new': typeof ContractsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
   '/service-assignments/new': typeof ServiceAssignmentsNewRoute
   '/service-sessions/$sessionId': typeof ServiceSessionsSessionIdRoute
@@ -411,6 +436,7 @@ export interface FileRoutesById {
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/reports/': typeof ReportsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -433,6 +459,7 @@ export interface FileRouteTypes {
     | '/industries'
     | '/kpis'
     | '/persons'
+    | '/reports'
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
@@ -447,6 +474,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
     | '/service-sessions/$sessionId'
@@ -460,6 +488,7 @@ export interface FileRouteTypes {
     | '/clients/'
     | '/contracts/'
     | '/persons/'
+    | '/reports/'
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
@@ -486,6 +515,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
     | '/service-sessions/$sessionId'
@@ -499,6 +529,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/contracts'
     | '/persons'
+    | '/reports'
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
@@ -519,6 +550,7 @@ export interface FileRouteTypes {
     | '/industries'
     | '/kpis'
     | '/persons'
+    | '/reports'
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
@@ -533,6 +565,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/persons/$personId'
     | '/persons/new'
+    | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
     | '/service-assignments/new'
     | '/service-sessions/$sessionId'
@@ -546,6 +579,7 @@ export interface FileRouteTypes {
     | '/clients/'
     | '/contracts/'
     | '/persons/'
+    | '/reports/'
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
@@ -567,6 +601,7 @@ export interface RootRouteChildren {
   IndustriesRoute: typeof IndustriesRoute
   KpisRoute: typeof KpisRoute
   PersonsRoute: typeof PersonsRouteWithChildren
+  ReportsRoute: typeof ReportsRouteWithChildren
   ServiceAssignmentsRoute: typeof ServiceAssignmentsRouteWithChildren
   ServiceSessionsRoute: typeof ServiceSessionsRouteWithChildren
   ServicesRoute: typeof ServicesRouteWithChildren
@@ -609,6 +644,13 @@ declare module '@tanstack/react-router' {
       path: '/service-assignments'
       fullPath: '/service-assignments'
       preLoaderRoute: typeof ServiceAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/persons': {
@@ -737,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServiceAssignmentsIndexRouteImport
       parentRoute: typeof ServiceAssignmentsRoute
     }
+    '/reports/': {
+      id: '/reports/'
+      path: '/'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof ReportsIndexRouteImport
+      parentRoute: typeof ReportsRoute
+    }
     '/persons/': {
       id: '/persons/'
       path: '/'
@@ -827,6 +876,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/service-assignments/$assignmentId'
       preLoaderRoute: typeof ServiceAssignmentsAssignmentIdRouteImport
       parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/reports/$templateSlug': {
+      id: '/reports/$templateSlug'
+      path: '/$templateSlug'
+      fullPath: '/reports/$templateSlug'
+      preLoaderRoute: typeof ReportsTemplateSlugRouteImport
+      parentRoute: typeof ReportsRoute
     }
     '/persons/new': {
       id: '/persons/new'
@@ -954,6 +1010,19 @@ const PersonsRouteChildren: PersonsRouteChildren = {
 const PersonsRouteWithChildren =
   PersonsRoute._addFileChildren(PersonsRouteChildren)
 
+interface ReportsRouteChildren {
+  ReportsTemplateSlugRoute: typeof ReportsTemplateSlugRoute
+  ReportsIndexRoute: typeof ReportsIndexRoute
+}
+
+const ReportsRouteChildren: ReportsRouteChildren = {
+  ReportsTemplateSlugRoute: ReportsTemplateSlugRoute,
+  ReportsIndexRoute: ReportsIndexRoute,
+}
+
+const ReportsRouteWithChildren =
+  ReportsRoute._addFileChildren(ReportsRouteChildren)
+
 interface ServiceAssignmentsRouteChildren {
   ServiceAssignmentsAssignmentIdRoute: typeof ServiceAssignmentsAssignmentIdRoute
   ServiceAssignmentsNewRoute: typeof ServiceAssignmentsNewRoute
@@ -1043,6 +1112,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndustriesRoute: IndustriesRoute,
   KpisRoute: KpisRoute,
   PersonsRoute: PersonsRouteWithChildren,
+  ReportsRoute: ReportsRouteWithChildren,
   ServiceAssignmentsRoute: ServiceAssignmentsRouteWithChildren,
   ServiceSessionsRoute: ServiceSessionsRouteWithChildren,
   ServicesRoute: ServicesRouteWithChildren,

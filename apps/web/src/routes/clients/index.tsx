@@ -18,6 +18,7 @@ import { ClientForm } from "@/components/ClientForm"
 import { ClientsPageHeader } from "@/components/ClientsPageHeader"
 import { ClientsListSkeleton } from "@/components/ClientsPageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -46,16 +47,29 @@ import {
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
+import { ClientTier } from "@/types/enums"
 import { normalizeErrorMessage } from "@/utils/errorHandler"
+function isTier(value: unknown): value is ClientTier {
+  return value === ClientTier.A || value === ClientTier.B || value === ClientTier.C
+}
+
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string } = {}
+    const out: { new?: boolean; search?: string; tier?: ClientTier } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
+    if (isTier(search.tier)) out.tier = search.tier
     return out
   },
 })
+
+const TIER_FILTER_OPTIONS: Array<{ value: "all" | ClientTier; label: string }> = [
+  { value: "all", label: "All tiers" },
+  { value: ClientTier.A, label: "Tier A" },
+  { value: ClientTier.B, label: "Tier B" },
+  { value: ClientTier.C, label: "Tier C" },
+]
 
 const TIME_RANGE_OPTIONS = [
   { value: "12h", label: "Last 12 hours" },
@@ -76,6 +90,7 @@ function ClientsListPage() {
 
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
+  const activeTier = searchParams.tier
 
   useEffect(() => {
     if (searchParams.new) setAddModalOpen(true)
@@ -88,9 +103,15 @@ function ClientsListPage() {
     }
   }, [activeSearch, navigate, searchParams.search])
 
+  const handleTierChange = (next: string) => {
+    const tier = isTier(next) ? next : undefined
+    navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
+    setPage(1)
+  }
+
   const query = useEntityList({
     resource: "clients",
-    params: { page, limit, search: activeSearch },
+    params: { page, limit, search: activeSearch, tier: activeTier },
     listFn: clientsApi.list,
   })
   const items = query.data?.items ?? []
@@ -133,6 +154,25 @@ function ClientsListPage() {
                 </SelectTrigger>
                 <SelectContent className="rounded-none border-ink/30 bg-white">
                   {TIME_RANGE_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className="rounded-none focus:bg-warm/50 focus:text-ink"
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={activeTier ?? "all"} onValueChange={handleTierChange}>
+                <SelectTrigger
+                  className="rounded-none h-9 w-[140px] gap-1.5 border-ink/30 bg-white text-ink [&>svg]:text-ink"
+                  aria-label="Filter by tier"
+                >
+                  <SelectValue placeholder="All tiers" />
+                </SelectTrigger>
+                <SelectContent className="rounded-none border-ink/30 bg-white">
+                  {TIER_FILTER_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
@@ -221,6 +261,7 @@ function ClientsListPage() {
                         <TableRow className="border-ink/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-ink [&>th]:bg-warm/30">
                           <TableHead>Name</TableHead>
                           <TableHead>Code</TableHead>
+                          <TableHead>Tier</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Contact</TableHead>
                           <TableHead>Operation</TableHead>
@@ -242,6 +283,9 @@ function ClientsListPage() {
                               </Link>
                             </TableCell>
                             <TableCell>{row.code}</TableCell>
+                            <TableCell>
+                              <TierBadge tier={row.tier} />
+                            </TableCell>
                             <TableCell>
                               <StatusBadge status={row.status} />
                             </TableCell>

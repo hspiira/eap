@@ -18,6 +18,7 @@ import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
 import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { TierBadge } from "@/components/common/TierBadge"
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -299,6 +300,7 @@ function ClientDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold text-ink">{client.name}</h1>
               <StatusBadge status={client.status} />
+              <TierBadge tier={client.tier} />
               {(client.is_verified ?? stats?.is_verified) && (
                 <span className="text-xs font-medium px-2 py-0.5 border border-natural bg-natural/20 text-ink">
                   Verified
