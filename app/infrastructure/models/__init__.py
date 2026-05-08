@@ -44,6 +44,7 @@ from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.tenant_model import TenantModel
 from app.infrastructure.models.user_model import UserModel
+from app.infrastructure.models.utilisation_event_model import UtilisationEventModel
 
 __all__ = [
     "ActivityModel",
@@ -83,4 +84,5 @@ __all__ = [
     "TenantMixin",
     "TimestampMixin",
     "UserModel",
+    "UtilisationEventModel",
 ]

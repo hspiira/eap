@@ -112,5 +112,9 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
         String(500), nullable=True
     )
 
+    # Pricing model + serialised pricing config (Phase 2 #D-Pricing)
+    pricing_model: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    pricing_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     def __repr__(self) -> str:
         return f"<ContractModel(id={self.id}, client_id={self.client_id}, status={self.status})>"

@@ -21,6 +21,9 @@ from app.domain.repositories.report_repository import (
     ReportRunRepository,
     ReportTemplateRepository,
 )
+from app.domain.repositories.utilisation_event_repository import (
+    UtilisationEventRepository,
+)
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.activity_repository import ActivityRepository
@@ -398,6 +401,16 @@ async def get_report_query_runner(db: AsyncSession = Depends(get_db)):
     from app.infrastructure.services.report_query_runner import ReportQueryRunner
 
     return ReportQueryRunner(db)
+
+
+async def get_utilisation_event_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "UtilisationEventRepository":
+    from app.infrastructure.repositories.utilisation_event_repository import (
+        UtilisationEventRepositoryImpl,
+    )
+
+    return UtilisationEventRepositoryImpl(db)
 
 
 # =============================================================================
