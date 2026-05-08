@@ -96,11 +96,13 @@ export const tenantStorage = {
 export interface UiPrefs {
   theme: 'light' | 'dark' | 'system'
   session_timeout_minutes: number
+  sidebar_open: boolean
 }
 
 const DEFAULT_UI: UiPrefs = {
   theme: 'system',
   session_timeout_minutes: 30,
+  sidebar_open: false,
 }
 
 export const uiStorage = {
@@ -116,6 +118,10 @@ export const uiStorage = {
         stored.session_timeout_minutes > 0
           ? stored.session_timeout_minutes
           : DEFAULT_UI.session_timeout_minutes,
+      sidebar_open:
+        typeof stored.sidebar_open === 'boolean'
+          ? stored.sidebar_open
+          : DEFAULT_UI.sidebar_open,
     }
   },
   patch(partial: Partial<UiPrefs>): UiPrefs {
