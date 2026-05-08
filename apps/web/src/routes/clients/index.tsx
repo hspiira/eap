@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -49,10 +49,12 @@ import { useEntityList } from "@/lib/queries"
 import { normalizeErrorMessage } from "@/utils/errorHandler"
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    new: search.new === "1" || search.new === true,
-    search: typeof search.search === "string" && search.search.trim() ? search.search : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const out: { new?: boolean; search?: string } = {}
+    if (search.new === "1" || search.new === true) out.new = true
+    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
+    return out
+  },
 })
 
 const TIME_RANGE_OPTIONS = [
@@ -198,10 +200,10 @@ function ClientsListPage() {
                 <div className="rounded-none border border-[#5A626A]/20 bg-white p-6 text-center">
                   <p className="text-[#5A626A]">{error}</p>
                 </div>
-              ) : displayItems.length === 0 ? (
+              ) : items.length === 0 ? (
                 <div className="rounded-none border border-[#5A626A]/20 bg-white p-8 text-center">
                   <p className="text-[#5A626A]">
-                    {items.length === 0 ? "No clients yet." : "No clients match your search."}
+                    {activeSearch ? "No clients match your search." : "No clients yet."}
                   </p>
                   <Button
                     size="sm"
@@ -225,7 +227,7 @@ function ClientsListPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {displayItems.map((row) => (
+                        {items.map((row) => (
                           <TableRow
                             key={row.id}
                             className="border-[#5A626A]/10 hover:bg-[#E6E0D7]/20 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm [&>td]:text-[#5A626A]"
@@ -262,13 +264,8 @@ function ClientsListPage() {
                     </Table>
                   </div>
 
-                  {showPagination && total > 0 && (
-                    <Pagination
-                      page={paginationPage}
-                      total={paginationTotal}
-                      limit={paginationLimit}
-                      onPageChange={setPage}
-                    />
+                  {total > 0 && (
+                    <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
                   )}
                 </div>
               )}

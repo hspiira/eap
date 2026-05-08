@@ -19,7 +19,7 @@ import {
 import type { ZodType } from 'zod'
 
 import { useToast } from '@/contexts/ToastContext'
-import { ApiError } from '@/types/api'
+import { defaultErrorMessage, isApiError } from '@/lib/errors'
 
 export interface UseApiFormOptions<TValues extends FieldValues> {
   schema: ZodType<TValues>
@@ -52,18 +52,13 @@ export function useApiForm<TValues extends FieldValues>(
       await opts.onSubmit(values as TValues)
       if (opts.successToast) showSuccess(opts.successToast)
     } catch (err) {
-      if (err instanceof ApiError && err.fieldErrors) {
+      if (isApiError(err) && err.fieldErrors) {
         for (const [field, message] of Object.entries(err.fieldErrors)) {
           form.setError(field as Path<TValues>, { type: 'server', message })
         }
         return
       }
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Something went wrong. Please try again.'
+      const message = defaultErrorMessage(err)
       form.setError('root.serverError' as Path<TValues>, { type: 'server', message })
       if (opts.errorToast !== false) showError(message)
     }

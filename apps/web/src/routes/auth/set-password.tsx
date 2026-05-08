@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import { authApi } from '@/api/endpoints/auth'
 import { useApiForm } from '@/hooks/useApiForm'
+import { isApiError, isValidationError } from '@/lib/errors'
 import { ApiError } from '@/types/api'
 
 export const Route = createFileRoute('/auth/set-password')({
@@ -31,12 +32,6 @@ const setPasswordSchema = z
     message: 'Passwords do not match',
   })
 
-function looksLikePasswordValidationError(err: ApiError): boolean {
-  if (err.fieldErrors?.password) return true
-  const msg = err.message.toLowerCase()
-  return msg.includes('password') || msg.includes('at least 8') || msg.includes('validation')
-}
-
 function SetPasswordPage() {
   const navigate = useNavigate()
   const { token, tenant_code } = Route.useSearch()
@@ -59,15 +54,15 @@ function SetPasswordPage() {
         })
         setSuccess(true)
       } catch (err) {
-        if (err instanceof ApiError && looksLikePasswordValidationError(err)) {
+        if (isValidationError(err)) {
           throw new ApiError(SET_PASSWORD_GENERIC_ERROR, err.code, err.status, {
             password: SET_PASSWORD_GENERIC_ERROR,
           })
         }
         throw new ApiError(
           SET_PASSWORD_LINK_ERROR,
-          err instanceof ApiError ? err.code : 'INVALID_TOKEN',
-          err instanceof ApiError ? err.status : 400,
+          isApiError(err) ? err.code : 'INVALID_TOKEN',
+          isApiError(err) ? err.status : 400,
         )
       }
     },

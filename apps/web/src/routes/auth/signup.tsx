@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import { useApiForm } from '@/hooks/useApiForm'
+import { isConflict } from '@/lib/errors'
 import { tenantActions } from '@/lib/tenant-actions'
 import { ApiError } from '@/types/api'
 
@@ -52,7 +53,7 @@ function SignupPage() {
         const response = await tenantActions.createTenant(values)
         setAdminCredentials(response)
       } catch (err) {
-        if (err instanceof ApiError && err.status === 409 && !err.fieldErrors) {
+        if (isConflict(err) && !err.fieldErrors) {
           throw new ApiError(err.message, err.code, err.status, {
             code: 'A tenant with this code already exists. Please choose a different code.',
           })
