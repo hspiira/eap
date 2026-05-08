@@ -212,3 +212,8 @@ class ActivityTransition(str, Enum):
     UPDATE_OUTCOME = "update_outcome"
     UPDATE_NEXT_FOLLOW_UP = "update_next_follow_up"
     MARK_IMPORTANT = "mark_important"
+
+
+class CriticalIncidentTransition(str, Enum):
+    RECORD_PHASE = "record_phase"
+    CLOSE = "close"

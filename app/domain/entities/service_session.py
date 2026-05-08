@@ -33,6 +33,7 @@ class ServiceSessionEntity:
     notes: str | None = None
     feedback: str | None = None
     cancellation_reason: str | None = None
+    incident_id: str | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list)
     

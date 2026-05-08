@@ -75,5 +75,10 @@ class ServiceSessionModel(
         String(500), nullable=True
     )
 
+    # Optional link to a CISM critical-incident response
+    incident_id: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+
     def __repr__(self) -> str:
         return f"<ServiceSessionModel(id={self.id}, status={self.status}, scheduled_at={self.scheduled_at})>"

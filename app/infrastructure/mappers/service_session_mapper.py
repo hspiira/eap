@@ -59,6 +59,7 @@ class ServiceSessionMapper:
             notes=decrypt(model.notes, tenant_id=model.tenant_id),
             feedback=decrypt(model.feedback, tenant_id=model.tenant_id),
             cancellation_reason=model.cancellation_reason,
+            incident_id=getattr(model, "incident_id", None),
             deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
@@ -89,6 +90,7 @@ class ServiceSessionMapper:
             notes=encrypt(entity.notes, tenant_id=entity.tenant_id.value),
             feedback=encrypt(entity.feedback, tenant_id=entity.tenant_id.value),
             cancellation_reason=entity.cancellation_reason,
+            incident_id=entity.incident_id,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
             deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
