@@ -39,16 +39,10 @@ from app.api.schemas.tenant_schemas import (
     TenantUpdate,
     TenantUpdateSettings,
 )
-from app.application.use_cases.tenant_use_cases import (
-    ActivateTenantUseCase,
-    ArchiveTenantUseCase,
-    CreateTenantUseCase,
-    RestoreTenantUseCase,
-    SuspendTenantUseCase,
-    TerminateTenantUseCase,
-    UpdateSubscriptionUseCase,
-    UpdateTenantSettingsUseCase,
-    UpdateTenantUseCase,
+from app.application.use_cases.tenant_use_cases import CreateTenantUseCase
+from app.application.use_cases.transitions import (
+    TenantTransition,
+    TransitionUseCase,
 )
 from app.core.config import settings
 from app.core.database import get_db
@@ -191,7 +185,9 @@ async def activate_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a tenant."""
-    tenant = await ActivateTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ACTIVATE)
     await audit_entity_operation(
         entity=tenant,
         audit_handler=audit_handler,
@@ -219,8 +215,10 @@ async def suspend_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a tenant."""
-    tenant = await SuspendTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), body.reason
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.SUSPEND, reason=body.reason
     )
     await audit_entity_operation(
         entity=tenant,
@@ -249,8 +247,10 @@ async def terminate_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a tenant."""
-    tenant = await TerminateTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), body.reason
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.TERMINATE, reason=body.reason
     )
     await audit_entity_operation(
         entity=tenant,
@@ -279,8 +279,11 @@ async def update_tenant_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant settings."""
-    tenant = await UpdateTenantSettingsUseCase(tenant_repo).execute(
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
         TenantId(tenant_id),
+        TenantTransition.UPDATE_SETTINGS,
         max_users=settings.max_users,
         max_clients=settings.max_clients,
         features_enabled=tuple(settings.features_enabled)
@@ -315,9 +318,16 @@ async def update_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant basic information."""
-    tenant = await UpdateTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id),
-        name=data.name,
+    if data.name is None:
+        from app.domain.exceptions import NotFoundError
+        tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
+        if tenant is None:
+            raise NotFoundError(f"Tenant not found: {tenant_id}")
+        return _to_tenant_response(tenant)
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.UPDATE_NAME, name=data.name
     )
     await audit_entity_operation(
         entity=tenant,
@@ -346,9 +356,12 @@ async def update_subscription(
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant subscription tier."""
-    tenant = await UpdateSubscriptionUseCase(tenant_repo).execute(
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
         TenantId(tenant_id),
-        data.subscription_tier,
+        TenantTransition.UPDATE_SUBSCRIPTION_TIER,
+        tier=data.subscription_tier,
     )
     await audit_entity_operation(
         entity=tenant,
@@ -376,7 +389,9 @@ async def archive_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a tenant."""
-    tenant = await ArchiveTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ARCHIVE)
     await audit_entity_operation(
         entity=tenant,
         audit_handler=audit_handler,
@@ -403,7 +418,9 @@ async def restore_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted tenant."""
-    tenant = await RestoreTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.RESTORE)
     await audit_entity_operation(
         entity=tenant,
         audit_handler=audit_handler,

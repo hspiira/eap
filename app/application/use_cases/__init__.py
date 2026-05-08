@@ -23,25 +23,21 @@ from app.application.use_cases.person_use_cases import (
     GetPersonUseCase,
     GetPersonsByTypeUseCase,
 )
-from app.application.use_cases.tenant_use_cases import (
-    ActivateTenantUseCase,
-    CreateTenantUseCase,
-    SuspendTenantUseCase,
-    TerminateTenantUseCase,
-    UpdateTenantSettingsUseCase,
+from app.application.use_cases.tenant_use_cases import CreateTenantUseCase
+from app.application.use_cases.transitions import (
+    TenantTransition,
+    TransitionUseCase,
 )
 from app.application.use_cases.user_use_cases import (
-    ActivateUserUseCase,
     CreateUserUseCase,
     GetUserUseCase,
-    VerifyUserEmailUseCase,
 )
+
+from app.application.use_cases.transitions import UserTransition  # noqa: E402
 
 __all__ = [
     "ActivateClientUseCase",
     "ActivatePersonUseCase",
-    "ActivateTenantUseCase",
-    "ActivateUserUseCase",
     "CreateClientUseCase",
     "CreateClientEmployeeUseCase",
     "CreateContractUseCase",
@@ -54,10 +50,9 @@ __all__ = [
     "GetPersonsByTypeUseCase",
     "GetUserUseCase",
     "RenewContractUseCase",
-    "SuspendTenantUseCase",
+    "TenantTransition",
     "TerminateContractUseCase",
-    "TerminateTenantUseCase",
-    "UpdateTenantSettingsUseCase",
+    "TransitionUseCase",
+    "UserTransition",
     "VerifyClientUseCase",
-    "VerifyUserEmailUseCase",
 ]

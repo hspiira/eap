@@ -70,11 +70,24 @@ class TenantEntity:
         self.updated_at = utc_now()
         self.events.append(TenantTerminated(occurred_at=utc_now(), tenant_id=self.id, reason=reason))
     
-    def update_settings(self, settings: TenantSettings) -> None:
-        """Update tenant configuration"""
+    def update_settings(
+        self,
+        *,
+        max_users: int | None = None,
+        max_clients: int | None = None,
+        features_enabled: tuple[str, ...] | None = None,
+        custom_branding: bool | None = None,
+    ) -> None:
+        """Replace any provided settings fields; unspecified fields are kept."""
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot update settings for terminated tenant")
-        self.settings = settings
+        current = self.settings
+        self.settings = TenantSettings(
+            max_users=max_users if max_users is not None else current.max_users,
+            max_clients=max_clients if max_clients is not None else current.max_clients,
+            features_enabled=features_enabled if features_enabled is not None else current.features_enabled,
+            custom_branding=custom_branding if custom_branding is not None else current.custom_branding,
+        )
         self.updated_at = utc_now()
     
     def update_name(self, name: str) -> None:

@@ -8,15 +8,9 @@ Refactored to use base use case classes.
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_archive_use_case,
-    create_restore_use_case,
-    create_suspend_use_case,
-    create_terminate_use_case,
-)
-from app.application.use_cases.user_use_cases import CreateUserUseCase, ActivateUserUseCase, VerifyUserEmailUseCase
+from app.application.use_cases.base import BaseUseCase
+from app.application.use_cases.transitions import TransitionUseCase, UserTransition
+from app.application.use_cases.user_use_cases import CreateUserUseCase
 from app.core.security import hash_password
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
@@ -34,64 +28,10 @@ if TYPE_CHECKING:
     )
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateTenantUseCase:
-    """Use case for activating a tenant."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        self._use_case = create_activate_use_case(tenant_repository, "Tenant")
-
-    async def execute(self, tenant_id: TenantId) -> TenantEntity:
-        return await self._use_case.execute(tenant_id)
-
-
-class SuspendTenantUseCase:
-    """Use case for suspending a tenant."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        self._use_case = create_suspend_use_case(tenant_repository, "Tenant")
-
-    async def execute(self, tenant_id: TenantId, reason: str) -> TenantEntity:
-        return await self._use_case.execute(tenant_id, reason=reason)
-
-
-class TerminateTenantUseCase:
-    """Use case for terminating a tenant."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        self._use_case = create_terminate_use_case(tenant_repository, "Tenant")
-
-    async def execute(self, tenant_id: TenantId, reason: str) -> TenantEntity:
-        return await self._use_case.execute(tenant_id, reason=reason)
-
-
-class ArchiveTenantUseCase:
-    """Use case for archiving a tenant."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        self._use_case = create_archive_use_case(tenant_repository, "Tenant")
-
-    async def execute(self, tenant_id: TenantId) -> TenantEntity:
-        return await self._use_case.execute(tenant_id)
-
-
-class RestoreTenantUseCase:
-    """Use case for restoring a tenant."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        self._use_case = create_restore_use_case(tenant_repository, "Tenant")
-
-    async def execute(self, tenant_id: TenantId) -> TenantEntity:
-        return await self._use_case.execute(tenant_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle / update operations are dispatched through
+# `TransitionUseCase` + `TenantTransition` (see app/application/use_cases/transitions.py).
+# This file keeps only the bespoke use cases that don't fit the simple
+# "load → call entity method → save" pattern.
 
 
 class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
@@ -235,11 +175,10 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             role=TenantRole.ADMIN,
         )
 
-        activate_use_case = ActivateUserUseCase(self.user_repository)
-        await activate_use_case.execute(admin_user.id)
-
-        verify_email_use_case = VerifyUserEmailUseCase(self.user_repository)
-        await verify_email_use_case.execute(admin_user.id)
+        user_transition: TransitionUseCase = TransitionUseCase(self.user_repository)
+        user_transition.entity_name = "User"
+        await user_transition.execute(admin_user.id, UserTransition.ACTIVATE)
+        await user_transition.execute(admin_user.id, UserTransition.VERIFY_EMAIL)
 
         set_password_token_val: str | None = None
         set_password_expires_at_val: datetime | None = None
@@ -261,67 +200,5 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
 # =============================================================================
 
 
-class UpdateTenantSettingsUseCase(BaseUseCase[TenantEntity, TenantId]):
-    """Use case for updating tenant settings."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        super().__init__(tenant_repository)
-
-    async def execute(
-        self,
-        tenant_id: TenantId,
-        max_users: int | None = None,
-        max_clients: int | None = None,
-        features_enabled: tuple[str, ...] | None = None,
-        custom_branding: bool | None = None,
-    ) -> TenantEntity:
-        """Update tenant settings."""
-        tenant = await self._get_entity_or_raise(tenant_id, "Tenant")
-
-        # Create new settings with updated values
-        new_settings = TenantSettings(
-            max_users=max_users if max_users is not None else tenant.settings.max_users,
-            max_clients=max_clients if max_clients is not None else tenant.settings.max_clients,
-            features_enabled=features_enabled if features_enabled is not None else tenant.settings.features_enabled,
-            custom_branding=custom_branding if custom_branding is not None else tenant.settings.custom_branding,
-        )
-
-        tenant.update_settings(new_settings)
-        return await self._save_and_publish_events(tenant)
-
-
-class UpdateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
-    """Use case for updating tenant basic information."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        super().__init__(tenant_repository)
-
-    async def execute(
-        self,
-        tenant_id: TenantId,
-        name: str | None = None,
-    ) -> TenantEntity:
-        """Update tenant basic information."""
-        tenant = await self._get_entity_or_raise(tenant_id, "Tenant")
-
-        if name is not None:
-            tenant.update_name(name)
-
-        return await self._save_and_publish_events(tenant)
-
-
-class UpdateSubscriptionUseCase(BaseUseCase[TenantEntity, TenantId]):
-    """Use case for updating tenant subscription tier."""
-
-    def __init__(self, tenant_repository: TenantRepository):
-        super().__init__(tenant_repository)
-
-    async def execute(
-        self,
-        tenant_id: TenantId,
-        subscription_tier: SubscriptionTier,
-    ) -> TenantEntity:
-        """Update tenant subscription tier."""
-        tenant = await self._get_entity_or_raise(tenant_id, "Tenant")
-        tenant.update_subscription_tier(subscription_tier)
-        return await self._save_and_publish_events(tenant)
+# Update operations are dispatched through TransitionUseCase + TenantTransition.
+# See app/application/use_cases/transitions.py.
