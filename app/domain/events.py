@@ -127,6 +127,30 @@ class UserTerminated(DomainEvent):
     reason: str
 
 
+@dataclass(frozen=True)
+class UserLoginFailed(DomainEvent):
+    """Raised on every failed login attempt; carries the running counter."""
+
+    user_id: UserId
+    failed_count: int
+
+
+@dataclass(frozen=True)
+class UserLockedOut(DomainEvent):
+    """Raised when the failed-login counter crosses the lockout threshold."""
+
+    user_id: UserId
+    locked_until: datetime
+    failed_count: int
+
+
+@dataclass(frozen=True)
+class UserLockoutCleared(DomainEvent):
+    """Raised when a previously-locked account logs in successfully."""
+
+    user_id: UserId
+
+
 # === Contract Events ===
 
 @dataclass(frozen=True)

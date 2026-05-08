@@ -4,6 +4,8 @@ Authentication API Routes
 FastAPI routes for authentication operations.
 """
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +27,6 @@ from app.api.schemas.auth_schemas import (
     RefreshResponse,
     SetInitialPasswordRequest,
 )
-from app.application.use_cases.user_use_cases import RecordUserLoginUseCase
 from app.core.database import get_db
 from app.core.security import (
     COOKIE_ACCESS_TOKEN,
@@ -160,11 +161,10 @@ async def login(
             detail=f"Tenant is {tenant.status.value.lower()}. Access denied.",
         )
 
-    # Get user by email within tenant
     tenant_id = TenantId(tenant.id.value)
     email = Email(request_body.email)
     user = await user_repo.get_by_email(email, tenant_id)
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -172,9 +172,17 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if user has a password set
-    # Access private field for authentication purposes
+    if user.is_locked():
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Account is temporarily locked due to repeated failed sign-in attempts. Try again later.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     password_hash = getattr(user, "_password_hash", None)
+    lockout_threshold = settings.LOGIN_LOCKOUT_THRESHOLD
+    lockout_window = timedelta(minutes=settings.LOGIN_LOCKOUT_DURATION_MINUTES)
+
     if not password_hash:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -182,24 +190,26 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verify password
     if not verify_password(request_body.password, password_hash):
+        user.record_failed_login(
+            threshold=lockout_threshold,
+            lock_duration=lockout_window,
+        )
+        await user_repo.save(user)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid tenant code or credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if user is active (not banned, terminated, or suspended)
     if user.status in (UserStatus.BANNED, UserStatus.TERMINATED, UserStatus.SUSPENDED):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"User account is {user.status.value.lower()}. Access denied.",
         )
 
-    # Record login
-    record_login_use_case = RecordUserLoginUseCase(user_repo)
-    await record_login_use_case.execute(user.id)
+    user.record_successful_login()
+    await user_repo.save(user)
 
     # Optionally revoke all previous refresh tokens for this user before issuing a new one
     if (

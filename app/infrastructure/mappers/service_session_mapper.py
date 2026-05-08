@@ -4,6 +4,7 @@ Service Session Mapper
 Converts between ServiceSessionEntity (domain) and ServiceSessionModel (persistence).
 """
 
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
 from app.domain.value_objects.core import (
@@ -55,8 +56,8 @@ class ServiceSessionMapper:
             _completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
             _duration=model.duration,
             _location=model.location,
-            _notes=model.notes,
-            _feedback=model.feedback,
+            _notes=decrypt(model.notes, tenant_id=model.tenant_id),
+            _feedback=decrypt(model.feedback, tenant_id=model.tenant_id),
             _cancellation_reason=model.cancellation_reason,
             _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
@@ -85,8 +86,8 @@ class ServiceSessionMapper:
             completed_at=ensure_utc(entity._completed_at) if entity._completed_at else None,
             duration=entity._duration,
             location=entity._location,
-            notes=entity._notes,
-            feedback=entity._feedback,
+            notes=encrypt(entity._notes, tenant_id=entity._tenant_id.value),
+            feedback=encrypt(entity._feedback, tenant_id=entity._tenant_id.value),
             cancellation_reason=entity._cancellation_reason,
             created_at=ensure_utc(entity._created_at),
             updated_at=ensure_utc(entity._updated_at),

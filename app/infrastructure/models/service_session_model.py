@@ -7,7 +7,7 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import SessionStatus
@@ -69,8 +69,8 @@ class ServiceSessionModel(
 
     # Details
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    feedback: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )

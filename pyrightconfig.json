@@ -1,0 +1,17 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.12",
+    "include": ["app", "tests", "alembic", "scripts"],
+    "exclude": ["**/__pycache__", ".venv"],
+    "typeCheckingMode": "basic",
+    "reportMissingImports": "error",
+    "reportMissingTypeStubs": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportMissingTypeArgument": "none",
+    "reportUntypedFunctionDecorator": "none"
+}
