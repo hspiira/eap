@@ -1,10 +1,6 @@
 """ServiceAssignment Use Cases - Application services for ServiceAssignment operations."""
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
 from app.domain.enums import BaseStatus
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
@@ -12,34 +8,7 @@ from app.domain.value_objects.core import ContractId, ServiceAssignmentId, Servi
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateServiceAssignmentUseCase:
-    """Use case for activating a service assignment."""
-
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-class DeactivateServiceAssignmentUseCase:
-    """Use case for deactivating a service assignment."""
-
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + ServiceAssignmentTransition.
 
 
 class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, ServiceAssignmentId]):

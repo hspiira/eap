@@ -7,11 +7,7 @@ Refactored to use base use case classes.
 
 from datetime import datetime
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_archive_use_case,
-    create_restore_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
 from app.domain.repositories.service_session_repository import (
@@ -26,34 +22,7 @@ from app.domain.value_objects.core import (
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ArchiveServiceSessionUseCase:
-    """Use case for archiving a service session."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        self._use_case = create_archive_use_case(session_repository, "Session")
-
-    async def execute(self, session_id: SessionId) -> ServiceSessionEntity:
-        return await self._use_case.execute(session_id)
-
-
-class RestoreServiceSessionUseCase:
-    """Use case for restoring a service session."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        self._use_case = create_restore_use_case(session_repository, "Session")
-
-    async def execute(self, session_id: SessionId) -> ServiceSessionEntity:
-        return await self._use_case.execute(session_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle / single-method commands dispatched via TransitionUseCase + ServiceSessionTransition.
 
 
 class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
@@ -90,79 +59,8 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         return await self._save_and_publish_events(session)
 
 
-# =============================================================================
-# SPECIALIZED COMMAND USE CASES
-# =============================================================================
-
-
-class CompleteServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for completing a service session."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
-
-    async def execute(
-        self, session_id: SessionId, duration: int, notes: str | None = None
-    ) -> ServiceSessionEntity:
-        """Complete a service session."""
-        session = await self._get_entity_or_raise(session_id, "Session")
-        session.complete(duration, notes)
-        return await self._save_and_publish_events(session)
-
-
-class CancelServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for cancelling a service session."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
-
-    async def execute(
-        self, session_id: SessionId, reason: str
-    ) -> ServiceSessionEntity:
-        """Cancel a service session."""
-        session = await self._get_entity_or_raise(session_id, "Session")
-        session.cancel(reason)
-        return await self._save_and_publish_events(session)
-
-
-class RescheduleServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for rescheduling a service session."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
-
-    async def execute(
-        self, session_id: SessionId, new_scheduled_at: datetime
-    ) -> ServiceSessionEntity:
-        """Reschedule a service session."""
-        session = await self._get_entity_or_raise(session_id, "Session")
-        session.reschedule(new_scheduled_at)
-        return await self._save_and_publish_events(session)
-
-
-class MarkNoShowServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for marking a service session as no-show."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
-
-    async def execute(self, session_id: SessionId) -> ServiceSessionEntity:
-        """Mark a service session as no-show."""
-        session = await self._get_entity_or_raise(session_id, "Session")
-        session.mark_no_show()
-        return await self._save_and_publish_events(session)
-
-
-# =============================================================================
-# UPDATE USE CASES
-# =============================================================================
-
-
 class UpdateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for updating service session information."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
+    """Composite update for ServiceSession (location + notes)."""
 
     async def execute(
         self,
@@ -170,29 +68,11 @@ class UpdateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         location: str | None = None,
         notes: str | None = None,
     ) -> ServiceSessionEntity:
-        """Update service session information."""
         session = await self._get_entity_or_raise(session_id, "Session")
-
         if location is not None:
             session.update_location(location)
         if notes is not None:
             session.update_notes(notes)
-
-        return await self._save_and_publish_events(session)
-
-
-class UpdateServiceSessionFeedbackUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
-    """Use case for updating service session feedback."""
-
-    def __init__(self, session_repository: ServiceSessionRepository):
-        super().__init__(session_repository)
-
-    async def execute(
-        self, session_id: SessionId, feedback: str
-    ) -> ServiceSessionEntity:
-        """Update service session feedback."""
-        session = await self._get_entity_or_raise(session_id, "Session")
-        session.update_feedback(feedback)
         return await self._save_and_publish_events(session)
 
 

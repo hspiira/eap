@@ -26,13 +26,15 @@ from app.api.schemas.document_schemas import (
     DocumentVersionResponse,
 )
 from app.application.use_cases.document_use_cases import (
-    ArchiveDocumentUseCase,
     CreateDocumentUseCase,
     CreateDocumentVersionUseCase,
-    PublishDocumentUseCase,
     SetDocumentConfidentialityUseCase,
     SetDocumentExpiryUseCase,
     UpdateDocumentMetadataUseCase,
+)
+from app.application.use_cases.transitions import (
+    DocumentTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import DocumentStatus, DocumentType
@@ -143,7 +145,9 @@ async def publish_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a document (make it available)."""
-    updated = await PublishDocumentUseCase(document_repo).execute(document.id)
+    use_case: TransitionUseCase = TransitionUseCase(document_repo)
+    use_case.entity_name = "Document"
+    updated = await use_case.execute(document.id, DocumentTransition.PUBLISH)
     await audit_entity_operation(
         entity=updated,
         audit_handler=audit_handler,
@@ -169,7 +173,9 @@ async def archive_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a document."""
-    updated = await ArchiveDocumentUseCase(document_repo).execute(document.id)
+    use_case: TransitionUseCase = TransitionUseCase(document_repo)
+    use_case.entity_name = "Document"
+    updated = await use_case.execute(document.id, DocumentTransition.ARCHIVE)
     await audit_entity_operation(
         entity=updated,
         audit_handler=audit_handler,

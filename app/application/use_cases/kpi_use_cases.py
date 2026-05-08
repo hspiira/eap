@@ -7,11 +7,7 @@ Refactored to use base use case classes.
 
 from decimal import Decimal
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.repositories.kpi_repository import (
@@ -22,34 +18,7 @@ from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# KPI LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateKPIUseCase:
-    """Use case for activating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self._use_case = create_activate_use_case(kpi_repository, "KPI")
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        return await self._use_case.execute(kpi_id)
-
-
-class DeactivateKPIUseCase:
-    """Use case for deactivating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self._use_case = create_deactivate_use_case(kpi_repository, "KPI")
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        return await self._use_case.execute(kpi_id)
-
-
-# =============================================================================
-# KPI CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + KPITransition / KPIAssignmentTransition.
 
 
 class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
@@ -155,31 +124,6 @@ class GetKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
     async def execute(self, kpi_id: KPIId) -> KPIEntity | None:
         """Get KPI by ID."""
         return await self.repository.get_by_id(kpi_id)
-
-
-# =============================================================================
-# KPI ASSIGNMENT LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateKPIAssignmentUseCase:
-    """Use case for activating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-class DeactivateKPIAssignmentUseCase:
-    """Use case for deactivating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
 
 
 # =============================================================================

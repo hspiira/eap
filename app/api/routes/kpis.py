@@ -27,16 +27,17 @@ from app.api.schemas.kpi_schemas import (
     KPIUpdate,
 )
 from app.application.use_cases.kpi_use_cases import (
-    ActivateKPIUseCase,
-    ActivateKPIAssignmentUseCase,
     CreateKPIUseCase,
     CreateKPIAssignmentUseCase,
-    DeactivateKPIUseCase,
-    DeactivateKPIAssignmentUseCase,
     GetKPIUseCase,
     GetKPIAssignmentUseCase,
     UpdateKPIUseCase,
     UpdateKPIAssignmentUseCase,
+)
+from app.application.use_cases.transitions import (
+    KPIAssignmentTransition,
+    KPITransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import KPICategory
@@ -181,7 +182,9 @@ async def activate_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI."""
-    kpi = await ActivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    use_case: TransitionUseCase = TransitionUseCase(kpi_repo)
+    use_case.entity_name = "KPI"
+    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.ACTIVATE)
     await audit_entity_operation(
         entity=kpi,
         audit_handler=audit_handler,
@@ -207,7 +210,9 @@ async def deactivate_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI."""
-    kpi = await DeactivateKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
+    use_case: TransitionUseCase = TransitionUseCase(kpi_repo)
+    use_case.entity_name = "KPI"
+    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.DEACTIVATE)
     await audit_entity_operation(
         entity=kpi,
         audit_handler=audit_handler,
@@ -388,8 +393,10 @@ async def activate_kpi_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI assignment."""
-    assignment = await ActivateKPIAssignmentUseCase(assignment_repo).execute(
-        KPIAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        KPIAssignmentId(assignment_id), KPIAssignmentTransition.ACTIVATE
     )
     await audit_entity_operation(
         entity=assignment,
@@ -416,8 +423,10 @@ async def deactivate_kpi_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI assignment."""
-    assignment = await DeactivateKPIAssignmentUseCase(assignment_repo).execute(
-        KPIAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        KPIAssignmentId(assignment_id), KPIAssignmentTransition.DEACTIVATE
     )
     await audit_entity_operation(
         entity=assignment,
