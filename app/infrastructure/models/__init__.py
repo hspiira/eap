@@ -14,6 +14,7 @@ from app.infrastructure.models.base import (
 )
 from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeModel
+from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
 from app.infrastructure.models.care_callback_model import (
     CareCallbackCampaignModel,
     OutreachRecordModel,
@@ -25,6 +26,8 @@ from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
 from app.infrastructure.models.diagnosis_model import DiagnosisModel, DiagnosisTypeModel
 from app.infrastructure.models.document_model import DocumentModel
+from app.infrastructure.models.dsar_model import DSARRequestModel
+from app.infrastructure.models.engagement_model import EngagementModel
 from app.infrastructure.models.industry_model import IndustryModel
 from app.infrastructure.models.json_schemas import (
     DependentInfoDict,
@@ -58,6 +61,7 @@ __all__ = [
     "ActivityModel",
     "AuditLogModel",
     "Base",
+    "BenchmarkConsentModel",
     "CareCallbackCampaignModel",
     "ClientModel",
     "ClientTagModel",
@@ -66,11 +70,13 @@ __all__ = [
     "CriticalIncidentModel",
     "CuidMixin",
     "DependentInfoDict",
+    "DSARRequestModel",
     "DiagnosisModel",
     "DiagnosisTypeModel",
     "DocumentModel",
     "EmergencyContactDict",
     "EmploymentInfoDict",
+    "EngagementModel",
     "EntityChangeModel",
     "EnumValueType",
     "IndustryModel",

@@ -298,6 +298,67 @@ class SurveySource(str, Enum):
     MICROSOFT_FORMS = "MicrosoftForms"
 
 
+class EngagementStatus(str, Enum):
+    """Cluster B consultancy engagement lifecycle (SAD §5.2.8)."""
+
+    DRAFT = "Draft"
+    ACTIVE = "Active"
+    DELIVERED = "Delivered"
+    INVOICED = "Invoiced"
+    CLOSED = "Closed"
+
+
+class DeliverableStatus(str, Enum):
+    """Per-deliverable lifecycle within an Engagement."""
+
+    PENDING = "Pending"
+    IN_PROGRESS = "InProgress"
+    DELIVERED = "Delivered"
+    ACCEPTED = "Accepted"
+
+
+class DSARRequestType(str, Enum):
+    """Subject access request type (SAD §6.6 / §8.4)."""
+
+    EXPORT = "Export"
+    ERASURE = "Erasure"
+
+
+class DSARRequestStatus(str, Enum):
+    """DSAR fulfilment lifecycle."""
+
+    REQUESTED = "Requested"
+    PROCESSING = "Processing"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
+    CANCELLED = "Cancelled"
+
+
+class RetentionDataClass(str, Enum):
+    """Data classes for per-class retention policies (SAD §6.6)."""
+
+    SESSIONS = "Sessions"
+    TRIAGE = "Triage"
+    SURVEY = "Survey"
+    AUDIT = "Audit"
+    ENGAGEMENTS = "Engagements"
+    OUTREACH = "Outreach"
+
+
+class BenchmarkScope(str, Enum):
+    """Metric families a tenant can opt into for cross-tenant benchmarking."""
+
+    SESSION_VOLUME = "SessionVolume"
+    UTILISATION_RATES = "UtilisationRates"
+    SATISFACTION = "Satisfaction"
+    CARE_CALLBACK_OUTCOMES = "CareCallbackOutcomes"
+
+
+class TenantConsentStatus(str, Enum):
+    ACTIVE = "Active"
+    WITHDRAWN = "Withdrawn"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"
