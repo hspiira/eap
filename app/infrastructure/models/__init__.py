@@ -18,6 +18,7 @@ from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
+from app.infrastructure.models.diagnosis_model import DiagnosisModel, DiagnosisTypeModel
 from app.infrastructure.models.document_model import DocumentModel
 from app.infrastructure.models.industry_model import IndustryModel
 from app.infrastructure.models.json_schemas import (
@@ -47,6 +48,8 @@ __all__ = [
     "ContractModel",
     "CuidMixin",
     "DependentInfoDict",
+    "DiagnosisModel",
+    "DiagnosisTypeModel",
     "DocumentModel",
     "EmergencyContactDict",
     "EmploymentInfoDict",

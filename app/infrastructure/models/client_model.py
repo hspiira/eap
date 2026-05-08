@@ -8,10 +8,11 @@ This is a data container only - no business logic.
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -70,6 +71,9 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             values_callable=lambda x: [e.value for e in x],
         ),
         nullable=True,
+    )
+    tier: Mapped[ClientTier | None] = mapped_column(
+        EnumValueType(ClientTier), nullable=True, index=True
     )
 
     def __repr__(self) -> str:

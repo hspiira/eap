@@ -29,6 +29,7 @@ from app.api.schemas.client_schemas import (
     ClientUpdate,
     ClientUpdateBillingAddress,
     ClientUpdateContactInfo,
+    ClientUpdateTier,
     ContactInfoSchema,
 )
 from app.application.use_cases.client_use_cases import (
@@ -40,7 +41,7 @@ from app.application.use_cases.transitions import (
     TransitionUseCase,
 )
 from app.core.database import get_db
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ClientTier
 from app.domain.entities.client import ClientEntity
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
@@ -93,6 +94,7 @@ def _to_client_response(client: ClientEntity) -> ClientResponse:
         industry_id=client.industry_id.value if client.industry_id else None,
         parent_client_id=client.parent_client_id.value if client.parent_client_id else None,
         preferred_contact_method=client.preferred_contact_method,
+        tier=client.tier,
         is_active=client.is_active(),
     )
 
@@ -379,6 +381,7 @@ async def update_client(
         client.id,
         name=data.name,
         preferred_contact_method=data.preferred_contact_method,
+        tier=data.tier,
     )
     await audit_entity_operation(
         entity=client,
@@ -467,6 +470,37 @@ async def update_client_billing_address(
     return _to_client_response(client)
 
 
+@router.patch(
+    "/{client_id}/tier",
+    response_model=ClientResponse,
+    summary="Set client engagement tier (A/B/C)",
+)
+@transactional()
+async def update_client_tier(
+    data: ClientUpdateTier,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    client: ClientEntity = Depends(get_client_for_current_tenant),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Set the client's engagement tier."""
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(
+        client.id, ClientTransition.UPDATE_TIER, tier=data.tier
+    )
+    await audit_entity_operation(
+        entity=client,
+        audit_handler=audit_handler,
+        tenant_id=client.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_client_response(client)
+
+
 # ==================== QUERIES (Direct Repository) ====================
 
 
@@ -480,6 +514,7 @@ async def list_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
+    tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
     search: str | None = Query(None, description="Search in client name"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -496,6 +531,7 @@ async def list_clients(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_verified=is_verified,
+        tier=tier,
         search=search,
         limit=limit,
         offset=offset,
@@ -507,6 +543,7 @@ async def list_clients(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_verified=is_verified,
+        tier=tier,
         search=search,
     )
 

@@ -8,7 +8,7 @@ Separate from domain entities.
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 
 
 # === Value Object Schemas ===
@@ -88,6 +88,13 @@ class ClientUpdate(BaseModel):
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )
+    tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
+
+
+class ClientUpdateTier(BaseModel):
+    """Request schema for updating client engagement tier."""
+
+    tier: ClientTier | None = Field(..., description="Engagement tier; null clears it")
 
 
 class ClientUpdateContactInfo(BaseModel):
@@ -120,6 +127,7 @@ class ClientResponse(BaseModel):
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )
+    tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
     is_active: bool = Field(..., description="Whether client is active")
 
     model_config = ConfigDict(from_attributes=True)

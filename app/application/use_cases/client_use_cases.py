@@ -7,7 +7,7 @@ Refactored to use base use case classes to eliminate boilerplate.
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.domain.exceptions import SubscriptionLimitError
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.tenant_repository import TenantRepository
@@ -122,12 +122,15 @@ class UpdateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         client_id: ClientId,
         name: str | None = None,
         preferred_contact_method: ContactMethod | None = None,
+        tier: ClientTier | None = None,
     ) -> ClientEntity:
         client = await self._get_entity_or_raise(client_id, "Client")
         if name is not None:
             client.update_name(name)
         if preferred_contact_method is not None:
             client.update_preferred_contact_method(preferred_contact_method)
+        if tier is not None:
+            client.update_tier(tier)
         return await self._save_and_publish_events(client)
 
 

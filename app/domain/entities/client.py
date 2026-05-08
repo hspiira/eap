@@ -7,7 +7,7 @@ Represents an organizational client receiving EAP services.
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import ClientId, TenantId, UserId, ContactInfo, Address, IndustryId
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.domain.events import ClientDeactivated, DomainEvent, ClientVerified, ClientActivated, ClientSuspended, ClientTerminated
 from app.domain.exceptions import DomainError
 from app.shared.utils.datetime import utc_now
@@ -30,6 +30,7 @@ class ClientEntity:
     industry_id: IndustryId | None = None
     parent_client_id: ClientId | None = None
     preferred_contact_method: ContactMethod | None = None
+    tier: ClientTier | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list)
     
@@ -137,7 +138,14 @@ class ClientEntity:
             raise DomainError("Cannot update preferred contact method for deleted client")
         self.preferred_contact_method = method
         self.updated_at = utc_now()
-    
+
+    def update_tier(self, tier: ClientTier | None) -> None:
+        """Set the engagement tier (A/B/C) used by reporting and pricing."""
+        if self.status == BaseStatus.DELETED:
+            raise DomainError("Cannot update tier for deleted client")
+        self.tier = tier
+        self.updated_at = utc_now()
+
     def is_active(self) -> bool:
         """Check if client is operational"""
         return self.status == BaseStatus.ACTIVE and self.deleted_at is None
