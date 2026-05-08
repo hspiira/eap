@@ -6,21 +6,20 @@ import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
 import { industriesApi } from "@/api/endpoints/industries"
 import { AppLayout } from "@/components/AppLayout"
-import { ListToolbar } from "@/components/common/ListToolbar"
+import { EmptyState } from "@/components/common/EmptyState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterChip,
+  FilterSearch,
+  FilterTrigger,
+} from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -44,7 +43,11 @@ const LEVEL_OPTIONS = [
   { value: "1", label: "Level 1" },
   { value: "2", label: "Level 2" },
   { value: "3", label: "Level 3+" },
-]
+] as const
+
+type LevelFilter = (typeof LEVEL_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
 
 function IndustriesPage() {
   const { isAuthenticated, isLoading } = useAuthStore()
@@ -52,7 +55,7 @@ function IndustriesPage() {
   const [page, setPage] = useState(1)
   const limit = 20
   const [searchInput, setSearchInput] = useState("")
-  const [levelFilter, setLevelFilter] = useState<string>("all")
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>("all")
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
 
@@ -126,67 +129,57 @@ function IndustriesPage() {
   if (isLoading) return <div className="p-8 text-fg">Loading…</div>
   if (!isAuthenticated) return null
 
-  const description =
-    total > 0
-      ? `${total.toLocaleString()} ${total === 1 ? "industry" : "industries"} indexed`
-      : "Standard industry taxonomy used to classify clients"
+  const levelChip = LEVEL_OPTIONS.find((o) => o.value === levelFilter)
+  const hasFilters = Boolean(activeSearch) || levelFilter !== "all"
 
   return (
     <AppLayout>
       <PageShell
         icon={BarChart3}
         breadcrumb="Organization & Clients · Industries"
-        title="Industries"
-        description={description}
         actions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-none gap-1.5"
-              onClick={refetch}
-            >
-              <RotateCw className="size-4" />
-              Refresh
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-none gap-1.5">
-              <Download className="size-4" />
-              Export
-            </Button>
+            <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+            <IconButton label="Export" icon={Download} />
+            <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
             <Button
               size="sm"
-              className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
             >
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               Add industry
             </Button>
           </>
         }
-        toolbar={
-          <ListToolbar
-            searchValue={searchInput}
-            onSearchChange={setSearchInput}
-            placeholder="Search industries…"
-            filters={
-              <Select value={levelFilter} onValueChange={setLevelFilter}>
-                <SelectTrigger
-                  className="h-9 w-36 rounded-none border-fg/25 bg-surface text-fg [&>svg]:text-fg/60"
-                  aria-label="Filter by level"
-                >
-                  <SelectValue placeholder="All levels" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-fg/25 bg-surface">
-                  {LEVEL_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="rounded-none">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
-        }
       >
+        <FilterBar>
+          <FilterButton
+            options={[
+              { id: "level", label: "Level" },
+              { id: "parent", label: "Parent" },
+              { id: "code", label: "Code" },
+            ]}
+          />
+          {levelFilter !== "all" && levelChip ? (
+            <FilterChip
+              label={levelChip.label}
+              onRemove={() => setLevelFilter("all")}
+            />
+          ) : null}
+          <FilterTrigger
+            label="All levels"
+            value={levelFilter}
+            options={LEVEL_OPTIONS}
+            onChange={setLevelFilter}
+          />
+          <div className="ml-auto" />
+          <FilterSearch
+            value={searchInput}
+            onChange={setSearchInput}
+            placeholder="Search industries…"
+          />
+        </FilterBar>
+
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
           <div className="col-span-12 flex min-w-0 flex-col overflow-hidden lg:col-span-8">
             {loading ? (
@@ -194,17 +187,25 @@ function IndustriesPage() {
             ) : error ? (
               <ErrorBlock message={error} onRetry={refetch} />
             ) : items.length === 0 ? (
-              <EmptyBlock hasSearch={Boolean(activeSearch) || levelFilter !== "all"} />
+              <EmptyState
+                icon={BarChart3}
+                title={hasFilters ? "No industries match your filters" : "No industries yet"}
+                description={
+                  hasFilters
+                    ? "Try a different name or clear filters."
+                    : "Add an industry classification to get started."
+                }
+              />
             ) : (
               <>
-                <div className="min-h-0 flex-1 overflow-auto border border-fg/15 bg-surface">
-                  <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-fg/70">Name</TableHead>
-                        <TableHead className="text-fg/70">Code</TableHead>
-                        <TableHead className="text-fg/70">Level</TableHead>
-                        <TableHead className="text-fg/70">Parent</TableHead>
+                <div className="relative min-h-0 flex-1 overflow-auto bg-surface">
+                  <table className="w-full caption-bottom text-sm">
+                    <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                      <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                        <TableHead className="text-fg/65">Name</TableHead>
+                        <TableHead className="text-fg/65">Code</TableHead>
+                        <TableHead className="text-fg/65">Level</TableHead>
+                        <TableHead className="text-fg/65">Parent</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -214,8 +215,8 @@ function IndustriesPage() {
                           onClick={() => setSelectedId(row.id)}
                           className={cn(
                             "cursor-pointer",
-                            selectedId === row.id &&
-                              "bg-primary/5 hover:bg-primary/5 [&>td]:border-l-0",
+                            ROW_BORDER,
+                            selectedId === row.id && "bg-primary/5 hover:bg-primary/5",
                           )}
                         >
                           <TableCell>
@@ -229,7 +230,7 @@ function IndustriesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-fg/65">
-                            {row.code ?? "—"}
+                            {row.code ?? <span className="text-fg/40">—</span>}
                           </TableCell>
                           <TableCell>
                             <LevelPill level={row.level ?? null} />
@@ -244,10 +245,10 @@ function IndustriesPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
+                  </table>
                 </div>
                 {total > 0 && (
-                  <div className="shrink-0 border border-t-0 border-fg/15 bg-surface px-3 py-2">
+                  <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
                     <Pagination
                       page={page}
                       total={total}
@@ -262,7 +263,7 @@ function IndustriesPage() {
 
           <div className="col-span-12 flex min-w-0 flex-col lg:col-span-4">
             {selectedId && detailsLoading ? (
-              <div className="border border-fg/15 bg-surface p-4 text-sm text-fg/70">
+              <div className="border border-fg/10 bg-surface p-4 text-sm text-fg/70">
                 Loading…
               </div>
             ) : selectedIndustry ? (
@@ -283,7 +284,29 @@ function IndustriesPage() {
   )
 }
 
-function filterByLevel(items: ReadonlyArray<Industry>, level: string): Industry[] {
+function IconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick?: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+    >
+      <Icon className="size-3.5" />
+    </button>
+  )
+}
+
+function filterByLevel(items: ReadonlyArray<Industry>, level: LevelFilter): Industry[] {
   if (level === "all") return [...items]
   if (level === "3") return items.filter((i) => (i.level ?? 0) >= 3)
   const target = Number.parseInt(level, 10)
@@ -291,11 +314,9 @@ function filterByLevel(items: ReadonlyArray<Industry>, level: string): Industry[
 }
 
 function LevelPill({ level }: { level: number | null }) {
-  if (level == null) {
-    return <span className="text-fg/40">—</span>
-  }
+  if (level == null) return <span className="text-fg/40">—</span>
   return (
-    <span className="inline-flex items-center border border-fg/20 bg-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-fg/75">
+    <span className="inline-flex items-center border border-fg/15 bg-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-fg/75">
       L{level}
     </span>
   )
@@ -303,12 +324,12 @@ function LevelPill({ level }: { level: number | null }) {
 
 function DetailsPlaceholder() {
   return (
-    <div className="flex flex-1 flex-col justify-center border border-dashed border-fg/20 bg-surface p-5">
-      <div className="mx-auto mb-2 grid size-9 place-items-center bg-primary/10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
+      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
         <BarChart3 className="size-4 text-primary" />
       </div>
-      <h3 className="text-center text-sm font-semibold text-fg">Pick an industry</h3>
-      <p className="mt-1 text-center text-xs text-fg/65">
+      <h3 className="text-sm font-semibold text-fg">Pick an industry</h3>
+      <p className="max-w-[24ch] text-xs text-fg/60">
         Select a row to view its hierarchy and edit details.
       </p>
     </div>
@@ -317,8 +338,8 @@ function DetailsPlaceholder() {
 
 function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <div className="max-w-md border border-danger/30 bg-danger-soft p-6 text-center">
+    <div className="flex flex-1 items-center justify-center px-6 py-10">
+      <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
         <Button
           variant="outline"
@@ -329,26 +350,6 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
           <RotateCw className="size-4" />
           Try again
         </Button>
-      </div>
-    </div>
-  )
-}
-
-function EmptyBlock({ hasSearch }: { hasSearch: boolean }) {
-  return (
-    <div className="flex flex-1 items-center justify-center">
-      <div className="max-w-md border border-fg/15 bg-surface p-8 text-center">
-        <div className="mx-auto mb-3 grid size-10 place-items-center bg-primary/10">
-          <BarChart3 className="size-5 text-primary" />
-        </div>
-        <h2 className="text-base font-semibold text-fg">
-          {hasSearch ? "No industries match your filters" : "No industries yet"}
-        </h2>
-        <p className="mt-1 text-sm text-fg/65">
-          {hasSearch
-            ? "Try a different name or clear filters."
-            : "Add an industry classification to get started."}
-        </p>
       </div>
     </div>
   )

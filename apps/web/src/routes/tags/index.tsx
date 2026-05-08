@@ -13,7 +13,12 @@ import {
 } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
-import { ListToolbar } from "@/components/common/ListToolbar"
+import { EmptyState } from "@/components/common/EmptyState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterSearch,
+} from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -40,6 +44,8 @@ import { normalizeErrorMessage } from "@/utils/errorHandler"
 export const Route = createFileRoute("/tags/")({
   component: TagsListPage,
 })
+
+const ROW_BORDER = "border-fg/8"
 
 function TagsListPage() {
   const [page, setPage] = useState(1)
@@ -64,66 +70,102 @@ function TagsListPage() {
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["client-tags", "list"] })
 
-  const description =
-    total > 0
-      ? `${total.toLocaleString()} ${total === 1 ? "tag" : "tags"} available for client labelling`
-      : "Reusable labels for grouping clients across the platform"
-
   return (
     <PageShell
       icon={Tag}
       breadcrumb="Organization & Clients · Tags"
-      title="Tags"
-      description={description}
       actions={
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-none gap-1.5"
-            onClick={refetch}
-          >
-            <RotateCw className="size-4" />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-none gap-1.5">
-            <Download className="size-4" />
-            Export
-          </Button>
+          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             asChild
             size="sm"
-            className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
           >
             <Link to="/tags/new">
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               New tag
             </Link>
           </Button>
         </>
       }
-      toolbar={
-        <ListToolbar
-          searchValue={searchInput}
-          onSearchChange={setSearchInput}
-          placeholder="Search tags by name…"
-        />
-      }
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-bg">
+      <FilterBar>
+        <FilterButton
+          options={[
+            { id: "color", label: "Color" },
+            { id: "name", label: "Name" },
+          ]}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search tags…"
+        />
+      </FilterBar>
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
-          <div className="flex-1 overflow-auto p-5 text-sm text-fg/70">Loading…</div>
+          <div className="flex-1 overflow-auto p-5 text-sm text-fg/65">Loading…</div>
         ) : error ? (
           <ErrorState message={error} onRetry={refetch} />
         ) : items.length === 0 ? (
-          <EmptyState hasSearch={Boolean(activeSearch)} />
+          <EmptyState
+            icon={Tag}
+            title={activeSearch ? "No tags match your search" : "No tags yet"}
+            description={
+              activeSearch
+                ? "Try a different name."
+                : "Create a tag to start organising clients."
+            }
+            action={
+              activeSearch ? null : (
+                <Button
+                  asChild
+                  size="sm"
+                  className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Link to="/tags/new">
+                    <Plus className="size-4" />
+                    New tag
+                  </Link>
+                </Button>
+              )
+            }
+          />
         ) : (
           <>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <TagsTable items={items} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        className="size-3.5 cursor-pointer accent-primary"
+                      />
+                    </TableHead>
+                    <TableHead className="text-fg/65">Tag</TableHead>
+                    <TableHead className="text-fg/65">Color</TableHead>
+                    <TableHead className="text-fg/65">Description</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => (
+                    <TagRow key={row.id} row={row} />
+                  ))}
+                </TableBody>
+              </table>
             </div>
             {total > 0 && (
-              <div className="shrink-0 border-t border-fg/10 bg-surface px-5 py-2.5">
+              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
                 <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
               </div>
             )}
@@ -134,40 +176,33 @@ function TagsListPage() {
   )
 }
 
-function TagsTable({ items }: { items: ReadonlyArray<ClientTag> }) {
+function IconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick?: () => void
+}) {
   return (
-    <Table>
-      <TableHeader className="sticky top-0 z-10 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="w-10 px-5">
-            <input
-              type="checkbox"
-              aria-label="Select all"
-              className="size-3.5 cursor-pointer accent-primary"
-            />
-          </TableHead>
-          <TableHead className="text-fg/70">Tag</TableHead>
-          <TableHead className="text-fg/70">Color</TableHead>
-          <TableHead className="text-fg/70">Description</TableHead>
-          <TableHead className="w-16 text-right text-fg/70">
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((row) => (
-          <TagRow key={row.id} row={row} />
-        ))}
-      </TableBody>
-    </Table>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+    >
+      <Icon className="size-3.5" />
+    </button>
   )
 }
 
 function TagRow({ row }: { row: ClientTag }) {
   const swatch = row.color ?? null
   return (
-    <TableRow className="group cursor-default">
-      <TableCell className="px-5">
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
         <input
           type="checkbox"
           aria-label={`Select ${row.name}`}
@@ -249,42 +284,10 @@ function TagRow({ row }: { row: ClientTag }) {
   )
 }
 
-function EmptyState({ hasSearch }: { hasSearch: boolean }) {
-  return (
-    <div className="flex flex-1 items-center justify-center p-10">
-      <div className="max-w-md border border-fg/15 bg-surface p-8 text-center">
-        <div className="mx-auto mb-3 grid size-10 place-items-center bg-primary/10">
-          <Tag className="size-5 text-primary" />
-        </div>
-        <h2 className="text-base font-semibold text-fg">
-          {hasSearch ? "No tags match your search" : "No tags yet"}
-        </h2>
-        <p className="mt-1 text-sm text-fg/65">
-          {hasSearch
-            ? "Try a different name."
-            : "Create a tag to start organising clients."}
-        </p>
-        {!hasSearch && (
-          <Button
-            asChild
-            size="sm"
-            className="mt-4 rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Link to="/tags/new">
-              <Plus className="size-4" />
-              New tag
-            </Link>
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-1 items-center justify-center p-10">
-      <div className="max-w-md border border-danger/30 bg-danger-soft p-6 text-center">
+    <div className="flex flex-1 items-center justify-center px-6 py-10">
+      <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
         <Button
           variant="outline"

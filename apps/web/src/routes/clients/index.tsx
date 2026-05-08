@@ -15,7 +15,14 @@ import {
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientForm } from "@/components/ClientForm"
 import { ClientsListSkeleton } from "@/components/ClientsPageSkeletons"
-import { ListToolbar } from "@/components/common/ListToolbar"
+import { EmptyState } from "@/components/common/EmptyState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterChip,
+  FilterSearch,
+  FilterTrigger,
+} from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
@@ -37,14 +44,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -72,25 +71,30 @@ export const Route = createFileRoute("/clients/")({
   },
 })
 
-const TIER_FILTER_OPTIONS: Array<{ value: "all" | ClientTier; label: string }> = [
+const TIER_OPTIONS = [
   { value: "all", label: "All tiers" },
   { value: ClientTier.A, label: "Tier A" },
   { value: ClientTier.B, label: "Tier B" },
   { value: ClientTier.C, label: "Tier C" },
-]
+] as const
 
 const TIME_RANGE_OPTIONS = [
   { value: "12h", label: "Last 12 hours" },
   { value: "7d", label: "Last 7 days" },
   { value: "30d", label: "Last 30 days" },
   { value: "all", label: "All time" },
-]
+] as const
+
+type TierFilter = (typeof TIER_OPTIONS)[number]["value"]
+type TimeRange = (typeof TIME_RANGE_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
 
 function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
   const navigate = useNavigate({ from: "/clients/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [timeRange, setTimeRange] = useState("12h")
+  const [timeRange, setTimeRange] = useState<TimeRange>("12h")
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [page, setPage] = useState(1)
   const limit = 20
@@ -111,8 +115,8 @@ function ClientsListPage() {
     }
   }, [activeSearch, navigate, searchParams.search])
 
-  const handleTierChange = (next: string) => {
-    const tier = isTier(next) ? next : undefined
+  const handleTierChange = (next: TierFilter) => {
+    const tier = next === "all" ? undefined : next
     navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
     setPage(1)
   }
@@ -127,83 +131,64 @@ function ClientsListPage() {
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["clients", "list"] })
-
-  const description =
-    total > 0
-      ? `${total.toLocaleString()} ${total === 1 ? "client" : "clients"} on file`
-      : "Manage corporate clients, billing entities, and tiering"
+  const hasFilters = Boolean(activeSearch) || Boolean(activeTier)
 
   return (
     <PageShell
       icon={Building2}
       breadcrumb="Organization & Clients · Clients"
-      title="Clients"
-      description={description}
       actions={
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-none gap-1.5"
-            onClick={refetch}
-          >
-            <RotateCw className="size-4" />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-none gap-1.5">
-            <Download className="size-4" />
-            Export
-          </Button>
+          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"
-            className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
             onClick={() => setAddModalOpen(true)}
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             Add client
           </Button>
         </>
       }
-      toolbar={
-        <ListToolbar
-          searchValue={searchInput}
-          onSearchChange={setSearchInput}
-          placeholder="Search clients by name or code…"
-          filters={
-            <>
-              <Select value={activeTier ?? "all"} onValueChange={handleTierChange}>
-                <SelectTrigger
-                  className="h-9 w-32 rounded-none border-fg/25 bg-surface text-fg [&>svg]:text-fg/60"
-                  aria-label="Filter by tier"
-                >
-                  <SelectValue placeholder="All tiers" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-fg/25 bg-surface">
-                  {TIER_FILTER_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="rounded-none">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="h-9 w-44 gap-1.5 rounded-none border-fg/25 bg-surface text-fg [&>svg]:text-fg/60">
-                  <Calendar className="size-4" />
-                  <SelectValue placeholder="Last 12 hours" />
-                </SelectTrigger>
-                <SelectContent className="rounded-none border-fg/25 bg-surface">
-                  {TIME_RANGE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="rounded-none">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          }
-        />
-      }
     >
+      <FilterBar>
+        <FilterButton
+          options={[
+            { id: "tier", label: "Tier" },
+            { id: "status", label: "Status" },
+            { id: "industry", label: "Industry" },
+            { id: "tag", label: "Tag" },
+          ]}
+        />
+        {activeTier ? (
+          <FilterChip
+            label={`Tier is ${activeTier}`}
+            onRemove={() => handleTierChange("all")}
+          />
+        ) : null}
+        <FilterTrigger
+          label="All tiers"
+          value={(activeTier ?? "all") as TierFilter}
+          options={TIER_OPTIONS}
+          onChange={handleTierChange}
+        />
+        <FilterTrigger
+          icon={Calendar}
+          label="Time range"
+          value={timeRange}
+          options={TIME_RANGE_OPTIONS}
+          onChange={setTimeRange}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search clients…"
+        />
+      </FilterBar>
+
       <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
         <DialogContent className="rounded-none">
           <DialogCloseButton />
@@ -220,7 +205,7 @@ function ClientsListPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-bg">
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
             <ClientsListSkeleton />
@@ -229,16 +214,58 @@ function ClientsListPage() {
           <ErrorState message={error} onRetry={refetch} />
         ) : items.length === 0 ? (
           <EmptyState
-            hasSearch={Boolean(activeSearch)}
-            onAdd={() => setAddModalOpen(true)}
+            icon={Building2}
+            title={hasFilters ? "No clients match your filters" : "No clients yet"}
+            description={
+              hasFilters
+                ? "Try a different name or clear filters."
+                : "Add your first corporate client to get started."
+            }
+            action={
+              hasFilters ? null : (
+                <Button
+                  size="sm"
+                  className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => setAddModalOpen(true)}
+                >
+                  <Plus className="size-4" />
+                  Add client
+                </Button>
+              )
+            }
           />
         ) : (
           <>
-            <div className="min-h-0 flex-1 overflow-auto">
-              <ClientsTable items={items} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        className="size-3.5 cursor-pointer accent-primary"
+                      />
+                    </TableHead>
+                    <TableHead className="text-fg/65">Client</TableHead>
+                    <TableHead className="text-fg/65">Code</TableHead>
+                    <TableHead className="text-fg/65">Tier</TableHead>
+                    <TableHead className="text-fg/65">Status</TableHead>
+                    <TableHead className="text-fg/65">Contact</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => (
+                    <ClientRow key={row.id} row={row} />
+                  ))}
+                </TableBody>
+              </table>
             </div>
             {total > 0 && (
-              <div className="shrink-0 border-t border-fg/10 bg-surface px-5 py-2.5">
+              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
                 <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
               </div>
             )}
@@ -249,45 +276,14 @@ function ClientsListPage() {
   )
 }
 
-function ClientsTable({ items }: { items: ReadonlyArray<Client> }) {
-  return (
-    <Table>
-      <TableHeader className="sticky top-0 z-10 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="w-10 px-5">
-            <input
-              type="checkbox"
-              aria-label="Select all"
-              className="size-3.5 cursor-pointer accent-primary"
-            />
-          </TableHead>
-          <TableHead className="text-fg/70">Client</TableHead>
-          <TableHead className="text-fg/70">Code</TableHead>
-          <TableHead className="text-fg/70">Tier</TableHead>
-          <TableHead className="text-fg/70">Status</TableHead>
-          <TableHead className="text-fg/70">Contact</TableHead>
-          <TableHead className="w-16 text-right text-fg/70">
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((row) => (
-          <ClientRow key={row.id} row={row} />
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
-
 function ClientRow({ row }: { row: Client }) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
     row.contact_info?.email && row.contact_info?.phone ? row.contact_info?.phone : null
 
   return (
-    <TableRow className="group cursor-default">
-      <TableCell className="px-5">
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
         <input
           type="checkbox"
           aria-label={`Select ${row.name}`}
@@ -303,17 +299,12 @@ function ClientRow({ row }: { row: Client }) {
         >
           <span
             aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-xs font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
             {initial(row.name)}
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
-              {row.name}
-            </span>
-            <span className="block truncate text-xs text-fg/55">
-              {row.code}
-            </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">
+            {row.name}
           </span>
         </Link>
       </TableCell>
@@ -375,40 +366,10 @@ function ClientRow({ row }: { row: Client }) {
   )
 }
 
-function EmptyState({ hasSearch, onAdd }: { hasSearch: boolean; onAdd: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center p-10">
-      <div className="max-w-md border border-fg/15 bg-surface p-8 text-center">
-        <div className="mx-auto mb-3 grid size-10 place-items-center bg-primary/10">
-          <Building2 className="size-5 text-primary" />
-        </div>
-        <h2 className="text-base font-semibold text-fg">
-          {hasSearch ? "No clients match your search" : "No clients yet"}
-        </h2>
-        <p className="mt-1 text-sm text-fg/65">
-          {hasSearch
-            ? "Try a different name or code, or clear filters."
-            : "Add your first corporate client to get started."}
-        </p>
-        {!hasSearch && (
-          <Button
-            size="sm"
-            className="mt-4 rounded-none bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={onAdd}
-          >
-            <Plus className="size-4" />
-            Add client
-          </Button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-1 items-center justify-center p-10">
-      <div className="max-w-md border border-danger/30 bg-danger-soft p-6 text-center">
+    <div className="flex flex-1 items-center justify-center px-6 py-10">
+      <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
         <Button
           variant="outline"
@@ -421,6 +382,28 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         </Button>
       </div>
     </div>
+  )
+}
+
+function IconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick?: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+    >
+      <Icon className="size-3.5" />
+    </button>
   )
 }
 
