@@ -38,11 +38,9 @@ function remove(key: string): void {
   try {
     window.localStorage.removeItem(key)
   } catch {
-    // ignore
+    // quota exceeded or storage disabled — ignore
   }
 }
-
-// ---------- auth ----------
 
 export interface AuthRecord {
   token: string | null
@@ -72,8 +70,6 @@ export const authStorage = {
   },
 }
 
-// ---------- tenant ----------
-
 export interface TenantRecord {
   id: string | null
 }
@@ -90,8 +86,6 @@ export const tenantStorage = {
     remove(KEY_TENANT)
   },
 }
-
-// ---------- ui prefs ----------
 
 export interface UiPrefs {
   theme: 'light' | 'dark' | 'system'

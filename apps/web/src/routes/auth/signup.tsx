@@ -2,98 +2,91 @@ import { useEffect, useRef, useState } from 'react'
 
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Check, CheckCircle, Copy, KeyRound, X } from 'lucide-react'
+import { z } from 'zod'
 
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
-import type { ApiError } from '@/api/types'
+import { useApiForm } from '@/hooks/useApiForm'
 import { tenantActions } from '@/lib/tenant-actions'
+import { ApiError } from '@/types/api'
 
 export const Route = createFileRoute('/auth/signup')({
   component: SignupPage,
 })
 
-function validateCode(value: string): boolean {
-  if (value.length < 3 || value.length > 15) return false
-  return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value)
+const tenantCodeRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+const tenantCreateSchema = z.object({
+  name: z.string().trim().min(1, 'Tenant name is required'),
+  code: z
+    .string()
+    .trim()
+    .min(3, 'Code must be 3-15 characters')
+    .max(15, 'Code must be 3-15 characters')
+    .regex(tenantCodeRegex, 'Lowercase alphanumeric with optional hyphens'),
+})
+
+function formatCode(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/^-+|-+$/g, '')
 }
 
 function SignupPage() {
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
+  const navigate = useNavigate()
+  const [adminCredentials, setAdminCredentials] = useState<TenantCreateResponse | null>(null)
+  const [copiedSetPasswordLink, setCopiedSetPasswordLink] = useState(false)
   const [codeAvailability, setCodeAvailability] = useState<{
     checking: boolean
     available: boolean | null
   }>({ checking: false, available: null })
-  const [errors, setErrors] = useState<{ name?: string; code?: string; general?: string }>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [adminCredentials, setAdminCredentials] = useState<TenantCreateResponse | null>(null)
-  const [copiedSetPasswordLink, setCopiedSetPasswordLink] = useState(false)
-  const createTenant = tenantActions.createTenant
-  const navigate = useNavigate()
-  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const form = useApiForm<z.infer<typeof tenantCreateSchema>>({
+    schema: tenantCreateSchema,
+    defaultValues: { name: '', code: '' },
+    errorToast: false,
+    formOptions: { mode: 'onTouched' },
+    onSubmit: async (values) => {
+      try {
+        const response = await tenantActions.createTenant(values)
+        setAdminCredentials(response)
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409 && !err.fieldErrors) {
+          throw new ApiError(err.message, err.code, err.status, {
+            code: 'A tenant with this code already exists. Please choose a different code.',
+          })
+        }
+        throw err
+      }
+    },
+  })
+
+  const { register, watch, setValue, formState, submit, serverError } = form
+  const codeValue = watch('code')
+  const nameValue = watch('name')
+  const codeIsValid = tenantCodeRegex.test(codeValue ?? '') && (codeValue?.length ?? 0) >= 3 && (codeValue?.length ?? 0) <= 15
+
+  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
-    if (!code.trim() || !validateCode(code)) {
+    if (!codeIsValid) {
       setCodeAvailability({ checking: false, available: null })
       return
     }
     setCodeAvailability({ checking: true, available: null })
     checkTimeoutRef.current = setTimeout(async () => {
       try {
-        const result = await tenantsApi.checkCode(code.trim())
-        setCodeAvailability((prev) => ({ ...prev, checking: false, available: result.available }))
+        const result = await tenantsApi.checkCode(codeValue.trim())
+        setCodeAvailability({ checking: false, available: result.available })
       } catch {
-        setCodeAvailability((prev) => ({ ...prev, checking: false, available: null }))
+        setCodeAvailability({ checking: false, available: null })
       }
     }, 500)
     return () => {
       if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
     }
-  }, [code])
-
-  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '')
-    setCode(value)
-    if (errors.code) setErrors((e) => ({ ...e, code: undefined }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-    if (!name.trim()) {
-      setErrors({ name: 'Tenant name is required' })
-      return
-    }
-    if (!code.trim()) {
-      setErrors({ code: 'Tenant code is required' })
-      return
-    }
-    if (!validateCode(code)) {
-      setErrors({ code: 'Code must be 3-15 characters, lowercase alphanumeric with optional hyphens' })
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      const response = await createTenant({ name: name.trim(), code: code.trim() })
-      setAdminCredentials(response)
-    } catch (error) {
-      if (error instanceof Error && 'status' in error) {
-        const apiError = error as ApiError
-        if (apiError.fieldErrors) {
-          setErrors(apiError.fieldErrors as { name?: string; code?: string })
-        } else if (apiError.status === 409) {
-          setErrors({ code: 'A tenant with this code already exists. Please choose a different code.' })
-        } else {
-          setErrors({ general: apiError.message || 'Failed to create tenant. Please try again.' })
-        }
-      } else {
-        setErrors({ general: 'An unexpected error occurred. Please try again.' })
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  }, [codeValue, codeIsValid])
 
   const goToSetPassword = () => {
     if (!adminCredentials?.set_password_url) return
@@ -122,7 +115,11 @@ function SignupPage() {
     if (adminCredentials) {
       navigate({
         to: '/auth/login',
-        search: { tenant_code: adminCredentials.code, email: adminCredentials.admin_email },
+        search: {
+          tenant_code: adminCredentials.code,
+          email: adminCredentials.admin_email,
+          redirect: undefined,
+        },
       })
     }
   }
@@ -253,6 +250,8 @@ function SignupPage() {
     )
   }
 
+  const codeRegister = register('code')
+
   return (
     <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
       <div className="text-center mb-8">
@@ -260,10 +259,10 @@ function SignupPage() {
         <p className="text-white/70">Register as a new tenant</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {errors.general && (
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        {serverError && (
           <div className="p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
-            {errors.general}
+            {serverError}
           </div>
         )}
 
@@ -273,15 +272,14 @@ function SignupPage() {
           </label>
           <input
             id="name"
-            name="name"
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
             placeholder="Enter tenant name"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('name')}
           />
-          {errors.name && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.name}</p>}
+          {formState.errors.name && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.name.message as string}</p>
+          )}
         </div>
 
         <div>
@@ -291,15 +289,16 @@ function SignupPage() {
           <div className="relative">
             <input
               id="code"
-              name="code"
               type="text"
-              value={code}
-              onChange={handleCodeChange}
-              required
               placeholder="e.g., acme-corp"
               className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30 pr-10"
+              {...codeRegister}
+              onChange={(e) => {
+                const formatted = formatCode(e.target.value)
+                setValue('code', formatted, { shouldValidate: true, shouldTouch: true })
+              }}
             />
-            {code && validateCode(code) && (
+            {codeValue && codeIsValid && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 {codeAvailability.checking ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-transparent rounded-full animate-spin" />
@@ -311,34 +310,34 @@ function SignupPage() {
               </div>
             )}
           </div>
-          {errors.code && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.code}</p>}
-          {code && !validateCode(code) && code.length > 0 && !errors.code && (
-            <p className="mt-1 text-sm text-[#D0B5B3]">
-              Code must be 3-15 characters, lowercase alphanumeric with optional hyphens
-            </p>
+          {formState.errors.code && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.code.message as string}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={
-            isSubmitting ||
-            !name.trim() ||
-            !code.trim() ||
-            !validateCode(code) ||
+            formState.isSubmitting ||
+            !nameValue?.trim() ||
+            !codeIsValid ||
             codeAvailability.checking ||
             codeAvailability.available === false
           }
           className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
+          {formState.isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
         </button>
       </form>
 
       <div className="mt-6 text-center space-y-2">
         <p className="text-white/70 text-sm">
           Already have an account?{' '}
-          <Link to="/auth/login" search={{ tenant_code: '', email: '' }} className="text-natural hover:underline">
+          <Link
+            to="/auth/login"
+            search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
+            className="text-natural hover:underline"
+          >
             Sign in
           </Link>
         </p>
