@@ -24,7 +24,8 @@ Design Notes:
 from dataclasses import dataclass, field
 from datetime import datetime, date, time
 from app.domain.value_objects.core import ContractId, TenantId, ClientId, DateRange, Money
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.value_objects.pricing import ContractPricing
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.events import DomainEvent, ContractRenewed, ContractTerminated
 from app.domain.exceptions import DomainError
 from app.shared.utils.datetime import utc_now
@@ -51,7 +52,21 @@ class ContractEntity:
     signed_at: datetime | None = None
     termination_reason: str | None = None
     deleted_at: datetime | None = None
+    pricing: ContractPricing | None = None
     events: list[DomainEvent] = field(default_factory=list)
+
+    def update_pricing(self, pricing: ContractPricing) -> None:
+        """Set or replace the contract's pricing configuration."""
+        if self.deleted_at:
+            raise DomainError("Cannot update pricing for deleted contract")
+        if self.status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot update pricing for terminated contract")
+        self.pricing = pricing
+        self.updated_at = utc_now()
+
+    @property
+    def pricing_model(self) -> PricingModel | None:
+        return self.pricing.model if self.pricing else None
     
     def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
         if new_end_date <= self.period.end_date.date():

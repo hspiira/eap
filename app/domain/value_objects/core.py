@@ -177,6 +177,11 @@ class ReportTemplateId(Id):
 class ReportRunId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class UtilisationEventId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

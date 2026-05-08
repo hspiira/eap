@@ -118,6 +118,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.outbox_repository",
     "app.api.dependencies -> app.infrastructure.repositories.password_set_token_repository",
     "app.api.dependencies -> app.infrastructure.repositories.report_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.utilisation_event_repository",
     "app.api.dependencies -> app.infrastructure.services.report_query_runner",
     "app.api.dependencies -> app.infrastructure.repositories.person_repository",
     "app.api.dependencies -> app.infrastructure.repositories.refresh_token_repository",
