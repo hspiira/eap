@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as TagsRouteImport } from './routes/tags'
+import { Route as SurveysRouteImport } from './routes/surveys'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as ServiceSessionsRouteImport } from './routes/service-sessions'
 import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
@@ -33,6 +34,7 @@ import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as TagsIndexRouteImport } from './routes/tags/index'
+import { Route as SurveysIndexRouteImport } from './routes/surveys/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
 import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
@@ -47,6 +49,8 @@ import { Route as UsersNewRouteImport } from './routes/users/new'
 import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
 import { Route as TagsNewRouteImport } from './routes/tags/new'
 import { Route as TagsTagIdRouteImport } from './routes/tags/$tagId'
+import { Route as SurveysNewRouteImport } from './routes/surveys/new'
+import { Route as SurveysSurveyIdRouteImport } from './routes/surveys/$surveyId'
 import { Route as ServicesNewRouteImport } from './routes/services/new'
 import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
 import { Route as ServiceSessionsNewRouteImport } from './routes/service-sessions/new'
@@ -80,6 +84,11 @@ const UsersRoute = UsersRouteImport.update({
 const TagsRoute = TagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SurveysRoute = SurveysRouteImport.update({
+  id: '/surveys',
+  path: '/surveys',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesRoute = ServicesRouteImport.update({
@@ -192,6 +201,11 @@ const TagsIndexRoute = TagsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TagsRoute,
 } as any)
+const SurveysIndexRoute = SurveysIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SurveysRoute,
+} as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -261,6 +275,16 @@ const TagsTagIdRoute = TagsTagIdRouteImport.update({
   id: '/$tagId',
   path: '/$tagId',
   getParentRoute: () => TagsRoute,
+} as any)
+const SurveysNewRoute = SurveysNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => SurveysRoute,
+} as any)
+const SurveysSurveyIdRoute = SurveysSurveyIdRouteImport.update({
+  id: '/$surveyId',
+  path: '/$surveyId',
+  getParentRoute: () => SurveysRoute,
 } as any)
 const ServicesNewRoute = ServicesNewRouteImport.update({
   id: '/new',
@@ -408,6 +432,7 @@ export interface FileRoutesByFullPath {
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
+  '/surveys': typeof SurveysRouteWithChildren
   '/tags': typeof TagsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
@@ -432,6 +457,8 @@ export interface FileRoutesByFullPath {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -446,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -483,6 +511,8 @@ export interface FileRoutesByTo {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -497,6 +527,7 @@ export interface FileRoutesByTo {
   '/service-assignments': typeof ServiceAssignmentsIndexRoute
   '/service-sessions': typeof ServiceSessionsIndexRoute
   '/services': typeof ServicesIndexRoute
+  '/surveys': typeof SurveysIndexRoute
   '/tags': typeof TagsIndexRoute
   '/users': typeof UsersIndexRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -524,6 +555,7 @@ export interface FileRoutesById {
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
   '/service-sessions': typeof ServiceSessionsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
+  '/surveys': typeof SurveysRouteWithChildren
   '/tags': typeof TagsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
@@ -548,6 +580,8 @@ export interface FileRoutesById {
   '/service-sessions/new': typeof ServiceSessionsNewRoute
   '/services/$serviceId': typeof ServicesServiceIdRoute
   '/services/new': typeof ServicesNewRoute
+  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -562,6 +596,7 @@ export interface FileRoutesById {
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
   '/service-sessions/': typeof ServiceSessionsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -590,6 +625,7 @@ export interface FileRouteTypes {
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
+    | '/surveys'
     | '/tags'
     | '/users'
     | '/auth/login'
@@ -614,6 +650,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/surveys/$surveyId'
+    | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
     | '/users/$userId'
@@ -628,6 +666,7 @@ export interface FileRouteTypes {
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
+    | '/surveys/'
     | '/tags/'
     | '/users/'
     | '/care-callbacks/worklist/$caseId'
@@ -665,6 +704,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/surveys/$surveyId'
+    | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
     | '/users/$userId'
@@ -679,6 +720,7 @@ export interface FileRouteTypes {
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
+    | '/surveys'
     | '/tags'
     | '/users'
     | '/care-callbacks/worklist/$caseId'
@@ -705,6 +747,7 @@ export interface FileRouteTypes {
     | '/service-assignments'
     | '/service-sessions'
     | '/services'
+    | '/surveys'
     | '/tags'
     | '/users'
     | '/auth/login'
@@ -729,6 +772,8 @@ export interface FileRouteTypes {
     | '/service-sessions/new'
     | '/services/$serviceId'
     | '/services/new'
+    | '/surveys/$surveyId'
+    | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
     | '/users/$userId'
@@ -743,6 +788,7 @@ export interface FileRouteTypes {
     | '/service-assignments/'
     | '/service-sessions/'
     | '/services/'
+    | '/surveys/'
     | '/tags/'
     | '/users/'
     | '/care-callbacks/worklist/$caseId'
@@ -770,6 +816,7 @@ export interface RootRouteChildren {
   ServiceAssignmentsRoute: typeof ServiceAssignmentsRouteWithChildren
   ServiceSessionsRoute: typeof ServiceSessionsRouteWithChildren
   ServicesRoute: typeof ServicesRouteWithChildren
+  SurveysRoute: typeof SurveysRouteWithChildren
   TagsRoute: typeof TagsRouteWithChildren
   UsersRoute: typeof UsersRouteWithChildren
 }
@@ -788,6 +835,13 @@ declare module '@tanstack/react-router' {
       path: '/tags'
       fullPath: '/tags'
       preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/surveys': {
+      id: '/surveys'
+      path: '/surveys'
+      fullPath: '/surveys'
+      preLoaderRoute: typeof SurveysRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services': {
@@ -944,6 +998,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsIndexRouteImport
       parentRoute: typeof TagsRoute
     }
+    '/surveys/': {
+      id: '/surveys/'
+      path: '/'
+      fullPath: '/surveys/'
+      preLoaderRoute: typeof SurveysIndexRouteImport
+      parentRoute: typeof SurveysRoute
+    }
     '/services/': {
       id: '/services/'
       path: '/'
@@ -1041,6 +1102,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/tags/$tagId'
       preLoaderRoute: typeof TagsTagIdRouteImport
       parentRoute: typeof TagsRoute
+    }
+    '/surveys/new': {
+      id: '/surveys/new'
+      path: '/new'
+      fullPath: '/surveys/new'
+      preLoaderRoute: typeof SurveysNewRouteImport
+      parentRoute: typeof SurveysRoute
+    }
+    '/surveys/$surveyId': {
+      id: '/surveys/$surveyId'
+      path: '/$surveyId'
+      fullPath: '/surveys/$surveyId'
+      preLoaderRoute: typeof SurveysSurveyIdRouteImport
+      parentRoute: typeof SurveysRoute
     }
     '/services/new': {
       id: '/services/new'
@@ -1396,6 +1471,21 @@ const ServicesRouteWithChildren = ServicesRoute._addFileChildren(
   ServicesRouteChildren,
 )
 
+interface SurveysRouteChildren {
+  SurveysSurveyIdRoute: typeof SurveysSurveyIdRoute
+  SurveysNewRoute: typeof SurveysNewRoute
+  SurveysIndexRoute: typeof SurveysIndexRoute
+}
+
+const SurveysRouteChildren: SurveysRouteChildren = {
+  SurveysSurveyIdRoute: SurveysSurveyIdRoute,
+  SurveysNewRoute: SurveysNewRoute,
+  SurveysIndexRoute: SurveysIndexRoute,
+}
+
+const SurveysRouteWithChildren =
+  SurveysRoute._addFileChildren(SurveysRouteChildren)
+
 interface TagsRouteChildren {
   TagsTagIdRoute: typeof TagsTagIdRoute
   TagsNewRoute: typeof TagsNewRoute
@@ -1445,6 +1535,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServiceAssignmentsRoute: ServiceAssignmentsRouteWithChildren,
   ServiceSessionsRoute: ServiceSessionsRouteWithChildren,
   ServicesRoute: ServicesRouteWithChildren,
+  SurveysRoute: SurveysRouteWithChildren,
   TagsRoute: TagsRouteWithChildren,
   UsersRoute: UsersRouteWithChildren,
 }

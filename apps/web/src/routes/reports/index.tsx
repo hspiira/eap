@@ -31,7 +31,7 @@ const TEMPLATES: ReportTemplate[] = [
       "PHQ-9 / WOS-5 deltas, crisis-flag count, by-counsellor outcomes for a single wave.",
     cadence: "Per wave",
     icon: PieChart,
-    ready: false,
+    ready: true,
   },
   {
     slug: "tier-portfolio",

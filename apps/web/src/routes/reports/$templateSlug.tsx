@@ -1,8 +1,11 @@
 import { useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, Printer } from "lucide-react"
 
+import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
+import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import { Button } from "@/components/ui/button"
 
 import { type RenewalPackData,renewalPackFixture } from "./renewal-pack-fixture"
@@ -10,9 +13,12 @@ import { type RenewalPackData,renewalPackFixture } from "./renewal-pack-fixture"
 export const Route = createFileRoute("/reports/$templateSlug")({
   component: ReportTemplatePage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { client_id?: string } = {}
+    const out: { client_id?: string; campaign_id?: string } = {}
     if (typeof search.client_id === "string" && search.client_id.trim()) {
       out.client_id = search.client_id
+    }
+    if (typeof search.campaign_id === "string" && search.campaign_id.trim()) {
+      out.campaign_id = search.campaign_id
     }
     return out
   },
@@ -22,6 +28,7 @@ function ReportTemplatePage() {
   const { templateSlug } = Route.useParams()
 
   if (templateSlug === "per-client-renewal") return <PerClientRenewalPack />
+  if (templateSlug === "care-callback-summary") return <CareCallbackWaveSummary />
   return <UnknownTemplate slug={templateSlug} />
 }
 
@@ -180,6 +187,191 @@ function SatisfactionDistribution({ data }: { data: RenewalPackData }) {
       </ul>
     </section>
   )
+}
+
+function CareCallbackWaveSummary() {
+  const search = Route.useSearch()
+  const campaignId = search.campaign_id
+
+  const aggregateQuery = useQuery({
+    queryKey: ["care-callback-campaigns", "aggregate", campaignId ?? ""],
+    queryFn: () => careCallbacksApi.getAggregate(campaignId as string),
+    enabled: !!campaignId,
+  })
+  const campaignQuery = useQuery({
+    queryKey: ["care-callback-campaigns", "detail", campaignId ?? ""],
+    queryFn: () => careCallbacksApi.getCampaign(campaignId as string),
+    enabled: !!campaignId,
+  })
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") window.print()
+  }
+
+  if (!campaignId) {
+    return (
+      <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
+        <div className="mx-auto max-w-3xl space-y-3">
+          <h1 className="text-xl font-semibold text-ink">Care callback wave summary</h1>
+          <p className="text-sm text-ink/70">
+            Pass a <code className="font-mono">?campaign_id=…</code> search param to render the
+            summary for a specific wave. From a campaign detail page, use the share-link to
+            arrive here pre-populated.
+          </p>
+          <Link to="/care-callbacks" className="text-sm font-medium text-natural hover:underline">
+            ← Pick a campaign
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const aggregate = aggregateQuery.data
+  const campaign = campaignQuery.data
+
+  return (
+    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6 print:p-0">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <header className="flex flex-wrap items-center justify-between gap-4 print:hidden">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/reports"
+              className="inline-flex h-9 items-center gap-1.5 px-2 text-sm text-ink/70 hover:text-ink"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Reports
+            </Link>
+            <h1 className="text-xl font-semibold text-ink">
+              Wave summary{campaign ? ` — ${campaign.name}` : ""}
+            </h1>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="rounded-none border-ink/30 text-ink"
+            onClick={handlePrint}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        </header>
+
+        <article className="space-y-8 border border-ink/20 bg-white p-8 print:border-0 print:p-0">
+          {aggregateQuery.isPending || campaignQuery.isPending ? (
+            <p className="text-sm text-ink/60">Loading…</p>
+          ) : !aggregate || !campaign ? (
+            <p className="text-sm text-ink/60">Aggregate unavailable for this campaign.</p>
+          ) : (
+            <>
+              <section>
+                <p className="text-xs uppercase tracking-wide text-ink/60">Wave summary</p>
+                <h2 className="mt-1 text-2xl font-semibold text-ink">{campaign.name}</h2>
+                <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <dt className="text-xs text-ink/60">Period</dt>
+                    <dd className="text-sm text-ink">
+                      {new Date(campaign.period_start).toLocaleDateString()} –{" "}
+                      {new Date(campaign.period_end).toLocaleDateString()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink/60">Status</dt>
+                    <dd className="text-sm text-ink">{campaign.status}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-ink/60">Counsellors</dt>
+                    <dd className="text-sm text-ink">{campaign.counsellor_user_ids.length}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="grid gap-3 sm:grid-cols-5">
+                <Stat label="Cases" value={aggregate.cases_total} />
+                <Stat label="Completed" value={aggregate.cases_completed} />
+                <Stat label="No answer" value={aggregate.cases_no_answer} />
+                <Stat label="Declined" value={aggregate.cases_declined} />
+                <Stat label="Crisis" value={aggregate.cases_crisis} highlight />
+              </section>
+
+              {!aggregate.k_floor_met ? (
+                <p className="text-sm text-ink/70">
+                  <strong>Insufficient data.</strong> Aggregate metrics suppressed until at least{" "}
+                  {K_ANON_FLOOR} cases are completed.
+                </p>
+              ) : (
+                <section>
+                  <h3 className="text-sm font-semibold text-ink">Per-question outcomes</h3>
+                  <p className="mt-1 text-xs text-ink/60">
+                    {aggregate.wos5_delta_mean !== null
+                      ? `WOS-5 post mean: ${aggregate.wos5_delta_mean}`
+                      : "WOS-5 follow-up not collected for this wave."}
+                  </p>
+                  <table className="mt-3 w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-ink/20 text-left text-xs uppercase text-ink/60">
+                        <th className="py-2 pr-3 font-medium">Question</th>
+                        <th className="py-2 pr-3 font-medium">n</th>
+                        <th className="py-2 font-medium">Mean / Top</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {aggregate.question_summaries.map((s) => (
+                        <tr key={s.question_key} className="border-b border-ink/10">
+                          <td className="py-2 pr-3 text-ink">{s.prompt}</td>
+                          <td className="py-2 pr-3 text-ink">{s.n}</td>
+                          <td className="py-2 text-ink/70">
+                            {s.mean !== null && s.mean !== undefined
+                              ? s.mean.toFixed(2)
+                              : s.histogram
+                                ? topHistogramEntry(s.histogram)
+                                : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              )}
+            </>
+          )}
+        </article>
+      </div>
+    </div>
+  )
+}
+
+function Stat({
+  label,
+  value,
+  highlight,
+}: {
+  label: string
+  value: number
+  highlight?: boolean
+}) {
+  return (
+    <div
+      className={`border p-3 ${
+        highlight ? "border-danger-soft/40 bg-danger-soft/10" : "border-ink/20"
+      }`}
+    >
+      <div className="text-xs uppercase text-ink/60">{label}</div>
+      <div
+        className={`mt-1 text-lg font-semibold ${highlight ? "text-danger-soft" : "text-ink"}`}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function topHistogramEntry(h: Record<string, number>): string {
+  const entries = Object.entries(h)
+  if (entries.length === 0) return "—"
+  entries.sort((a, b) => b[1] - a[1])
+  const [value, count] = entries[0]
+  return `${value} (${count})`
 }
 
 function UnknownTemplate({ slug }: { slug: string }) {

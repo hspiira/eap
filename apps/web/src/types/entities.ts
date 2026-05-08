@@ -30,6 +30,8 @@ import type {
   QuestionnaireAdministration,
   QuestionnaireQuestionType,
   RelationType,
+  SurveySource,
+  SurveyStatus,
   SessionStatus,
   StaffRole,
   TenantStatus,
@@ -693,6 +695,56 @@ export interface CallbackQuestionSummary {
   /** For choice questions: option_value → count. */
   histogram?: Record<string, number> | null
   /** Number of completed answers contributing to this row. */
+  n: number
+}
+
+/**
+ * Survey campaign (Phase 3 #2).
+ *
+ * The Evexía BE doesn't host the form — clients run Google Forms / Typeform / etc., and
+ * the survey provider POSTs each response to the webhook URL stored on this entity.
+ * Aggregates compute server-side and respect the same k-anon floor as care-callbacks.
+ */
+export interface Survey extends BaseEntity {
+  client_id: string
+  name: string
+  description?: string | null
+  status: SurveyStatus
+  source: SurveySource
+  /** Webhook URL the BE exposes; copied into the form's "send response to URL" field. */
+  webhook_url: string
+  /** Shared secret the survey provider must include in the `X-Evexia-Token` header. */
+  webhook_token: string
+  /** Inclusive collection window. */
+  period_start: string
+  period_end: string
+  /** Set when status flips to COLLECTING. Read-only. */
+  first_response_at?: string | null
+  /** Set when status flips to CLOSED. Read-only. */
+  closed_at?: string | null
+  response_count: number
+}
+
+/**
+ * Aggregated, no-PII rollup for a survey. K-anon floor mirrors care-callbacks (= 10).
+ */
+export interface SurveyAggregate {
+  survey_id: string
+  response_count: number
+  /** Mean satisfaction (1-5) across all responses; null when k-floor unmet. */
+  satisfaction_mean?: number | null
+  /** Net Promoter Score buckets — promoters minus detractors as %; null when k-floor unmet. */
+  nps?: number | null
+  /** Per-question summaries — same shape as the care-callback aggregate. */
+  question_summaries: SurveyQuestionSummary[]
+  k_floor_met: boolean
+}
+
+export interface SurveyQuestionSummary {
+  question_key: string
+  prompt: string
+  mean?: number | null
+  histogram?: Record<string, number> | null
   n: number
 }
 

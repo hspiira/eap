@@ -38,7 +38,7 @@ describe('reports landing', () => {
 
   it('marks not-yet-implemented templates as coming soon', async () => {
     await renderRoute('@/routes/reports/index')
-    expect(screen.getAllByText(/coming soon/i).length).toBeGreaterThanOrEqual(3)
+    expect(screen.getAllByText(/coming soon/i).length).toBeGreaterThanOrEqual(2)
   })
 })
 

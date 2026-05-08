@@ -15,6 +15,7 @@ import {
   Home,
   Inbox,
   LayoutList,
+  MessageSquare,
   PhoneCall,
   Tag,
   UserCircle,
@@ -203,6 +204,10 @@ export function AppSidebar() {
             { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
             { to: "/care-callbacks/worklist", label: "My worklist", icon: Headphones },
           ]}
+        />
+        <SidebarSection
+          label="Surveys"
+          items={[{ to: "/surveys", label: "Surveys", icon: MessageSquare }]}
         />
         <SidebarSection
           label="Analytics & Performance"

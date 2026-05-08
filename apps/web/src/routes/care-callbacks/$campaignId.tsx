@@ -44,16 +44,29 @@ function CampaignDetailPage() {
           >
             ← All campaigns
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-ink">{campaign.name}</h1>
-          <p className="mt-1 text-sm text-ink/70">
-            {new Date(campaign.period_start).toLocaleDateString()} –{" "}
-            {new Date(campaign.period_end).toLocaleDateString()} · sampling: {campaign.sampling}
-            {campaign.sample_size ? ` (n=${campaign.sample_size})` : ""} · status:{" "}
-            <span className="font-medium text-ink">{campaign.status}</span>
-          </p>
-          {campaign.description ? (
-            <p className="mt-2 text-sm text-ink/70">{campaign.description}</p>
-          ) : null}
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-semibold text-ink">{campaign.name}</h1>
+              <p className="mt-1 text-sm text-ink/70">
+                {new Date(campaign.period_start).toLocaleDateString()} –{" "}
+                {new Date(campaign.period_end).toLocaleDateString()} · sampling:{" "}
+                {campaign.sampling}
+                {campaign.sample_size ? ` (n=${campaign.sample_size})` : ""} · status:{" "}
+                <span className="font-medium text-ink">{campaign.status}</span>
+              </p>
+              {campaign.description ? (
+                <p className="mt-2 text-sm text-ink/70">{campaign.description}</p>
+              ) : null}
+            </div>
+            <Link
+              to="/reports/$templateSlug"
+              params={{ templateSlug: "care-callback-summary" }}
+              search={{ campaign_id: campaign.id }}
+              className="inline-flex h-9 items-center gap-1.5 px-3 border border-ink/30 bg-white text-sm text-ink hover:border-natural hover:text-natural"
+            >
+              Open wave summary →
+            </Link>
+          </div>
         </header>
 
         <section className="border border-ink/20 bg-white p-4">

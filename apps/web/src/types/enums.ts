@@ -342,6 +342,29 @@ export enum QuestionnaireAdministration {
 }
 
 /**
+ * Lifecycle status of a Survey campaign (Phase 3 #2).
+ * - DRAFT: webhook not yet wired; no responses accepted.
+ * - COLLECTING: webhook live; responses streaming in.
+ * - CLOSED: response window closed; aggregates finalised.
+ */
+export enum SurveyStatus {
+  DRAFT = 'Draft',
+  COLLECTING = 'Collecting',
+  CLOSED = 'Closed',
+}
+
+/**
+ * Source platform for Survey responses. Phase 3 v1 ships Google Forms; the BE keeps
+ * the union open so we can add SurveyMonkey / Typeform without a schema change.
+ */
+export enum SurveySource {
+  GOOGLE_FORMS = 'Google Forms',
+  TYPEFORM = 'Typeform',
+  SURVEY_MONKEY = 'SurveyMonkey',
+  CUSTOM = 'Custom',
+}
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {
