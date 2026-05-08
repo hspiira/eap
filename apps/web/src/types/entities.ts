@@ -8,6 +8,13 @@ import type {
   BaseStatus,
   ClientTier,
   ContactMethod,
+  AccreditationStatus,
+  IncidentSeverity,
+  IncidentStatus,
+  IncidentTimelineEventKind,
+  PricingModel,
+  ProviderRegion,
+  ProviderTier,
   ContractStatus,
   DocumentStatus,
   DocumentType,
@@ -272,11 +279,164 @@ export interface ServiceSession extends BaseEntity {
   completed_at?: string | null
   location?: string | null
   notes?: string | null
+  diagnosis_id?: string | null
+  /** Free-text diagnosis. Deprecated path — only used when VITE_DIAGNOSIS_FREETEXT_FALLBACK is on. */
+  diagnosis_text?: string | null
   feedback?: {
     rating?: number | null
     comments?: string | null
   } | null
   metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Contract pricing config (D-Pricing v1). Discriminated by `model`.
+ */
+export type ContractPricing =
+  | RetainerPricing
+  | FrameworkPricing
+  | FFSPricing
+  | AdminUtilisationPricing
+  | ValueAddPricing
+
+export interface RetainerPricing {
+  model: PricingModel.RETAINER
+  monthly_fee: number
+  /** Optional max sessions covered before overflow rate. */
+  session_cap?: number | null
+  overflow_rate?: number | null
+}
+
+export interface FrameworkPricing {
+  model: PricingModel.FRAMEWORK
+  deposit: number
+  /** Remaining balance, computed by BE; FE displays it read-only. */
+  drawdown_balance: number
+  unit_rate: number
+}
+
+export interface FFSPricing {
+  model: PricingModel.FFS
+  unit_rate: number
+}
+
+export interface AdminUtilisationPricing {
+  model: PricingModel.ADMIN_UTILISATION
+  monthly_admin_fee: number
+  /** Hard floor on monthly admin fee — flags warnings if pricing dips below. */
+  admin_floor: number
+  utilisation_rate: number
+}
+
+export interface ValueAddPricing {
+  model: PricingModel.VALUE_ADD
+  monthly_fee: number
+  bundled_services: string[]
+}
+
+export interface RateCardItem {
+  service_id: string
+  service_name: string
+  rate: number
+}
+
+/**
+ * Invoice-line preview row returned from BE per contract pricing config.
+ */
+export interface InvoiceLinePreview {
+  label: string
+  quantity: number
+  unit: string
+  unit_rate: number
+  subtotal: number
+  /** Rendered footnote for context (e.g. "below admin floor"). */
+  note?: string | null
+}
+
+/**
+ * Service provider (counsellor / agency / clinic) — D-Provider v1.
+ */
+export interface Provider extends BaseEntity {
+  name: string
+  tier: ProviderTier
+  region: ProviderRegion
+  email?: string | null
+  phone?: string | null
+  accreditation: ProviderAccreditation
+  non_compete_clauses: ProviderNonCompete[]
+  /** Tier transitions, most-recent first. */
+  tier_audit?: ProviderTierTransition[]
+}
+
+export interface ProviderAccreditation {
+  body: string
+  registration_number: string
+  status: AccreditationStatus
+  issued_at: string
+  expires_at: string
+}
+
+export interface ProviderNonCompete {
+  id: string
+  client_id: string
+  client_name: string
+  /** Effective range — both ISO dates. */
+  start_date: string
+  end_date: string
+  /** Region scope of the non-compete. Empty array = global. */
+  regions: ProviderRegion[]
+  notes?: string | null
+}
+
+export interface ProviderTierTransition {
+  id: string
+  from_tier: ProviderTier | null
+  to_tier: ProviderTier
+  at: string
+  actor: string
+  reason: string
+}
+
+/**
+ * Critical Incident (CISM v1).
+ */
+export interface Incident extends BaseEntity {
+  client_id: string
+  title: string
+  description: string
+  severity: IncidentSeverity
+  status: IncidentStatus
+  occurred_at: string
+  affected_population: number
+  /** Service-session IDs linked from the incident timeline. */
+  linked_session_ids?: string[]
+  resolution_notes?: string | null
+}
+
+export interface IncidentTimelineEvent {
+  id: string
+  incident_id: string
+  kind: IncidentTimelineEventKind
+  at: string
+  actor: string
+  message: string
+  /** When `kind === SESSION_LINKED`, references the linked service session. */
+  session_id?: string | null
+}
+
+/**
+ * Diagnosis taxonomy node (ICD-10 subset for v1).
+ * Children are expanded lazily via diagnosesApi.list({ parent_id }).
+ */
+export interface Diagnosis {
+  id: string
+  code: string
+  label: string
+  parent_id: string | null
+  level: number
+  has_children: boolean
+  /** Slash-joined full path of labels, useful for combobox display. */
+  path: string
 }
 
 /**

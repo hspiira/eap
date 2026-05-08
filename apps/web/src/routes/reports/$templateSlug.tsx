@@ -5,7 +5,7 @@ import { ArrowLeft, Printer } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-import { renewalPackFixture, type RenewalPackData } from "./renewal-pack-fixture"
+import { type RenewalPackData,renewalPackFixture } from "./renewal-pack-fixture"
 
 export const Route = createFileRoute("/reports/$templateSlug")({
   component: ReportTemplatePage,

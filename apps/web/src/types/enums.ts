@@ -217,6 +217,74 @@ export enum ClientTier {
 }
 
 /**
+ * Critical incident severity (CISM v1).
+ */
+export enum IncidentSeverity {
+  LOW = 'Low',
+  MEDIUM = 'Medium',
+  HIGH = 'High',
+  CRITICAL = 'Critical',
+}
+
+/**
+ * Lifecycle status of a critical incident record.
+ */
+export enum IncidentStatus {
+  OPEN = 'Open',
+  IN_PROGRESS = 'In Progress',
+  RESOLVED = 'Resolved',
+  CLOSED = 'Closed',
+}
+
+/**
+ * Contract pricing models (D-Pricing v1).
+ * - RETAINER: monthly fixed fee, optional cap on sessions.
+ * - FRAMEWORK: deposit drawn down per session at unit rate.
+ * - FFS: pay-per-session at unit rate, no commitment.
+ * - ADMIN_UTILISATION: monthly admin fee + per-session rate; admin floor enforced.
+ * - VALUE_ADD: bundled fee covering services + outcomes (e.g. CISM, reports).
+ */
+export enum PricingModel {
+  RETAINER = 'Retainer',
+  FRAMEWORK = 'Framework',
+  FFS = 'FFS',
+  ADMIN_UTILISATION = 'Admin+Utilisation',
+  VALUE_ADD = 'Value-Add',
+}
+
+export enum ProviderTier {
+  T1 = 'T1',
+  T2 = 'T2',
+  T3 = 'T3',
+}
+
+export enum ProviderRegion {
+  NAIROBI = 'Nairobi',
+  COAST = 'Coast',
+  RIFT = 'Rift',
+  WESTERN = 'Western',
+  CENTRAL = 'Central',
+  REMOTE = 'Remote / Telehealth',
+}
+
+export enum AccreditationStatus {
+  ACTIVE = 'Active',
+  PENDING_RENEWAL = 'Pending Renewal',
+  EXPIRED = 'Expired',
+  SUSPENDED = 'Suspended',
+}
+
+export enum IncidentTimelineEventKind {
+  CREATED = 'Created',
+  TRIAGE = 'Triage',
+  COMMS = 'Comms',
+  SESSION_LINKED = 'Session Linked',
+  AFTER_ACTION = 'After Action',
+  RESOLVED = 'Resolved',
+  NOTE = 'Note',
+}
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {

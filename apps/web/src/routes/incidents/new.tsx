@@ -1,0 +1,173 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
+
+import { incidentsApi } from "@/api/endpoints/incidents"
+import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityMutation } from "@/lib/queries"
+import { IncidentSeverity } from "@/types/enums"
+
+export const Route = createFileRoute("/incidents/new")({
+  component: IncidentCreatePage,
+})
+
+const SEVERITY_VALUES = [
+  IncidentSeverity.LOW,
+  IncidentSeverity.MEDIUM,
+  IncidentSeverity.HIGH,
+  IncidentSeverity.CRITICAL,
+] as const
+
+const incidentCreateSchema = z.object({
+  client_id: z.string().trim().min(1, "Client ID is required"),
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().min(10, "Add a brief description (≥10 chars)"),
+  severity: z.enum(SEVERITY_VALUES as readonly [string, ...string[]]),
+  occurred_at: z
+    .string()
+    .min(1, "Occurred-at time is required")
+    .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
+  affected_population: z.coerce.number().int().min(0, "Must be a non-negative integer"),
+})
+
+function IncidentCreatePage() {
+  const navigate = useNavigate()
+  const createIncident = useEntityMutation({
+    resource: "incidents",
+    mutationFn: incidentsApi.create,
+  })
+
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof incidentCreateSchema>>({
+    schema: incidentCreateSchema,
+    defaultValues: {
+      client_id: "",
+      title: "",
+      description: "",
+      severity: IncidentSeverity.MEDIUM,
+      occurred_at: "",
+      affected_population: 0,
+    },
+    successToast: "Incident logged",
+    onSubmit: async (values) => {
+      const created = await createIncident.mutateAsync({
+        client_id: values.client_id,
+        title: values.title,
+        description: values.description,
+        severity: values.severity as IncidentSeverity,
+        occurred_at: new Date(values.occurred_at).toISOString(),
+        affected_population: values.affected_population,
+      })
+      navigate({ to: "/incidents/$incidentId", params: { incidentId: created.id } })
+    },
+  })
+
+  return (
+    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
+      <div className="mx-auto max-w-2xl space-y-4">
+        <h1 className="text-xl font-semibold text-ink">Log critical incident</h1>
+        <form onSubmit={submit} className="space-y-4" noValidate>
+          {serverError && (
+            <p className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2" role="alert">
+              {serverError}
+            </p>
+          )}
+          <FormField
+            label="Client ID"
+            required
+            error={formState.errors.client_id?.message as string | undefined}
+            htmlFor="client_id"
+          >
+            <Input id="client_id" className="rounded-none" {...register("client_id")} />
+          </FormField>
+          <FormField
+            label="Title"
+            required
+            error={formState.errors.title?.message as string | undefined}
+            htmlFor="title"
+          >
+            <Input id="title" className="rounded-none" {...register("title")} />
+          </FormField>
+          <FormField
+            label="Description"
+            required
+            error={formState.errors.description?.message as string | undefined}
+            htmlFor="description"
+          >
+            <textarea
+              id="description"
+              rows={4}
+              className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+              {...register("description")}
+            />
+          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              label="Severity"
+              required
+              error={formState.errors.severity?.message as string | undefined}
+              htmlFor="severity"
+            >
+              <select
+                id="severity"
+                className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                {...register("severity")}
+              >
+                {SEVERITY_VALUES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField
+              label="Affected population"
+              required
+              error={formState.errors.affected_population?.message as string | undefined}
+              htmlFor="affected_population"
+            >
+              <Input
+                id="affected_population"
+                type="number"
+                min={0}
+                className="rounded-none"
+                {...register("affected_population")}
+              />
+            </FormField>
+          </div>
+          <FormField
+            label="Occurred at"
+            required
+            error={formState.errors.occurred_at?.message as string | undefined}
+            htmlFor="occurred_at"
+          >
+            <Input
+              id="occurred_at"
+              type="datetime-local"
+              className="rounded-none"
+              {...register("occurred_at")}
+            />
+          </FormField>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              disabled={formState.isSubmitting}
+              className="rounded-none bg-natural text-white hover:bg-natural-dark"
+            >
+              {formState.isSubmitting ? "Logging…" : "Log incident"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="rounded-none border-ink/30 text-ink"
+              onClick={() => navigate({ to: "/incidents" })}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

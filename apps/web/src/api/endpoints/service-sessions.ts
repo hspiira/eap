@@ -14,6 +14,8 @@ export interface ServiceSessionCreate {
   scheduled_at: string
   location?: string | null
   notes?: string | null
+  diagnosis_id?: string | null
+  diagnosis_text?: string | null
   metadata?: Record<string, unknown> | null
 }
 
