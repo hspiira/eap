@@ -52,13 +52,13 @@ const directionIcons = [ArrowRight, ArrowLeft, ArrowUp, ArrowDown]
 
 export function TransitionsCard() {
   return (
-    <div className="flex flex-col border border-[#bfc4c9]/30 bg-[#E6E0D7] rounded-none overflow-hidden">
-      <div className="flex flex-wrap items-center gap-1 p-3 border-b border-[#5A626A]/20">
+    <div className="flex flex-col border border-border/30 bg-warm rounded-none overflow-hidden">
+      <div className="flex flex-wrap items-center gap-1 p-3 border-b border-ink/20">
         {toolbarIcons.map(({ icon: Icon, label }) => (
           <button
             key={label}
             type="button"
-            className="p-2 text-[#5A626A] hover:bg-[#5A626A]/10 rounded-none transition-colors"
+            className="p-2 text-ink hover:bg-ink/10 rounded-none transition-colors"
             aria-label={label}
           >
             <Icon className="h-4 w-4" />
@@ -66,7 +66,7 @@ export function TransitionsCard() {
         ))}
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#5A626A]/15 text-[#5A626A] border border-[#5A626A] font-medium rounded-none"
+          className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink/15 text-ink border border-ink font-medium rounded-none"
           aria-label="Transitions"
         >
           <Sparkles className="h-4 w-4" />
@@ -81,10 +81,10 @@ export function TransitionsCard() {
               key={id}
               type="button"
               className={cn(
-                "inline-flex items-center gap-2 px-3 py-2 border bg-white text-[#5A626A] rounded-none text-sm font-medium transition-colors",
+                "inline-flex items-center gap-2 px-3 py-2 border bg-white text-ink rounded-none text-sm font-medium transition-colors",
                 id === "push"
-                  ? "border-[#5A626A] ring-1 ring-[#5A626A]"
-                  : "border-[#bfc4c9]/40 hover:border-[#5A626A]/50"
+                  ? "border-ink ring-1 ring-ink"
+                  : "border-border/40 hover:border-ink/50"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -93,7 +93,7 @@ export function TransitionsCard() {
           ))}
           <button
             type="button"
-            className="w-9 h-9 border border-dashed border-[#bfc4c9]/50 bg-white/50 text-[#5A626A]/50 hover:border-[#5A626A]/50 rounded-none"
+            className="w-9 h-9 border border-dashed border-border/50 bg-white/50 text-ink/50 hover:border-ink/50 rounded-none"
             aria-label="More"
           />
         </div>
@@ -107,8 +107,8 @@ export function TransitionsCard() {
                 className={cn(
                   "px-3 py-2 border text-sm font-medium rounded-none transition-colors",
                   opt === "Both"
-                    ? "bg-[#5A626A]/15 border-[#5A626A]/30 text-[#5A626A]"
-                    : "bg-white border-[#bfc4c9]/40 text-[#5A626A] hover:border-[#5A626A]/50"
+                    ? "bg-ink/15 border-ink/30 text-ink"
+                    : "bg-white border-border/40 text-ink hover:border-ink/50"
                 )}
               >
                 {opt}
@@ -123,8 +123,8 @@ export function TransitionsCard() {
                 className={cn(
                   "p-2 border rounded-none transition-colors",
                   i === 0
-                    ? "bg-[#5A626A] text-white border-[#5A626A]"
-                    : "bg-white border-[#bfc4c9]/40 text-[#5A626A] hover:border-[#5A626A]/50"
+                    ? "bg-ink text-white border-ink"
+                    : "bg-white border-border/40 text-ink hover:border-ink/50"
                 )}
                 aria-label={["Right", "Left", "Up", "Down"][i]}
               >
@@ -132,20 +132,20 @@ export function TransitionsCard() {
               </button>
             ))}
           </div>
-          <span className="text-sm text-[#5A626A]/80">Apply All Scenes</span>
+          <span className="text-sm text-ink/80">Apply All Scenes</span>
         </div>
 
-        <div className="flex flex-col gap-2 p-3 bg-white border border-[#bfc4c9]/30 rounded-none">
+        <div className="flex flex-col gap-2 p-3 bg-white border border-border/30 rounded-none">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="px-3 py-1.5 bg-[#E6E0D7] border border-[#bfc4c9]/30 text-[#5A626A] text-sm rounded-none hover:bg-[#E6E0D7]/80"
+              className="px-3 py-1.5 bg-warm border border-border/30 text-ink text-sm rounded-none hover:bg-warm/80"
             >
               Make it fast
             </button>
             <button
               type="button"
-              className="px-3 py-1.5 bg-[#E6E0D7] border border-[#bfc4c9]/30 text-[#5A626A] text-sm rounded-none hover:bg-[#E6E0D7]/80"
+              className="px-3 py-1.5 bg-warm border border-border/30 text-ink text-sm rounded-none hover:bg-warm/80"
             >
               Add a Smooth slide from top left corner to bottom right corner
             </button>
@@ -154,11 +154,11 @@ export function TransitionsCard() {
             <input
               type="text"
               placeholder="Type your prompt here..."
-              className="flex-1 min-w-0 px-3 py-2 border border-[#bfc4c9]/40 bg-[#fafafa] text-[#5A626A] placeholder:text-[#5A626A]/50 text-sm rounded-none focus:outline-none focus:border-[#5A626A]/60"
+              className="flex-1 min-w-0 px-3 py-2 border border-border/40 bg-neutral-50 text-ink placeholder:text-ink/50 text-sm rounded-none focus:outline-none focus:border-ink/60"
             />
             <button
               type="button"
-              className="p-2 bg-[#5A626A] text-white border border-[#5A626A] rounded-none hover:opacity-90 transition-opacity"
+              className="p-2 bg-ink text-white border border-ink rounded-none hover:opacity-90 transition-opacity"
               aria-label="Submit prompt"
             >
               <ArrowUp className="h-4 w-4" />

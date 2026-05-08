@@ -55,7 +55,7 @@ function UserDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-8 text-[#5A626A]">
+      <div className="p-8 text-ink">
         Loading…
       </div>
     )
@@ -64,7 +64,7 @@ function UserDetailPage() {
   if (!user) {
     return (
       <div className="p-8">
-        <p className="text-[#5A626A]">User not found.</p>
+        <p className="text-ink">User not found.</p>
         <Button variant="secondary" className="mt-4 rounded-none" onClick={() => navigate({ to: "/users" })}>
           Back to users
         </Button>
@@ -84,30 +84,30 @@ function UserDetailPage() {
           ← Users
         </Button>
       </div>
-      <div className="border border-[#5A626A]/30 rounded-none p-6 bg-[#E6E0D7]/30">
-        <h1 className="text-xl font-semibold text-[#5A626A]">{user.email}</h1>
+      <div className="border border-ink/30 rounded-none p-6 bg-warm/30">
+        <h1 className="text-xl font-semibold text-ink">{user.email}</h1>
         <dl className="mt-4 grid gap-2 sm:grid-cols-2">
           <div>
-            <dt className="text-sm text-[#5A626A]/80">Status</dt>
+            <dt className="text-sm text-ink/80">Status</dt>
             <dd><StatusBadge status={user.status} /></dd>
           </div>
           <div>
-            <dt className="text-sm text-[#5A626A]/80">Email verified</dt>
+            <dt className="text-sm text-ink/80">Email verified</dt>
             <dd>{user.is_email_verified ? "Yes" : "No"}</dd>
           </div>
           <div>
-            <dt className="text-sm text-[#5A626A]/80">2FA</dt>
+            <dt className="text-sm text-ink/80">2FA</dt>
             <dd>{user.is_two_factor_enabled ? "On" : "Off"}</dd>
           </div>
           {user.last_login_at && (
             <div>
-              <dt className="text-sm text-[#5A626A]/80">Last login</dt>
+              <dt className="text-sm text-ink/80">Last login</dt>
               <dd>{new Date(user.last_login_at).toLocaleString()}</dd>
             </div>
           )}
         </dl>
         <div className="mt-6">
-          <h2 className="text-sm font-medium text-[#5A626A] mb-2">Actions</h2>
+          <h2 className="text-sm font-medium text-ink mb-2">Actions</h2>
           <LifecycleActions
             entityId={user.id}
             currentStatus={user.status}

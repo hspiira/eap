@@ -41,7 +41,7 @@ function ServicesListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[#5A626A]">Services</h1>
+        <h1 className="text-xl font-semibold text-ink">Services</h1>
         <Link to="/services/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">Add service</Link>
       </div>
       <DataTable<Service> columns={columns} data={items} loading={loading} error={error} page={page} total={total} limit={limit} onPageChange={setPage} emptyMessage="No services yet." />

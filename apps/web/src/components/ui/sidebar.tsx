@@ -10,20 +10,20 @@ export const sidebarStyles = {
   text: "text-black",
   textMuted: "text-black/80",
   textMutedHover: "text-black/80 hover:text-black",
-  hoverBg: "hover:bg-[#f0f0f0]",
-  activeBg: "bg-[#f0f0f0]",
-  focusRing: "outline-none focus-visible:ring-1 focus-visible:ring-[#5A626A]",
+  hoverBg: "hover:bg-surface-tile",
+  activeBg: "bg-surface-tile",
+  focusRing: "outline-none focus-visible:ring-1 focus-visible:ring-ink",
   itemBase: "flex w-full items-center gap-1.5 px-2 py-1.5 text-sm font-medium transition-colors rounded-none",
   itemSub: "flex w-full items-center gap-1.5 px-2 py-1 text-sm transition-colors rounded-none",
   icon: "h-3.5 w-3.5 shrink-0",
   iconMuted: "opacity-70",
-  contextIconBox: "flex h-6 w-6 shrink-0 items-center justify-center bg-[#D0B5B3] text-white text-sm font-bold",
-  groupAction: "p-0.5 hover:bg-[#f0f0f0] rounded-none",
-  border: "border-[#5A626A]/15",
-  borderedRow: "border-t border-[#5A626A]/20 rounded-none bg-white h-10 flex items-center",
-  borderedRowBottom: "border-b border-[#5A626A]/20",
-  searchContainer: "rounded-none bg-[#f5f5f5] px-2 py-1.5",
-  searchShortcut: "px-1.5 py-0.5 bg-[#5A626A]/15 rounded-none",
+  contextIconBox: "flex h-6 w-6 shrink-0 items-center justify-center bg-danger-soft text-white text-sm font-bold",
+  groupAction: "p-0.5 hover:bg-surface-tile rounded-none",
+  border: "border-ink/15",
+  borderedRow: "border-t border-ink/20 rounded-none bg-white h-10 flex items-center",
+  borderedRowBottom: "border-b border-ink/20",
+  searchContainer: "rounded-none bg-neutral-50 px-2 py-1.5",
+  searchShortcut: "px-1.5 py-0.5 bg-ink/15 rounded-none",
   iconLg: "h-5 w-5 shrink-0",
   bg: "bg-white",
 } as const
@@ -67,7 +67,7 @@ const Sidebar = React.forwardRef<
     ref={ref}
     data-sidebar="sidebar"
     className={cn(
-      "col-span-3 flex min-h-0 w-full min-w-0 flex-col overflow-hidden border-l border-r border-[#bfc4c9]/30 rounded-none",
+      "col-span-3 flex min-h-0 w-full min-w-0 flex-col overflow-hidden border-l border-r border-border/30 rounded-none",
       sidebarStyles.border,
       sidebarStyles.bg,
       sidebarStyles.text,
@@ -243,7 +243,7 @@ const SidebarInset = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <main
     ref={ref}
-    className={cn("col-span-9 flex h-full min-h-0 flex-col overflow-hidden min-w-0 border-t border-r border-[#bfc4c9]/30 bg-white", className)}
+    className={cn("col-span-9 flex h-full min-h-0 flex-col overflow-hidden min-w-0 border-t border-r border-border/30 bg-white", className)}
     {...props}
   />
 ))

@@ -34,7 +34,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-[#5A626A]/30 bg-white p-0 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-none",
+        "fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-ink/30 bg-white p-0 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-none",
         className
       )}
       onInteractOutside={(e) => {
@@ -59,7 +59,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-left px-6 py-4 border-b border-[#5A626A]/20 bg-[#fafafa]",
+      "flex flex-col space-y-2 text-left px-6 py-4 border-b border-ink/20 bg-neutral-50",
       className
     )}
     {...props}
@@ -73,7 +73,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-6 py-4 border-t border-[#5A626A]/20 bg-[#fafafa]",
+      "flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-6 py-4 border-t border-ink/20 bg-neutral-50",
       className
     )}
     {...props}
@@ -87,7 +87,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-xl font-semibold text-[#5A626A]", className)}
+    className={cn("text-xl font-semibold text-ink", className)}
     {...props}
   />
 ))
@@ -99,7 +99,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-[#5A626A]/70", className)}
+    className={cn("text-sm text-ink/70", className)}
     {...props}
   />
 ))
@@ -112,7 +112,7 @@ function DialogCloseButton({
   return (
     <DialogPrimitive.Close
       className={cn(
-        "absolute right-4 top-4 rounded-none border border-[#5A626A]/30 p-1.5 text-[#5A626A]/70 hover:bg-[#5A626A]/10 hover:text-[#5A626A] focus:outline-none focus:ring-2 focus:ring-[#5A626A]/20",
+        "absolute right-4 top-4 rounded-none border border-ink/30 p-1.5 text-ink/70 hover:bg-ink/10 hover:text-ink focus:outline-none focus:ring-2 focus:ring-ink/20",
         className
       )}
       aria-label="Close"

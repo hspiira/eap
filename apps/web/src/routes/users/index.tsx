@@ -60,7 +60,7 @@ function UsersListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[#5A626A]">Users</h1>
+        <h1 className="text-xl font-semibold text-ink">Users</h1>
         <Link
           to="/users/new"
           className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark"

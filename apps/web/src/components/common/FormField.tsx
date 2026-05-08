@@ -24,11 +24,11 @@ export function FormField({
     <div className={cn("space-y-1.5", className)}>
       <Label htmlFor={htmlFor}>
         {label}
-        {required && <span className="text-[#5A626A]/80 ml-0.5">*</span>}
+        {required && <span className="text-ink/80 ml-0.5">*</span>}
       </Label>
       {children}
       {error && (
-        <p className="text-sm text-[#5A626A]" role="alert">
+        <p className="text-sm text-ink" role="alert">
           {error}
         </p>
       )}

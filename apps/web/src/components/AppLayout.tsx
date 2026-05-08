@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 export function AppLayout({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden border border-t border-l border-r border-[#bfc4c9]/30 bg-white pt-6 px-6">
+    <div className="flex h-screen flex-col overflow-hidden border border-t border-l border-r border-border/30 bg-white pt-6 px-6">
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex h-full flex-col">

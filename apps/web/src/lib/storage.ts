@@ -47,6 +47,10 @@ export interface AuthRecord {
   refresh_token: string | null
   user_id: string | null
   email: string | null
+  /** Epoch ms when the access token expires. Null when unknown (cookie auth). */
+  token_expires_at: number | null
+  /** Optional CSRF token, used when BE sets HttpOnly auth cookies. */
+  csrf_token: string | null
 }
 
 const EMPTY_AUTH: AuthRecord = {
@@ -54,6 +58,8 @@ const EMPTY_AUTH: AuthRecord = {
   refresh_token: null,
   user_id: null,
   email: null,
+  token_expires_at: null,
+  csrf_token: null,
 }
 
 export const authStorage = {

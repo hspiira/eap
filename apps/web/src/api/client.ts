@@ -49,13 +49,31 @@ class ApiClient {
   }
 
   /**
-   * Set authentication token
+   * Set authentication token. Optionally pass `expiresInSeconds` to record when the token
+   * expires; AppBootstrap uses that to schedule a silent refresh.
    */
-  setToken(token: string | null): void {
+  setToken(token: string | null, expiresInSeconds?: number): void {
     this.token = token
     if (!useCookies()) {
-      authStorage.patch({ token })
+      const token_expires_at =
+        token && typeof expiresInSeconds === 'number'
+          ? Date.now() + expiresInSeconds * 1000
+          : null
+      authStorage.patch({ token, token_expires_at })
     }
+  }
+
+  /** Epoch ms when the current access token expires, or null if unknown. */
+  getTokenExpiresAt(): number | null {
+    if (useCookies()) return null
+    return authStorage.read().token_expires_at
+  }
+
+  setCsrfToken(token: string | null): void {
+    authStorage.patch({ csrf_token: token })
+  }
+  getCsrfToken(): string | null {
+    return authStorage.read().csrf_token
   }
 
   getToken(): string | null {
@@ -81,6 +99,14 @@ class ApiClient {
     return this.refreshToken
   }
 
+  /**
+   * Public proactive refresh. Same wire as the reactive 401 path but exposed so a scheduler
+   * can rotate the access token before it expires.
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    return this.tryRefreshToken()
+  }
+
   private async tryRefreshToken(): Promise<boolean> {
     if (this.refreshPromise) return this.refreshPromise
 
@@ -94,6 +120,13 @@ class ApiClient {
             credentials: 'include',
           })
           if (!response.ok) return false
+          // BE may rotate the CSRF token on refresh; honor it if returned.
+          try {
+            const data = await response.clone().json()
+            if (data && typeof data.csrf_token === 'string') this.setCsrfToken(data.csrf_token)
+          } catch {
+            // body may be empty — fine
+          }
           return true
         } catch {
           return false
@@ -115,7 +148,9 @@ class ApiClient {
         if (!response.ok) return false
 
         const data = await response.json()
-        this.setToken(data.access_token)
+        const expiresIn =
+          typeof data.expires_in === 'number' ? data.expires_in : undefined
+        this.setToken(data.access_token, expiresIn)
         this.setRefreshToken(data.refresh_token)
         return true
       } catch {
@@ -238,6 +273,9 @@ class ApiClient {
         if (token) {
           headers['Authorization'] = `Bearer ${token}`
         }
+      } else {
+        const csrf = this.getCsrfToken()
+        if (csrf) headers['X-CSRF-Token'] = csrf
       }
       const tenantId = this.getTenantId()
       const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
@@ -259,6 +297,9 @@ class ApiClient {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
+    } else {
+      const csrf = this.getCsrfToken()
+      if (csrf) headers['X-CSRF-Token'] = csrf
     }
     const tenantId = this.getTenantId()
     const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
@@ -376,8 +417,24 @@ class ApiClient {
     const message = this.normalizeErrorMessageBody(body, response)
     const errorCode = this.normalizeErrorCodeBody(body, response.status)
     const fieldErrors = this.normalizeFieldErrorsBody(body)
+    const data = this.normalizeErrorDataBody(body)
 
-    return new ApiError(message, errorCode, response.status, fieldErrors)
+    return new ApiError(message, errorCode, response.status, fieldErrors, data)
+  }
+
+  /**
+   * Pass through server-provided extra fields (e.g. `retry_after_seconds` for lockout)
+   * minus the ones we already extract into typed fields.
+   */
+  private normalizeErrorDataBody(body: unknown): Record<string, unknown> | undefined {
+    if (!body || typeof body !== 'object') return undefined
+    const b = body as Record<string, unknown>
+    const reserved = new Set(['error', 'message', 'detail', 'details', 'timestamp', 'path', 'request_id'])
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(b)) {
+      if (!reserved.has(k)) out[k] = v
+    }
+    return Object.keys(out).length > 0 ? out : undefined
   }
 
   private normalizeErrorMessageBody(body: unknown, response: Response): string {

@@ -28,30 +28,30 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
   return (
     <div
       className={cn(
-        "flex flex-col border border-[#5A626A]/20 bg-white p-4 rounded-none",
+        "flex flex-col border border-ink/20 bg-white p-4 rounded-none",
         className
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[#5A626A]">Today's to-do</h3>
-        <span className="text-xs text-[#5A626A]/70">View all</span>
+        <h3 className="text-sm font-semibold text-ink">Today's to-do</h3>
+        <span className="text-xs text-ink/70">View all</span>
       </div>
-      <div className="mb-3 flex items-center justify-between rounded-none border border-[#5A626A]/30 bg-[#fafafa] px-2 py-1">
-        <button type="button" className="p-1 text-[#5A626A]/70 hover:bg-[#5A626A]/10" aria-label="Previous day">
+      <div className="mb-3 flex items-center justify-between rounded-none border border-ink/30 bg-neutral-50 px-2 py-1">
+        <button type="button" className="p-1 text-ink/70 hover:bg-ink/10" aria-label="Previous day">
           ←
         </button>
-        <span className="text-xs text-[#5A626A]">{formatTodayLabel()}</span>
-        <button type="button" className="p-1 text-[#5A626A]/70 hover:bg-[#5A626A]/10" aria-label="Next day">
+        <span className="text-xs text-ink">{formatTodayLabel()}</span>
+        <button type="button" className="p-1 text-ink/70 hover:bg-ink/10" aria-label="Next day">
           →
         </button>
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-[#5A626A]/80">Nothing scheduled for today.</p>
+        <p className="text-sm text-ink/80">Nothing scheduled for today.</p>
       ) : (
         <ul className="space-y-2">
           {items.map((item) => (
-            <li key={item.id} className="flex gap-2 text-sm text-[#5A626A]">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-none bg-[#5A626A]" />
+            <li key={item.id} className="flex gap-2 text-sm text-ink">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-none bg-ink" />
               <span className="min-w-0 flex-1">
                 {item.link ? (
                   <a
@@ -67,7 +67,7 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
               {item.link && item.linkLabel && (
                 <a
                   href={item.link}
-                  className="shrink-0 text-xs text-[#5A626A]/70 hover:text-natural"
+                  className="shrink-0 text-xs text-ink/70 hover:text-natural"
                 >
                   {item.linkLabel}
                 </a>

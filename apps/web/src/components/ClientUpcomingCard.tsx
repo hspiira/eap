@@ -22,14 +22,14 @@ export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps
     return (
       <div
         className={cn(
-          "flex flex-col border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden",
+          "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
           className
         )}
       >
-        <div className="border-b border-[#5A626A]/20 px-4 py-3 bg-[#E6E0D7]/20">
-          <h3 className="text-sm font-semibold text-[#5A626A]">Upcoming</h3>
+        <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
+          <h3 className="text-sm font-semibold text-ink">Upcoming</h3>
         </div>
-        <div className="px-4 py-4 text-sm text-[#5A626A]/80">No upcoming events or deadlines.</div>
+        <div className="px-4 py-4 text-sm text-ink/80">No upcoming events or deadlines.</div>
       </div>
     )
   }
@@ -37,20 +37,20 @@ export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps
   return (
     <div
       className={cn(
-        "flex flex-col border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden",
+        "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
         className
       )}
     >
-      <div className="border-b border-[#5A626A]/20 px-4 py-3 bg-[#E6E0D7]/20">
-        <h3 className="text-sm font-semibold text-[#5A626A]">Upcoming</h3>
+      <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
+        <h3 className="text-sm font-semibold text-ink">Upcoming</h3>
       </div>
-      <div className="flex flex-col divide-y divide-[#5A626A]/15 max-h-[280px] overflow-y-auto">
+      <div className="flex flex-col divide-y divide-ink/15 max-h-[280px] overflow-y-auto">
         {items.map((item) => (
           <div key={item.id} className="px-4 py-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1 space-y-1">
-                <h4 className="text-sm font-medium text-[#5A626A]">{item.title}</h4>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#5A626A]/70">
+                <h4 className="text-sm font-medium text-ink">{item.title}</h4>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/70">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 shrink-0" />
                     {item.date}
@@ -63,7 +63,7 @@ export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps
                   )}
                 </div>
                 {item.context && (
-                  <div className="flex items-center gap-1 text-xs text-[#5A626A]/70">
+                  <div className="flex items-center gap-1 text-xs text-ink/70">
                     <MapPin className="h-3 w-3 shrink-0" />
                     <span>{item.context}</span>
                   </div>

@@ -75,7 +75,7 @@ function TagEditPage() {
     return (
       <TagsPageHeader breadcrumb="Tags > Edit">
         <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
-          <p className="text-[#5A626A]">Loading…</p>
+          <p className="text-ink">Loading…</p>
         </div>
       </TagsPageHeader>
     )
@@ -85,10 +85,10 @@ function TagEditPage() {
     <TagsPageHeader breadcrumb="Tags > Edit">
       <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
         <div className="max-w-md">
-          <h1 className="text-xl font-semibold text-[#5A626A]">Edit tag</h1>
+          <h1 className="text-xl font-semibold text-ink">Edit tag</h1>
           <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
             {(serverError || loadError) && (
-              <p className="text-sm text-[#5A626A]" role="alert">
+              <p className="text-sm text-ink" role="alert">
                 {serverError ?? loadError}
               </p>
             )}
@@ -115,7 +115,7 @@ function TagEditPage() {
                 />
                 {color && hexColorRegex.test(color) && (
                   <span
-                    className="h-8 w-8 shrink-0 border border-[#5A626A]/30"
+                    className="h-8 w-8 shrink-0 border border-ink/30"
                     style={{ backgroundColor: color }}
                   />
                 )}

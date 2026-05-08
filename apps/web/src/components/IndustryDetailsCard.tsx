@@ -57,14 +57,14 @@ export function IndustryDetailsCard({
   }
 
   return (
-    <div className="border border-[#bfc4c9]/25 bg-white p-4 flex flex-col min-h-0">
+    <div className="border border-border/25 bg-white p-4 flex flex-col min-h-0">
       <div className="mb-3 flex items-center justify-between shrink-0">
-        <h3 className="text-sm font-semibold text-[#5A626A] truncate min-w-0">
+        <h3 className="text-sm font-semibold text-ink truncate min-w-0">
           {industry.name || "Industry"}
         </h3>
         <button
           type="button"
-          className="p-1 text-[#5A626A]/70 hover:text-[#5A626A] shrink-0"
+          className="p-1 text-ink/70 hover:text-ink shrink-0"
           aria-label="Close"
           onClick={onClose}
         >
@@ -76,7 +76,7 @@ export function IndustryDetailsCard({
         {isEditing ? (
           <div className="space-y-2">
             <div>
-              <label className="text-xs font-medium text-[#5A626A]/80 block mb-1">Name</label>
+              <label className="text-xs font-medium text-ink/80 block mb-1">Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -84,7 +84,7 @@ export function IndustryDetailsCard({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-[#5A626A]/80 block mb-1">Code</label>
+              <label className="text-xs font-medium text-ink/80 block mb-1">Code</label>
               <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -93,7 +93,7 @@ export function IndustryDetailsCard({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-[#5A626A]/80 block mb-1">Level</label>
+              <label className="text-xs font-medium text-ink/80 block mb-1">Level</label>
               <Input
                 type="number"
                 min={0}
@@ -116,16 +116,16 @@ export function IndustryDetailsCard({
           <div className="space-y-2">
             <dl className="grid gap-1.5 text-sm">
               <div>
-                <dt className="text-[#5A626A]/70">Name</dt>
-                <dd className="text-[#5A626A] font-medium">{industry.name}</dd>
+                <dt className="text-ink/70">Name</dt>
+                <dd className="text-ink font-medium">{industry.name}</dd>
               </div>
               <div>
-                <dt className="text-[#5A626A]/70">Code</dt>
-                <dd className="text-[#5A626A]">{industry.code ?? "—"}</dd>
+                <dt className="text-ink/70">Code</dt>
+                <dd className="text-ink">{industry.code ?? "—"}</dd>
               </div>
               <div>
-                <dt className="text-[#5A626A]/70">Level</dt>
-                <dd className="text-[#5A626A]">{industry.level != null ? industry.level : "—"}</dd>
+                <dt className="text-ink/70">Level</dt>
+                <dd className="text-ink">{industry.level != null ? industry.level : "—"}</dd>
               </div>
             </dl>
             <Button
@@ -140,37 +140,37 @@ export function IndustryDetailsCard({
           </div>
         )}
 
-        <div className="border-t border-[#bfc4c9]/25 pt-3">
-          <h4 className="text-xs font-semibold text-[#5A626A] mb-2">Hierarchy</h4>
+        <div className="border-t border-border/25 pt-3">
+          <h4 className="text-xs font-semibold text-ink mb-2">Hierarchy</h4>
           <ul className="space-y-1.5">
             {parent && (
               <li className="flex items-center gap-2 text-sm">
-                <Building2 className="h-3.5 w-3.5 text-[#5A626A]/60 shrink-0" />
-                <span className="text-[#5A626A]/80">Parent: {parent.name}</span>
+                <Building2 className="h-3.5 w-3.5 text-ink/60 shrink-0" />
+                <span className="text-ink/80">Parent: {parent.name}</span>
                 {parent.code && (
-                  <span className="text-[#5A626A]/50 text-xs">({parent.code})</span>
+                  <span className="text-ink/50 text-xs">({parent.code})</span>
                 )}
               </li>
             )}
             <li className="flex items-center gap-2 text-sm">
               <ChevronRight className="h-3.5 w-3.5 text-natural shrink-0" />
-              <span className="text-[#5A626A] font-medium">{industry.name}</span>
+              <span className="text-ink font-medium">{industry.name}</span>
               {industry.code && (
-                <span className="text-[#5A626A]/50 text-xs">({industry.code})</span>
+                <span className="text-ink/50 text-xs">({industry.code})</span>
               )}
             </li>
             {children.length > 0 &&
               children.map((child) => (
                 <li key={child.id} className="flex items-center gap-2 pl-4 text-sm">
-                  <Building2 className="h-3.5 w-3.5 text-[#5A626A]/60 shrink-0" />
-                  <span className="text-[#5A626A]/90">{child.name}</span>
+                  <Building2 className="h-3.5 w-3.5 text-ink/60 shrink-0" />
+                  <span className="text-ink/90">{child.name}</span>
                   {child.code && (
-                    <span className="text-[#5A626A]/50 text-xs">({child.code})</span>
+                    <span className="text-ink/50 text-xs">({child.code})</span>
                   )}
                 </li>
               ))}
             {!parent && children.length === 0 && (
-              <li className="text-xs text-[#5A626A]/60">No parent or children</li>
+              <li className="text-xs text-ink/60">No parent or children</li>
             )}
           </ul>
         </div>

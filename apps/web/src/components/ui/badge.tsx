@@ -12,9 +12,9 @@ const badgeVariants = cva(
         default:
           "border-natural bg-natural text-white",
         secondary:
-          "border-[#5A626A]/30 bg-[#f0f0f0] text-[#5A626A]",
+          "border-ink/30 bg-surface-tile text-ink",
         outline:
-          "border-[#5A626A]/50 text-[#5A626A] bg-transparent",
+          "border-ink/50 text-ink bg-transparent",
       },
       size: {
         sm: "px-1.5 py-0 text-xs",

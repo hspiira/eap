@@ -108,35 +108,35 @@ function ClientsListPage() {
           </div>
         ) : (
           <>
-            <div className="flex flex-nowrap items-center gap-2 border-b border-[#5A626A]/20 bg-white px-3 py-2 shrink-0">
+            <div className="flex flex-nowrap items-center gap-2 border-b border-ink/20 bg-white px-3 py-2 shrink-0">
               <div className="relative flex-1 min-w-0 max-w-md">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A626A]/70" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/70" />
                 <Input
                   placeholder="Search clients..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="rounded-none h-9 pl-8 pr-3 border-[#5A626A]/30 bg-white text-[#5A626A] placeholder:text-[#5A626A]/60"
+                  className="rounded-none h-9 pl-8 pr-3 border-ink/30 bg-white text-ink placeholder:text-ink/60"
                 />
               </div>
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-[#5A626A]/30 text-[#5A626A] bg-white hover:bg-[#E6E0D7]/50"
+                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
               >
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="rounded-none h-9 w-[180px] gap-1.5 border-[#5A626A]/30 bg-white text-[#5A626A] [&>svg]:text-[#5A626A]">
+                <SelectTrigger className="rounded-none h-9 w-[180px] gap-1.5 border-ink/30 bg-white text-ink [&>svg]:text-ink">
                   <Calendar className="h-4 w-4 shrink-0" />
                   <SelectValue placeholder="Last 12 hours" />
                 </SelectTrigger>
-                <SelectContent className="rounded-none border-[#5A626A]/30 bg-white">
+                <SelectContent className="rounded-none border-ink/30 bg-white">
                   {TIME_RANGE_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
-                      className="rounded-none focus:bg-[#E6E0D7]/50 focus:text-[#5A626A]"
+                      className="rounded-none focus:bg-warm/50 focus:text-ink"
                     >
                       {opt.label}
                     </SelectItem>
@@ -146,7 +146,7 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-[#5A626A]/30 text-[#5A626A] bg-white hover:bg-[#E6E0D7]/50"
+                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
               >
                 <ListFilter className="h-4 w-4" />
                 Queries
@@ -155,7 +155,7 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-[#5A626A]/30 text-[#5A626A] bg-white hover:bg-[#E6E0D7]/50"
+                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
                 onClick={() => refetch?.()}
               >
                 <RotateCw className="h-4 w-4" />
@@ -164,7 +164,7 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-[#5A626A]/30 text-[#5A626A] bg-[#E6E0D7]/50 hover:bg-[#E0DAD2]"
+                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-warm/50 hover:bg-warm-dark"
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -197,12 +197,12 @@ function ClientsListPage() {
 
             <div className="flex-1 min-h-0 overflow-auto p-4">
               {error ? (
-                <div className="rounded-none border border-[#5A626A]/20 bg-white p-6 text-center">
-                  <p className="text-[#5A626A]">{error}</p>
+                <div className="rounded-none border border-ink/20 bg-white p-6 text-center">
+                  <p className="text-ink">{error}</p>
                 </div>
               ) : items.length === 0 ? (
-                <div className="rounded-none border border-[#5A626A]/20 bg-white p-8 text-center">
-                  <p className="text-[#5A626A]">
+                <div className="rounded-none border border-ink/20 bg-white p-8 text-center">
+                  <p className="text-ink">
                     {activeSearch ? "No clients match your search." : "No clients yet."}
                   </p>
                   <Button
@@ -215,10 +215,10 @@ function ClientsListPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-none border border-[#5A626A]/20 bg-white overflow-hidden">
+                  <div className="rounded-none border border-ink/20 bg-white overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-[#5A626A]/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-[#5A626A] [&>th]:bg-[#E6E0D7]/30">
+                        <TableRow className="border-ink/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-ink [&>th]:bg-warm/30">
                           <TableHead>Name</TableHead>
                           <TableHead>Code</TableHead>
                           <TableHead>Status</TableHead>
@@ -230,13 +230,13 @@ function ClientsListPage() {
                         {items.map((row) => (
                           <TableRow
                             key={row.id}
-                            className="border-[#5A626A]/10 hover:bg-[#E6E0D7]/20 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm [&>td]:text-[#5A626A]"
+                            className="border-ink/10 hover:bg-warm/20 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm [&>td]:text-ink"
                           >
                             <TableCell>
                               <Link
                                 to="/clients/$clientId"
                                 params={{ clientId: row.id }}
-                                className="text-[#5A626A] hover:text-natural hover:underline"
+                                className="text-ink hover:text-natural hover:underline"
                               >
                                 {row.name}
                               </Link>
@@ -252,7 +252,7 @@ function ClientsListPage() {
                               <Link
                                 to="/clients/$clientId"
                                 params={{ clientId: row.id }}
-                                className="inline-flex items-center justify-center text-[#5A626A] hover:text-natural"
+                                className="inline-flex items-center justify-center text-ink hover:text-natural"
                                 aria-label="View client"
                               >
                                 <ExternalLink className="h-4 w-4" />

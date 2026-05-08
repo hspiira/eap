@@ -9,7 +9,7 @@ export const Route = createFileRoute("/tags")({
 
 function TagsLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
-  if (isLoading) return <div className="p-8 text-[#5A626A]">Loading…</div>
+  if (isLoading) return <div className="p-8 text-ink">Loading…</div>
   if (!isAuthenticated) return null
   return (
     <AppLayout>

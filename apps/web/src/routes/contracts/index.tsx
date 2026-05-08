@@ -73,14 +73,14 @@ function ContractsListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-[#5A626A]">Contracts</h1>
+        <h1 className="text-xl font-semibold text-ink">Contracts</h1>
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A626A]/70" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/70" />
           <Input
             placeholder="Search contracts..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-none h-9 pl-8 pr-3 border-[#5A626A]/30"
+            className="rounded-none h-9 pl-8 pr-3 border-ink/30"
           />
         </div>
         <Link to="/contracts/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">

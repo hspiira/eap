@@ -9,25 +9,25 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
-const skeletonClass = "rounded-none bg-[#5A626A]/15"
+const skeletonClass = "rounded-none bg-ink/15"
 
 export function IndustriesListSkeleton() {
   const rows = 8
 
   return (
     <div className="space-y-2">
-      <div className="rounded-none border border-[#5A626A]/30">
+      <div className="rounded-none border border-ink/30">
         <Table>
           <TableHeader>
-            <TableRow className="border-[#5A626A]/20 hover:bg-transparent">
-              <TableHead className="text-[#5A626A]">Name</TableHead>
-              <TableHead className="text-[#5A626A]">Code</TableHead>
-              <TableHead className="text-[#5A626A]">Level</TableHead>
+            <TableRow className="border-ink/20 hover:bg-transparent">
+              <TableHead className="text-ink">Name</TableHead>
+              <TableHead className="text-ink">Code</TableHead>
+              <TableHead className="text-ink">Level</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: rows }).map((_, i) => (
-              <TableRow key={i} className="border-[#5A626A]/15">
+              <TableRow key={i} className="border-ink/15">
                 <TableCell className="py-1.5">
                   <Skeleton className={cn(skeletonClass, "h-3.5 w-full max-w-[180px]")} />
                 </TableCell>

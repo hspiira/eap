@@ -9,10 +9,10 @@ const ACTIVITIES = [
   {
     id: "1",
     icon: BarChart3,
-    iconColor: "text-[#7ED321]",
+    iconColor: "text-accent-green",
     title: "Weekly Summary",
     badge: "Personal Record!",
-    badgeClass: "bg-[#8B48F7] text-white",
+    badgeClass: "bg-accent-purple text-white",
     description: "You completed 5 workouts this week.",
     time: "Today",
     actions: null,
@@ -20,7 +20,7 @@ const ACTIVITIES = [
   {
     id: "2",
     icon: User,
-    iconColor: "text-[#8B48F7]",
+    iconColor: "text-accent-purple",
     title: "Challenge Invitation",
     badge: null,
     badgeClass: "",
@@ -31,14 +31,14 @@ const ACTIVITIES = [
         <Button
           variant="secondary"
           size="sm"
-          className="gap-1.5 border-[#E0E0E0] bg-white text-[#4A4A4A] hover:bg-[#F8F8FA]"
+          className="gap-1.5 border-neutral-200 bg-white text-neutral-700 hover:bg-surface-soft"
         >
           <X className="h-3.5 w-3.5" />
           Decline
         </Button>
         <Button
           size="sm"
-          className="gap-1.5 bg-[#8B48F7] text-white hover:bg-[#7A3CE6]"
+          className="gap-1.5 bg-accent-purple text-white hover:bg-accent-purple-dark"
         >
           <Check className="h-3.5 w-3.5" />
           Join
@@ -49,10 +49,10 @@ const ACTIVITIES = [
   {
     id: "3",
     icon: BarChart3,
-    iconColor: "text-[#4A4A4A]",
+    iconColor: "text-neutral-700",
     title: "FitTracker Pro",
     badge: "5K Run",
-    badgeClass: "bg-[#FF77A9] text-white",
+    badgeClass: "bg-accent-pink text-white",
     description: "Your running goal was achieved.",
     time: "Yesterday",
     actions: null,
@@ -60,7 +60,7 @@ const ACTIVITIES = [
   {
     id: "4",
     icon: Heart,
-    iconColor: "text-[#E00000]",
+    iconColor: "text-accent-error-deep",
     title: "Sarah Fitness",
     badge: null,
     badgeClass: "",
@@ -72,23 +72,23 @@ const ACTIVITIES = [
 
 export function ActivityFeedCard() {
   return (
-    <div className="border border-[#E0E0E0] bg-white rounded-none">
-      <div className="flex items-center justify-between border-b border-[#EEEEEE] px-4 py-3">
+    <div className="border border-neutral-200 bg-white rounded-none">
+      <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[#4A4A4A]">Activity Feed</h2>
-          <span className="flex h-5 min-w-[20px] items-center justify-center bg-[#E8E8E8] px-1.5 text-xs font-medium text-[#4A4A4A] rounded-none">
+          <h2 className="text-sm font-semibold text-neutral-700">Activity Feed</h2>
+          <span className="flex h-5 min-w-[20px] items-center justify-center bg-surface-chip px-1.5 text-xs font-medium text-neutral-700 rounded-none">
             {ACTIVITIES.length}
           </span>
         </div>
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center text-[#999999] hover:bg-[#F8F8FA] rounded-none"
+          className="flex h-8 w-8 items-center justify-center text-neutral-400 hover:bg-surface-soft rounded-none"
           aria-label="Activity feed settings"
         >
           <Settings className="h-4 w-4" />
         </button>
       </div>
-      <div className="flex gap-0 border-b border-[#EEEEEE]">
+      <div className="flex gap-0 border-b border-neutral-100">
         {TABS.map((tab, i) => (
           <button
             key={tab}
@@ -96,23 +96,23 @@ export function ActivityFeedCard() {
             className={cn(
               "px-4 py-2.5 text-sm font-medium rounded-none",
               i === 0
-                ? "bg-[#8B48F7] text-white"
-                : "text-[#4A4A4A] hover:bg-[#F8F8FA]"
+                ? "bg-accent-purple text-white"
+                : "text-neutral-700 hover:bg-surface-soft"
             )}
           >
             {tab}
           </button>
         ))}
       </div>
-      <div className="divide-y divide-[#EEEEEE]">
+      <div className="divide-y divide-neutral-100">
         {ACTIVITIES.map((a) => (
           <div key={a.id} className="flex gap-3 px-4 py-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E0E0E0] bg-[#F0F0F0]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-surface-tile">
               <a.icon className={cn("h-4 w-4", a.iconColor)} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-[#4A4A4A]">{a.title}</span>
+                <span className="text-sm font-medium text-neutral-700">{a.title}</span>
                 {a.badge && (
                   <span
                     className={cn(
@@ -123,9 +123,9 @@ export function ActivityFeedCard() {
                     {a.badge}
                   </span>
                 )}
-                <span className="ml-auto shrink-0 text-xs text-[#999999]">{a.time}</span>
+                <span className="ml-auto shrink-0 text-xs text-neutral-400">{a.time}</span>
               </div>
-              <p className="mt-0.5 text-sm text-[#4A4A4A]/90">{a.description}</p>
+              <p className="mt-0.5 text-sm text-neutral-700/90">{a.description}</p>
               {a.actions && (
                 <div className="mt-2 flex gap-2">{a.actions}</div>
               )}

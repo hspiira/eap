@@ -163,7 +163,7 @@ function SignupPage() {
             <button
               type="button"
               onClick={handleCopySetPasswordLink}
-              className="px-4 py-2 bg-[#5A626A] hover:bg-[#4a5260] text-white rounded-none transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-ink hover:bg-surface-slate-pressed text-white rounded-none transition-colors flex items-center gap-2"
               title={copiedSetPasswordLink ? 'Copied!' : 'Copy link'}
             >
               <Copy className="w-4 h-4" />
@@ -183,7 +183,7 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-[#D0B5B3] hover:bg-[#c0a5a3] text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-danger-soft hover:bg-danger-soft-dark text-white font-semibold rounded-none transition-colors"
         >
           Go to Sign in
         </button>
@@ -262,7 +262,7 @@ function SignupPage() {
 
       <form onSubmit={submit} className="space-y-4" noValidate>
         {serverError && (
-          <div className="p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
+          <div className="p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm">
             {serverError}
           </div>
         )}
@@ -279,7 +279,7 @@ function SignupPage() {
             {...register('name')}
           />
           {formState.errors.name && (
-            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.name.message as string}</p>
+            <p className="mt-1 text-sm text-danger-soft">{formState.errors.name.message as string}</p>
           )}
         </div>
 
@@ -312,7 +312,7 @@ function SignupPage() {
             )}
           </div>
           {formState.errors.code && (
-            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.code.message as string}</p>
+            <p className="mt-1 text-sm text-danger-soft">{formState.errors.code.message as string}</p>
           )}
         </div>
 

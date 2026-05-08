@@ -13,9 +13,9 @@ const buttonVariants = cva(
         default:
           "bg-natural text-white hover:bg-natural-dark focus-visible:ring-natural",
         secondary:
-          "bg-white text-[#5A626A] border border-[#5A626A]/30 hover:bg-[#f0f0f0] focus-visible:ring-[#5A626A]",
+          "bg-white text-ink border border-ink/30 hover:bg-surface-tile focus-visible:ring-ink",
         ghost:
-          "text-[#5A626A] hover:bg-[#f0f0f0] focus-visible:ring-[#5A626A]",
+          "text-ink hover:bg-surface-tile focus-visible:ring-ink",
       },
       size: {
         default: "h-9 px-4 py-2 text-sm",

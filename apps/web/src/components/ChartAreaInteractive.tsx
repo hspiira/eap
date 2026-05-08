@@ -113,11 +113,11 @@ const chartConfig = {
   },
   desktop: {
     label: "Desktop",
-    color: "#5A626A",
+    color: "var(--palette-ink)",
   },
   mobile: {
     label: "Mobile",
-    color: "#103a10",
+    color: "var(--palette-natural)",
   },
 } satisfies ChartConfig
 
@@ -140,15 +140,15 @@ export function ChartAreaInteractive() {
 
   return (
     <div className="w-full">
-      <div className="mb-3 flex items-center justify-between border-b border-[#bfc4c9]/20 pb-3">
+      <div className="mb-3 flex items-center justify-between border-b border-border/20 pb-3">
         <div>
-          <p className="text-sm font-semibold text-[#5A626A]">Area Chart - Interactive</p>
-          <p className="text-xs text-[#5A626A]/70">Showing total visitors for the selected period</p>
+          <p className="text-sm font-semibold text-ink">Area Chart - Interactive</p>
+          <p className="text-xs text-ink/70">Showing total visitors for the selected period</p>
         </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="rounded-none border border-[#bfc4c9]/40 bg-[#fafafa] px-3 py-2 text-xs text-[#5A626A]"
+          className="rounded-none border border-border/40 bg-neutral-50 px-3 py-2 text-xs text-ink"
           aria-label="Select time range"
         >
           <option value="90d">Last 3 months</option>
@@ -187,7 +187,7 @@ export function ChartAreaInteractive() {
               />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} strokeOpacity={0.08} stroke="#5A626A" />
+          <CartesianGrid vertical={false} strokeOpacity={0.08} stroke="var(--palette-ink)" />
           <XAxis
             dataKey="date"
             tickLine={false}

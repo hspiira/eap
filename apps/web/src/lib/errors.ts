@@ -43,6 +43,26 @@ export function isTimeoutError(err: unknown): err is ApiError {
   return isApiError(err) && err.code === 'TIMEOUT_ERROR'
 }
 
+export function isAccountLocked(err: unknown): err is ApiError {
+  return isApiError(err) && err.code === 'ACCOUNT_LOCKED'
+}
+
+/**
+ * Seconds remaining on an account lockout, or `null` if the server didn't say.
+ * Reads `data.retry_after_seconds` (number) or `data.locked_until` (ISO datetime).
+ */
+export function getLockoutSecondsRemaining(err: unknown): number | null {
+  if (!isAccountLocked(err) || !err.data) return null
+  const retry = err.data.retry_after_seconds
+  if (typeof retry === 'number' && retry > 0) return Math.ceil(retry)
+  const lockedUntil = err.data.locked_until
+  if (typeof lockedUntil === 'string') {
+    const ms = Date.parse(lockedUntil) - Date.now()
+    if (Number.isFinite(ms) && ms > 0) return Math.ceil(ms / 1000)
+  }
+  return null
+}
+
 /**
  * User-facing default message for an API error, picked by status/code rather than the
  * raw server message. Caller can still pass a `fallback` for unknown shapes.

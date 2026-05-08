@@ -47,10 +47,10 @@ const FILTER_OPTIONS = [
 ] as const
 
 const ASSIGNEE_CHIPS = [
-  { initials: "MA", bg: "bg-[#5A626A]" },
-  { initials: "HM", bg: "bg-[#D0B5B3]" },
+  { initials: "MA", bg: "bg-ink" },
+  { initials: "HM", bg: "bg-danger-soft" },
   { initials: "MR", bg: "bg-natural" },
-  { initials: "AO", bg: "bg-[#5A626A]/80" },
+  { initials: "AO", bg: "bg-ink/80" },
 ]
 
 type StatusId = "overdue" | "due-soon" | "blocked" | "needs-review"
@@ -65,8 +65,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "overdue",
     label: "Overdue",
-    badgeClass: "bg-[#D0B5B3] text-[#5A626A]",
-    checkboxClass: "border-[#D0B5B3]",
+    badgeClass: "bg-danger-soft text-ink",
+    checkboxClass: "border-danger-soft",
     tasks: [
       { title: "Create script for creating user accounts and onboarding flow" },
       { title: "Create Slack Integration Documentation for workspace" },
@@ -76,7 +76,7 @@ const STATUS_COLUMNS: Array<{
   {
     id: "due-soon",
     label: "Due soon",
-    badgeClass: "bg-natural/80 text-[#5A626A]",
+    badgeClass: "bg-natural/80 text-ink",
     checkboxClass: "border-natural",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
@@ -85,8 +85,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "blocked",
     label: "Blocked",
-    badgeClass: "bg-[#5A626A] text-[#E6E0D7]",
-    checkboxClass: "border-[#5A626A]",
+    badgeClass: "bg-ink text-warm",
+    checkboxClass: "border-ink",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -94,7 +94,7 @@ const STATUS_COLUMNS: Array<{
   {
     id: "needs-review",
     label: "Needs review",
-    badgeClass: "bg-natural text-[#E6E0D7]",
+    badgeClass: "bg-natural text-warm",
     checkboxClass: "border-natural",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
@@ -108,7 +108,7 @@ function FilterBar() {
   const [activeFilter, setActiveFilter] = useState<string | null>("Priority is any of 2 priorities")
 
   return (
-    <div className="flex flex-nowrap items-center gap-2 border-b border-[#5A626A]/20 bg-[#fafafa] px-3 py-0 h-10">
+    <div className="flex flex-nowrap items-center gap-2 border-b border-ink/20 bg-neutral-50 px-3 py-0 h-10">
       <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="sm" className="h-8 gap-1.5 shrink-0">
@@ -117,10 +117,10 @@ function FilterBar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[220px] p-0">
-          <div className="border-b border-[#5A626A]/20 p-2">
+          <div className="border-b border-ink/20 p-2">
             <Input
               placeholder="Filter..."
-              className="h-8 border-[#5A626A]/20 bg-[#E6E0D7]/50"
+              className="h-8 border-ink/20 bg-warm/50"
             />
           </div>
           <div className="max-h-[280px] overflow-y-auto py-1">
@@ -146,7 +146,7 @@ function FilterBar() {
           <span
             key={c.initials}
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-[#E6E0D7]",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-warm",
               c.bg
             )}
           >
@@ -156,12 +156,12 @@ function FilterBar() {
       </div>
 
       {activeFilter && (
-        <div className="flex h-8 shrink-0 items-center gap-1 border border-[#5A626A]/30 bg-[#E6E0D7] px-2 py-0">
-          <span className="text-sm text-[#5A626A]">{activeFilter}</span>
+        <div className="flex h-8 shrink-0 items-center gap-1 border border-ink/30 bg-warm px-2 py-0">
+          <span className="text-sm text-ink">{activeFilter}</span>
           <button
             type="button"
             onClick={() => setActiveFilter(null)}
-            className="p-0.5 text-[#5A626A] hover:bg-[#5A626A]/10"
+            className="p-0.5 text-ink hover:bg-ink/10"
             aria-label="Remove filter"
           >
             ×
@@ -173,7 +173,7 @@ function FilterBar() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex h-8 min-w-[120px] shrink-0 items-center gap-2 border border-[#5A626A]/30 bg-[#E6E0D7] px-2 py-0 text-left text-sm text-[#5A626A]"
+            className="flex h-8 min-w-[120px] shrink-0 items-center gap-2 border border-ink/30 bg-warm px-2 py-0 text-left text-sm text-ink"
           >
             Assignee
           </button>
@@ -184,19 +184,19 @@ function FilterBar() {
             No assignee
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-[#D0B5B3] text-xs text-[#5A626A]">
+            <span className="flex h-6 w-6 items-center justify-center bg-danger-soft text-xs text-ink">
               HM
             </span>
             HM Harshith Mullapudi
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-[#5A626A]/20 text-xs text-[#5A626A]">
+            <span className="flex h-6 w-6 items-center justify-center bg-ink/20 text-xs text-ink">
               MA
             </span>
             MA Manik Aggarwal
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-natural/40 text-xs text-[#5A626A]">
+            <span className="flex h-6 w-6 items-center justify-center bg-natural/40 text-xs text-ink">
               MR
             </span>
             MR Manoj Reddy
@@ -223,7 +223,7 @@ function TaskRow({
   isDone?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-[#5A626A]/10 py-2 last:border-b-0">
+    <div className="flex items-center gap-2 border-b border-ink/10 py-2 last:border-b-0">
       <span
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center border-2 rounded-none",
@@ -231,17 +231,17 @@ function TaskRow({
           isDone && "bg-natural border-natural"
         )}
       >
-        {isDone ? <Check className="h-2.5 w-2.5 text-[#E6E0D7]" /> : null}
+        {isDone ? <Check className="h-2.5 w-2.5 text-warm" /> : null}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-[#5A626A]">{title}</span>
+      <span className="min-w-0 flex-1 truncate text-sm text-ink">{title}</span>
       {subIssue != null && (
-        <span className="shrink-0 text-xs text-[#5A626A]/80">Sub-Issue {subIssue}</span>
+        <span className="shrink-0 text-xs text-ink/80">Sub-Issue {subIssue}</span>
       )}
       {blocked && (
-        <span className="shrink-0 text-xs text-[#5A626A]/80">Blocked by</span>
+        <span className="shrink-0 text-xs text-ink/80">Blocked by</span>
       )}
       {blocking && (
-        <span className="shrink-0 border border-[#D0B5B3] bg-[#D0B5B3]/20 px-1.5 py-0.5 text-xs text-[#5A626A]">
+        <span className="shrink-0 border border-danger-soft bg-danger-soft/20 px-1.5 py-0.5 text-xs text-ink">
           Blocking issues
         </span>
       )}
@@ -251,35 +251,35 @@ function TaskRow({
 
 export function AtRiskPage() {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-[#fafafa]">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-neutral-50">
       <div
         className={cn(
-          "h-10 flex items-center rounded-none bg-[#fafafa]",
+          "h-10 flex items-center rounded-none bg-neutral-50",
           sidebarStyles.borderedRowBottom
         )}
       >
         <div className="flex w-full items-center gap-1.5 px-2 py-0">
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-[#5A626A] hover:bg-[#E6E0D7]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
             aria-label="Back"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-[#5A626A] hover:bg-[#E6E0D7]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
             aria-label="Forward"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <Code className="h-4 w-4 shrink-0 text-[#5A626A]/70" />
-          <span className="min-w-0 flex-1 truncate text-sm text-[#5A626A]">{BREADCRUMB}</span>
+          <Code className="h-4 w-4 shrink-0 text-ink/70" />
+          <span className="min-w-0 flex-1 truncate text-sm text-ink">{BREADCRUMB}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-[#5A626A] hover:bg-[#E6E0D7]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -307,9 +307,9 @@ export function AtRiskPage() {
           {STATUS_COLUMNS.map((col) => (
             <div
               key={col.id}
-              className="flex w-[280px] shrink-0 flex-col border border-[#5A626A]/20 bg-[#E6E0D7]/30"
+              className="flex w-[280px] shrink-0 flex-col border border-ink/20 bg-warm/30"
             >
-              <div className="flex items-center justify-between gap-2 border-b border-[#5A626A]/20 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border-b border-ink/20 px-3 py-2">
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-none",
@@ -319,7 +319,7 @@ export function AtRiskPage() {
                   {col.id === "needs-review" && <Check className="h-3 w-3" />}
                   {col.label}
                 </span>
-                <span className="text-xs text-[#5A626A]">{col.tasks.length}</span>
+                <span className="text-xs text-ink">{col.tasks.length}</span>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                   <Plus className="h-3.5 w-3.5" />
                 </Button>

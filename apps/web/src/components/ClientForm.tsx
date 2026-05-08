@@ -66,7 +66,7 @@ export function ClientForm({
     <form onSubmit={submit} className="space-y-4" noValidate>
       {serverError && (
         <p
-          className="text-sm text-[#5A626A] border border-[#5A626A]/30 bg-[#f5f5f5] px-3 py-2 rounded-none"
+          className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2 rounded-none"
           role="alert"
         >
           {serverError}
@@ -78,7 +78,7 @@ export function ClientForm({
         error={formState.errors.name?.message as string | undefined}
         htmlFor="client-name"
       >
-        <Input id="client-name" className="rounded-none border-[#5A626A]/30" {...register("name")} />
+        <Input id="client-name" className="rounded-none border-ink/30" {...register("name")} />
       </FormField>
       <FormField
         label="Code (3–5 chars)"
@@ -86,18 +86,18 @@ export function ClientForm({
         error={formState.errors.code?.message as string | undefined}
         htmlFor="client-code"
       >
-        <Input id="client-code" className="rounded-none border-[#5A626A]/30" {...register("code")} />
+        <Input id="client-code" className="rounded-none border-ink/30" {...register("code")} />
       </FormField>
       <FormField label="Email" error={contactEmailError as string | undefined} htmlFor="client-email">
         <Input
           id="client-email"
           type="email"
-          className="rounded-none border-[#5A626A]/30"
+          className="rounded-none border-ink/30"
           {...register("email")}
         />
       </FormField>
       <FormField label="Phone" error={contactPhoneError as string | undefined} htmlFor="client-phone">
-        <Input id="client-phone" className="rounded-none border-[#5A626A]/30" {...register("phone")} />
+        <Input id="client-phone" className="rounded-none border-ink/30" {...register("phone")} />
       </FormField>
       <div className="flex gap-2 pt-2">
         <Button
@@ -111,7 +111,7 @@ export function ClientForm({
           <Button
             type="button"
             variant="secondary"
-            className="rounded-none border-[#5A626A]/30 text-[#5A626A]"
+            className="rounded-none border-ink/30 text-ink"
             onClick={onCancel}
           >
             Cancel

@@ -22,11 +22,14 @@ export const authApi = {
 
     if (!useAuthCookies()) {
       if (response.access_token) {
-        apiClient.setToken(response.access_token)
+        apiClient.setToken(response.access_token, response.expires_in)
       }
       if (response.refresh_token) {
         apiClient.setRefreshToken(response.refresh_token)
       }
+    } else {
+      const csrf = (response as AuthResponse & { csrf_token?: string }).csrf_token
+      if (typeof csrf === 'string') apiClient.setCsrfToken(csrf)
     }
 
     return response

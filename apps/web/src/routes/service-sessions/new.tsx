@@ -39,9 +39,9 @@ function ServiceSessionCreatePage() {
 
   return (
     <div className="p-6 max-w-md">
-      <h1 className="text-xl font-semibold text-[#5A626A]">Add session</h1>
+      <h1 className="text-xl font-semibold text-ink">Add session</h1>
       <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
-        {serverError && <p className="text-sm text-[#5A626A]" role="alert">{serverError}</p>}
+        {serverError && <p className="text-sm text-ink" role="alert">{serverError}</p>}
         <FormField
           label="Service ID"
           required

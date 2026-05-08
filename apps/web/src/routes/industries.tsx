@@ -100,7 +100,7 @@ function IndustriesPage() {
     [refetch]
   )
 
-  if (isLoading) return <div className="p-8 text-[#5A626A]">Loading…</div>
+  if (isLoading) return <div className="p-8 text-ink">Loading…</div>
   if (!isAuthenticated) return null
 
   return (
@@ -129,7 +129,7 @@ function IndustriesPage() {
           </div>
           <div className="col-span-4 min-w-0 flex flex-col min-h-0">
             {selectedId && detailsLoading ? (
-              <div className="border border-[#bfc4c9]/25 bg-white p-4 text-sm text-[#5A626A]/70 rounded-none">
+              <div className="border border-border/25 bg-white p-4 text-sm text-ink/70 rounded-none">
                 Loading…
               </div>
             ) : selectedIndustry ? (
@@ -141,9 +141,9 @@ function IndustriesPage() {
                 onUpdated={handleIndustryUpdated}
               />
             ) : (
-              <div className="border border-[#bfc4c9]/25 bg-white p-4 flex flex-col justify-center flex-1 min-h-[120px] rounded-none">
-                <h3 className="text-sm font-semibold text-[#5A626A] mb-2">Hey, Let&apos;s Start Now!</h3>
-                <p className="text-sm text-[#5A626A]/80">
+              <div className="border border-border/25 bg-white p-4 flex flex-col justify-center flex-1 min-h-[120px] rounded-none">
+                <h3 className="text-sm font-semibold text-ink mb-2">Hey, Let&apos;s Start Now!</h3>
+                <p className="text-sm text-ink/80">
                   Select an industry from the list to view its details, hierarchy, and edit it.
                 </p>
               </div>

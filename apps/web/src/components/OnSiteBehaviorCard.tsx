@@ -9,13 +9,13 @@ const steps = [
 
 export function OnSiteBehaviorCard() {
   return (
-    <div className="border border-[#bfc4c9]/25 bg-white p-4">
+    <div className="border border-border/25 bg-white p-4">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-[#5A626A]">On-site behavior</h3>
+          <h3 className="text-sm font-semibold text-ink">On-site behavior</h3>
           <button
             type="button"
-            className="flex h-5 w-5 items-center justify-center border border-[#bfc4c9]/40 bg-[#E6E0D7]/50 text-[#5A626A]"
+            className="flex h-5 w-5 items-center justify-center border border-border/40 bg-warm/50 text-ink"
             aria-label="Info"
           >
             <Info className="h-3 w-3" />
@@ -30,17 +30,17 @@ export function OnSiteBehaviorCard() {
       <div className="mb-4 flex items-center gap-2">
         <button
           type="button"
-          className="flex items-center justify-center p-0 text-[#5A626A]/70 hover:text-[#5A626A]"
+          className="flex items-center justify-center p-0 text-ink/70 hover:text-ink"
           aria-label="Previous"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="border border-[#bfc4c9]/30 bg-[#fafafa] px-3 py-1.5 text-sm text-[#5A626A]">
+        <span className="border border-border/30 bg-neutral-50 px-3 py-1.5 text-sm text-ink">
           United Kingdom
         </span>
         <button
           type="button"
-          className="flex items-center justify-center p-0 text-[#5A626A]/70 hover:text-[#5A626A]"
+          className="flex items-center justify-center p-0 text-ink/70 hover:text-ink"
           aria-label="Next"
         >
           <ChevronRight className="h-4 w-4" />
@@ -54,17 +54,17 @@ export function OnSiteBehaviorCard() {
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center border ${
                   active
-                    ? "border-[#D0B5B3] bg-[#D0B5B3] text-white"
-                    : "border-[#bfc4c9]/40 bg-white text-[#5A626A]"
+                    ? "border-danger-soft bg-danger-soft text-white"
+                    : "border-border/40 bg-white text-ink"
                 }`}
               >
                 <Icon className="h-4 w-4" />
               </div>
               {i < steps.length - 1 && (
                 <div className="relative flex flex-1 items-center">
-                  <div className="h-0.5 w-full bg-[#bfc4c9]/40" />
+                  <div className="h-0.5 w-full bg-border/40" />
                   {i === 1 && (
-                    <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full pb-0.5 text-xs text-[#5A626A]/60">
+                    <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full pb-0.5 text-xs text-ink/60">
                       2s
                     </span>
                   )}

@@ -71,6 +71,29 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/components/**/*.{ts,tsx}', 'src/routes/**/*.{ts,tsx}'],
+    ignores: [
+      'src/components/ui/chart.tsx',
+      'src/routes/tags/$tagId.tsx',
+      'src/routes/tags/new.tsx',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "Literal[value=/#[0-9a-fA-F]{3,6}\\b/]",
+          message:
+            'No raw hex literals in components/routes — use a CSS-var-backed Tailwind class (defined in src/theme/). See docs/CODING_GUIDELINES.md §1.8.',
+        },
+        {
+          selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,6}\\b/]",
+          message:
+            'No raw hex literals in components/routes — use a CSS var (defined in src/theme/). See docs/CODING_GUIDELINES.md §1.8.',
+        },
+      ],
+    },
+  },
+  {
     // Loosen rules in tests
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {

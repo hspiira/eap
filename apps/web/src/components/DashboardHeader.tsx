@@ -48,7 +48,7 @@ function PageTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const title = routeTitles[pathname] ?? "Dashboard"
   return (
-    <span className="text-sm font-medium text-[#5A626A] truncate">
+    <span className="text-sm font-medium text-ink truncate">
       {title}
     </span>
   )
@@ -67,7 +67,7 @@ function HeaderSearch() {
     return () => window.removeEventListener("keydown", handler)
   }, [])
   return (
-    <div className="relative h-8 min-w-[200px] max-w-[320px] rounded-none bg-[#f5f5f5] px-2">
+    <div className="relative h-8 min-w-[200px] max-w-[320px] rounded-none bg-neutral-50 px-2">
       <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-black/80" />
       <Input
         ref={inputRef}
@@ -75,7 +75,7 @@ function HeaderSearch() {
         className="h-full min-h-0 border-0 bg-transparent pl-8 pr-10 py-0 text-sm focus-visible:ring-0"
         onKeyDown={(e) => e.stopPropagation()}
       />
-      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs text-black/80 bg-[#5A626A]/15 rounded-none">
+      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs text-black/80 bg-ink/15 rounded-none">
         ⌘K
       </kbd>
     </div>
@@ -89,23 +89,23 @@ function NotificationsDropdown() {
         <Button
           variant="ghost"
           size="sm"
-          className="relative h-8 w-8 p-0 text-[#5A626A] hover:bg-[#E6E0D7]"
+          className="relative h-8 w-8 p-0 text-ink hover:bg-warm"
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
           <span
-            className="absolute right-1 top-1 h-1.5 w-1.5 bg-[#b85c4a]"
+            className="absolute right-1 top-1 h-1.5 w-1.5 bg-stone"
             aria-hidden
           />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel className="text-[#5A626A]">
+        <DropdownMenuLabel className="text-ink">
           Notifications
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-sm text-[#5A626A]"
+          className="cursor-pointer text-sm text-ink"
           onSelect={() => {
             setTimeout(() => {
               document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
@@ -115,7 +115,7 @@ function NotificationsDropdown() {
           <span className="truncate">Captiva 01 121 PHA – Speeding</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="cursor-pointer text-sm text-[#5A626A]"
+          className="cursor-pointer text-sm text-ink"
           onSelect={() => {
             setTimeout(() => {
               document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
@@ -126,7 +126,7 @@ function NotificationsDropdown() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-sm font-medium text-[#5A626A]"
+          className="cursor-pointer text-sm font-medium text-ink"
           onSelect={() => {
             setTimeout(() => {
               document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
@@ -161,7 +161,7 @@ function ThemeToggle() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 text-[#5A626A] hover:bg-[#E6E0D7]"
+            className="h-8 w-8 p-0 text-ink hover:bg-warm"
             onClick={cycle}
             aria-label={`Theme: ${label}`}
           >
@@ -170,7 +170,7 @@ function ThemeToggle() {
         </TooltipTrigger>
         <TooltipContent
           side="bottom"
-          className="border border-[#5A626A]/20 bg-[#E6E0D7] text-[#5A626A] rounded-none"
+          className="border border-ink/20 bg-warm text-ink rounded-none"
         >
           Theme: {label}
         </TooltipContent>
@@ -199,10 +199,10 @@ function UserMenu() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 gap-2 px-2 text-[#5A626A] hover:bg-[#E6E0D7]"
+          className="h-8 gap-2 px-2 text-ink hover:bg-warm"
           aria-label="Account menu"
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-[#5A626A]/30 bg-[#E6E0D7] text-xs font-medium text-[#5A626A]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-ink/30 bg-warm text-xs font-medium text-ink">
             {displayEmail.charAt(0).toUpperCase()}
           </span>
           <span className="max-w-[120px] truncate text-sm">{displayEmail}</span>
@@ -210,14 +210,14 @@ function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="text-[#5A626A] font-normal">
+        <DropdownMenuLabel className="text-ink font-normal">
           <span className="truncate">{displayEmail}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
             to="/"
-            className="cursor-pointer text-[#5A626A]"
+            className="cursor-pointer text-ink"
           >
             <User className="mr-2 h-4 w-4" />
             Profile
@@ -226,7 +226,7 @@ function UserMenu() {
         <DropdownMenuItem asChild>
           <Link
             to="/"
-            className="cursor-pointer text-[#5A626A]"
+            className="cursor-pointer text-ink"
           >
             <Settings className="mr-2 h-4 w-4" />
             Settings
@@ -234,7 +234,7 @@ function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-[#5A626A] focus:bg-[#E0DAD2]"
+          className="cursor-pointer text-ink focus:bg-warm-dark"
           onSelect={(e) => {
             e.preventDefault()
             handleSignOut()
@@ -255,7 +255,7 @@ function HelpLink() {
         <TooltipTrigger asChild>
           <a
             href="#"
-            className="flex h-8 w-8 shrink-0 items-center justify-center text-[#5A626A] hover:bg-[#E6E0D7]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center text-ink hover:bg-warm"
             aria-label="Help & feedback"
           >
             <HelpCircle className="h-4 w-4" />
@@ -263,7 +263,7 @@ function HelpLink() {
         </TooltipTrigger>
         <TooltipContent
           side="bottom"
-          className="border border-[#5A626A]/20 bg-[#E6E0D7] text-[#5A626A] rounded-none"
+          className="border border-ink/20 bg-warm text-ink rounded-none"
         >
           Help & feedback
         </TooltipContent>
@@ -276,7 +276,7 @@ export function DashboardHeader() {
   return (
     <header
       className={cn(
-        "h-10 flex items-center rounded-none bg-[#fafafa]",
+        "h-10 flex items-center rounded-none bg-neutral-50",
         sidebarStyles.borderedRowBottom,
         "sticky top-0 z-10 shrink-0"
       )}

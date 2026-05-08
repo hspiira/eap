@@ -45,11 +45,11 @@ function ContractDetailPage() {
     }
   }, [fetchContract])
 
-  if (loading) return <div className="p-8 text-[#5A626A]">Loading…</div>
+  if (loading) return <div className="p-8 text-ink">Loading…</div>
   if (!contract) {
     return (
       <div className="p-8">
-        <p className="text-[#5A626A]">Contract not found.</p>
+        <p className="text-ink">Contract not found.</p>
         <Button variant="secondary" className="mt-4 rounded-none" onClick={() => navigate({ to: "/contracts" })}>Back to contracts</Button>
       </div>
     )
@@ -58,16 +58,16 @@ function ContractDetailPage() {
   return (
     <div className="p-6 space-y-6">
       <Button variant="ghost" size="sm" className="rounded-none" onClick={() => navigate({ to: "/contracts" })}>← Contracts</Button>
-      <div className="border border-[#5A626A]/30 rounded-none p-6 bg-[#E6E0D7]/30">
-        <h1 className="text-xl font-semibold text-[#5A626A]">{contract.contract_number ?? contract.id}</h1>
+      <div className="border border-ink/30 rounded-none p-6 bg-warm/30">
+        <h1 className="text-xl font-semibold text-ink">{contract.contract_number ?? contract.id}</h1>
         <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-          <div><dt className="text-sm text-[#5A626A]/80">Status</dt><dd><StatusBadge status={contract.status} /></dd></div>
-          <div><dt className="text-sm text-[#5A626A]/80">Client ID</dt><dd>{contract.client_id}</dd></div>
-          <div><dt className="text-sm text-[#5A626A]/80">Start</dt><dd>{contract.start_date}</dd></div>
-          <div><dt className="text-sm text-[#5A626A]/80">End</dt><dd>{contract.end_date ?? "—"}</dd></div>
+          <div><dt className="text-sm text-ink/80">Status</dt><dd><StatusBadge status={contract.status} /></dd></div>
+          <div><dt className="text-sm text-ink/80">Client ID</dt><dd>{contract.client_id}</dd></div>
+          <div><dt className="text-sm text-ink/80">Start</dt><dd>{contract.start_date}</dd></div>
+          <div><dt className="text-sm text-ink/80">End</dt><dd>{contract.end_date ?? "—"}</dd></div>
         </dl>
         <div className="mt-6">
-          <h2 className="text-sm font-medium text-[#5A626A] mb-2">Actions</h2>
+          <h2 className="text-sm font-medium text-ink mb-2">Actions</h2>
           <LifecycleActions entityId={contract.id} currentStatus={contract.status} kind="contract" onAction={handleAction} loading={actionLoading} />
         </div>
       </div>

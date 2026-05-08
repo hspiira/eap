@@ -67,7 +67,7 @@ function NavTop() {
   const items = [
     { to: "/", label: "Home", icon: Home },
     { to: "/inbox", label: "Inbox", icon: Inbox },
-    { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-[#D0B5B3]" },
+    { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-danger-soft" },
   ] as const
 
   return (

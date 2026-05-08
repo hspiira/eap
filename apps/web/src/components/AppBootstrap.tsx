@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import apiClient from '@/api/client'
+import { useSilentRefresh } from '@/hooks/useSilentRefresh'
 import { authActions } from '@/lib/auth-store'
 import { tenantStorage } from '@/lib/storage'
 import { tenantActions } from '@/lib/tenant-actions'
@@ -29,6 +30,8 @@ export function AppBootstrap() {
   useEffect(() => {
     authActions.initAuth()
   }, [])
+
+  useSilentRefresh()
 
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {

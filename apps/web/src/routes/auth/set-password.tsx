@@ -119,7 +119,7 @@ function SetPasswordPage() {
         <Link
           to="/auth/login"
           search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
-          className="block w-full py-3 bg-[#D0B5B3] hover:bg-[#c0a5a3] text-white font-semibold rounded-none transition-colors text-center"
+          className="block w-full py-3 bg-danger-soft hover:bg-danger-soft-dark text-white font-semibold rounded-none transition-colors text-center"
         >
           Go to Sign in
         </Link>
@@ -138,7 +138,7 @@ function SetPasswordPage() {
       </p>
 
       {serverError && (
-        <div className="mb-4 p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
+        <div className="mb-4 p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm">
           {serverError}
         </div>
       )}
@@ -156,7 +156,7 @@ function SetPasswordPage() {
             {...register('password')}
           />
           {formState.errors.password && (
-            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.password.message as string}</p>
+            <p className="mt-1 text-sm text-danger-soft">{formState.errors.password.message as string}</p>
           )}
         </div>
         <button
@@ -178,7 +178,7 @@ function SetPasswordPage() {
             {...register('password_confirm')}
           />
           {formState.errors.password_confirm && (
-            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.password_confirm.message as string}</p>
+            <p className="mt-1 text-sm text-danger-soft">{formState.errors.password_confirm.message as string}</p>
           )}
         </div>
 

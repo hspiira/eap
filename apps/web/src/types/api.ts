@@ -130,7 +130,8 @@ export class ApiError extends Error {
     message: string,
     public code: string,
     public status: number,
-    public fieldErrors?: FieldErrors
+    public fieldErrors?: FieldErrors,
+    public data?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'ApiError'

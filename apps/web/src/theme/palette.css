@@ -19,7 +19,59 @@
   --palette-calm-light: #ebe6df;
   --palette-calm-dark: #d2ccc4;
 
+  --palette-ink: #5A626A;
+  --palette-warm: #E6E0D7;
+  --palette-warm-dark: #E0DAD2;
+  --palette-danger-soft: #D0B5B3;
+  --palette-danger-soft-dark: #c0a5a3;
+  --palette-stone: #b85c4a;
+
   --palette-white: #ffffff;
-  --palette-neutral-50: #f5f5f5;
+  --palette-neutral-50: #fafafa;
   --palette-neutral-100: #ebebeb;
+  --palette-neutral-200: #e5e5e5;
+  --palette-neutral-300: #d4d4d4;
+  --palette-neutral-400: #9e9e9e;
+  --palette-neutral-500: #777777;
+  --palette-neutral-600: #555555;
+  --palette-neutral-700: #4a4a4a;
+  --palette-neutral-800: #333333;
+
+  --palette-accent-purple: #8b48f7;
+  --palette-accent-purple-dark: #7a3ce6;
+  --palette-accent-purple-deep: #4c396b;
+  --palette-accent-pink: #ff77a9;
+  --palette-accent-green: #7ed321;
+  --palette-accent-success: #4caf50;
+  --palette-accent-success-soft: #e6f7ed;
+  --palette-accent-success-ink: #1e6e3c;
+  --palette-accent-error: #f44336;
+  --palette-accent-error-soft: #ffebee;
+  --palette-accent-error-ink: #c62828;
+  --palette-accent-error-deep: #e00000;
+  --palette-accent-blue: #1d4ed8;
+  --palette-accent-blue-soft: #f0f2f5;
+  --palette-accent-blue-ink: #616161;
+  --palette-accent-red-deep: #b91c1c;
+
+  --palette-surface-soft: #f8f8fa;
+  --palette-surface-tile: #f0f0f0;
+  --palette-surface-chip: #e8e8e8;
+  --palette-surface-chip-cool: #f2f2f2;
+  --palette-surface-soft-cool: #f5f5f5;
+  --palette-surface-shadow: #6e6e6e;
+  --palette-surface-slate: #4a5568;
+  --palette-surface-slate-light: #4a5258;
+  --palette-surface-slate-dim: #4a525a;
+  --palette-surface-slate-pressed: #4a5260;
+  --palette-surface-lilac-faint: #f8f8fc;
+  --palette-surface-lilac: #d5c8f2;
+  --palette-surface-lilac-mid: #b3a0d6;
+  --palette-surface-lilac-mid-hover: #a090c8;
+
+  --palette-accent-amber-ink: #8b6914;
+  --palette-accent-coral: #ff4d4f;
+  --palette-accent-coral-dark: #e04547;
+  --palette-accent-olive: #9cad5c;
+  --palette-text-faint: #aaaaaa;
 }

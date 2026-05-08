@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
-const skeletonClass = "rounded-none bg-[#5A626A]/15"
+const skeletonClass = "rounded-none bg-ink/15"
 
 export function ClientsListSkeleton() {
   const rows = 8
@@ -26,10 +26,10 @@ export function ClientsListSkeleton() {
         <Skeleton className={cn(skeletonClass, "h-9 w-24")} />
         <Skeleton className={cn(skeletonClass, "h-9 w-28")} />
       </div>
-      <div className="rounded-none border border-[#5A626A]/20 bg-white overflow-hidden">
+      <div className="rounded-none border border-ink/20 bg-white overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-[#5A626A]/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-[#5A626A] [&>th]:bg-[#E6E0D7]/30">
+            <TableRow className="border-ink/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-ink [&>th]:bg-warm/30">
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Status</TableHead>
@@ -41,7 +41,7 @@ export function ClientsListSkeleton() {
             {Array.from({ length: rows }).map((_, i) => (
               <TableRow
                 key={i}
-                className="border-[#5A626A]/10 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm"
+                className="border-ink/10 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm"
               >
                 <TableCell>
                   <Skeleton className={cn(skeletonClass, "h-3.5 w-full max-w-[140px]")} />
@@ -78,8 +78,8 @@ export function ClientsListSkeleton() {
 export function ClientDetailSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#5A626A]/20 bg-[#E6E0D7]/30">
+      <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+        <div className="px-6 py-5 border-b border-ink/20 bg-warm/30">
           <div className="flex items-center gap-2">
             <Skeleton className={cn(skeletonClass, "h-7 w-48")} />
             <Skeleton className={cn(skeletonClass, "h-5 w-16")} />
@@ -100,8 +100,8 @@ export function ClientDetailSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-[#5A626A]/20 px-4 py-3 bg-[#E6E0D7]/20">
+        <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-ink/20 px-4 py-3 bg-warm/20">
             <Skeleton className={cn(skeletonClass, "h-4 w-4")} />
             <Skeleton className={cn(skeletonClass, "h-4 w-16")} />
           </div>
@@ -110,8 +110,8 @@ export function ClientDetailSkeleton() {
             <Skeleton className={cn(skeletonClass, "h-10 w-full")} />
           </div>
         </div>
-        <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#5A626A]/20">
+        <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-ink/20">
             <Skeleton className={cn(skeletonClass, "h-4 w-20")} />
           </div>
           <div className="px-4 py-3 space-y-2">
@@ -122,11 +122,11 @@ export function ClientDetailSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#5A626A]/20">
+        <div className="lg:col-span-2 border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-ink/20">
             <Skeleton className={cn(skeletonClass, "h-4 w-20")} />
           </div>
-          <div className="divide-y divide-[#5A626A]/15 px-4">
+          <div className="divide-y divide-ink/15 px-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex gap-3 py-3">
                 <Skeleton className={cn(skeletonClass, "h-9 w-9 shrink-0")} />
@@ -140,8 +140,8 @@ export function ClientDetailSkeleton() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-6 py-3 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-6 py-3 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-20")} />
             </div>
             <div className="px-6 py-4 grid grid-cols-2 gap-4">
@@ -149,17 +149,17 @@ export function ClientDetailSkeleton() {
               <Skeleton className={cn(skeletonClass, "h-10 w-full")} />
             </div>
           </div>
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-6 py-3 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-6 py-3 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-28")} />
             </div>
             <div className="px-6 py-4">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-[#5A626A]/15">
-                    <TableHead className="text-[#5A626A]">Name</TableHead>
-                    <TableHead className="text-[#5A626A]">Code</TableHead>
-                    <TableHead className="text-[#5A626A]">Status</TableHead>
+                  <TableRow className="hover:bg-transparent border-ink/15">
+                    <TableHead className="text-ink">Name</TableHead>
+                    <TableHead className="text-ink">Code</TableHead>
+                    <TableHead className="text-ink">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -174,17 +174,17 @@ export function ClientDetailSkeleton() {
               </Table>
             </div>
           </div>
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-6 py-3 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-6 py-3 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-24")} />
             </div>
             <div className="px-6 py-4">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-[#5A626A]/15">
-                    <TableHead className="text-[#5A626A]">Number</TableHead>
-                    <TableHead className="text-[#5A626A]">Status</TableHead>
-                    <TableHead className="text-[#5A626A]">Dates</TableHead>
+                  <TableRow className="hover:bg-transparent border-ink/15">
+                    <TableHead className="text-ink">Number</TableHead>
+                    <TableHead className="text-ink">Status</TableHead>
+                    <TableHead className="text-ink">Dates</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -199,8 +199,8 @@ export function ClientDetailSkeleton() {
               </Table>
             </div>
           </div>
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-6 py-3 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-6 py-3 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-16")} />
             </div>
             <div className="px-6 py-4 flex flex-wrap gap-2">
@@ -208,8 +208,8 @@ export function ClientDetailSkeleton() {
               <Skeleton className={cn(skeletonClass, "h-6 w-24")} />
             </div>
           </div>
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-28")} />
             </div>
             <div className="p-4">
@@ -228,8 +228,8 @@ export function ClientDetailSkeleton() {
               </ul>
             </div>
           </div>
-          <div className="border border-[#5A626A]/30 rounded-none bg-[#fafafa] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#5A626A]/20">
+          <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
+            <div className="px-6 py-4 border-b border-ink/20">
               <Skeleton className={cn(skeletonClass, "h-4 w-14")} />
             </div>
             <div className="px-6 py-4 flex flex-wrap gap-2">

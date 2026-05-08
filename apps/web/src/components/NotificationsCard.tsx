@@ -30,21 +30,21 @@ export function NotificationsCard() {
     <div
       data-notifications-card
       className={cn(
-        "flex flex-col rounded-lg border border-[#bfc4c9]/25 bg-white",
+        "flex flex-col rounded-lg border border-border/25 bg-white",
         "shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
       )}
     >
-      <div className="flex items-center justify-between border-b border-[#bfc4c9]/20 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border/20 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Bell className="h-4 w-4 text-[#5A626A]" />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#b85c4a]" aria-hidden />
+            <Bell className="h-4 w-4 text-ink" />
+            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-stone" aria-hidden />
           </div>
-          <h3 className="text-sm font-semibold text-[#5A626A]">Notifications</h3>
+          <h3 className="text-sm font-semibold text-ink">Notifications</h3>
         </div>
         <button
           type="button"
-          className="p-1 text-[#5A626A]/70 hover:bg-[#f0f0f0] hover:text-[#5A626A]"
+          className="p-1 text-ink/70 hover:bg-surface-tile hover:text-ink"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -55,26 +55,26 @@ export function NotificationsCard() {
           {notifications.map((n) => (
             <div
               key={n.id}
-              className="border-b border-[#bfc4c9]/15 px-4 py-3 last:border-b-0"
+              className="border-b border-border/15 px-4 py-3 last:border-b-0"
             >
               <div className="flex items-start gap-2">
-                <Car className="mt-0.5 h-4 w-4 shrink-0 text-[#5A626A]/70" />
+                <Car className="mt-0.5 h-4 w-4 shrink-0 text-ink/70" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-[#5A626A]">{n.vehicle}</span>
+                      <span className="text-sm font-medium text-ink">{n.vehicle}</span>
                       {n.id === "1" && (
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#b85c4a]" aria-hidden />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone" aria-hidden />
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <button type="button" className="p-1 text-[#5A626A]/60 hover:text-[#5A626A]" aria-label="Mark read">
+                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Mark read">
                         <Eye className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" className="p-1 text-[#5A626A]/60 hover:text-[#5A626A]" aria-label="Delete">
+                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Delete">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" className="p-1 text-[#5A626A]/60 hover:text-[#5A626A]" aria-label="Expand">
+                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Expand">
                         {n.expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       </button>
                     </div>
@@ -82,14 +82,14 @@ export function NotificationsCard() {
                   <span
                     className={cn(
                       "mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium",
-                      n.tagVariant === "red" && "bg-[#b85c4a]/15 text-[#b85c4a]",
-                      n.tagVariant === "orange" && "bg-[#D0B5B3]/30 text-[#8B6914]"
+                      n.tagVariant === "red" && "bg-stone/15 text-stone",
+                      n.tagVariant === "orange" && "bg-danger-soft/30 text-accent-amber-ink"
                     )}
                   >
                     {n.tag}
                   </span>
                   {n.expanded && n.description && (
-                    <p className="mt-2 text-xs leading-relaxed text-[#5A626A]/90">
+                    <p className="mt-2 text-xs leading-relaxed text-ink/90">
                       {n.description}
                     </p>
                   )}
@@ -106,14 +106,14 @@ export function NotificationsCard() {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-2 border-t border-[#bfc4c9]/20 p-3">
-          <div className="flex justify-start bg-[#f5f5f5] px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-[#5A626A]">
+        <div className="grid grid-cols-2 gap-2 border-t border-border/20 p-3">
+          <div className="flex justify-start bg-neutral-50 px-3 py-2">
+            <Button variant="ghost" size="sm" className="rounded-md text-xs text-ink">
               Delete all
             </Button>
           </div>
-          <div className="flex justify-start bg-[#f5f5f5] px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-[#5A626A]">
+          <div className="flex justify-start bg-neutral-50 px-3 py-2">
+            <Button variant="ghost" size="sm" className="rounded-md text-xs text-ink">
               Delete read messages
             </Button>
           </div>

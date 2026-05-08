@@ -26,8 +26,8 @@ export function TagsPageHeader({ breadcrumb, children }: TagsPageHeaderProps) {
         )}
       >
         <div className="flex w-full items-center gap-1.5 px-2 py-0">
-          <Tag className="h-4 w-4 shrink-0 text-[#5A626A]/70" />
-          <span className="min-w-0 flex-1 truncate text-sm text-[#5A626A]">{breadcrumb}</span>
+          <Tag className="h-4 w-4 shrink-0 text-ink/70" />
+          <span className="min-w-0 flex-1 truncate text-sm text-ink">{breadcrumb}</span>
           <Button asChild size="sm" variant="default" className="rounded-none h-8 gap-1.5 bg-natural hover:bg-natural-dark text-white">
             <Link to="/tags/new">
               <Plus className="h-4 w-4" />
@@ -38,7 +38,7 @@ export function TagsPageHeader({ breadcrumb, children }: TagsPageHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-[#5A626A] hover:bg-[#f0f0f0]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-surface-tile"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
