@@ -11,6 +11,7 @@ import {
   FileCheck,
   FileSignature,
   FolderOpen,
+  Handshake,
   Headphones,
   Home,
   Inbox,
@@ -208,6 +209,10 @@ export function AppSidebar() {
         <SidebarSection
           label="Surveys"
           items={[{ to: "/surveys", label: "Surveys", icon: MessageSquare }]}
+        />
+        <SidebarSection
+          label="Consultancy"
+          items={[{ to: "/engagements", label: "Engagements", icon: Handshake }]}
         />
         <SidebarSection
           label="Analytics & Performance"

@@ -22,6 +22,7 @@ import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as IncidentsRouteImport } from './routes/incidents'
 import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as EngagementsRouteImport } from './routes/engagements'
 import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as ContractsRouteImport } from './routes/contracts'
 import { Route as ContactsRouteImport } from './routes/contacts'
@@ -42,6 +43,7 @@ import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as ProvidersIndexRouteImport } from './routes/providers/index'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
+import { Route as EngagementsIndexRouteImport } from './routes/engagements/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
@@ -63,6 +65,8 @@ import { Route as PersonsNewRouteImport } from './routes/persons/new'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
 import { Route as IncidentsNewRouteImport } from './routes/incidents/new'
 import { Route as IncidentsIncidentIdRouteImport } from './routes/incidents/$incidentId'
+import { Route as EngagementsNewRouteImport } from './routes/engagements/new'
+import { Route as EngagementsEngagementIdRouteImport } from './routes/engagements/$engagementId'
 import { Route as ContractsNewRouteImport } from './routes/contracts/new'
 import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
@@ -139,6 +143,11 @@ const IncidentsRoute = IncidentsRouteImport.update({
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EngagementsRoute = EngagementsRouteImport.update({
+  id: '/engagements',
+  path: '/engagements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocumentsRoute = DocumentsRouteImport.update({
@@ -240,6 +249,11 @@ const IncidentsIndexRoute = IncidentsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => IncidentsRoute,
+} as any)
+const EngagementsIndexRoute = EngagementsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EngagementsRoute,
 } as any)
 const ContractsIndexRoute = ContractsIndexRouteImport.update({
   id: '/',
@@ -348,6 +362,16 @@ const IncidentsIncidentIdRoute = IncidentsIncidentIdRouteImport.update({
   path: '/$incidentId',
   getParentRoute: () => IncidentsRoute,
 } as any)
+const EngagementsNewRoute = EngagementsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => EngagementsRoute,
+} as any)
+const EngagementsEngagementIdRoute = EngagementsEngagementIdRouteImport.update({
+  id: '/$engagementId',
+  path: '/$engagementId',
+  getParentRoute: () => EngagementsRoute,
+} as any)
 const ContractsNewRoute = ContractsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -422,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
   '/documents': typeof DocumentsRoute
+  '/engagements': typeof EngagementsRouteWithChildren
   '/inbox': typeof InboxRoute
   '/incidents': typeof IncidentsRouteWithChildren
   '/industries': typeof IndustriesRoute
@@ -445,6 +470,8 @@ export interface FileRoutesByFullPath {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/engagements/$engagementId': typeof EngagementsEngagementIdRoute
+  '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
@@ -466,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/care-callbacks/': typeof CareCallbacksIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
+  '/engagements/': typeof EngagementsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
@@ -499,6 +527,8 @@ export interface FileRoutesByTo {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/engagements/$engagementId': typeof EngagementsEngagementIdRoute
+  '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
@@ -520,6 +550,7 @@ export interface FileRoutesByTo {
   '/care-callbacks': typeof CareCallbacksIndexRoute
   '/clients': typeof ClientsIndexRoute
   '/contracts': typeof ContractsIndexRoute
+  '/engagements': typeof EngagementsIndexRoute
   '/incidents': typeof IncidentsIndexRoute
   '/persons': typeof PersonsIndexRoute
   '/providers': typeof ProvidersIndexRoute
@@ -545,6 +576,7 @@ export interface FileRoutesById {
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
   '/documents': typeof DocumentsRoute
+  '/engagements': typeof EngagementsRouteWithChildren
   '/inbox': typeof InboxRoute
   '/incidents': typeof IncidentsRouteWithChildren
   '/industries': typeof IndustriesRoute
@@ -568,6 +600,8 @@ export interface FileRoutesById {
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
   '/contracts/new': typeof ContractsNewRoute
+  '/engagements/$engagementId': typeof EngagementsEngagementIdRoute
+  '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
@@ -589,6 +623,7 @@ export interface FileRoutesById {
   '/care-callbacks/': typeof CareCallbacksIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
+  '/engagements/': typeof EngagementsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
@@ -615,6 +650,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/contracts'
     | '/documents'
+    | '/engagements'
     | '/inbox'
     | '/incidents'
     | '/industries'
@@ -638,6 +674,8 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/engagements/$engagementId'
+    | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
     | '/persons/$personId'
@@ -659,6 +697,7 @@ export interface FileRouteTypes {
     | '/care-callbacks/'
     | '/clients/'
     | '/contracts/'
+    | '/engagements/'
     | '/incidents/'
     | '/persons/'
     | '/providers/'
@@ -692,6 +731,8 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/engagements/$engagementId'
+    | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
     | '/persons/$personId'
@@ -713,6 +754,7 @@ export interface FileRouteTypes {
     | '/care-callbacks'
     | '/clients'
     | '/contracts'
+    | '/engagements'
     | '/incidents'
     | '/persons'
     | '/providers'
@@ -737,6 +779,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/contracts'
     | '/documents'
+    | '/engagements'
     | '/inbox'
     | '/incidents'
     | '/industries'
@@ -760,6 +803,8 @@ export interface FileRouteTypes {
     | '/clients/new'
     | '/contracts/$contractId'
     | '/contracts/new'
+    | '/engagements/$engagementId'
+    | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
     | '/persons/$personId'
@@ -781,6 +826,7 @@ export interface FileRouteTypes {
     | '/care-callbacks/'
     | '/clients/'
     | '/contracts/'
+    | '/engagements/'
     | '/incidents/'
     | '/persons/'
     | '/providers/'
@@ -806,6 +852,7 @@ export interface RootRouteChildren {
   ContactsRoute: typeof ContactsRoute
   ContractsRoute: typeof ContractsRouteWithChildren
   DocumentsRoute: typeof DocumentsRoute
+  EngagementsRoute: typeof EngagementsRouteWithChildren
   InboxRoute: typeof InboxRoute
   IncidentsRoute: typeof IncidentsRouteWithChildren
   IndustriesRoute: typeof IndustriesRoute
@@ -912,6 +959,13 @@ declare module '@tanstack/react-router' {
       path: '/inbox'
       fullPath: '/inbox'
       preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/engagements': {
+      id: '/engagements'
+      path: '/engagements'
+      fullPath: '/engagements'
+      preLoaderRoute: typeof EngagementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/documents': {
@@ -1053,6 +1107,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/incidents/'
       preLoaderRoute: typeof IncidentsIndexRouteImport
       parentRoute: typeof IncidentsRoute
+    }
+    '/engagements/': {
+      id: '/engagements/'
+      path: '/'
+      fullPath: '/engagements/'
+      preLoaderRoute: typeof EngagementsIndexRouteImport
+      parentRoute: typeof EngagementsRoute
     }
     '/contracts/': {
       id: '/contracts/'
@@ -1200,6 +1261,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/incidents/$incidentId'
       preLoaderRoute: typeof IncidentsIncidentIdRouteImport
       parentRoute: typeof IncidentsRoute
+    }
+    '/engagements/new': {
+      id: '/engagements/new'
+      path: '/new'
+      fullPath: '/engagements/new'
+      preLoaderRoute: typeof EngagementsNewRouteImport
+      parentRoute: typeof EngagementsRoute
+    }
+    '/engagements/$engagementId': {
+      id: '/engagements/$engagementId'
+      path: '/$engagementId'
+      fullPath: '/engagements/$engagementId'
+      preLoaderRoute: typeof EngagementsEngagementIdRouteImport
+      parentRoute: typeof EngagementsRoute
     }
     '/contracts/new': {
       id: '/contracts/new'
@@ -1366,6 +1441,22 @@ const ContractsRouteWithChildren = ContractsRoute._addFileChildren(
   ContractsRouteChildren,
 )
 
+interface EngagementsRouteChildren {
+  EngagementsEngagementIdRoute: typeof EngagementsEngagementIdRoute
+  EngagementsNewRoute: typeof EngagementsNewRoute
+  EngagementsIndexRoute: typeof EngagementsIndexRoute
+}
+
+const EngagementsRouteChildren: EngagementsRouteChildren = {
+  EngagementsEngagementIdRoute: EngagementsEngagementIdRoute,
+  EngagementsNewRoute: EngagementsNewRoute,
+  EngagementsIndexRoute: EngagementsIndexRoute,
+}
+
+const EngagementsRouteWithChildren = EngagementsRoute._addFileChildren(
+  EngagementsRouteChildren,
+)
+
 interface IncidentsRouteChildren {
   IncidentsIncidentIdRoute: typeof IncidentsIncidentIdRoute
   IncidentsNewRoute: typeof IncidentsNewRoute
@@ -1525,6 +1616,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactsRoute: ContactsRoute,
   ContractsRoute: ContractsRouteWithChildren,
   DocumentsRoute: DocumentsRoute,
+  EngagementsRoute: EngagementsRouteWithChildren,
   InboxRoute: InboxRoute,
   IncidentsRoute: IncidentsRouteWithChildren,
   IndustriesRoute: IndustriesRoute,

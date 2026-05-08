@@ -365,6 +365,54 @@ export enum SurveySource {
 }
 
 /**
+ * Consultancy engagement lifecycle (Phase 4 #1). Linear FSM:
+ * SCOPING → ACTIVE → DELIVERED → CLOSED. CANCELLED is a terminal off-ramp from any state.
+ */
+export enum EngagementStatus {
+  SCOPING = 'Scoping',
+  ACTIVE = 'Active',
+  DELIVERED = 'Delivered',
+  CLOSED = 'Closed',
+  CANCELLED = 'Cancelled',
+}
+
+/**
+ * Type of consultancy engagement. Drives default rate-card lookup BE-side and the
+ * "kind" badge in the FE.
+ */
+export enum EngagementType {
+  POLICY_DRAFT = 'Policy Draft',
+  TRAINING = 'Training',
+  ASSESSMENT = 'Assessment',
+  ADVISORY = 'Advisory',
+  AUDIT = 'Audit',
+  OTHER = 'Other',
+}
+
+/**
+ * Engagement deliverable status — independent from the parent engagement's status.
+ */
+export enum DeliverableStatus {
+  PENDING = 'Pending',
+  IN_PROGRESS = 'In Progress',
+  SUBMITTED = 'Submitted',
+  ACCEPTED = 'Accepted',
+  REJECTED = 'Rejected',
+}
+
+/**
+ * Engagement timeline event kinds. Mirrors the IncidentTimeline pattern.
+ */
+export enum EngagementTimelineEventKind {
+  CREATED = 'Created',
+  STATUS_CHANGED = 'Status Changed',
+  DELIVERABLE_ADDED = 'Deliverable Added',
+  DELIVERABLE_UPDATED = 'Deliverable Updated',
+  HOURS_LOGGED = 'Hours Logged',
+  NOTE = 'Note',
+}
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {
