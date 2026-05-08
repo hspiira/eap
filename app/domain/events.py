@@ -11,6 +11,7 @@ from app.domain.value_objects.core import (
     TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId,
     CareCallbackCampaignId, CriticalIncidentId, OutreachRecordId,
     SurveyCampaignId, SurveyResponseId,
+    EngagementId, DSARRequestId,
 )
 from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
@@ -367,3 +368,91 @@ class SurveyResponseIngested(DomainEvent):
     response_id: "SurveyResponseId"
     campaign_id: "SurveyCampaignId"
     external_response_id: str
+
+
+@dataclass(frozen=True)
+class EngagementCreated(DomainEvent):
+    engagement_id: "EngagementId"
+    tenant_id: TenantId
+    client_id: ClientId
+
+
+@dataclass(frozen=True)
+class EngagementActivated(DomainEvent):
+    engagement_id: "EngagementId"
+
+
+@dataclass(frozen=True)
+class EngagementDelivered(DomainEvent):
+    engagement_id: "EngagementId"
+
+
+@dataclass(frozen=True)
+class EngagementInvoiced(DomainEvent):
+    engagement_id: "EngagementId"
+
+
+@dataclass(frozen=True)
+class EngagementClosed(DomainEvent):
+    engagement_id: "EngagementId"
+
+
+@dataclass(frozen=True)
+class HoursLogged(DomainEvent):
+    engagement_id: "EngagementId"
+    user_id: UserId
+    hours: float
+
+
+@dataclass(frozen=True)
+class ProviderPanelStatusChanged(DomainEvent):
+    """Audit trail for the 80→8 panel cull and any other panel-status moves."""
+
+    provider_id: PersonId
+    old_status: str
+    new_status: str
+    actor: UserId
+    reason: str
+
+
+@dataclass(frozen=True)
+class ProviderTierChanged(DomainEvent):
+    """Audit trail for provider tier upgrades / downgrades."""
+
+    provider_id: PersonId
+    old_tier: str
+    new_tier: str
+    actor: UserId
+    reason: str
+
+
+@dataclass(frozen=True)
+class ProviderAssignmentBlocked(DomainEvent):
+    """Raised when an assignment is rejected by panel or non-compete enforcement."""
+
+    provider_id: PersonId
+    client_id: ClientId
+    reason: str
+
+
+@dataclass(frozen=True)
+class DSARRequestSubmitted(DomainEvent):
+    request_id: "DSARRequestId"
+    tenant_id: TenantId
+    subject_person_id: PersonId
+    request_type: str
+
+
+@dataclass(frozen=True)
+class DSARRequestCompleted(DomainEvent):
+    request_id: "DSARRequestId"
+    request_type: str
+
+
+@dataclass(frozen=True)
+class DSARErasureExecuted(DomainEvent):
+    """Raised when subject PII is tombstoned. Carries no PII itself by design."""
+
+    request_id: "DSARRequestId"
+    subject_person_id: PersonId
+    tombstone_token: str

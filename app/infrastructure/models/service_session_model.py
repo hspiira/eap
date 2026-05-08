@@ -80,5 +80,11 @@ class ServiceSessionModel(
         String(25), nullable=True, index=True
     )
 
+    # Phase 4 #D-Import: idempotency key for re-runnable historical loads.
+    # Unique per tenant; absent for organic in-app sessions.
+    import_source_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+
     def __repr__(self) -> str:
         return f"<ServiceSessionModel(id={self.id}, status={self.status}, scheduled_at={self.scheduled_at})>"

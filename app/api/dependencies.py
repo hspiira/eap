@@ -9,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.benchmark_consent_repository import (
+    BenchmarkConsentRepository,
+)
 from app.domain.repositories.care_callback_repository import (
     CareCallbackCampaignRepository,
     OutreachRecordRepository,
@@ -17,6 +20,8 @@ from app.domain.repositories.critical_incident_repository import (
     CriticalIncidentRepository,
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.repositories.dsar_repository import DSARRequestRepository
+from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
 )
@@ -439,6 +444,56 @@ async def get_outreach_record_repository(
     )
 
     return OutreachRecordRepositoryImpl(db)
+
+
+async def get_engagement_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EngagementRepository":
+    from app.infrastructure.repositories.engagement_repository import (
+        EngagementRepositoryImpl,
+    )
+
+    return EngagementRepositoryImpl(db)
+
+
+async def get_dsar_request_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DSARRequestRepository":
+    from app.infrastructure.repositories.dsar_repository import (
+        DSARRequestRepositoryImpl,
+    )
+
+    return DSARRequestRepositoryImpl(db)
+
+
+async def get_dsar_collector(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.dsar_service import SqlDSARDataCollector
+
+    return SqlDSARDataCollector(db)
+
+
+async def get_benchmark_consent_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "BenchmarkConsentRepository":
+    from app.infrastructure.repositories.benchmark_consent_repository import (
+        BenchmarkConsentRepositoryImpl,
+    )
+
+    return BenchmarkConsentRepositoryImpl(db)
+
+
+async def get_benchmark_collector(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.benchmark_collector import (
+        SqlBenchmarkCollector,
+    )
+
+    return SqlBenchmarkCollector(db)
+
+
+async def get_dsar_tombstoner(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.dsar_service import SqlDSARTombstoner
+
+    return SqlDSARTombstoner(db)
 
 
 async def get_survey_campaign_repository(

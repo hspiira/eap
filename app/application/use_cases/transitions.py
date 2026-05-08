@@ -245,3 +245,10 @@ class OutreachTransition(str, Enum):
 class SurveyCampaignTransition(str, Enum):
     ACTIVATE = "activate"
     CLOSE = "close"
+
+
+class EngagementTransition(str, Enum):
+    ACTIVATE = "activate"
+    DELIVER = "deliver"
+    INVOICE = "invoice"
+    CLOSE = "close"

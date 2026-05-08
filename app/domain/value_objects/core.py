@@ -207,6 +207,31 @@ class SurveyCampaignId(Id):
 class SurveyResponseId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class EngagementId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DeliverableId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class HoursLogEntryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DSARRequestId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class BenchmarkConsentId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

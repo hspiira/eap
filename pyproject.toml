@@ -105,6 +105,8 @@ ignore_imports = [
     # Composition-root wiring (intentional pattern):
     "app.api.dependencies -> app.infrastructure.repositories.activity_repository",
     "app.api.dependencies -> app.infrastructure.repositories.audit_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.benchmark_consent_repository",
+    "app.api.dependencies -> app.infrastructure.services.benchmark_collector",
     "app.api.dependencies -> app.infrastructure.repositories.care_callback_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
@@ -113,6 +115,9 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.critical_incident_repository",
     "app.api.dependencies -> app.infrastructure.repositories.diagnosis_repository",
     "app.api.dependencies -> app.infrastructure.repositories.document_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.dsar_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.engagement_repository",
+    "app.api.dependencies -> app.infrastructure.services.dsar_service",
     "app.api.dependencies -> app.infrastructure.repositories.industry_repository",
     "app.api.dependencies -> app.infrastructure.repositories.kpi_repository",
     "app.api.dependencies -> app.infrastructure.repositories.non_compete_clause_repository",
