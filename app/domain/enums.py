@@ -129,6 +129,79 @@ class CriticalIncidentPhase(str, Enum):
     PASTORAL = "Pastoral"
     FOLLOW_UP = "FollowUp"
 
+
+class ProviderTier(str, Enum):
+    """Provider panel tier — drives routing and rate cards (Joseph's framework)."""
+
+    T1 = "T1"
+    T2 = "T2"
+    T3 = "T3"
+
+
+class UgandaRegion(str, Enum):
+    """The 8 empanelment regions used for provider geo-distribution."""
+
+    CENTRAL = "Central"
+    KAMPALA_METRO = "KampalaMetro"
+    EASTERN = "Eastern"
+    NORTHERN = "Northern"
+    WEST_NILE = "WestNile"
+    WESTERN = "Western"
+    SOUTH_WESTERN = "SouthWestern"
+    KARAMOJA = "Karamoja"
+
+
+class AccreditationStatus(str, Enum):
+    """Where the provider sits in the accreditation pipeline."""
+
+    PENDING = "Pending"
+    ACCREDITED = "Accredited"
+    LAPSED = "Lapsed"
+    SUSPENDED = "Suspended"
+    REJECTED = "Rejected"
+
+
+class PanelStatus(str, Enum):
+    """Whether the provider is currently on the active panel."""
+
+    ACTIVE = "Active"
+    SUSPENDED = "Suspended"
+    REMOVED = "Removed"
+
+
+class NonCompeteStatus(str, Enum):
+    """Lifecycle of a non-compete clause."""
+
+    DRAFT = "Draft"
+    ACTIVE = "Active"
+    REVOKED = "Revoked"
+    EXPIRED = "Expired"
+
+
+class ReportQueryType(str, Enum):
+    """Library of canned report queries (SAD §5.2.10).
+
+    Each value maps to a single :class:`~app.application.services.report_query_runner.QueryRunner`
+    method. New queries are added by extending the enum and adding a runner;
+    templates reference them by enum value.
+    """
+
+    SESSIONS_BY_MONTH = "sessions_by_month"
+    DIAGNOSIS_PREVALENCE = "diagnosis_prevalence"
+    CONTRACT_UTILISATION = "contract_utilisation"
+    CARE_CALLBACK_OUTCOMES = "care_callback_outcomes"
+    SATISFACTION_DISTRIBUTION = "satisfaction_distribution"
+
+
+class ReportRunStatus(str, Enum):
+    """Lifecycle of a single report execution."""
+
+    PENDING = "Pending"
+    RUNNING = "Running"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"

@@ -13,7 +13,14 @@ from app.domain.repositories.critical_incident_repository import (
     CriticalIncidentRepository,
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.repositories.non_compete_clause_repository import (
+    NonCompeteClauseRepository,
+)
 from app.domain.repositories.outbox_repository import OutboxRepository
+from app.domain.repositories.report_repository import (
+    ReportRunRepository,
+    ReportTemplateRepository,
+)
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.activity_repository import ActivityRepository
@@ -355,6 +362,42 @@ async def get_critical_incident_repository(
     )
 
     return CriticalIncidentRepositoryImpl(db)
+
+
+async def get_non_compete_clause_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "NonCompeteClauseRepository":
+    from app.infrastructure.repositories.non_compete_clause_repository import (
+        NonCompeteClauseRepositoryImpl,
+    )
+
+    return NonCompeteClauseRepositoryImpl(db)
+
+
+async def get_report_template_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReportTemplateRepository":
+    from app.infrastructure.repositories.report_repository import (
+        ReportTemplateRepositoryImpl,
+    )
+
+    return ReportTemplateRepositoryImpl(db)
+
+
+async def get_report_run_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReportRunRepository":
+    from app.infrastructure.repositories.report_repository import (
+        ReportRunRepositoryImpl,
+    )
+
+    return ReportRunRepositoryImpl(db)
+
+
+async def get_report_query_runner(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.report_query_runner import ReportQueryRunner
+
+    return ReportQueryRunner(db)
 
 
 # =============================================================================

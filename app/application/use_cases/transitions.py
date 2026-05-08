@@ -120,9 +120,15 @@ class PersonTransition(str, Enum):
     UPDATE_EMPLOYMENT_INFO = "update_employment_info"
     UPDATE_DEPENDENT_INFO = "update_dependent_info"
     UPDATE_LICENSE_INFO = "update_license_info"
+    UPDATE_PROVIDER_PROFILE = "update_provider_profile"
     UPDATE_STAFF_INFO = "update_staff_info"
     ADD_SECONDARY_ROLE = "add_secondary_role"
     REMOVE_SECONDARY_ROLE = "remove_secondary_role"
+
+
+class NonCompeteTransition(str, Enum):
+    SIGN = "sign"
+    REVOKE = "revoke"
 
 
 class ContractTransition(str, Enum):

@@ -23,6 +23,7 @@ from app.infrastructure.models.json_schemas import (
     EmergencyContactDict,
     EmploymentInfoDict,
     LicenseInfoDict,
+    ProviderProfileDict,
     StaffInfoDict,
 )
 
@@ -108,14 +109,17 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     license_info: Mapped[LicenseInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Professional license information for SERVICE_PROVIDER person types.
-    
+
     Schema: {
         "number": str,
         "issuing_authority": str,
         "expiry_date": str | None (ISO date: YYYY-MM-DD)
     }
     """
-    
+
+    provider_profile: Mapped["ProviderProfileDict | None"] = mapped_column(JSON, nullable=True)
+    """Panel metadata for SERVICE_PROVIDER persons (tier, region, accreditation)."""
+
     staff_info: Mapped[StaffInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Staff information for PLATFORM_STAFF person types.

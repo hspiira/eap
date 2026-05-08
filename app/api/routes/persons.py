@@ -44,6 +44,7 @@ from app.application.use_cases.person_use_cases import (
     CreateClientEmployeeUseCase,
     CreateDependentUseCase,
 )
+from app.api.schemas.provider_profile_schemas import ProviderProfileUpdate
 from app.application.use_cases.transitions import (
     PersonTransition,
     TransitionUseCase,
@@ -545,6 +546,51 @@ async def update_license_info(
     use_case.entity_name = "Person"
     person = await use_case.execute(
         person.id, PersonTransition.UPDATE_LICENSE_INFO, info=info
+    )
+    await audit_entity_operation(
+        entity=person,
+        audit_handler=audit_handler,
+        tenant_id=person.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_person_response(person)
+
+
+@router.patch(
+    "/{person_id}/provider-profile",
+    response_model=PersonResponse,
+    summary="Set or replace the provider panel profile",
+)
+@transactional()
+async def update_provider_profile(
+    data: "ProviderProfileUpdate",
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    person: PersonEntity = Depends(get_person_for_current_tenant),
+    person_repo: PersonRepository = Depends(get_person_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.domain.value_objects.core import ProviderProfile
+
+    p = data.profile
+    profile = ProviderProfile(
+        tier=p.tier,
+        region=p.region,
+        accreditation_status=p.accreditation_status,
+        panel_status=p.panel_status,
+        accreditation_authority=p.accreditation_authority,
+        accreditation_expiry=p.accreditation_expiry,
+        specialties=tuple(p.specialties),
+        bio=p.bio,
+    )
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id,
+        PersonTransition.UPDATE_PROVIDER_PROFILE,
+        profile=profile,
     )
     await audit_entity_operation(
         entity=person,

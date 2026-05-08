@@ -27,11 +27,17 @@ from app.infrastructure.models.json_schemas import (
     EmergencyContactDict,
     EmploymentInfoDict,
     LicenseInfoDict,
+    ProviderProfileDict,
     StaffInfoDict,
 )
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
+from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
+from app.infrastructure.models.report_model import (
+    ReportRunModel,
+    ReportTemplateModel,
+)
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
 from app.infrastructure.models.service_model import ServiceModel
@@ -61,9 +67,13 @@ __all__ = [
     "KPIAssignmentModel",
     "KPIModel",
     "LicenseInfoDict",
+    "NonCompeteClauseModel",
     "OutboxEventModel",
     "PasswordSetTokenModel",
     "PersonModel",
+    "ProviderProfileDict",
+    "ReportRunModel",
+    "ReportTemplateModel",
     "ServiceAssignmentModel",
     "ServiceModel",
     "ServiceSessionModel",

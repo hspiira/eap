@@ -8,7 +8,17 @@ from datetime import date
 
 from app.domain.entities.person import PersonEntity
 from app.domain.entities.user import UserEntity
-from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
+from app.domain.enums import (
+    AccreditationStatus,
+    BaseStatus,
+    PanelStatus,
+    PersonType,
+    ProviderTier,
+    RelationType,
+    StaffRole,
+    UgandaRegion,
+    WorkStatus,
+)
 from app.domain.value_objects.core import (
     ClientEmployeeCode,
     ClientId,
@@ -18,6 +28,7 @@ from app.domain.value_objects.core import (
     EmploymentInfo,
     LicenseInfo,
     PersonId,
+    ProviderProfile,
     StaffInfo,
     TenantId,
     UserId,
@@ -95,6 +106,23 @@ class PersonMapper:
                 else lic_dict.get("expiry_date"),
             )
 
+        provider_profile = None
+        pp_raw = getattr(model, "provider_profile", None)
+        if pp_raw:
+            expiry = pp_raw.get("accreditation_expiry")
+            if isinstance(expiry, str):
+                expiry = date.fromisoformat(expiry)
+            provider_profile = ProviderProfile(
+                tier=ProviderTier(pp_raw["tier"]),
+                region=UgandaRegion(pp_raw["region"]),
+                accreditation_status=AccreditationStatus(pp_raw["accreditation_status"]),
+                panel_status=PanelStatus(pp_raw.get("panel_status", PanelStatus.ACTIVE.value)),
+                accreditation_authority=pp_raw.get("accreditation_authority"),
+                accreditation_expiry=expiry,
+                specialties=tuple(pp_raw.get("specialties") or ()),
+                bio=pp_raw.get("bio"),
+            )
+
         staff_info = None
         if model.staff_info:
             staff_dict = model.staff_info
@@ -153,6 +181,7 @@ class PersonMapper:
             profile=profile,
             employment_info=employment_info,
             license_info=license_info,
+            provider_profile=provider_profile,
             staff_info=staff_info,
             dependent_info=dependent_info,
             status=status,
@@ -201,6 +230,20 @@ class PersonMapper:
                 else None,
             }
 
+        provider_profile = None
+        if entity.provider_profile:
+            pp = entity.provider_profile
+            provider_profile = {
+                "tier": pp.tier.value,
+                "region": pp.region.value,
+                "accreditation_status": pp.accreditation_status.value,
+                "panel_status": pp.panel_status.value,
+                "accreditation_authority": pp.accreditation_authority,
+                "accreditation_expiry": pp.accreditation_expiry.isoformat() if pp.accreditation_expiry else None,
+                "specialties": list(pp.specialties),
+                "bio": pp.bio,
+            }
+
         staff_info = None
         if entity.staff_info:
             staff_info = {
@@ -244,6 +287,7 @@ class PersonMapper:
             user_id=entity.user_id.value,
             employment_info=employment_info,
             license_info=license_info,
+            provider_profile=provider_profile,
             staff_info=staff_info,
             dependent_info=dependent_info,
             status=entity.status.value,
