@@ -1,5 +1,11 @@
 import { Calendar, Clock, MapPin } from "lucide-react"
 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 export interface ClientUpcomingItem {
@@ -17,70 +23,64 @@ interface ClientUpcomingCardProps {
   className?: string
 }
 
-export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps) {
-  if (items.length === 0) {
-    return (
-      <div
-        className={cn(
-          "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
-          className
-        )}
-      >
-        <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
-          <h3 className="text-sm font-semibold text-fg">Upcoming</h3>
-        </div>
-        <div className="px-4 py-4 text-sm text-fg/80">No upcoming events or deadlines.</div>
-      </div>
-    )
-  }
-
+export function ClientUpcomingCard({
+  items,
+  className,
+}: ClientUpcomingCardProps) {
   return (
-    <div
-      className={cn(
-        "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
-        className
-      )}
-    >
-      <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
-        <h3 className="text-sm font-semibold text-fg">Upcoming</h3>
-      </div>
-      <div className="flex flex-col divide-y divide-ink/15 max-h-[280px] overflow-y-auto">
-        {items.map((item) => (
-          <div key={item.id} className="px-4 py-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1 space-y-1">
-                <h4 className="text-sm font-medium text-fg">{item.title}</h4>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg/70">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 shrink-0" />
-                    {item.date}
-                  </span>
-                  {item.time && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 shrink-0" />
-                      {item.time}
-                    </span>
-                  )}
-                </div>
-                {item.context && (
-                  <div className="flex items-center gap-1 text-xs text-fg/70">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span>{item.context}</span>
-                  </div>
-                )}
-              </div>
-              {item.link && (
-                <a
-                  href={item.link}
-                  className="shrink-0 text-xs font-medium text-primary hover:underline"
-                >
-                  {item.linkLabel ?? "View"}
-                </a>
-              )}
-            </div>
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="border-b border-border-subtle p-3">
+        <CardTitle className="text-sm font-semibold text-fg">Upcoming</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {items.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-fg-muted">
+            No upcoming events or deadlines.
           </div>
-        ))}
-      </div>
-    </div>
+        ) : (
+          <ul className="max-h-70 divide-y divide-border-subtle overflow-y-auto">
+            {items.map((item) => (
+              <li key={item.id} className="p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1 grid gap-1">
+                    <h4 className="text-sm font-medium text-fg">{item.title}</h4>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="size-3 shrink-0" aria-hidden />
+                        <span className="font-mono tabular-nums">
+                          {item.date}
+                        </span>
+                      </span>
+                      {item.time ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-3 shrink-0" aria-hidden />
+                          <span className="font-mono tabular-nums">
+                            {item.time}
+                          </span>
+                        </span>
+                      ) : null}
+                    </div>
+                    {item.context ? (
+                      <div className="flex items-center gap-1 text-xs text-fg-muted">
+                        <MapPin className="size-3 shrink-0" aria-hidden />
+                        <span>{item.context}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      className="shrink-0 text-xs font-medium text-primary hover:underline"
+                    >
+                      {item.linkLabel ?? "View"}
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }

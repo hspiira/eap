@@ -1,79 +1,126 @@
-import { ChevronLeft, ChevronRight, Info, Link2, Lock, Receipt, ShoppingCart } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Headphones, Info, Pill, Stethoscope } from "lucide-react"
 
-const steps = [
-  { icon: Link2, label: "Link", active: false },
-  { icon: Lock, label: "Lock", active: false },
-  { icon: ShoppingCart, label: "Cart", active: false },
-  { icon: Receipt, label: "Receipt", active: true },
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
+
+interface FunnelStage {
+  id: string
+  label: string
+  icon: React.ElementType
+  count: number
+}
+
+interface OnSiteBehaviorCardProps {
+  title?: string
+  subtitle?: string
+  stages?: ReadonlyArray<FunnelStage>
+  totalLabel?: string
+  className?: string
+}
+
+const DEFAULT_STAGES: ReadonlyArray<FunnelStage> = [
+  { id: "intake", label: "Intake", icon: CalendarDays, count: 1240 },
+  { id: "session", label: "Session", icon: Headphones, count: 980 },
+  { id: "review", label: "Review", icon: Stethoscope, count: 612 },
+  { id: "followup", label: "Follow-up", icon: Pill, count: 414 },
 ]
 
-export function OnSiteBehaviorCard() {
+export function OnSiteBehaviorCard({
+  title = "Care funnel",
+  subtitle = "Last 30 days",
+  stages = DEFAULT_STAGES,
+  totalLabel = "Active cases",
+  className,
+}: OnSiteBehaviorCardProps = {}) {
+  const max = stages.reduce((acc, s) => Math.max(acc, s.count), 0) || 1
+
   return (
-    <div className="border border-border/25 bg-white p-4">
-      <div className="mb-4 flex items-center justify-between">
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-fg">On-site behavior</h3>
-          <button
-            type="button"
-            className="flex h-5 w-5 items-center justify-center border border-border/40 bg-surface/50 text-fg"
-            aria-label="Info"
-          >
-            <Info className="h-3 w-3" />
-          </button>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
-          <span className="h-1.5 w-1.5 shrink-0 bg-primary" />
-          Live
-        </div>
-      </div>
-
-      <div className="mb-4 flex items-center gap-2">
-        <button
-          type="button"
-          className="flex items-center justify-center p-0 text-fg/70 hover:text-fg"
-          aria-label="Previous"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="border border-border/30 bg-neutral-50 px-3 py-1.5 text-sm text-fg">
-          United Kingdom
-        </span>
-        <button
-          type="button"
-          className="flex items-center justify-center p-0 text-fg/70 hover:text-fg"
-          aria-label="Next"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="pt-2">
-        <div className="flex items-center">
-          {steps.map(({ icon: Icon, active }, i) => (
-            <div key={i} className="flex flex-1 items-center">
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center border ${
-                  active
-                    ? "border-danger-soft bg-danger-soft text-white"
-                    : "border-border/40 bg-white text-fg"
-                }`}
+          <CardTitle className="text-sm font-semibold text-fg">
+            {title}
+          </CardTitle>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="text-fg-subtle hover:text-fg"
+                aria-label="Funnel info"
               >
-                <Icon className="h-4 w-4" />
-              </div>
-              {i < steps.length - 1 && (
-                <div className="relative flex flex-1 items-center">
-                  <div className="h-0.5 w-full bg-border/40" />
-                  {i === 1 && (
-                    <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full pb-0.5 text-xs text-fg/60">
-                      2s
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                <Info className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Counts are scoped to {subtitle.toLowerCase()}.
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </div>
-    </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="size-7" aria-label="Previous period">
+            <ChevronLeft className="size-3.5" />
+          </Button>
+          <span className="font-mono text-xs tabular-nums text-fg-muted">
+            {subtitle}
+          </span>
+          <Button variant="ghost" size="icon" className="size-7" aria-label="Next period">
+            <ChevronRight className="size-3.5" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-3 p-4">
+        <ol className="grid gap-2">
+          {stages.map((s, i) => {
+            const ratio = s.count / max
+            return (
+              <li key={s.id} className="grid gap-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <span
+                    className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-fg-muted"
+                    aria-hidden
+                  >
+                    <s.icon className="size-3.5" />
+                  </span>
+                  <span className="font-medium text-fg">{s.label}</span>
+                  <span className="ml-auto font-mono tabular-nums text-fg-muted">
+                    {s.count.toLocaleString()}
+                  </span>
+                </div>
+                <div
+                  className="ml-9 h-1.5 overflow-hidden rounded-sm bg-muted"
+                  aria-hidden
+                >
+                  <div
+                    className={cn(
+                      "h-full transition-[width] duration-200",
+                      i === stages.length - 1 ? "bg-primary" : "bg-fg-muted",
+                    )}
+                    style={{ width: `${Math.max(ratio * 100, 4)}%` }}
+                  />
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+        <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-xs">
+          <span className="text-fg-muted">{totalLabel}</span>
+          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+            {stages[stages.length - 1]?.count.toLocaleString() ?? "0"}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

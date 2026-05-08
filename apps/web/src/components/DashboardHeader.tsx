@@ -10,6 +10,8 @@ import {
   LogOut,
   Monitor,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   Settings,
   Sun,
@@ -25,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import {
   Tooltip,
   TooltipContent,
@@ -38,19 +40,27 @@ import { authActions } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 
-const routeTitles: Record<string, string> = {
+const ROUTE_TITLES: Record<string, string> = {
   "/": "Home",
   "/at-risk": "At Risk",
+  "/design": "Design gallery",
 }
+
+const ICON_BUTTON =
+  "size-8 shrink-0 text-fg-muted hover:bg-surface-hover hover:text-fg"
 
 function PageTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const title = routeTitles[pathname] ?? "Dashboard"
+  const title = ROUTE_TITLES[pathname] ?? humaniseRoute(pathname)
   return (
-    <span className="text-sm font-medium text-fg truncate">
-      {title}
-    </span>
+    <span className="truncate text-sm font-medium text-fg">{title}</span>
   )
+}
+
+function humaniseRoute(pathname: string): string {
+  if (pathname === "/") return "Home"
+  const last = pathname.split("/").filter(Boolean).pop() ?? ""
+  return last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, " ")
 }
 
 function HeaderSearch() {
@@ -66,74 +76,65 @@ function HeaderSearch() {
     return () => window.removeEventListener("keydown", handler)
   }, [])
   return (
-    <div className="relative h-8 min-w-50 max-w-[320px] rounded-none bg-neutral-50 px-2">
-      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-black/80" />
-      <Input
+    <div className="relative hidden h-8 w-full max-w-80 items-center md:flex">
+      <Search
+        className="pointer-events-none absolute left-2.5 size-3.5 text-fg-subtle"
+        aria-hidden
+      />
+      <input
         ref={inputRef}
+        type="search"
         placeholder="Search"
-        className="h-full min-h-0 border-0 bg-transparent pl-8 pr-10 py-0 text-sm focus-visible:ring-0"
+        aria-label="Search"
+        className="h-8 w-full rounded-sm border border-border-subtle bg-surface pl-8 pr-12 text-sm text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         onKeyDown={(e) => e.stopPropagation()}
       />
-      <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs text-black/80 bg-fg/15 rounded-none">
+      <kbd
+        aria-hidden
+        className="pointer-events-none absolute right-2 inline-flex h-5 select-none items-center rounded-sm border border-border-subtle bg-bg px-1.5 font-mono text-[10px] font-medium text-fg-subtle"
+      >
         ⌘K
       </kbd>
     </div>
   )
 }
 
+function HeaderSidebarTrigger() {
+  const { open } = useSidebar()
+  const Icon = open ? PanelLeftClose : PanelLeftOpen
+  return (
+    <SidebarTrigger className={ICON_BUTTON}>
+      <Icon className="size-4" />
+    </SidebarTrigger>
+  )
+}
+
 function NotificationsDropdown() {
+  const hasUnread = false
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="relative h-8 w-8 p-0 text-fg hover:bg-surface"
+          size="icon"
+          className={cn(ICON_BUTTON, "relative")}
           aria-label="Notifications"
         >
-          <Bell className="h-4 w-4" />
-          <span
-            className="absolute right-1 top-1 h-1.5 w-1.5 bg-danger"
-            aria-hidden
-          />
+          <Bell className="size-4" />
+          {hasUnread ? (
+            <span
+              className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-danger"
+              aria-hidden
+            />
+          ) : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel className="text-fg">
-          Notifications
-        </DropdownMenuLabel>
+        <DropdownMenuLabel className="text-fg">Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer text-sm text-fg"
-          onSelect={() => {
-            setTimeout(() => {
-              document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
-            }, 0)
-          }}
-        >
-          <span className="truncate">Captiva 01 121 PHA – Speeding</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer text-sm text-fg"
-          onSelect={() => {
-            setTimeout(() => {
-              document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
-            }, 0)
-          }}
-        >
-          <span className="truncate">Howo Авт 01 054 JKA – Exited geofence</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer text-sm font-medium text-fg"
-          onSelect={() => {
-            setTimeout(() => {
-              document.querySelector('[data-notifications-card]')?.scrollIntoView({ behavior: 'smooth' })
-            }, 0)
-          }}
-        >
-          View all notifications
-        </DropdownMenuItem>
+        <div className="px-2 py-3 text-center text-xs text-fg-muted">
+          You're all caught up.
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -144,7 +145,7 @@ function ThemeToggle() {
   const cycle = () => {
     const next: Array<"light" | "dark" | "system"> = ["light", "dark", "system"]
     const i = next.indexOf(preference)
-    setPreference(next[(i + 1) % 3])
+    setPreference(next[(i + 1) % next.length])
   }
   const label =
     preference === "light"
@@ -154,27 +155,20 @@ function ThemeToggle() {
         : "System"
   const Icon = preference === "light" ? Sun : preference === "dark" ? Moon : Monitor
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-fg hover:bg-surface"
-            onClick={cycle}
-            aria-label={`Theme: ${label}`}
-          >
-            <Icon className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent
-          side="bottom"
-          className="border border-fg/20 bg-surface text-fg rounded-none"
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={ICON_BUTTON}
+          onClick={cycle}
+          aria-label={`Theme: ${label}. Click to cycle.`}
         >
-          Theme: {label}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          <Icon className="size-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Theme: {label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -183,6 +177,7 @@ function UserMenu() {
   const navigate = useNavigate()
   const { showSuccess } = useToast()
   const displayEmail = email ?? "Account"
+  const initial = displayEmail.charAt(0).toUpperCase()
 
   const handleSignOut = async () => {
     await authActions.logout()
@@ -198,48 +193,47 @@ function UserMenu() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 gap-2 px-2 text-fg hover:bg-surface"
+          className="h-8 gap-2 px-1.5 text-fg-muted hover:bg-surface-hover hover:text-fg"
           aria-label="Account menu"
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-fg/30 bg-surface text-xs font-medium text-fg">
-            {displayEmail.charAt(0).toUpperCase()}
+          <span
+            className="grid size-6 shrink-0 place-items-center rounded-sm bg-muted font-mono text-xs font-medium text-fg"
+            aria-hidden
+          >
+            {initial}
           </span>
-          <span className="max-w-30 truncate text-sm">{displayEmail}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-70" />
+          <span className="hidden max-w-32 truncate text-sm md:inline">
+            {displayEmail}
+          </span>
+          <ChevronDown className="size-3.5 shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="text-fg font-normal">
+        <DropdownMenuLabel className="font-normal text-fg">
           <span className="truncate">{displayEmail}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link
-            to="/"
-            className="cursor-pointer text-fg"
-          >
-            <User className="mr-2 h-4 w-4" />
+          <Link to="/" className="cursor-pointer">
+            <User className="size-4" />
             Profile
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link
-            to="/"
-            className="cursor-pointer text-fg"
-          >
-            <Settings className="mr-2 h-4 w-4" />
+          <Link to="/" className="cursor-pointer">
+            <Settings className="size-4" />
             Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-fg focus:bg-surface-hover"
+          className="cursor-pointer"
           onSelect={(e) => {
             e.preventDefault()
             handleSignOut()
           }}
         >
-          <LogOut className="mr-2 h-4 w-4" />
+          <LogOut className="size-4" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -247,50 +241,47 @@ function UserMenu() {
   )
 }
 
-function HelpLink() {
+function HelpButton() {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="#"
-            className="flex h-8 w-8 shrink-0 items-center justify-center text-fg hover:bg-surface"
-            aria-label="Help & feedback"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent
-          side="bottom"
-          className="border border-fg/20 bg-surface text-fg rounded-none"
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className={ICON_BUTTON}
+          aria-label="Help & feedback"
         >
-          Help & feedback
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          <a href="#help">
+            <HelpCircle className="size-4" />
+          </a>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">Help & feedback</TooltipContent>
+    </Tooltip>
   )
 }
 
 export function DashboardHeader() {
   return (
-    <header
-      className={cn(
-        "h-10 flex items-center rounded-none bg-neutral-50 border-b border-fg/20",
-        "sticky top-0 z-10 shrink-0"
-      )}
-    >
-      <div className="flex w-full items-center gap-4 px-2">
+    <TooltipProvider delayDuration={300}>
+      <header
+        className={cn(
+          "sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b border-border-subtle bg-bg pl-2 pr-3",
+        )}
+      >
+        <HeaderSidebarTrigger />
         <div className="min-w-0 flex-1" aria-label="Breadcrumbs">
           <PageTitle />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
         <HeaderSearch />
-        <NotificationsDropdown />
-        <ThemeToggle />
-        <UserMenu />
-        <HelpLink />
+        <div className="flex shrink-0 items-center gap-1">
+          <NotificationsDropdown />
+          <ThemeToggle />
+          <UserMenu />
+          <HelpButton />
         </div>
-      </div>
-    </header>
+      </header>
+    </TooltipProvider>
   )
 }

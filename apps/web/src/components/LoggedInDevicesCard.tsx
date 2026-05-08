@@ -1,79 +1,116 @@
-import { Laptop, Smartphone } from "lucide-react"
+import { Globe, Laptop, Smartphone } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-const SESSIONS = [
+type DeviceType = "desktop" | "mobile" | "browser"
+
+export interface ActiveSession {
+  id: string
+  device: DeviceType
+  label: string
+  location?: string
+  lastActive: string
+  current?: boolean
+}
+
+interface LoggedInDevicesCardProps {
+  sessions?: ReadonlyArray<ActiveSession>
+  className?: string
+}
+
+const DEVICE_ICON: Record<DeviceType, React.ElementType> = {
+  desktop: Laptop,
+  mobile: Smartphone,
+  browser: Globe,
+}
+
+const DEFAULT_SESSIONS: ReadonlyArray<ActiveSession> = [
   {
-    device: "2018 MacBook Pro 15-inch",
-    location: "Melbourne, Australia",
-    time: "22 Jan at 10:42am",
-    status: "Active now",
-    dotColor: "bg-accent-success",
-    badgeClass: "bg-accent-success-soft text-accent-success-ink",
-    icon: Laptop,
+    id: "s1",
+    device: "desktop",
+    label: "MacBook Pro · Safari",
+    location: "Nairobi, KE",
+    lastActive: "Active now",
+    current: true,
   },
   {
-    device: "2018 MacBook Pro 15-inch",
-    location: "Melbourne, Australia",
-    time: "22 Jan at 12:15pm",
-    status: "Error Login",
-    dotColor: "bg-accent-error",
-    badgeClass: "bg-accent-error-soft text-accent-error-ink",
-    icon: Laptop,
+    id: "s2",
+    device: "mobile",
+    label: "iPhone · Mobile app",
+    location: "Nairobi, KE",
+    lastActive: "2h ago",
   },
   {
-    device: "2022 iPhone XS",
-    location: "Melbourne, Australia",
-    time: "22 Jan at 15:29pm",
-    status: "In Active",
-    dotColor: "bg-neutral-400",
-    badgeClass: "bg-accent-blue-soft text-accent-blue-ink",
-    icon: Smartphone,
+    id: "s3",
+    device: "browser",
+    label: "Chrome · Windows",
+    location: "Mombasa, KE",
+    lastActive: "3d ago",
   },
 ]
 
-export function LoggedInDevicesCard() {
+export function LoggedInDevicesCard({
+  sessions = DEFAULT_SESSIONS,
+  className,
+}: LoggedInDevicesCardProps = {}) {
   return (
-    <div className="flex max-w-[420px] flex-col rounded-xl border border-neutral-200 bg-white shadow-sm">
-      <div className="px-4 pt-4 pb-3">
-        <h2 className="text-lg font-bold text-neutral-800">Where you're logged in</h2>
-        <p className="mt-1.5 text-sm leading-snug text-neutral-500">
-          We'll alert you via{" "}
-          <span className="font-semibold font-mono text-neutral-500">admin@untitled.com</span>{" "}
-          if there is any unusual activity on your account.
-        </p>
-      </div>
-      <div className="flex flex-col">
-        {SESSIONS.map((s, i) => (
-          <div
-            key={i}
-            className="px-4 py-3"
-          >
-            <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-start justify-center pt-0.5 text-fg-subtle">
-                <s.icon className="h-4 w-4" strokeWidth={1.5} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-neutral-800">{s.device}</p>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {s.location} • {s.time}
-                </p>
-                <div className="mt-2">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-bold",
-                      s.badgeClass
-                    )}
-                  >
-                    <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", s.dotColor)} />
-                    {s.status}
-                  </span>
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
+        <CardTitle className="text-sm font-semibold text-fg">
+          Active sessions
+        </CardTitle>
+        <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+          {sessions.length}
+        </Badge>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ul className="divide-y divide-border-subtle">
+          {sessions.map((s) => {
+            const Icon = DEVICE_ICON[s.device]
+            return (
+              <li key={s.id} className="flex items-center gap-3 p-3">
+                <span
+                  className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-fg-muted"
+                  aria-hidden
+                >
+                  <Icon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-fg">
+                      {s.label}
+                    </span>
+                    {s.current ? (
+                      <Badge variant="secondary" size="sm" className="text-success">
+                        Current
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <div className="text-xs text-fg-muted">
+                    {s.location ? `${s.location} · ` : ""}
+                    <span className="font-mono tabular-nums">
+                      {s.lastActive}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+                {!s.current ? (
+                  <Button variant="outline" size="sm">
+                    Sign out
+                  </Button>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }

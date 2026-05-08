@@ -1,138 +1,148 @@
 import { Info } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-const sections = [
+interface CampaignMetric {
+  label: string
+  value: string
+  dot?: "success" | "warning" | "danger" | null
+}
+
+interface CampaignSection {
+  title: string
+  primaryMetric: string
+  primaryHint?: string
+  rows: ReadonlyArray<CampaignMetric>
+}
+
+interface EmailCampaignCardProps {
+  title?: string
+  subtitle?: string
+  sections?: ReadonlyArray<CampaignSection>
+  className?: string
+}
+
+const DEFAULT_SECTIONS: ReadonlyArray<CampaignSection> = [
   {
     title: "Delivered",
     primaryMetric: "98.0%",
+    primaryHint: "Of sent emails",
     rows: [
-      { label: "SENT", value: "415,581", dot: null },
-      { label: "DELIVERED", value: "98.0% (407,212)", dot: "green" },
-      { label: "BOUNCED", value: "2.0% (8,369)", dot: "warning" },
+      { label: "Sent", value: "415,581" },
+      { label: "Delivered", value: "407,269" },
+      { label: "Bounced", value: "8,312", dot: "warning" },
     ],
-    summary: "Deliverability is solid at 98%. Keep your bounce rate under 2% by removing invalid or inactive emails regularly.",
-    highlight: { text: "Deliverability is solid at 98%", type: "green" },
   },
   {
     title: "Engaged",
-    primaryMetric: "56.0%",
+    primaryMetric: "32.4%",
+    primaryHint: "Open rate",
     rows: [
-      { label: "OPENS", value: "56.0% (228,037)", dot: "green" },
-      { label: "CLICKS", value: "1.39% (9,555)", dot: "warning" },
+      { label: "Opened", value: "131,955", dot: "success" },
+      { label: "Clicked", value: "27,402" },
+      { label: "Unsubscribed", value: "1,182", dot: "danger" },
     ],
-    summary: "Click rate is low at 1.39%. Aim for 2%+. Test stronger CTAs and refine targeting.",
-    highlight: { text: "Click rate is low at 1.39%", type: "warning" },
   },
-  {
-    title: "Complaints",
-    primaryMetric: "0.20%",
-    rows: [
-      { label: "UNSUBSCRIBES", value: "0.20% (820)", dot: "warning" },
-      { label: "REPORTED SPAM", value: "0.00% (2)", dot: "warning" },
-    ],
-    summary: "Unsubscribes and complaints are fine. Keep monitoring for spikes after each campaign.",
-    highlight: null,
-  },
-] as const
+]
 
-function MetricRow({
-  label,
-  value,
-  dot,
-}: {
-  label: string
-  value: string
-  dot: "green" | "warning" | null
-}) {
-  const isMuted = dot === null
+const DOT_TONE: Record<NonNullable<CampaignMetric["dot"]>, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+}
+
+export function EmailCampaignCard({
+  title = "Outreach campaign",
+  subtitle = "Wellness check-in · Q2 2026",
+  sections = DEFAULT_SECTIONS,
+  className,
+}: EmailCampaignCardProps = {}) {
   return (
-    <div className="flex items-baseline justify-between gap-2 py-1 text-sm">
-      <div className="flex min-w-0 items-center gap-1.5">
-        {dot && (
-          <span
-            className={cn(
-              "h-1.5 w-1.5 shrink-0 rounded-full",
-              dot === "green" && "bg-primary",
-              dot === "warning" && "bg-danger"
-            )}
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
+        <div>
+          <CardTitle className="text-sm font-semibold text-fg">
+            {title}
+          </CardTitle>
+          <p className="mt-0.5 text-xs text-fg-muted">{subtitle}</p>
+        </div>
+        <Badge variant="outline" size="sm">
+          <Info className="size-3" />
+          Live
+        </Badge>
+      </CardHeader>
+      <CardContent className="grid gap-0 p-0 sm:grid-cols-2">
+        {sections.map((s, i) => (
+          <SectionBlock
+            key={s.title}
+            section={s}
+            isFirstColumn={i === 0}
+            totalCols={sections.length}
           />
-        )}
-        <span className={cn("truncate", isMuted ? "text-fg/60" : "text-fg")}>
-          {label}
-        </span>
-      </div>
-      <span className={cn("shrink-0 tabular-nums", isMuted ? "text-fg/70" : "text-fg")}>
-        {value}
-      </span>
-    </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }
 
-export function EmailCampaignCard() {
+function SectionBlock({
+  section,
+  isFirstColumn,
+  totalCols,
+}: {
+  section: CampaignSection
+  isFirstColumn: boolean
+  totalCols: number
+}) {
   return (
-    <div className="w-full p-4">
-      <div
-        className={cn(
-          "overflow-hidden border border-fg/20 bg-white rounded-none"
-        )}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {sections.map((section, i) => (
-            <div
-              key={section.title}
-              className={cn(
-                "flex flex-col p-5",
-                i > 0 && "border-l border-border/25"
-              )}
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="text-sm font-medium text-fg">{section.title}</h3>
-                <button
-                  type="button"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-fg/30 text-fg/70 hover:bg-fg/10"
-                  aria-label={`Info about ${section.title}`}
-                >
-                  <Info className="h-2.5 w-2.5" />
-                </button>
-              </div>
-              <p className="mb-4 text-2xl font-bold tabular-nums text-fg">
-                {section.primaryMetric}
-              </p>
-              <div className="space-y-0 border-t border-border/20 pt-3">
-                {section.rows.map((row) => (
-                  <MetricRow
-                    key={row.label}
-                    label={row.label}
-                    value={row.value}
-                    dot={row.dot}
-                  />
-                ))}
-              </div>
-              <p className="mt-4 text-xs leading-relaxed text-fg/90">
-                {section.highlight ? (() => {
-                  const { text, type } = section.highlight
-                  const i = section.summary.indexOf(text)
-                  if (i === -1) return section.summary
-                  const before = section.summary.slice(0, i)
-                  const after = section.summary.slice(i + text.length)
-                  return (
-                    <>
-                      {before}
-                      <span className={type === "green" ? "text-primary font-medium" : "text-danger font-medium"}>
-                        {text}
-                      </span>
-                      {after}
-                    </>
-                  )
-                })() : (
-                  section.summary
-                )}
-              </p>
-            </div>
-          ))}
-        </div>
+    <div
+      className={cn(
+        "p-4",
+        !isFirstColumn && "border-t border-border-subtle sm:border-t-0",
+        !isFirstColumn && totalCols > 1 && "sm:border-l sm:border-l-border-subtle",
+      )}
+    >
+      <div className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        {section.title}
       </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
+          {section.primaryMetric}
+        </span>
+        {section.primaryHint ? (
+          <span className="text-xs text-fg-subtle">{section.primaryHint}</span>
+        ) : null}
+      </div>
+      <ul className="mt-3 grid gap-1.5">
+        {section.rows.map((r) => (
+          <li
+            key={r.label}
+            className="flex items-center justify-between text-xs"
+          >
+            <span className="flex items-center gap-2 text-fg-muted">
+              {r.dot ? (
+                <span
+                  className={cn("size-1.5 rounded-full", DOT_TONE[r.dot])}
+                  aria-hidden
+                />
+              ) : (
+                <span className="size-1.5" aria-hidden />
+              )}
+              {r.label}
+            </span>
+            <span className="font-mono font-medium tabular-nums text-fg">
+              {r.value}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

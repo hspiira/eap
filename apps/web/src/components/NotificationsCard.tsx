@@ -1,124 +1,176 @@
-import { Bell, Car, ChevronDown, ChevronUp, Eye, Trash2, X } from "lucide-react"
+import { useState } from "react"
 
+import { Bell, ChevronDown, ChevronUp, Eye, Trash2 } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-const notifications = [
+type NotificationTone = "info" | "success" | "warning" | "danger"
+
+export interface NotificationItem {
+  id: string
+  title: string
+  tag?: { label: string; tone: NotificationTone } | null
+  description?: string
+  link?: { label: string; href: string }
+}
+
+interface NotificationsCardProps {
+  notifications?: ReadonlyArray<NotificationItem>
+  className?: string
+}
+
+const TAG_VARIANT: Record<NotificationTone, "default" | "secondary" | "destructive" | "outline"> = {
+  info: "secondary",
+  success: "secondary",
+  warning: "secondary",
+  danger: "destructive",
+}
+
+const TAG_TONE: Record<NotificationTone, string> = {
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+  danger: "",
+}
+
+const DEFAULT_NOTIFICATIONS: ReadonlyArray<NotificationItem> = [
   {
-    id: "1",
-    vehicle: "Captiva 01 121 PHA",
-    tag: "Speeding",
-    tagVariant: "red",
-    expanded: true,
+    id: "n1",
+    title: "Acme Holdings — contract renewal due",
+    tag: { label: "Action needed", tone: "warning" },
     description:
-      "Captiva 01 121 PHA violated the speed limit. On September 20, 2024, at 18:43:33, it was traveling at 76 km/h near 'E39, Samarkand, Samarkand Region, Uzbekistan'.",
-    link: "Register an event",
+      "Master service agreement expires in 14 days. Initiate renewal to avoid service interruption.",
+    link: { label: "Open contract", href: "/contracts" },
   },
   {
-    id: "2",
-    vehicle: "Howo Авт 01 054 JKA",
-    tag: "Exited the geofence",
-    tagVariant: "orange",
-    expanded: false,
-    description: null,
-    link: null,
+    id: "n2",
+    title: "Critical incident logged",
+    tag: { label: "Critical", tone: "danger" },
+    description:
+      "Severity High incident reported 2026-05-08. Awaiting case-manager assignment.",
+    link: { label: "Open incident", href: "/incidents" },
+  },
+  {
+    id: "n3",
+    title: "Survey response rate above target",
+    tag: { label: "Healthy", tone: "success" },
   },
 ]
 
-export function NotificationsCard() {
+export function NotificationsCard({
+  notifications = DEFAULT_NOTIFICATIONS,
+  className,
+}: NotificationsCardProps = {}) {
+  const [expandedId, setExpandedId] = useState<string | null>(
+    notifications[0]?.id ?? null,
+  )
+
   return (
-    <div
-      data-notifications-card
-      className={cn(
-        "flex flex-col rounded-lg border border-border/25 bg-white",
-        "shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
-      )}
-    >
-      <div className="flex items-center justify-between border-b border-border/20 px-4 py-3">
+    <Card className={cn("rounded-md", className)} data-notifications-card>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Bell className="h-4 w-4 text-fg" />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-danger" aria-hidden />
-          </div>
-          <h3 className="text-sm font-semibold text-fg">Notifications</h3>
+          <Bell className="size-4 text-fg-muted" aria-hidden />
+          <CardTitle className="text-sm font-semibold text-fg">
+            Notifications
+          </CardTitle>
+          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+            {notifications.length}
+          </Badge>
         </div>
-        <button
-          type="button"
-          className="p-1 text-fg/70 hover:bg-surface-tile hover:text-fg"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="flex max-h-[420px] flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className="border-b border-border/15 px-4 py-3 last:border-b-0"
-            >
-              <div className="flex items-start gap-2">
-                <Car className="mt-0.5 h-4 w-4 shrink-0 text-fg/70" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-fg">{n.vehicle}</span>
-                      {n.id === "1" && (
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" aria-hidden />
-                      )}
+        <Button variant="ghost" size="sm" className="-mr-2 h-7 px-2 text-xs text-fg-muted">
+          Mark all read
+        </Button>
+      </CardHeader>
+      <CardContent className="p-0">
+        {notifications.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-fg-muted">
+            No notifications.
+          </div>
+        ) : (
+          <ul className="max-h-100 divide-y divide-border-subtle overflow-y-auto">
+            {notifications.map((n) => {
+              const expanded = n.id === expandedId
+              const expandable = Boolean(n.description || n.link)
+              return (
+                <li key={n.id} className="p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1 grid gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium text-fg">
+                          {n.title}
+                        </span>
+                        {n.tag ? (
+                          <Badge
+                            variant={TAG_VARIANT[n.tag.tone]}
+                            size="sm"
+                            className={cn(TAG_TONE[n.tag.tone])}
+                          >
+                            {n.tag.label}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {expanded && n.description ? (
+                        <p className="text-xs leading-relaxed text-fg-muted">
+                          {n.description}
+                        </p>
+                      ) : null}
+                      {expanded && n.link ? (
+                        <div className="flex items-center gap-2 pt-1">
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1.5"
+                          >
+                            <a href={n.link.href}>
+                              <Eye className="size-3" />
+                              {n.link.label}
+                            </a>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-fg-muted"
+                          >
+                            <Trash2 className="size-3" />
+                            Dismiss
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Mark read">
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Delete">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Expand">
-                        {n.expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
+                    {expandable ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6"
+                        aria-label={expanded ? "Collapse" : "Expand"}
+                        aria-expanded={expanded}
+                        onClick={() =>
+                          setExpandedId(expanded ? null : n.id)
+                        }
+                      >
+                        {expanded ? (
+                          <ChevronUp className="size-3.5" />
+                        ) : (
+                          <ChevronDown className="size-3.5" />
+                        )}
+                      </Button>
+                    ) : null}
                   </div>
-                  <span
-                    className={cn(
-                      "mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium",
-                      n.tagVariant === "red" && "bg-danger/15 text-danger",
-                      n.tagVariant === "orange" && "bg-danger-soft/30 text-accent-amber-ink"
-                    )}
-                  >
-                    {n.tag}
-                  </span>
-                  {n.expanded && n.description && (
-                    <p className="mt-2 text-xs leading-relaxed text-fg/90">
-                      {n.description}
-                    </p>
-                  )}
-                  {n.expanded && n.link && (
-                    <button
-                      type="button"
-                      className="mt-2 text-xs font-medium text-primary hover:underline"
-                    >
-                      {n.link}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 border-t border-border/20 p-3">
-          <div className="flex justify-start bg-neutral-50 px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-fg">
-              Delete all
-            </Button>
-          </div>
-          <div className="flex justify-start bg-neutral-50 px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-fg">
-              Delete read messages
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }

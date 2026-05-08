@@ -1,95 +1,173 @@
-import { BookOpen, ChevronDown, ChevronUp, X } from "lucide-react"
+import { BookOpen, ChevronDown, ChevronUp } from "lucide-react"
+import { useState } from "react"
 
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
 
-const speedRanges = [
-  { label: "0 - 29 km/h", color: "bg-fg" },
-  { label: "30 - 69 km/h", color: "bg-primary" },
-  { label: "69 - ∞ km/h", color: "bg-danger" },
+interface ToggleSetting {
+  id: string
+  label: string
+  description?: string
+  defaultEnabled?: boolean
+}
+
+interface MapSettingsCardProps {
+  settings?: ReadonlyArray<ToggleSetting>
+  className?: string
+}
+
+const DEFAULT_SETTINGS: ReadonlyArray<ToggleSetting> = [
+  {
+    id: "auto-assign",
+    label: "Auto-assign new cases",
+    description: "Route new cases to available case managers based on workload.",
+    defaultEnabled: true,
+  },
+  {
+    id: "weekly-digest",
+    label: "Weekly digest emails",
+    description: "Send a Monday summary of the previous week's activity.",
+    defaultEnabled: true,
+  },
+  {
+    id: "audit-export",
+    label: "Audit log retention 90d",
+    description: "Keep audit log entries for 90 days before archival.",
+    defaultEnabled: false,
+  },
 ]
 
-export function MapSettingsCard() {
+export function MapSettingsCard({
+  settings = DEFAULT_SETTINGS,
+  className,
+}: MapSettingsCardProps = {}) {
+  const initial = Object.fromEntries(
+    settings.map((s) => [s.id, s.defaultEnabled ?? false]),
+  )
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(initial)
+
   return (
-    <div
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
+        <CardTitle className="text-sm font-semibold text-fg">
+          Workspace settings
+        </CardTitle>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-mr-2 h-7 gap-1.5 px-2 text-xs text-fg-muted"
+        >
+          <a href="#docs">
+            <BookOpen className="size-3" />
+            Docs
+          </a>
+        </Button>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ul className="divide-y divide-border-subtle">
+          {settings.map((s) => (
+            <SettingRow
+              key={s.id}
+              setting={s}
+              enabled={enabled[s.id] ?? false}
+              onToggle={(v) =>
+                setEnabled((prev) => ({ ...prev, [s.id]: v }))
+              }
+            />
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SettingRow({
+  setting,
+  enabled,
+  onToggle,
+}: {
+  setting: ToggleSetting
+  enabled: boolean
+  onToggle: (next: boolean) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <li className="p-3">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-fg">{setting.label}</span>
+              {setting.description ? (
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 text-fg-muted"
+                    aria-label={open ? "Collapse details" : "Expand details"}
+                  >
+                    {open ? (
+                      <ChevronUp className="size-3" />
+                    ) : (
+                      <ChevronDown className="size-3" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              ) : null}
+            </div>
+          </div>
+          <Toggle enabled={enabled} onChange={onToggle} label={setting.label} />
+        </div>
+        {setting.description ? (
+          <CollapsibleContent className="pt-1.5">
+            <p className="text-xs text-fg-muted">{setting.description}</p>
+          </CollapsibleContent>
+        ) : null}
+      </Collapsible>
+    </li>
+  )
+}
+
+function Toggle({
+  enabled,
+  onChange,
+  label,
+}: {
+  enabled: boolean
+  onChange: (next: boolean) => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      onClick={() => onChange(!enabled)}
       className={cn(
-        "flex flex-col rounded-lg border border-border/25 bg-white",
-        "shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+        "relative inline-flex h-5 w-8 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        enabled ? "bg-primary" : "bg-muted",
       )}
     >
-      <div className="flex items-center justify-between border-b border-border/20 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-fg" />
-          <h3 className="text-sm font-semibold text-fg">Map settings</h3>
-        </div>
-        <button
-          type="button"
-          className="p-1 text-fg/70 hover:bg-surface-tile hover:text-fg"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="flex flex-col gap-4 p-4">
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-8">
-            <label className="mb-1 block text-xs font-medium text-fg/80">Line color</label>
-            <div className="flex h-9 items-center justify-between rounded border border-border/40 bg-neutral-50 px-3">
-              <span className="text-sm text-fg">By Speed</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-fg/60" />
-            </div>
-          </div>
-          <div className="col-span-4">
-            <label className="mb-1 block text-xs font-medium text-fg/80">Thickness</label>
-            <div className="flex h-9 items-center justify-between rounded border border-border/40 bg-neutral-50 px-3">
-              <span className="text-sm text-fg">4 px</span>
-              <div className="flex flex-col">
-                <button type="button" className="text-fg/60 hover:text-fg" aria-label="Increase">
-                  <ChevronUp className="h-3.5 w-3.5" />
-                </button>
-                <button type="button" className="text-fg/60 hover:text-fg" aria-label="Decrease">
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {speedRanges.map(({ label, color }) => (
-            <div key={label} className="flex min-w-0 flex-1 items-center gap-1.5">
-              <div className={cn("h-1.5 w-8 shrink-0 rounded-full", color)} />
-              <span className="truncate text-xs leading-tight text-fg/80">{label}</span>
-            </div>
-          ))}
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-fg/80">Markings</label>
-          <div className="grid grid-cols-11 gap-1">
-            {[
-              { label: "3", className: "rounded-md bg-neutral-200 text-fg text-xs font-semibold" },
-              { label: "@", className: "rounded-md bg-neutral-200 text-fg text-xs" },
-              { label: "Y", className: "rounded-md bg-neutral-200 text-fg text-xs font-semibold" },
-              { label: "", className: "rounded-sm bg-danger" },
-              { label: "B", className: "rounded-md bg-primary text-white text-xs font-bold" },
-              { label: "⚡", className: "rounded-md bg-accent-olive text-white text-xs" },
-              { label: "P", className: "rounded-md bg-danger-soft text-fg text-xs font-bold" },
-              { label: "", className: "rounded-sm border border-fg/50 bg-white" },
-              { label: "", className: "rounded-full bg-fg ring-2 ring-white ring-offset-0.5" },
-              { label: "P", className: "rounded-md border border-fg/40 bg-white text-fg text-xs font-bold" },
-              { label: "S", className: "rounded-md border border-fg/40 bg-white text-fg text-xs font-semibold" },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex aspect-square min-h-0 w-full max-w-full items-center justify-center border border-border/20",
-                  item.className
-                )}
-              >
-                {item.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      <span
+        className={cn(
+          "size-4 rounded-full bg-bg shadow-sm transition-transform",
+          enabled ? "translate-x-3.5" : "translate-x-0.5",
+        )}
+        aria-hidden
+      />
+    </button>
   )
 }

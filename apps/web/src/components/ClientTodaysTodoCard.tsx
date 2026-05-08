@@ -1,5 +1,13 @@
-import { cn } from "@/lib/utils"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 export interface ClientTodaysTodoItem {
   id: string
@@ -18,64 +26,85 @@ function formatTodayLabel() {
   const d = new Date()
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, "0")
-  const day = d.getDate()
+  const day = String(d.getDate()).padStart(2, "0")
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  const weekDay = days[d.getDay()]
-  return `${y}/${m} ${day} ${weekDay}`
+  return `${y}-${m}-${day} · ${days[d.getDay()]}`
 }
 
-export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardProps) {
+export function ClientTodaysTodoCard({
+  items,
+  className,
+}: ClientTodaysTodoCardProps) {
   return (
-    <div
-      className={cn(
-        "flex flex-col border border-fg/20 bg-white p-4 rounded-none",
-        className
-      )}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-fg">Today's to-do</h3>
-        <span className="text-xs text-fg/70">View all</span>
-      </div>
-      <div className="mb-3 flex items-center justify-between rounded-none border border-fg/30 bg-neutral-50 px-2 py-1">
-        <button type="button" className="p-1 text-fg/70 hover:bg-fg/10" aria-label="Previous day">
-          ←
-        </button>
-        <span className="text-xs text-fg">{formatTodayLabel()}</span>
-        <button type="button" className="p-1 text-fg/70 hover:bg-fg/10" aria-label="Next day">
-          →
-        </button>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-sm text-fg/80">Nothing scheduled for today.</p>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={item.id} className="flex gap-2 text-sm text-fg">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-none bg-fg" />
-              <span className="min-w-0 flex-1">
-                {item.link ? (
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
+        <CardTitle className="text-sm font-semibold text-fg">
+          Today's to-do
+        </CardTitle>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-mr-2 h-7 px-2 text-xs text-fg-muted"
+        >
+          View all
+        </Button>
+      </CardHeader>
+      <CardContent className="grid gap-3 p-3">
+        <div className="flex items-center justify-between rounded-sm border border-border-subtle bg-surface px-2 py-1">
+          <Button variant="ghost" size="icon" className="size-6" aria-label="Previous day">
+            <ChevronLeft className="size-3.5" />
+          </Button>
+          <span className="font-mono text-xs tabular-nums text-fg-muted">
+            {formatTodayLabel()}
+          </span>
+          <Button variant="ghost" size="icon" className="size-6" aria-label="Next day">
+            <ChevronRight className="size-3.5" />
+          </Button>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-sm text-fg-muted">Nothing scheduled for today.</p>
+        ) : (
+          <ul className="grid gap-2">
+            {items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-baseline gap-3 text-sm text-fg"
+              >
+                {item.time ? (
+                  <span className="font-mono shrink-0 tabular-nums text-fg-subtle">
+                    {item.time}
+                  </span>
+                ) : (
+                  <span
+                    className="mt-1 size-1.5 shrink-0 rounded-full bg-fg-muted"
+                    aria-hidden
+                  />
+                )}
+                <span className="min-w-0 flex-1">
+                  {item.link ? (
+                    <a
+                      href={item.link}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    item.title
+                  )}
+                </span>
+                {item.link && item.linkLabel ? (
                   <a
                     href={item.link}
-                    className="hover:text-primary hover:underline"
+                    className="shrink-0 text-xs text-fg-muted hover:text-primary"
                   >
-                    {(item.time ? `${item.time} ` : "") + item.title}
+                    {item.linkLabel}
                   </a>
-                ) : (
-                  <span>{(item.time ? `${item.time} ` : "") + item.title}</span>
-                )}
-              </span>
-              {item.link && item.linkLabel && (
-                <a
-                  href={item.link}
-                  className="shrink-0 text-xs text-fg/70 hover:text-primary"
-                >
-                  {item.linkLabel}
-                </a>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }

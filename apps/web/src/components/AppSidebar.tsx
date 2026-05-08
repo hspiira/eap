@@ -15,7 +15,6 @@ import {
   Headphones,
   Home,
   Inbox,
-  LayoutList,
   MessageSquare,
   PhoneCall,
   Search,
@@ -38,8 +37,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
-  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 
@@ -140,12 +137,6 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex h-8 items-center justify-between">
-          <SidebarTrigger>
-            <LayoutList className="size-4" />
-          </SidebarTrigger>
-        </div>
-        <SidebarSeparator />
         <div className="flex h-8 items-center">
           <TenantDisplay />
         </div>

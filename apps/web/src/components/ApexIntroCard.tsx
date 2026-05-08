@@ -1,46 +1,62 @@
-import { Plus } from "lucide-react"
+import { Mic, Sparkles } from "lucide-react"
 
-export function ApexIntroCard() {
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+
+interface ApexIntroCardProps {
+  className?: string
+}
+
+export function ApexIntroCard({ className }: ApexIntroCardProps = {}) {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-surface-lilac-faint p-4 shadow-sm">
-      <div className="flex gap-4">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-lilac text-accent-purple-deep"
-          aria-hidden
-        >
-          <span className="text-lg font-bold">A</span>
+    <Card className={cn("rounded-md", className)}>
+      <CardContent className="grid gap-3 p-4">
+        <div className="flex items-start gap-3">
+          <span
+            className="grid size-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"
+            aria-hidden
+          >
+            <Sparkles className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1 grid gap-1">
+            <p className="text-sm text-fg">
+              Hello, I'm <strong className="font-semibold">Apex</strong> — your
+              tenant assistant.
+            </p>
+            <p className="text-sm text-fg-muted">
+              Ask me anything about clients, contracts, sessions, or incidents.
+              I'll surface the right record and the right action.
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] text-neutral-800">
-            Hello, I am <strong>Apex</strong>, powered by <strong>AX-Prime technology.</strong>
-          </p>
-          <p className="mt-1.5 text-sm text-neutral-600 leading-relaxed">
-            I am a highly advanced AI model designed to handle complex data with ease,
-            particularly in the medical field.
-          </p>
+
+        <div className="flex items-center gap-2 rounded-sm border border-border-subtle bg-surface px-3 py-2">
+          <span className="font-mono text-xs tabular-nums text-fg-subtle">
+            0:00
+          </span>
+          <div
+            className="flex flex-1 items-center justify-center gap-0.5"
+            aria-hidden
+          >
+            {Array.from({ length: 32 }).map((_, i) => (
+              <span
+                key={i}
+                className="w-0.5 shrink-0 rounded-full bg-primary/40"
+                style={{
+                  height: `${Math.max(4, 10 + Math.sin(i * 0.6) * 10)}px`,
+                }}
+              />
+            ))}
+          </div>
+          <Button variant="outline" size="icon" aria-label="Start voice input">
+            <Mic className="size-4" />
+          </Button>
         </div>
-      </div>
-      <div className="mt-4 flex items-center gap-3 rounded-full bg-accent-purple-deep px-4 py-2.5">
-        <span className="text-xs font-medium text-white shrink-0">0:44</span>
-        <div className="flex flex-1 items-center justify-center gap-0.5 py-1 min-h-0">
-          {Array.from({ length: 32 }).map((_, i) => (
-            <span
-              key={i}
-              className="w-0.5 shrink-0 rounded-full bg-white/90"
-              style={{
-                height: `${Math.max(4, 10 + Math.sin(i * 0.6) * 10)}px`,
-              }}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-lilac-mid text-white hover:bg-surface-lilac-mid-hover"
-          aria-label="Add"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
