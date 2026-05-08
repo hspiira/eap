@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app.api.routes.activities import router as activities_router
 from app.api.routes.audit import router as audit_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.care_callbacks import router as care_callbacks_router
 from app.api.routes.client_tags import router as client_tags_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contacts import router as contacts_router
@@ -25,6 +26,7 @@ from app.api.routes.reports import router as reports_router
 from app.api.routes.services import router as services_router
 from app.api.routes.service_assignments import router as service_assignments_router
 from app.api.routes.service_sessions import router as service_sessions_router
+from app.api.routes.surveys import router as surveys_router
 from app.api.routes.tenants import router as tenants_router
 from app.api.routes.users import router as users_router
 
@@ -50,6 +52,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(non_compete_router)
     app.include_router(reports_router)
     app.include_router(pricing_router)
+    app.include_router(care_callbacks_router)
+    app.include_router(surveys_router)
     app.include_router(kpis_router)
     app.include_router(audit_router)
 
@@ -58,6 +62,7 @@ __all__ = [
     "activities_router",
     "audit_router",
     "auth_router",
+    "care_callbacks_router",
     "client_tags_router",
     "clients_router",
     "contacts_router",
@@ -75,6 +80,7 @@ __all__ = [
     "services_router",
     "service_assignments_router",
     "service_sessions_router",
+    "surveys_router",
     "tenants_router",
     "users_router",
 ]

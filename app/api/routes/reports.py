@@ -17,6 +17,7 @@ from app.api.schemas.report_schemas import (
     TemplateSectionInput,
 )
 from app.application.use_cases.report_use_cases import (
+    CreateRenewalPackTemplateUseCase,
     CreateReportTemplateUseCase,
     GetReportRunUseCase,
     RunReportTemplateUseCase,
@@ -83,6 +84,39 @@ def _to_run_response(r: ReportRun) -> ReportRunResponse:
         created_at=r.created_at,
         updated_at=r.updated_at,
     )
+
+
+@router.post(
+    "/templates/renewal-pack",
+    response_model=ReportTemplateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Materialise the v1 renewal-pack template (idempotent)",
+)
+@transactional()
+async def create_renewal_pack_template(
+    request: Request,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    client_id: str | None = Query(
+        default=None,
+        description="Optional client scope; omit for tenant-wide variant",
+    ),
+    current_user: TokenData = Depends(require_same_tenant),
+    repo: ReportTemplateRepository = Depends(get_report_template_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    template = await CreateRenewalPackTemplateUseCase(repo).execute(
+        tenant_id=TenantId(tenant_id),
+        client_id=client_id,
+    )
+    await audit_entity_operation(
+        entity=template,
+        audit_handler=audit_handler,
+        tenant_id=template.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_template_response(template)
 
 
 @router.post(
