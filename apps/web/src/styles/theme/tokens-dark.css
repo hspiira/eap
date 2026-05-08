@@ -33,10 +33,11 @@
   --fg-subtle: var(--neutral-500);
   --fg-on-brand: #052e16;
 
-  /* Borders. */
-  --border-default: var(--neutral-300);
-  --border-subtle: var(--neutral-200);
-  --border-strong: var(--neutral-400);
+  /* Borders — Tegon-style hairlines. Dark mode borders are inherently
+   * harder to balance; keep them well under 10% white. */
+  --border-subtle: rgb(255 255 255 / 0.04);
+  --border-default: rgb(255 255 255 / 0.06);
+  --border-strong: var(--neutral-300);
 
   /* Brand — brighter green works against dark surfaces. */
   --brand: #34d399;

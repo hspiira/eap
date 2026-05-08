@@ -1,6 +1,9 @@
+import { ArrowUpRight, ShieldCheck } from 'lucide-react'
+
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { AppLayout } from '@/components/AppLayout'
+import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/slices/authSlice'
 
 export const Route = createFileRoute('/')({
@@ -12,11 +15,8 @@ function HomePage() {
 
   if (isLoading) {
     return (
-      <div
-        className="min-h-svh w-full flex items-center justify-center bg-white text-black"
-        style={{ minHeight: '100dvh' }}
-      >
-        <p>Loading...</p>
+      <div className="grid min-h-svh w-full place-items-center bg-bg text-fg">
+        <p className="text-sm text-fg-muted">Loading…</p>
       </div>
     )
   }
@@ -36,76 +36,105 @@ const EMPTY_AUTH_SEARCH = {
 
 function LandingPage() {
   return (
-    <div className="h-dvh bg-black flex flex-col relative overflow-hidden">
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 z-0 w-full h-full object-cover"
-        style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-        aria-hidden
-      >
-        <source src="/videos/bg_landing.webm" type="video/webm" />
-      </video>
-      <div
-        className="absolute inset-0 z-0 bg-black/40 backdrop-blur-[1px]"
-        style={{ willChange: 'transform', transform: 'translateZ(0)' }}
-        aria-hidden
-      />
-
-      <div className="relative z-10 flex flex-col w-full flex-1 min-h-0 overflow-y-auto">
-        <nav className="px-8 py-8 shrink-0">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="text-2xl font-semibold text-white tracking-wide">Evexía</div>
-            <Link
-              to="/auth/login"
-              search={EMPTY_AUTH_SEARCH}
-              className="text-white/70 hover:text-white transition-colors text-sm"
+    <div className="flex min-h-svh flex-col bg-bg text-fg">
+      <header className="border-b border-border-subtle">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight text-fg"
+          >
+            <span
+              className="grid size-6 place-items-center rounded-sm bg-primary text-primary-foreground"
+              aria-hidden
             >
-              Sign In
+              <ShieldCheck className="size-3.5" />
+            </span>
+            Evexía
+          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
+              Sign in
             </Link>
-          </div>
-        </nav>
+          </Button>
+        </div>
+      </header>
 
-        <main className="flex-1 flex items-center px-8">
-          <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight">
-                Manage with
-                <br />
-                <span className="text-primary">clarity</span>
-              </h1>
-              <p className="text-lg text-white/80 leading-relaxed max-w-md tracking-wider">
-                A comprehensive platform for managing clients, services, and delivery
-              </p>
+      <main className="flex-1">
+        <div className="mx-auto grid w-full max-w-6xl gap-16 px-6 py-16 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:py-24">
+          <div className="grid gap-6">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-sm border border-border-subtle bg-surface px-2 py-1 font-mono text-xs uppercase tracking-wider text-fg-muted">
+              EAP operations platform
+            </span>
+            <h1 className="text-4xl font-semibold tracking-tight text-fg md:text-5xl lg:text-6xl">
+              Manage care, clients, and contracts with{' '}
+              <span className="text-primary">clarity</span>.
+            </h1>
+            <p className="max-w-prose text-base leading-relaxed text-fg-muted md:text-lg">
+              A single console for case managers and platform staff. Track
+              sessions, monitor incidents, renew contracts, and stay
+              audit-ready — all in one place.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg">
+                <Link to="/auth/signup">
+                  Get started
+                  <ArrowUpRight className="size-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
+                  Sign in
+                </Link>
+              </Button>
             </div>
-
-            <div className="flex flex-col items-start lg:items-end gap-4">
-              <Link
-                to="/auth/signup"
-                className="group flex items-center gap-4 px-8 py-5 bg-black/20 backdrop-blur-sm border border-white/15 hover:bg-black/30 hover:border-white/25 text-white transition-all rounded-none"
-              >
-                <span className="text-lg font-medium">Get Started</span>
-                <span className="text-white/50 group-hover:text-white/80 group-hover:translate-x-1 transition-all">→</span>
-              </Link>
-              <Link
-                to="/auth/login"
-                search={EMPTY_AUTH_SEARCH}
-                className="text-white/60 hover:text-white/90 transition-colors text-sm"
-              >
-                Already have an account?
-              </Link>
-            </div>
           </div>
-        </main>
 
-        <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm shrink-0">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-white/50 text-xs">© 2026 Evexía</p>
+          <FeatureSummary />
+        </div>
+      </main>
+
+      <footer className="border-t border-border-subtle">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4 text-xs text-fg-subtle">
+          <span>© 2026 Evexía</span>
+          <span className="font-mono">v0.1</span>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+const FEATURES: ReadonlyArray<{ title: string; body: string }> = [
+  {
+    title: 'Client and contract lifecycle',
+    body: 'Onboard organisations, manage tiers, renew agreements, and track every change in audit.',
+  },
+  {
+    title: 'Sessions, cases, and incidents',
+    body: 'Log delivered care, escalate critical incidents, route cases through review.',
+  },
+  {
+    title: 'Insight without the spreadsheet',
+    body: 'KPI dashboards, surveys, and engagement reports that stay in sync with the source.',
+  },
+]
+
+function FeatureSummary() {
+  return (
+    <div className="grid gap-3 rounded-md border border-border-subtle bg-surface p-4 md:p-6">
+      {FEATURES.map((f, i) => (
+        <div key={f.title} className="grid gap-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="grid size-5 place-items-center rounded-sm bg-primary/10 font-mono text-[10px] font-medium text-primary"
+              aria-hidden
+            >
+              {i + 1}
+            </span>
+            <h2 className="text-sm font-semibold text-fg">{f.title}</h2>
           </div>
-        </footer>
-      </div>
+          <p className="pl-7 text-sm text-fg-muted">{f.body}</p>
+        </div>
+      ))}
     </div>
   )
 }

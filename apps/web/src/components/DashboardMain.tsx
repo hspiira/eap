@@ -21,39 +21,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { formatKpi, useDashboardKpis } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
 
 interface KpiSpec {
   id: string
   label: string
   value: string
+  loading?: boolean
+  error?: boolean
   delta?: { value: string; direction: "up" | "down"; tone: "success" | "danger" | "muted" }
   hint?: string
 }
-
-const KPIS: ReadonlyArray<KpiSpec> = [
-  {
-    id: "active-clients",
-    label: "Active clients",
-    value: "—",
-    hint: "Live from API once wired",
-  },
-  {
-    id: "open-cases",
-    label: "Open cases",
-    value: "—",
-  },
-  {
-    id: "sessions-mtd",
-    label: "Sessions MTD",
-    value: "—",
-  },
-  {
-    id: "renewals-30d",
-    label: "Renewals (30d)",
-    value: "—",
-  },
-]
 
 interface QuickAction {
   to: string
@@ -100,17 +80,50 @@ const SAMPLE_ALERTS: ClientAlert[] = [
 ]
 
 export function DashboardMain() {
+  const kpis = useDashboardKpis()
+
+  const kpiSpecs: ReadonlyArray<KpiSpec> = [
+    {
+      id: "clients",
+      label: "Clients",
+      value: formatKpi(kpis.clients.value),
+      loading: kpis.clients.loading,
+      error: kpis.clients.error,
+    },
+    {
+      id: "incidents",
+      label: "Incidents",
+      value: formatKpi(kpis.incidents.value),
+      loading: kpis.incidents.loading,
+      error: kpis.incidents.error,
+    },
+    {
+      id: "sessions",
+      label: "Sessions",
+      value: formatKpi(kpis.sessions.value),
+      loading: kpis.sessions.loading,
+      error: kpis.sessions.error,
+    },
+    {
+      id: "contracts",
+      label: "Contracts",
+      value: formatKpi(kpis.contracts.value),
+      loading: kpis.contracts.loading,
+      error: kpis.contracts.error,
+    },
+  ]
+
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-bg">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6">
+      <div className="grid w-full gap-4 p-4 md:p-6">
         <DashboardHeader />
-        <KpiStrip kpis={KPIS} />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="grid gap-4 lg:col-span-2">
+        <KpiStrip kpis={kpiSpecs} />
+        <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 lg:col-span-2 xl:col-span-3">
             <QuickActionsCard actions={QUICK_ACTIONS} />
             <ActivityFeedCard />
           </div>
-          <div className="grid gap-4">
+          <div className="grid gap-4 xl:col-span-1">
             <OnboardingProgressCard />
             <ClientAlertsCard alerts={SAMPLE_ALERTS} />
           </div>
@@ -166,9 +179,17 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
               {kpi.label}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-                {kpi.value}
-              </span>
+              {kpi.loading ? (
+                <Skeleton className="h-7 w-12" />
+              ) : kpi.error ? (
+                <span className="font-mono text-2xl font-semibold tabular-nums text-fg-subtle">
+                  —
+                </span>
+              ) : (
+                <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
+                  {kpi.value}
+                </span>
+              )}
               {kpi.delta ? (
                 <Badge
                   variant={
@@ -185,7 +206,9 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
                 </Badge>
               ) : null}
             </div>
-            {kpi.hint ? (
+            {kpi.error ? (
+              <p className="mt-1 text-xs text-danger">Failed to load</p>
+            ) : kpi.hint ? (
               <p className="mt-1 text-xs text-fg-subtle">{kpi.hint}</p>
             ) : null}
           </div>
@@ -211,17 +234,16 @@ function QuickActionsCard({
           {actions.length}
         </Badge>
       </CardHeader>
-      <CardContent className="grid gap-0 p-0 sm:grid-cols-2">
-        {actions.map((action, i) => (
+      <CardContent className="grid gap-0 p-0 sm:grid-cols-2 xl:grid-cols-4">
+        {actions.map((action) => (
           <Link
             key={action.to}
             to={action.to}
             className={cn(
               "group flex items-start gap-3 p-3 transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none",
-              i > 0 && "border-t border-border-subtle",
-              i === 1 && "sm:border-t-0 sm:border-l",
-              i > 1 && "sm:border-l-0",
-              i % 2 === 1 && "sm:border-l sm:border-l-border-subtle",
+              "border-t border-border-subtle",
+              "sm:nth-[-n+2]:border-t-0 sm:nth-[2n]:border-l sm:nth-[2n]:border-l-border-subtle",
+              "xl:border-t-0 xl:not-first:border-l xl:not-first:border-l-border-subtle",
             )}
           >
             <span

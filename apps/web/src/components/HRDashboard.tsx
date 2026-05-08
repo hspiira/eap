@@ -1,232 +1,347 @@
-import { BarChart3, ChevronRight, FileText, Mail, Receipt, RefreshCw, User } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  ChevronRight as Chevron,
+  FileText,
+  Mail,
+  Receipt,
+  RefreshCw,
+  User,
+} from "lucide-react"
 
-import { ChartAreaInteractive } from "@/components/ChartAreaInteractive"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-function Card({ title, link, children, className }: { title: string; link?: string; children: React.ReactNode; className?: string }) {
+interface SectionCardProps {
+  title: string
+  link?: string
+  className?: string
+  children: React.ReactNode
+}
+
+function SectionCard({ title, link, className, children }: SectionCardProps) {
   return (
-    <div className={cn("flex flex-col border border-border/25 bg-white p-4", className)}>
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-fg">{title}</h3>
-        {link && (
-          <button type="button" className="text-xs text-fg/70 hover:text-primary">
-            {link} <ChevronRight className="inline h-3 w-3" />
-          </button>
-        )}
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
+        <CardTitle className="text-sm font-semibold text-fg">{title}</CardTitle>
+        {link ? (
+          <Button variant="ghost" size="sm" className="-mr-2 h-7 gap-1 px-2 text-fg-muted">
+            {link}
+            <Chevron className="size-3" />
+          </Button>
+        ) : null}
+      </CardHeader>
+      <CardContent className="p-3">{children}</CardContent>
+    </Card>
+  )
+}
+
+const QUICK_APPS = [
+  { icon: Mail, label: "Inbox" },
+  { icon: FileText, label: "Surveys" },
+  { icon: User, label: "Persons" },
+  { icon: Receipt, label: "Billing" },
+] as const
+
+const ANNOUNCEMENTS = [
+  "Q3 reporting cadence: weekly snapshots due each Monday by 09:00.",
+  "New incident escalation flow rolling out 2026-06-01.",
+  "Care-callback templates updated; review before next campaign.",
+] as const
+
+const RECENT_HIRES = [
+  { name: "M. Reddy", role: "Care manager", date: "2026-05-08" },
+  { name: "L. Achieng", role: "Intake coordinator", date: "2026-05-06" },
+  { name: "F. Hasibiri", role: "Senior counsellor", date: "2026-05-02" },
+] as const
+
+const TODAYS_QUEUE = [
+  { time: "09:00", title: "New tenant onboarding kickoff" },
+  { time: "14:00", title: "Internal case review" },
+  { time: "15:30", title: "Approval queue: contract renewals" },
+] as const
+
+export function HRDashboard() {
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-4 p-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <SectionCard title="This week" link="See breakdown">
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
+              3,320
+            </span>
+            <Badge variant="secondary" size="sm" className="font-mono tabular-nums text-success">
+              <ArrowUp className="size-3" />
+              +224
+            </Badge>
+          </div>
+          <div className="my-3 grid grid-cols-3 gap-1 text-xs">
+            <BreakdownRow label="Resolved" value="2,459" tone="success" />
+            <BreakdownRow label="Pending" value="280" tone="warning" />
+            <BreakdownRow label="Escalated" value="56" tone="danger" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat value="23" label="Approvals" hint="Approved 21 · Pending 2" />
+            <Stat value="14" label="Promotions" hint="Promoted 12 · Pending 2" />
+            <Stat value="17" label="Movements" hint="On +13 · Off +4" />
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Today's queue" link="View all">
+          <div className="mb-3 flex items-center justify-between rounded-sm border border-border-subtle bg-surface px-2 py-1">
+            <Button variant="ghost" size="icon" className="size-6" aria-label="Previous week">
+              <ChevronLeft className="size-3.5" />
+            </Button>
+            <span className="font-mono text-xs tabular-nums text-fg-muted">
+              2026-05-08 · W19
+            </span>
+            <Button variant="ghost" size="icon" className="size-6" aria-label="Next week">
+              <ChevronRight className="size-3.5" />
+            </Button>
+          </div>
+          <ul className="grid gap-2">
+            {TODAYS_QUEUE.map((item) => (
+              <li key={item.time} className="flex items-baseline gap-3 text-sm">
+                <span className="font-mono tabular-nums text-fg-subtle">
+                  {item.time}
+                </span>
+                <span className="text-fg">{item.title}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+
+        <SectionCard title="Quick access">
+          <div className="flex items-center gap-3">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-semibold"
+              aria-hidden
+            >
+              EZ
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">Good morning</p>
+              <p className="text-xs text-fg-muted">Manager · Admin: All tenants</p>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {QUICK_APPS.map(({ icon: Icon, label }) => (
+              <button
+                key={label}
+                type="button"
+                className="grid place-items-center gap-1 rounded-sm border border-border-subtle bg-surface p-2 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+              >
+                <Icon className="size-4" />
+                <span className="text-[11px]">{label}</span>
+              </button>
+            ))}
+          </div>
+        </SectionCard>
       </div>
-      {children}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <SectionCard title="Persons" link="View all" className="lg:col-span-1">
+          <div className="font-mono text-3xl font-semibold tabular-nums text-fg">
+            3,345
+          </div>
+          <p className="mt-1 text-xs text-fg-muted">Total persons across tenant</p>
+          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            {[
+              { label: "Employees", value: "2,830" },
+              { label: "Dependents", value: "456" },
+              { label: "Providers", value: "32" },
+              { label: "Platform", value: "27" },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="flex justify-between border-b border-border-subtle py-1 last:border-b-0"
+              >
+                <span className="text-fg-muted">{label}</span>
+                <span className="font-mono font-medium tabular-nums text-fg">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Alerts" link="Acknowledge" className="lg:col-span-2">
+          <div className="flex items-start gap-3">
+            <span
+              className="grid size-10 shrink-0 place-items-center rounded-md bg-danger-soft font-mono text-sm font-semibold text-danger"
+              aria-hidden
+            >
+              <Bell className="size-4" />
+            </span>
+            <ul className="grid min-w-0 flex-1 gap-1.5 text-sm text-fg">
+              <AlertRow count={13} text="contracts expiring within 30 days" />
+              <AlertRow count={23} text="persons missing emergency contact" />
+              <AlertRow count={7} text="incidents awaiting case-manager assignment" />
+            </ul>
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard title="Recent person changes" link="View all">
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <RefreshCw className="size-3" />
+            Tenant: All
+          </Button>
+          <Button variant="outline" size="sm">
+            By entry date
+          </Button>
+        </div>
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[
+            { label: "Onboarded", value: "639", positive: true },
+            { label: "Off-boarded", value: "320", positive: false },
+            { label: "New persons", value: "178", positive: true },
+            { label: "Archived", value: "245", positive: false },
+          ].map(({ label, value, positive }) => (
+            <div
+              key={label}
+              className="rounded-sm border border-border-subtle bg-surface p-3"
+            >
+              <div className="font-mono text-xl font-semibold tabular-nums text-fg">
+                {value}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1 text-xs text-fg-muted">
+                {positive ? (
+                  <ArrowUp className="size-3 text-success" />
+                ) : (
+                  <ArrowDown className="size-3 text-fg-subtle" />
+                )}
+                {label}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-border-subtle pt-3">
+          <div className="mb-2 flex gap-3">
+            <button
+              type="button"
+              className="border-b-2 border-primary pb-1 text-xs font-medium text-fg"
+            >
+              New persons
+            </button>
+            <button
+              type="button"
+              className="border-b-2 border-transparent pb-1 text-xs text-fg-muted hover:text-fg"
+            >
+              Archived
+            </button>
+          </div>
+          <ul className="grid gap-2">
+            {RECENT_HIRES.map((p) => (
+              <li
+                key={p.name}
+                className="flex items-center gap-3 text-sm text-fg"
+              >
+                <span
+                  className="grid size-7 shrink-0 place-items-center rounded-sm bg-muted font-mono text-xs font-medium text-fg-muted"
+                  aria-hidden
+                >
+                  {p.name.slice(0, 1)}
+                </span>
+                <span className="flex-1 truncate">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-fg-muted"> · {p.role}</span>
+                </span>
+                <span className="font-mono text-xs tabular-nums text-fg-subtle">
+                  {p.date}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Announcements" link="View all">
+        <ul className="grid gap-2 text-sm text-fg">
+          {ANNOUNCEMENTS.map((text, i) => (
+            <li
+              key={i}
+              className="border-b border-border-subtle pb-2 last:border-b-0 last:pb-0"
+            >
+              <button
+                type="button"
+                className="text-left text-fg-muted transition-colors hover:text-primary"
+              >
+                {text}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </SectionCard>
     </div>
   )
 }
 
-export function HRDashboard() {
+function BreakdownRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone: "success" | "warning" | "danger"
+}) {
+  const toneClass: Record<typeof tone, string> = {
+    success: "bg-success",
+    warning: "bg-warning",
+    danger: "bg-danger",
+  }
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card title="This Week's Data" link="This week's count >">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-fg">3,320</span>
-            <span className="text-sm font-medium text-danger">+224</span>
-          </div>
-          <div className="my-3 flex items-center gap-4">
-            <div
-              className="h-24 w-24 shrink-0 rounded-full border-4 border-warm"
-              style={{
-                background: `conic-gradient(var(--palette-ink) 0deg 260deg, var(--palette-danger-soft) 260deg 320deg, var(--palette-neutral-200) 320deg 350deg, var(--token-border) 350deg 360deg)`,
-              }}
-            />
-            <div className="min-w-0 flex-1 space-y-1 text-xs text-fg/90">
-              <div className="flex justify-between"><span>Positive</span><span className="font-medium">2,459</span></div>
-              <div className="flex justify-between"><span>Late</span><span className="font-medium">280</span></div>
-              <div className="flex justify-between"><span>Tech</span><span className="font-medium">56</span></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-fg">23</div>
-              <div className="text-[10px] text-fg/70">This week's approval</div>
-              <div className="text-[10px] text-fg/60">Approved 2 · Pending 2</div>
-            </div>
-            <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-fg">14</div>
-              <div className="text-[10px] text-fg/70">Promotion</div>
-              <div className="text-[10px] text-fg/60">Promoted 2 · Pending 2</div>
-            </div>
-            <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-fg">17</div>
-              <div className="text-[10px] text-fg/70">HR</div>
-              <div className="text-[10px] text-fg/60">Onboard +4 · Left +4</div>
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Today's To-Do" link="View all >">
-          <div className="mb-3 flex items-center justify-between rounded-none border border-border/30 bg-neutral-50 px-2 py-1">
-            <button type="button" className="p-1 text-fg/70">←</button>
-            <span className="text-xs text-fg">2022/06 19 20 21 22 23 24 25</span>
-            <button type="button" className="p-1 text-fg/70">→</button>
-          </div>
-          <ul className="space-y-2">
-            {["9:00 New employee onboarding", "14:00 Internal HR meeting", "15:00 Approval reimbursement review"].map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-fg">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fg" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card title="Quick access">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 shrink-0 rounded-none bg-danger-soft flex items-center justify-center text-lg font-bold text-white">Z</div>
-            <div>
-              <p className="text-sm font-medium text-fg">Good morning!</p>
-              <p className="text-xs text-fg/70">Manager · Admin: All company</p>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            {["Manager", "Admin"].map((role, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className="h-10 w-10 rounded-none bg-surface flex items-center justify-center text-xs font-medium text-fg">
-                  {role.slice(0, 1)}
-                </div>
-                <span className="text-[10px] text-fg/70">{role}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title="Common Applications" link="All applications >">
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: Mail, label: "Mail" },
-              { icon: FileText, label: "Questionnaire" },
-              { icon: BarChart3, label: "JIRA" },
-              { icon: BarChart3, label: "Performance" },
-              { icon: User, label: "HR" },
-              { icon: Receipt, label: "Payslip" },
-            ].map(({ icon: Icon, label }, i) => (
-              <button key={i} type="button" className="flex flex-col items-center gap-1 rounded-none border border-border/20 bg-neutral-50 p-3 hover:bg-surface">
-                <Icon className="h-6 w-6 text-fg" />
-                <span className="text-xs text-fg">{label}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Help Center" link="View all >">
-          <div className="flex gap-4 border-b border-border/20 pb-2">
-            <button type="button" className="text-xs font-medium text-fg border-b-2 border-fg pb-0.5">Common questions</button>
-            <button type="button" className="text-xs text-fg/70 hover:text-fg">HR Management</button>
-          </div>
-          <ul className="mt-2 space-y-1.5 text-xs text-fg/90">
-            {[
-              "New employee onboarding process and documents",
-              "Contract, archives and company document entry",
-              "Creating to-dos and related manuals",
-              "Confidentiality and customer confidentiality solutions",
-              "Smart collaborative office operations manual",
-            ].map((text, i) => (
-              <li key={i}>
-                <button type="button" className="text-left hover:text-primary">{text}</button>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card title="Employee Data" link="View details >">
-          <div className="mb-3 text-3xl font-bold text-fg">3,345</div>
-          <p className="mb-3 text-xs text-fg/70">Total employees</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {[
-              { label: "Full-time", value: "2,830" },
-              { label: "Intern", value: "46" },
-              { label: "Probation", value: "32" },
-              { label: "Outsource", value: "80" },
-              { label: "Official", value: "2,710" },
-              { label: "Resignation", value: "18" },
-              { label: "Vacant", value: "5" },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between border-b border-border/15 py-1">
-                <span className="text-fg/80">{label}</span>
-                <span className="font-medium text-fg">{value}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="flex flex-col gap-4 lg:col-span-2">
-          <Card title="Alerts">
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none bg-danger-soft text-lg font-bold text-white">40</div>
-              <ul className="min-w-0 flex-1 space-y-1.5 text-xs text-fg">
-                <li><span className="font-medium text-danger">13</span> employees with contract expiring soon</li>
-                <li><span className="font-medium text-danger">23</span> employees missing emergency contact</li>
-                <li><span className="font-medium text-danger">7</span> employees absent 1 day in last 7 days</li>
-              </ul>
-            </div>
-          </Card>
-
-          <Card title="Announcements" link="View all >">
-            <ul className="space-y-2 text-xs text-fg">
-              {[
-                "6-20 Knowledge base and document organization notice",
-                "6-19 Field management and field staff welfare plan update",
-                "6-18 Empower all staff, precise decisions, efficient management",
-              ].map((text, i) => (
-                <li key={i} className="border-b border-border/15 pb-2 last:border-0 last:pb-0">
-                  <button type="button" className="text-left hover:text-primary">{text}</button>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
-      </div>
-
-      <Card title="Employee Changes" link="View all >">
-        <div className="mb-4 flex flex-wrap gap-2">
-          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-fg">
-            <RefreshCw className="h-3 w-3" /> Selection: All company
-          </button>
-          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-fg">
-            By entry date
-          </button>
-        </div>
-        <div className="mb-4 grid grid-cols-4 gap-4">
-          {[
-            { label: "Onboarded", value: "639" },
-            { label: "Left", value: "320" },
-            { label: "New hires", value: "178" },
-            { label: "Removed", value: "245" },
-          ].map(({ label, value }) => (
-            <div key={label} className="text-center">
-              <div className="text-2xl font-bold text-fg">{value}</div>
-              <div className="text-xs text-fg/70">{label}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mb-4 rounded-none border border-border/25 bg-white p-4">
-          <ChartAreaInteractive />
-        </div>
-        <div className="flex gap-4 border-t border-border/20 pt-3">
-          <button type="button" className="text-xs font-medium text-fg border-b-2 border-fg pb-0.5">New hires</button>
-          <button type="button" className="text-xs text-fg/70 hover:text-fg">Removed</button>
-        </div>
-        <ul className="mt-2 space-y-2">
-          {["Ding Shi, Specialist, 06/23 onboard", "Li Ming, Engineer, 06/22 onboard", "Wang Fang, Analyst, 06/21 onboard"].map((entry, i) => (
-            <li key={i} className="flex items-center gap-2 text-sm text-fg">
-              <div className="h-8 w-8 shrink-0 rounded-none bg-surface flex items-center justify-center text-xs font-medium text-fg">
-                {entry.slice(0, 1)}
-              </div>
-              <span>{entry}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+    <div className="flex items-center gap-2 rounded-sm border border-border-subtle bg-surface px-2 py-1.5">
+      <span className={cn("size-1.5 rounded-full", toneClass[tone])} aria-hidden />
+      <span className="text-fg-muted">{label}</span>
+      <span className="ml-auto font-mono font-medium tabular-nums text-fg">
+        {value}
+      </span>
     </div>
+  )
+}
+
+function Stat({
+  value,
+  label,
+  hint,
+}: {
+  value: string
+  label: string
+  hint?: string
+}) {
+  return (
+    <div className="rounded-sm border border-border-subtle bg-surface p-2 text-center">
+      <div className="font-mono text-base font-semibold tabular-nums text-fg">
+        {value}
+      </div>
+      <div className="text-[11px] text-fg-muted">{label}</div>
+      {hint ? (
+        <div className="mt-0.5 text-[10px] text-fg-subtle">{hint}</div>
+      ) : null}
+    </div>
+  )
+}
+
+function AlertRow({ count, text }: { count: number; text: string }) {
+  return (
+    <li className="flex items-baseline gap-2">
+      <span className="font-mono font-medium tabular-nums text-danger">
+        {count}
+      </span>
+      <span className="text-fg-muted">{text}</span>
+    </li>
   )
 }

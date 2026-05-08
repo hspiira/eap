@@ -36,10 +36,13 @@
   --fg-subtle: var(--neutral-400);
   --fg-on-brand: var(--neutral-0);
 
-  /* Borders — one default, one subtle, one strong. */
-  --border-default: var(--neutral-200);
-  --border-subtle: var(--neutral-100);
-  --border-strong: var(--neutral-300);
+  /* Borders — Tegon-style hairlines. Should never compete with content.
+   * subtle (cards, sections): nearly invisible, just enough to delimit surface
+   * default (rows, dividers): barely visible
+   * strong (focus/emphasis containers): visible neutral */
+  --border-subtle: rgb(0 0 0 / 0.025);
+  --border-default: rgb(0 0 0 / 0.05);
+  --border-strong: var(--neutral-200);
 
   /* Brand — single colour, used for primary buttons, key accents. */
   --brand: #0f5132;

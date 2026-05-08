@@ -1,79 +1,134 @@
-import { ChevronDown, Mic, Plus, Send, X } from "lucide-react"
+import { useState } from "react"
 
+import { ChevronDown, Mic, Plus, Send, Sparkles } from "lucide-react"
 
-export function QueryInputCard() {
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+
+const MODES = ["Search", "Ask"] as const
+type Mode = (typeof MODES)[number]
+
+interface QueryInputCardProps {
+  /** Initial query text, e.g. for the gallery preview. */
+  initialQuery?: string
+  /** Optional submit handler — receives the trimmed query. */
+  onSubmit?: (query: string) => void
+  className?: string
+}
+
+const DEFAULT_QUERY =
+  "Show me clients with overdue contracts in the last 30 days, sorted by tier."
+
+export function QueryInputCard({
+  initialQuery = DEFAULT_QUERY,
+  onSubmit,
+  className,
+}: QueryInputCardProps = {}) {
+  const [mode, setMode] = useState<Mode>("Search")
+  const [query, setQuery] = useState(initialQuery)
+
   return (
-    <div className="w-full space-y-3">
+    <div className={cn("grid w-full gap-3", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex rounded-none bg-surface p-0.5">
-          <button
-            type="button"
-            className="rounded-none bg-fg px-4 py-2 text-sm font-medium text-white"
-          >
-            Rent
-          </button>
-          <button
-            type="button"
-            className="rounded-none px-4 py-2 text-sm font-medium text-fg hover:bg-surface-hover"
-          >
-            Buy
-          </button>
-        </div>
-        <div className="flex items-center rounded-none bg-fg pl-3 pr-1 py-1.5">
-          <button type="button" className="flex items-center gap-1 text-sm text-white">
-            Location
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-          <div className="mx-2 h-4 w-px bg-white/40" />
-          <button type="button" className="flex items-center gap-1 text-sm text-white">
-            Bedrooms
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-          <div className="mx-2 h-4 w-px bg-white/40" />
-          <button type="button" className="flex items-center gap-1 text-sm text-white">
-            Price
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            className="ml-2 flex h-7 w-7 items-center justify-center rounded-none bg-fg text-white hover:bg-surface-slate-light"
-            aria-label="Clear filters"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
+        <ModeToggle value={mode} onChange={setMode} />
+        <FilterChips />
       </div>
-      <div className="rounded-none border border-border/25 bg-white p-4">
-        <p className="min-h-[4rem] text-sm leading-relaxed text-fg">
-          San Francisco family home for 4 persons, price between $4K-$7K, with a terrace, pets allowed.
-        </p>
-        <div className="mt-4 flex items-center justify-between border-t border-border/20 pt-3">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 text-sm text-fg/80 hover:text-fg"
-          >
-            <Plus className="h-4 w-4" />
-            <span>4.10</span>
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-none bg-fg text-white hover:bg-surface-slate-light"
-              aria-label="Voice input"
-            >
-              <Mic className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-none bg-fg text-white hover:bg-surface-slate-light"
-              aria-label="Send"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+
+      <Card className="rounded-md">
+        <CardContent className="p-3">
+          <label htmlFor="query-input" className="sr-only">
+            Query
+          </label>
+          <textarea
+            id="query-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            rows={3}
+            className="block min-h-16 w-full resize-none border-0 bg-transparent text-sm leading-relaxed text-fg outline-none placeholder:text-fg-subtle"
+            placeholder="Ask anything about your tenant — clients, sessions, incidents, contracts."
+          />
+          <div className="mt-3 flex items-center justify-between border-t border-border-subtle pt-3">
+            <Button variant="ghost" size="sm" className="gap-1.5 px-2">
+              <Plus className="size-3.5" />
+              <span className="font-mono text-xs tabular-nums">4.10</span>
+              <ChevronDown className="size-3" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" aria-label="Voice input">
+                <Mic className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                aria-label="Submit query"
+                onClick={() => onSubmit?.(query.trim())}
+                disabled={query.trim().length === 0}
+              >
+                <Send className="size-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function ModeToggle({
+  value,
+  onChange,
+}: {
+  value: Mode
+  onChange: (m: Mode) => void
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Query mode"
+      className="inline-flex rounded-sm border border-border-subtle bg-surface p-0.5"
+    >
+      {MODES.map((m) => {
+        const selected = m === value
+        return (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(m)}
+            className={cn(
+              "rounded-sm px-3 py-1 text-xs font-medium transition-colors",
+              selected
+                ? "bg-primary text-primary-foreground"
+                : "text-fg-muted hover:text-fg",
+            )}
+          >
+            {m}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function FilterChips() {
+  const chips = ["Resource", "Status", "Time range"] as const
+  return (
+    <div className="flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface p-0.5">
+      <Sparkles className="ml-1.5 size-3.5 text-fg-subtle" aria-hidden />
+      {chips.map((c) => (
+        <button
+          key={c}
+          type="button"
+          className="flex items-center gap-1 rounded-sm px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+        >
+          {c}
+          <ChevronDown className="size-3" />
+        </button>
+      ))}
     </div>
   )
 }

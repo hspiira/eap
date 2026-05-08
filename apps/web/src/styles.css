@@ -167,6 +167,20 @@
  * sharp; new shadcn primitives use --radius-sm / --radius-md from tokens-base.
  */
 
+/*
+ * Default border colour for any element using Tailwind's `border` utility
+ * without a colour. Tegon-style hairlines: the subtle token, not the default
+ * one, so cards/dividers don't compete with content for attention.
+ * Components can still opt up via border-border, border-border-strong.
+ */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border-subtle, currentColor);
+  }
+}
+
 html {
   overflow-x: hidden;
   min-height: 100%;

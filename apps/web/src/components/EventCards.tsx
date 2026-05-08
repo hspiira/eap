@@ -1,160 +1,185 @@
-import { Calendar, Check, ClipboardCopy, Clock, MapPin, Pencil, TrendingUp } from "lucide-react"
+import {
+  Calendar,
+  Check,
+  ClipboardCopy,
+  Clock,
+  MapPin,
+  Pencil,
+  TrendingUp,
+} from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-const events = [
+export interface ScheduledEvent {
+  id: string
+  name: string
+  date: string
+  time: string
+  location: string
+  attendees?: number | null
+  avatarTones?: ReadonlyArray<"info" | "success" | "warning" | "danger">
+  amount?: string
+  amountTone?: "primary" | "neutral"
+  dailyLabel?: string
+  dailyChange?: string
+  dailyChangePositive?: boolean
+  status?: string | null
+  showPublish?: boolean
+}
+
+const DEFAULT_EVENTS: ReadonlyArray<ScheduledEvent> = [
   {
-    id: "1",
-    name: "Poolside Party",
+    id: "evt-1",
+    name: "Q2 wellness town hall",
     date: "April 27",
     time: "5:00 PM",
-    location: "Los Angeles, CA",
-    attendees: "+45 more are down",
-    avatarColors: ["var(--palette-accent-red-deep)", "var(--palette-neutral-50)", "var(--palette-accent-blue)"],
+    location: "Acme Holdings, Nairobi",
+    attendees: 45,
+    avatarTones: ["info", "success", "warning"],
     amount: "$5,790.00",
-    amountPositive: true,
-    dailyLabel: "Today",
+    amountTone: "primary",
+    dailyLabel: "RSVPs",
     dailyChange: "6.5%",
     dailyChangePositive: true,
-    status: null,
-    showPublish: false,
   },
   {
-    id: "2",
-    name: "Rave",
+    id: "evt-2",
+    name: "Manager training cohort",
     date: "June 4",
     time: "7:00 PM",
-    location: "Miami, FL",
-    attendees: null,
-    avatarColors: [],
+    location: "Beta Industries, Mombasa",
     amount: "$0.00",
-    amountPositive: false,
-    dailyLabel: "Today",
+    amountTone: "neutral",
+    dailyLabel: "RSVPs",
     dailyChange: "0.0%",
-    dailyChangePositive: false,
     status: "Draft",
     showPublish: true,
   },
 ]
 
-function EventCard({
-  name,
-  date,
-  time,
-  location,
-  attendees,
-  avatarColors,
-  amount,
-  amountPositive,
-  dailyLabel,
-  dailyChange,
-  dailyChangePositive,
-  status,
-  showPublish,
-}: (typeof events)[0]) {
+const TONE_BG: Record<NonNullable<ScheduledEvent["avatarTones"]>[number], string> = {
+  info: "bg-info",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+}
+
+interface EventCardsProps {
+  events?: ReadonlyArray<ScheduledEvent>
+}
+
+export function EventCards({ events = DEFAULT_EVENTS }: EventCardsProps = {}) {
   return (
-    <article
-      className={cn(
-        "rounded-lg border border-border/25 bg-white p-5",
-        "shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
-      )}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1 space-y-2">
-          <h3 className="text-lg font-bold text-fg">{name}</h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg/70">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 shrink-0" />
-              {date}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0" />
-              {time}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm text-fg/70">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span>& {location}</span>
-          </div>
-          {attendees ? (
-            <div className="flex items-center gap-2 pt-0.5">
-              <div className="flex -space-x-2">
-                {avatarColors.map((color, i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-6 shrink-0 rounded-full border-2 border-white"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-fg/70">{attendees}</span>
-            </div>
-          ) : status ? (
-            <span className="inline-block rounded-md border border-border/40 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-fg/80">
-              {status}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex flex-col items-end gap-1 text-right">
-          <span
-            className={cn(
-              "text-xl font-bold tabular-nums",
-              amountPositive ? "text-primary" : "text-fg"
-            )}
-          >
-            {amount}
-          </span>
-          <div className="flex items-center gap-1.5 text-sm text-fg/70">
-            <span>{dailyLabel}</span>
-            {dailyChangePositive ? (
-              <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-                <TrendingUp className="h-3 w-3" />
-                {dailyChange}
-              </span>
-            ) : (
-              <span className="text-xs text-fg/70">{dailyChange}</span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-border/20 pt-4">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="rounded-md border border-fg/20 bg-neutral-50 text-fg hover:bg-neutral-100"
-        >
-          <Pencil className="mr-1.5 h-3.5 w-3.5" />
-          Edit Event
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="rounded-md border border-fg/20 bg-neutral-50 text-fg hover:bg-neutral-100"
-        >
-          <ClipboardCopy className="mr-1.5 h-3.5 w-3.5" />
-          Copy Link
-        </Button>
-        {showPublish && (
-          <Button
-            size="sm"
-            className="rounded-md bg-fg text-white hover:bg-surface-slate"
-          >
-            <Check className="mr-1.5 h-3.5 w-3.5" />
-            Publish
-          </Button>
-        )}
-      </div>
-    </article>
+    <div className="grid gap-4">
+      {events.map((event) => (
+        <EventCard key={event.id} event={event} />
+      ))}
+    </div>
   )
 }
 
-export function EventCards() {
+function EventCard({ event }: { event: ScheduledEvent }) {
   return (
-    <div className="space-y-4">
-      {events.map((event) => (
-        <EventCard key={event.id} {...event} />
-      ))}
-    </div>
+    <Card className="rounded-md">
+      <CardContent className="p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 grid gap-2">
+            <h3 className="text-base font-semibold text-fg">{event.name}</h3>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="size-3.5 shrink-0" aria-hidden />
+                <span className="font-mono tabular-nums">{event.date}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="size-3.5 shrink-0" aria-hidden />
+                <span className="font-mono tabular-nums">{event.time}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-fg-muted">
+              <MapPin className="size-3.5 shrink-0" aria-hidden />
+              <span>{event.location}</span>
+            </div>
+            {event.attendees ? (
+              <div className="flex items-center gap-2 pt-0.5">
+                <div className="flex -space-x-1.5">
+                  {(event.avatarTones ?? []).map((tone, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        "size-5 shrink-0 rounded-full border-2 border-bg",
+                        TONE_BG[tone],
+                      )}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
+                <span className="font-mono text-sm tabular-nums text-fg-muted">
+                  +{event.attendees} attendees
+                </span>
+              </div>
+            ) : event.status ? (
+              <Badge variant="outline" size="sm" className="w-fit">
+                {event.status}
+              </Badge>
+            ) : null}
+          </div>
+
+          <div className="flex flex-col items-end gap-1 text-right">
+            {event.amount ? (
+              <span
+                className={cn(
+                  "font-mono text-lg font-semibold tabular-nums",
+                  event.amountTone === "primary" ? "text-primary" : "text-fg",
+                )}
+              >
+                {event.amount}
+              </span>
+            ) : null}
+            {event.dailyChange ? (
+              <div className="flex items-center gap-1.5 text-sm text-fg-muted">
+                {event.dailyLabel ? <span>{event.dailyLabel}</span> : null}
+                {event.dailyChangePositive ? (
+                  <Badge
+                    variant="secondary"
+                    size="sm"
+                    className="font-mono tabular-nums text-success"
+                  >
+                    <TrendingUp className="size-3" />
+                    {event.dailyChange}
+                  </Badge>
+                ) : (
+                  <span className="font-mono text-xs tabular-nums text-fg-muted">
+                    {event.dailyChange}
+                  </span>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-border-subtle pt-3">
+          <Button variant="outline" size="sm">
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+          <Button variant="outline" size="sm">
+            <ClipboardCopy className="size-3.5" />
+            Copy link
+          </Button>
+          {event.showPublish ? (
+            <Button size="sm">
+              <Check className="size-3.5" />
+              Publish
+            </Button>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

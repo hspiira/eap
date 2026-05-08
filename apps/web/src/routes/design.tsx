@@ -1,8 +1,18 @@
 import { useState } from 'react'
 
 import { createFileRoute } from '@tanstack/react-router'
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  FileSignature,
+  MessageSquare,
+} from 'lucide-react'
 
-import { ActivityFeedCard } from '@/components/ActivityFeedCard'
+import {
+  ActivityFeedCard,
+  type Activity,
+} from '@/components/ActivityFeedCard'
 import { ClientAlertsCard, type ClientAlert } from '@/components/ClientAlertsCard'
 import { OnboardingProgressCard } from '@/components/OnboardingProgressCard'
 import { GalleryControls } from '@/components/gallery/GalleryControls'
@@ -393,7 +403,7 @@ function MigratedCardsSpecimen() {
         source="components/ActivityFeedCard.tsx"
       >
         <div className="max-w-md">
-          <ActivityFeedCard />
+          <ActivityFeedCard activities={GALLERY_ACTIVITIES} />
         </div>
       </GallerySpecimen>
       <GallerySpecimen
@@ -419,6 +429,51 @@ function MigratedCardsSpecimen() {
     </GallerySection>
   )
 }
+
+const GALLERY_ACTIVITIES: Activity[] = [
+  {
+    id: "g1",
+    icon: CalendarClock,
+    tone: "info",
+    title: "Weekly summary",
+    description: "12 sessions delivered, 3 case openings, 1 critical incident.",
+    time: "Today",
+    badge: { label: "Cycle complete", variant: "secondary" },
+  },
+  {
+    id: "g2",
+    icon: FileSignature,
+    tone: "warning",
+    title: "Contract renewal due",
+    description: "Acme Holdings — current term expires in 14 days.",
+    time: "Yesterday",
+  },
+  {
+    id: "g3",
+    icon: AlertTriangle,
+    tone: "danger",
+    title: "Critical incident logged",
+    description: "Severity: High. Awaiting case-manager assignment.",
+    time: "Yesterday",
+    badge: { label: "Action needed", variant: "destructive" },
+  },
+  {
+    id: "g4",
+    icon: CheckCircle2,
+    tone: "success",
+    title: "Survey completed",
+    description: "12 respondents over the past 24 hours.",
+    time: "2d ago",
+  },
+  {
+    id: "g5",
+    icon: MessageSquare,
+    tone: "info",
+    title: "New thread",
+    description: "Care manager replied to engagement #4221.",
+    time: "3d ago",
+  },
+]
 
 const GALLERY_ALERTS: ClientAlert[] = [
   {
@@ -513,17 +568,17 @@ const REGISTRY: ReadonlyArray<{
       { name: 'ActivityFeedCard', path: 'components/ActivityFeedCard.tsx', status: 'audit' },
       { name: 'ChartAreaInteractive', path: 'components/ChartAreaInteractive.tsx', status: 'migrate' },
       { name: 'EmailCampaignCard', path: 'components/EmailCampaignCard.tsx', status: 'review' },
-      { name: 'EventCards', path: 'components/EventCards.tsx', status: 'migrate' },
+      { name: 'EventCards', path: 'components/EventCards.tsx', status: 'audit' },
       { name: 'FlightProgressCard', path: 'components/FlightProgressCard.tsx', status: 'review' },
-      { name: 'HRDashboard', path: 'components/HRDashboard.tsx', status: 'migrate' },
+      { name: 'HRDashboard', path: 'components/HRDashboard.tsx', status: 'audit' },
       { name: 'InviteToProjectCard', path: 'components/InviteToProjectCard.tsx', status: 'migrate' },
       { name: 'LoggedInDevicesCard', path: 'components/LoggedInDevicesCard.tsx', status: 'review' },
       { name: 'MapSettingsCard', path: 'components/MapSettingsCard.tsx', status: 'review' },
       { name: 'NotificationsCard', path: 'components/NotificationsCard.tsx', status: 'audit' },
       { name: 'OnSiteBehaviorCard', path: 'components/OnSiteBehaviorCard.tsx', status: 'review' },
       { name: 'OnboardingProgressCard', path: 'components/OnboardingProgressCard.tsx', status: 'audit' },
-      { name: 'QueryInputCard', path: 'components/QueryInputCard.tsx', status: 'migrate' },
-      { name: 'TransitionsCard', path: 'components/TransitionsCard.tsx', status: 'migrate' },
+      { name: 'QueryInputCard', path: 'components/QueryInputCard.tsx', status: 'audit' },
+      { name: 'TransitionsCard', path: 'components/TransitionsCard.tsx', status: 'audit' },
     ],
   },
   {
