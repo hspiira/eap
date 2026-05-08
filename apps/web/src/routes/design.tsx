@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { createFileRoute } from '@tanstack/react-router'
 
+import { ActivityFeedCard } from '@/components/ActivityFeedCard'
 import { GalleryControls } from '@/components/gallery/GalleryControls'
 import { GallerySection, GallerySpecimen } from '@/components/gallery/GallerySection'
 import { ProviderTierBadge } from '@/components/common/ProviderTierBadge'
@@ -57,6 +58,7 @@ function GalleryRoute() {
         <BadgesSpecimen />
         <DomainBadgesSpecimen />
         <CardsSpecimen />
+        <MigratedCardsSpecimen />
         <FormsSpecimen />
         <FeedbackSpecimen />
         <ComponentRegistry />
@@ -73,6 +75,7 @@ const SECTIONS = [
   { id: 'badges', label: 'Badges' },
   { id: 'domain-badges', label: 'Domain Badges' },
   { id: 'cards', label: 'Cards' },
+  { id: 'migrated-cards', label: 'Migrated Cards' },
   { id: 'forms', label: 'Forms' },
   { id: 'feedback', label: 'Feedback' },
   { id: 'registry', label: 'Registry' },
@@ -376,6 +379,25 @@ function CardsSpecimen() {
   )
 }
 
+function MigratedCardsSpecimen() {
+  return (
+    <GallerySection
+      id="migrated-cards"
+      title="Migrated Cards"
+      description="Cards rebuilt against shadcn primitives + new tokens. Reference for the rest of the migration."
+    >
+      <GallerySpecimen
+        label="ActivityFeedCard"
+        source="components/ActivityFeedCard.tsx"
+      >
+        <div className="max-w-md">
+          <ActivityFeedCard />
+        </div>
+      </GallerySpecimen>
+    </GallerySection>
+  )
+}
+
 function FormsSpecimen() {
   return (
     <GallerySection id="forms" title="Forms" description="Inputs and labels — pair with react-hook-form + zod (Phase 4).">
@@ -437,7 +459,7 @@ const REGISTRY: ReadonlyArray<{
     group: 'Dashboard cards (review for EAP fit)',
     items: [
       { name: 'ApexIntroCard', path: 'components/ApexIntroCard.tsx', status: 'review' },
-      { name: 'ActivityFeedCard', path: 'components/ActivityFeedCard.tsx', status: 'migrate' },
+      { name: 'ActivityFeedCard', path: 'components/ActivityFeedCard.tsx', status: 'audit' },
       { name: 'ChartAreaInteractive', path: 'components/ChartAreaInteractive.tsx', status: 'migrate' },
       { name: 'EmailCampaignCard', path: 'components/EmailCampaignCard.tsx', status: 'review' },
       { name: 'EventCards', path: 'components/EventCards.tsx', status: 'migrate' },

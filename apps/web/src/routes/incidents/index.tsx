@@ -23,14 +23,14 @@ function IncidentsListPage() {
       <div className="mx-auto max-w-5xl space-y-4">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-ink">Critical incidents</h1>
-            <p className="mt-1 text-sm text-ink/70">
+            <h1 className="text-xl font-semibold text-fg">Critical incidents</h1>
+            <p className="mt-1 text-sm text-fg/70">
               CISM log — events, severity, affected population, linked sessions.
             </p>
           </div>
           <Link
             to="/incidents/new"
-            className="inline-flex h-9 items-center gap-1.5 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark"
+            className="inline-flex h-9 items-center gap-1.5 px-4 bg-primary text-white font-medium rounded-none hover:bg-primary"
           >
             <Plus className="h-4 w-4" />
             Log incident
@@ -38,11 +38,11 @@ function IncidentsListPage() {
         </header>
 
         {query.isPending ? (
-          <p className="text-sm text-ink/60">Loading…</p>
+          <p className="text-sm text-fg/60">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-ink/60">No incidents on file.</p>
+          <p className="text-sm text-fg/60">No incidents on file.</p>
         ) : (
-          <ul className="divide-y divide-ink/10 border border-ink/20 bg-white">
+          <ul className="divide-y divide-ink/10 border border-fg/20 bg-white">
             {items.map((inc) => (
               <li key={inc.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
@@ -50,12 +50,12 @@ function IncidentsListPage() {
                     <Link
                       to="/incidents/$incidentId"
                       params={{ incidentId: inc.id }}
-                      className="text-sm font-semibold text-ink hover:text-natural hover:underline"
+                      className="text-sm font-semibold text-fg hover:text-primary hover:underline"
                     >
                       {inc.title}
                     </Link>
-                    <p className="mt-1 text-sm text-ink/70 line-clamp-2">{inc.description}</p>
-                    <p className="mt-1 text-xs text-ink/60">
+                    <p className="mt-1 text-sm text-fg/70 line-clamp-2">{inc.description}</p>
+                    <p className="mt-1 text-xs text-fg/60">
                       {new Date(inc.occurred_at).toLocaleString()} · {inc.affected_population}{" "}
                       affected · {inc.linked_session_ids?.length ?? 0} session(s) linked
                     </p>

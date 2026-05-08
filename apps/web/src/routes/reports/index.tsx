@@ -57,8 +57,8 @@ function ReportsLandingPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <header className="flex items-baseline justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-ink">Reports</h1>
-            <p className="mt-1 text-sm text-ink/70">
+            <h1 className="text-2xl font-semibold text-fg">Reports</h1>
+            <p className="mt-1 text-sm text-fg/70">
               Reference templates for renewal, wave summaries, and tier portfolio reviews.
             </p>
           </div>
@@ -79,14 +79,14 @@ function ReportsLandingPage() {
 function ReportTemplateCard({ template }: { template: ReportTemplate }) {
   const Icon = template.icon
   const cardClass =
-    "group flex h-full flex-col gap-3 border border-ink/20 bg-white p-4 rounded-none transition-colors"
+    "group flex h-full flex-col gap-3 border border-fg/20 bg-white p-4 rounded-none transition-colors"
 
   if (!template.ready) {
     return (
       <div className={`${cardClass} opacity-60`} aria-disabled="true">
         <CardHeader template={template} icon={Icon} />
-        <p className="text-sm text-ink/70">{template.description}</p>
-        <span className="mt-auto text-xs uppercase tracking-wide text-ink/50">Coming soon</span>
+        <p className="text-sm text-fg/70">{template.description}</p>
+        <span className="mt-auto text-xs uppercase tracking-wide text-fg/50">Coming soon</span>
       </div>
     )
   }
@@ -95,11 +95,11 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
     <Link
       to="/reports/$templateSlug"
       params={{ templateSlug: template.slug }}
-      className={`${cardClass} hover:border-natural hover:bg-warm/30`}
+      className={`${cardClass} hover:border-primary hover:bg-surface/30`}
     >
       <CardHeader template={template} icon={Icon} />
-      <p className="text-sm text-ink/70">{template.description}</p>
-      <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-natural">
+      <p className="text-sm text-fg/70">{template.description}</p>
+      <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
         Open template <ArrowRight className="h-4 w-4" />
       </span>
     </Link>
@@ -109,12 +109,12 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
 function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: LucideIcon }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-ink/20 bg-warm/40 text-natural">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-fg/20 bg-surface/40 text-primary">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
-        <h2 className="text-sm font-semibold text-ink">{template.title}</h2>
-        <p className="text-xs text-ink/60">{template.cadence}</p>
+        <h2 className="text-sm font-semibold text-fg">{template.title}</h2>
+        <p className="text-xs text-fg/60">{template.cadence}</p>
       </div>
     </div>
   )

@@ -9,13 +9,13 @@ export const Route = createFileRoute("/documents")({
 
 function DocumentsRoute() {
   const { isAuthenticated, isLoading } = useAuthStore()
-  if (isLoading) return <div className="p-8 text-ink">Loading…</div>
+  if (isLoading) return <div className="p-8 text-fg">Loading…</div>
   if (!isAuthenticated) return null
   return (
     <AppLayout>
       <div className="p-8">
-        <h1 className="text-xl font-semibold text-ink">Documents</h1>
-        <p className="mt-2 text-ink/80">Documents — module coming next.</p>
+        <h1 className="text-xl font-semibold text-fg">Documents</h1>
+        <p className="mt-2 text-fg/80">Documents — module coming next.</p>
       </div>
     </AppLayout>
   )

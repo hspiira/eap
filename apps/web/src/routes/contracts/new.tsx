@@ -43,9 +43,9 @@ function ContractCreatePage() {
 
   return (
     <div className="p-6 max-w-md">
-      <h1 className="text-xl font-semibold text-ink">Add contract</h1>
+      <h1 className="text-xl font-semibold text-fg">Add contract</h1>
       <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
-        {serverError && <p className="text-sm text-ink" role="alert">{serverError}</p>}
+        {serverError && <p className="text-sm text-fg" role="alert">{serverError}</p>}
         <FormField
           label="Client ID"
           required

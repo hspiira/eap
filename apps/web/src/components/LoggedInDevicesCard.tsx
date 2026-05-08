@@ -50,7 +50,7 @@ export function LoggedInDevicesCard() {
             className="px-4 py-3"
           >
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-start justify-center pt-0.5 text-text-faint">
+              <div className="flex h-8 w-8 shrink-0 items-start justify-center pt-0.5 text-fg-subtle">
                 <s.icon className="h-4 w-4" strokeWidth={1.5} />
               </div>
               <div className="min-w-0 flex-1">

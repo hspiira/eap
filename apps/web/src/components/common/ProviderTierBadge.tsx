@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils"
 import { ProviderTier } from "@/types/enums"
 
 const TIER_TONE: Record<ProviderTier, string> = {
-  [ProviderTier.T1]: "bg-natural/15 text-natural border-natural/40",
-  [ProviderTier.T2]: "bg-warm text-ink border-ink/20",
+  [ProviderTier.T1]: "bg-primary/15 text-primary border-primary/40",
+  [ProviderTier.T2]: "bg-surface text-fg border-fg/20",
   [ProviderTier.T3]: "bg-neutral-100 text-neutral-600 border-neutral-300",
 }
 

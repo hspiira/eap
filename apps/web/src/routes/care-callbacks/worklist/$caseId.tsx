@@ -109,10 +109,10 @@ function CaseTriagePage() {
   })
 
   if (caseQuery.isPending) {
-    return <p className="p-6 text-sm text-ink/60">Loading case…</p>
+    return <p className="p-6 text-sm text-fg/60">Loading case…</p>
   }
   if (!caseQuery.data) {
-    return <p className="p-6 text-sm text-ink/60">Case not found.</p>
+    return <p className="p-6 text-sm text-fg/60">Case not found.</p>
   }
   const callCase = caseQuery.data
   const existingOutcome = outcomeQuery.data
@@ -130,14 +130,14 @@ function CaseTriagePage() {
         <header>
           <Link
             to="/care-callbacks/worklist"
-            className="text-xs text-ink/60 hover:text-natural hover:underline"
+            className="text-xs text-fg/60 hover:text-primary hover:underline"
           >
             ← My worklist
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-ink">{callCase.person_display_name}</h1>
-          <p className="mt-1 text-sm text-ink/70">
+          <h1 className="mt-2 text-xl font-semibold text-fg">{callCase.person_display_name}</h1>
+          <p className="mt-1 text-sm text-fg/70">
             Campaign: {campaign?.name ?? callCase.campaign_id} · status:{" "}
-            <span className="font-medium text-ink">{callCase.status}</span> · attempts:{" "}
+            <span className="font-medium text-fg">{callCase.status}</span> · attempts:{" "}
             {callCase.attempt_count}
           </p>
         </header>
@@ -151,17 +151,17 @@ function CaseTriagePage() {
                 type="button"
                 disabled={startMutation.isPending}
                 onClick={() => startMutation.mutate()}
-                className="rounded-none bg-natural text-white hover:bg-natural-dark"
+                className="rounded-none bg-primary text-white hover:bg-primary"
               >
                 {startMutation.isPending ? "Opening…" : "Open case"}
               </Button>
             )}
 
             {!triage ? (
-              <p className="text-sm text-ink/60">Loading triage form…</p>
+              <p className="text-sm text-fg/60">Loading triage form…</p>
             ) : (
               <>
-                <section className="border border-ink/20 bg-white p-4 space-y-4">
+                <section className="border border-fg/20 bg-white p-4 space-y-4">
                   <QuestionnaireRenderer
                     questionnaire={triage}
                     answers={preAnswers}
@@ -180,8 +180,8 @@ function CaseTriagePage() {
                 {crisisActive && <CrisisAlert reasons={crisisReasons} />}
 
                 {followup && (
-                  <section className="border border-ink/20 bg-white p-4 space-y-4">
-                    <p className="text-xs uppercase tracking-wide text-ink/60">Post-call</p>
+                  <section className="border border-fg/20 bg-white p-4 space-y-4">
+                    <p className="text-xs uppercase tracking-wide text-fg/60">Post-call</p>
                     <QuestionnaireRenderer
                       questionnaire={followup}
                       answers={postAnswers}
@@ -198,10 +198,10 @@ function CaseTriagePage() {
                   </section>
                 )}
 
-                <section className="border border-ink/20 bg-white p-4 space-y-2">
+                <section className="border border-fg/20 bg-white p-4 space-y-2">
                   <label
                     htmlFor="notes"
-                    className="block text-sm font-medium text-ink"
+                    className="block text-sm font-medium text-fg"
                   >
                     Counsellor notes (not surfaced in aggregate report)
                   </label>
@@ -211,13 +211,13 @@ function CaseTriagePage() {
                     disabled={isClosed}
                     value={counsellorNotes}
                     onChange={(e) => setCounsellorNotes(e.target.value)}
-                    className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+                    className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
                   />
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label
                         htmlFor="final_status"
-                        className="block text-sm font-medium text-ink"
+                        className="block text-sm font-medium text-fg"
                       >
                         Outcome status
                       </label>
@@ -228,7 +228,7 @@ function CaseTriagePage() {
                         onChange={(e) =>
                           setFinalStatus(e.target.value as CallbackCaseStatus)
                         }
-                        className="mt-1 flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                        className="mt-1 flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
                       >
                         <option value={CallbackCaseStatus.COMPLETED}>Completed</option>
                         <option value={CallbackCaseStatus.NO_ANSWER}>No answer</option>
@@ -248,14 +248,14 @@ function CaseTriagePage() {
                     type="button"
                     disabled={!canSubmit || submitMutation.isPending}
                     onClick={() => submitMutation.mutate()}
-                    className="rounded-none bg-natural text-white hover:bg-natural-dark"
+                    className="rounded-none bg-primary text-white hover:bg-primary"
                   >
                     {submitMutation.isPending ? "Saving…" : "Save outcome"}
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
-                    className="rounded-none border-ink/30 text-ink"
+                    className="rounded-none border-fg/30 text-fg"
                     onClick={() => navigate({ to: "/care-callbacks/worklist" })}
                   >
                     Cancel
@@ -290,32 +290,32 @@ function requiredAnswered(
 
 function ExistingOutcomeCard({ outcome }: { outcome: NonNullable<Awaited<ReturnType<typeof careCallbacksApi.getOutcomeForCase>>> }) {
   return (
-    <section className="border border-ink/20 bg-white p-4 space-y-3">
+    <section className="border border-fg/20 bg-white p-4 space-y-3">
       <header className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-ink">Outcome on file</h2>
-        <span className="text-xs text-ink/60">
+        <h2 className="text-sm font-semibold text-fg">Outcome on file</h2>
+        <span className="text-xs text-fg/60">
           {new Date(outcome.recorded_at).toLocaleString()} · by {outcome.recorded_by_user_id}
         </span>
       </header>
       {outcome.crisis_flagged && <CrisisAlert reasons={outcome.crisis_reasons} />}
       <div>
-        <p className="text-xs uppercase tracking-wide text-ink/60">Pre-call answers</p>
-        <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-ink/10 bg-neutral-50 p-2 text-xs text-ink/80">
+        <p className="text-xs uppercase tracking-wide text-fg/60">Pre-call answers</p>
+        <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-fg/10 bg-neutral-50 p-2 text-xs text-fg/80">
           {JSON.stringify(outcome.pre_answers, null, 2)}
         </pre>
       </div>
       {outcome.post_answers ? (
         <div>
-          <p className="text-xs uppercase tracking-wide text-ink/60">Post-call answers</p>
-          <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-ink/10 bg-neutral-50 p-2 text-xs text-ink/80">
+          <p className="text-xs uppercase tracking-wide text-fg/60">Post-call answers</p>
+          <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-fg/10 bg-neutral-50 p-2 text-xs text-fg/80">
             {JSON.stringify(outcome.post_answers, null, 2)}
           </pre>
         </div>
       ) : null}
       {outcome.counsellor_notes ? (
         <div>
-          <p className="text-xs uppercase tracking-wide text-ink/60">Counsellor notes</p>
-          <p className="mt-1 text-sm text-ink/80 whitespace-pre-wrap">{outcome.counsellor_notes}</p>
+          <p className="text-xs uppercase tracking-wide text-fg/60">Counsellor notes</p>
+          <p className="mt-1 text-sm text-fg/80 whitespace-pre-wrap">{outcome.counsellor_notes}</p>
         </div>
       ) : null}
     </section>

@@ -47,10 +47,10 @@ function TagCreatePage() {
     <TagsPageHeader breadcrumb="Tags > New">
       <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
         <div className="max-w-md">
-          <h1 className="text-xl font-semibold text-ink">New tag</h1>
+          <h1 className="text-xl font-semibold text-fg">New tag</h1>
           <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
             {serverError && (
-              <p className="text-sm text-ink" role="alert">
+              <p className="text-sm text-fg" role="alert">
                 {serverError}
               </p>
             )}
@@ -77,7 +77,7 @@ function TagCreatePage() {
                 />
                 {color && hexColorRegex.test(color) && (
                   <span
-                    className="h-8 w-8 shrink-0 border border-ink/30"
+                    className="h-8 w-8 shrink-0 border border-fg/30"
                     style={{ backgroundColor: color }}
                   />
                 )}
@@ -94,7 +94,7 @@ function TagCreatePage() {
               <Button
                 type="submit"
                 disabled={formState.isSubmitting}
-                className="rounded-none bg-natural hover:bg-natural-dark"
+                className="rounded-none bg-primary hover:bg-primary"
               >
                 {formState.isSubmitting ? "Creating…" : "Create tag"}
               </Button>

@@ -53,7 +53,7 @@ export function Pagination({
         className
       )}
     >
-      <p className="text-xs text-ink">
+      <p className="text-xs text-fg">
         {total === 0 ? "0 items" : `${from}–${to} of ${total}`}
       </p>
       <nav className="flex items-center gap-1" aria-label="Pagination">
@@ -70,7 +70,7 @@ export function Pagination({
         <div className="flex items-center gap-1">
           {pages.map((p, i) =>
             p === 'ellipsis' ? (
-              <span key={`e-${i}`} className="px-2 text-ink">
+              <span key={`e-${i}`} className="px-2 text-fg">
                 …
               </span>
             ) : (

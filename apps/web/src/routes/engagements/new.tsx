@@ -84,11 +84,11 @@ function EngagementCreatePage() {
   return (
     <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
       <div className="mx-auto max-w-2xl space-y-4">
-        <h1 className="text-xl font-semibold text-ink">New engagement</h1>
+        <h1 className="text-xl font-semibold text-fg">New engagement</h1>
         <form onSubmit={submit} className="space-y-4" noValidate>
           {serverError && (
             <p
-              className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2"
+              className="text-sm text-fg border border-fg/30 bg-neutral-50 px-3 py-2"
               role="alert"
             >
               {serverError}
@@ -118,7 +118,7 @@ function EngagementCreatePage() {
             <textarea
               id="description"
               rows={3}
-              className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+              className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
               {...register("description")}
             />
           </FormField>
@@ -130,7 +130,7 @@ function EngagementCreatePage() {
           >
             <select
               id="engagement_type"
-              className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+              className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
               {...register("engagement_type")}
             >
               {TYPE_VALUES.map((v) => (
@@ -214,14 +214,14 @@ function EngagementCreatePage() {
             <Button
               type="submit"
               disabled={formState.isSubmitting}
-              className="rounded-none bg-natural text-white hover:bg-natural-dark"
+              className="rounded-none bg-primary text-white hover:bg-primary"
             >
               {formState.isSubmitting ? "Creating…" : "Create engagement"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-ink/30 text-ink"
+              className="rounded-none border-fg/30 text-fg"
               onClick={() => navigate({ to: "/engagements" })}
             >
               Cancel

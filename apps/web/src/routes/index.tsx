@@ -83,7 +83,7 @@ function LandingPage() {
               <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-white leading-[1.1] tracking-tight">
                 Manage with
                 <br />
-                <span className="text-natural">clarity</span>
+                <span className="text-primary">clarity</span>
               </h1>
               <p className="text-lg text-white/80 leading-relaxed max-w-md tracking-wider">
                 A comprehensive platform for managing clients, services, and delivery

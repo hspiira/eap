@@ -7,9 +7,9 @@ function Card({ title, link, children, className }: { title: string; link?: stri
   return (
     <div className={cn("flex flex-col border border-border/25 bg-white p-4", className)}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        <h3 className="text-sm font-semibold text-fg">{title}</h3>
         {link && (
-          <button type="button" className="text-xs text-ink/70 hover:text-natural">
+          <button type="button" className="text-xs text-fg/70 hover:text-primary">
             {link} <ChevronRight className="inline h-3 w-3" />
           </button>
         )}
@@ -25,8 +25,8 @@ export function HRDashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="This Week's Data" link="This week's count >">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-ink">3,320</span>
-            <span className="text-sm font-medium text-stone">+224</span>
+            <span className="text-2xl font-bold text-fg">3,320</span>
+            <span className="text-sm font-medium text-danger">+224</span>
           </div>
           <div className="my-3 flex items-center gap-4">
             <div
@@ -35,7 +35,7 @@ export function HRDashboard() {
                 background: `conic-gradient(var(--palette-ink) 0deg 260deg, var(--palette-danger-soft) 260deg 320deg, var(--palette-neutral-200) 320deg 350deg, var(--token-border) 350deg 360deg)`,
               }}
             />
-            <div className="min-w-0 flex-1 space-y-1 text-xs text-ink/90">
+            <div className="min-w-0 flex-1 space-y-1 text-xs text-fg/90">
               <div className="flex justify-between"><span>Positive</span><span className="font-medium">2,459</span></div>
               <div className="flex justify-between"><span>Late</span><span className="font-medium">280</span></div>
               <div className="flex justify-between"><span>Tech</span><span className="font-medium">56</span></div>
@@ -43,33 +43,33 @@ export function HRDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-ink">23</div>
-              <div className="text-[10px] text-ink/70">This week's approval</div>
-              <div className="text-[10px] text-ink/60">Approved 2 · Pending 2</div>
+              <div className="text-lg font-bold text-fg">23</div>
+              <div className="text-[10px] text-fg/70">This week's approval</div>
+              <div className="text-[10px] text-fg/60">Approved 2 · Pending 2</div>
             </div>
             <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-ink">14</div>
-              <div className="text-[10px] text-ink/70">Promotion</div>
-              <div className="text-[10px] text-ink/60">Promoted 2 · Pending 2</div>
+              <div className="text-lg font-bold text-fg">14</div>
+              <div className="text-[10px] text-fg/70">Promotion</div>
+              <div className="text-[10px] text-fg/60">Promoted 2 · Pending 2</div>
             </div>
             <div className="border border-border/20 bg-neutral-50 p-2">
-              <div className="text-lg font-bold text-ink">17</div>
-              <div className="text-[10px] text-ink/70">HR</div>
-              <div className="text-[10px] text-ink/60">Onboard +4 · Left +4</div>
+              <div className="text-lg font-bold text-fg">17</div>
+              <div className="text-[10px] text-fg/70">HR</div>
+              <div className="text-[10px] text-fg/60">Onboard +4 · Left +4</div>
             </div>
           </div>
         </Card>
 
         <Card title="Today's To-Do" link="View all >">
           <div className="mb-3 flex items-center justify-between rounded-none border border-border/30 bg-neutral-50 px-2 py-1">
-            <button type="button" className="p-1 text-ink/70">←</button>
-            <span className="text-xs text-ink">2022/06 19 20 21 22 23 24 25</span>
-            <button type="button" className="p-1 text-ink/70">→</button>
+            <button type="button" className="p-1 text-fg/70">←</button>
+            <span className="text-xs text-fg">2022/06 19 20 21 22 23 24 25</span>
+            <button type="button" className="p-1 text-fg/70">→</button>
           </div>
           <ul className="space-y-2">
             {["9:00 New employee onboarding", "14:00 Internal HR meeting", "15:00 Approval reimbursement review"].map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-ink">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />
+              <li key={i} className="flex gap-2 text-sm text-fg">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fg" />
                 <span>{item}</span>
               </li>
             ))}
@@ -80,17 +80,17 @@ export function HRDashboard() {
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 shrink-0 rounded-none bg-danger-soft flex items-center justify-center text-lg font-bold text-white">Z</div>
             <div>
-              <p className="text-sm font-medium text-ink">Good morning!</p>
-              <p className="text-xs text-ink/70">Manager · Admin: All company</p>
+              <p className="text-sm font-medium text-fg">Good morning!</p>
+              <p className="text-xs text-fg/70">Manager · Admin: All company</p>
             </div>
           </div>
           <div className="mt-3 flex gap-2">
             {["Manager", "Admin"].map((role, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <div className="h-10 w-10 rounded-none bg-warm flex items-center justify-center text-xs font-medium text-ink">
+                <div className="h-10 w-10 rounded-none bg-surface flex items-center justify-center text-xs font-medium text-fg">
                   {role.slice(0, 1)}
                 </div>
-                <span className="text-[10px] text-ink/70">{role}</span>
+                <span className="text-[10px] text-fg/70">{role}</span>
               </div>
             ))}
           </div>
@@ -108,9 +108,9 @@ export function HRDashboard() {
               { icon: User, label: "HR" },
               { icon: Receipt, label: "Payslip" },
             ].map(({ icon: Icon, label }, i) => (
-              <button key={i} type="button" className="flex flex-col items-center gap-1 rounded-none border border-border/20 bg-neutral-50 p-3 hover:bg-warm">
-                <Icon className="h-6 w-6 text-ink" />
-                <span className="text-xs text-ink">{label}</span>
+              <button key={i} type="button" className="flex flex-col items-center gap-1 rounded-none border border-border/20 bg-neutral-50 p-3 hover:bg-surface">
+                <Icon className="h-6 w-6 text-fg" />
+                <span className="text-xs text-fg">{label}</span>
               </button>
             ))}
           </div>
@@ -118,10 +118,10 @@ export function HRDashboard() {
 
         <Card title="Help Center" link="View all >">
           <div className="flex gap-4 border-b border-border/20 pb-2">
-            <button type="button" className="text-xs font-medium text-ink border-b-2 border-ink pb-0.5">Common questions</button>
-            <button type="button" className="text-xs text-ink/70 hover:text-ink">HR Management</button>
+            <button type="button" className="text-xs font-medium text-fg border-b-2 border-fg pb-0.5">Common questions</button>
+            <button type="button" className="text-xs text-fg/70 hover:text-fg">HR Management</button>
           </div>
-          <ul className="mt-2 space-y-1.5 text-xs text-ink/90">
+          <ul className="mt-2 space-y-1.5 text-xs text-fg/90">
             {[
               "New employee onboarding process and documents",
               "Contract, archives and company document entry",
@@ -130,7 +130,7 @@ export function HRDashboard() {
               "Smart collaborative office operations manual",
             ].map((text, i) => (
               <li key={i}>
-                <button type="button" className="text-left hover:text-natural">{text}</button>
+                <button type="button" className="text-left hover:text-primary">{text}</button>
               </li>
             ))}
           </ul>
@@ -139,8 +139,8 @@ export function HRDashboard() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card title="Employee Data" link="View details >">
-          <div className="mb-3 text-3xl font-bold text-ink">3,345</div>
-          <p className="mb-3 text-xs text-ink/70">Total employees</p>
+          <div className="mb-3 text-3xl font-bold text-fg">3,345</div>
+          <p className="mb-3 text-xs text-fg/70">Total employees</p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             {[
               { label: "Full-time", value: "2,830" },
@@ -152,8 +152,8 @@ export function HRDashboard() {
               { label: "Vacant", value: "5" },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between border-b border-border/15 py-1">
-                <span className="text-ink/80">{label}</span>
-                <span className="font-medium text-ink">{value}</span>
+                <span className="text-fg/80">{label}</span>
+                <span className="font-medium text-fg">{value}</span>
               </div>
             ))}
           </div>
@@ -163,23 +163,23 @@ export function HRDashboard() {
           <Card title="Alerts">
             <div className="flex items-start gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-none bg-danger-soft text-lg font-bold text-white">40</div>
-              <ul className="min-w-0 flex-1 space-y-1.5 text-xs text-ink">
-                <li><span className="font-medium text-stone">13</span> employees with contract expiring soon</li>
-                <li><span className="font-medium text-stone">23</span> employees missing emergency contact</li>
-                <li><span className="font-medium text-stone">7</span> employees absent 1 day in last 7 days</li>
+              <ul className="min-w-0 flex-1 space-y-1.5 text-xs text-fg">
+                <li><span className="font-medium text-danger">13</span> employees with contract expiring soon</li>
+                <li><span className="font-medium text-danger">23</span> employees missing emergency contact</li>
+                <li><span className="font-medium text-danger">7</span> employees absent 1 day in last 7 days</li>
               </ul>
             </div>
           </Card>
 
           <Card title="Announcements" link="View all >">
-            <ul className="space-y-2 text-xs text-ink">
+            <ul className="space-y-2 text-xs text-fg">
               {[
                 "6-20 Knowledge base and document organization notice",
                 "6-19 Field management and field staff welfare plan update",
                 "6-18 Empower all staff, precise decisions, efficient management",
               ].map((text, i) => (
                 <li key={i} className="border-b border-border/15 pb-2 last:border-0 last:pb-0">
-                  <button type="button" className="text-left hover:text-natural">{text}</button>
+                  <button type="button" className="text-left hover:text-primary">{text}</button>
                 </li>
               ))}
             </ul>
@@ -189,10 +189,10 @@ export function HRDashboard() {
 
       <Card title="Employee Changes" link="View all >">
         <div className="mb-4 flex flex-wrap gap-2">
-          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-ink">
+          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-fg">
             <RefreshCw className="h-3 w-3" /> Selection: All company
           </button>
-          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-ink">
+          <button type="button" className="flex items-center gap-1 rounded-none border border-border/40 bg-neutral-50 px-2 py-1 text-xs text-fg">
             By entry date
           </button>
         </div>
@@ -204,8 +204,8 @@ export function HRDashboard() {
             { label: "Removed", value: "245" },
           ].map(({ label, value }) => (
             <div key={label} className="text-center">
-              <div className="text-2xl font-bold text-ink">{value}</div>
-              <div className="text-xs text-ink/70">{label}</div>
+              <div className="text-2xl font-bold text-fg">{value}</div>
+              <div className="text-xs text-fg/70">{label}</div>
             </div>
           ))}
         </div>
@@ -213,13 +213,13 @@ export function HRDashboard() {
           <ChartAreaInteractive />
         </div>
         <div className="flex gap-4 border-t border-border/20 pt-3">
-          <button type="button" className="text-xs font-medium text-ink border-b-2 border-ink pb-0.5">New hires</button>
-          <button type="button" className="text-xs text-ink/70 hover:text-ink">Removed</button>
+          <button type="button" className="text-xs font-medium text-fg border-b-2 border-fg pb-0.5">New hires</button>
+          <button type="button" className="text-xs text-fg/70 hover:text-fg">Removed</button>
         </div>
         <ul className="mt-2 space-y-2">
           {["Ding Shi, Specialist, 06/23 onboard", "Li Ming, Engineer, 06/22 onboard", "Wang Fang, Analyst, 06/21 onboard"].map((entry, i) => (
-            <li key={i} className="flex items-center gap-2 text-sm text-ink">
-              <div className="h-8 w-8 shrink-0 rounded-none bg-warm flex items-center justify-center text-xs font-medium text-ink">
+            <li key={i} className="flex items-center gap-2 text-sm text-fg">
+              <div className="h-8 w-8 shrink-0 rounded-none bg-surface flex items-center justify-center text-xs font-medium text-fg">
                 {entry.slice(0, 1)}
               </div>
               <span>{entry}</span>

@@ -71,7 +71,7 @@ export function ClientForm({
     <form onSubmit={submit} className="space-y-4" noValidate>
       {serverError && (
         <p
-          className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2 rounded-none"
+          className="text-sm text-fg border border-fg/30 bg-neutral-50 px-3 py-2 rounded-none"
           role="alert"
         >
           {serverError}
@@ -83,7 +83,7 @@ export function ClientForm({
         error={formState.errors.name?.message as string | undefined}
         htmlFor="client-name"
       >
-        <Input id="client-name" className="rounded-none border-ink/30" {...register("name")} />
+        <Input id="client-name" className="rounded-none border-fg/30" {...register("name")} />
       </FormField>
       <FormField
         label="Code (3–5 chars)"
@@ -91,7 +91,7 @@ export function ClientForm({
         error={formState.errors.code?.message as string | undefined}
         htmlFor="client-code"
       >
-        <Input id="client-code" className="rounded-none border-ink/30" {...register("code")} />
+        <Input id="client-code" className="rounded-none border-fg/30" {...register("code")} />
       </FormField>
       <FormField
         label="Tier"
@@ -100,7 +100,7 @@ export function ClientForm({
       >
         <select
           id="client-tier"
-          className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+          className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
           {...register("tier")}
         >
           <option value="">Unassigned</option>
@@ -115,18 +115,18 @@ export function ClientForm({
         <Input
           id="client-email"
           type="email"
-          className="rounded-none border-ink/30"
+          className="rounded-none border-fg/30"
           {...register("email")}
         />
       </FormField>
       <FormField label="Phone" error={contactPhoneError as string | undefined} htmlFor="client-phone">
-        <Input id="client-phone" className="rounded-none border-ink/30" {...register("phone")} />
+        <Input id="client-phone" className="rounded-none border-fg/30" {...register("phone")} />
       </FormField>
       <div className="flex gap-2 pt-2">
         <Button
           type="submit"
           disabled={formState.isSubmitting}
-          className="rounded-none bg-natural text-white hover:bg-natural-dark"
+          className="rounded-none bg-primary text-white hover:bg-primary"
         >
           {formState.isSubmitting ? "Creating…" : submitLabel}
         </Button>
@@ -134,7 +134,7 @@ export function ClientForm({
           <Button
             type="button"
             variant="secondary"
-            className="rounded-none border-ink/30 text-ink"
+            className="rounded-none border-fg/30 text-fg"
             onClick={onCancel}
           >
             Cancel

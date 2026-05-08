@@ -1,138 +1,174 @@
-import { BarChart3, Check, Heart, Settings, User, X } from "lucide-react"
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  FileSignature,
+  MessageSquare,
+  Settings,
+} from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-const TABS = ["All", "Workouts", "Goals", "Social"] as const
+type ActivityTone = "info" | "success" | "warning" | "danger"
 
-const ACTIVITIES = [
+interface Activity {
+  id: string
+  icon: React.ElementType
+  tone: ActivityTone
+  title: string
+  description: string
+  time: string
+  badge?: { label: string; variant?: "default" | "secondary" | "destructive" | "outline" }
+  actions?: React.ReactNode
+}
+
+const TABS = ["All", "Sessions", "Cases", "Contracts"] as const
+
+const ACTIVITIES: Activity[] = [
   {
     id: "1",
-    icon: BarChart3,
-    iconColor: "text-accent-green",
-    title: "Weekly Summary",
-    badge: "Personal Record!",
-    badgeClass: "bg-accent-purple text-white",
-    description: "You completed 5 workouts this week.",
+    icon: CalendarClock,
+    tone: "info",
+    title: "Weekly summary",
+    description: "12 sessions delivered, 3 case openings, 1 critical incident.",
     time: "Today",
-    actions: null,
+    badge: { label: "Cycle complete", variant: "secondary" },
   },
   {
     id: "2",
-    icon: User,
-    iconColor: "text-accent-purple",
-    title: "Challenge Invitation",
-    badge: null,
-    badgeClass: "",
-    description: 'Join the "10K Steps Daily" challenge.',
+    icon: FileSignature,
+    tone: "warning",
+    title: "Contract renewal due",
+    description: "Acme Holdings — current term expires in 14 days.",
     time: "Yesterday",
     actions: (
       <>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="gap-1.5 border-neutral-200 bg-white text-neutral-700 hover:bg-surface-soft"
-        >
-          <X className="h-3.5 w-3.5" />
-          Decline
+        <Button variant="outline" size="sm">
+          Defer
         </Button>
-        <Button
-          size="sm"
-          className="gap-1.5 bg-accent-purple text-white hover:bg-accent-purple-dark"
-        >
-          <Check className="h-3.5 w-3.5" />
-          Join
+        <Button size="sm">
+          <CheckCircle2 className="size-3.5" />
+          Renew
         </Button>
       </>
     ),
   },
   {
     id: "3",
-    icon: BarChart3,
-    iconColor: "text-neutral-700",
-    title: "FitTracker Pro",
-    badge: "5K Run",
-    badgeClass: "bg-accent-pink text-white",
-    description: "Your running goal was achieved.",
+    icon: AlertTriangle,
+    tone: "danger",
+    title: "Critical incident logged",
+    description: "Severity: High. Awaiting case-manager assignment.",
     time: "Yesterday",
-    actions: null,
+    badge: { label: "Action needed", variant: "destructive" },
   },
   {
     id: "4",
-    icon: Heart,
-    iconColor: "text-accent-error-deep",
-    title: "Sarah Fitness",
-    badge: null,
-    badgeClass: "",
-    description: "Liked your workout routine.",
-    time: "Yesterday",
-    actions: null,
+    icon: MessageSquare,
+    tone: "success",
+    title: "Survey completed",
+    description: "12 respondents over the past 24 hours.",
+    time: "2d ago",
   },
 ]
 
+const TONE_RING: Record<ActivityTone, string> = {
+  info: "bg-info-soft text-info ring-info/20",
+  success: "bg-success-soft text-success ring-success/20",
+  warning: "bg-warning-soft text-warning ring-warning/20",
+  danger: "bg-danger-soft text-danger ring-danger/20",
+}
+
 export function ActivityFeedCard() {
   return (
-    <div className="border border-neutral-200 bg-white rounded-none">
-      <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
+    <Card className="rounded-md">
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border p-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-neutral-700">Activity Feed</h2>
-          <span className="flex h-5 min-w-[20px] items-center justify-center bg-surface-chip px-1.5 text-xs font-medium text-neutral-700 rounded-none">
+          <CardTitle className="text-sm font-semibold text-fg">
+            Activity feed
+          </CardTitle>
+          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
             {ACTIVITIES.length}
-          </span>
+          </Badge>
         </div>
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center text-neutral-400 hover:bg-surface-soft rounded-none"
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label="Activity feed settings"
+          className="size-8"
         >
-          <Settings className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="flex gap-0 border-b border-neutral-100">
-        {TABS.map((tab, i) => (
-          <button
-            key={tab}
-            type="button"
-            className={cn(
-              "px-4 py-2.5 text-sm font-medium rounded-none",
-              i === 0
-                ? "bg-accent-purple text-white"
-                : "text-neutral-700 hover:bg-surface-soft"
-            )}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-      <div className="divide-y divide-neutral-100">
-        {ACTIVITIES.map((a) => (
-          <div key={a.id} className="flex gap-3 px-4 py-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-surface-tile">
-              <a.icon className={cn("h-4 w-4", a.iconColor)} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-neutral-700">{a.title}</span>
-                {a.badge && (
-                  <span
-                    className={cn(
-                      "px-1.5 py-0.5 text-xs font-medium rounded-none",
-                      a.badgeClass
-                    )}
-                  >
-                    {a.badge}
-                  </span>
-                )}
-                <span className="ml-auto shrink-0 text-xs text-neutral-400">{a.time}</span>
-              </div>
-              <p className="mt-0.5 text-sm text-neutral-700/90">{a.description}</p>
-              {a.actions && (
-                <div className="mt-2 flex gap-2">{a.actions}</div>
+          <Settings className="size-4" />
+        </Button>
+      </CardHeader>
+
+      <div
+        role="tablist"
+        aria-label="Activity filters"
+        className="flex border-b border-border"
+      >
+        {TABS.map((tab, i) => {
+          const active = i === 0
+          return (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={cn(
+                "border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "border-primary text-fg"
+                  : "border-transparent text-fg-muted hover:text-fg",
               )}
-            </div>
-          </div>
-        ))}
+            >
+              {tab}
+            </button>
+          )
+        })}
       </div>
-    </div>
+
+      <CardContent className="p-0">
+        <ol className="divide-y divide-border">
+          {ACTIVITIES.map((a) => (
+            <li key={a.id} className="flex gap-3 p-3">
+              <span
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-md ring-1",
+                  TONE_RING[a.tone],
+                )}
+                aria-hidden
+              >
+                <a.icon className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-fg">{a.title}</span>
+                  {a.badge ? (
+                    <Badge variant={a.badge.variant ?? "secondary"} size="sm">
+                      {a.badge.label}
+                    </Badge>
+                  ) : null}
+                  <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-fg-subtle">
+                    {a.time}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-sm text-fg-muted">{a.description}</p>
+                {a.actions ? (
+                  <div className="mt-2 flex gap-2">{a.actions}</div>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+    </Card>
   )
 }

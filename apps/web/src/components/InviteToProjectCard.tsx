@@ -20,7 +20,7 @@ export function InviteToProjectCard() {
     <div className="border border-neutral-200 bg-white rounded-none">
       <div className="flex items-start justify-between p-4 border-b border-dashed border-neutral-200">
         <div className="flex gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-ink/30 text-ink">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-fg/30 text-fg">
             <UserPlus className="h-5 w-5" />
           </div>
           <div>

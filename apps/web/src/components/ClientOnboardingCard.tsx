@@ -22,14 +22,14 @@ export function ClientOnboardingCard({ steps, title = "Setup progress", classNam
     return (
       <div
         className={cn(
-          "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
+          "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
           className
         )}
       >
-        <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
-          <h3 className="text-sm font-semibold text-ink">{title}</h3>
+        <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
+          <h3 className="text-sm font-semibold text-fg">{title}</h3>
         </div>
-        <div className="px-4 py-4 text-sm text-ink/80">No setup steps defined.</div>
+        <div className="px-4 py-4 text-sm text-fg/80">No setup steps defined.</div>
       </div>
     )
   }
@@ -37,27 +37,27 @@ export function ClientOnboardingCard({ steps, title = "Setup progress", classNam
   return (
     <div
       className={cn(
-        "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
+        "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
         className
       )}
     >
-      <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
-        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
+        <h3 className="text-sm font-semibold text-fg">{title}</h3>
       </div>
       <div className="p-4">
         <div className="mb-4 flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-ink text-white rounded-none">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-fg text-white rounded-none">
             <Rocket className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="h-2 w-full bg-warm rounded-none">
+            <div className="h-2 w-full bg-surface rounded-none">
               <div
-                className="h-full bg-natural rounded-none"
+                className="h-full bg-primary rounded-none"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
-          <span className="text-xs font-medium text-ink">{progressPercent}%</span>
+          <span className="text-xs font-medium text-fg">{progressPercent}%</span>
         </div>
         <ul className="space-y-2">
           {steps.map((step) => (
@@ -66,8 +66,8 @@ export function ClientOnboardingCard({ steps, title = "Setup progress", classNam
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center text-xs font-medium rounded-none",
                   step.done
-                    ? "bg-natural text-white"
-                    : "border border-ink/30 bg-warm/50 text-ink"
+                    ? "bg-primary text-white"
+                    : "border border-fg/30 bg-surface/50 text-fg"
                 )}
               >
                 {step.done ? <Check className="h-3.5 w-3.5" /> : null}
@@ -75,13 +75,13 @@ export function ClientOnboardingCard({ steps, title = "Setup progress", classNam
               <span
                 className={cn(
                   "flex-1 text-sm",
-                  step.done ? "text-ink" : "text-ink/80"
+                  step.done ? "text-fg" : "text-fg/80"
                 )}
               >
                 {step.label}
               </span>
               {!step.done && (
-                <span className="p-0.5 text-ink/60" aria-hidden>
+                <span className="p-0.5 text-fg/60" aria-hidden>
                   <ChevronRight className="h-4 w-4" />
                 </span>
               )}

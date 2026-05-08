@@ -66,10 +66,10 @@ function IncidentCreatePage() {
   return (
     <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
       <div className="mx-auto max-w-2xl space-y-4">
-        <h1 className="text-xl font-semibold text-ink">Log critical incident</h1>
+        <h1 className="text-xl font-semibold text-fg">Log critical incident</h1>
         <form onSubmit={submit} className="space-y-4" noValidate>
           {serverError && (
-            <p className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2" role="alert">
+            <p className="text-sm text-fg border border-fg/30 bg-neutral-50 px-3 py-2" role="alert">
               {serverError}
             </p>
           )}
@@ -98,7 +98,7 @@ function IncidentCreatePage() {
             <textarea
               id="description"
               rows={4}
-              className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+              className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
               {...register("description")}
             />
           </FormField>
@@ -111,7 +111,7 @@ function IncidentCreatePage() {
             >
               <select
                 id="severity"
-                className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
                 {...register("severity")}
               >
                 {SEVERITY_VALUES.map((s) => (
@@ -153,14 +153,14 @@ function IncidentCreatePage() {
             <Button
               type="submit"
               disabled={formState.isSubmitting}
-              className="rounded-none bg-natural text-white hover:bg-natural-dark"
+              className="rounded-none bg-primary text-white hover:bg-primary"
             >
               {formState.isSubmitting ? "Logging…" : "Log incident"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-ink/30 text-ink"
+              className="rounded-none border-fg/30 text-fg"
               onClick={() => navigate({ to: "/incidents" })}
             >
               Cancel

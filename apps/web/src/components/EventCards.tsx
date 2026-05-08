@@ -62,8 +62,8 @@ function EventCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-2">
-          <h3 className="text-lg font-bold text-ink">{name}</h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink/70">
+          <h3 className="text-lg font-bold text-fg">{name}</h3>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg/70">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 shrink-0" />
               {date}
@@ -73,7 +73,7 @@ function EventCard({
               {time}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-ink/70">
+          <div className="flex items-center gap-1.5 text-sm text-fg/70">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
             <span>& {location}</span>
           </div>
@@ -88,10 +88,10 @@ function EventCard({
                   />
                 ))}
               </div>
-              <span className="text-sm text-ink/70">{attendees}</span>
+              <span className="text-sm text-fg/70">{attendees}</span>
             </div>
           ) : status ? (
-            <span className="inline-block rounded-md border border-border/40 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-ink/80">
+            <span className="inline-block rounded-md border border-border/40 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-fg/80">
               {status}
             </span>
           ) : null}
@@ -100,20 +100,20 @@ function EventCard({
           <span
             className={cn(
               "text-xl font-bold tabular-nums",
-              amountPositive ? "text-natural" : "text-ink"
+              amountPositive ? "text-primary" : "text-fg"
             )}
           >
             {amount}
           </span>
-          <div className="flex items-center gap-1.5 text-sm text-ink/70">
+          <div className="flex items-center gap-1.5 text-sm text-fg/70">
             <span>{dailyLabel}</span>
             {dailyChangePositive ? (
-              <span className="inline-flex items-center gap-0.5 rounded border border-natural/40 bg-natural/10 px-1.5 py-0.5 text-xs font-medium text-natural">
+              <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                 <TrendingUp className="h-3 w-3" />
                 {dailyChange}
               </span>
             ) : (
-              <span className="text-xs text-ink/70">{dailyChange}</span>
+              <span className="text-xs text-fg/70">{dailyChange}</span>
             )}
           </div>
         </div>
@@ -122,7 +122,7 @@ function EventCard({
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-md border border-ink/20 bg-neutral-50 text-ink hover:bg-neutral-100"
+          className="rounded-md border border-fg/20 bg-neutral-50 text-fg hover:bg-neutral-100"
         >
           <Pencil className="mr-1.5 h-3.5 w-3.5" />
           Edit Event
@@ -130,7 +130,7 @@ function EventCard({
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-md border border-ink/20 bg-neutral-50 text-ink hover:bg-neutral-100"
+          className="rounded-md border border-fg/20 bg-neutral-50 text-fg hover:bg-neutral-100"
         >
           <ClipboardCopy className="mr-1.5 h-3.5 w-3.5" />
           Copy Link
@@ -138,7 +138,7 @@ function EventCard({
         {showPublish && (
           <Button
             size="sm"
-            className="rounded-md bg-ink text-white hover:bg-surface-slate"
+            className="rounded-md bg-fg text-white hover:bg-surface-slate"
           >
             <Check className="mr-1.5 h-3.5 w-3.5" />
             Publish

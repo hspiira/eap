@@ -49,9 +49,9 @@ function PersonCreatePage() {
 
   return (
     <div className="p-6 max-w-md">
-      <h1 className="text-xl font-semibold text-ink">Add person</h1>
+      <h1 className="text-xl font-semibold text-fg">Add person</h1>
       <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
-        {serverError && <p className="text-sm text-ink" role="alert">{serverError}</p>}
+        {serverError && <p className="text-sm text-fg" role="alert">{serverError}</p>}
         <FormField
           label="First name"
           required
@@ -76,7 +76,7 @@ function PersonCreatePage() {
         >
           <select
             id="person_type"
-            className="flex h-9 w-full border border-ink/30 bg-warm px-3 py-2 rounded-none"
+            className="flex h-9 w-full border border-fg/30 bg-surface px-3 py-2 rounded-none"
             {...register("person_type")}
           >
             <option value={PersonType.CLIENT_EMPLOYEE}>Client Employee</option>

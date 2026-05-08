@@ -30,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { sidebarStyles } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 
 const BREADCRUMB = "Engineering > At Risk"
@@ -47,10 +46,10 @@ const FILTER_OPTIONS = [
 ] as const
 
 const ASSIGNEE_CHIPS = [
-  { initials: "MA", bg: "bg-ink" },
+  { initials: "MA", bg: "bg-fg" },
   { initials: "HM", bg: "bg-danger-soft" },
-  { initials: "MR", bg: "bg-natural" },
-  { initials: "AO", bg: "bg-ink/80" },
+  { initials: "MR", bg: "bg-primary" },
+  { initials: "AO", bg: "bg-fg/80" },
 ]
 
 type StatusId = "overdue" | "due-soon" | "blocked" | "needs-review"
@@ -65,7 +64,7 @@ const STATUS_COLUMNS: Array<{
   {
     id: "overdue",
     label: "Overdue",
-    badgeClass: "bg-danger-soft text-ink",
+    badgeClass: "bg-danger-soft text-fg",
     checkboxClass: "border-danger-soft",
     tasks: [
       { title: "Create script for creating user accounts and onboarding flow" },
@@ -76,8 +75,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "due-soon",
     label: "Due soon",
-    badgeClass: "bg-natural/80 text-ink",
-    checkboxClass: "border-natural",
+    badgeClass: "bg-primary/80 text-fg",
+    checkboxClass: "border-primary",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -85,8 +84,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "blocked",
     label: "Blocked",
-    badgeClass: "bg-ink text-warm",
-    checkboxClass: "border-ink",
+    badgeClass: "bg-fg text-surface",
+    checkboxClass: "border-fg",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -94,8 +93,8 @@ const STATUS_COLUMNS: Array<{
   {
     id: "needs-review",
     label: "Needs review",
-    badgeClass: "bg-natural text-warm",
-    checkboxClass: "border-natural",
+    badgeClass: "bg-primary text-surface",
+    checkboxClass: "border-primary",
     tasks: [
       { title: "Create backend API for sending workspace invitation" },
     ],
@@ -108,7 +107,7 @@ function FilterBar() {
   const [activeFilter, setActiveFilter] = useState<string | null>("Priority is any of 2 priorities")
 
   return (
-    <div className="flex flex-nowrap items-center gap-2 border-b border-ink/20 bg-neutral-50 px-3 py-0 h-10">
+    <div className="flex flex-nowrap items-center gap-2 border-b border-fg/20 bg-neutral-50 px-3 py-0 h-10">
       <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="sm" className="h-8 gap-1.5 shrink-0">
@@ -116,14 +115,14 @@ function FilterBar() {
             Filter
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[220px] p-0">
-          <div className="border-b border-ink/20 p-2">
+        <DropdownMenuContent align="start" className="min-w-55 p-0">
+          <div className="border-b border-fg/20 p-2">
             <Input
               placeholder="Filter..."
-              className="h-8 border-ink/20 bg-warm/50"
+              className="h-8 border-fg/20 bg-surface/50"
             />
           </div>
-          <div className="max-h-[280px] overflow-y-auto py-1">
+          <div className="max-h-70 overflow-y-auto py-1">
             {FILTER_OPTIONS.map((opt) => (
               <DropdownMenuItem
                 key={opt.id}
@@ -146,7 +145,7 @@ function FilterBar() {
           <span
             key={c.initials}
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-warm",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-surface",
               c.bg
             )}
           >
@@ -156,12 +155,12 @@ function FilterBar() {
       </div>
 
       {activeFilter && (
-        <div className="flex h-8 shrink-0 items-center gap-1 border border-ink/30 bg-warm px-2 py-0">
-          <span className="text-sm text-ink">{activeFilter}</span>
+        <div className="flex h-8 shrink-0 items-center gap-1 border border-fg/30 bg-surface px-2 py-0">
+          <span className="text-sm text-fg">{activeFilter}</span>
           <button
             type="button"
             onClick={() => setActiveFilter(null)}
-            className="p-0.5 text-ink hover:bg-ink/10"
+            className="p-0.5 text-fg hover:bg-fg/10"
             aria-label="Remove filter"
           >
             ×
@@ -173,30 +172,30 @@ function FilterBar() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex h-8 min-w-[120px] shrink-0 items-center gap-2 border border-ink/30 bg-warm px-2 py-0 text-left text-sm text-ink"
+            className="flex h-8 min-w-30 shrink-0 items-center gap-2 border border-fg/30 bg-surface px-2 py-0 text-left text-sm text-fg"
           >
             Assignee
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[200px]">
+        <DropdownMenuContent align="start" className="min-w-50">
           <DropdownMenuItem className="gap-2">
             <User className="h-4 w-4" />
             No assignee
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-danger-soft text-xs text-ink">
+            <span className="flex h-6 w-6 items-center justify-center bg-danger-soft text-xs text-fg">
               HM
             </span>
             HM Harshith Mullapudi
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-ink/20 text-xs text-ink">
+            <span className="flex h-6 w-6 items-center justify-center bg-fg/20 text-xs text-fg">
               MA
             </span>
             MA Manik Aggarwal
           </DropdownMenuItem>
           <DropdownMenuItem className="gap-2">
-            <span className="flex h-6 w-6 items-center justify-center bg-natural/40 text-xs text-ink">
+            <span className="flex h-6 w-6 items-center justify-center bg-primary/40 text-xs text-fg">
               MR
             </span>
             MR Manoj Reddy
@@ -223,25 +222,25 @@ function TaskRow({
   isDone?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2 border-b border-ink/10 py-2 last:border-b-0">
+    <div className="flex items-center gap-2 border-b border-fg/10 py-2 last:border-b-0">
       <span
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center border-2 rounded-none",
           checkboxClass,
-          isDone && "bg-natural border-natural"
+          isDone && "bg-primary border-primary"
         )}
       >
-        {isDone ? <Check className="h-2.5 w-2.5 text-warm" /> : null}
+        {isDone ? <Check className="h-2.5 w-2.5 text-surface" /> : null}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-ink">{title}</span>
+      <span className="min-w-0 flex-1 truncate text-sm text-fg">{title}</span>
       {subIssue != null && (
-        <span className="shrink-0 text-xs text-ink/80">Sub-Issue {subIssue}</span>
+        <span className="shrink-0 text-xs text-fg/80">Sub-Issue {subIssue}</span>
       )}
       {blocked && (
-        <span className="shrink-0 text-xs text-ink/80">Blocked by</span>
+        <span className="shrink-0 text-xs text-fg/80">Blocked by</span>
       )}
       {blocking && (
-        <span className="shrink-0 border border-danger-soft bg-danger-soft/20 px-1.5 py-0.5 text-xs text-ink">
+        <span className="shrink-0 border border-danger-soft bg-danger-soft/20 px-1.5 py-0.5 text-xs text-fg">
           Blocking issues
         </span>
       )}
@@ -254,32 +253,31 @@ export function AtRiskPage() {
     <div className="flex h-full min-h-0 flex-1 flex-col bg-neutral-50">
       <div
         className={cn(
-          "h-10 flex items-center rounded-none bg-neutral-50",
-          sidebarStyles.borderedRowBottom
+          "h-10 flex items-center rounded-none bg-neutral-50 border-b border-fg/20",
         )}
       >
         <div className="flex w-full items-center gap-1.5 px-2 py-0">
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
+            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
             aria-label="Back"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
+            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
             aria-label="Forward"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          <Code className="h-4 w-4 shrink-0 text-ink/70" />
-          <span className="min-w-0 flex-1 truncate text-sm text-ink">{BREADCRUMB}</span>
+          <Code className="h-4 w-4 shrink-0 text-fg/70" />
+          <span className="min-w-0 flex-1 truncate text-sm text-fg">{BREADCRUMB}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-ink hover:bg-warm"
+                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -307,9 +305,9 @@ export function AtRiskPage() {
           {STATUS_COLUMNS.map((col) => (
             <div
               key={col.id}
-              className="flex w-[280px] shrink-0 flex-col border border-ink/20 bg-warm/30"
+              className="flex w-70 shrink-0 flex-col border border-fg/20 bg-surface/30"
             >
-              <div className="flex items-center justify-between gap-2 border-b border-ink/20 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border-b border-fg/20 px-3 py-2">
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-none",
@@ -319,7 +317,7 @@ export function AtRiskPage() {
                   {col.id === "needs-review" && <Check className="h-3 w-3" />}
                   {col.label}
                 </span>
-                <span className="text-xs text-ink">{col.tasks.length}</span>
+                <span className="text-xs text-fg">{col.tasks.length}</span>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                   <Plus className="h-3.5 w-3.5" />
                 </Button>

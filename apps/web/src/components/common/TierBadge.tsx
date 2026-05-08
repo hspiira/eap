@@ -13,8 +13,8 @@ const TIER_LABELS: Record<ClientTier, string> = {
 }
 
 const TIER_TONE: Record<ClientTier, string> = {
-  [ClientTier.A]: "bg-natural/10 text-natural border-natural/30",
-  [ClientTier.B]: "bg-warm text-ink border-ink/20",
+  [ClientTier.A]: "bg-primary/10 text-primary border-primary/30",
+  [ClientTier.B]: "bg-surface text-fg border-fg/20",
   [ClientTier.C]: "bg-neutral-100 text-neutral-600 border-neutral-300",
 }
 

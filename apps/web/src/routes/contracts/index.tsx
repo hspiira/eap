@@ -27,7 +27,7 @@ const columns = [
     accessorKey: "contract_number" as keyof Contract,
     header: "Number",
     cell: (row: Contract) => (
-      <Link to="/contracts/$contractId" params={{ contractId: row.id }} className="text-natural hover:underline">
+      <Link to="/contracts/$contractId" params={{ contractId: row.id }} className="text-primary hover:underline">
         {row.contract_number ?? row.id.slice(0, 8)}
       </Link>
     ),
@@ -73,17 +73,17 @@ function ContractsListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-ink">Contracts</h1>
+        <h1 className="text-xl font-semibold text-fg">Contracts</h1>
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/70" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg/70" />
           <Input
             placeholder="Search contracts..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-none h-9 pl-8 pr-3 border-ink/30"
+            className="rounded-none h-9 pl-8 pr-3 border-fg/30"
           />
         </div>
-        <Link to="/contracts/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">
+        <Link to="/contracts/new" className="inline-flex items-center justify-center h-9 px-4 bg-primary text-white font-medium rounded-none hover:bg-primary">
           Add contract
         </Link>
       </div>

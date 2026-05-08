@@ -25,9 +25,9 @@ interface Props {
 export function QuestionnaireRenderer({ questionnaire, answers, onChange, readOnly }: Props) {
   return (
     <fieldset className="space-y-5">
-      <legend className="text-sm font-semibold text-ink">{questionnaire.title}</legend>
+      <legend className="text-sm font-semibold text-fg">{questionnaire.title}</legend>
       {questionnaire.description ? (
-        <p className="text-xs text-ink/60">{questionnaire.description}</p>
+        <p className="text-xs text-fg/60">{questionnaire.description}</p>
       ) : null}
       {questionnaire.questions.map((q) => (
         <QuestionField
@@ -54,12 +54,12 @@ function QuestionField({ question, value, onChange, readOnly }: QuestionFieldPro
 
   return (
     <div className="space-y-1.5">
-      <label htmlFor={labelId} className="block text-sm font-medium text-ink">
+      <label htmlFor={labelId} className="block text-sm font-medium text-fg">
         {question.prompt}
         {question.required && <span className="ml-1 text-danger-soft">*</span>}
       </label>
       {question.help_text ? (
-        <p className="text-xs text-ink/60">{question.help_text}</p>
+        <p className="text-xs text-fg/60">{question.help_text}</p>
       ) : null}
       {renderInput(question, value, onChange, readOnly, labelId)}
     </div>
@@ -95,7 +95,7 @@ function renderInput(
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+          className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
         >
           <option value="">— Select —</option>
           {(q.options ?? []).map((opt) => (
@@ -115,7 +115,7 @@ function renderInput(
               <label
                 key={opt.value}
                 className={`inline-flex items-center gap-1.5 border px-2 py-1 text-sm cursor-pointer ${
-                  checked ? "border-natural bg-natural/10 text-ink" : "border-ink/30 text-ink/70"
+                  checked ? "border-primary bg-primary/10 text-fg" : "border-fg/30 text-fg/70"
                 }`}
               >
                 <input
@@ -144,7 +144,7 @@ function renderInput(
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+          className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
         />
       )
   }
@@ -179,8 +179,8 @@ function ScaleInput({ inputId, min, max, minLabel, maxLabel, value, onChange, re
               onClick={() => onChange(selected ? null : t)}
               className={`min-w-9 border px-2 py-1 text-sm tabular-nums ${
                 selected
-                  ? "border-natural bg-natural text-white"
-                  : "border-ink/30 bg-white text-ink hover:border-natural"
+                  ? "border-primary bg-primary text-white"
+                  : "border-fg/30 bg-white text-fg hover:border-primary"
               } ${readOnly ? "cursor-not-allowed opacity-60" : ""}`}
             >
               {t}
@@ -188,7 +188,7 @@ function ScaleInput({ inputId, min, max, minLabel, maxLabel, value, onChange, re
           )
         })}
       </div>
-      <div className="flex justify-between text-xs text-ink/60">
+      <div className="flex justify-between text-xs text-fg/60">
         <span>{minLabel ?? min}</span>
         <span>{maxLabel ?? max}</span>
       </div>

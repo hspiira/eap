@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Activity as ActivityEntity } from "@/types/entities"
 
-const skeletonClass = "rounded-none bg-ink/15"
+const skeletonClass = "rounded-none bg-fg/15"
 
 const ACTIVITY_ICONS: Record<string, typeof Phone> = {
   CALL: Phone,
@@ -57,12 +57,12 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
     return (
       <div
         className={cn(
-          "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
+          "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
           className
         )}
       >
-        <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
-          <h3 className="text-sm font-semibold text-ink">Activity</h3>
+        <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
+          <h3 className="text-sm font-semibold text-fg">Activity</h3>
         </div>
         <div className="divide-y divide-ink/15 px-4">
           {[1, 2, 3, 4].map((i) => (
@@ -84,14 +84,14 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
     return (
       <div
         className={cn(
-          "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
+          "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
           className
         )}
       >
-        <div className="border-b border-ink/20 px-4 py-3 bg-warm/20">
-          <h3 className="text-sm font-semibold text-ink">Activity</h3>
+        <div className="border-b border-fg/20 px-4 py-3 bg-surface/20">
+          <h3 className="text-sm font-semibold text-fg">Activity</h3>
         </div>
-        <div className="px-4 py-4 text-sm text-ink/80">No recent activity.</div>
+        <div className="px-4 py-4 text-sm text-fg/80">No recent activity.</div>
       </div>
     )
   }
@@ -99,13 +99,13 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
   return (
     <div
       className={cn(
-        "flex flex-col border border-ink/30 rounded-none bg-neutral-50 overflow-hidden",
+        "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
         className
       )}
     >
-      <div className="flex items-center justify-between border-b border-ink/20 px-4 py-3 bg-warm/20">
-        <h3 className="text-sm font-semibold text-ink">Activity</h3>
-        <span className="flex h-5 min-w-[20px] items-center justify-center bg-ink/15 px-1.5 text-xs font-medium text-ink rounded-none">
+      <div className="flex items-center justify-between border-b border-fg/20 px-4 py-3 bg-surface/20">
+        <h3 className="text-sm font-semibold text-fg">Activity</h3>
+        <span className="flex h-5 min-w-[20px] items-center justify-center bg-fg/15 px-1.5 text-xs font-medium text-fg rounded-none">
           {activities.length}
         </span>
       </div>
@@ -115,18 +115,18 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
           const title = a.title ?? a.activity_type
           return (
             <div key={a.id} className="flex gap-3 px-4 py-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-ink/20 bg-warm/50 text-ink rounded-none">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-fg/20 bg-surface/50 text-fg rounded-none">
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-ink">{title}</span>
-                  <span className="shrink-0 text-xs text-ink/70">
+                  <span className="text-sm font-medium text-fg">{title}</span>
+                  <span className="shrink-0 text-xs text-fg/70">
                     {formatActivityTime(a.occurred_at)}
                   </span>
                 </div>
                 {a.description && (
-                  <p className="mt-0.5 text-sm text-ink/90">{a.description}</p>
+                  <p className="mt-0.5 text-sm text-fg/90">{a.description}</p>
                 )}
               </div>
             </div>

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import type { Person } from "@/types/entities"
 import { PersonType } from "@/types/enums"
 
-const skeletonClass = "rounded-none bg-ink/15"
+const skeletonClass = "rounded-none bg-fg/15"
 
 interface ClientStaffSummaryCardProps {
   clientId: string
@@ -40,15 +40,15 @@ export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSumma
   return (
     <div
       className={cn(
-        "flex flex-col border border-ink/20 bg-white p-4 rounded-none",
+        "flex flex-col border border-fg/20 bg-white p-4 rounded-none",
         className
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-ink">Staff & people</h3>
+        <h3 className="text-sm font-semibold text-fg">Staff & people</h3>
         <Link
           to="/persons"
-          className="text-xs text-ink/70 hover:text-natural flex items-center gap-0.5"
+          className="text-xs text-fg/70 hover:text-primary flex items-center gap-0.5"
         >
           View details <ChevronRight className="inline h-3 w-3" />
         </Link>
@@ -62,21 +62,21 @@ export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSumma
         </div>
       ) : (
         <>
-          <div className="mb-3 text-2xl font-bold text-ink">{total}</div>
-          <p className="mb-3 text-xs text-ink/70">Total people linked to this client</p>
-          <div className="grid grid-cols-2 gap-2 border-t border-ink/15 pt-3 text-xs">
+          <div className="mb-3 text-2xl font-bold text-fg">{total}</div>
+          <p className="mb-3 text-xs text-fg/70">Total people linked to this client</p>
+          <div className="grid grid-cols-2 gap-2 border-t border-fg/15 pt-3 text-xs">
             <div className="flex justify-between py-1">
-              <span className="text-ink/80">Staff (employees)</span>
-              <span className="font-medium text-ink">{staff.length}</span>
+              <span className="text-fg/80">Staff (employees)</span>
+              <span className="font-medium text-fg">{staff.length}</span>
             </div>
             <div className="flex justify-between py-1">
-              <span className="text-ink/80">Dependents / relatives</span>
-              <span className="font-medium text-ink">{dependents.length}</span>
+              <span className="text-fg/80">Dependents / relatives</span>
+              <span className="font-medium text-fg">{dependents.length}</span>
             </div>
             {other.length > 0 && (
               <div className="flex justify-between py-1 col-span-2">
-                <span className="text-ink/80">Other</span>
-                <span className="font-medium text-ink">{other.length}</span>
+                <span className="text-fg/80">Other</span>
+                <span className="font-medium text-fg">{other.length}</span>
               </div>
             )}
           </div>

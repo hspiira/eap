@@ -12,17 +12,17 @@ export const Route = createFileRoute("/engagements/")({
 function statusBadgeClass(status: EngagementStatus): string {
   switch (status) {
     case EngagementStatus.ACTIVE:
-      return "border-natural/40 bg-natural/10 text-natural-dark"
+      return "border-primary/40 bg-primary/10 text-primary"
     case EngagementStatus.SCOPING:
-      return "border-ink/30 bg-neutral-50 text-ink"
+      return "border-fg/30 bg-neutral-50 text-fg"
     case EngagementStatus.DELIVERED:
-      return "border-stone/40 bg-stone/10 text-ink"
+      return "border-stone/40 bg-danger/10 text-fg"
     case EngagementStatus.CLOSED:
-      return "border-ink/20 bg-white text-ink/60"
+      return "border-fg/20 bg-white text-fg/60"
     case EngagementStatus.CANCELLED:
       return "border-danger-soft/40 bg-danger-soft/10 text-danger-soft"
     default:
-      return "border-ink/30 bg-white text-ink"
+      return "border-fg/30 bg-white text-fg"
   }
 }
 
@@ -50,15 +50,15 @@ function EngagementsListPage() {
       <div className="mx-auto max-w-5xl space-y-4">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-ink">Engagements</h1>
-            <p className="mt-1 text-sm text-ink/70">
+            <h1 className="text-xl font-semibold text-fg">Engagements</h1>
+            <p className="mt-1 text-sm text-fg/70">
               Consultancy work — policy drafts, training, audits, advisory. Tracks scope,
               deliverables, and hours-logged.
             </p>
           </div>
           <Link
             to="/engagements/new"
-            className="inline-flex h-9 items-center gap-1.5 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark"
+            className="inline-flex h-9 items-center gap-1.5 px-4 bg-primary text-white font-medium rounded-none hover:bg-primary"
           >
             <Plus className="h-4 w-4" />
             New engagement
@@ -66,11 +66,11 @@ function EngagementsListPage() {
         </header>
 
         {query.isPending ? (
-          <p className="text-sm text-ink/60">Loading…</p>
+          <p className="text-sm text-fg/60">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-ink/60">No engagements yet.</p>
+          <p className="text-sm text-fg/60">No engagements yet.</p>
         ) : (
-          <ul className="divide-y divide-ink/10 border border-ink/20 bg-white">
+          <ul className="divide-y divide-ink/10 border border-fg/20 bg-white">
             {items.map((e) => {
               const overdue = isOverdue(e.due_date, e.status)
               const budgetPct = e.budget_hours
@@ -83,11 +83,11 @@ function EngagementsListPage() {
                       <Link
                         to="/engagements/$engagementId"
                         params={{ engagementId: e.id }}
-                        className="text-sm font-semibold text-ink hover:text-natural hover:underline"
+                        className="text-sm font-semibold text-fg hover:text-primary hover:underline"
                       >
                         {e.name}
                       </Link>
-                      <p className="mt-1 text-xs text-ink/60">
+                      <p className="mt-1 text-xs text-fg/60">
                         {e.engagement_type} · started{" "}
                         {new Date(e.start_date).toLocaleDateString()}
                         {e.due_date
@@ -100,9 +100,9 @@ function EngagementsListPage() {
                         )}
                       </p>
                       {e.description ? (
-                        <p className="mt-1 text-sm text-ink/70 line-clamp-2">{e.description}</p>
+                        <p className="mt-1 text-sm text-fg/70 line-clamp-2">{e.description}</p>
                       ) : null}
-                      <p className="mt-2 text-xs text-ink/60">
+                      <p className="mt-2 text-xs text-fg/60">
                         Hours: {e.hours_logged}
                         {e.budget_hours ? ` / ${e.budget_hours} (${budgetPct}%)` : ""}
                       </p>

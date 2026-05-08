@@ -7,13 +7,13 @@ export function FlightProgressCard() {
     <div className="border border-border/25 bg-white p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-xl font-bold text-ink">LHR</div>
-          <div className="text-xs text-ink/70">London, UK</div>
+          <div className="text-xl font-bold text-fg">LHR</div>
+          <div className="text-xs text-fg/70">London, UK</div>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center border border-border/40 bg-warm/50 px-2 py-0.5 text-xs text-ink">
+            <span className="inline-flex items-center border border-border/40 bg-surface/50 px-2 py-0.5 text-xs text-fg">
               DEP 08:00
             </span>
-            <span className="inline-flex items-center border border-border/40 bg-warm/50 px-2 py-0.5 text-xs text-ink">
+            <span className="inline-flex items-center border border-border/40 bg-surface/50 px-2 py-0.5 text-xs text-fg">
               GMT+1
             </span>
           </div>
@@ -22,7 +22,7 @@ export function FlightProgressCard() {
         <div className="relative flex min-w-0 flex-1 items-center px-2 pt-6">
           <div className="absolute left-0 right-0 top-6 h-0.5 bg-border/40" />
           <div
-            className="absolute left-0 top-6 h-0.5 bg-ink"
+            className="absolute left-0 top-6 h-0.5 bg-fg"
             style={{ width: `${progressPercent}%` }}
           />
           <div
@@ -33,18 +33,18 @@ export function FlightProgressCard() {
             className="relative z-10 -translate-x-1/2"
             style={{ left: `${progressPercent}%` }}
           >
-            <Plane className="h-5 w-5 text-ink" strokeWidth={2} style={{ transform: "rotate(-45deg)" }} />
+            <Plane className="h-5 w-5 text-fg" strokeWidth={2} style={{ transform: "rotate(-45deg)" }} />
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-xl font-bold text-ink">OPO</div>
-          <div className="text-xs text-ink/70">Porto, PT</div>
+          <div className="text-xl font-bold text-fg">OPO</div>
+          <div className="text-xs text-fg/70">Porto, PT</div>
           <div className="mt-2 flex flex-wrap justify-end gap-1.5">
-            <span className="inline-flex items-center border border-border/40 bg-warm/50 px-2 py-0.5 text-xs text-ink">
+            <span className="inline-flex items-center border border-border/40 bg-surface/50 px-2 py-0.5 text-xs text-fg">
               ETA 10:15
             </span>
-            <span className="inline-flex items-center border border-border/40 bg-warm/50 px-2 py-0.5 text-xs text-ink">
+            <span className="inline-flex items-center border border-border/40 bg-surface/50 px-2 py-0.5 text-xs text-fg">
               GMT+1
             </span>
           </div>

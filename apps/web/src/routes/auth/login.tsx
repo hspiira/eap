@@ -176,7 +176,7 @@ function LoginPage() {
         <button
           type="submit"
           disabled={submitDisabled}
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLocked
             ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
@@ -189,7 +189,7 @@ function LoginPage() {
       <div className="mt-6 text-center space-y-2">
         <p className="text-white/70 text-sm">
           Don&apos;t have an account?{' '}
-          <Link to="/auth/signup" className="text-natural hover:underline">
+          <Link to="/auth/signup" className="text-primary hover:underline">
             Sign up
           </Link>
         </p>

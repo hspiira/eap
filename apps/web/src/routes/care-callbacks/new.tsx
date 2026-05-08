@@ -108,15 +108,15 @@ function CampaignCreatePage() {
   return (
     <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
       <div className="mx-auto max-w-2xl space-y-4">
-        <h1 className="text-xl font-semibold text-ink">New care-callback campaign</h1>
-        <p className="text-sm text-ink/70">
+        <h1 className="text-xl font-semibold text-fg">New care-callback campaign</h1>
+        <p className="text-sm text-fg/70">
           Define audience, sampling, and the counsellor pool. Cases are generated to each
           counsellor's worklist when the campaign is activated.
         </p>
         <form onSubmit={submit} className="space-y-4" noValidate>
           {serverError && (
             <p
-              className="text-sm text-ink border border-ink/30 bg-neutral-50 px-3 py-2"
+              className="text-sm text-fg border border-fg/30 bg-neutral-50 px-3 py-2"
               role="alert"
             >
               {serverError}
@@ -146,7 +146,7 @@ function CampaignCreatePage() {
             <textarea
               id="description"
               rows={3}
-              className="flex w-full border border-ink/30 bg-white px-3 py-2 text-sm text-ink rounded-none"
+              className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
               {...register("description")}
             />
           </FormField>
@@ -187,7 +187,7 @@ function CampaignCreatePage() {
             >
               <select
                 id="sampling"
-                className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
                 {...register("sampling")}
               >
                 {SAMPLING_VALUES.map((s) => (
@@ -234,7 +234,7 @@ function CampaignCreatePage() {
             >
               <select
                 id="questionnaire_code"
-                className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
                 {...register("questionnaire_code")}
               >
                 {triageOptions.map((q) => (
@@ -251,7 +251,7 @@ function CampaignCreatePage() {
             >
               <select
                 id="followup_questionnaire_code"
-                className="flex h-9 w-full border border-ink/30 bg-white px-3 py-2 rounded-none text-ink"
+                className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
                 {...register("followup_questionnaire_code")}
               >
                 <option value="">— None —</option>
@@ -267,14 +267,14 @@ function CampaignCreatePage() {
             <Button
               type="submit"
               disabled={formState.isSubmitting}
-              className="rounded-none bg-natural text-white hover:bg-natural-dark"
+              className="rounded-none bg-primary text-white hover:bg-primary"
             >
               {formState.isSubmitting ? "Creating…" : "Create campaign"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-ink/30 text-ink"
+              className="rounded-none border-fg/30 text-fg"
               onClick={() => navigate({ to: "/care-callbacks" })}
             >
               Cancel

@@ -52,7 +52,7 @@ export function ConfirmDialog({
               handleConfirm()
             }}
             disabled={loading}
-            className={destructive ? "bg-ink hover:bg-surface-slate-dim" : undefined}
+            className={destructive ? "bg-fg hover:bg-surface-slate-dim" : undefined}
           >
             {loading ? "…" : confirmLabel}
           </AlertDialogAction>

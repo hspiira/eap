@@ -192,27 +192,11 @@ button {
   font-family: inherit;
 }
 
-:root {
-  --sidebar: var(--palette-white);
-  --sidebar-foreground: var(--palette-safe);
-  --sidebar-primary: var(--palette-natural);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--palette-neutral-100);
-  --sidebar-accent-foreground: var(--palette-safe);
-  --sidebar-border: var(--palette-safe);
-  --sidebar-ring: var(--palette-natural);
-}
-
-.dark {
-  --sidebar: var(--palette-safe-dark);
-  --sidebar-foreground: var(--palette-calm);
-  --sidebar-primary: var(--palette-natural);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--palette-safe);
-  --sidebar-accent-foreground: var(--palette-calm);
-  --sidebar-border: var(--palette-safe);
-  --sidebar-ring: var(--palette-natural);
-}
+/*
+ * Sidebar tokens are now defined in styles/theme/tokens-{light,dark}.css —
+ * bound to the new neutral ramp + brand. The legacy :root/.dark blocks here
+ * have been removed.
+ */
 
 @theme inline {
   --color-sidebar: var(--sidebar);

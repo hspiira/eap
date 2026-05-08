@@ -53,16 +53,16 @@ function MetricRow({
           <span
             className={cn(
               "h-1.5 w-1.5 shrink-0 rounded-full",
-              dot === "green" && "bg-natural",
-              dot === "warning" && "bg-stone"
+              dot === "green" && "bg-primary",
+              dot === "warning" && "bg-danger"
             )}
           />
         )}
-        <span className={cn("truncate", isMuted ? "text-ink/60" : "text-ink")}>
+        <span className={cn("truncate", isMuted ? "text-fg/60" : "text-fg")}>
           {label}
         </span>
       </div>
-      <span className={cn("shrink-0 tabular-nums", isMuted ? "text-ink/70" : "text-ink")}>
+      <span className={cn("shrink-0 tabular-nums", isMuted ? "text-fg/70" : "text-fg")}>
         {value}
       </span>
     </div>
@@ -74,7 +74,7 @@ export function EmailCampaignCard() {
     <div className="w-full p-4">
       <div
         className={cn(
-          "overflow-hidden border border-ink/20 bg-white rounded-none"
+          "overflow-hidden border border-fg/20 bg-white rounded-none"
         )}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,16 +87,16 @@ export function EmailCampaignCard() {
               )}
             >
               <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="text-sm font-medium text-ink">{section.title}</h3>
+                <h3 className="text-sm font-medium text-fg">{section.title}</h3>
                 <button
                   type="button"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-ink/30 text-ink/70 hover:bg-ink/10"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-none border border-fg/30 text-fg/70 hover:bg-fg/10"
                   aria-label={`Info about ${section.title}`}
                 >
                   <Info className="h-2.5 w-2.5" />
                 </button>
               </div>
-              <p className="mb-4 text-2xl font-bold tabular-nums text-ink">
+              <p className="mb-4 text-2xl font-bold tabular-nums text-fg">
                 {section.primaryMetric}
               </p>
               <div className="space-y-0 border-t border-border/20 pt-3">
@@ -109,7 +109,7 @@ export function EmailCampaignCard() {
                   />
                 ))}
               </div>
-              <p className="mt-4 text-xs leading-relaxed text-ink/90">
+              <p className="mt-4 text-xs leading-relaxed text-fg/90">
                 {section.highlight ? (() => {
                   const { text, type } = section.highlight
                   const i = section.summary.indexOf(text)
@@ -119,7 +119,7 @@ export function EmailCampaignCard() {
                   return (
                     <>
                       {before}
-                      <span className={type === "green" ? "text-natural font-medium" : "text-stone font-medium"}>
+                      <span className={type === "green" ? "text-primary font-medium" : "text-danger font-medium"}>
                         {text}
                       </span>
                       {after}

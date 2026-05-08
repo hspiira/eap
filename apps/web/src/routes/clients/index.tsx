@@ -129,35 +129,35 @@ function ClientsListPage() {
           </div>
         ) : (
           <>
-            <div className="flex flex-nowrap items-center gap-2 border-b border-ink/20 bg-white px-3 py-2 shrink-0">
+            <div className="flex flex-nowrap items-center gap-2 border-b border-fg/20 bg-white px-3 py-2 shrink-0">
               <div className="relative flex-1 min-w-0 max-w-md">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/70" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg/70" />
                 <Input
                   placeholder="Search clients..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="rounded-none h-9 pl-8 pr-3 border-ink/30 bg-white text-ink placeholder:text-ink/60"
+                  className="rounded-none h-9 pl-8 pr-3 border-fg/30 bg-white text-fg placeholder:text-fg/60"
                 />
               </div>
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
+                className="rounded-none h-9 gap-1.5 border-fg/30 text-fg bg-white hover:bg-surface/50"
               >
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
               <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger className="rounded-none h-9 w-[180px] gap-1.5 border-ink/30 bg-white text-ink [&>svg]:text-ink">
+                <SelectTrigger className="rounded-none h-9 w-45 gap-1.5 border-fg/30 bg-white text-fg [&>svg]:text-fg">
                   <Calendar className="h-4 w-4 shrink-0" />
                   <SelectValue placeholder="Last 12 hours" />
                 </SelectTrigger>
-                <SelectContent className="rounded-none border-ink/30 bg-white">
+                <SelectContent className="rounded-none border-fg/30 bg-white">
                   {TIME_RANGE_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
-                      className="rounded-none focus:bg-warm/50 focus:text-ink"
+                      className="rounded-none focus:bg-surface/50 focus:text-fg"
                     >
                       {opt.label}
                     </SelectItem>
@@ -166,17 +166,17 @@ function ClientsListPage() {
               </Select>
               <Select value={activeTier ?? "all"} onValueChange={handleTierChange}>
                 <SelectTrigger
-                  className="rounded-none h-9 w-[140px] gap-1.5 border-ink/30 bg-white text-ink [&>svg]:text-ink"
+                  className="rounded-none h-9 w-35 gap-1.5 border-fg/30 bg-white text-fg [&>svg]:text-fg"
                   aria-label="Filter by tier"
                 >
                   <SelectValue placeholder="All tiers" />
                 </SelectTrigger>
-                <SelectContent className="rounded-none border-ink/30 bg-white">
+                <SelectContent className="rounded-none border-fg/30 bg-white">
                   {TIER_FILTER_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
-                      className="rounded-none focus:bg-warm/50 focus:text-ink"
+                      className="rounded-none focus:bg-surface/50 focus:text-fg"
                     >
                       {opt.label}
                     </SelectItem>
@@ -186,7 +186,7 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
+                className="rounded-none h-9 gap-1.5 border-fg/30 text-fg bg-white hover:bg-surface/50"
               >
                 <ListFilter className="h-4 w-4" />
                 Queries
@@ -195,7 +195,7 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-white hover:bg-warm/50"
+                className="rounded-none h-9 gap-1.5 border-fg/30 text-fg bg-white hover:bg-surface/50"
                 onClick={() => refetch?.()}
               >
                 <RotateCw className="h-4 w-4" />
@@ -204,14 +204,14 @@ function ClientsListPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                className="rounded-none h-9 gap-1.5 border-ink/30 text-ink bg-warm/50 hover:bg-warm-dark"
+                className="rounded-none h-9 gap-1.5 border-fg/30 text-fg bg-surface/50 hover:bg-surface-hover"
               >
                 <Download className="h-4 w-4" />
                 Download
               </Button>
               <Button
                 size="sm"
-                className="rounded-none h-9 gap-1.5 bg-natural text-white hover:bg-natural-dark"
+                className="rounded-none h-9 gap-1.5 bg-primary text-white hover:bg-primary"
                 onClick={() => setAddModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -237,17 +237,17 @@ function ClientsListPage() {
 
             <div className="flex-1 min-h-0 overflow-auto p-4">
               {error ? (
-                <div className="rounded-none border border-ink/20 bg-white p-6 text-center">
-                  <p className="text-ink">{error}</p>
+                <div className="rounded-none border border-fg/20 bg-white p-6 text-center">
+                  <p className="text-fg">{error}</p>
                 </div>
               ) : items.length === 0 ? (
-                <div className="rounded-none border border-ink/20 bg-white p-8 text-center">
-                  <p className="text-ink">
+                <div className="rounded-none border border-fg/20 bg-white p-8 text-center">
+                  <p className="text-fg">
                     {activeSearch ? "No clients match your search." : "No clients yet."}
                   </p>
                   <Button
                     size="sm"
-                    className="mt-3 rounded-none bg-natural text-white hover:bg-natural-dark"
+                    className="mt-3 rounded-none bg-primary text-white hover:bg-primary"
                     onClick={() => setAddModalOpen(true)}
                   >
                     Add client
@@ -255,10 +255,10 @@ function ClientsListPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-none border border-ink/20 bg-white overflow-hidden">
+                  <div className="rounded-none border border-fg/20 bg-white overflow-hidden">
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-ink/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-ink [&>th]:bg-warm/30">
+                        <TableRow className="border-fg/15 hover:bg-transparent [&>th]:h-9 [&>th]:py-2 [&>th]:px-3 [&>th]:text-xs [&>th]:font-medium [&>th]:uppercase [&>th]:text-fg [&>th]:bg-surface/30">
                           <TableHead>Name</TableHead>
                           <TableHead>Code</TableHead>
                           <TableHead>Tier</TableHead>
@@ -271,13 +271,13 @@ function ClientsListPage() {
                         {items.map((row) => (
                           <TableRow
                             key={row.id}
-                            className="border-ink/10 hover:bg-warm/20 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm [&>td]:text-ink"
+                            className="border-fg/10 hover:bg-surface/20 [&>td]:py-2 [&>td]:px-3 [&>td]:text-sm [&>td]:text-fg"
                           >
                             <TableCell>
                               <Link
                                 to="/clients/$clientId"
                                 params={{ clientId: row.id }}
-                                className="text-ink hover:text-natural hover:underline"
+                                className="text-fg hover:text-primary hover:underline"
                               >
                                 {row.name}
                               </Link>
@@ -296,7 +296,7 @@ function ClientsListPage() {
                               <Link
                                 to="/clients/$clientId"
                                 params={{ clientId: row.id }}
-                                className="inline-flex items-center justify-center text-ink hover:text-natural"
+                                className="inline-flex items-center justify-center text-fg hover:text-primary"
                                 aria-label="View client"
                               >
                                 <ExternalLink className="h-4 w-4" />

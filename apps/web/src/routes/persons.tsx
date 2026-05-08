@@ -9,7 +9,7 @@ export const Route = createFileRoute("/persons")({
 
 function PersonsLayout() {
   const { isAuthenticated, isLoading } = useAuthStore()
-  if (isLoading) return <div className="p-8 text-ink">Loading…</div>
+  if (isLoading) return <div className="p-8 text-fg">Loading…</div>
   if (!isAuthenticated) return null
   return <AppLayout><Outlet /></AppLayout>
 }

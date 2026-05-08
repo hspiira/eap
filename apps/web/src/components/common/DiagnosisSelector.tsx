@@ -105,32 +105,32 @@ export function DiagnosisSelector({
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          'flex w-full items-center justify-between gap-2 border border-ink/30 bg-white px-3 py-2 text-left text-sm text-ink rounded-none',
+          'flex w-full items-center justify-between gap-2 border border-fg/30 bg-white px-3 py-2 text-left text-sm text-fg rounded-none',
           'focus:outline-none focus:ring-1 focus:ring-natural disabled:opacity-50',
-          !value && 'text-ink/60',
+          !value && 'text-fg/60',
         )}
       >
         <span className="min-w-0 truncate">{triggerLabel}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-ink/60" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-fg/60" />
       </button>
 
       {showPath && selectedQuery.data && (
-        <p className="mt-1 text-xs text-ink/60">{selectedQuery.data.path}</p>
+        <p className="mt-1 text-xs text-fg/60">{selectedQuery.data.path}</p>
       )}
 
       {open && (
         <div
-          className="absolute z-20 mt-1 w-full max-h-80 overflow-auto border border-ink/30 bg-white shadow-lg rounded-none"
+          className="absolute z-20 mt-1 w-full max-h-80 overflow-auto border border-fg/30 bg-white shadow-lg rounded-none"
           role="listbox"
         >
-          <div className="sticky top-0 border-b border-ink/15 bg-white p-2">
+          <div className="sticky top-0 border-b border-fg/15 bg-white p-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/60" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg/60" />
               <Input
                 placeholder="Search diagnoses..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="rounded-none h-8 pl-8 pr-3 border-ink/20"
+                className="rounded-none h-8 pl-8 pr-3 border-fg/20"
                 autoFocus
               />
             </div>
@@ -179,8 +179,8 @@ function SearchResults({
   selectedId: string | null
   leavesOnly: boolean
 }) {
-  if (loading) return <p className="p-3 text-sm text-ink/60">Searching…</p>
-  if (data.length === 0) return <p className="p-3 text-sm text-ink/60">No matches.</p>
+  if (loading) return <p className="p-3 text-sm text-fg/60">Searching…</p>
+  if (data.length === 0) return <p className="p-3 text-sm text-fg/60">No matches.</p>
 
   return (
     <ul className="p-1">
@@ -191,18 +191,18 @@ function SearchResults({
             disabled={leavesOnly && d.has_children}
             onClick={() => onSelect(d)}
             className={cn(
-              'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm text-ink rounded-none hover:bg-warm/50 disabled:cursor-not-allowed disabled:opacity-50',
-              d.id === selectedId && 'bg-natural/10',
+              'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm text-fg rounded-none hover:bg-surface/50 disabled:cursor-not-allowed disabled:opacity-50',
+              d.id === selectedId && 'bg-primary/10',
             )}
           >
             <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
-              {d.id === selectedId ? <Check className="h-4 w-4 text-natural" /> : null}
+              {d.id === selectedId ? <Check className="h-4 w-4 text-primary" /> : null}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="font-medium text-ink">
+              <span className="font-medium text-fg">
                 {d.code} <span className="font-normal">— {d.label}</span>
               </span>
-              <span className="block text-xs text-ink/60">{d.path}</span>
+              <span className="block text-xs text-fg/60">{d.path}</span>
             </span>
           </button>
         </li>
@@ -228,8 +228,8 @@ function TreeView({
   selectedId: string | null
   leavesOnly: boolean
 }) {
-  if (loadingRoots) return <p className="p-3 text-sm text-ink/60">Loading…</p>
-  if (roots.length === 0) return <p className="p-3 text-sm text-ink/60">No diagnoses available.</p>
+  if (loadingRoots) return <p className="p-3 text-sm text-fg/60">Loading…</p>
+  if (roots.length === 0) return <p className="p-3 text-sm text-fg/60">No diagnoses available.</p>
 
   return (
     <ul className="p-1">
@@ -282,7 +282,7 @@ function TreeNode({
             type="button"
             onClick={() => onToggle(node.id)}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            className="flex h-8 w-6 shrink-0 items-center justify-center text-ink/60 hover:text-ink"
+            className="flex h-8 w-6 shrink-0 items-center justify-center text-fg/60 hover:text-fg"
             style={{ marginLeft: indent }}
           >
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -295,13 +295,13 @@ function TreeNode({
           disabled={!selectable}
           onClick={() => onSelect(node)}
           className={cn(
-            'flex flex-1 items-center gap-2 px-2 py-1 text-left text-sm text-ink rounded-none hover:bg-warm/50 disabled:cursor-not-allowed disabled:text-ink/60',
-            node.id === selectedId && 'bg-natural/10',
+            'flex flex-1 items-center gap-2 px-2 py-1 text-left text-sm text-fg rounded-none hover:bg-surface/50 disabled:cursor-not-allowed disabled:text-fg/60',
+            node.id === selectedId && 'bg-primary/10',
           )}
         >
           <span className="font-medium">{node.code}</span>
-          <span className="text-ink/80">{node.label}</span>
-          {node.id === selectedId && <Check className="ml-auto h-4 w-4 text-natural" />}
+          <span className="text-fg/80">{node.label}</span>
+          {node.id === selectedId && <Check className="ml-auto h-4 w-4 text-primary" />}
         </button>
       </div>
       {isExpanded && childrenQuery.data?.items && (

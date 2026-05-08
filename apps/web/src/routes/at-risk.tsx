@@ -15,7 +15,7 @@ function AtRiskRoute() {
   if (isLoading) {
     return (
       <div
-        className="min-h-svh w-full flex items-center justify-center bg-warm text-ink"
+        className="min-h-svh w-full flex items-center justify-center bg-surface text-fg"
         style={{ minHeight: "100dvh" }}
       >
         <p>Loading...</p>
@@ -25,9 +25,9 @@ function AtRiskRoute() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-warm">
-        <p className="text-ink">Sign in to view At Risk.</p>
-        <Link to="/auth/login" className="text-natural hover:underline">
+      <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-surface">
+        <p className="text-fg">Sign in to view At Risk.</p>
+        <Link to="/auth/login" className="text-primary hover:underline">
           Sign in
         </Link>
       </div>

@@ -59,7 +59,7 @@ export function DataTable<T extends object>({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="rounded-none border border-ink/30">
+      <div className="rounded-none border border-fg/30">
         <Table>
           <TableHeader>
             <TableRow>
@@ -73,7 +73,7 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-ink py-4 text-sm"
+                  className="text-center text-fg py-4 text-sm"
                 >
                   {error}
                 </TableCell>
@@ -82,7 +82,7 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-ink py-4 text-sm"
+                  className="text-center text-fg py-4 text-sm"
                 >
                   Loading…
                 </TableCell>
@@ -91,7 +91,7 @@ export function DataTable<T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-ink py-4 text-sm"
+                  className="text-center text-fg py-4 text-sm"
                 >
                   {emptyMessage}
                 </TableCell>

@@ -24,7 +24,7 @@ export function NotFound({
     <div className={fullPage ? 'flex flex-col gap-3' : 'flex flex-wrap gap-4 justify-center'}>
       <Link
         to={backUrl}
-        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-natural text-white hover:opacity-90 font-semibold rounded-none transition-opacity"
+        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white hover:opacity-90 font-semibold rounded-none transition-opacity"
       >
         <Home size={18} aria-hidden />
         <span>{backLabel}</span>
@@ -33,7 +33,7 @@ export function NotFound({
         type="button"
         onClick={() => window.history.back()}
         className={`inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-none transition-colors ${
-          fullPage ? 'bg-nurturing text-white hover:opacity-90' : 'bg-safe/10 text-safe hover:bg-safe/20'
+          fullPage ? 'bg-warning text-white hover:opacity-90' : 'bg-muted/10 text-fg-muted hover:bg-muted/20'
         }`}
       >
         <ArrowLeft size={18} aria-hidden />
@@ -47,9 +47,9 @@ export function NotFound({
       <div className={`min-h-screen bg-white flex items-center justify-center px-4 ${className}`}>
         <div className="max-w-md w-full bg-white border border-safe p-8 rounded-none">
           <div className="text-center">
-            <FileQuestion size={48} className="text-safe mx-auto mb-4" aria-hidden />
-            <h1 className="text-2xl font-bold text-safe mb-2">{title}</h1>
-            <p className="text-safe/80 mb-6">{message}</p>
+            <FileQuestion size={48} className="text-fg-muted mx-auto mb-4" aria-hidden />
+            <h1 className="text-2xl font-bold text-fg-muted mb-2">{title}</h1>
+            <p className="text-fg-muted/80 mb-6">{message}</p>
             {actions}
           </div>
         </div>
@@ -60,9 +60,9 @@ export function NotFound({
   return (
     <div className={`flex flex-col items-center justify-center min-h-[60vh] p-8 text-center ${className}`}>
       <div className="mb-8">
-        <p className="text-6xl font-bold text-safe mb-4">404</p>
-        <h1 className="text-2xl font-semibold text-safe mb-4">{title}</h1>
-        <p className="text-safe/80 max-w-md mx-auto">{message}</p>
+        <p className="text-6xl font-bold text-fg-muted mb-4">404</p>
+        <h1 className="text-2xl font-semibold text-fg-muted mb-4">{title}</h1>
+        <p className="text-fg-muted/80 max-w-md mx-auto">{message}</p>
       </div>
       {actions}
     </div>

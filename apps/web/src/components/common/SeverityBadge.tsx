@@ -7,9 +7,9 @@ interface SeverityBadgeProps {
 }
 
 const SEVERITY_TONE: Record<IncidentSeverity, string> = {
-  [IncidentSeverity.LOW]: "bg-warm text-ink border-ink/20",
-  [IncidentSeverity.MEDIUM]: "bg-natural/10 text-natural border-natural/30",
-  [IncidentSeverity.HIGH]: "bg-stone/15 text-stone border-stone/30",
+  [IncidentSeverity.LOW]: "bg-surface text-fg border-fg/20",
+  [IncidentSeverity.MEDIUM]: "bg-primary/10 text-primary border-primary/30",
+  [IncidentSeverity.HIGH]: "bg-danger/15 text-danger border-stone/30",
   [IncidentSeverity.CRITICAL]: "bg-danger-soft/30 text-danger border-danger/40",
 }
 

@@ -27,7 +27,7 @@ const columns = [
     accessorKey: "first_name" as keyof Person,
     header: "Name",
     cell: (row: Person) => (
-      <Link to="/persons/$personId" params={{ personId: row.id }} className="text-natural hover:underline">
+      <Link to="/persons/$personId" params={{ personId: row.id }} className="text-primary hover:underline">
         {row.first_name} {row.last_name}
       </Link>
     ),
@@ -66,17 +66,17 @@ function PersonsListPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold text-ink">Persons</h1>
+        <h1 className="text-xl font-semibold text-fg">Persons</h1>
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink/70" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg/70" />
           <Input
             placeholder="Search persons..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-none h-9 pl-8 pr-3 border-ink/30"
+            className="rounded-none h-9 pl-8 pr-3 border-fg/30"
           />
         </div>
-        <Link to="/persons/new" className="inline-flex items-center justify-center h-9 px-4 bg-natural text-white font-medium rounded-none hover:bg-natural-dark">Add person</Link>
+        <Link to="/persons/new" className="inline-flex items-center justify-center h-9 px-4 bg-primary text-white font-medium rounded-none hover:bg-primary">Add person</Link>
       </div>
       <DataTable<Person> columns={columns} data={items} loading={loading} error={error} page={page} total={total} limit={limit} onPageChange={setPage} emptyMessage={activeSearch ? "No persons match your search." : "No persons yet."} />
     </div>

@@ -88,4 +88,14 @@
   --destructive: var(--danger);
   --destructive-foreground: var(--neutral-0);
   --input: var(--border-default);
+
+  /* Sidebar — bound to the new ramp. shadcn primitives read --sidebar*. */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-fg);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--brand);
 }

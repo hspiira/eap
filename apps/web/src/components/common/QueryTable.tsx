@@ -147,93 +147,93 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
 
   return (
     <div className={cn("space-y-4", className)}>
-      <h1 className="text-xl font-semibold text-ink">{title}</h1>
+      <h1 className="text-xl font-semibold text-fg">{title}</h1>
 
-      <div className="border border-ink/20 bg-warm/30 p-4 rounded-none space-y-4">
+      <div className="border border-fg/20 bg-surface/30 p-4 rounded-none space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Item ID</label>
+            <label className="text-sm font-medium text-fg">Item ID</label>
             <Input
               placeholder="Enter item ID"
               value={collectionId}
               onChange={(e) => setCollectionId(e.target.value)}
-              className="rounded-none border-ink/30 bg-white"
+              className="rounded-none border-fg/30 bg-white"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Name</label>
+            <label className="text-sm font-medium text-fg">Name</label>
             <Input
               placeholder="Enter name"
               value={collectionName}
               onChange={(e) => setCollectionName(e.target.value)}
-              className="rounded-none border-ink/30 bg-white"
+              className="rounded-none border-fg/30 bg-white"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Filter method</label>
+            <label className="text-sm font-medium text-fg">Filter method</label>
             <Select value={filterMethod} onValueChange={setFilterMethod}>
-              <SelectTrigger className="rounded-none border-ink/30 bg-white text-ink h-9 [&>svg]:text-ink">
+              <SelectTrigger className="rounded-none border-fg/30 bg-white text-fg h-9 [&>svg]:text-fg">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-ink/30 bg-warm">
-                <SelectItem value="all" className="rounded-none focus:bg-warm focus:text-ink">All</SelectItem>
-                <SelectItem value="manual" className="rounded-none focus:bg-warm focus:text-ink">Manual</SelectItem>
-                <SelectItem value="auto" className="rounded-none focus:bg-warm focus:text-ink">Auto</SelectItem>
+              <SelectContent className="rounded-none border-fg/30 bg-surface">
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
+                <SelectItem value="manual" className="rounded-none focus:bg-surface focus:text-fg">Manual</SelectItem>
+                <SelectItem value="auto" className="rounded-none focus:bg-surface focus:text-fg">Auto</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Content type</label>
+            <label className="text-sm font-medium text-fg">Content type</label>
             <Select value={contentType} onValueChange={setContentType}>
-              <SelectTrigger className="rounded-none border-ink/30 bg-white text-ink h-9 [&>svg]:text-ink">
+              <SelectTrigger className="rounded-none border-fg/30 bg-white text-fg h-9 [&>svg]:text-fg">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-ink/30 bg-warm">
-                <SelectItem value="all" className="rounded-none focus:bg-warm focus:text-ink">All</SelectItem>
-                <SelectItem value="document" className="rounded-none focus:bg-warm focus:text-ink">Document</SelectItem>
-                <SelectItem value="report" className="rounded-none focus:bg-warm focus:text-ink">Report</SelectItem>
-                <SelectItem value="checklist" className="rounded-none focus:bg-warm focus:text-ink">Checklist</SelectItem>
+              <SelectContent className="rounded-none border-fg/30 bg-surface">
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
+                <SelectItem value="document" className="rounded-none focus:bg-surface focus:text-fg">Document</SelectItem>
+                <SelectItem value="report" className="rounded-none focus:bg-surface focus:text-fg">Report</SelectItem>
+                <SelectItem value="checklist" className="rounded-none focus:bg-surface focus:text-fg">Checklist</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Status</label>
+            <label className="text-sm font-medium text-fg">Status</label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="rounded-none border-ink/30 bg-white text-ink h-9 [&>svg]:text-ink">
+              <SelectTrigger className="rounded-none border-fg/30 bg-white text-fg h-9 [&>svg]:text-fg">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-ink/30 bg-warm">
-                <SelectItem value="all" className="rounded-none focus:bg-warm focus:text-ink">All</SelectItem>
-                <SelectItem value="at-risk" className="rounded-none focus:bg-warm focus:text-ink">At Risk</SelectItem>
-                <SelectItem value="critical" className="rounded-none focus:bg-warm focus:text-ink">Critical</SelectItem>
-                <SelectItem value="safe" className="rounded-none focus:bg-warm focus:text-ink">Safe</SelectItem>
+              <SelectContent className="rounded-none border-fg/30 bg-surface">
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
+                <SelectItem value="at-risk" className="rounded-none focus:bg-surface focus:text-fg">At Risk</SelectItem>
+                <SelectItem value="critical" className="rounded-none focus:bg-surface focus:text-fg">Critical</SelectItem>
+                <SelectItem value="safe" className="rounded-none focus:bg-surface focus:text-fg">Safe</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Created from</label>
+            <label className="text-sm font-medium text-fg">Created from</label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="rounded-none border-ink/30 bg-white"
+              className="rounded-none border-fg/30 bg-white"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-ink">Created to</label>
+            <label className="text-sm font-medium text-fg">Created to</label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="rounded-none border-ink/30 bg-white"
+              className="rounded-none border-fg/30 bg-white"
             />
           </div>
           <div className="flex gap-2">
             <Button
               type="button"
-              className="rounded-none bg-natural text-white hover:bg-natural-dark"
+              className="rounded-none bg-primary text-white hover:bg-primary"
               onClick={() => setPage(1)}
             >
               <Search className="h-4 w-4 mr-1.5" />
@@ -242,7 +242,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-ink/30 text-ink bg-white hover:bg-warm"
+              className="rounded-none border-fg/30 text-fg bg-white hover:bg-surface"
               onClick={handleReset}
             >
               <RotateCw className="h-4 w-4 mr-1.5" />
@@ -254,13 +254,13 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Button className="rounded-none bg-natural text-white hover:bg-natural-dark">
+          <Button className="rounded-none bg-primary text-white hover:bg-primary">
             <Plus className="h-4 w-4 mr-1.5" />
             New
           </Button>
           <Button
             variant="secondary"
-            className="rounded-none border-ink/30 text-ink bg-warm hover:bg-warm-dark"
+            className="rounded-none border-fg/30 text-fg bg-surface hover:bg-surface-hover"
           >
             <FileUp className="h-4 w-4 mr-1.5" />
             Batch import
@@ -268,7 +268,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
         </div>
         <Button
           variant="secondary"
-          className="rounded-none border-ink/30 text-ink bg-warm hover:bg-warm-dark"
+          className="rounded-none border-fg/30 text-fg bg-surface hover:bg-surface-hover"
         >
           <Download className="h-4 w-4 mr-1.5" />
           Download

@@ -24,7 +24,7 @@ const columns = [
       <Link
         to="/tags/$tagId"
         params={{ tagId: row.id }}
-        className="text-natural hover:underline"
+        className="text-primary hover:underline"
       >
         {row.name}
       </Link>
@@ -38,10 +38,10 @@ const columns = [
       row.color ? (
         <span className="flex items-center gap-2">
           <span
-            className="inline-block h-4 w-4 border border-ink/30"
+            className="inline-block h-4 w-4 border border-fg/30"
             style={{ backgroundColor: row.color }}
           />
-          <span className="text-ink">{row.color}</span>
+          <span className="text-fg">{row.color}</span>
         </span>
       ) : (
         "—"
@@ -52,7 +52,7 @@ const columns = [
     accessorKey: "description" as keyof ClientTag,
     header: "Description",
     cell: (row: ClientTag) => (
-      <span className="text-ink max-w-[240px] truncate block">
+      <span className="text-fg max-w-[240px] truncate block">
         {row.description ?? "—"}
       </span>
     ),
@@ -62,7 +62,7 @@ const columns = [
     accessorKey: "id" as keyof ClientTag,
     header: "",
     cell: (row: ClientTag) => (
-      <Button asChild variant="ghost" size="sm" className="rounded-none h-8 w-8 p-0 text-ink">
+      <Button asChild variant="ghost" size="sm" className="rounded-none h-8 w-8 p-0 text-fg">
         <Link to="/tags/$tagId" params={{ tagId: row.id }} aria-label="Edit tag">
           <Pencil className="h-4 w-4" />
         </Link>

@@ -83,8 +83,8 @@ function SetPasswordPage() {
           <p className="text-white/70">Password set</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
-            <Check className="w-5 h-5 text-natural" />
+          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+            <Check className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">You can now log in</h2>
@@ -94,7 +94,7 @@ function SetPasswordPage() {
         <button
           type="button"
           onClick={goToLogin}
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors"
         >
           Go to Sign in
         </button>
@@ -162,7 +162,7 @@ function SetPasswordPage() {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="text-white/70 hover:text-natural text-sm"
+          className="text-white/70 hover:text-primary text-sm"
         >
           {showPassword ? 'Hide' : 'Show'} password
         </button>
@@ -185,7 +185,7 @@ function SetPasswordPage() {
         <button
           type="submit"
           disabled={formState.isSubmitting}
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {formState.isSubmitting ? 'Setting password...' : 'Set password'}
         </button>

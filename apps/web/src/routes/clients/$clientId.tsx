@@ -38,7 +38,7 @@ export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetailPage,
 })
 
-const skeletonClass = "rounded-none bg-ink/15"
+const skeletonClass = "rounded-none bg-fg/15"
 
 function Section({
   title,
@@ -50,9 +50,9 @@ function Section({
   className?: string
 }) {
   return (
-    <div className={cn("border border-ink/30 rounded-none bg-neutral-50 overflow-hidden", className)}>
-      <div className="px-6 py-3 border-b border-ink/20 bg-warm/20">
-        <h2 className="text-sm font-medium text-ink">{title}</h2>
+    <div className={cn("border border-fg/30 rounded-none bg-neutral-50 overflow-hidden", className)}>
+      <div className="px-6 py-3 border-b border-fg/20 bg-surface/20">
+        <h2 className="text-sm font-medium text-fg">{title}</h2>
       </div>
       <div className="px-6 py-4">{children}</div>
     </div>
@@ -62,8 +62,8 @@ function Section({
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-ink/70">{label}</dt>
-      <dd className="mt-1 text-ink">{value ?? "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-fg/70">{label}</dt>
+      <dd className="mt-1 text-fg">{value ?? "—"}</dd>
     </div>
   )
 }
@@ -271,11 +271,11 @@ function ClientDetailPage() {
   if (!client) {
     return (
       <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
-        <div className="border border-ink/20 rounded-none bg-warm/20 p-8 text-center">
-          <p className="text-ink">Client not found.</p>
+        <div className="border border-fg/20 rounded-none bg-surface/20 p-8 text-center">
+          <p className="text-fg">Client not found.</p>
           <Button
             variant="secondary"
-            className="mt-4 rounded-none border-ink/30 text-ink"
+            className="mt-4 rounded-none border-fg/30 text-fg"
             onClick={() => navigate({ to: "/clients" })}
           >
             Back to clients
@@ -295,23 +295,23 @@ function ClientDetailPage() {
   return (
     <ClientsPageHeader breadcrumb={`Clients > ${client.name}`}>
       <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4 space-y-4">
-        <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
-          <div className="px-6 py-5 border-b border-ink/20 bg-warm/30">
+        <div className="border border-fg/30 rounded-none bg-neutral-50 overflow-hidden">
+          <div className="px-6 py-5 border-b border-fg/20 bg-surface/30">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold text-ink">{client.name}</h1>
+              <h1 className="text-xl font-semibold text-fg">{client.name}</h1>
               <StatusBadge status={client.status} />
               <TierBadge tier={client.tier} />
               {(client.is_verified ?? stats?.is_verified) && (
-                <span className="text-xs font-medium px-2 py-0.5 border border-natural bg-natural/20 text-ink">
+                <span className="text-xs font-medium px-2 py-0.5 border border-primary bg-primary/20 text-fg">
                   Verified
                 </span>
               )}
             </div>
-            <p className="text-sm text-ink/70 mt-1">Code: {client.code}</p>
+            <p className="text-sm text-fg/70 mt-1">Code: {client.code}</p>
           </div>
 
           <div className="px-6 py-5">
-            <h2 className="text-sm font-medium text-ink mb-3">Contact</h2>
+            <h2 className="text-sm font-medium text-fg mb-3">Contact</h2>
             <dl className="grid gap-4 sm:grid-cols-2">
               <DetailRow label="Email" value={client.contact_info?.email} />
               <DetailRow label="Phone" value={client.contact_info?.phone} />
@@ -323,8 +323,8 @@ function ClientDetailPage() {
           </div>
 
           {hasBillingDisplay && (
-            <div className="px-6 py-5 border-t border-ink/15">
-              <h2 className="text-sm font-medium text-ink mb-3">Billing address</h2>
+            <div className="px-6 py-5 border-t border-fg/15">
+              <h2 className="text-sm font-medium text-fg mb-3">Billing address</h2>
               <dl className="grid gap-2 sm:grid-cols-2">
                 {client.billing_address?.street && (
                   <DetailRow label="Street" value={client.billing_address.street} />
@@ -343,15 +343,15 @@ function ClientDetailPage() {
           )}
 
           {client.parent_client_id && (
-            <div className="px-6 py-3 border-t border-ink/15">
-              <span className="text-xs font-medium uppercase tracking-wide text-ink/70">
+            <div className="px-6 py-3 border-t border-fg/15">
+              <span className="text-xs font-medium uppercase tracking-wide text-fg/70">
                 Parent client
               </span>
               <p className="mt-1">
                 <Link
                   to="/clients/$clientId"
                   params={{ clientId: client.parent_client_id }}
-                  className="text-natural hover:underline"
+                  className="text-primary hover:underline"
                 >
                   View parent client
                 </Link>
@@ -399,10 +399,10 @@ function ClientDetailPage() {
           {childrenLoading ? (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-ink/15">
-                  <TableHead className="text-ink">Name</TableHead>
-                  <TableHead className="text-ink">Code</TableHead>
-                  <TableHead className="text-ink">Status</TableHead>
+                <TableRow className="hover:bg-transparent border-fg/15">
+                  <TableHead className="text-fg">Name</TableHead>
+                  <TableHead className="text-fg">Code</TableHead>
+                  <TableHead className="text-fg">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -416,25 +416,25 @@ function ClientDetailPage() {
               </TableBody>
             </Table>
           ) : children.length === 0 ? (
-            <p className="text-sm text-ink/80">No child clients.</p>
+            <p className="text-sm text-fg/80">No child clients.</p>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-ink/15">
-                  <TableHead className="text-ink">Name</TableHead>
-                  <TableHead className="text-ink">Code</TableHead>
-                  <TableHead className="text-ink">Status</TableHead>
+                <TableRow className="hover:bg-transparent border-fg/15">
+                  <TableHead className="text-fg">Name</TableHead>
+                  <TableHead className="text-fg">Code</TableHead>
+                  <TableHead className="text-fg">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {children.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <Link to="/clients/$clientId" params={{ clientId: c.id }} className="text-natural hover:underline">
+                      <Link to="/clients/$clientId" params={{ clientId: c.id }} className="text-primary hover:underline">
                         {c.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-ink">{c.code}</TableCell>
+                    <TableCell className="text-fg">{c.code}</TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
                   </TableRow>
                 ))}
@@ -447,10 +447,10 @@ function ClientDetailPage() {
           {contractsLoading ? (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-ink/15">
-                  <TableHead className="text-ink">Number</TableHead>
-                  <TableHead className="text-ink">Status</TableHead>
-                  <TableHead className="text-ink">Dates</TableHead>
+                <TableRow className="hover:bg-transparent border-fg/15">
+                  <TableHead className="text-fg">Number</TableHead>
+                  <TableHead className="text-fg">Status</TableHead>
+                  <TableHead className="text-fg">Dates</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -464,26 +464,26 @@ function ClientDetailPage() {
               </TableBody>
             </Table>
           ) : contracts.length === 0 ? (
-            <p className="text-sm text-ink/80">No contracts.</p>
+            <p className="text-sm text-fg/80">No contracts.</p>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-ink/15">
-                  <TableHead className="text-ink">Number</TableHead>
-                  <TableHead className="text-ink">Status</TableHead>
-                  <TableHead className="text-ink">Dates</TableHead>
+                <TableRow className="hover:bg-transparent border-fg/15">
+                  <TableHead className="text-fg">Number</TableHead>
+                  <TableHead className="text-fg">Status</TableHead>
+                  <TableHead className="text-fg">Dates</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {contracts.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <Link to="/contracts/$contractId" params={{ contractId: c.id }} className="text-natural hover:underline">
+                      <Link to="/contracts/$contractId" params={{ contractId: c.id }} className="text-primary hover:underline">
                         {c.contract_number ?? c.id}
                       </Link>
                     </TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell className="text-ink text-sm">
+                    <TableCell className="text-fg text-sm">
                       {c.start_date}
                       {c.end_date ? ` – ${c.end_date}` : ""}
                     </TableCell>
@@ -501,13 +501,13 @@ function ClientDetailPage() {
               <Skeleton className={cn(skeletonClass, "h-6 w-24")} />
             </div>
           ) : tags.length === 0 ? (
-            <p className="text-sm text-ink/80">No tags.</p>
+            <p className="text-sm text-fg/80">No tags.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {tags.map((t) => (
                 <span
                   key={t.id}
-                  className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-ink/30 bg-warm/50 text-ink rounded-none"
+                  className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-fg/30 bg-surface/50 text-fg rounded-none"
                 >
                   {t.name}
                 </span>
@@ -518,9 +518,9 @@ function ClientDetailPage() {
 
             <ClientOnboardingCard steps={onboardingSteps} />
 
-            <div className="border border-ink/30 rounded-none bg-neutral-50 overflow-hidden">
-              <div className="px-6 py-4 border-b border-ink/20 bg-warm/20">
-                <h2 className="text-sm font-medium text-ink">Actions</h2>
+            <div className="border border-fg/30 rounded-none bg-neutral-50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-fg/20 bg-surface/20">
+                <h2 className="text-sm font-medium text-fg">Actions</h2>
               </div>
               <div className="px-6 py-4">
                 <LifecycleActions

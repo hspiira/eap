@@ -18,8 +18,8 @@ import {
   LayoutList,
   MessageSquare,
   PhoneCall,
+  Search,
   Tag,
-  UserCircle,
   UserCog,
   Users,
 } from "lucide-react"
@@ -38,11 +38,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  sidebarStyles,
+  SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
+
+const PROJECT_LOGO = "/evexi%CC%81a.svg"
 
 function toProperCase(s: string): string {
   return s
@@ -51,45 +52,43 @@ function toProperCase(s: string): string {
     .join(" ")
 }
 
-const PROJECT_LOGO = "/evexi%CC%81a.svg"
-
 function TenantDisplay() {
   const currentTenant = useTenantStore((s) => s.currentTenant)
   const displayName = currentTenant?.name ? toProperCase(currentTenant.name) : ""
 
   return (
-    <div className={cn("flex w-full items-center gap-1.5 px-2", sidebarStyles.text, "font-semibold")}>
-      <img src={PROJECT_LOGO} alt="" className="h-6 w-6 shrink-0 object-contain" />
+    <div className="flex w-full items-center gap-2 px-2 text-sm font-semibold text-sidebar-foreground">
+      <img src={PROJECT_LOGO} alt="" className="h-5 w-5 shrink-0 object-contain" />
       <span className="truncate">{displayName || "—"}</span>
     </div>
   )
 }
 
+type TopItem = {
+  to: string
+  label: string
+  icon: React.ElementType
+  iconClassName?: string
+}
+
+const TOP_ITEMS: ReadonlyArray<TopItem> = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
+  { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-danger" },
+]
+
 function NavTop() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
-  const items = [
-    { to: "/", label: "Home", icon: Home },
-    { to: "/inbox", label: "Inbox", icon: Inbox },
-    { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-danger-soft" },
-  ] as const
-
   return (
     <SidebarMenu>
-      {items.map(({ to, label, icon: Icon, iconClassName }) => (
+      {TOP_ITEMS.map(({ to, label, icon: Icon, iconClassName }) => (
         <SidebarMenuItem key={label}>
-          <SidebarMenuButton asChild isActive={pathname === (to.startsWith("/") ? to : pathname)}>
-            {to.startsWith("/") ? (
-              <Link to={to}>
-                <Icon className={cn(sidebarStyles.icon, iconClassName)} />
-                <span>{label}</span>
-              </Link>
-            ) : (
-              <a href={to}>
-                <Icon className={cn(sidebarStyles.icon, iconClassName)} />
-                <span>{label}</span>
-              </a>
-            )}
+          <SidebarMenuButton asChild isActive={pathname === to}>
+            <Link to={to}>
+              <Icon className={iconClassName} />
+              <span>{label}</span>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
@@ -97,30 +96,24 @@ function NavTop() {
   )
 }
 
-function SidebarSection({
-  label,
-  defaultOpen = false,
-  items,
-}: {
+interface SidebarSectionProps {
   label: string
   defaultOpen?: boolean
-  items: Array<{ to: string; label: string; icon: React.ElementType }>
-}) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname }) as string
+  items: ReadonlyArray<{ to: string; label: string; icon: React.ElementType }>
+}
+
+function SidebarSection({ label, defaultOpen = false, items }: SidebarSectionProps) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   return (
     <SidebarGroup>
       <Collapsible defaultOpen={defaultOpen} className="group/collapsible">
         <CollapsibleTrigger asChild>
           <button
-            className={cn(
-              "flex w-full items-center gap-1.5 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider",
-              sidebarStyles.text,
-              sidebarStyles.hoverBg,
-              "outline-none rounded-none [&[data-state=open]>svg]:rotate-90"
-            )}
+            type="button"
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&[data-state=open]>svg]:rotate-90"
           >
-            <ChevronRight className={cn(sidebarStyles.icon, "transition-transform")} />
+            <ChevronRight className="size-3.5 shrink-0 transition-transform" />
             {label}
           </button>
         </CollapsibleTrigger>
@@ -130,7 +123,7 @@ function SidebarSection({
               <SidebarMenuItem key={itemLabel}>
                 <SidebarMenuButton asChild isActive={pathname === to}>
                   <Link to={to}>
-                    <Icon className={sidebarStyles.icon} />
+                    <Icon />
                     <span>{itemLabel}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -147,18 +140,22 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className={cn(sidebarStyles.borderedRow, "justify-between")}>
+        <div className="flex h-8 items-center justify-between">
           <SidebarTrigger>
-            <LayoutList className={sidebarStyles.iconLg} />
+            <LayoutList className="size-4" />
           </SidebarTrigger>
         </div>
-        <div className={cn(sidebarStyles.borderedRow, sidebarStyles.borderedRowBottom)}>
+        <SidebarSeparator />
+        <div className="flex h-8 items-center">
           <TenantDisplay />
         </div>
-        <div className="space-y-2 px-2">
-          <div className={cn("relative", sidebarStyles.searchContainer)}>
-            <Input placeholder="Search" className="h-8 border-0 pl-8 pr-10 bg-transparent focus-visible:ring-0 rounded-none" />
-          </div>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
+          <Input
+            placeholder="Search"
+            aria-label="Search"
+            className="h-8 border-sidebar-border bg-sidebar pl-7 text-sm focus-visible:ring-sidebar-ring"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -178,11 +175,7 @@ export function AppSidebar() {
           label="People"
           items={[
             { to: "/persons", label: "Persons", icon: Users },
-            { to: "/persons", label: "Client Employees", icon: UserCircle },
-            { to: "/persons", label: "Dependents", icon: Users },
-            { to: "/persons", label: "Platform Staff", icon: UserCog },
-            { to: "/persons", label: "Service Providers", icon: Briefcase },
-            { to: "/users", label: "Users", icon: UserCog },
+            { to: "/users", label: "Platform Users", icon: UserCog },
           ]}
         />
         <SidebarSection
@@ -216,15 +209,11 @@ export function AppSidebar() {
         />
         <SidebarSection
           label="Analytics & Performance"
-          items={[
-            { to: "/kpis", label: "KPIs", icon: BarChart3 },
-          ]}
+          items={[{ to: "/kpis", label: "KPIs", icon: BarChart3 }]}
         />
         <SidebarSection
           label="Documents"
-          items={[
-            { to: "/documents", label: "Documents", icon: FolderOpen },
-          ]}
+          items={[{ to: "/documents", label: "Documents", icon: FolderOpen }]}
         />
         <SidebarSection
           label="Audit & Compliance"
@@ -237,3 +226,4 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+

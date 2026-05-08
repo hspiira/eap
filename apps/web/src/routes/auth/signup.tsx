@@ -133,8 +133,8 @@ function SignupPage() {
           <p className="text-white/70">Register as a new tenant</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-natural" />
+          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Tenant created</h2>
@@ -163,7 +163,7 @@ function SignupPage() {
             <button
               type="button"
               onClick={handleCopySetPasswordLink}
-              className="px-4 py-2 bg-ink hover:bg-surface-slate-pressed text-white rounded-none transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-fg hover:bg-surface-slate-pressed text-white rounded-none transition-colors flex items-center gap-2"
               title={copiedSetPasswordLink ? 'Copied!' : 'Copy link'}
             >
               <Copy className="w-4 h-4" />
@@ -174,7 +174,7 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToSetPassword}
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors flex items-center justify-center gap-2 mb-4"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors flex items-center justify-center gap-2 mb-4"
         >
           <KeyRound className="w-4 h-4" />
           Set your password
@@ -209,8 +209,8 @@ function SignupPage() {
           <p className="text-white/70">Tenant created</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-natural/20 flex items-center justify-center shrink-0">
-            <CheckCircle className="w-5 h-5 text-natural" />
+          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">{adminCredentials.name}</h2>
@@ -233,7 +233,7 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors"
         >
           Go to Sign in
         </button>
@@ -304,7 +304,7 @@ function SignupPage() {
                 {codeAvailability.checking ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-transparent rounded-full animate-spin" />
                 ) : codeAvailability.available === true ? (
-                  <Check size={20} className="text-natural" />
+                  <Check size={20} className="text-primary" />
                 ) : codeAvailability.available === false ? (
                   <X size={20} className="text-red-400" />
                 ) : null}
@@ -325,7 +325,7 @@ function SignupPage() {
             codeAvailability.checking ||
             codeAvailability.available === false
           }
-          className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {formState.isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
         </button>
@@ -337,7 +337,7 @@ function SignupPage() {
           <Link
             to="/auth/login"
             search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
-            className="text-natural hover:underline"
+            className="text-primary hover:underline"
           >
             Sign in
           </Link>

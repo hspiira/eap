@@ -65,11 +65,11 @@ export function PricingConfig({ value, onChange, projectedSessions = 20 }: Prici
         <Select value={value.model} onValueChange={handleModel}>
           <SelectTrigger
             id="pricing-model"
-            className="rounded-none h-9 border-ink/30 bg-white text-ink [&>svg]:text-ink"
+            className="rounded-none h-9 border-fg/30 bg-white text-fg [&>svg]:text-fg"
           >
             <SelectValue placeholder="Select model" />
           </SelectTrigger>
-          <SelectContent className="rounded-none border-ink/30 bg-white">
+          <SelectContent className="rounded-none border-fg/30 bg-white">
             {MODEL_VALUES.map((m) => (
               <SelectItem key={m} value={m} className="rounded-none">
                 {m}
@@ -117,7 +117,7 @@ function NumericInput({
       min={0}
       value={value}
       onChange={(e) => onChange(Number(e.target.value) || 0)}
-      className="rounded-none border-ink/30"
+      className="rounded-none border-fg/30"
     />
   )
 }
@@ -192,16 +192,16 @@ function FrameworkInputs({
           />
         </FormField>
       </div>
-      <div className="border border-ink/20 bg-warm/30 p-3" aria-label="Framework deposit drawdown">
-        <p className="text-xs uppercase tracking-wide text-ink/60">Deposit drawdown</p>
-        <div className="mt-2 h-3 w-full bg-white border border-ink/15">
+      <div className="border border-fg/20 bg-surface/30 p-3" aria-label="Framework deposit drawdown">
+        <p className="text-xs uppercase tracking-wide text-fg/60">Deposit drawdown</p>
+        <div className="mt-2 h-3 w-full bg-white border border-fg/15">
           <div
-            className="h-full bg-natural"
+            className="h-full bg-primary"
             style={{ width: `${drawdownPct}%` }}
             aria-hidden
           />
         </div>
-        <p className="mt-2 text-xs text-ink/70">
+        <p className="mt-2 text-xs text-fg/70">
           {value.drawdown_balance.toFixed(2)} of {value.deposit.toFixed(2)} remaining ({drawdownPct}%)
         </p>
       </div>
@@ -309,7 +309,7 @@ function ValueAddInputs({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="e.g. CISM, Reports"
-            className="rounded-none border-ink/30"
+            className="rounded-none border-fg/30"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault()
@@ -320,7 +320,7 @@ function ValueAddInputs({
           <button
             type="button"
             onClick={addService}
-            className="px-3 border border-ink/30 bg-white text-sm text-ink hover:bg-warm/50"
+            className="px-3 border border-fg/30 bg-white text-sm text-fg hover:bg-surface/50"
           >
             Add
           </button>
@@ -331,14 +331,14 @@ function ValueAddInputs({
           {value.bundled_services.map((svc) => (
             <li
               key={svc}
-              className="inline-flex items-center gap-1 border border-ink/20 bg-warm px-2 py-0.5 text-xs text-ink"
+              className="inline-flex items-center gap-1 border border-fg/20 bg-surface px-2 py-0.5 text-xs text-fg"
             >
               {svc}
               <button
                 type="button"
                 onClick={() => removeService(svc)}
                 aria-label={`Remove ${svc}`}
-                className="ml-1 text-ink/60 hover:text-ink"
+                className="ml-1 text-fg/60 hover:text-fg"
               >
                 ×
               </button>
@@ -374,18 +374,18 @@ function InvoicePreview({
   return (
     <section
       aria-label="Invoice preview"
-      className="border border-ink/20 bg-white p-4"
+      className="border border-fg/20 bg-white p-4"
     >
-      <h3 className="text-sm font-semibold text-ink">Invoice preview</h3>
-      <p className="mt-1 text-xs text-ink/60">
+      <h3 className="text-sm font-semibold text-fg">Invoice preview</h3>
+      <p className="mt-1 text-xs text-fg/60">
         Projected at {projectedSessions} sessions/month.
       </p>
       {!debouncedReady || query.isPending ? (
-        <p className="mt-3 text-sm text-ink/60">Calculating…</p>
+        <p className="mt-3 text-sm text-fg/60">Calculating…</p>
       ) : (
         <table className="mt-3 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-ink/20 text-left text-xs uppercase text-ink/60">
+            <tr className="border-b border-fg/20 text-left text-xs uppercase text-fg/60">
               <th className="py-2 pr-3 font-medium">Line</th>
               <th className="py-2 pr-3 font-medium">Qty</th>
               <th className="py-2 pr-3 font-medium">Unit</th>
@@ -395,22 +395,22 @@ function InvoicePreview({
           </thead>
           <tbody>
             {lines.map((l, i) => (
-              <tr key={`${l.label}-${i}`} className="border-b border-ink/10 align-top">
-                <td className="py-2 pr-3 text-ink">
+              <tr key={`${l.label}-${i}`} className="border-b border-fg/10 align-top">
+                <td className="py-2 pr-3 text-fg">
                   {l.label}
-                  {l.note && <p className="mt-1 text-xs text-stone">{l.note}</p>}
+                  {l.note && <p className="mt-1 text-xs text-danger">{l.note}</p>}
                 </td>
-                <td className="py-2 pr-3 text-ink">{l.quantity}</td>
-                <td className="py-2 pr-3 text-ink/70">{l.unit}</td>
-                <td className="py-2 pr-3 text-ink">{l.unit_rate.toFixed(2)}</td>
-                <td className="py-2 text-right text-ink">{l.subtotal.toFixed(2)}</td>
+                <td className="py-2 pr-3 text-fg">{l.quantity}</td>
+                <td className="py-2 pr-3 text-fg/70">{l.unit}</td>
+                <td className="py-2 pr-3 text-fg">{l.unit_rate.toFixed(2)}</td>
+                <td className="py-2 text-right text-fg">{l.subtotal.toFixed(2)}</td>
               </tr>
             ))}
             <tr>
-              <td colSpan={4} className="py-2 pr-3 text-right text-xs uppercase text-ink/60">
+              <td colSpan={4} className="py-2 pr-3 text-right text-xs uppercase text-fg/60">
                 Total
               </td>
-              <td className="py-2 text-right text-sm font-semibold text-ink">
+              <td className="py-2 text-right text-sm font-semibold text-fg">
                 {total.toFixed(2)}
               </td>
             </tr>

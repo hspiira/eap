@@ -49,9 +49,9 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
     statusLower === 'renewed'
   ) {
     return {
-      bg: 'bg-natural',
+      bg: 'bg-primary',
       text: 'text-white',
-      border: 'border-natural-dark',
+      border: 'border-primary',
     }
   }
 
@@ -67,7 +67,7 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
     statusLower === 'assigned'
   ) {
     return {
-      bg: 'bg-nurturing',
+      bg: 'bg-warning',
       text: 'text-white',
       border: 'border-nurturing-dark',
     }
@@ -91,7 +91,7 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
     statusLower === 'refunded'
   ) {
     return {
-      bg: 'bg-safe',
+      bg: 'bg-muted',
       text: 'text-white',
       border: 'border-safe-dark',
     }
@@ -112,7 +112,7 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
 
   // Default - Safe/Grey
   return {
-    bg: 'bg-safe-light',
+    bg: 'bg-muted',
     text: 'text-white',
     border: 'border-safe',
   }

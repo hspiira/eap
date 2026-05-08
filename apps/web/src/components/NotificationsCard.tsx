@@ -37,14 +37,14 @@ export function NotificationsCard() {
       <div className="flex items-center justify-between border-b border-border/20 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Bell className="h-4 w-4 text-ink" />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-stone" aria-hidden />
+            <Bell className="h-4 w-4 text-fg" />
+            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-danger" aria-hidden />
           </div>
-          <h3 className="text-sm font-semibold text-ink">Notifications</h3>
+          <h3 className="text-sm font-semibold text-fg">Notifications</h3>
         </div>
         <button
           type="button"
-          className="p-1 text-ink/70 hover:bg-surface-tile hover:text-ink"
+          className="p-1 text-fg/70 hover:bg-surface-tile hover:text-fg"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -58,23 +58,23 @@ export function NotificationsCard() {
               className="border-b border-border/15 px-4 py-3 last:border-b-0"
             >
               <div className="flex items-start gap-2">
-                <Car className="mt-0.5 h-4 w-4 shrink-0 text-ink/70" />
+                <Car className="mt-0.5 h-4 w-4 shrink-0 text-fg/70" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-ink">{n.vehicle}</span>
+                      <span className="text-sm font-medium text-fg">{n.vehicle}</span>
                       {n.id === "1" && (
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-stone" aria-hidden />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" aria-hidden />
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Mark read">
+                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Mark read">
                         <Eye className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Delete">
+                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Delete">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" className="p-1 text-ink/60 hover:text-ink" aria-label="Expand">
+                      <button type="button" className="p-1 text-fg/60 hover:text-fg" aria-label="Expand">
                         {n.expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       </button>
                     </div>
@@ -82,21 +82,21 @@ export function NotificationsCard() {
                   <span
                     className={cn(
                       "mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium",
-                      n.tagVariant === "red" && "bg-stone/15 text-stone",
+                      n.tagVariant === "red" && "bg-danger/15 text-danger",
                       n.tagVariant === "orange" && "bg-danger-soft/30 text-accent-amber-ink"
                     )}
                   >
                     {n.tag}
                   </span>
                   {n.expanded && n.description && (
-                    <p className="mt-2 text-xs leading-relaxed text-ink/90">
+                    <p className="mt-2 text-xs leading-relaxed text-fg/90">
                       {n.description}
                     </p>
                   )}
                   {n.expanded && n.link && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-medium text-natural hover:underline"
+                      className="mt-2 text-xs font-medium text-primary hover:underline"
                     >
                       {n.link}
                     </button>
@@ -108,12 +108,12 @@ export function NotificationsCard() {
         </div>
         <div className="grid grid-cols-2 gap-2 border-t border-border/20 p-3">
           <div className="flex justify-start bg-neutral-50 px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-ink">
+            <Button variant="ghost" size="sm" className="rounded-md text-xs text-fg">
               Delete all
             </Button>
           </div>
           <div className="flex justify-start bg-neutral-50 px-3 py-2">
-            <Button variant="ghost" size="sm" className="rounded-md text-xs text-ink">
+            <Button variant="ghost" size="sm" className="rounded-md text-xs text-fg">
               Delete read messages
             </Button>
           </div>
