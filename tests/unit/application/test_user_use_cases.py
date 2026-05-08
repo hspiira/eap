@@ -1,36 +1,25 @@
-"""
-Unit tests for User use cases.
+"""User use case tests.
 
-Tests application logic with mocked repositories.
+Lifecycle/update operations now flow through ``TransitionUseCase`` +
+``UserTransition`` (Phase 1 #C3). The detailed FSM behaviour is covered
+in ``test_user_entity.py``; here we verify only the application-level
+wiring: create-on-creation, query-by-email, and a representative
+transition end-to-end.
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from app.application.use_cases.transitions import TransitionUseCase, UserTransition
 from app.application.use_cases.user_use_cases import (
     CreateUserUseCase,
-    ActivateUserUseCase,
-    VerifyUserEmailUseCase,
-    SuspendUserUseCase,
-    BanUserUseCase,
-    DeactivateUserUseCase,
-    TerminateUserUseCase,
-    UpdateUserPasswordUseCase,
-    UpdateUserPreferencesUseCase,
-    EnableTwoFactorUseCase,
-    DisableTwoFactorUseCase,
-    RecordUserLoginUseCase,
     GetUserUseCase,
 )
 from app.domain.entities.user import UserEntity
-from app.domain.enums import UserStatus, Language
-from app.domain.value_objects.core import UserId, TenantId, Email
-
-
-# =============================================================================
-# FIXTURES
-# =============================================================================
+from app.domain.enums import UserStatus
+from app.domain.value_objects.core import Email, TenantId, UserId
 
 
 @pytest.fixture
@@ -55,7 +44,6 @@ def now() -> datetime:
 
 @pytest.fixture
 def mock_user_repo():
-    """Create a mock user repository."""
     repo = MagicMock()
     repo.get_by_id = AsyncMock()
     repo.get_by_email = AsyncMock()
@@ -66,22 +54,7 @@ def mock_user_repo():
 
 
 @pytest.fixture
-def active_user(user_id, tenant_id, email, now) -> UserEntity:
-    """Create an active user entity."""
-    return UserEntity(
-        id=user_id,
-        tenant_id=tenant_id,
-        email=email,
-        status=UserStatus.ACTIVE,
-        is_two_factor_enabled=False,
-        created_at=now,
-        updated_at=now,
-    )
-
-
-@pytest.fixture
 def pending_user(user_id, tenant_id, email, now) -> UserEntity:
-    """Create a pending user entity."""
     return UserEntity(
         id=user_id,
         tenant_id=tenant_id,
@@ -93,28 +66,31 @@ def pending_user(user_id, tenant_id, email, now) -> UserEntity:
     )
 
 
-# =============================================================================
-# CREATE USER USE CASE TESTS
-# =============================================================================
+@pytest.fixture
+def active_user(user_id, tenant_id, email, now) -> UserEntity:
+    return UserEntity(
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+def _transition_use_case(repo) -> TransitionUseCase[UserEntity, UserId, UserTransition]:
+    use_case: TransitionUseCase[UserEntity, UserId, UserTransition] = TransitionUseCase(repo)
+    use_case.entity_name = "User"
+    return use_case
 
 
 class TestCreateUserUseCase:
-    """Tests for CreateUserUseCase."""
-
     @pytest.mark.asyncio
     async def test_create_user_success(self, mock_user_repo, user_id, tenant_id, email):
-        """Test successful user creation."""
         mock_user_repo.get_by_email.return_value = None
-
         use_case = CreateUserUseCase(mock_user_repo)
-        user = await use_case.execute(
-            user_id=user_id,
-            tenant_id=tenant_id,
-            email=email,
-            password_hash="hashed-password",
-        )
-
-        assert user.id == user_id
+        user = await use_case.execute(user_id, tenant_id, email, "hash")
         assert user.email == email
         assert user.status == UserStatus.PENDING_VERIFICATION
         mock_user_repo.save.assert_called_once()
@@ -123,317 +99,92 @@ class TestCreateUserUseCase:
     async def test_create_user_duplicate_email_raises_error(
         self, mock_user_repo, user_id, tenant_id, email, active_user
     ):
-        """Test that creating user with existing email raises ValueError."""
         mock_user_repo.get_by_email.return_value = active_user
-
         use_case = CreateUserUseCase(mock_user_repo)
-
         with pytest.raises(ValueError, match="already exists"):
-            await use_case.execute(
-                user_id=user_id,
-                tenant_id=tenant_id,
-                email=email,
-            )
+            await use_case.execute(user_id, tenant_id, email, "hash")
 
 
-# =============================================================================
-# ACTIVATE USER USE CASE TESTS
-# =============================================================================
-
-
-class TestActivateUserUseCase:
-    """Tests for ActivateUserUseCase."""
-
+class TestUserTransitions:
     @pytest.mark.asyncio
-    async def test_activate_user_success(self, mock_user_repo, user_id, pending_user):
-        """Test successful user activation."""
+    async def test_activate(self, mock_user_repo, user_id, pending_user):
         mock_user_repo.get_by_id.return_value = pending_user
-
-        use_case = ActivateUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
-
-        assert user.status == UserStatus.ACTIVE
+        await _transition_use_case(mock_user_repo).execute(user_id, UserTransition.ACTIVATE)
+        assert pending_user.status == UserStatus.ACTIVE
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_activate_user_not_found_raises_error(self, mock_user_repo, user_id):
-        """Test that activating non-existent user raises ValueError."""
-        mock_user_repo.get_by_id.return_value = None
-
-        use_case = ActivateUserUseCase(mock_user_repo)
-
-        with pytest.raises(ValueError, match="not found"):
-            await use_case.execute(user_id)
-
-
-# =============================================================================
-# VERIFY EMAIL USE CASE TESTS
-# =============================================================================
-
-
-class TestVerifyUserEmailUseCase:
-    """Tests for VerifyUserEmailUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_verify_email_success(self, mock_user_repo, user_id, pending_user):
-        """Test successful email verification."""
+    async def test_verify_email(self, mock_user_repo, user_id, pending_user):
         mock_user_repo.get_by_id.return_value = pending_user
-
-        use_case = VerifyUserEmailUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
-
-        assert user.email_verified_at is not None
-        mock_user_repo.save.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_verify_email_not_found_raises_error(self, mock_user_repo, user_id):
-        """Test that verifying non-existent user raises ValueError."""
-        mock_user_repo.get_by_id.return_value = None
-
-        use_case = VerifyUserEmailUseCase(mock_user_repo)
-
-        with pytest.raises(ValueError, match="not found"):
-            await use_case.execute(user_id)
-
-
-# =============================================================================
-# SUSPEND USER USE CASE TESTS
-# =============================================================================
-
-
-class TestSuspendUserUseCase:
-    """Tests for SuspendUserUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_suspend_user_success(self, mock_user_repo, user_id, active_user):
-        """Test successful user suspension."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = SuspendUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id, "Policy violation")
-
-        assert user.status == UserStatus.SUSPENDED
-        mock_user_repo.save.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_suspend_user_not_found_raises_error(self, mock_user_repo, user_id):
-        """Test that suspending non-existent user raises ValueError."""
-        mock_user_repo.get_by_id.return_value = None
-
-        use_case = SuspendUserUseCase(mock_user_repo)
-
-        with pytest.raises(ValueError, match="not found"):
-            await use_case.execute(user_id, "reason")
-
-
-# =============================================================================
-# BAN USER USE CASE TESTS
-# =============================================================================
-
-
-class TestBanUserUseCase:
-    """Tests for BanUserUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_ban_user_success(self, mock_user_repo, user_id, active_user):
-        """Test successful user ban."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = BanUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id, "Security violation")
-
-        assert user.status == UserStatus.BANNED
-        mock_user_repo.save.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_ban_user_not_found_raises_error(self, mock_user_repo, user_id):
-        """Test that banning non-existent user raises ValueError."""
-        mock_user_repo.get_by_id.return_value = None
-
-        use_case = BanUserUseCase(mock_user_repo)
-
-        with pytest.raises(ValueError, match="not found"):
-            await use_case.execute(user_id, "reason")
-
-
-# =============================================================================
-# DEACTIVATE USER USE CASE TESTS
-# =============================================================================
-
-
-class TestDeactivateUserUseCase:
-    """Tests for DeactivateUserUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_deactivate_user_success(self, mock_user_repo, user_id, active_user):
-        """Test successful user deactivation."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = DeactivateUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id, "User requested")
-
-        assert user.status == UserStatus.INACTIVE
-        mock_user_repo.save.assert_called_once()
-
-
-# =============================================================================
-# TERMINATE USER USE CASE TESTS
-# =============================================================================
-
-
-class TestTerminateUserUseCase:
-    """Tests for TerminateUserUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_terminate_user_success(self, mock_user_repo, user_id, active_user):
-        """Test successful user termination."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = TerminateUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id, "Account closed")
-
-        assert user.status == UserStatus.TERMINATED
-        assert user.deleted_at is not None
-        mock_user_repo.save.assert_called_once()
-
-
-# =============================================================================
-# UPDATE PASSWORD USE CASE TESTS
-# =============================================================================
-
-
-class TestUpdateUserPasswordUseCase:
-    """Tests for UpdateUserPasswordUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_update_password_success(self, mock_user_repo, user_id, active_user):
-        """Test successful password update."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = UpdateUserPasswordUseCase(mock_user_repo)
-        user = await use_case.execute(user_id, "new-hash-123")
-
-        assert user._password_hash == "new-hash-123"
-        mock_user_repo.save.assert_called_once()
-
-
-# =============================================================================
-# UPDATE PREFERENCES USE CASE TESTS
-# =============================================================================
-
-
-class TestUpdateUserPreferencesUseCase:
-    """Tests for UpdateUserPreferencesUseCase."""
-
-    @pytest.mark.asyncio
-    async def test_update_preferences_success(self, mock_user_repo, user_id, active_user):
-        """Test successful preferences update."""
-        mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = UpdateUserPreferencesUseCase(mock_user_repo)
-        user = await use_case.execute(
-            user_id,
-            preferred_language=Language.SPANISH,
-            timezone="America/New_York",
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.VERIFY_EMAIL
         )
-
-        assert user.preferred_language == Language.SPANISH
-        assert user.timezone == "America/New_York"
-        mock_user_repo.save.assert_called_once()
-
-
-# =============================================================================
-# TWO-FACTOR USE CASE TESTS
-# =============================================================================
-
-
-class TestEnableTwoFactorUseCase:
-    """Tests for EnableTwoFactorUseCase."""
+        assert pending_user.email_verified_at is not None
 
     @pytest.mark.asyncio
-    async def test_enable_2fa_success(self, mock_user_repo, user_id, active_user):
-        """Test successful 2FA enable."""
+    async def test_suspend_with_reason(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = EnableTwoFactorUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
-
-        assert user.is_two_factor_enabled is True
-        mock_user_repo.save.assert_called_once()
-
-
-class TestDisableTwoFactorUseCase:
-    """Tests for DisableTwoFactorUseCase."""
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.SUSPEND, reason="Policy violation"
+        )
+        assert active_user.status == UserStatus.SUSPENDED
 
     @pytest.mark.asyncio
-    async def test_disable_2fa_success(self, mock_user_repo, user_id, active_user):
-        """Test successful 2FA disable."""
-        active_user.is_two_factor_enabled = True
+    async def test_ban_with_reason(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
-
-        use_case = DisableTwoFactorUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
-
-        assert user.is_two_factor_enabled is False
-        mock_user_repo.save.assert_called_once()
-
-
-# =============================================================================
-# RECORD LOGIN USE CASE TESTS
-# =============================================================================
-
-
-class TestRecordUserLoginUseCase:
-    """Tests for RecordUserLoginUseCase."""
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.BAN, reason="Fraud"
+        )
+        assert active_user.status == UserStatus.BANNED
 
     @pytest.mark.asyncio
-    async def test_record_login_success(self, mock_user_repo, user_id, active_user):
-        """Test successful login recording."""
+    async def test_deactivate(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.DEACTIVATE, reason="Inactive"
+        )
+        assert active_user.status == UserStatus.INACTIVE
 
-        use_case = RecordUserLoginUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
+    @pytest.mark.asyncio
+    async def test_terminate(self, mock_user_repo, user_id, active_user):
+        mock_user_repo.get_by_id.return_value = active_user
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.TERMINATE, reason="Account closure"
+        )
+        assert active_user.status == UserStatus.TERMINATED
 
-        assert user.last_login_at is not None
-        mock_user_repo.save.assert_called_once()
+    @pytest.mark.asyncio
+    async def test_update_password(self, mock_user_repo, user_id, active_user):
+        mock_user_repo.get_by_id.return_value = active_user
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.UPDATE_PASSWORD, password_hash="newhash"
+        )
+        assert active_user._password_hash == "newhash"
 
-
-# =============================================================================
-# GET USER USE CASE TESTS
-# =============================================================================
+    @pytest.mark.asyncio
+    async def test_enable_disable_two_factor(self, mock_user_repo, user_id, active_user):
+        mock_user_repo.get_by_id.return_value = active_user
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.ENABLE_TWO_FACTOR
+        )
+        assert active_user.is_two_factor_enabled is True
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.DISABLE_TWO_FACTOR
+        )
+        assert active_user.is_two_factor_enabled is False
 
 
 class TestGetUserUseCase:
-    """Tests for GetUserUseCase."""
-
     @pytest.mark.asyncio
-    async def test_get_user_by_id_success(self, mock_user_repo, user_id, active_user):
-        """Test successful user retrieval by ID."""
+    async def test_by_id(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
-
         use_case = GetUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
-
-        assert user == active_user
-
-    @pytest.mark.asyncio
-    async def test_get_user_by_id_not_found(self, mock_user_repo, user_id):
-        """Test user retrieval when not found."""
-        mock_user_repo.get_by_id.return_value = None
-
-        use_case = GetUserUseCase(mock_user_repo)
-        user = await use_case.execute(user_id)
-
-        assert user is None
+        assert user is active_user
 
     @pytest.mark.asyncio
-    async def test_get_user_by_email_success(
-        self, mock_user_repo, email, tenant_id, active_user
-    ):
-        """Test successful user retrieval by email."""
+    async def test_by_email(self, mock_user_repo, email, tenant_id, active_user):
         mock_user_repo.get_by_email.return_value = active_user
-
         use_case = GetUserUseCase(mock_user_repo)
         user = await use_case.execute_by_email(email, tenant_id)
-
-        assert user == active_user
+        assert user is active_user

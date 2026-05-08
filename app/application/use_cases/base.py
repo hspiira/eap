@@ -58,24 +58,15 @@ class BaseUseCase(ABC, Generic[TEntity, TId]):
         return entity
     
     async def _save_and_publish_events(self, entity: TEntity) -> TEntity:
-        """
-        Save entity and publish any collected domain events.
-        
-        Args:
-            entity: The entity to save
-            
-        Returns:
-            The saved entity
+        """Save the entity and publish its collected domain events.
+
+        Events stay attached to the entity so callers (e.g. routes that emit
+        audit) can inspect them; clearing is the caller's responsibility.
         """
         await self.repository.save(entity)
-        
-        # Publish domain events if entity has them (do not clear here;
-        # routes may process entity.events for audit, then clear)
-        if hasattr(entity, '_events'):
-            events: list[DomainEvent] = getattr(entity, '_events', [])
-            for event in events:
-                await event_bus.publish(event)
-
+        events: list[DomainEvent] = getattr(entity, "events", []) or []
+        for event in events:
+            await event_bus.publish(event)
         return entity
 
 
@@ -108,11 +99,8 @@ class EntityLifecycleUseCase(BaseUseCase[TEntity, TId]):
         """
         entity = await self._get_entity_or_raise(entity_id, self.entity_name)
         await self._perform_action(entity, *args, **kwargs)
-        
-        # Update timestamp if entity has _updated_at
-        if hasattr(entity, '_updated_at'):
-            setattr(entity, '_updated_at', utc_now())
-        
+        if hasattr(entity, "updated_at"):
+            entity.updated_at = utc_now()
         return await self._save_and_publish_events(entity)
 
 
