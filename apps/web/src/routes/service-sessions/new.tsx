@@ -1,59 +1,78 @@
-import { useState } from "react"
-
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
 
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
 
 export const Route = createFileRoute("/service-sessions/new")({
   component: ServiceSessionCreatePage,
 })
 
+const sessionCreateSchema = z.object({
+  service_id: z.string().trim().min(1, "Service ID is required"),
+  person_id: z.string().trim().min(1, "Person ID is required"),
+  scheduled_at: z
+    .string()
+    .min(1, "Scheduled time is required")
+    .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
+})
+
 function ServiceSessionCreatePage() {
   const navigate = useNavigate()
-  const [serviceId, setServiceId] = useState("")
-  const [personId, setPersonId] = useState("")
-  const [scheduledAt, setScheduledAt] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    try {
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof sessionCreateSchema>>({
+    schema: sessionCreateSchema,
+    defaultValues: { service_id: "", person_id: "", scheduled_at: "" },
+    successToast: "Session created",
+    onSubmit: async (values) => {
       await serviceSessionsApi.create({
-        service_id: serviceId,
-        person_id: personId,
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        service_id: values.service_id,
+        person_id: values.person_id,
+        scheduled_at: new Date(values.scheduled_at).toISOString(),
       })
       navigate({ to: "/service-sessions" })
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create session")
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+  })
 
   return (
     <div className="p-6 max-w-md">
       <h1 className="text-xl font-semibold text-[#5A626A]">Add session</h1>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        {error && <p className="text-sm text-[#5A626A]" role="alert">{error}</p>}
-        <FormField label="Service ID" required htmlFor="service_id">
-          <Input id="service_id" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required className="rounded-none" />
+      <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+        {serverError && <p className="text-sm text-[#5A626A]" role="alert">{serverError}</p>}
+        <FormField
+          label="Service ID"
+          required
+          error={formState.errors.service_id?.message as string | undefined}
+          htmlFor="service_id"
+        >
+          <Input id="service_id" className="rounded-none" {...register("service_id")} />
         </FormField>
-        <FormField label="Person ID" required htmlFor="person_id">
-          <Input id="person_id" value={personId} onChange={(e) => setPersonId(e.target.value)} required className="rounded-none" />
+        <FormField
+          label="Person ID"
+          required
+          error={formState.errors.person_id?.message as string | undefined}
+          htmlFor="person_id"
+        >
+          <Input id="person_id" className="rounded-none" {...register("person_id")} />
         </FormField>
-        <FormField label="Scheduled at (ISO)" required htmlFor="scheduled_at">
-          <Input id="scheduled_at" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} required className="rounded-none" />
+        <FormField
+          label="Scheduled at"
+          required
+          error={formState.errors.scheduled_at?.message as string | undefined}
+          htmlFor="scheduled_at"
+        >
+          <Input id="scheduled_at" type="datetime-local" className="rounded-none" {...register("scheduled_at")} />
         </FormField>
         <div className="flex gap-2">
-          <Button type="submit" disabled={loading} className="rounded-none">{loading ? "Creating…" : "Create session"}</Button>
-          <Button type="button" variant="secondary" className="rounded-none" onClick={() => navigate({ to: "/service-sessions" })}>Cancel</Button>
+          <Button type="submit" disabled={formState.isSubmitting} className="rounded-none">
+            {formState.isSubmitting ? "Creating…" : "Create session"}
+          </Button>
+          <Button type="button" variant="secondary" className="rounded-none" onClick={() => navigate({ to: "/service-sessions" })}>
+            Cancel
+          </Button>
         </div>
       </form>
     </div>

@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, Check } from 'lucide-react'
+import { z } from 'zod'
 
 import { authApi } from '@/api/endpoints/auth'
+import { useApiForm } from '@/hooks/useApiForm'
+import { ApiError } from '@/types/api'
 
 export const Route = createFileRoute('/auth/set-password')({
   component: SetPasswordPage,
@@ -18,80 +21,62 @@ const SET_PASSWORD_GENERIC_ERROR =
 const SET_PASSWORD_LINK_ERROR =
   'Invalid or expired link. Request a new link from your administrator.'
 
-function getSetPasswordErrorMessage(error: unknown): string {
-  const err = error as { detail?: string | Array<{ loc?: unknown[]; msg?: string }> }
-  const detail = err?.detail
-  if (detail == null) return SET_PASSWORD_LINK_ERROR
+const setPasswordSchema = z
+  .object({
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password_confirm: z.string(),
+  })
+  .refine((d) => d.password === d.password_confirm, {
+    path: ['password_confirm'],
+    message: 'Passwords do not match',
+  })
 
-  if (Array.isArray(detail)) {
-    const hasPasswordField = detail.some(
-      (d) =>
-        Array.isArray(d.loc) &&
-        d.loc.some((x) => String(x).toLowerCase().includes('password'))
-    )
-    if (hasPasswordField) return SET_PASSWORD_GENERIC_ERROR
-    return SET_PASSWORD_LINK_ERROR
-  }
-
-  const s = String(detail).toLowerCase()
-  if (
-    s.includes('password') ||
-    s.includes('body.') ||
-    s.includes('validation') ||
-    s.includes('at least 8')
-  ) {
-    return SET_PASSWORD_GENERIC_ERROR
-  }
-  return SET_PASSWORD_LINK_ERROR
+function looksLikePasswordValidationError(err: ApiError): boolean {
+  if (err.fieldErrors?.password) return true
+  const msg = err.message.toLowerCase()
+  return msg.includes('password') || msg.includes('at least 8') || msg.includes('validation')
 }
 
 function SetPasswordPage() {
   const navigate = useNavigate()
   const { token, tenant_code } = Route.useSearch()
-  const [password, setPassword] = useState('')
-  const [passwordConfirm, setPasswordConfirm] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  useEffect(() => {
-    if (!token) setError(SET_PASSWORD_LINK_ERROR)
-  }, [token])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    if (!token) return
-    const p = password.trim()
-    const pc = passwordConfirm.trim()
-    if (p.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
-    }
-    if (p !== pc) {
-      setError('Passwords do not match.')
-      return
-    }
-    setLoading(true)
-    try {
-      await authApi.setInitialPassword({
-        token,
-        password: p,
-        password_confirm: pc,
-      })
-      setSuccess(true)
-    } catch (err) {
-      setError(getSetPasswordErrorMessage(err))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof setPasswordSchema>>({
+    schema: setPasswordSchema,
+    defaultValues: { password: '', password_confirm: '' },
+    errorToast: false,
+    onSubmit: async (values) => {
+      if (!token) {
+        throw new ApiError(SET_PASSWORD_LINK_ERROR, 'INVALID_TOKEN', 400)
+      }
+      try {
+        await authApi.setInitialPassword({
+          token,
+          password: values.password,
+          password_confirm: values.password_confirm,
+        })
+        setSuccess(true)
+      } catch (err) {
+        if (err instanceof ApiError && looksLikePasswordValidationError(err)) {
+          throw new ApiError(SET_PASSWORD_GENERIC_ERROR, err.code, err.status, {
+            password: SET_PASSWORD_GENERIC_ERROR,
+          })
+        }
+        throw new ApiError(
+          SET_PASSWORD_LINK_ERROR,
+          err instanceof ApiError ? err.code : 'INVALID_TOKEN',
+          err instanceof ApiError ? err.status : 400,
+        )
+      }
+    },
+  })
 
   const goToLogin = () => {
     navigate({
       to: '/auth/login',
-      search: { tenant_code: tenant_code || '', email: '' },
+      search: { tenant_code: tenant_code || undefined, email: undefined, redirect: undefined },
     })
   }
 
@@ -135,10 +120,10 @@ function SetPasswordPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
           <p className="text-white/70">Invalid link</p>
         </div>
-        <p className="text-white/80 mb-6">{error}</p>
+        <p className="text-white/80 mb-6">{SET_PASSWORD_LINK_ERROR}</p>
         <Link
           to="/auth/login"
-          search={{ tenant_code: '', email: '' }}
+          search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
           className="block w-full py-3 bg-[#D0B5B3] hover:bg-[#c0a5a3] text-white font-semibold rounded-none transition-colors text-center"
         >
           Go to Sign in
@@ -157,28 +142,27 @@ function SetPasswordPage() {
         Choose a password for your admin account (min 8 characters).
       </p>
 
-      {error && (
+      {serverError && (
         <div className="mb-4 p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
-          {error}
+          {serverError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" noValidate>
         <div>
           <label htmlFor="password" className="block text-white/90 text-sm font-medium mb-1">
             Password *
           </label>
           <input
             id="password"
-            name="password"
             type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
             placeholder="••••••••"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('password')}
           />
+          {formState.errors.password && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.password.message as string}</p>
+          )}
         </div>
         <button
           type="button"
@@ -193,23 +177,22 @@ function SetPasswordPage() {
           </label>
           <input
             id="password_confirm"
-            name="password_confirm"
             type="password"
-            value={passwordConfirm}
-            onChange={(e) => setPasswordConfirm(e.target.value)}
-            required
-            minLength={8}
             placeholder="••••••••"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('password_confirm')}
           />
+          {formState.errors.password_confirm && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.password_confirm.message as string}</p>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={formState.isSubmitting}
           className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Setting password...' : 'Set password'}
+          {formState.isSubmitting ? 'Setting password...' : 'Set password'}
         </button>
       </form>
 

@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
 
 export interface ClientFormProps {
   onSuccess?: () => void
@@ -11,93 +12,94 @@ export interface ClientFormProps {
   submitLabel?: string
 }
 
+const clientCreateSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  code: z
+    .string()
+    .trim()
+    .min(3, "Code must be 3–5 characters")
+    .max(5, "Code must be 3–5 characters"),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
+  phone: z.string().optional(),
+})
+
 export function ClientForm({
   onSuccess,
   onCancel,
   submitLabel = "Create client",
 }: ClientFormProps) {
-  const [name, setName] = useState("")
-  const [code, setCode] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setFieldErrors({})
-    setLoading(true)
-    try {
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof clientCreateSchema>>({
+    schema: clientCreateSchema,
+    defaultValues: { name: "", code: "", email: "", phone: "" },
+    successToast: "Client created",
+    onSubmit: async (values) => {
       await clientsApi.create({
-        name,
-        code,
-        contact_info: { email: email || undefined, phone: phone || undefined },
+        name: values.name,
+        code: values.code,
+        contact_info: {
+          email: values.email || undefined,
+          phone: values.phone || undefined,
+        },
       })
       onSuccess?.()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to create client")
-      if (err && typeof err === "object" && "fieldErrors" in err) {
-        setFieldErrors((err as { fieldErrors?: Record<string, string> }).fieldErrors ?? {})
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+  })
+
+  const contactEmailError =
+    (formState.errors as Record<string, { message?: string }>)["contact_info.email"]?.message ??
+    formState.errors.email?.message
+  const contactPhoneError =
+    (formState.errors as Record<string, { message?: string }>)["contact_info.phone"]?.message ??
+    formState.errors.phone?.message
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
+    <form onSubmit={submit} className="space-y-4" noValidate>
+      {serverError && (
         <p
           className="text-sm text-[#5A626A] border border-[#5A626A]/30 bg-[#f5f5f5] px-3 py-2 rounded-none"
           role="alert"
         >
-          {error}
+          {serverError}
         </p>
       )}
-      <FormField label="Name" required error={fieldErrors.name} htmlFor="client-name">
-        <Input
-          id="client-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="rounded-none border-[#5A626A]/30"
-        />
+      <FormField
+        label="Name"
+        required
+        error={formState.errors.name?.message as string | undefined}
+        htmlFor="client-name"
+      >
+        <Input id="client-name" className="rounded-none border-[#5A626A]/30" {...register("name")} />
       </FormField>
-      <FormField label="Code (3–5 chars)" required error={fieldErrors.code} htmlFor="client-code">
-        <Input
-          id="client-code"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          required
-          className="rounded-none border-[#5A626A]/30"
-        />
+      <FormField
+        label="Code (3–5 chars)"
+        required
+        error={formState.errors.code?.message as string | undefined}
+        htmlFor="client-code"
+      >
+        <Input id="client-code" className="rounded-none border-[#5A626A]/30" {...register("code")} />
       </FormField>
-      <FormField label="Email" error={fieldErrors["contact_info.email"]} htmlFor="client-email">
+      <FormField label="Email" error={contactEmailError as string | undefined} htmlFor="client-email">
         <Input
           id="client-email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           className="rounded-none border-[#5A626A]/30"
+          {...register("email")}
         />
       </FormField>
-      <FormField label="Phone" error={fieldErrors["contact_info.phone"]} htmlFor="client-phone">
-        <Input
-          id="client-phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="rounded-none border-[#5A626A]/30"
-        />
+      <FormField label="Phone" error={contactPhoneError as string | undefined} htmlFor="client-phone">
+        <Input id="client-phone" className="rounded-none border-[#5A626A]/30" {...register("phone")} />
       </FormField>
       <div className="flex gap-2 pt-2">
         <Button
           type="submit"
-          disabled={loading}
+          disabled={formState.isSubmitting}
           className="rounded-none bg-natural text-white hover:bg-natural-dark"
         >
-          {loading ? "Creating…" : submitLabel}
+          {formState.isSubmitting ? "Creating…" : submitLabel}
         </Button>
         {onCancel && (
           <Button

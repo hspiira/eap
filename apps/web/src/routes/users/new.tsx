@@ -1,74 +1,61 @@
-import { useState } from "react"
-
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
 
 import { usersApi } from "@/api/endpoints/users"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
 
 export const Route = createFileRoute("/users/new")({
   component: UserCreatePage,
 })
 
+const userCreateSchema = z.object({
+  email: z.string().trim().min(1, "Email is required").email("Invalid email"),
+  password: z.string().optional(),
+})
+
 function UserCreatePage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setFieldErrors({})
-    setLoading(true)
-    try {
-      await usersApi.create({ email, password: password || undefined })
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof userCreateSchema>>({
+    schema: userCreateSchema,
+    defaultValues: { email: "", password: "" },
+    successToast: "User created",
+    onSubmit: async (values) => {
+      await usersApi.create({ email: values.email, password: values.password || undefined })
       navigate({ to: "/users" })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to create user"
-      setError(message)
-      if (err && typeof err === "object" && "fieldErrors" in err) {
-        setFieldErrors((err as { fieldErrors?: Record<string, string> }).fieldErrors ?? {})
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+  })
 
   return (
     <div className="p-6 max-w-md">
       <h1 className="text-xl font-semibold text-[#5A626A]">Add user</h1>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        {error && (
+      <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+        {serverError && (
           <p className="text-sm text-[#5A626A]" role="alert">
-            {error}
+            {serverError}
           </p>
         )}
-        <FormField label="Email" required error={fieldErrors.email} htmlFor="email">
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="rounded-none"
-          />
+        <FormField
+          label="Email"
+          required
+          error={formState.errors.email?.message as string | undefined}
+          htmlFor="email"
+        >
+          <Input id="email" type="email" className="rounded-none" {...register("email")} />
         </FormField>
-        <FormField label="Password (optional)" error={fieldErrors.password} htmlFor="password">
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-none"
-          />
+        <FormField
+          label="Password (optional)"
+          error={formState.errors.password?.message as string | undefined}
+          htmlFor="password"
+        >
+          <Input id="password" type="password" className="rounded-none" {...register("password")} />
         </FormField>
         <div className="flex gap-2">
-          <Button type="submit" disabled={loading} className="rounded-none">
-            {loading ? "Creating…" : "Create user"}
+          <Button type="submit" disabled={formState.isSubmitting} className="rounded-none">
+            {formState.isSubmitting ? "Creating…" : "Create user"}
           </Button>
           <Button
             type="button"

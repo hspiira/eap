@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react'
-
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 
-import type { ApiError } from '@/api/types'
+import { useApiForm } from '@/hooks/useApiForm'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 import { authActions } from '@/lib/auth-store'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { normalizeErrorMessage } from '@/utils/errorHandler'
 
 function safeRedirectPath(raw: unknown): string | undefined {
   const s = typeof raw === 'string' ? raw.trim() : ''
@@ -24,54 +21,32 @@ export const Route = createFileRoute('/auth/login')({
   }),
 })
 
+const loginSchema = z.object({
+  tenant_code: z.string().trim().min(1, 'Tenant code is required'),
+  email: z.string().trim().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
+
 function LoginPage() {
   const navigate = useNavigate()
   const search = Route.useSearch()
   const redirectTo = search.redirect ?? '/'
   const isAuthenticated = useRedirectIfAuthenticated(redirectTo)
 
-  const [email, setEmail] = useState(search.email || '')
-  const [password, setPassword] = useState('')
-  const [tenantCode, setTenantCode] = useState(search.tenant_code || '')
-  const [errors, setErrors] = useState<{ email?: string; password?: string; tenant_code?: string; general?: string }>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const authError = useAuthStore((s) => s.error)
-
-  useEffect(() => {
-    if (authError) setErrors((e) => ({ ...e, general: authError }))
-  }, [authError])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-    setIsSubmitting(true)
-    authActions.clearError()
-
-    try {
-      await authActions.login({
-        email,
-        password,
-        tenant_code: tenantCode,
-      })
+  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof loginSchema>>({
+    schema: loginSchema,
+    defaultValues: {
+      tenant_code: search.tenant_code ?? '',
+      email: search.email ?? '',
+      password: '',
+    },
+    errorToast: false,
+    onSubmit: async (values) => {
+      authActions.clearError()
+      await authActions.login(values)
       navigate({ to: redirectTo, search: {} })
-    } catch (error: unknown) {
-      if (error instanceof Error && 'status' in error) {
-        const apiError = error as ApiError
-        if (apiError.fieldErrors) {
-          setErrors(apiError.fieldErrors as { email?: string; password?: string; tenant_code?: string })
-        } else {
-          setErrors({ general: apiError.message || 'Login failed. Please try again.' })
-        }
-      } else {
-        setErrors({
-          general: normalizeErrorMessage(error, 'Login failed. Please try again.'),
-        })
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+  })
 
   if (isAuthenticated) return null
 
@@ -82,10 +57,10 @@ function LoginPage() {
         <p className="text-white/70">Sign in to your account</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {errors.general && (
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        {serverError && (
           <div className="p-3 bg-[#D0B5B3]/20 border border-[#D0B5B3]/30 text-white text-sm">
-            {errors.general}
+            {serverError}
           </div>
         )}
 
@@ -95,16 +70,17 @@ function LoginPage() {
           </label>
           <input
             id="tenant_code"
-            name="tenant_code"
             type="text"
-            value={tenantCode}
-            onChange={(e) => setTenantCode(e.target.value.toLowerCase())}
-            required
             placeholder="Enter tenant code"
             autoComplete="organization"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('tenant_code', {
+              setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
+            })}
           />
-          {errors.tenant_code && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.tenant_code}</p>}
+          {formState.errors.tenant_code && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.tenant_code.message as string}</p>
+          )}
         </div>
 
         <div>
@@ -113,16 +89,15 @@ function LoginPage() {
           </label>
           <input
             id="email"
-            name="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
             placeholder="Enter your email"
             autoComplete="email"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('email')}
           />
-          {errors.email && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.email}</p>}
+          {formState.errors.email && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.email.message as string}</p>
+          )}
         </div>
 
         <div>
@@ -131,24 +106,23 @@ function LoginPage() {
           </label>
           <input
             id="password"
-            name="password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
             placeholder="Enter your password"
             autoComplete="current-password"
             className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            {...register('password')}
           />
-          {errors.password && <p className="mt-1 text-sm text-[#D0B5B3]">{errors.password}</p>}
+          {formState.errors.password && (
+            <p className="mt-1 text-sm text-[#D0B5B3]">{formState.errors.password.message as string}</p>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={formState.isSubmitting}
           className="w-full py-3 bg-natural hover:bg-natural-dark text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {formState.isSubmitting ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
