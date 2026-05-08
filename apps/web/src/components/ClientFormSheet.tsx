@@ -1,19 +1,15 @@
+import { useEffect } from "react"
+
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
-import { Button } from "@/components/ui/button"
+import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
 import { useEntityMutation } from "@/lib/queries"
 import { ClientTier } from "@/types/enums"
-
-export interface ClientFormProps {
-  onSuccess?: () => void
-  onCancel?: () => void
-  submitLabel?: string
-}
 
 const TIER_VALUES = [ClientTier.A, ClientTier.B, ClientTier.C] as const
 
@@ -33,22 +29,24 @@ const clientCreateSchema = z.object({
   phone: z.string().optional(),
 })
 
+type ClientFormValues = z.infer<typeof clientCreateSchema>
+
 const SELECT_CLASS =
   "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
 
-export function ClientForm({
-  onSuccess,
-  onCancel,
-  submitLabel = "Create client",
-}: ClientFormProps) {
+interface ClientFormSheetProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onCreated?: () => void
+}
+
+export function ClientFormSheet({ open, onOpenChange, onCreated }: ClientFormSheetProps) {
   const createClient = useEntityMutation({
     resource: "clients",
     mutationFn: clientsApi.create,
   })
 
-  const { register, formState, submit, serverError } = useApiForm<
-    z.infer<typeof clientCreateSchema>
-  >({
+  const { register, reset, formState, submit, serverError } = useApiForm<ClientFormValues>({
     schema: clientCreateSchema,
     defaultValues: { name: "", code: "", tier: "", email: "", phone: "" },
     successToast: "Client created",
@@ -62,41 +60,51 @@ export function ClientForm({
           phone: values.phone || undefined,
         },
       })
-      onSuccess?.()
+      onCreated?.()
+      onOpenChange(false)
+      reset()
     },
   })
+
+  useEffect(() => {
+    if (!open) {
+      reset({ name: "", code: "", tier: "", email: "", phone: "" })
+    }
+  }, [open, reset])
 
   const errors = formState.errors as Record<string, { message?: string }>
 
   return (
-    <form onSubmit={submit} className="space-y-6" noValidate>
-      {serverError ? (
-        <div
-          role="alert"
-          className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
-        >
-          {serverError}
-        </div>
-      ) : null}
-
+    <SheetForm
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add client"
+      description="Create a new corporate client. You can link contracts, services, and staff after saving."
+      size="md"
+      onSubmit={submit}
+      isSubmitting={formState.isSubmitting}
+      serverError={serverError}
+      submitLabel="Create client"
+      submittingLabel="Creating…"
+    >
       <FormSection title="Identity">
         <FormField
-          label="Name"
+          label="Client name"
           required
           error={errors.name?.message}
-          htmlFor="client-name"
+          htmlFor="cs-name"
         >
-          <Input id="client-name" placeholder="e.g. Acme Corp" {...register("name")} />
+          <Input id="cs-name" placeholder="e.g. Acme Corp" {...register("name")} />
         </FormField>
         <FormField
           label="Code"
           description="3–5 character code used in employee references."
           required
           error={errors.code?.message}
-          htmlFor="client-code"
+          htmlFor="cs-code"
         >
           <Input
-            id="client-code"
+            id="cs-code"
             placeholder="ACME"
             maxLength={5}
             className="font-mono uppercase"
@@ -110,9 +118,9 @@ export function ClientForm({
           label="Tier"
           optional
           error={errors.tier?.message}
-          htmlFor="client-tier"
+          htmlFor="cs-tier"
         >
-          <select id="client-tier" className={SELECT_CLASS} {...register("tier")}>
+          <select id="cs-tier" className={SELECT_CLASS} {...register("tier")}>
             <option value="">Unassigned</option>
             {TIER_VALUES.map((t) => (
               <option key={t} value={t}>
@@ -125,16 +133,16 @@ export function ClientForm({
 
       <FormSection
         title="Primary contact"
-        description="Used for billing and account communications."
+        description="Used for billing and account notifications."
       >
         <FormField
           label="Email"
           optional
           error={(errors["contact_info.email"]?.message ?? errors.email?.message) as string | undefined}
-          htmlFor="client-email"
+          htmlFor="cs-email"
         >
           <Input
-            id="client-email"
+            id="cs-email"
             type="email"
             placeholder="contact@acme.com"
             {...register("email")}
@@ -144,22 +152,11 @@ export function ClientForm({
           label="Phone"
           optional
           error={(errors["contact_info.phone"]?.message ?? errors.phone?.message) as string | undefined}
-          htmlFor="client-phone"
+          htmlFor="cs-phone"
         >
-          <Input id="client-phone" type="tel" placeholder="+254 …" {...register("phone")} />
+          <Input id="cs-phone" type="tel" placeholder="+254 …" {...register("phone")} />
         </FormField>
       </FormSection>
-
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? "Creating…" : submitLabel}
-        </Button>
-        {onCancel ? (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        ) : null}
-      </div>
-    </form>
+    </SheetForm>
   )
 }

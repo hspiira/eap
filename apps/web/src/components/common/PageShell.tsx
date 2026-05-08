@@ -48,12 +48,12 @@ function DefaultPageMenu() {
         <button
           type="button"
           aria-label="Page options"
-          className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+          className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
         >
           <MoreHorizontal className="size-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="rounded-none">
+      <DropdownMenuContent align="end">
         <DropdownMenuItem>View settings</DropdownMenuItem>
         <DropdownMenuItem>Export CSV</DropdownMenuItem>
       </DropdownMenuContent>

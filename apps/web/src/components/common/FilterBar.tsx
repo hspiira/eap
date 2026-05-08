@@ -43,12 +43,12 @@ export function FilterButton({ options }: FilterButtonProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm" className="h-8 shrink-0 gap-1.5 rounded-none">
+        <Button variant="secondary" size="sm" className="h-8 shrink-0 gap-1.5">
           <FilterIcon className="size-3.5" />
           Filter
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-52 rounded-none">
+      <DropdownMenuContent align="start" className="min-w-52">
         {options.map((opt) => (
           <DropdownMenuItem
             key={opt.id}
@@ -74,13 +74,13 @@ interface FilterChipProps {
 
 export function FilterChip({ label, onRemove }: FilterChipProps) {
   return (
-    <span className="inline-flex h-8 shrink-0 items-center gap-1 border border-fg/25 bg-bg pl-2 pr-1 text-sm text-fg">
+    <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border border-fg/25 bg-bg pl-2 pr-1 text-sm text-fg">
       <span className="truncate">{label}</span>
       <button
         type="button"
         onClick={onRemove}
         aria-label="Remove filter"
-        className="grid size-5 place-items-center text-fg/65 transition-colors hover:bg-surface-hover hover:text-fg"
+        className="grid size-5 place-items-center rounded-sm text-fg/65 transition-colors hover:bg-surface-hover hover:text-fg"
       >
         <X className="size-3" />
       </button>
@@ -114,14 +114,14 @@ export function FilterTrigger<T extends string>({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 border border-fg/25 bg-bg px-2 text-sm text-fg hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-sm border border-fg/25 bg-bg px-2 text-sm text-fg hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {Icon ? <Icon className="size-3.5 text-fg/65" /> : null}
           <span className="whitespace-nowrap">{current}</span>
           <ChevronDown className="size-3.5 text-fg/55" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-44 rounded-none">
+      <DropdownMenuContent align="start" className="min-w-44">
         {options.map((opt) => (
           <DropdownMenuItem
             key={opt.value}
@@ -152,7 +152,7 @@ export function FilterSearch({
   return (
     <label
       className={cn(
-        "relative inline-flex h-8 shrink-0 items-center border border-fg/25 bg-bg pl-7 pr-1.5 focus-within:ring-2 focus-within:ring-ring",
+        "relative inline-flex h-8 shrink-0 items-center rounded-sm border border-fg/25 bg-bg pl-7 pr-1.5 focus-within:ring-2 focus-within:ring-ring",
         className,
       )}
     >

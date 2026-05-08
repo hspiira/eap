@@ -144,7 +144,7 @@ function IndustriesPage() {
             <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
             <Button
               size="sm"
-              className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
+              className="h-7 gap-1.5 px-2.5"
             >
               <Plus className="size-3.5" />
               Add industry
@@ -299,7 +299,7 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
     >
       <Icon className="size-3.5" />
     </button>
@@ -344,7 +344,7 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
         <Button
           variant="outline"
           size="sm"
-          className="mt-4 rounded-none gap-1.5"
+          className="mt-4 gap-1.5"
           onClick={onRetry}
         >
           <RotateCw className="size-4" />

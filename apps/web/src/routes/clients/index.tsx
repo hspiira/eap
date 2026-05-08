@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { ClientForm } from "@/components/ClientForm"
+import { ClientFormSheet } from "@/components/ClientFormSheet"
 import { ClientsListSkeleton } from "@/components/ClientsPageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
@@ -27,14 +27,6 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogCloseButton,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,7 +136,7 @@ function ClientsListPage() {
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"
-            className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
+            className="h-7 gap-1.5 px-2.5"
             onClick={() => setAddModalOpen(true)}
           >
             <Plus className="size-3.5" />
@@ -189,21 +181,11 @@ function ClientsListPage() {
         />
       </FilterBar>
 
-      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-        <DialogContent className="rounded-none">
-          <DialogCloseButton />
-          <DialogHeader>
-            <DialogTitle>Add client</DialogTitle>
-            <DialogDescription>Create a new client record.</DialogDescription>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            <ClientForm
-              onSuccess={() => setAddModalOpen(false)}
-              onCancel={() => setAddModalOpen(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ClientFormSheet
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        onCreated={refetch}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -223,11 +205,7 @@ function ClientsListPage() {
             }
             action={
               hasFilters ? null : (
-                <Button
-                  size="sm"
-                  className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                  onClick={() => setAddModalOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddModalOpen(true)}>
                   <Plus className="size-4" />
                   Add client
                 </Button>
@@ -333,7 +311,7 @@ function ClientRow({ row }: { row: Client }) {
             to="/clients/$clientId"
             params={{ clientId: row.id }}
             aria-label={`Open ${row.name}`}
-            className="grid size-7 place-items-center rounded-none text-fg/65 hover:bg-surface-hover hover:text-fg"
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
           >
             <ExternalLink className="size-3.5" />
           </Link>
@@ -342,12 +320,12 @@ function ClientRow({ row }: { row: Client }) {
               <button
                 type="button"
                 aria-label={`More actions for ${row.name}`}
-                className="grid size-7 place-items-center rounded-none text-fg/65 hover:bg-surface-hover hover:text-fg"
+                className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
               >
                 <MoreHorizontal className="size-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-none">
+            <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link to="/clients/$clientId" params={{ clientId: row.id }}>
                   View details
@@ -371,12 +349,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
     <div className="flex flex-1 items-center justify-center px-6 py-10">
       <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4 rounded-none gap-1.5"
-          onClick={onRetry}
-        >
+        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
           <RotateCw className="size-4" />
           Try again
         </Button>
@@ -400,7 +373,7 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
     >
       <Icon className="size-3.5" />
     </button>

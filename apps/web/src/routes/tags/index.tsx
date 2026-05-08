@@ -20,6 +20,7 @@ import {
   FilterSearch,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { TagFormSheet } from "@/components/TagFormSheet"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -55,6 +56,9 @@ function TagsListPage() {
   const activeSearch = debouncedSearch || undefined
   const queryClient = useQueryClient()
 
+  const [creatingTag, setCreatingTag] = useState(false)
+  const [editingTag, setEditingTag] = useState<ClientTag | null>(null)
+
   useEffect(() => {
     setPage(1)
   }, [activeSearch])
@@ -70,6 +74,14 @@ function TagsListPage() {
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["client-tags", "list"] })
 
+  const sheetOpen = creatingTag || Boolean(editingTag)
+  const handleSheetOpenChange = (open: boolean) => {
+    if (!open) {
+      setCreatingTag(false)
+      setEditingTag(null)
+    }
+  }
+
   return (
     <PageShell
       icon={Tag}
@@ -80,14 +92,12 @@ function TagsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
-            asChild
             size="sm"
-            className="h-7 gap-1.5 rounded-none bg-primary px-2.5 text-primary-foreground hover:bg-primary/90"
+            className="h-7 gap-1.5 px-2.5"
+            onClick={() => setCreatingTag(true)}
           >
-            <Link to="/tags/new">
-              <Plus className="size-3.5" />
-              New tag
-            </Link>
+            <Plus className="size-3.5" />
+            New tag
           </Button>
         </>
       }
@@ -107,6 +117,13 @@ function TagsListPage() {
         />
       </FilterBar>
 
+      <TagFormSheet
+        open={sheetOpen}
+        onOpenChange={handleSheetOpenChange}
+        tag={editingTag}
+        onSaved={refetch}
+      />
+
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5 text-sm text-fg/65">Loading…</div>
@@ -123,15 +140,9 @@ function TagsListPage() {
             }
             action={
               activeSearch ? null : (
-                <Button
-                  asChild
-                  size="sm"
-                  className="rounded-none gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Link to="/tags/new">
-                    <Plus className="size-4" />
-                    New tag
-                  </Link>
+                <Button size="sm" className="gap-1.5" onClick={() => setCreatingTag(true)}>
+                  <Plus className="size-4" />
+                  New tag
                 </Button>
               )
             }
@@ -159,7 +170,7 @@ function TagsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <TagRow key={row.id} row={row} />
+                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} />
                   ))}
                 </TableBody>
               </table>
@@ -191,14 +202,14 @@ function IconButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-none text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
     >
       <Icon className="size-3.5" />
     </button>
   )
 }
 
-function TagRow({ row }: { row: ClientTag }) {
+function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
   const swatch = row.color ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
@@ -211,10 +222,10 @@ function TagRow({ row }: { row: ClientTag }) {
         />
       </TableCell>
       <TableCell>
-        <Link
-          to="/tags/$tagId"
-          params={{ tagId: row.id }}
-          className="inline-flex items-center gap-2"
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-2 text-left"
         >
           <span
             aria-hidden
@@ -224,7 +235,7 @@ function TagRow({ row }: { row: ClientTag }) {
           <span className="text-sm font-medium text-fg group-hover:text-primary">
             {row.name}
           </span>
-        </Link>
+        </button>
       </TableCell>
       <TableCell>
         {swatch ? (
@@ -247,29 +258,33 @@ function TagRow({ row }: { row: ClientTag }) {
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <Link
-            to="/tags/$tagId"
-            params={{ tagId: row.id }}
+          <button
+            type="button"
+            onClick={onEdit}
             aria-label={`Edit ${row.name}`}
-            className="grid size-7 place-items-center rounded-none text-fg/65 hover:bg-surface-hover hover:text-fg"
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
           >
             <Pencil className="size-3.5" />
-          </Link>
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label={`More actions for ${row.name}`}
-                className="grid size-7 place-items-center rounded-none text-fg/65 hover:bg-surface-hover hover:text-fg"
+                className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
               >
                 <MoreHorizontal className="size-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-none">
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={onEdit} className="gap-2">
+                <Pencil className="size-3.5" />
+                Edit
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/tags/$tagId" params={{ tagId: row.id }} className="gap-2">
                   <ExternalLink className="size-3.5" />
-                  Open
+                  Open page
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -289,12 +304,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
     <div className="flex flex-1 items-center justify-center px-6 py-10">
       <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4 rounded-none gap-1.5"
-          onClick={onRetry}
-        >
+        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
           <RotateCw className="size-4" />
           Try again
         </Button>
