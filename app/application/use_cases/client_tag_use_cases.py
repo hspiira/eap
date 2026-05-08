@@ -62,14 +62,14 @@ class CreateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
             raise ValueError(f"Tag with name '{name}' already exists")
 
         tag = ClientTagEntity(
-            _id=tag_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _description=description,
-            _color=color,
+            id=tag_id,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            color=color,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(tag)

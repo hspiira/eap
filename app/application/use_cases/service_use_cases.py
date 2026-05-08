@@ -96,17 +96,17 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         # Create service entity
         now = utc_now()
         service = ServiceEntity(
-            _id=service_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _description=description,
-            _status=BaseStatus.PENDING,
-            _created_at=now,
-            _updated_at=now,
-            _category=category,
-            _duration_minutes=duration_minutes,
-            _is_group_service=is_group_service,
-            _max_participants=max_participants,
+            id=service_id,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            status=BaseStatus.PENDING,
+            created_at=now,
+            updated_at=now,
+            category=category,
+            duration_minutes=duration_minutes,
+            is_group_service=is_group_service,
+            max_participants=max_participants,
         )
 
         return await self._save_and_publish_events(service)

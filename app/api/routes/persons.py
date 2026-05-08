@@ -487,7 +487,7 @@ async def update_employment_info(
     db: AsyncSession = Depends(get_db),
 ):
     """Update employment information for a person."""
-    from app.domain.value_objects.core import ClientEmployeeCode, EmploymentInfo
+    from app.domain.value_objects.core import ClientEmployeeCode
     employee_code = None
     if data.employment_info.employee_code:
         employee_code = ClientEmployeeCode.from_string(data.employment_info.employee_code)

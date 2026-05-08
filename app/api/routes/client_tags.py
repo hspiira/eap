@@ -1,6 +1,6 @@
 """ClientTag API Routes - FastAPI routes for ClientTag operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.authorization import require_same_tenant

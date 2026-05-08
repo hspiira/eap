@@ -29,20 +29,20 @@ class KPIMapper:
         tenant_id = TenantId(model.tenant_id)
 
         return KPIEntity(
-            _id=kpi_id,
-            _tenant_id=tenant_id,
-            _name=model.name,
-            _description=model.description,
-            _category=model.category,
-            _measurement_unit=model.measurement_unit,
-            _target_value=model.target_value if model.target_value else None,
-            _threshold_min=model.threshold_min if model.threshold_min else None,
-            _threshold_max=model.threshold_max if model.threshold_max else None,
-            _formula=model.formula,
+            id=kpi_id,
+            tenant_id=tenant_id,
+            name=model.name,
+            description=model.description,
+            category=model.category,
+            measurement_unit=model.measurement_unit,
+            target_value=model.target_value if model.target_value else None,
+            threshold_min=model.threshold_min if model.threshold_min else None,
+            threshold_max=model.threshold_max if model.threshold_max else None,
+            formula=model.formula,
             _is_active=model.is_active,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
     @staticmethod
@@ -57,20 +57,20 @@ class KPIMapper:
             KPIModel for persistence
         """
         model = KPIModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            name=entity._name,
-            description=entity._description,
-            category=entity._category,
-            measurement_unit=entity._measurement_unit,
-            target_value=entity._target_value if entity._target_value else None,
-            threshold_min=entity._threshold_min if entity._threshold_min else None,
-            threshold_max=entity._threshold_max if entity._threshold_max else None,
-            formula=entity._formula,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            name=entity.name,
+            description=entity.description,
+            category=entity.category,
+            measurement_unit=entity.measurement_unit,
+            target_value=entity.target_value if entity.target_value else None,
+            threshold_min=entity.threshold_min if entity.threshold_min else None,
+            threshold_max=entity.threshold_max if entity.threshold_max else None,
+            formula=entity.formula,
             is_active=entity._is_active,
-            created_at=ensure_utc(entity._created_at),
-            updated_at=ensure_utc(entity._updated_at),
-            deleted_at=ensure_utc(entity._deleted_at) if entity._deleted_at else None,
+            created_at=ensure_utc(entity.created_at),
+            updated_at=ensure_utc(entity.updated_at),
+            deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
         )
 
         return model
@@ -95,16 +95,16 @@ class KPIAssignmentMapper:
         tenant_id = TenantId(model.tenant_id)
 
         return KPIAssignmentEntity(
-            _id=assignment_id,
-            _kpi_id=kpi_id,
-            _tenant_id=tenant_id,
-            _client_id=model.client_id,
-            _contract_id=model.contract_id,
-            _target_value=model.target_value if model.target_value else None,
+            id=assignment_id,
+            kpi_id=kpi_id,
+            tenant_id=tenant_id,
+            client_id=model.client_id,
+            contract_id=model.contract_id,
+            target_value=model.target_value if model.target_value else None,
             _is_active=model.is_active,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
     @staticmethod
@@ -119,16 +119,16 @@ class KPIAssignmentMapper:
             KPIAssignmentModel for persistence
         """
         model = KPIAssignmentModel(
-            id=entity._id.value,
-            kpi_id=entity._kpi_id.value,
-            tenant_id=entity._tenant_id.value,
-            client_id=entity._client_id,
-            contract_id=entity._contract_id,
-            target_value=entity._target_value if entity._target_value else None,
+            id=entity.id.value,
+            kpi_id=entity.kpi_id.value,
+            tenant_id=entity.tenant_id.value,
+            client_id=entity.client_id,
+            contract_id=entity.contract_id,
+            target_value=entity.target_value if entity.target_value else None,
             is_active=entity._is_active,
-            created_at=ensure_utc(entity._created_at),
-            updated_at=ensure_utc(entity._updated_at),
-            deleted_at=ensure_utc(entity._deleted_at) if entity._deleted_at else None,
+            created_at=ensure_utc(entity.created_at),
+            updated_at=ensure_utc(entity.updated_at),
+            deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
         )
 
         return model

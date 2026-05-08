@@ -50,13 +50,13 @@ def now() -> datetime:
 def pending_user(user_id, tenant_id, email, now) -> UserEntity:
     """Create a user in pending verification status."""
     return UserEntity(
-        _id=user_id,
-        _tenant_id=tenant_id,
-        _email=email,
-        _status=UserStatus.PENDING_VERIFICATION,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.PENDING_VERIFICATION,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -64,13 +64,13 @@ def pending_user(user_id, tenant_id, email, now) -> UserEntity:
 def active_user(user_id, tenant_id, email, now) -> UserEntity:
     """Create an active user."""
     return UserEntity(
-        _id=user_id,
-        _tenant_id=tenant_id,
-        _email=email,
-        _status=UserStatus.ACTIVE,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -78,13 +78,13 @@ def active_user(user_id, tenant_id, email, now) -> UserEntity:
 def banned_user(user_id, tenant_id, email, now) -> UserEntity:
     """Create a banned user."""
     return UserEntity(
-        _id=user_id,
-        _tenant_id=tenant_id,
-        _email=email,
-        _status=UserStatus.BANNED,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.BANNED,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -99,20 +99,20 @@ class TestUserCreation:
     def test_create_user_success(self, user_id, tenant_id, email, now):
         """Test successful user creation."""
         user = UserEntity(
-            _id=user_id,
-            _tenant_id=tenant_id,
-            _email=email,
-            _status=UserStatus.PENDING_VERIFICATION,
-            _is_two_factor_enabled=False,
-            _created_at=now,
-            _updated_at=now,
+            id=user_id,
+            tenant_id=tenant_id,
+            email=email,
+            status=UserStatus.PENDING_VERIFICATION,
+            is_two_factor_enabled=False,
+            created_at=now,
+            updated_at=now,
         )
 
-        assert user._id == user_id
-        assert user._tenant_id == tenant_id
-        assert user._email == email
-        assert user._status == UserStatus.PENDING_VERIFICATION
-        assert user._is_two_factor_enabled is False
+        assert user.id == user_id
+        assert user.tenant_id == tenant_id
+        assert user.email == email
+        assert user.status == UserStatus.PENDING_VERIFICATION
+        assert user.is_two_factor_enabled is False
 
     def test_create_user_without_email_raises_invariant_violation(
         self, user_id, tenant_id, now
@@ -120,13 +120,13 @@ class TestUserCreation:
         """Test that creating user without email raises InvariantViolation."""
         with pytest.raises(InvariantViolation, match="User must have an email"):
             UserEntity(
-                _id=user_id,
-                _tenant_id=tenant_id,
-                _email=None,
-                _status=UserStatus.PENDING_VERIFICATION,
-                _is_two_factor_enabled=False,
-                _created_at=now,
-                _updated_at=now,
+                id=user_id,
+                tenant_id=tenant_id,
+                email=None,
+                status=UserStatus.PENDING_VERIFICATION,
+                is_two_factor_enabled=False,
+                created_at=now,
+                updated_at=now,
             )
 
 
@@ -142,9 +142,9 @@ class TestUserActivation:
         """Test activating a pending user."""
         pending_user.activate()
 
-        assert pending_user._status == UserStatus.ACTIVE
-        assert pending_user._status_changed_at is not None
-        assert any(isinstance(e, UserActivated) for e in pending_user._events)
+        assert pending_user.status == UserStatus.ACTIVE
+        assert pending_user.status_changed_at is not None
+        assert any(isinstance(e, UserActivated) for e in pending_user.events)
 
     def test_activate_banned_user_raises_error(self, banned_user):
         """Test that activating a banned user raises DomainError."""
@@ -164,9 +164,9 @@ class TestUserSuspension:
         """Test suspending an active user."""
         active_user.suspend("Policy violation")
 
-        assert active_user._status == UserStatus.SUSPENDED
-        assert active_user._status_changed_at is not None
-        assert any(isinstance(e, UserSuspended) for e in active_user._events)
+        assert active_user.status == UserStatus.SUSPENDED
+        assert active_user.status_changed_at is not None
+        assert any(isinstance(e, UserSuspended) for e in active_user.events)
 
     def test_suspend_without_reason_raises_error(self, active_user):
         """Test that suspending without reason raises DomainError."""
@@ -186,9 +186,9 @@ class TestUserBan:
         """Test banning a user."""
         active_user.ban("Security violation")
 
-        assert active_user._status == UserStatus.BANNED
-        assert active_user._status_changed_at is not None
-        assert any(isinstance(e, UserBanned) for e in active_user._events)
+        assert active_user.status == UserStatus.BANNED
+        assert active_user.status_changed_at is not None
+        assert any(isinstance(e, UserBanned) for e in active_user.events)
 
     def test_ban_without_reason_raises_error(self, active_user):
         """Test that banning without reason raises DomainError."""
@@ -208,8 +208,8 @@ class TestUserDeactivation:
         """Test deactivating an active user."""
         active_user.deactivate("User requested")
 
-        assert active_user._status == UserStatus.INACTIVE
-        assert any(isinstance(e, UserDeactivated) for e in active_user._events)
+        assert active_user.status == UserStatus.INACTIVE
+        assert any(isinstance(e, UserDeactivated) for e in active_user.events)
 
     def test_deactivate_banned_user_raises_error(self, banned_user):
         """Test that deactivating a banned user raises DomainError."""
@@ -219,13 +219,13 @@ class TestUserDeactivation:
     def test_deactivate_already_inactive_raises_error(self, user_id, tenant_id, email, now):
         """Test that deactivating already inactive user raises DomainError."""
         inactive_user = UserEntity(
-            _id=user_id,
-            _tenant_id=tenant_id,
-            _email=email,
-            _status=UserStatus.INACTIVE,
-            _is_two_factor_enabled=False,
-            _created_at=now,
-            _updated_at=now,
+            id=user_id,
+            tenant_id=tenant_id,
+            email=email,
+            status=UserStatus.INACTIVE,
+            is_two_factor_enabled=False,
+            created_at=now,
+            updated_at=now,
         )
 
         with pytest.raises(DomainError, match="User is already inactive"):
@@ -244,9 +244,9 @@ class TestUserTermination:
         """Test terminating a user."""
         active_user.terminate("Account closed")
 
-        assert active_user._status == UserStatus.TERMINATED
-        assert active_user._deleted_at is not None
-        assert any(isinstance(e, UserTerminated) for e in active_user._events)
+        assert active_user.status == UserStatus.TERMINATED
+        assert active_user.deleted_at is not None
+        assert any(isinstance(e, UserTerminated) for e in active_user.events)
 
     def test_terminate_without_reason_raises_error(self, active_user):
         """Test that terminating without reason raises DomainError."""
@@ -272,14 +272,14 @@ class TestEmailVerification:
         """Test verifying user email."""
         pending_user.verify_email()
 
-        assert pending_user._email_verified_at is not None
-        assert any(isinstance(e, UserEmailVerified) for e in pending_user._events)
+        assert pending_user.email_verified_at is not None
+        assert any(isinstance(e, UserEmailVerified) for e in pending_user.events)
 
     def test_verify_email_auto_activates_pending_user(self, pending_user):
         """Test that verifying email auto-activates pending user."""
         pending_user.verify_email()
 
-        assert pending_user._status == UserStatus.ACTIVE
+        assert pending_user.status == UserStatus.ACTIVE
 
 
 # =============================================================================
@@ -303,7 +303,7 @@ class TestPasswordUpdate:
 
     def test_update_password_deleted_user_raises_error(self, active_user):
         """Test that updating password for deleted user raises DomainError."""
-        active_user._deleted_at = datetime.now(UTC)
+        active_user.deleted_at = datetime.now(UTC)
 
         with pytest.raises(DomainError, match="Cannot update password for deleted user"):
             active_user.update_password("new-hash")
@@ -321,17 +321,17 @@ class TestPreferencesUpdate:
         """Test updating language preference."""
         active_user.update_preferences(preferred_language=Language.SPANISH)
 
-        assert active_user._preferred_language == Language.SPANISH
+        assert active_user.preferred_language == Language.SPANISH
 
     def test_update_timezone_preference(self, active_user):
         """Test updating timezone preference."""
         active_user.update_preferences(timezone="America/New_York")
 
-        assert active_user._timezone == "America/New_York"
+        assert active_user.timezone == "America/New_York"
 
     def test_update_preferences_deleted_user_raises_error(self, active_user):
         """Test that updating preferences for deleted user raises DomainError."""
-        active_user._deleted_at = datetime.now(UTC)
+        active_user.deleted_at = datetime.now(UTC)
 
         with pytest.raises(DomainError, match="Cannot update preferences for deleted user"):
             active_user.update_preferences(timezone="UTC")
@@ -349,21 +349,21 @@ class TestTwoFactorAuth:
         """Test enabling two-factor authentication."""
         active_user.enable_two_factor()
 
-        assert active_user._is_two_factor_enabled is True
+        assert active_user.is_two_factor_enabled is True
 
     def test_enable_two_factor_when_already_enabled_raises_error(self, active_user):
         """Test that enabling 2FA when already enabled raises DomainError."""
-        active_user._is_two_factor_enabled = True
+        active_user.is_two_factor_enabled = True
 
         with pytest.raises(DomainError, match="Two-factor authentication is already enabled"):
             active_user.enable_two_factor()
 
     def test_disable_two_factor(self, active_user):
         """Test disabling two-factor authentication."""
-        active_user._is_two_factor_enabled = True
+        active_user.is_two_factor_enabled = True
         active_user.disable_two_factor()
 
-        assert active_user._is_two_factor_enabled is False
+        assert active_user.is_two_factor_enabled is False
 
     def test_disable_two_factor_when_not_enabled_raises_error(self, active_user):
         """Test that disabling 2FA when not enabled raises DomainError."""
@@ -389,7 +389,7 @@ class TestHelperMethods:
 
     def test_is_active_returns_false_for_deleted_user(self, active_user):
         """Test is_active returns False for deleted user."""
-        active_user._deleted_at = datetime.now(UTC)
+        active_user.deleted_at = datetime.now(UTC)
 
         assert active_user.is_active() is False
 
@@ -397,4 +397,4 @@ class TestHelperMethods:
         """Test recording user login."""
         active_user.record_login()
 
-        assert active_user._last_login_at is not None
+        assert active_user.last_login_at is not None

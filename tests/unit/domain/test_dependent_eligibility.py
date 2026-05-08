@@ -7,13 +7,10 @@ must track the primary employee's eligibility, not silently return truthy.
 
 from datetime import UTC, date, datetime
 
-import pytest
 
 from app.domain.entities.person import PersonEntity
 from app.domain.entities.user import UserEntity
 from app.domain.enums import (
-    BaseStatus,
-    PersonType,
     RelationType,
     UserStatus,
     WorkStatus,
@@ -71,13 +68,13 @@ class TestDependentInfoIsEligible:
 def _make_user(uid: str, tid: str) -> UserEntity:
     now = datetime.now(UTC)
     return UserEntity(
-        _id=UserId(uid),
-        _tenant_id=TenantId(tid),
-        _email=Email(f"{uid}@example.com"),
-        _status=UserStatus.ACTIVE,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=UserId(uid),
+        tenant_id=TenantId(tid),
+        email=Email(f"{uid}@example.com"),
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 

@@ -112,6 +112,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.document_repository",
     "app.api.dependencies -> app.infrastructure.repositories.industry_repository",
     "app.api.dependencies -> app.infrastructure.repositories.kpi_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.outbox_repository",
     "app.api.dependencies -> app.infrastructure.repositories.password_set_token_repository",
     "app.api.dependencies -> app.infrastructure.repositories.person_repository",
     "app.api.dependencies -> app.infrastructure.repositories.refresh_token_repository",
@@ -127,8 +128,6 @@ ignore_imports = [
     "app.api.routes.auth -> app.infrastructure.repositories.refresh_token_repository",
     "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
     "app.api.routes.clients -> app.infrastructure.models.client_model",
-    "app.api.routes.tenants -> app.infrastructure.models.client_model",
-    "app.api.routes.tenants -> app.infrastructure.models.user_model",
     "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",
     "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
 ]

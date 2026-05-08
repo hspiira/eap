@@ -10,7 +10,6 @@ from datetime import date, datetime
 import decimal
 import re
 from app.domain.enums import WorkStatus, StaffRole, RelationType
-from app.domain.enums import WorkStatus, StaffRole, RelationType
 from app.shared.utils.datetime import utc_now
 
 

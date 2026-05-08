@@ -63,19 +63,19 @@ class CreateContactUseCase(BaseUseCase[ContactEntity, ContactId]):
         """Create a new contact."""
         now = utc_now()
         contact = ContactEntity(
-            _id=contact_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _name=name,
-            _title=title,
-            _email=Email(email) if email else None,
-            _phone=phone,
-            _department=department,
-            _is_primary=is_primary,
-            _notes=notes,
+            id=contact_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            name=name,
+            title=title,
+            email=Email(email) if email else None,
+            phone=phone,
+            department=department,
+            is_primary=is_primary,
+            notes=notes,
             _is_active=True,
-            _created_at=now,
-            _updated_at=now,
+            created_at=now,
+            updated_at=now,
         )
 
         return await self._save_and_publish_events(contact)

@@ -39,23 +39,23 @@ class UserMapper:
 
         # Create entity
         return UserEntity(
-            _id=user_id,
-            _tenant_id=tenant_id,
-            _email=email,
+            id=user_id,
+            tenant_id=tenant_id,
+            email=email,
             _password_hash=model.password_hash,
-            _email_verified_at=ensure_utc(model.email_verified_at),
-            _status=status,
-            _status_changed_at=ensure_utc(model.status_changed_at),
-            _preferred_language=preferred_language,
-            _timezone=model.timezone,
-            _is_two_factor_enabled=model.is_two_factor_enabled,
-            _last_login_at=ensure_utc(model.last_login_at),
-            _role=role,
-            _failed_login_count=getattr(model, "failed_login_count", 0) or 0,
-            _locked_until=ensure_utc(getattr(model, "locked_until", None)),
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at),
+            email_verified_at=ensure_utc(model.email_verified_at),
+            status=status,
+            status_changed_at=ensure_utc(model.status_changed_at),
+            preferred_language=preferred_language,
+            timezone=model.timezone,
+            is_two_factor_enabled=model.is_two_factor_enabled,
+            last_login_at=ensure_utc(model.last_login_at),
+            role=role,
+            failed_login_count=getattr(model, "failed_login_count", 0) or 0,
+            locked_until=ensure_utc(getattr(model, "locked_until", None)),
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at),
         )
 
     @staticmethod
@@ -72,27 +72,27 @@ class UserMapper:
         # Create model
         # Note: created_at and updated_at are handled by TimestampMixin
         model = UserModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            email=entity._email.value,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            email=entity.email.value,
             password_hash=entity._password_hash,
-            email_verified_at=entity._email_verified_at,
-            status=entity._status,
-            status_changed_at=entity._status_changed_at,
-            preferred_language=entity._preferred_language
-            if entity._preferred_language
+            email_verified_at=entity.email_verified_at,
+            status=entity.status,
+            status_changed_at=entity.status_changed_at,
+            preferred_language=entity.preferred_language
+            if entity.preferred_language
             else None,
-            timezone=entity._timezone,
-            is_two_factor_enabled=entity._is_two_factor_enabled,
-            last_login_at=entity._last_login_at,
-            role=entity._role,
-            failed_login_count=entity._failed_login_count,
-            locked_until=entity._locked_until,
-            deleted_at=entity._deleted_at,
+            timezone=entity.timezone,
+            is_two_factor_enabled=entity.is_two_factor_enabled,
+            last_login_at=entity.last_login_at,
+            role=entity.role,
+            failed_login_count=entity.failed_login_count,
+            locked_until=entity.locked_until,
+            deleted_at=entity.deleted_at,
         )
 
         # Set updated_at if provided (otherwise TimestampMixin will handle it)
-        if entity._updated_at:
-            model.updated_at = entity._updated_at
+        if entity.updated_at:
+            model.updated_at = entity.updated_at
 
         return model

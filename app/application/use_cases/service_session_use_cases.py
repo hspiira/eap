@@ -74,17 +74,17 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
     ) -> ServiceSessionEntity:
         """Create a new service session."""
         session = ServiceSessionEntity(
-            _id=session_id,
-            _tenant_id=tenant_id,
-            _service_id=service_id,
-            _provider_id=provider_id,
-            _person_id=person_id,
-            _scheduled_at=scheduled_at,
-            _status=SessionStatus.SCHEDULED,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
-            _reschedule_count=0,
-            _location=location,
+            id=session_id,
+            tenant_id=tenant_id,
+            service_id=service_id,
+            provider_id=provider_id,
+            person_id=person_id,
+            scheduled_at=scheduled_at,
+            status=SessionStatus.SCHEDULED,
+            created_at=utc_now(),
+            updated_at=utc_now(),
+            reschedule_count=0,
+            location=location,
         )
 
         return await self._save_and_publish_events(session)

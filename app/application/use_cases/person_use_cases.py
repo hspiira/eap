@@ -32,7 +32,10 @@ from app.domain.value_objects.core import (
 )
 
 if TYPE_CHECKING:
+    from datetime import date
+
     from app.domain.entities.user import UserEntity
+    from app.domain.enums import WorkStatus
     from app.domain.value_objects.core import EmergencyContact
 
 
@@ -158,7 +161,6 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
         )
 
         from app.domain.value_objects.core import EmploymentInfo
-        from datetime import date as date_type
         
         employment_info = EmploymentInfo(
             client_id=client_id,
@@ -290,8 +292,10 @@ class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
             tenant_id: Tenant identifier (required for CLIENT_EMPLOYEE to generate code)
             family_id: Optional family identifier (for CLIENT_EMPLOYEE)
         """
+        from app.domain.value_objects.core import EmploymentInfo
+
         person = await self._get_entity_or_raise(person_id, "Person")
-        
+
         if role == PersonType.CLIENT_EMPLOYEE and isinstance(info, EmploymentInfo):
             if not info.employee_code and self.code_generator and tenant_id:
                 employee_code = await self.code_generator.generate_code(
@@ -300,7 +304,6 @@ class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
                     family_id=family_id,
                     person_id=person_id,
                 )
-                from app.domain.value_objects.core import EmploymentInfo
                 info = EmploymentInfo(
                     client_id=info.client_id,
                     employee_code=employee_code,

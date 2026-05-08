@@ -25,7 +25,6 @@ from app.application.use_cases.user_use_cases import (
 )
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus, Language
-from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import UserId, TenantId, Email
 
 
@@ -70,13 +69,13 @@ def mock_user_repo():
 def active_user(user_id, tenant_id, email, now) -> UserEntity:
     """Create an active user entity."""
     return UserEntity(
-        _id=user_id,
-        _tenant_id=tenant_id,
-        _email=email,
-        _status=UserStatus.ACTIVE,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -84,13 +83,13 @@ def active_user(user_id, tenant_id, email, now) -> UserEntity:
 def pending_user(user_id, tenant_id, email, now) -> UserEntity:
     """Create a pending user entity."""
     return UserEntity(
-        _id=user_id,
-        _tenant_id=tenant_id,
-        _email=email,
-        _status=UserStatus.PENDING_VERIFICATION,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=user_id,
+        tenant_id=tenant_id,
+        email=email,
+        status=UserStatus.PENDING_VERIFICATION,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -115,9 +114,9 @@ class TestCreateUserUseCase:
             password_hash="hashed-password",
         )
 
-        assert user._id == user_id
-        assert user._email == email
-        assert user._status == UserStatus.PENDING_VERIFICATION
+        assert user.id == user_id
+        assert user.email == email
+        assert user.status == UserStatus.PENDING_VERIFICATION
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
@@ -153,7 +152,7 @@ class TestActivateUserUseCase:
         use_case = ActivateUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
 
-        assert user._status == UserStatus.ACTIVE
+        assert user.status == UserStatus.ACTIVE
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
@@ -183,7 +182,7 @@ class TestVerifyUserEmailUseCase:
         use_case = VerifyUserEmailUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
 
-        assert user._email_verified_at is not None
+        assert user.email_verified_at is not None
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
@@ -213,7 +212,7 @@ class TestSuspendUserUseCase:
         use_case = SuspendUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id, "Policy violation")
 
-        assert user._status == UserStatus.SUSPENDED
+        assert user.status == UserStatus.SUSPENDED
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
@@ -243,7 +242,7 @@ class TestBanUserUseCase:
         use_case = BanUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id, "Security violation")
 
-        assert user._status == UserStatus.BANNED
+        assert user.status == UserStatus.BANNED
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
@@ -273,7 +272,7 @@ class TestDeactivateUserUseCase:
         use_case = DeactivateUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id, "User requested")
 
-        assert user._status == UserStatus.INACTIVE
+        assert user.status == UserStatus.INACTIVE
         mock_user_repo.save.assert_called_once()
 
 
@@ -293,8 +292,8 @@ class TestTerminateUserUseCase:
         use_case = TerminateUserUseCase(mock_user_repo)
         user = await use_case.execute(user_id, "Account closed")
 
-        assert user._status == UserStatus.TERMINATED
-        assert user._deleted_at is not None
+        assert user.status == UserStatus.TERMINATED
+        assert user.deleted_at is not None
         mock_user_repo.save.assert_called_once()
 
 
@@ -338,8 +337,8 @@ class TestUpdateUserPreferencesUseCase:
             timezone="America/New_York",
         )
 
-        assert user._preferred_language == Language.SPANISH
-        assert user._timezone == "America/New_York"
+        assert user.preferred_language == Language.SPANISH
+        assert user.timezone == "America/New_York"
         mock_user_repo.save.assert_called_once()
 
 
@@ -359,7 +358,7 @@ class TestEnableTwoFactorUseCase:
         use_case = EnableTwoFactorUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
 
-        assert user._is_two_factor_enabled is True
+        assert user.is_two_factor_enabled is True
         mock_user_repo.save.assert_called_once()
 
 
@@ -369,13 +368,13 @@ class TestDisableTwoFactorUseCase:
     @pytest.mark.asyncio
     async def test_disable_2fa_success(self, mock_user_repo, user_id, active_user):
         """Test successful 2FA disable."""
-        active_user._is_two_factor_enabled = True
+        active_user.is_two_factor_enabled = True
         mock_user_repo.get_by_id.return_value = active_user
 
         use_case = DisableTwoFactorUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
 
-        assert user._is_two_factor_enabled is False
+        assert user.is_two_factor_enabled is False
         mock_user_repo.save.assert_called_once()
 
 
@@ -395,7 +394,7 @@ class TestRecordUserLoginUseCase:
         use_case = RecordUserLoginUseCase(mock_user_repo)
         user = await use_case.execute(user_id)
 
-        assert user._last_login_at is not None
+        assert user.last_login_at is not None
         mock_user_repo.save.assert_called_once()
 
 

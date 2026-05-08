@@ -144,24 +144,24 @@ class PersonMapper:
 
         # Create entity
         return PersonEntity(
-            _id=person_id,
-            _tenant_id=tenant_id,
-            _person_type=person_type,
-            _is_dual_role=model.is_dual_role,
-            _secondary_person_type=secondary_person_type,
-            _user_id=user_id,
-            _profile=profile,
-            _employment_info=employment_info,
-            _license_info=license_info,
-            _staff_info=staff_info,
-            _dependent_info=dependent_info,
-            _status=status,
-            _emergency_contact=emergency_contact,
-            _family_id=family_id,
-            _last_service_date=model.last_service_date,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at),
+            id=person_id,
+            tenant_id=tenant_id,
+            person_type=person_type,
+            is_dual_role=model.is_dual_role,
+            secondary_person_type=secondary_person_type,
+            user_id=user_id,
+            profile=profile,
+            employment_info=employment_info,
+            license_info=license_info,
+            staff_info=staff_info,
+            dependent_info=dependent_info,
+            status=status,
+            emergency_contact=emergency_contact,
+            family_id=family_id,
+            last_service_date=model.last_service_date,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at),
         )
 
     @staticmethod
@@ -177,87 +177,87 @@ class PersonMapper:
         """
         # Convert value objects to JSON
         employment_info = None
-        if entity._employment_info:
+        if entity.employment_info:
             employment_info = {
-                "client_id": entity._employment_info.client_id.value,
-                "employee_code": str(entity._employment_info.employee_code),
-                "role": entity._employment_info.role,
-                "start_date": entity._employment_info.start_date.isoformat(),
-                "status": entity._employment_info.status.value,
-                "department": entity._employment_info.department,
-                "employee_id": entity._employment_info.employee_id,
-                "end_date": entity._employment_info.end_date.isoformat()
-                if entity._employment_info.end_date
+                "client_id": entity.employment_info.client_id.value,
+                "employee_code": str(entity.employment_info.employee_code),
+                "role": entity.employment_info.role,
+                "start_date": entity.employment_info.start_date.isoformat(),
+                "status": entity.employment_info.status.value,
+                "department": entity.employment_info.department,
+                "employee_id": entity.employment_info.employee_id,
+                "end_date": entity.employment_info.end_date.isoformat()
+                if entity.employment_info.end_date
                 else None,
             }
 
         license_info = None
-        if entity._license_info:
+        if entity.license_info:
             license_info = {
-                "number": entity._license_info.number,
-                "issuing_authority": entity._license_info.issuing_authority,
-                "expiry_date": entity._license_info.expiry_date.isoformat()
-                if entity._license_info.expiry_date
+                "number": entity.license_info.number,
+                "issuing_authority": entity.license_info.issuing_authority,
+                "expiry_date": entity.license_info.expiry_date.isoformat()
+                if entity.license_info.expiry_date
                 else None,
             }
 
         staff_info = None
-        if entity._staff_info:
+        if entity.staff_info:
             staff_info = {
-                "role": entity._staff_info.role.value,
-                "client_id": entity._staff_info.client_id.value,
-                "department": entity._staff_info.department,
-                "can_manage_clients": entity._staff_info.can_manage_clients,
-                "can_manage_services": entity._staff_info.can_manage_services,
-                "can_view_reports": entity._staff_info.can_view_reports,
+                "role": entity.staff_info.role.value,
+                "client_id": entity.staff_info.client_id.value,
+                "department": entity.staff_info.department,
+                "can_manage_clients": entity.staff_info.can_manage_clients,
+                "can_manage_services": entity.staff_info.can_manage_services,
+                "can_view_reports": entity.staff_info.can_view_reports,
             }
 
         dependent_info = None
-        if entity._dependent_info:
+        if entity.dependent_info:
             dependent_info = {
-                "primary_employee_id": entity._dependent_info.primary_employee_id.value,
-                "relationship": entity._dependent_info.relationship.value,
-                "guardian_id": entity._dependent_info.guardian_id.value
-                if entity._dependent_info.guardian_id
+                "primary_employee_id": entity.dependent_info.primary_employee_id.value,
+                "relationship": entity.dependent_info.relationship.value,
+                "guardian_id": entity.dependent_info.guardian_id.value
+                if entity.dependent_info.guardian_id
                 else None,
             }
 
         emergency_contact = None
-        if entity._emergency_contact:
+        if entity.emergency_contact:
             emergency_contact = {
-                "name": entity._emergency_contact.name,
-                "phone": entity._emergency_contact.phone,
-                "email": entity._emergency_contact.email.value
-                if entity._emergency_contact.email
+                "name": entity.emergency_contact.name,
+                "phone": entity.emergency_contact.phone,
+                "email": entity.emergency_contact.email.value
+                if entity.emergency_contact.email
                 else None,
             }
 
         # Create model
         model = PersonModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            person_type=entity._person_type.value,
-            is_dual_role=entity._is_dual_role,
-            secondary_person_type=entity._secondary_person_type.value
-            if entity._secondary_person_type
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            person_type=entity.person_type.value,
+            is_dual_role=entity.is_dual_role,
+            secondary_person_type=entity.secondary_person_type.value
+            if entity.secondary_person_type
             else None,
-            user_id=entity._user_id.value,
+            user_id=entity.user_id.value,
             employment_info=employment_info,
             license_info=license_info,
             staff_info=staff_info,
             dependent_info=dependent_info,
-            status=entity._status.value,
+            status=entity.status.value,
             emergency_contact=emergency_contact,
-            family_id=entity._family_id.value if entity._family_id else None,
-            last_service_date=entity._last_service_date,
-            deleted_at=entity._deleted_at,
+            family_id=entity.family_id.value if entity.family_id else None,
+            last_service_date=entity.last_service_date,
+            deleted_at=entity.deleted_at,
         )
 
         # Set timestamps explicitly to ensure they're available in-memory after merge()
         # session.merge() doesn't automatically refresh database-generated values
-        if entity._created_at:
-            model.created_at = entity._created_at
-        if entity._updated_at:
-            model.updated_at = entity._updated_at
+        if entity.created_at:
+            model.created_at = entity.created_at
+        if entity.updated_at:
+            model.updated_at = entity.updated_at
 
         return model

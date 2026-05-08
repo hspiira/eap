@@ -70,15 +70,15 @@ class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, Servic
             )
 
         assignment = ServiceAssignmentEntity(
-            _id=assignment_id,
-            _tenant_id=tenant_id,
-            _service_id=service_id,
-            _contract_id=contract_id,
-            _status=BaseStatus.PENDING,
-            _assigned_by=assigned_by,
-            _notes=notes,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            id=assignment_id,
+            tenant_id=tenant_id,
+            service_id=service_id,
+            contract_id=contract_id,
+            status=BaseStatus.PENDING,
+            assigned_by=assigned_by,
+            notes=notes,
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(assignment)

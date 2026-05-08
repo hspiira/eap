@@ -85,23 +85,23 @@ class ContractMapper:
 
         # Create entity
         return ContractEntity(
-            _id=contract_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _period=period,
-            _billing_rate=billing_rate,
-            _payment_frequency=payment_frequency,
-            _payment_status=payment_status,
-            _status=status,
-            _is_auto_renew=model.is_auto_renew,
-            _last_billing_date=model.last_billing_date,
-            _next_billing_date=model.next_billing_date,
-            _signed_by=model.signed_by,
-            _signed_at=ensure_utc(model.signed_at) if model.signed_at else None,
-            _termination_reason=model.termination_reason,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            id=contract_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            period=period,
+            billing_rate=billing_rate,
+            payment_frequency=payment_frequency,
+            payment_status=payment_status,
+            status=status,
+            is_auto_renew=model.is_auto_renew,
+            last_billing_date=model.last_billing_date,
+            next_billing_date=model.next_billing_date,
+            signed_by=model.signed_by,
+            signed_at=ensure_utc(model.signed_at) if model.signed_at else None,
+            termination_reason=model.termination_reason,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
     @staticmethod
@@ -117,33 +117,33 @@ class ContractMapper:
         """
         # Serialize DateRange to JSON
         period_dict = {
-            "start_date": entity._period.start_date.isoformat(),
-            "end_date": entity._period.end_date.isoformat(),
+            "start_date": entity.period.start_date.isoformat(),
+            "end_date": entity.period.end_date.isoformat(),
         }
 
         # Serialize Money to JSON
         billing_dict = {
-            "amount": str(entity._billing_rate.amount),
-            "currency": entity._billing_rate.currency,
+            "amount": str(entity.billing_rate.amount),
+            "currency": entity.billing_rate.currency,
         }
 
         # Create model
         return ContractModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            client_id=entity._client_id.value,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            client_id=entity.client_id.value,
             period=period_dict,
             billing_rate=billing_dict,
-            payment_frequency=entity._payment_frequency,
-            payment_status=entity._payment_status,
-            status=entity._status,
-            is_auto_renew=entity._is_auto_renew,
-            last_billing_date=entity._last_billing_date,
-            next_billing_date=entity._next_billing_date,
-            signed_by=entity._signed_by,
-            signed_at=ensure_utc(entity._signed_at) if entity._signed_at else None,
-            termination_reason=entity._termination_reason,
-            created_at=ensure_utc(entity._created_at),
-            updated_at=ensure_utc(entity._updated_at),
-            deleted_at=ensure_utc(entity._deleted_at) if entity._deleted_at else None,
+            payment_frequency=entity.payment_frequency,
+            payment_status=entity.payment_status,
+            status=entity.status,
+            is_auto_renew=entity.is_auto_renew,
+            last_billing_date=entity.last_billing_date,
+            next_billing_date=entity.next_billing_date,
+            signed_by=entity.signed_by,
+            signed_at=ensure_utc(entity.signed_at) if entity.signed_at else None,
+            termination_reason=entity.termination_reason,
+            created_at=ensure_utc(entity.created_at),
+            updated_at=ensure_utc(entity.updated_at),
+            deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
         )

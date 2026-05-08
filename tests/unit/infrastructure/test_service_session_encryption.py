@@ -29,18 +29,18 @@ def isolate_provider():
 def _make_entity(tenant: str, notes: str | None, feedback: str | None) -> ServiceSessionEntity:
     now = datetime.now(UTC)
     return ServiceSessionEntity(
-        _id=SessionId("ses-1"),
-        _tenant_id=TenantId(tenant),
-        _service_id=ServiceId("svc-1"),
-        _provider_id=PersonId("prov-1"),
-        _person_id=PersonId("per-1"),
-        _scheduled_at=now,
-        _status=SessionStatus.SCHEDULED,
-        _created_at=now,
-        _updated_at=now,
-        _reschedule_count=0,
-        _notes=notes,
-        _feedback=feedback,
+        id=SessionId("ses-1"),
+        tenant_id=TenantId(tenant),
+        service_id=ServiceId("svc-1"),
+        provider_id=PersonId("prov-1"),
+        person_id=PersonId("per-1"),
+        scheduled_at=now,
+        status=SessionStatus.SCHEDULED,
+        created_at=now,
+        updated_at=now,
+        reschedule_count=0,
+        notes=notes,
+        feedback=feedback,
     )
 
 
@@ -66,8 +66,8 @@ class TestServiceSessionEncryptionWiring:
         # Cross-aggregate copy: the model carries ciphertext; mapping back
         # decrypts using the model's own tenant_id.
         rehydrated = ServiceSessionMapper.to_entity(model)
-        assert rehydrated._notes == "session note"
-        assert rehydrated._feedback == "client feedback"
+        assert rehydrated.notes == "session note"
+        assert rehydrated.feedback == "client feedback"
 
     def test_none_remains_none_through_mapper(self):
         entity = _make_entity("t-1", None, None)
@@ -75,8 +75,8 @@ class TestServiceSessionEncryptionWiring:
         assert model.notes is None
         assert model.feedback is None
         rehydrated = ServiceSessionMapper.to_entity(model)
-        assert rehydrated._notes is None
-        assert rehydrated._feedback is None
+        assert rehydrated.notes is None
+        assert rehydrated.feedback is None
 
     def test_ciphertext_is_tenant_bound(self):
         entity_a = _make_entity("t-A", "shared text", None)

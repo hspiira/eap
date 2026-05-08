@@ -1,18 +1,15 @@
-"""
-Audit Event Handler
+"""Audit event handler (Phase 1 #C10).
 
-Handles domain events and automatically creates audit logs.
+Emits domain events to the transactional outbox; the worker drains the
+outbox and writes the actual audit_logs / entity_changes rows. Writing to
+the outbox happens in the caller's database transaction, so an event is
+durable iff the action that produced it commits.
 """
 
 from typing import Any
 
-from app.application.use_cases.audit_use_cases import (
-    LogAuditActionUseCase,
-    LogEntityChangeUseCase,
-)
-from app.domain.enums import AuditActionType
 from app.domain.events import DomainEvent
-from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import TenantId, UserId
 from app.shared.utils.audit_helper import (
     extract_field_changes,
@@ -23,14 +20,10 @@ from app.shared.utils.audit_helper import (
 
 
 class AuditEventHandler:
-    """
-    Event handler that processes domain events and creates audit logs.
-    
-    This should be called after entity operations to process collected events.
-    """
+    """Enqueues domain events on the transactional outbox."""
 
-    def __init__(self, audit_repository: AuditRepository):
-        self.audit_repository = audit_repository
+    def __init__(self, outbox_repository: OutboxRepository):
+        self._outbox = outbox_repository
 
     async def handle_events(
         self,
@@ -42,69 +35,55 @@ class AuditEventHandler:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> None:
-        """
-        Process domain events and create audit logs.
-        
-        Args:
-            entity: Entity that raised the events
-            events: List of domain events
-            tenant_id: Tenant identifier
-            user_id: User identifier (None for system actions)
-            old_entity: Previous entity state (for tracking changes)
-            ip_address: IP address
-            user_agent: User agent string
-        """
         if not events:
             return
-
-        log_use_case = LogAuditActionUseCase(self.audit_repository)
-        change_use_case = LogEntityChangeUseCase(self.audit_repository)
 
         resource_type = get_resource_type_from_entity(entity)
         resource_id = get_resource_id_from_entity(entity)
 
         for event in events:
             action_type = map_domain_event_to_audit_action(type(event).__name__)
+            field_changes: list[dict[str, Any]] = []
+            if action_type.value == "CREATE":
+                field_changes = [
+                    fc.__dict__ for fc in extract_field_changes(None, entity)
+                ]
+            elif action_type.value == "UPDATE" and old_entity is not None:
+                field_changes = [
+                    fc.__dict__ for fc in extract_field_changes(old_entity, entity)
+                ]
 
-            audit_log = await log_use_case.execute(
-                tenant_id=tenant_id,
-                action_type=action_type,
-                resource_type=resource_type,
-                user_id=user_id,
-                resource_id=resource_id,
-                description=f"{type(event).__name__} for {resource_type} {resource_id}",
-                ip_address=ip_address,
-                user_agent=user_agent,
-                metadata={
-                    "event_type": type(event).__name__,
-                    "event_data": self._extract_event_data(event),
-                },
+            payload = {
+                "action_type": action_type.value,
+                "resource_type": resource_type,
+                "resource_id": resource_id,
+                "user_id": user_id.value if user_id else None,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "event_type": type(event).__name__,
+                "event_data": _extract_event_data(event),
+                "field_changes": field_changes,
+            }
+
+            await self._outbox.enqueue(
+                tenant_id=tenant_id.value,
+                event_type=type(event).__name__,
+                payload=payload,
+                occurred_at=event.occurred_at,
+                aggregate_type=resource_type,
+                aggregate_id=resource_id,
             )
 
-            if audit_log is not None:
-                if action_type == AuditActionType.CREATE:
-                    field_changes = extract_field_changes(None, entity)
-                elif action_type == AuditActionType.UPDATE and old_entity is not None:
-                    field_changes = extract_field_changes(old_entity, entity)
-                else:
-                    field_changes = []
-                
-                if field_changes:
-                    await change_use_case.execute(
-                        audit_log_id=audit_log._id,
-                        entity_type=resource_type,
-                        entity_id=resource_id or "",
-                        field_changes=field_changes,
-                    )
 
-    def _extract_event_data(self, event: DomainEvent) -> dict[str, Any]:
-        """Extract relevant data from domain event."""
-        data = {}
-        for field_name, field_value in event.__dict__.items():
-            if field_name == "occurred_at":
-                continue
-            if hasattr(field_value, "value"):
-                data[field_name] = field_value.value
-            else:
-                data[field_name] = str(field_value)
-        return data
+def _extract_event_data(event: DomainEvent) -> dict[str, Any]:
+    data: dict[str, Any] = {}
+    for field_name, field_value in event.__dict__.items():
+        if field_name == "occurred_at":
+            continue
+        if hasattr(field_value, "value"):
+            data[field_name] = field_value.value
+        elif hasattr(field_value, "isoformat"):
+            data[field_name] = field_value.isoformat()
+        else:
+            data[field_name] = str(field_value)
+    return data

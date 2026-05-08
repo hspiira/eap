@@ -35,7 +35,7 @@ async def audit_entity_operation(
         await audit_entity_operation(
             entity=tenant,
             audit_handler=audit_handler,
-            tenant_id=tenant._tenant_id,
+            tenant_id=tenant.tenant_id,
             user_id=current_user_id,
             old_entity=old_tenant,
             request=request,

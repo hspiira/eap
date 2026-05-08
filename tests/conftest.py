@@ -143,14 +143,14 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         # Stub so require_tenant_role(ADMIN) passes in E2E
         now = utc_now()
         return UserEntity(
-            _id=UserId(current_user.user_id),
-            _tenant_id=TenantId(current_user.tenant_id),
-            _email=Email(current_user.email or "test@example.com"),
-            _status=UserStatus.ACTIVE,
-            _is_two_factor_enabled=False,
-            _role=TenantRole.ADMIN,
-            _created_at=now,
-            _updated_at=now,
+            id=UserId(current_user.user_id),
+            tenant_id=TenantId(current_user.tenant_id),
+            email=Email(current_user.email or "test@example.com"),
+            status=UserStatus.ACTIVE,
+            is_two_factor_enabled=False,
+            role=TenantRole.ADMIN,
+            created_at=now,
+            updated_at=now,
         )
 
     app.dependency_overrides[get_db] = override_get_db

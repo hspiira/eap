@@ -33,7 +33,7 @@ def extract_field_changes(
                 FieldChange(
                     field_name="id",
                     old_value=None,
-                    new_value=new_entity._id.value if hasattr(new_entity._id, "value") else str(new_entity._id),
+                    new_value=new_entity.id.value if hasattr(new_entity.id, "value") else str(new_entity.id),
                 )
             )
         return changes
@@ -130,18 +130,10 @@ def get_resource_type_from_entity(entity: Any) -> str:
 
 
 def get_resource_id_from_entity(entity: Any) -> str | None:
-    """
-    Get resource ID from entity.
-    
-    Args:
-        entity: Domain entity
-        
-    Returns:
-        Resource ID string or None
-    """
-    if hasattr(entity, "_id"):
-        id_value = entity._id
-        if hasattr(id_value, "value"):
-            return id_value.value
-        return str(id_value)
-    return None
+    """Return the public string id of an entity, or None if absent."""
+    if not hasattr(entity, "id"):
+        return None
+    id_value = entity.id
+    if hasattr(id_value, "value"):
+        return id_value.value
+    return str(id_value)

@@ -32,19 +32,19 @@ class CreateActivityUseCase(BaseUseCase[ActivityEntity, ActivityId]):
         """Create a new activity."""
         now = utc_now()
         activity = ActivityEntity(
-            _id=activity_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _activity_type=activity_type,
-            _description=description,
-            _created_by=created_by,
-            _occurred_at=occurred_at or now,
-            _subject=subject,
-            _outcome=outcome,
-            _next_follow_up=next_follow_up,
-            _is_important=is_important,
-            _created_at=now,
-            _updated_at=now,
+            id=activity_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            activity_type=activity_type,
+            description=description,
+            created_by=created_by,
+            occurred_at=occurred_at or now,
+            subject=subject,
+            outcome=outcome,
+            next_follow_up=next_follow_up,
+            is_important=is_important,
+            created_at=now,
+            updated_at=now,
         )
 
         return await self._save_and_publish_events(activity)

@@ -14,13 +14,13 @@ from app.domain.value_objects.core import Email, TenantId, UserId
 def _make_user() -> UserEntity:
     now = datetime.now(UTC)
     return UserEntity(
-        _id=UserId("usr-1"),
-        _tenant_id=TenantId("tenant-1"),
-        _email=Email("user@example.com"),
-        _status=UserStatus.ACTIVE,
-        _is_two_factor_enabled=False,
-        _created_at=now,
-        _updated_at=now,
+        id=UserId("usr-1"),
+        tenant_id=TenantId("tenant-1"),
+        email=Email("user@example.com"),
+        status=UserStatus.ACTIVE,
+        is_two_factor_enabled=False,
+        created_at=now,
+        updated_at=now,
     )
 
 

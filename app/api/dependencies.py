@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.activity_repository import ActivityRepository
@@ -310,19 +311,19 @@ async def get_service_assignment_repository(
     return ServiceAssignmentRepositoryImpl(db)
 
 
+async def get_outbox_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "OutboxRepository":
+    from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+
+    return OutboxRepositoryImpl(db)
+
+
 async def get_audit_event_handler(
-    audit_repo: AuditRepository = Depends(get_audit_repository),
+    outbox_repo: "OutboxRepository" = Depends(get_outbox_repository),
 ) -> AuditEventHandler:
-    """
-    Dependency for getting audit event handler.
-
-    Args:
-        audit_repo: Audit repository (injected dependency)
-
-    Returns:
-        AuditEventHandler instance
-    """
-    return AuditEventHandler(audit_repo)
+    """Audit handler enqueues domain events on the transactional outbox."""
+    return AuditEventHandler(outbox_repo)
 
 
 async def get_refresh_token_repository(
@@ -337,7 +338,7 @@ async def get_refresh_token_repository(
 # =============================================================================
 
 
-from app.application.services.validation_service import ValidationService
+from app.application.services.validation_service import ValidationService  # noqa: E402
 
 
 async def get_validation_service(
@@ -380,7 +381,7 @@ async def get_validation_service(
 # =============================================================================
 
 
-from app.shared.events.event_bus import EventBus, event_bus
+from app.shared.events.event_bus import EventBus, event_bus  # noqa: E402
 
 
 def get_event_bus() -> EventBus:

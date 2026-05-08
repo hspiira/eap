@@ -7,7 +7,6 @@ Pydantic models for authentication request/response validation.
 import re
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.security import Token
 
 
 def validate_email_with_test(email: str) -> str:
