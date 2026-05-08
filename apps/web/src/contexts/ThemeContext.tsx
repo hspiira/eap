@@ -30,7 +30,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     preference === 'system' ? systemTheme : preference
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', effectiveTheme)
+    const root = document.documentElement
+    root.setAttribute('data-theme', effectiveTheme)
+    root.classList.toggle('dark', effectiveTheme === 'dark')
   }, [effectiveTheme])
 
   useEffect(() => {

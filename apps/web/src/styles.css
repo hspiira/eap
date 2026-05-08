@@ -1,9 +1,23 @@
 @import "tailwindcss";
 @import "./theme/index.css";
+@import "./styles/theme/tokens-base.css";
+@import "./styles/theme/tokens-light.css";
+@import "./styles/theme/tokens-dark.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Theme blocks are ordered so the new semantic tokens win on collision.
+ * The legacy palette @theme is declared first; the new @theme inline follows
+ * and overrides --color-surface / --color-border / --color-danger via cascade.
+ */
+
 @theme {
+  /*
+   * Legacy palette tokens — retained for backwards compatibility while
+   * existing components migrate. New code uses the semantic tokens declared
+   * in the @theme inline block below; on collision, the later block wins.
+   */
   --color-safe: var(--palette-safe);
   --color-safe-light: var(--palette-safe-light);
   --color-safe-dark: var(--palette-safe-dark);
@@ -75,9 +89,83 @@
   --radius-none: 0;
 }
 
-* {
-  border-radius: 0;
+@theme inline {
+  /*
+   * New semantic tokens — preferred for all new code.
+   * Declared after the legacy block so they win on collision via cascade.
+   * Source values live in styles/theme/tokens-{light,dark}.css.
+   *
+   * App utilities: bg-bg, text-fg, bg-brand, border-border, bg-success, …
+   * shadcn-conventional utilities: bg-primary, bg-secondary, bg-muted,
+   *   bg-accent (= muted highlight, NOT brand), bg-destructive, bg-card,
+   *   bg-popover, border-input, ring-ring.
+   */
+
+  /* App surfaces & text */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-on-brand: var(--fg-on-brand);
+
+  /* App borders */
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  /* App brand */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-fg: var(--brand-fg);
+
+  /* App semantic */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-fg: var(--info-fg);
+  --color-ring: var(--ring);
+
+  /* shadcn-conventional aliases. Override the legacy mappings for any
+   * collisions (--color-primary, --color-border, --color-destructive). */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+
+  --radius-md: 6px;
+  --radius-sm: 4px;
 }
+
+/*
+ * Legacy global radius reset removed in Phase 1 of the UI rebuild.
+ * The 92 components that explicitly set `rounded-none` continue to render
+ * sharp; new shadcn primitives use --radius-sm / --radius-md from tokens-base.
+ */
 
 html {
   overflow-x: hidden;

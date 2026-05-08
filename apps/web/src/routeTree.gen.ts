@@ -24,6 +24,7 @@ import { Route as IncidentsRouteImport } from './routes/incidents'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as EngagementsRouteImport } from './routes/engagements'
 import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as ContractsRouteImport } from './routes/contracts'
 import { Route as ContactsRouteImport } from './routes/contacts'
 import { Route as ClientsRouteImport } from './routes/clients'
@@ -153,6 +154,11 @@ const EngagementsRoute = EngagementsRouteImport.update({
 const DocumentsRoute = DocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContractsRoute = ContractsRouteImport.update({
@@ -445,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/clients': typeof ClientsRouteWithChildren
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
+  '/design': typeof DesignRoute
   '/documents': typeof DocumentsRoute
   '/engagements': typeof EngagementsRouteWithChildren
   '/inbox': typeof InboxRoute
@@ -514,6 +521,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
   '/contacts': typeof ContactsRoute
+  '/design': typeof DesignRoute
   '/documents': typeof DocumentsRoute
   '/inbox': typeof InboxRoute
   '/industries': typeof IndustriesRoute
@@ -575,6 +583,7 @@ export interface FileRoutesById {
   '/clients': typeof ClientsRouteWithChildren
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
+  '/design': typeof DesignRoute
   '/documents': typeof DocumentsRoute
   '/engagements': typeof EngagementsRouteWithChildren
   '/inbox': typeof InboxRoute
@@ -649,6 +658,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/contacts'
     | '/contracts'
+    | '/design'
     | '/documents'
     | '/engagements'
     | '/inbox'
@@ -718,6 +728,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/auth'
     | '/contacts'
+    | '/design'
     | '/documents'
     | '/inbox'
     | '/industries'
@@ -778,6 +789,7 @@ export interface FileRouteTypes {
     | '/clients'
     | '/contacts'
     | '/contracts'
+    | '/design'
     | '/documents'
     | '/engagements'
     | '/inbox'
@@ -851,6 +863,7 @@ export interface RootRouteChildren {
   ClientsRoute: typeof ClientsRouteWithChildren
   ContactsRoute: typeof ContactsRoute
   ContractsRoute: typeof ContractsRouteWithChildren
+  DesignRoute: typeof DesignRoute
   DocumentsRoute: typeof DocumentsRoute
   EngagementsRoute: typeof EngagementsRouteWithChildren
   InboxRoute: typeof InboxRoute
@@ -973,6 +986,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/documents'
       preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contracts': {
@@ -1615,6 +1635,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientsRoute: ClientsRouteWithChildren,
   ContactsRoute: ContactsRoute,
   ContractsRoute: ContractsRouteWithChildren,
+  DesignRoute: DesignRoute,
   DocumentsRoute: DocumentsRoute,
   EngagementsRoute: EngagementsRouteWithChildren,
   InboxRoute: InboxRoute,
