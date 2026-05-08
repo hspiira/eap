@@ -9,7 +9,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import decimal
 import re
-from app.domain.enums import WorkStatus, StaffRole, RelationType
+from app.domain.enums import (
+    AccreditationStatus,
+    PanelStatus,
+    ProviderTier,
+    RelationType,
+    StaffRole,
+    UgandaRegion,
+    WorkStatus,
+)
 from app.shared.utils.datetime import utc_now
 
 
@@ -154,6 +162,21 @@ class ServiceAssignmentId(Id):
 class CriticalIncidentId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class NonCompeteClauseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReportTemplateId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReportRunId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:
@@ -288,6 +311,40 @@ class LicenseInfo:
         if not self.expiry_date:
             return True
         return self.expiry_date >= utc_now().date()
+
+
+@dataclass(frozen=True)
+class ProviderProfile:
+    """Panel-level metadata about a service provider (Joseph's framework)."""
+
+    tier: ProviderTier
+    region: UgandaRegion
+    accreditation_status: AccreditationStatus
+    panel_status: PanelStatus = PanelStatus.ACTIVE
+    accreditation_authority: str | None = None
+    accreditation_expiry: date | None = None
+    specialties: tuple[str, ...] = ()
+    bio: str | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.tier, ProviderTier):
+            raise ValueError("ProviderProfile.tier must be a ProviderTier")
+        if not isinstance(self.region, UgandaRegion):
+            raise ValueError("ProviderProfile.region must be a UgandaRegion")
+        if not isinstance(self.accreditation_status, AccreditationStatus):
+            raise ValueError("accreditation_status must be an AccreditationStatus")
+        if not isinstance(self.panel_status, PanelStatus):
+            raise ValueError("panel_status must be a PanelStatus")
+
+    def is_panel_eligible(self) -> bool:
+        """Whether the provider can currently take new assignments."""
+        if self.panel_status != PanelStatus.ACTIVE:
+            return False
+        if self.accreditation_status != AccreditationStatus.ACCREDITED:
+            return False
+        if self.accreditation_expiry is not None and self.accreditation_expiry < utc_now().date():
+            return False
+        return True
 
 @dataclass(frozen=True)
 class ClientEmployeeCode:

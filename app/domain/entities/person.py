@@ -32,7 +32,18 @@ Design Notes:
 from dataclasses import dataclass, field
 from datetime import datetime, date
 from typing import Union
-from app.domain.value_objects.core import PersonId, TenantId, UserId, ClientId, EmploymentInfo, LicenseInfo, StaffInfo, DependentInfo, EmergencyContact
+from app.domain.value_objects.core import (
+    ClientId,
+    DependentInfo,
+    EmergencyContact,
+    EmploymentInfo,
+    LicenseInfo,
+    PersonId,
+    ProviderProfile,
+    StaffInfo,
+    TenantId,
+    UserId,
+)
 from app.domain.entities.user import UserEntity
 from app.domain.enums import PersonType, BaseStatus
 from app.domain.events import (
@@ -66,6 +77,7 @@ class PersonEntity:
     secondary_person_type: PersonType | None = None
     employment_info: EmploymentInfo | None = None  # CLIENT_EMPLOYEE
     license_info: LicenseInfo | None = None  # SERVICE_PROVIDER
+    provider_profile: ProviderProfile | None = None  # SERVICE_PROVIDER (panel metadata)
     staff_info: StaffInfo | None = None  # PLATFORM_STAFF
     dependent_info: DependentInfo | None = None  # DEPENDENT
     emergency_contact: EmergencyContact | None = None
@@ -261,6 +273,15 @@ class PersonEntity:
         self.license_info = info
         self.updated_at = utc_now()
         self._ensure_invariants()
+
+    def update_provider_profile(self, profile: ProviderProfile) -> None:
+        """Set or replace the provider's panel profile (tier/region/accreditation)."""
+        if self.status == BaseStatus.DELETED:
+            raise DomainError("Cannot update provider profile for deleted person")
+        if self.person_type != PersonType.SERVICE_PROVIDER and self.secondary_person_type != PersonType.SERVICE_PROVIDER:
+            raise DomainError("Provider profile is only valid for SERVICE_PROVIDER persons")
+        self.provider_profile = profile
+        self.updated_at = utc_now()
     
     def update_staff_info(self, info: StaffInfo) -> None:
         """Update staff information."""

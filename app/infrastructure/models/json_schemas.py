@@ -88,6 +88,19 @@ class DependentInfoDict(TypedDict):
     guardian_id: NotRequired[str | None]
 
 
+class ProviderProfileDict(TypedDict):
+    """JSON schema for provider_profile column (SERVICE_PROVIDER panel metadata)."""
+
+    tier: str  # ProviderTier enum value
+    region: str  # UgandaRegion enum value
+    accreditation_status: str  # AccreditationStatus enum value
+    panel_status: NotRequired[str]  # PanelStatus enum value (default Active)
+    accreditation_authority: NotRequired[str | None]
+    accreditation_expiry: NotRequired[str | None]  # ISO date YYYY-MM-DD
+    specialties: NotRequired[list[str]]
+    bio: NotRequired[str | None]
+
+
 class EmergencyContactDict(TypedDict):
     """
     JSON schema for emergency_contact column.
