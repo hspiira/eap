@@ -6,6 +6,7 @@ import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
 import { industriesApi } from "@/api/endpoints/industries"
 import { AppLayout } from "@/components/AppLayout"
+import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -56,6 +57,7 @@ function IndustriesPage() {
   const limit = 20
   const [searchInput, setSearchInput] = useState("")
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all")
+  const [createOpen, setCreateOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
 
@@ -145,6 +147,7 @@ function IndustriesPage() {
             <Button
               size="sm"
               className="h-7 gap-1.5 px-2.5"
+              onClick={() => setCreateOpen(true)}
             >
               <Plus className="size-3.5" />
               Add industry
@@ -179,6 +182,12 @@ function IndustriesPage() {
             placeholder="Search industries…"
           />
         </FilterBar>
+
+        <IndustryFormSheet
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSaved={() => refetch()}
+        />
 
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
           <div className="col-span-12 flex min-w-0 flex-col overflow-hidden lg:col-span-8">

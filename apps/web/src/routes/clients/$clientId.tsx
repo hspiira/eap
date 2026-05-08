@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Building2,
+  ChevronRight,
+  Pencil,
+  RotateCw,
+} from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -9,21 +17,21 @@ import type { ClientAlert } from "@/components/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
-import { ClientsPageHeader } from "@/components/ClientsPageHeader"
 import { ClientDetailSkeleton } from "@/components/ClientsPageSkeletons"
 import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
 import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
+import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
+import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { TierBadge } from "@/components/common/TierBadge"
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -38,35 +46,9 @@ export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetailPage,
 })
 
-const skeletonClass = "rounded-none bg-fg/15"
+const ROW_BORDER = "border-fg/8"
 
-function Section({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <div className={cn("border border-fg/30 rounded-none bg-neutral-50 overflow-hidden", className)}>
-      <div className="px-6 py-3 border-b border-fg/20 bg-surface/20">
-        <h2 className="text-sm font-medium text-fg">{title}</h2>
-      </div>
-      <div className="px-6 py-4">{children}</div>
-    </div>
-  )
-}
-
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-fg/70">{label}</dt>
-      <dd className="mt-1 text-fg">{value ?? "—"}</dd>
-    </div>
-  )
-}
+type TabValue = "overview" | "activity" | "contracts" | "staff"
 
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
@@ -82,6 +64,7 @@ function ClientDetailPage() {
   const [contractsLoading, setContractsLoading] = useState(false)
   const [tags, setTags] = useState<ClientTag[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
+  const [tab, setTab] = useState<TabValue>("overview")
 
   const fetchClient = useCallback(async () => {
     try {
@@ -148,7 +131,7 @@ function ClientDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchClient]
+    [fetchClient],
   )
 
   const hasBilling = client
@@ -161,10 +144,12 @@ function ClientDetailPage() {
       )
     : false
 
+  const isVerified = !!(client?.is_verified ?? stats?.is_verified)
+
   const alerts = useMemo((): ClientAlert[] => {
     if (!client) return []
     const list: ClientAlert[] = []
-    if (!(client.is_verified ?? stats?.is_verified)) {
+    if (!isVerified) {
       list.push({
         id: "verify",
         title: "Client not verified",
@@ -196,7 +181,7 @@ function ClientDetailPage() {
       }
     })
     return list
-  }, [client, stats?.is_verified, hasBilling, contracts])
+  }, [client, isVerified, hasBilling, contracts])
 
   const upcomingItems = useMemo((): ClientUpcomingItem[] => {
     const list: ClientUpcomingItem[] = []
@@ -240,10 +225,10 @@ function ClientDetailPage() {
     return [
       { id: "contact", label: "Contact info added", done: hasContact },
       { id: "contract", label: "At least one contract", done: hasContract },
-      { id: "billing", label: "Billing address set", done: !!hasBilling },
-      { id: "verified", label: "Client verified", done: !!(client.is_verified ?? stats?.is_verified) },
+      { id: "billing", label: "Billing address set", done: hasBilling },
+      { id: "verified", label: "Client verified", done: isVerified },
     ]
-  }, [client, stats?.is_verified, contracts.length, hasBilling])
+  }, [client, isVerified, contracts.length, hasBilling])
 
   const todaysTodoItems = useMemo((): ClientTodaysTodoItem[] => {
     const today = new Date().toISOString().slice(0, 10)
@@ -260,281 +245,413 @@ function ClientDetailPage() {
 
   if (loading) {
     return (
-      <ClientsPageHeader breadcrumb="Clients > …">
-        <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
+      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · …">
+        <div className="min-h-0 flex-1 overflow-auto p-5">
           <ClientDetailSkeleton />
         </div>
-      </ClientsPageHeader>
+      </PageShell>
     )
   }
 
   if (!client) {
     return (
-      <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">
-        <div className="border border-fg/20 rounded-none bg-surface/20 p-8 text-center">
-          <p className="text-fg">Client not found.</p>
-          <Button
-            variant="secondary"
-            className="mt-4 rounded-none border-fg/30 text-fg"
-            onClick={() => navigate({ to: "/clients" })}
-          >
-            Back to clients
-          </Button>
-        </div>
-      </div>
+      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · Not found">
+        <EmptyState
+          icon={Building2}
+          title="Client not found"
+          description="The client you're looking for may have been archived or doesn't exist."
+          action={
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate({ to: "/clients" })}>
+              <ArrowLeft className="size-4" />
+              Back to clients
+            </Button>
+          }
+        />
+      </PageShell>
     )
   }
 
-  const hasBillingDisplay =
-    client.billing_address &&
-    (client.billing_address.street ||
-      client.billing_address.city ||
-      client.billing_address.postal_code ||
-      client.billing_address.country)
-
   return (
-    <ClientsPageHeader breadcrumb={`Clients > ${client.name}`}>
-      <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4 space-y-4">
-        <div className="border border-fg/30 rounded-none bg-neutral-50 overflow-hidden">
-          <div className="px-6 py-5 border-b border-fg/20 bg-surface/30">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold text-fg">{client.name}</h1>
-              <StatusBadge status={client.status} />
-              <TierBadge tier={client.tier} />
-              {(client.is_verified ?? stats?.is_verified) && (
-                <span className="text-xs font-medium px-2 py-0.5 border border-primary bg-primary/20 text-fg">
-                  Verified
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-fg/70 mt-1">Code: {client.code}</p>
+    <PageShell
+      icon={Building2}
+      breadcrumb={`Organization & Clients · Clients · ${client.name}`}
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/clients" })}
+            aria-label="Back to clients"
+            title="Back to clients"
+            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+          >
+            <ArrowLeft className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={fetchClient}
+            aria-label="Refresh"
+            title="Refresh"
+            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+          >
+            <RotateCw className="size-3.5" />
+          </button>
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5">
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+        </>
+      }
+    >
+      <Hero client={client} verified={isVerified} />
+
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+        <div className="grid grid-cols-12 gap-5 px-5 py-5">
+          <div className="col-span-12 min-w-0 lg:col-span-8">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+              <TabsList className="-mx-3 mb-4 px-3">
+                <Tab value="overview">Overview</Tab>
+                <Tab value="activity">Activity</Tab>
+                <Tab value="contracts" count={contracts.length}>
+                  Contracts
+                </Tab>
+                <Tab value="staff">Staff</Tab>
+              </TabsList>
+
+              <TabPanel value="overview">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <ClientAlertsCard alerts={alerts} />
+                  <ClientUpcomingCard items={upcomingItems} />
+                  <ClientOnboardingCard steps={onboardingSteps} />
+                  <ClientTodaysTodoCard items={todaysTodoItems} />
+                </div>
+                <div className="mt-4">
+                  <EmailCampaignCard />
+                </div>
+              </TabPanel>
+
+              <TabPanel value="activity">
+                <ClientActivityCard clientId={clientId} limit={20} />
+              </TabPanel>
+
+              <TabPanel value="contracts">
+                <ContractsPanel contracts={contracts} loading={contractsLoading} />
+              </TabPanel>
+
+              <TabPanel value="staff">
+                <ClientStaffSummaryCard clientId={clientId} />
+              </TabPanel>
+            </Tabs>
           </div>
 
-          <div className="px-6 py-5">
-            <h2 className="text-sm font-medium text-fg mb-3">Contact</h2>
-            <dl className="grid gap-4 sm:grid-cols-2">
-              <DetailRow label="Email" value={client.contact_info?.email} />
-              <DetailRow label="Phone" value={client.contact_info?.phone} />
-              <DetailRow label="Address" value={client.contact_info?.address} />
-              {client.preferred_contact_method && (
-                <DetailRow label="Preferred contact" value={client.preferred_contact_method} />
-              )}
-            </dl>
-          </div>
-
-          {hasBillingDisplay && (
-            <div className="px-6 py-5 border-t border-fg/15">
-              <h2 className="text-sm font-medium text-fg mb-3">Billing address</h2>
-              <dl className="grid gap-2 sm:grid-cols-2">
-                {client.billing_address?.street && (
-                  <DetailRow label="Street" value={client.billing_address.street} />
-                )}
-                {client.billing_address?.city && (
-                  <DetailRow label="City" value={client.billing_address.city} />
-                )}
-                {client.billing_address?.postal_code && (
-                  <DetailRow label="Postal code" value={client.billing_address.postal_code} />
-                )}
-                {client.billing_address?.country && (
-                  <DetailRow label="Country" value={client.billing_address.country} />
-                )}
-              </dl>
-            </div>
-          )}
-
-          {client.parent_client_id && (
-            <div className="px-6 py-3 border-t border-fg/15">
-              <span className="text-xs font-medium uppercase tracking-wide text-fg/70">
-                Parent client
-              </span>
-              <p className="mt-1">
-                <Link
-                  to="/clients/$clientId"
-                  params={{ clientId: client.parent_client_id }}
-                  className="text-primary hover:underline"
-                >
-                  View parent client
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <ClientAlertsCard alerts={alerts} />
-          <ClientUpcomingCard items={upcomingItems} />
-        </div>
-
-        <EmailCampaignCard />
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <ClientActivityCard clientId={clientId} limit={10} />
-          </div>
-          <div className="space-y-4">
-            <Section title="Overview">
-          {statsLoading ? (
-            <div className="grid grid-cols-2 gap-4">
-              <Skeleton className={cn(skeletonClass, "h-12 w-full")} />
-              <Skeleton className={cn(skeletonClass, "h-12 w-full")} />
-            </div>
-          ) : (
-            <dl className="grid grid-cols-2 gap-4">
-              <DetailRow
-                label="Child clients"
-                value={stats?.child_count != null ? String(stats.child_count) : "—"}
-              />
-              <DetailRow
-                label="Contracts"
-                value={stats?.contract_count != null ? String(stats.contract_count) : "—"}
-              />
-            </dl>
-          )}
-            </Section>
-
-            <ClientStaffSummaryCard clientId={clientId} />
-            <ClientTodaysTodoCard items={todaysTodoItems} />
-
-            <Section title="Child clients">
-          {childrenLoading ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-fg/15">
-                  <TableHead className="text-fg">Name</TableHead>
-                  <TableHead className="text-fg">Code</TableHead>
-                  <TableHead className="text-fg">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[1, 2, 3].map((i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-4 w-24")} /></TableCell>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-4 w-12")} /></TableCell>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-5 w-14")} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : children.length === 0 ? (
-            <p className="text-sm text-fg/80">No child clients.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-fg/15">
-                  <TableHead className="text-fg">Name</TableHead>
-                  <TableHead className="text-fg">Code</TableHead>
-                  <TableHead className="text-fg">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {children.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>
-                      <Link to="/clients/$clientId" params={{ clientId: c.id }} className="text-primary hover:underline">
-                        {c.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-fg">{c.code}</TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-            </Section>
-
-            <Section title="Contracts">
-          {contractsLoading ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-fg/15">
-                  <TableHead className="text-fg">Number</TableHead>
-                  <TableHead className="text-fg">Status</TableHead>
-                  <TableHead className="text-fg">Dates</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[1, 2].map((i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-4 w-20")} /></TableCell>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-5 w-16")} /></TableCell>
-                    <TableCell><Skeleton className={cn(skeletonClass, "h-4 w-28")} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : contracts.length === 0 ? (
-            <p className="text-sm text-fg/80">No contracts.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-fg/15">
-                  <TableHead className="text-fg">Number</TableHead>
-                  <TableHead className="text-fg">Status</TableHead>
-                  <TableHead className="text-fg">Dates</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contracts.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>
-                      <Link to="/contracts/$contractId" params={{ contractId: c.id }} className="text-primary hover:underline">
-                        {c.contract_number ?? c.id}
-                      </Link>
-                    </TableCell>
-                    <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell className="text-fg text-sm">
-                      {c.start_date}
-                      {c.end_date ? ` – ${c.end_date}` : ""}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-            </Section>
-
-            <Section title="Tags">
-          {tagsLoading ? (
-            <div className="flex flex-wrap gap-2">
-              <Skeleton className={cn(skeletonClass, "h-6 w-20")} />
-              <Skeleton className={cn(skeletonClass, "h-6 w-24")} />
-            </div>
-          ) : tags.length === 0 ? (
-            <p className="text-sm text-fg/80">No tags.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((t) => (
-                <span
-                  key={t.id}
-                  className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-fg/30 bg-surface/50 text-fg rounded-none"
-                >
-                  {t.name}
-                </span>
-              ))}
-            </div>
-          )}
-            </Section>
-
-            <ClientOnboardingCard steps={onboardingSteps} />
-
-            <div className="border border-fg/30 rounded-none bg-neutral-50 overflow-hidden">
-              <div className="px-6 py-4 border-b border-fg/20 bg-surface/20">
-                <h2 className="text-sm font-medium text-fg">Actions</h2>
-              </div>
-              <div className="px-6 py-4">
-                <LifecycleActions
-                  entityId={client.id}
-                  currentStatus={client.status}
-                  kind="client"
-                  onAction={handleAction}
-                  loading={actionLoading}
-                />
-              </div>
-            </div>
-          </div>
+          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+            <DetailRail
+              client={client}
+              stats={stats}
+              statsLoading={statsLoading}
+              tags={tags}
+              tagsLoading={tagsLoading}
+              children={children}
+              childrenLoading={childrenLoading}
+              onAction={handleAction}
+              actionLoading={actionLoading}
+            />
+          </aside>
         </div>
       </div>
-    </ClientsPageHeader>
+    </PageShell>
   )
+}
+
+function Hero({ client, verified }: { client: Client; verified: boolean }) {
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
+      <span
+        aria-hidden
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
+      >
+        {initial(client.name)}
+      </span>
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
+        {client.name}
+      </h1>
+      <span className="font-mono text-xs uppercase text-fg/55">{client.code}</span>
+      <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
+      <StatusBadge status={client.status} />
+      <TierBadge tier={client.tier} />
+      {verified ? (
+        <span className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+          <BadgeCheck className="size-3" />
+          Verified
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+function ContractsPanel({
+  contracts,
+  loading,
+}: {
+  contracts: Contract[]
+  loading: boolean
+}) {
+  if (loading) {
+    return <p className="text-sm text-fg/65">Loading contracts…</p>
+  }
+  if (contracts.length === 0) {
+    return (
+      <EmptyState
+        title="No contracts yet"
+        description="Add a contract once it's signed."
+      />
+    )
+  }
+  return (
+    <div className="overflow-hidden border border-fg/10 bg-surface">
+      <table className="w-full caption-bottom text-sm">
+        <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+          <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+            <TableHead className="text-fg/65">Number</TableHead>
+            <TableHead className="text-fg/65">Status</TableHead>
+            <TableHead className="text-fg/65">Start</TableHead>
+            <TableHead className="text-fg/65">End</TableHead>
+            <TableHead className="w-10 text-right text-fg/65">
+              <span className="sr-only">Open</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {contracts.map((c) => (
+            <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
+              <TableCell>
+                <Link
+                  to="/contracts/$contractId"
+                  params={{ contractId: c.id }}
+                  className="font-medium text-fg group-hover:text-primary"
+                >
+                  {c.contract_number ?? c.id}
+                </Link>
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={c.status} />
+              </TableCell>
+              <TableCell className="text-sm text-fg/75">{c.start_date}</TableCell>
+              <TableCell className="text-sm text-fg/75">{c.end_date ?? "—"}</TableCell>
+              <TableCell className="text-right">
+                <Link
+                  to="/contracts/$contractId"
+                  params={{ contractId: c.id }}
+                  aria-label="Open contract"
+                  className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                >
+                  <ChevronRight className="size-3.5" />
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </table>
+    </div>
+  )
+}
+
+interface DetailRailProps {
+  client: Client
+  stats: ClientStats | null
+  statsLoading: boolean
+  tags: ClientTag[]
+  tagsLoading: boolean
+  children: Client[]
+  childrenLoading: boolean
+  onAction: (id: string, action: LifecycleAction) => Promise<void>
+  actionLoading: boolean
+}
+
+function DetailRail({
+  client,
+  stats,
+  statsLoading,
+  tags,
+  tagsLoading,
+  children,
+  childrenLoading,
+  onAction,
+  actionLoading,
+}: DetailRailProps) {
+  const ba = client.billing_address
+  const hasBilling = !!(ba?.street || ba?.city || ba?.postal_code || ba?.country)
+  return (
+    <div className="space-y-5">
+      <RailSection title="At a glance">
+        <div className="grid grid-cols-2 gap-3">
+          <Stat label="Child clients" value={statsLoading ? "…" : fmtCount(stats?.child_count)} />
+          <Stat label="Contracts" value={statsLoading ? "…" : fmtCount(stats?.contract_count)} />
+        </div>
+      </RailSection>
+
+      <RailSection title="Contact">
+        <DetailGrid>
+          <DetailRow label="Email" value={client.contact_info?.email} />
+          <DetailRow label="Phone" value={client.contact_info?.phone} />
+          <DetailRow label="Address" value={client.contact_info?.address} fullWidth />
+          {client.preferred_contact_method ? (
+            <DetailRow
+              label="Preferred"
+              value={client.preferred_contact_method}
+            />
+          ) : null}
+        </DetailGrid>
+      </RailSection>
+
+      <RailSection title="Billing address">
+        {hasBilling ? (
+          <DetailGrid>
+            {ba?.street ? <DetailRow label="Street" value={ba.street} fullWidth /> : null}
+            {ba?.city ? <DetailRow label="City" value={ba.city} /> : null}
+            {ba?.postal_code ? <DetailRow label="Postal" value={ba.postal_code} /> : null}
+            {ba?.country ? <DetailRow label="Country" value={ba.country} /> : null}
+          </DetailGrid>
+        ) : (
+          <p className="text-xs text-fg/55">No billing address on file.</p>
+        )}
+      </RailSection>
+
+      {client.parent_client_id || children.length > 0 ? (
+        <RailSection title="Hierarchy">
+          {client.parent_client_id ? (
+            <Link
+              to="/clients/$clientId"
+              params={{ clientId: client.parent_client_id }}
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              <ArrowLeft className="size-3.5" />
+              Parent client
+            </Link>
+          ) : null}
+          {childrenLoading ? (
+            <p className="mt-2 text-xs text-fg/55">Loading children…</p>
+          ) : children.length > 0 ? (
+            <ul className="mt-2 space-y-1">
+              {children.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    to="/clients/$clientId"
+                    params={{ clientId: c.id }}
+                    className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary"
+                  >
+                    <ChevronRight className="size-3.5 text-fg/45" />
+                    <span className="truncate">{c.name}</span>
+                    <span className="font-mono text-[11px] text-fg/55">{c.code}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </RailSection>
+      ) : null}
+
+      <RailSection title="Tags">
+        {tagsLoading ? (
+          <p className="text-xs text-fg/55">Loading…</p>
+        ) : tags.length === 0 ? (
+          <p className="text-xs text-fg/55">No tags assigned.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => (
+              <span
+                key={t.id}
+                className="inline-flex items-center gap-1.5 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-xs text-fg"
+              >
+                <span
+                  aria-hidden
+                  className="block size-2 border border-fg/15"
+                  style={t.color ? { backgroundColor: t.color } : undefined}
+                />
+                {t.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </RailSection>
+
+      <RailSection title="Lifecycle">
+        <LifecycleActions
+          entityId={client.id}
+          currentStatus={client.status}
+          kind="client"
+          onAction={onAction}
+          loading={actionLoading}
+        />
+      </RailSection>
+    </div>
+  )
+}
+
+function RailSection({
+  title,
+  children,
+  className,
+}: {
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn("space-y-2", className)}>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-fg/55">
+        {title}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+        {label}
+      </div>
+      <div className="mt-0.5 font-mono text-base font-semibold text-fg">{value}</div>
+    </div>
+  )
+}
+
+function DetailGrid({ children }: { children: React.ReactNode }) {
+  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
+}
+
+function DetailRow({
+  label,
+  value,
+  fullWidth,
+}: {
+  label: string
+  value: React.ReactNode
+  fullWidth?: boolean
+}) {
+  return (
+    <div className={cn(fullWidth && "col-span-2")}>
+      <dt className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-sm text-fg">
+        {value || <span className="text-fg/40">—</span>}
+      </dd>
+    </div>
+  )
+}
+
+function fmtCount(n: number | null | undefined): string {
+  if (n == null) return "—"
+  return n.toLocaleString()
+}
+
+function initial(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return "·"
+  const parts = trimmed.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return trimmed.slice(0, 2).toUpperCase()
 }

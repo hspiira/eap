@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { Building2, ChevronRight, Pencil, X } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { ChevronRight, CornerDownRight, Pencil, X } from "lucide-react"
 
-import { industriesApi } from "@/api/endpoints/industries"
+import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import type { Industry } from "@/types/entities"
 
-type IndustryDetailsCardProps = {
+interface IndustryDetailsCardProps {
   industry: Industry
   parent: Industry | null
   children: Industry[]
@@ -22,159 +23,192 @@ export function IndustryDetailsCard({
   onClose,
   onUpdated,
 }: IndustryDetailsCardProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [name, setName] = useState(industry.name)
-  const [code, setCode] = useState(industry.code ?? "")
-  const [level, setLevel] = useState(industry.level != null ? String(industry.level) : "")
-
-  useEffect(() => {
-    setName(industry.name)
-    setCode(industry.code ?? "")
-    setLevel(industry.level != null ? String(industry.level) : "")
-  }, [industry.id, industry.name, industry.code, industry.level])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const updated = await industriesApi.update(industry.id, {
-        name: name.trim() || industry.name,
-        code: code.trim() || null,
-        level: level.trim() ? parseInt(level, 10) : null,
-      })
-      onUpdated(updated)
-      setIsEditing(false)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleCancel = () => {
-    setName(industry.name)
-    setCode(industry.code ?? "")
-    setLevel(industry.level != null ? String(industry.level) : "")
-    setIsEditing(false)
-  }
+  const [editOpen, setEditOpen] = useState(false)
 
   return (
-    <div className="border border-border/25 bg-white p-4 flex flex-col min-h-0">
-      <div className="mb-3 flex items-center justify-between shrink-0">
-        <h3 className="text-sm font-semibold text-fg truncate min-w-0">
-          {industry.name || "Industry"}
-        </h3>
+    <div className="flex min-h-0 flex-col border border-fg/10 bg-surface">
+      <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-semibold leading-tight text-fg">
+            {industry.name}
+          </h3>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase text-fg/55">
+              {industry.code ?? "no code"}
+            </span>
+            {industry.level != null ? (
+              <>
+                <span className="h-3 w-px bg-fg/20" aria-hidden />
+                <span className="font-mono text-[11px] text-fg/55">
+                  L{industry.level}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1.5 px-2.5"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="size-3.5" />
+          Edit
+        </Button>
         <button
           type="button"
-          className="p-1 text-fg/70 hover:text-fg shrink-0"
-          aria-label="Close"
           onClick={onClose}
+          aria-label="Close details"
+          className="grid size-7 shrink-0 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
         >
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </button>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+        <Section title="Hierarchy">
+          {parent || children.length > 0 ? (
+            <Tree industry={industry} parent={parent} children={children} />
+          ) : (
+            <p className="text-xs text-fg/55">Top-level industry — no parent or children.</p>
+          )}
+        </Section>
+
+        <Section title="Metadata">
+          <dl className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+            <Field label="Code" mono>
+              {industry.code ?? <span className="text-fg/40">—</span>}
+            </Field>
+            <Field label="Level" mono>
+              {industry.level != null ? `L${industry.level}` : <span className="text-fg/40">—</span>}
+            </Field>
+            <Field label="Children" mono>
+              {children.length}
+            </Field>
+            <Field label="ID" mono fullWidth>
+              <span className="text-fg/65">{industry.id}</span>
+            </Field>
+          </dl>
+        </Section>
       </div>
 
-      <div className="space-y-3 flex-1 min-h-0 overflow-y-auto">
-        {isEditing ? (
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs font-medium text-fg/80 block mb-1">Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="h-8 text-sm rounded-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-fg/80 block mb-1">Code</label>
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="h-8 text-sm rounded-none"
-                placeholder="Optional"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-fg/80 block mb-1">Level</label>
-              <Input
-                type="number"
-                min={0}
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                className="h-8 text-sm rounded-none"
-                placeholder="Optional"
-              />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" onClick={handleSave} disabled={saving} className="rounded-none">
-                {saving ? "Saving…" : "Save"}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={handleCancel} className="rounded-none">
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <dl className="grid gap-1.5 text-sm">
-              <div>
-                <dt className="text-fg/70">Name</dt>
-                <dd className="text-fg font-medium">{industry.name}</dd>
-              </div>
-              <div>
-                <dt className="text-fg/70">Code</dt>
-                <dd className="text-fg">{industry.code ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-fg/70">Level</dt>
-                <dd className="text-fg">{industry.level != null ? industry.level : "—"}</dd>
-              </div>
-            </dl>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setIsEditing(true)}
-              className="rounded-none gap-1.5"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-          </div>
-        )}
-
-        <div className="border-t border-border/25 pt-3">
-          <h4 className="text-xs font-semibold text-fg mb-2">Hierarchy</h4>
-          <ul className="space-y-1.5">
-            {parent && (
-              <li className="flex items-center gap-2 text-sm">
-                <Building2 className="h-3.5 w-3.5 text-fg/60 shrink-0" />
-                <span className="text-fg/80">Parent: {parent.name}</span>
-                {parent.code && (
-                  <span className="text-fg/50 text-xs">({parent.code})</span>
-                )}
-              </li>
-            )}
-            <li className="flex items-center gap-2 text-sm">
-              <ChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="text-fg font-medium">{industry.name}</span>
-              {industry.code && (
-                <span className="text-fg/50 text-xs">({industry.code})</span>
-              )}
-            </li>
-            {children.length > 0 &&
-              children.map((child) => (
-                <li key={child.id} className="flex items-center gap-2 pl-4 text-sm">
-                  <Building2 className="h-3.5 w-3.5 text-fg/60 shrink-0" />
-                  <span className="text-fg/90">{child.name}</span>
-                  {child.code && (
-                    <span className="text-fg/50 text-xs">({child.code})</span>
-                  )}
-                </li>
-              ))}
-            {!parent && children.length === 0 && (
-              <li className="text-xs text-fg/60">No parent or children</li>
-            )}
-          </ul>
-        </div>
-      </div>
+      <IndustryFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        industry={industry}
+        onSaved={onUpdated}
+      />
     </div>
+  )
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="space-y-2">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-fg/55">
+        {title}
+      </h4>
+      {children}
+    </section>
+  )
+}
+
+function Field({
+  label,
+  children,
+  mono,
+  fullWidth,
+}: {
+  label: string
+  children: React.ReactNode
+  mono?: boolean
+  fullWidth?: boolean
+}) {
+  return (
+    <div className={cn(fullWidth && "col-span-3")}>
+      <dt className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+        {label}
+      </dt>
+      <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "font-mono text-xs")}>
+        {children}
+      </dd>
+    </div>
+  )
+}
+
+interface TreeProps {
+  industry: Industry
+  parent: Industry | null
+  children: Industry[]
+}
+
+function Tree({ industry, parent, children }: TreeProps) {
+  return (
+    <ul className="space-y-1 text-sm">
+      {parent ? (
+        <li>
+          <TreeNode industry={parent} kind="parent" />
+        </li>
+      ) : null}
+      <li className={cn(parent && "ml-3 border-l border-fg/10 pl-3")}>
+        <TreeNode industry={industry} kind="current" />
+        {children.length > 0 ? (
+          <ul className="mt-1 space-y-1">
+            {children.map((c) => (
+              <li key={c.id} className="ml-3 border-l border-fg/10 pl-3">
+                <TreeNode industry={c} kind="child" />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </li>
+    </ul>
+  )
+}
+
+function TreeNode({
+  industry,
+  kind,
+}: {
+  industry: Industry
+  kind: "parent" | "current" | "child"
+}) {
+  const Icon = kind === "parent" ? CornerDownRight : ChevronRight
+  const interactive = kind !== "current"
+  const inner = (
+    <span
+      className={cn(
+        "flex items-center gap-1.5",
+        kind === "current" && "font-medium text-primary",
+        kind !== "current" && "text-fg",
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-3.5 shrink-0",
+          kind === "current" ? "text-primary" : "text-fg/40",
+        )}
+      />
+      <span className="truncate">{industry.name}</span>
+      {industry.code ? (
+        <span className="font-mono text-[11px] text-fg/55">{industry.code}</span>
+      ) : null}
+    </span>
+  )
+  if (!interactive) return inner
+  return (
+    <Link
+      to="/industries"
+      className="inline-flex w-full items-center hover:[&_span:not(.font-mono)]:text-primary"
+      aria-label={`Open ${industry.name}`}
+    >
+      {inner}
+    </Link>
   )
 }

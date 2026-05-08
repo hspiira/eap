@@ -31,7 +31,7 @@ export function ClientsPageHeader({ breadcrumb, toolbar, children }: ClientsPage
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-8 w-8 shrink-0 items-center justify-center text-fg hover:bg-surface-tile rounded-none"
+              className="flex h-8 w-8 shrink-0 items-center justify-center text-fg hover:bg-surface-hover rounded-sm"
               aria-label="More options"
             >
               <MoreHorizontal className="h-4 w-4" />
