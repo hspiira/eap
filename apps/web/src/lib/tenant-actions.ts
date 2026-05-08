@@ -6,8 +6,8 @@
 import apiClient from '@/api/client'
 import type { TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
+import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/store/slices/authSlice'
-import { useEntityCacheStore } from '@/store/slices/entityCacheSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { Tenant } from '@/types/entities'
 
@@ -34,7 +34,7 @@ export const tenantActions = {
   setCurrentTenant(tenant: Tenant | null): void {
     useTenantStore.getState().setCurrentTenant(tenant)
     syncToApiAndStorage(tenant)
-    useEntityCacheStore.getState().invalidateAll()
+    queryClient.clear()
   },
 
   async createTenant(data: TenantCreate): Promise<TenantCreateResponse> {

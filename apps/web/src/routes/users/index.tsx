@@ -1,10 +1,13 @@
+import { useState } from "react"
+
 import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { usersApi } from "@/api/endpoints/users"
 import { DataTable } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { useList } from "@/hooks/useList"
+import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
+import { normalizeErrorMessage } from "@/utils/errorHandler"
 
 export const Route = createFileRoute("/users/")({
   component: UsersListPage,
@@ -42,10 +45,17 @@ const columns = [
 ]
 
 function UsersListPage() {
-  const { items, total, page, limit, setPage, loading, error } = useList({
+  const [page, setPage] = useState(1)
+  const limit = 20
+  const query = useEntityList({
+    resource: "users",
+    params: { page, limit },
     listFn: usersApi.list,
-    initialParams: { page: 1, limit: 20 },
   })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
 
   return (
     <div className="p-6 space-y-4">

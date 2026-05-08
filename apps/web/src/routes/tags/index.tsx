@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Pencil } from "lucide-react"
 
@@ -5,8 +7,9 @@ import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { DataTable } from "@/components/common/DataTable"
 import { TagsPageHeader } from "@/components/TagsPageHeader"
 import { Button } from "@/components/ui/button"
-import { useList } from "@/hooks/useList"
+import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
+import { normalizeErrorMessage } from "@/utils/errorHandler"
 
 export const Route = createFileRoute("/tags/")({
   component: TagsListPage,
@@ -69,10 +72,17 @@ const columns = [
 ]
 
 function TagsListPage() {
-  const { items, total, page, limit, setPage, loading, error } = useList({
+  const [page, setPage] = useState(1)
+  const limit = 20
+  const query = useEntityList({
+    resource: "client-tags",
+    params: { page, limit },
     listFn: clientTagsApi.list,
-    initialParams: { page: 1, limit: 20 },
   })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
 
   return (
     <TagsPageHeader breadcrumb="Tags">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { industriesApi } from "@/api/endpoints/industries"
@@ -8,9 +9,10 @@ import { DataTable } from "@/components/common/DataTable"
 import { IndustriesPageHeader } from "@/components/IndustriesPageHeader"
 import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
-import { useList } from "@/hooks/useList"
+import { useEntityList } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Industry } from "@/types/entities"
+import { normalizeErrorMessage } from "@/utils/errorHandler"
 
 export const Route = createFileRoute("/industries")({
   component: IndustriesPage,
@@ -29,10 +31,22 @@ const columns = [
 
 function IndustriesPage() {
   const { isAuthenticated, isLoading } = useAuthStore()
-  const { items, total, page, limit, setPage, loading, error, refetch } = useList({
+  const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const limit = 20
+  const query = useEntityList({
+    resource: "industries",
+    params: { page, limit },
     listFn: industriesApi.list,
-    initialParams: { page: 1, limit: 20 },
   })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const refetch = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["industries", "list"] }),
+    [queryClient],
+  )
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(null)

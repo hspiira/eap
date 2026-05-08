@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
@@ -9,6 +11,7 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { NotFound } from '../components/ui/NotFound'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { ToastProvider } from '../contexts/ToastContext'
+import { queryClient } from '../lib/query-client'
 import appCss from '../styles.css?url'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 
@@ -37,20 +40,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body style={{ minHeight: '100dvh' }}>
-        <ThemeProvider>
-          <ToastProvider>
-            <AppBootstrap />
-            <ErrorBoundary>
-              <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
-                {children}
-              </div>
-            </ErrorBoundary>
-          </ToastProvider>
-        </ThemeProvider>
-        <TanStackDevtools
-          config={{ position: 'bottom-right' }}
-          plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
-        />
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ToastProvider>
+              <AppBootstrap />
+              <ErrorBoundary>
+                <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
+                  {children}
+                </div>
+              </ErrorBoundary>
+            </ToastProvider>
+          </ThemeProvider>
+          <TanStackDevtools
+            config={{ position: 'bottom-right' }}
+            plugins={[
+              { name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> },
+              { name: 'React Query', render: <ReactQueryDevtoolsPanel /> },
+            ]}
+          />
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>

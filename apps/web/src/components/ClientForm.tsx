@@ -5,6 +5,7 @@ import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityMutation } from "@/lib/queries"
 
 export interface ClientFormProps {
   onSuccess?: () => void
@@ -32,12 +33,17 @@ export function ClientForm({
   onCancel,
   submitLabel = "Create client",
 }: ClientFormProps) {
+  const createClient = useEntityMutation({
+    resource: "clients",
+    mutationFn: clientsApi.create,
+  })
+
   const { register, formState, submit, serverError } = useApiForm<z.infer<typeof clientCreateSchema>>({
     schema: clientCreateSchema,
     defaultValues: { name: "", code: "", email: "", phone: "" },
     successToast: "Client created",
     onSubmit: async (values) => {
-      await clientsApi.create({
+      await createClient.mutateAsync({
         name: values.name,
         code: values.code,
         contact_info: {

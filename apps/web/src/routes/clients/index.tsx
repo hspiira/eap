@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Calendar,
   Download,
@@ -43,11 +44,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useList } from "@/hooks/useList"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityList } from "@/lib/queries"
+import { normalizeErrorMessage } from "@/utils/errorHandler"
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
   validateSearch: (search: Record<string, unknown>) => ({
     new: search.new === "1" || search.new === true,
+    search: typeof search.search === "string" && search.search.trim() ? search.search : undefined,
   }),
 })
 
@@ -60,34 +64,38 @@ const TIME_RANGE_OPTIONS = [
 
 function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
-  const [search, setSearch] = useState("")
+  const navigate = useNavigate({ from: "/clients/" })
+  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [timeRange, setTimeRange] = useState("12h")
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const limit = 20
+  const queryClient = useQueryClient()
+
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
+  const activeSearch = debouncedSearch || undefined
 
   useEffect(() => {
     if (searchParams.new) setAddModalOpen(true)
   }, [searchParams.new])
 
-  const { items, total, page, limit, setPage, loading, error, refetch } = useList({
+  useEffect(() => {
+    if (activeSearch !== searchParams.search) {
+      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
+      setPage(1)
+    }
+  }, [activeSearch, navigate, searchParams.search])
+
+  const query = useEntityList({
+    resource: "clients",
+    params: { page, limit, search: activeSearch },
     listFn: clientsApi.list,
-    initialParams: { page: 1, limit: 20 },
   })
-
-  const displayItems = useMemo(() => {
-    if (!search.trim()) return items
-    const q = search.trim().toLowerCase()
-    return items.filter(
-      (c) =>
-        c.name?.toLowerCase().includes(q) ||
-        c.code?.toLowerCase().includes(q) ||
-        c.status?.toLowerCase().includes(q)
-    )
-  }, [items, search])
-
-  const showPagination = !search.trim()
-  const paginationTotal = showPagination ? total : displayItems.length
-  const paginationPage = showPagination ? page : 1
-  const paginationLimit = showPagination ? limit : Math.max(limit, displayItems.length)
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["clients", "list"] })
 
   return (
     <ClientsPageHeader breadcrumb="Clients">
@@ -102,9 +110,9 @@ function ClientsListPage() {
               <div className="relative flex-1 min-w-0 max-w-md">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5A626A]/70" />
                 <Input
-                  placeholder="Search and filter with AI..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search clients..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="rounded-none h-9 pl-8 pr-3 border-[#5A626A]/30 bg-white text-[#5A626A] placeholder:text-[#5A626A]/60"
                 />
               </div>
@@ -178,10 +186,7 @@ function ClientsListPage() {
                 </DialogHeader>
                 <div className="px-6 pb-6">
                   <ClientForm
-                    onSuccess={() => {
-                      setAddModalOpen(false)
-                      refetch?.()
-                    }}
+                    onSuccess={() => setAddModalOpen(false)}
                     onCancel={() => setAddModalOpen(false)}
                   />
                 </div>

@@ -1,10 +1,13 @@
+import { useState } from "react"
+
 import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { personsApi } from "@/api/endpoints/persons"
 import { DataTable } from "@/components/common/DataTable"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { useList } from "@/hooks/useList"
+import { useEntityList } from "@/lib/queries"
 import type { Person } from "@/types/entities"
+import { normalizeErrorMessage } from "@/utils/errorHandler"
 
 export const Route = createFileRoute("/persons/")({
   component: PersonsListPage,
@@ -26,7 +29,17 @@ const columns = [
 ]
 
 function PersonsListPage() {
-  const { items, total, page, limit, setPage, loading, error } = useList({ listFn: personsApi.list, initialParams: { page: 1, limit: 20 } })
+  const [page, setPage] = useState(1)
+  const limit = 20
+  const query = useEntityList({
+    resource: "persons",
+    params: { page, limit },
+    listFn: personsApi.list,
+  })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
