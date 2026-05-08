@@ -78,15 +78,15 @@ class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
 
         # Create industry entity
         industry = IndustryEntity(
-            _id=industry_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _description=description,
-            _code=code,
-            _parent_industry_id=parent_industry_id,
+            id=industry_id,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            code=code,
+            parent_industry_id=parent_industry_id,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(industry)

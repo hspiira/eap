@@ -68,15 +68,15 @@ def now() -> datetime:
 def pending_client(client_id, tenant_id, contact_info, now) -> ClientEntity:
     """Create a client in pending status."""
     return ClientEntity(
-        _id=client_id,
-        _tenant_id=tenant_id,
-        _name="Acme Corp",
-        _code="ACME",
-        _contact_info=contact_info,
-        _status=BaseStatus.PENDING,
-        _is_verified=False,
-        _created_at=now,
-        _updated_at=now,
+        id=client_id,
+        tenant_id=tenant_id,
+        name="Acme Corp",
+        code="ACME",
+        contact_info=contact_info,
+        status=BaseStatus.PENDING,
+        is_verified=False,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -84,15 +84,15 @@ def pending_client(client_id, tenant_id, contact_info, now) -> ClientEntity:
 def active_client(client_id, tenant_id, contact_info, now) -> ClientEntity:
     """Create an active client."""
     return ClientEntity(
-        _id=client_id,
-        _tenant_id=tenant_id,
-        _name="Acme Corp",
-        _code="ACME",
-        _contact_info=contact_info,
-        _status=BaseStatus.ACTIVE,
-        _is_verified=True,
-        _created_at=now,
-        _updated_at=now,
+        id=client_id,
+        tenant_id=tenant_id,
+        name="Acme Corp",
+        code="ACME",
+        contact_info=contact_info,
+        status=BaseStatus.ACTIVE,
+        is_verified=True,
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -100,16 +100,16 @@ def active_client(client_id, tenant_id, contact_info, now) -> ClientEntity:
 def deleted_client(client_id, tenant_id, contact_info, now) -> ClientEntity:
     """Create a deleted client."""
     return ClientEntity(
-        _id=client_id,
-        _tenant_id=tenant_id,
-        _name="Deleted Corp",
-        _code="DEL",
-        _contact_info=contact_info,
-        _status=BaseStatus.DELETED,
-        _is_verified=False,
-        _created_at=now,
-        _updated_at=now,
-        _deleted_at=now,
+        id=client_id,
+        tenant_id=tenant_id,
+        name="Deleted Corp",
+        code="DEL",
+        contact_info=contact_info,
+        status=BaseStatus.DELETED,
+        is_verified=False,
+        created_at=now,
+        updated_at=now,
+        deleted_at=now,
     )
 
 
@@ -124,22 +124,22 @@ class TestClientCreation:
     def test_create_client_success(self, client_id, tenant_id, contact_info, now):
         """Test successful client creation."""
         client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name="Test Corp",
-            _code="TEST",
-            _contact_info=contact_info,
-            _status=BaseStatus.PENDING,
-            _is_verified=False,
-            _created_at=now,
-            _updated_at=now,
+            id=client_id,
+            tenant_id=tenant_id,
+            name="Test Corp",
+            code="TEST",
+            contact_info=contact_info,
+            status=BaseStatus.PENDING,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
         )
 
-        assert client._id == client_id
-        assert client._tenant_id == tenant_id
-        assert client._name == "Test Corp"
-        assert client._status == BaseStatus.PENDING
-        assert client._is_verified is False
+        assert client.id == client_id
+        assert client.tenant_id == tenant_id
+        assert client.name == "Test Corp"
+        assert client.status == BaseStatus.PENDING
+        assert client.is_verified is False
 
 
 # =============================================================================
@@ -154,8 +154,8 @@ class TestClientVerification:
         """Test verifying a client."""
         pending_client.verify(user_id)
 
-        assert pending_client._is_verified is True
-        assert any(isinstance(e, ClientVerified) for e in pending_client._events)
+        assert pending_client.is_verified is True
+        assert any(isinstance(e, ClientVerified) for e in pending_client.events)
 
 
 # =============================================================================
@@ -170,23 +170,23 @@ class TestClientActivation:
         """Test activating a pending client."""
         pending_client.activate()
 
-        assert pending_client._status == BaseStatus.ACTIVE
-        assert any(isinstance(e, ClientActivated) for e in pending_client._events)
+        assert pending_client.status == BaseStatus.ACTIVE
+        assert any(isinstance(e, ClientActivated) for e in pending_client.events)
 
     def test_activate_client_without_contact_raises_error(
         self, client_id, tenant_id, contact_info_empty, now
     ):
         """Test that activating client without contact info raises DomainError."""
         client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name="No Contact Corp",
-            _code="NOC",
-            _contact_info=contact_info_empty,
-            _status=BaseStatus.PENDING,
-            _is_verified=False,
-            _created_at=now,
-            _updated_at=now,
+            id=client_id,
+            tenant_id=tenant_id,
+            name="No Contact Corp",
+            code="NOC",
+            contact_info=contact_info_empty,
+            status=BaseStatus.PENDING,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
         )
 
         with pytest.raises(DomainError, match="Active clients must have contact info"):
@@ -215,7 +215,7 @@ class TestClientDeactivation:
         """Test deactivating an active client."""
         active_client.deactivate()
 
-        assert active_client._status == BaseStatus.INACTIVE
+        assert active_client.status == BaseStatus.INACTIVE
 
     def test_deactivate_deleted_client_raises_error(self, deleted_client):
         """Test that deactivating deleted client raises DomainError."""
@@ -227,15 +227,15 @@ class TestClientDeactivation:
     ):
         """Test that deactivating already inactive client raises DomainError."""
         inactive_client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name="Inactive Corp",
-            _code="INA",
-            _contact_info=contact_info,
-            _status=BaseStatus.INACTIVE,
-            _is_verified=False,
-            _created_at=now,
-            _updated_at=now,
+            id=client_id,
+            tenant_id=tenant_id,
+            name="Inactive Corp",
+            code="INA",
+            contact_info=contact_info,
+            status=BaseStatus.INACTIVE,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
         )
 
         with pytest.raises(DomainError, match="Client is already inactive"):
@@ -254,8 +254,8 @@ class TestClientSuspension:
         """Test suspending an active client."""
         active_client.suspend("Payment overdue")
 
-        assert active_client._status == BaseStatus.INACTIVE
-        assert any(isinstance(e, ClientSuspended) for e in active_client._events)
+        assert active_client.status == BaseStatus.INACTIVE
+        assert any(isinstance(e, ClientSuspended) for e in active_client.events)
 
     def test_suspend_without_reason_raises_error(self, active_client):
         """Test that suspending without reason raises DomainError."""
@@ -280,9 +280,9 @@ class TestClientTermination:
         """Test terminating a client."""
         active_client.terminate("Contract ended")
 
-        assert active_client._status == BaseStatus.DELETED
-        assert active_client._deleted_at is not None
-        assert any(isinstance(e, ClientTerminated) for e in active_client._events)
+        assert active_client.status == BaseStatus.DELETED
+        assert active_client.deleted_at is not None
+        assert any(isinstance(e, ClientTerminated) for e in active_client.events)
 
     def test_terminate_without_reason_raises_error(self, active_client):
         """Test that terminating without reason raises DomainError."""
@@ -307,7 +307,7 @@ class TestClientArchive:
         """Test archiving an active client."""
         active_client.archive()
 
-        assert active_client._status == BaseStatus.ARCHIVED
+        assert active_client.status == BaseStatus.ARCHIVED
 
     def test_archive_deleted_client_raises_error(self, deleted_client):
         """Test that archiving deleted client raises DomainError."""
@@ -319,15 +319,15 @@ class TestClientArchive:
     ):
         """Test that archiving already archived client raises DomainError."""
         archived_client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name="Archived Corp",
-            _code="ARC",
-            _contact_info=contact_info,
-            _status=BaseStatus.ARCHIVED,
-            _is_verified=False,
-            _created_at=now,
-            _updated_at=now,
+            id=client_id,
+            tenant_id=tenant_id,
+            name="Archived Corp",
+            code="ARC",
+            contact_info=contact_info,
+            status=BaseStatus.ARCHIVED,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
         )
 
         with pytest.raises(DomainError, match="Client is already archived"):
@@ -345,20 +345,20 @@ class TestClientRestore:
     def test_restore_archived_client(self, client_id, tenant_id, contact_info, now):
         """Test restoring an archived client."""
         archived_client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name="Archived Corp",
-            _code="ARC",
-            _contact_info=contact_info,
-            _status=BaseStatus.ARCHIVED,
-            _is_verified=False,
-            _created_at=now,
-            _updated_at=now,
+            id=client_id,
+            tenant_id=tenant_id,
+            name="Archived Corp",
+            code="ARC",
+            contact_info=contact_info,
+            status=BaseStatus.ARCHIVED,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
         )
 
         archived_client.restore()
 
-        assert archived_client._status == BaseStatus.ACTIVE
+        assert archived_client.status == BaseStatus.ACTIVE
 
     def test_restore_deleted_client_raises_error(self, deleted_client):
         """Test that restoring deleted client raises DomainError."""
@@ -383,7 +383,7 @@ class TestClientUpdate:
         """Test updating client name."""
         active_client.update_name("New Name Corp")
 
-        assert active_client._name == "New Name Corp"
+        assert active_client.name == "New Name Corp"
 
     def test_update_name_empty_raises_error(self, active_client):
         """Test that updating with empty name raises DomainError."""
@@ -400,7 +400,7 @@ class TestClientUpdate:
         new_contact = ContactInfo(phone="+1-555-999-8888")
         active_client.update_contact_info(new_contact)
 
-        assert active_client._contact_info == new_contact
+        assert active_client.contact_info == new_contact
 
     def test_update_contact_info_deleted_raises_error(self, deleted_client):
         """Test that updating contact info for deleted client raises DomainError."""
@@ -411,13 +411,13 @@ class TestClientUpdate:
         """Test updating billing address."""
         active_client.update_billing_address(billing_address)
 
-        assert active_client._billing_address == billing_address
+        assert active_client.billing_address == billing_address
 
     def test_update_preferred_contact_method(self, active_client):
         """Test updating preferred contact method."""
         active_client.update_preferred_contact_method(ContactMethod.EMAIL)
 
-        assert active_client._preferred_contact_method == ContactMethod.EMAIL
+        assert active_client.preferred_contact_method == ContactMethod.EMAIL
 
 
 # =============================================================================

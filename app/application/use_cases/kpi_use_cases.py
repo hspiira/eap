@@ -80,19 +80,19 @@ class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
 
         # Create KPI entity
         kpi = KPIEntity(
-            _id=kpi_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _category=category,
-            _measurement_unit=measurement_unit,
-            _description=description,
-            _target_value=target_value,
-            _threshold_min=threshold_min,
-            _threshold_max=threshold_max,
-            _formula=formula,
+            id=kpi_id,
+            tenant_id=tenant_id,
+            name=name,
+            category=category,
+            measurement_unit=measurement_unit,
+            description=description,
+            target_value=target_value,
+            threshold_min=threshold_min,
+            threshold_max=threshold_max,
+            formula=formula,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(kpi)
@@ -221,15 +221,15 @@ class CreateKPIAssignmentUseCase(BaseUseCase[KPIAssignmentEntity, KPIAssignmentI
 
         # Create assignment entity
         assignment = KPIAssignmentEntity(
-            _id=assignment_id,
-            _kpi_id=kpi_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _contract_id=contract_id,
-            _target_value=target_value,
+            id=assignment_id,
+            kpi_id=kpi_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            contract_id=contract_id,
+            target_value=target_value,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(assignment)

@@ -5,7 +5,7 @@ FastAPI routes for Document operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.authorization import (
@@ -29,7 +29,6 @@ from app.application.use_cases.document_use_cases import (
     ArchiveDocumentUseCase,
     CreateDocumentUseCase,
     CreateDocumentVersionUseCase,
-    GetDocumentUseCase,
     PublishDocumentUseCase,
     SetDocumentConfidentialityUseCase,
     SetDocumentExpiryUseCase,

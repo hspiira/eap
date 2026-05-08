@@ -14,7 +14,7 @@ Use get_*_for_current_tenant (or get_user_in_tenant) for by-ID routes so tenant
 is derived from the loaded entity.
 """
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 
 from app.api.dependencies import (
     get_audit_repository,
@@ -199,7 +199,7 @@ async def get_audit_log_for_current_tenant(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Audit log not found",
         )
-    if audit_log._tenant_id.value != current_user.tenant_id:
+    if audit_log.tenant_id.value != current_user.tenant_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Audit log not found",

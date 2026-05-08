@@ -74,15 +74,15 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
 
         # Create user entity
         user = UserEntity(
-            _id=user_id,
-            _tenant_id=tenant_id,
-            _email=email,
+            id=user_id,
+            tenant_id=tenant_id,
+            email=email,
             _password_hash=password_hash,
-            _status=UserStatus.PENDING_VERIFICATION,
-            _is_two_factor_enabled=False,
-            _role=role,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            status=UserStatus.PENDING_VERIFICATION,
+            is_two_factor_enabled=False,
+            role=role,
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(user)

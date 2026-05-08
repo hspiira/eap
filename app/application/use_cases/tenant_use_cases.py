@@ -156,14 +156,14 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
 
         # Create tenant entity
         tenant = TenantEntity(
-            _id=tenant_id,
-            _name=name,
-            _code=tenant_code,
-            _status=TenantStatus.ACTIVE,
-            _settings=tenant_settings,
-            _subscription_tier=subscription_tier,
-            _deleted_at=None,
-            _updated_at=utc_now(),
+            id=tenant_id,
+            name=name,
+            code=tenant_code,
+            status=TenantStatus.ACTIVE,
+            settings=tenant_settings,
+            subscription_tier=subscription_tier,
+            deleted_at=None,
+            updated_at=utc_now(),
         )
 
         tenant = await self._save_and_publish_events(tenant)

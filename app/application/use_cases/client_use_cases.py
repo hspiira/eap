@@ -88,20 +88,20 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             raise ValueError(f"Client with name '{name}' already exists")
 
         client = ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _code=code,
-            _contact_info=contact_info,
-            _billing_address=billing_address,
-            _industry_id=industry_id,
-            _parent_client_id=parent_client_id,
-            _status=BaseStatus.PENDING,
-            _is_verified=False,
-            _preferred_contact_method=None,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
-            _deleted_at=None,
+            id=client_id,
+            tenant_id=tenant_id,
+            name=name,
+            code=code,
+            contact_info=contact_info,
+            billing_address=billing_address,
+            industry_id=industry_id,
+            parent_client_id=parent_client_id,
+            status=BaseStatus.PENDING,
+            is_verified=False,
+            preferred_contact_method=None,
+            created_at=utc_now(),
+            updated_at=utc_now(),
+            deleted_at=None,
         )
 
         return await self._save_and_publish_events(client)

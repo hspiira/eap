@@ -28,6 +28,7 @@ from app.infrastructure.models.json_schemas import (
     StaffInfoDict,
 )
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
+from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
@@ -55,6 +56,7 @@ __all__ = [
     "KPIAssignmentModel",
     "KPIModel",
     "LicenseInfoDict",
+    "OutboxEventModel",
     "PasswordSetTokenModel",
     "PersonModel",
     "ServiceAssignmentModel",

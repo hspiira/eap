@@ -58,17 +58,17 @@ class LogAuditActionUseCase:
             return None
 
         audit_log = AuditLog(
-            _id=AuditLogId(generate_cuid()),
-            _tenant_id=tenant_id,
-            _user_id=user_id,
-            _action_type=action_type,
-            _resource_type=resource_type,
-            _resource_id=resource_id,
-            _description=description,
-            _ip_address=ip_address,
-            _user_agent=user_agent,
-            _occurred_at=utc_now(),
-            _metadata=metadata,
+            id=AuditLogId(generate_cuid()),
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action_type=action_type,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            description=description,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            occurred_at=utc_now(),
+            metadata=metadata,
         )
 
         await self.audit_repository.save_audit_log(audit_log)
@@ -90,11 +90,11 @@ class LogEntityChangeUseCase:
     ) -> EntityChange:
         """Log entity changes associated with an audit log."""
         entity_change = EntityChange(
-            _id=EntityChangeId(generate_cuid()),
-            _audit_log_id=audit_log_id,
-            _entity_type=entity_type,
-            _entity_id=entity_id,
-            _field_changes=tuple(field_changes),
+            id=EntityChangeId(generate_cuid()),
+            audit_log_id=audit_log_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            field_changes=tuple(field_changes),
         )
 
         await self.audit_repository.save_entity_change(entity_change)

@@ -70,7 +70,7 @@ class BaseUseCase(ABC, Generic[TEntity, TId]):
         await self.repository.save(entity)
         
         # Publish domain events if entity has them (do not clear here;
-        # routes may process entity._events for audit, then clear)
+        # routes may process entity.events for audit, then clear)
         if hasattr(entity, '_events'):
             events: list[DomainEvent] = getattr(entity, '_events', [])
             for event in events:

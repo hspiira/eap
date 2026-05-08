@@ -7,13 +7,13 @@ Note: Audit logs are immutable - only read operations via API.
 Write operations (logging) are handled by use cases called from middleware/decorators.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 
 from app.core.authorization import (
     get_audit_log_for_current_tenant,
     require_same_tenant,
 )
-from app.core.security import TokenData, get_current_user
+from app.core.security import TokenData
 
 from app.api.dependencies import get_audit_repository
 from app.api.schemas.audit_schemas import (
@@ -27,7 +27,7 @@ from app.application.use_cases.audit_use_cases import GetAuditLogUseCase
 from app.domain.enums import AuditActionType
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.repositories.audit_repository import AuditRepository
-from app.domain.value_objects.core import AuditLogId, TenantId, UserId
+from app.domain.value_objects.core import TenantId, UserId
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
@@ -35,17 +35,17 @@ router = APIRouter(prefix="/audit", tags=["audit"])
 def _to_audit_log_response(audit_log: AuditLog) -> AuditLogResponse:
     """Map AuditLog entity to API response."""
     return AuditLogResponse(
-        id=audit_log._id.value,
-        tenant_id=audit_log._tenant_id.value,
-        user_id=audit_log._user_id.value if audit_log._user_id else None,
-        action_type=audit_log._action_type,
-        resource_type=audit_log._resource_type,
-        resource_id=audit_log._resource_id,
-        description=audit_log._description,
-        ip_address=audit_log._ip_address,
-        user_agent=audit_log._user_agent,
-        occurred_at=audit_log._occurred_at,
-        metadata=audit_log._metadata,
+        id=audit_log.id.value,
+        tenant_id=audit_log.tenant_id.value,
+        user_id=audit_log.user_id.value if audit_log.user_id else None,
+        action_type=audit_log.action_type,
+        resource_type=audit_log.resource_type,
+        resource_id=audit_log.resource_id,
+        description=audit_log.description,
+        ip_address=audit_log.ip_address,
+        user_agent=audit_log.user_agent,
+        occurred_at=audit_log.occurred_at,
+        metadata=audit_log.metadata,
     )
 
 
@@ -54,17 +54,17 @@ def _to_entity_change_response(
 ) -> EntityChangeResponse:
     """Map EntityChange entity to API response."""
     return EntityChangeResponse(
-        id=entity_change._id.value,
-        audit_log_id=entity_change._audit_log_id.value,
-        entity_type=entity_change._entity_type,
-        entity_id=entity_change._entity_id,
+        id=entity_change.id.value,
+        audit_log_id=entity_change.audit_log_id.value,
+        entity_type=entity_change.entity_type,
+        entity_id=entity_change.entity_id,
         field_changes=[
             FieldChangeSchema(
                 field_name=fc.field_name,
                 old_value=fc.old_value,
                 new_value=fc.new_value,
             )
-            for fc in entity_change._field_changes
+            for fc in entity_change.field_changes
         ],
     )
 
@@ -167,7 +167,7 @@ async def get_audit_log_changes(
     This is a QUERY operation - entity changes are immutable.
     """
     get_use_case = GetAuditLogUseCase(audit_repo)
-    entity_changes = await get_use_case.execute_entity_changes(audit_log._id)
+    entity_changes = await get_use_case.execute_entity_changes(audit_log.id)
     return [_to_entity_change_response(ec) for ec in entity_changes]
 
 
