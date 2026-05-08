@@ -23,13 +23,11 @@ from app.api.routes import register_routers
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.exception_handlers import register_exception_handlers
+from app.core.logging_config import configure_logging
 from app.core.middleware import setup_middleware
 from app.pages import render_root_page
 
-logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+configure_logging(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 
