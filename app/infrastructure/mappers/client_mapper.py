@@ -5,7 +5,7 @@ Converts between ClientEntity (domain) and ClientModel (persistence).
 """
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -69,6 +69,7 @@ class ClientMapper:
             if model.preferred_contact_method
             else None
         )
+        tier = ClientTier(model.tier) if getattr(model, "tier", None) else None
 
         # Create entity
         return ClientEntity(
@@ -83,6 +84,7 @@ class ClientMapper:
             status=status,
             is_verified=model.is_verified,
             preferred_contact_method=preferred_contact_method,
+            tier=tier,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
             deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
@@ -131,6 +133,7 @@ class ClientMapper:
             status=entity.status,
             is_verified=entity.is_verified,
             preferred_contact_method=entity.preferred_contact_method,
+            tier=entity.tier,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
             deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,

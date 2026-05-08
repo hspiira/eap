@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -331,6 +332,16 @@ async def get_refresh_token_repository(
 ) -> RefreshTokenRepository:
     """Dependency for refresh token repository (revocation/rotation)."""
     return RefreshTokenRepository(db)
+
+
+async def get_diagnosis_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DiagnosisRepository":
+    from app.infrastructure.repositories.diagnosis_repository import (
+        DiagnosisRepositoryImpl,
+    )
+
+    return DiagnosisRepositoryImpl(db)
 
 
 # =============================================================================

@@ -107,6 +107,7 @@ class ClientTransition(str, Enum):
     UPDATE_INDUSTRY = "update_industry"
     UPDATE_NAME = "update_name"
     UPDATE_PREFERRED_CONTACT_METHOD = "update_preferred_contact_method"
+    UPDATE_TIER = "update_tier"
 
 
 class PersonTransition(str, Enum):

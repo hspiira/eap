@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import select
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ClientTier
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
@@ -66,6 +66,7 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
+        tier: "ClientTier | None" = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -73,12 +74,13 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
         sort_desc: bool = True,
     ) -> Sequence[ClientEntity]:
         """List clients with filtering, searching, and pagination."""
-        # Build filters dict for base class
         filters: dict[str, Any] = {}
         if status:
             filters["status"] = status
         if is_verified is not None:
             filters["is_verified"] = is_verified
+        if tier is not None:
+            filters["tier"] = tier
 
         return await self._query_all(
             tenant_id=tenant_id.value,
@@ -96,6 +98,7 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
+        tier: "ClientTier | None" = None,
         search: str | None = None,
     ) -> int:
         """Count clients matching filters."""
@@ -104,6 +107,8 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
             filters["status"] = status
         if is_verified is not None:
             filters["is_verified"] = is_verified
+        if tier is not None:
+            filters["tier"] = tier
 
         return await self._count_all(
             tenant_id=tenant_id.value,

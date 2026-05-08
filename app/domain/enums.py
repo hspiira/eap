@@ -87,6 +87,19 @@ class SessionStatus(str, Enum):
     CANCELLED = "Cancelled"
     NO_SHOW = "No Show"
 
+
+class ClientTier(str, Enum):
+    """Joseph's A/B/C clustering for client engagement tiering.
+
+    A — strategic / large account, full service mix.
+    B — mid-tier, consultancy-extension candidates.
+    C — long-tail / small account, lower-touch service model.
+    """
+
+    A = "A"
+    B = "B"
+    C = "C"
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"
