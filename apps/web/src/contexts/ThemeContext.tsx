@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 import type { ReactNode } from 'react';
 
-const THEME_KEY = 'evexia_theme'
+import { uiStorage } from '@/lib/storage'
 
 export type ThemePreference = 'light' | 'dark' | 'system'
 type EffectiveTheme = 'light' | 'dark'
@@ -20,16 +20,10 @@ function getSystemTheme(): EffectiveTheme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function getStoredPreference(): ThemePreference | null {
-  if (typeof window === 'undefined') return null
-  const stored = localStorage.getItem(THEME_KEY) as ThemePreference | null
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : null
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => {
-    return getStoredPreference() ?? 'system'
-  })
+  const [preference, setPreferenceState] = useState<ThemePreference>(
+    () => uiStorage.read().theme,
+  )
   const [systemTheme, setSystemTheme] = useState<EffectiveTheme>(getSystemTheme)
 
   const effectiveTheme: EffectiveTheme =
@@ -50,7 +44,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setPreference = (p: ThemePreference) => {
     setPreferenceState(p)
-    localStorage.setItem(THEME_KEY, p)
+    uiStorage.patch({ theme: p })
   }
 
   return (

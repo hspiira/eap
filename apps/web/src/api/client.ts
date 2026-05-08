@@ -4,6 +4,7 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
+import { authStorage, tenantStorage } from '@/lib/storage'
 import type {
   ApiClientConfig,
   FieldErrors,
@@ -52,38 +53,30 @@ class ApiClient {
    */
   setToken(token: string | null): void {
     this.token = token
-    if (!useCookies() && typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('auth_token', token)
-      } else {
-        localStorage.removeItem('auth_token')
-      }
+    if (!useCookies()) {
+      authStorage.patch({ token })
     }
   }
 
   getToken(): string | null {
     if (useCookies()) return this.token
-    if (!this.token && typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token')
+    if (!this.token) {
+      this.token = authStorage.read().token
     }
     return this.token
   }
 
   setRefreshToken(token: string | null): void {
     this.refreshToken = token
-    if (!useCookies() && typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('refresh_token', token)
-      } else {
-        localStorage.removeItem('refresh_token')
-      }
+    if (!useCookies()) {
+      authStorage.patch({ refresh_token: token })
     }
   }
 
   getRefreshToken(): string | null {
     if (useCookies()) return this.refreshToken
-    if (!this.refreshToken && typeof window !== 'undefined') {
-      this.refreshToken = localStorage.getItem('refresh_token')
+    if (!this.refreshToken) {
+      this.refreshToken = authStorage.read().refresh_token
     }
     return this.refreshToken
   }
@@ -137,25 +130,16 @@ class ApiClient {
 
   setTenantId(tenantId: string | null): void {
     this.tenantId = tenantId
-    if (typeof window !== 'undefined') {
-      if (tenantId) {
-        localStorage.setItem('tenant_id', tenantId)
-      } else {
-        localStorage.removeItem('tenant_id')
-      }
-    }
+    tenantStorage.writeId(tenantId)
   }
 
   /**
-   * Get tenant ID. Uses in-memory value, then localStorage 'tenant_id', then 'current_tenant_id'.
+   * Get tenant ID. Uses in-memory value, falling back to persisted storage.
    * Ensures tenant is available even before AppBootstrap has restored it (e.g. after SSR hydrate).
    */
   getTenantId(): string | null {
     if (this.tenantId) return this.tenantId
-    if (typeof window === 'undefined') return null
-    const fromTenant = localStorage.getItem('tenant_id')
-    const fromCurrent = localStorage.getItem('current_tenant_id')
-    const id = fromTenant || fromCurrent || null
+    const id = tenantStorage.readId()
     if (id) this.tenantId = id
     return id
   }
@@ -167,14 +151,10 @@ class ApiClient {
     this.token = null
     this.refreshToken = null
     this.tenantId = null
-    if (typeof window !== 'undefined') {
-      if (!useCookies()) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('refresh_token')
-      }
-      localStorage.removeItem('tenant_id')
-      localStorage.removeItem('current_tenant_id')
+    if (!useCookies()) {
+      authStorage.clear()
     }
+    tenantStorage.clear()
   }
 
   /**
@@ -699,16 +679,15 @@ const apiClient = new ApiClient({
   retryDelay: DEFAULT_RETRY_DELAY,
 })
 
-// Initialize token and tenant from localStorage if available (client-only).
+// Initialize token and tenant from persisted storage (client-only).
 // When using cookie auth, tokens are not in localStorage; initAuth uses refresh to verify session.
 if (typeof window !== 'undefined') {
-  const storedTenantId =
-    localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id')
+  const storedTenantId = tenantStorage.readId()
   if (storedTenantId) {
     apiClient.setTenantId(storedTenantId)
   }
   if (!useCookies()) {
-    const storedToken = localStorage.getItem('auth_token')
+    const storedToken = authStorage.read().token
     if (storedToken) {
       apiClient.setToken(storedToken)
     }

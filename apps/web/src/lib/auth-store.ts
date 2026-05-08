@@ -7,6 +7,7 @@ import apiClient from '@/api/client'
 import { authApi } from '@/api/endpoints/auth'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { LoginRequest } from '@/api/types'
+import { authStorage } from '@/lib/storage'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { Tenant } from '@/types/entities'
@@ -42,9 +43,6 @@ export const authActions = {
       }
       if (tenantId) {
         apiClient.setTenantId(tenantId)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('current_tenant_id', tenantId)
-        }
         try {
           const tenant = await tenantsApi.getById(tenantId)
           useTenantStore.getState().setCurrentTenant(tenant as Tenant)
@@ -79,22 +77,17 @@ export const authActions = {
   },
 
   async initAuth(): Promise<void> {
+    const persisted = authStorage.read()
+    // apiClient already restores tenantId from storage at module init.
+
     if (useAuthCookies()) {
       const valid = await apiClient.validateSession()
-      if (typeof window !== 'undefined') {
-        const tid =
-          localStorage.getItem('tenant_id') ||
-          localStorage.getItem('current_tenant_id')
-        if (tid) apiClient.setTenantId(tid)
-      }
       if (!valid) {
         useAuthStore.getState().clearAuth()
         useAuthStore.getState().setLoading(false)
         return
       }
-      const userId = localStorage.getItem('auth_user_id')
-      const email = localStorage.getItem('auth_email')
-      useAuthStore.getState().setAuth(null, userId, email)
+      useAuthStore.getState().setAuth(null, persisted.user_id, persisted.email)
       useAuthStore.getState().setLoading(false)
       return
     }
@@ -104,19 +97,7 @@ export const authActions = {
       useAuthStore.getState().setLoading(false)
       return
     }
-
-    if (typeof window !== 'undefined') {
-      const tid =
-        localStorage.getItem('tenant_id') ||
-        localStorage.getItem('current_tenant_id')
-      if (tid) apiClient.setTenantId(tid)
-    }
-
-    const userId =
-      typeof window !== 'undefined' ? localStorage.getItem('auth_user_id') : null
-    const email =
-      typeof window !== 'undefined' ? localStorage.getItem('auth_email') : null
-    useAuthStore.getState().setAuth(token, userId, email)
+    useAuthStore.getState().setAuth(token, persisted.user_id, persisted.email)
     useAuthStore.getState().setLoading(false)
   },
 

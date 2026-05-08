@@ -12,17 +12,7 @@ import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { Tenant } from '@/types/entities'
 
 function syncToApiAndStorage(tenant: Tenant | null) {
-  if (tenant) {
-    apiClient.setTenantId(tenant.id)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('current_tenant_id', tenant.id)
-    }
-  } else {
-    apiClient.setTenantId(null)
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('current_tenant_id')
-    }
-  }
+  apiClient.setTenantId(tenant ? tenant.id : null)
 }
 
 export const tenantActions = {

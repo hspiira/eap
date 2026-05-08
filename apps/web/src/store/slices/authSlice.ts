@@ -8,6 +8,8 @@
 
 import { create } from 'zustand'
 
+import { authStorage } from '@/lib/storage'
+
 export interface AuthState {
   token: string | null
   user_id: string | null
@@ -40,25 +42,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
   ...initialState,
 
   setAuth: (token, user_id, email) => {
-    const useCookies = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
-    if (typeof window !== 'undefined') {
-      if (token && !useCookies) {
-        localStorage.setItem('auth_token', token)
-      } else if (!token || useCookies) {
-        localStorage.removeItem('auth_token')
-      }
-      if (user_id) {
-        localStorage.setItem('auth_user_id', user_id)
-      } else {
-        localStorage.removeItem('auth_user_id')
-      }
-      if (email) {
-        localStorage.setItem('auth_email', email)
-      } else {
-        localStorage.removeItem('auth_email')
-      }
-    }
-
+    const useCookies =
+      typeof import.meta !== 'undefined' && import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
+    authStorage.patch({
+      token: useCookies ? null : token ?? null,
+      user_id: user_id ?? null,
+      email: email ?? null,
+    })
     set({
       token,
       user_id: user_id ?? null,
@@ -75,13 +65,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   clearError: () => set({ error: null }),
 
   clearAuth: () => {
-    // Clear from localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('auth_user_id')
-      localStorage.removeItem('auth_email')
-    }
-
+    authStorage.clear()
     set({
       token: null,
       user_id: null,
