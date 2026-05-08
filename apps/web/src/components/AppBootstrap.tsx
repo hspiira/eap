@@ -31,6 +31,20 @@ export function AppBootstrap() {
     authActions.initAuth()
   }, [])
 
+  // Defensive: clear any inline background/overflow leaked onto <html>/<body>
+  // by the previous LandingPage useEffect that mutated documentElement.style
+  // directly. Without this, a stale dev session shows a permanent black page
+  // because the inline style overrides every CSS rule.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.documentElement.style.removeProperty('background')
+    document.documentElement.style.removeProperty('background-color')
+    document.documentElement.style.removeProperty('overflow')
+    document.body.style.removeProperty('background')
+    document.body.style.removeProperty('background-color')
+    document.body.style.removeProperty('overflow')
+  }, [])
+
   useSilentRefresh()
 
   useEffect(() => {

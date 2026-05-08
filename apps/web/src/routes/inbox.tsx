@@ -221,7 +221,7 @@ function TrainingCard({
   onToggle: (id: string) => void
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm flex flex-col min-h-[180px]">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm flex flex-col min-h-45">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div
@@ -764,7 +764,7 @@ function InboxPage() {
                 <TableCell className="px-2 py-1.5 rounded-none overflow-hidden">
                   <span className="inline-flex items-center gap-1.5 min-w-0">
                     <span
-                      className={cn("h-1.5 w-1.5 rounded-full shrink-0 flex-shrink-0", STATUS_DOT_COLORS[row.status])}
+                      className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT_COLORS[row.status])}
                     />
                     <span className="text-gray-700 truncate">{STATUS_LABELS[row.status]}</span>
                   </span>

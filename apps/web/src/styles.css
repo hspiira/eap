@@ -170,6 +170,9 @@
 html {
   overflow-x: hidden;
   min-height: 100%;
+  /* Defensive: clear any inline style="background: black" left over from
+   * the old LandingPage useEffect that mutated documentElement directly. */
+  background-color: var(--bg) !important;
 }
 
 body {
@@ -181,8 +184,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--token-page);
-  color: var(--token-text);
+  /* Use the new semantic tokens so body follows light/dark correctly.
+   * Falls back to legacy --token-page / --token-text for safety. */
+  background-color: var(--bg, var(--token-page));
+  color: var(--fg, var(--token-text));
 }
 
 input,

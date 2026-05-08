@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ActivityFeedCard } from '@/components/ActivityFeedCard'
+import { ClientAlertsCard, type ClientAlert } from '@/components/ClientAlertsCard'
+import { OnboardingProgressCard } from '@/components/OnboardingProgressCard'
 import { GalleryControls } from '@/components/gallery/GalleryControls'
 import { GallerySection, GallerySpecimen } from '@/components/gallery/GallerySection'
 import { ProviderTierBadge } from '@/components/common/ProviderTierBadge'
@@ -394,9 +396,58 @@ function MigratedCardsSpecimen() {
           <ActivityFeedCard />
         </div>
       </GallerySpecimen>
+      <GallerySpecimen
+        label="OnboardingProgressCard"
+        source="components/OnboardingProgressCard.tsx"
+      >
+        <div className="max-w-md">
+          <OnboardingProgressCard
+            onDismiss={() => {}}
+            onStartStep={() => {}}
+          />
+        </div>
+      </GallerySpecimen>
+      <GallerySpecimen
+        label="ClientAlertsCard"
+        source="components/ClientAlertsCard.tsx"
+      >
+        <div className="grid max-w-md gap-3">
+          <ClientAlertsCard alerts={GALLERY_ALERTS} />
+          <ClientAlertsCard alerts={[]} />
+        </div>
+      </GallerySpecimen>
     </GallerySection>
   )
 }
+
+const GALLERY_ALERTS: ClientAlert[] = [
+  {
+    id: "a1",
+    title: "Contract renewal overdue",
+    severity: "high",
+    description:
+      "Acme Holdings master service agreement lapsed 3 days ago. Sessions are paused until renewed.",
+    link: "/contracts",
+    linkLabel: "Open contracts",
+  },
+  {
+    id: "a2",
+    title: "Critical incident pending review",
+    severity: "critical",
+    description:
+      "Severity High incident reported 2025-05-08. Awaiting case-manager assignment.",
+  },
+  {
+    id: "a3",
+    title: "Survey response rate below target",
+    severity: "medium",
+  },
+  {
+    id: "a4",
+    title: "Quarterly check-in scheduled",
+    severity: "low",
+  },
+]
 
 function FormsSpecimen() {
   return (
@@ -452,7 +503,7 @@ const REGISTRY: ReadonlyArray<{
       { name: 'AppLayout', path: 'components/AppLayout.tsx', status: 'rebuild' },
       { name: 'AppSidebar', path: 'components/AppSidebar.tsx', status: 'rebuild' },
       { name: 'DashboardHeader', path: 'components/DashboardHeader.tsx', status: 'rebuild' },
-      { name: 'DashboardMain', path: 'components/DashboardMain.tsx', status: 'rebuild' },
+      { name: 'DashboardMain', path: 'components/DashboardMain.tsx', status: 'audit' },
     ],
   },
   {
@@ -470,7 +521,7 @@ const REGISTRY: ReadonlyArray<{
       { name: 'MapSettingsCard', path: 'components/MapSettingsCard.tsx', status: 'review' },
       { name: 'NotificationsCard', path: 'components/NotificationsCard.tsx', status: 'audit' },
       { name: 'OnSiteBehaviorCard', path: 'components/OnSiteBehaviorCard.tsx', status: 'review' },
-      { name: 'OnboardingProgressCard', path: 'components/OnboardingProgressCard.tsx', status: 'migrate' },
+      { name: 'OnboardingProgressCard', path: 'components/OnboardingProgressCard.tsx', status: 'audit' },
       { name: 'QueryInputCard', path: 'components/QueryInputCard.tsx', status: 'migrate' },
       { name: 'TransitionsCard', path: 'components/TransitionsCard.tsx', status: 'migrate' },
     ],
@@ -479,7 +530,7 @@ const REGISTRY: ReadonlyArray<{
     group: 'Client cards',
     items: [
       { name: 'ClientActivityCard', path: 'components/ClientActivityCard.tsx', status: 'migrate' },
-      { name: 'ClientAlertsCard', path: 'components/ClientAlertsCard.tsx', status: 'migrate' },
+      { name: 'ClientAlertsCard', path: 'components/ClientAlertsCard.tsx', status: 'audit' },
       { name: 'ClientOnboardingCard', path: 'components/ClientOnboardingCard.tsx', status: 'migrate' },
       { name: 'ClientStaffSummaryCard', path: 'components/ClientStaffSummaryCard.tsx', status: 'migrate' },
       { name: 'ClientTodaysTodoCard', path: 'components/ClientTodaysTodoCard.tsx', status: 'migrate' },

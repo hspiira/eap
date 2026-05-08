@@ -18,7 +18,12 @@ const config = defineConfig({
     nitro(),
     viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      router: {
+        // Skip co-located test files and fixtures inside src/routes/.
+        routeFileIgnorePattern: '\\.test\\.[jt]sx?$|-fixture\\.[jt]sx?$',
+      },
+    }),
     viteReact(),
   ],
 })

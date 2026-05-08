@@ -52,7 +52,7 @@ const columns = [
     accessorKey: "description" as keyof ClientTag,
     header: "Description",
     cell: (row: ClientTag) => (
-      <span className="text-fg max-w-[240px] truncate block">
+      <span className="text-fg max-w-60 truncate block">
         {row.description ?? "—"}
       </span>
     ),

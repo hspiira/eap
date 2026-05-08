@@ -2,13 +2,23 @@ import { useState } from "react"
 
 import { AlertCircle, Bell, ChevronDown, ChevronUp } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+
+export type ClientAlertSeverity = "low" | "medium" | "high" | "critical"
 
 export interface ClientAlert {
   id: string
   title: string
   description?: string | null
-  severity?: "high" | "medium"
+  severity?: ClientAlertSeverity
   link?: string
   linkLabel?: string
 }
@@ -18,95 +28,127 @@ interface ClientAlertsCardProps {
   className?: string
 }
 
+const SEVERITY_LABEL: Record<ClientAlertSeverity, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+}
+
+const SEVERITY_VARIANT: Record<
+  ClientAlertSeverity,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  low: "outline",
+  medium: "secondary",
+  high: "destructive",
+  critical: "destructive",
+}
+
+const SEVERITY_ICON_TONE: Record<ClientAlertSeverity, string> = {
+  low: "text-fg-subtle",
+  medium: "text-warning",
+  high: "text-danger",
+  critical: "text-danger",
+}
+
 export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  if (alerts.length === 0) {
-    return (
-      <div
-        className={cn(
-          "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
-          className
-        )}
-      >
-        <div className="flex items-center gap-2 border-b border-fg/20 px-4 py-3 bg-surface/20">
-          <Bell className="h-4 w-4 text-fg" />
-          <h3 className="text-sm font-semibold text-fg">Alerts</h3>
-        </div>
-        <div className="px-4 py-4 text-sm text-fg/80">No alerts for this client.</div>
-      </div>
-    )
-  }
+  const hasAlerts = alerts.length > 0
+  const hasUnacked = alerts.some(
+    (a) => a.severity === "high" || a.severity === "critical",
+  )
 
   return (
-    <div
-      className={cn(
-        "flex flex-col border border-fg/30 rounded-none bg-neutral-50 overflow-hidden",
-        className
-      )}
-    >
-      <div className="flex items-center gap-2 border-b border-fg/20 px-4 py-3 bg-surface/20">
-        <div className="relative">
-          <Bell className="h-4 w-4 text-fg" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-danger-soft" aria-hidden />
-        </div>
-        <h3 className="text-sm font-semibold text-fg">Alerts</h3>
-        <span className="flex h-5 min-w-[20px] items-center justify-center bg-fg/15 px-1.5 text-xs font-medium text-fg rounded-none">
-          {alerts.length}
+    <Card className={cn("rounded-md", className)}>
+      <CardHeader className="flex-row items-center gap-2 space-y-0 border-b border-border p-3">
+        <span className="relative" aria-hidden>
+          <Bell className="size-4 text-fg-muted" />
+          {hasUnacked ? (
+            <span className="absolute right-0 top-0 size-1.5 -translate-y-0.5 translate-x-0.5 rounded-full bg-danger" />
+          ) : null}
         </span>
-      </div>
-      <div className="flex max-h-[280px] flex-col overflow-y-auto">
-        {alerts.map((a) => {
-          const isExpanded = expandedId === a.id
-          return (
-            <div
-              key={a.id}
-              className="border-b border-fg/15 px-4 py-3 last:border-b-0"
-            >
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-fg/70" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-fg">{a.title}</span>
-                    <button
-                      type="button"
-                      className="p-1 text-fg/60 hover:bg-surface hover:text-fg rounded-none"
-                      aria-label={isExpanded ? "Collapse" : "Expand"}
-                      onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                    >
-                      {isExpanded ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
+        <CardTitle className="text-sm font-semibold text-fg">Alerts</CardTitle>
+        {hasAlerts ? (
+          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+            {alerts.length}
+          </Badge>
+        ) : null}
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {!hasAlerts ? (
+          <div className="px-3 py-6 text-center text-sm text-fg-muted">
+            No alerts for this client.
+          </div>
+        ) : (
+          <ul className="max-h-70 divide-y divide-border overflow-y-auto">
+            {alerts.map((a) => {
+              const severity = a.severity ?? "medium"
+              const isExpanded = expandedId === a.id
+              const expandable = Boolean(a.description || a.link)
+              return (
+                <li key={a.id} className="p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle
+                      className={cn(
+                        "mt-0.5 size-4 shrink-0",
+                        SEVERITY_ICON_TONE[severity],
                       )}
-                    </button>
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <span className="text-sm font-medium text-fg">
+                          {a.title}
+                        </span>
+                        {expandable ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6"
+                            aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
+                            aria-expanded={isExpanded}
+                            onClick={() =>
+                              setExpandedId(isExpanded ? null : a.id)
+                            }
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="size-3.5" />
+                            ) : (
+                              <ChevronDown className="size-3.5" />
+                            )}
+                          </Button>
+                        ) : null}
+                      </div>
+                      <Badge
+                        variant={SEVERITY_VARIANT[severity]}
+                        size="sm"
+                        className="mt-1"
+                      >
+                        {SEVERITY_LABEL[severity]}
+                      </Badge>
+                      {isExpanded && a.description ? (
+                        <p className="mt-2 text-xs leading-relaxed text-fg-muted">
+                          {a.description}
+                        </p>
+                      ) : null}
+                      {isExpanded && a.link ? (
+                        <a
+                          href={a.link}
+                          className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+                        >
+                          {a.linkLabel ?? "View"}
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                  <span
-                    className={cn(
-                      "mt-1 inline-block px-2 py-0.5 text-xs font-medium rounded-none",
-                      a.severity === "high" && "bg-danger-soft/30 text-fg",
-                      a.severity !== "high" && "bg-surface/50 text-fg/90"
-                    )}
-                  >
-                    {a.severity === "high" ? "High" : "Medium"}
-                  </span>
-                  {isExpanded && a.description && (
-                    <p className="mt-2 text-xs leading-relaxed text-fg/90">{a.description}</p>
-                  )}
-                  {isExpanded && a.link && (
-                    <a
-                      href={a.link}
-                      className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
-                    >
-                      {a.linkLabel ?? "View"}
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   )
 }

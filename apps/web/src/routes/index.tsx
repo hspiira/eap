@@ -1,5 +1,3 @@
-import { useEffect } from 'react'
-
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { AppLayout } from '@/components/AppLayout'
@@ -30,22 +28,15 @@ function HomePage() {
   return <AppLayout>{null}</AppLayout>
 }
 
-function LandingPage() {
-  useEffect(() => {
-    document.documentElement.style.background = 'black'
-    document.documentElement.style.overflow = 'hidden'
-    document.body.style.background = 'black'
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.documentElement.style.background = ''
-      document.documentElement.style.overflow = ''
-      document.body.style.background = ''
-      document.body.style.overflow = ''
-    }
-  }, [])
+const EMPTY_AUTH_SEARCH = {
+  tenant_code: undefined,
+  email: undefined,
+  redirect: undefined,
+} as const
 
+function LandingPage() {
   return (
-    <div className="h-screen h-[100dvh] bg-black flex flex-col relative overflow-hidden">
+    <div className="h-dvh bg-black flex flex-col relative overflow-hidden">
       <video
         autoPlay
         loop
@@ -64,12 +55,12 @@ function LandingPage() {
       />
 
       <div className="relative z-10 flex flex-col w-full flex-1 min-h-0 overflow-y-auto">
-        <nav className="px-8 py-8 flex-shrink-0">
+        <nav className="px-8 py-8 shrink-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="text-2xl font-semibold text-white tracking-wide">Evexía</div>
             <Link
               to="/auth/login"
-              search={{}}
+              search={EMPTY_AUTH_SEARCH}
               className="text-white/70 hover:text-white transition-colors text-sm"
             >
               Sign In
@@ -100,7 +91,7 @@ function LandingPage() {
               </Link>
               <Link
                 to="/auth/login"
-                search={{}}
+                search={EMPTY_AUTH_SEARCH}
                 className="text-white/60 hover:text-white/90 transition-colors text-sm"
               >
                 Already have an account?
@@ -109,7 +100,7 @@ function LandingPage() {
           </div>
         </main>
 
-        <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm flex-shrink-0">
+        <footer className="px-8 py-8 bg-black/20 backdrop-blur-sm shrink-0">
           <div className="max-w-7xl mx-auto">
             <p className="text-white/50 text-xs">© 2026 Evexía</p>
           </div>

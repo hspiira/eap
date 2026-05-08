@@ -141,7 +141,7 @@ function IndustriesPage() {
                 onUpdated={handleIndustryUpdated}
               />
             ) : (
-              <div className="border border-border/25 bg-white p-4 flex flex-col justify-center flex-1 min-h-[120px] rounded-none">
+              <div className="border border-border/25 bg-white p-4 flex flex-col justify-center flex-1 min-h-30 rounded-none">
                 <h3 className="text-sm font-semibold text-fg mb-2">Hey, Let&apos;s Start Now!</h3>
                 <p className="text-sm text-fg/80">
                   Select an industry from the list to view its details, hierarchy, and edit it.

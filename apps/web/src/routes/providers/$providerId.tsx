@@ -219,7 +219,7 @@ function AuditPanel({ provider }: { provider: Provider }) {
       {audit.map((t) => (
         <li key={t.id} className="relative">
           <span
-            className="absolute -left-[19px] top-1.5 inline-block h-3 w-3 rounded-full bg-primary"
+            className="absolute -left-4.75 top-1.5 inline-block h-3 w-3 rounded-full bg-primary"
             aria-hidden
           />
           <p className="text-xs uppercase tracking-wide text-fg/60">
