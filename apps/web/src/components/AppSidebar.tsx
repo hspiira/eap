@@ -11,9 +11,11 @@ import {
   FileCheck,
   FileSignature,
   FolderOpen,
+  Headphones,
   Home,
   Inbox,
   LayoutList,
+  PhoneCall,
   Tag,
   UserCircle,
   UserCog,
@@ -193,6 +195,13 @@ export function AppSidebar() {
           items={[
             { to: "/services", label: "Services", icon: Briefcase },
             { to: "/service-sessions", label: "Sessions", icon: Calendar },
+          ]}
+        />
+        <SidebarSection
+          label="Care Callbacks"
+          items={[
+            { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
+            { to: "/care-callbacks/worklist", label: "My worklist", icon: Headphones },
           ]}
         />
         <SidebarSection

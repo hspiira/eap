@@ -285,6 +285,63 @@ export enum IncidentTimelineEventKind {
 }
 
 /**
+ * Lifecycle status of a counsellor-initiated care-callback campaign (Phase 3 flagship).
+ */
+export enum CallbackCampaignStatus {
+  DRAFT = 'Draft',
+  SCHEDULED = 'Scheduled',
+  ACTIVE = 'Active',
+  COMPLETED = 'Completed',
+  CANCELLED = 'Cancelled',
+}
+
+/**
+ * Sampling strategy for selecting cases into a callback campaign.
+ * - FULL: every eligible session in the period.
+ * - RANDOM: random N from the eligible pool (`sample_size` honoured).
+ * - STRATIFIED: random N stratified by diagnosis bucket / department (BE-driven).
+ */
+export enum CallbackSamplingStrategy {
+  FULL = 'Full',
+  RANDOM = 'Random',
+  STRATIFIED = 'Stratified',
+}
+
+/**
+ * Per-case status inside an outreach worklist.
+ */
+export enum CallbackCaseStatus {
+  QUEUED = 'Queued',
+  IN_PROGRESS = 'In Progress',
+  COMPLETED = 'Completed',
+  NO_ANSWER = 'No Answer',
+  DECLINED = 'Declined',
+  CRISIS_ESCALATED = 'Crisis Escalated',
+}
+
+/**
+ * Question types used by the dynamic Questionnaire renderer (Phase 3 #1 triage form).
+ * Mirrors the BE shape; renderer dispatches on this discriminator.
+ */
+export enum QuestionnaireQuestionType {
+  SCALE = 'Scale',
+  SINGLE_CHOICE = 'SingleChoice',
+  MULTI_CHOICE = 'MultiChoice',
+  TEXT = 'Text',
+  YES_NO = 'YesNo',
+}
+
+/**
+ * When the questionnaire is administered relative to the session.
+ * Joseph 7-variable + WOS-5 are run pre + post; outcome reports diff the two.
+ */
+export enum QuestionnaireAdministration {
+  PRE = 'Pre',
+  POST = 'Post',
+  STANDALONE = 'Standalone',
+}
+
+/**
  * Action types for audit logs
  */
 export enum ActionType {

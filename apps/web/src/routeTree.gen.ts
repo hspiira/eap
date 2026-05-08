@@ -25,6 +25,7 @@ import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as ContractsRouteImport } from './routes/contracts'
 import { Route as ContactsRouteImport } from './routes/contacts'
 import { Route as ClientsRouteImport } from './routes/clients'
+import { Route as CareCallbacksRouteImport } from './routes/care-callbacks'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as AtRiskRouteImport } from './routes/at-risk'
@@ -41,6 +42,7 @@ import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
 import { Route as UsersNewRouteImport } from './routes/users/new'
 import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
 import { Route as TagsNewRouteImport } from './routes/tags/new'
@@ -61,9 +63,14 @@ import { Route as ContractsNewRouteImport } from './routes/contracts/new'
 import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
+import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
+import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
+import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as CareCallbacksWorklistIndexRouteImport } from './routes/care-callbacks/worklist/index'
+import { Route as CareCallbacksWorklistCaseIdRouteImport } from './routes/care-callbacks/worklist/$caseId'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -145,6 +152,11 @@ const ClientsRoute = ClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareCallbacksRoute = CareCallbacksRouteImport.update({
+  id: '/care-callbacks',
+  path: '/care-callbacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -224,6 +236,11 @@ const ClientsIndexRoute = ClientsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ClientsRoute,
+} as any)
+const CareCallbacksIndexRoute = CareCallbacksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CareCallbacksRoute,
 } as any)
 const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
@@ -327,6 +344,21 @@ const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   path: '/$clientId',
   getParentRoute: () => ClientsRoute,
 } as any)
+const CareCallbacksWorklistRoute = CareCallbacksWorklistRouteImport.update({
+  id: '/worklist',
+  path: '/worklist',
+  getParentRoute: () => CareCallbacksRoute,
+} as any)
+const CareCallbacksNewRoute = CareCallbacksNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CareCallbacksRoute,
+} as any)
+const CareCallbacksCampaignIdRoute = CareCallbacksCampaignIdRouteImport.update({
+  id: '/$campaignId',
+  path: '/$campaignId',
+  getParentRoute: () => CareCallbacksRoute,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -342,6 +374,18 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const CareCallbacksWorklistIndexRoute =
+  CareCallbacksWorklistIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => CareCallbacksWorklistRoute,
+  } as any)
+const CareCallbacksWorklistCaseIdRoute =
+  CareCallbacksWorklistCaseIdRouteImport.update({
+    id: '/$caseId',
+    path: '/$caseId',
+    getParentRoute: () => CareCallbacksWorklistRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -349,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/at-risk': typeof AtRiskRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
+  '/care-callbacks': typeof CareCallbacksRouteWithChildren
   '/clients': typeof ClientsRouteWithChildren
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
@@ -368,6 +413,9 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
+  '/care-callbacks/new': typeof CareCallbacksNewRoute
+  '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -388,6 +436,7 @@ export interface FileRoutesByFullPath {
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
+  '/care-callbacks/': typeof CareCallbacksIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
@@ -399,6 +448,8 @@ export interface FileRoutesByFullPath {
   '/services/': typeof ServicesIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
+  '/care-callbacks/worklist/': typeof CareCallbacksWorklistIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -414,6 +465,8 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
+  '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -434,6 +487,7 @@ export interface FileRoutesByTo {
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
+  '/care-callbacks': typeof CareCallbacksIndexRoute
   '/clients': typeof ClientsIndexRoute
   '/contracts': typeof ContractsIndexRoute
   '/incidents': typeof IncidentsIndexRoute
@@ -445,6 +499,8 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesIndexRoute
   '/tags': typeof TagsIndexRoute
   '/users': typeof UsersIndexRoute
+  '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
+  '/care-callbacks/worklist': typeof CareCallbacksWorklistIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -453,6 +509,7 @@ export interface FileRoutesById {
   '/at-risk': typeof AtRiskRoute
   '/audit': typeof AuditRoute
   '/auth': typeof AuthRouteWithChildren
+  '/care-callbacks': typeof CareCallbacksRouteWithChildren
   '/clients': typeof ClientsRouteWithChildren
   '/contacts': typeof ContactsRoute
   '/contracts': typeof ContractsRouteWithChildren
@@ -472,6 +529,9 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
+  '/care-callbacks/new': typeof CareCallbacksNewRoute
+  '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -492,6 +552,7 @@ export interface FileRoutesById {
   '/tags/new': typeof TagsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
+  '/care-callbacks/': typeof CareCallbacksIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
@@ -503,6 +564,8 @@ export interface FileRoutesById {
   '/services/': typeof ServicesIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
+  '/care-callbacks/worklist/': typeof CareCallbacksWorklistIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -512,6 +575,7 @@ export interface FileRouteTypes {
     | '/at-risk'
     | '/audit'
     | '/auth'
+    | '/care-callbacks'
     | '/clients'
     | '/contacts'
     | '/contracts'
@@ -531,6 +595,9 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/care-callbacks/$campaignId'
+    | '/care-callbacks/new'
+    | '/care-callbacks/worklist'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -551,6 +618,7 @@ export interface FileRouteTypes {
     | '/tags/new'
     | '/users/$userId'
     | '/users/new'
+    | '/care-callbacks/'
     | '/clients/'
     | '/contracts/'
     | '/incidents/'
@@ -562,6 +630,8 @@ export interface FileRouteTypes {
     | '/services/'
     | '/tags/'
     | '/users/'
+    | '/care-callbacks/worklist/$caseId'
+    | '/care-callbacks/worklist/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -577,6 +647,8 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/care-callbacks/$campaignId'
+    | '/care-callbacks/new'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -597,6 +669,7 @@ export interface FileRouteTypes {
     | '/tags/new'
     | '/users/$userId'
     | '/users/new'
+    | '/care-callbacks'
     | '/clients'
     | '/contracts'
     | '/incidents'
@@ -608,6 +681,8 @@ export interface FileRouteTypes {
     | '/services'
     | '/tags'
     | '/users'
+    | '/care-callbacks/worklist/$caseId'
+    | '/care-callbacks/worklist'
   id:
     | '__root__'
     | '/'
@@ -615,6 +690,7 @@ export interface FileRouteTypes {
     | '/at-risk'
     | '/audit'
     | '/auth'
+    | '/care-callbacks'
     | '/clients'
     | '/contacts'
     | '/contracts'
@@ -634,6 +710,9 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/set-password'
     | '/auth/signup'
+    | '/care-callbacks/$campaignId'
+    | '/care-callbacks/new'
+    | '/care-callbacks/worklist'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -654,6 +733,7 @@ export interface FileRouteTypes {
     | '/tags/new'
     | '/users/$userId'
     | '/users/new'
+    | '/care-callbacks/'
     | '/clients/'
     | '/contracts/'
     | '/incidents/'
@@ -665,6 +745,8 @@ export interface FileRouteTypes {
     | '/services/'
     | '/tags/'
     | '/users/'
+    | '/care-callbacks/worklist/$caseId'
+    | '/care-callbacks/worklist/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -673,6 +755,7 @@ export interface RootRouteChildren {
   AtRiskRoute: typeof AtRiskRoute
   AuditRoute: typeof AuditRoute
   AuthRoute: typeof AuthRouteWithChildren
+  CareCallbacksRoute: typeof CareCallbacksRouteWithChildren
   ClientsRoute: typeof ClientsRouteWithChildren
   ContactsRoute: typeof ContactsRoute
   ContractsRoute: typeof ContractsRouteWithChildren
@@ -805,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/care-callbacks': {
+      id: '/care-callbacks'
+      path: '/care-callbacks'
+      fullPath: '/care-callbacks'
+      preLoaderRoute: typeof CareCallbacksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -916,6 +1006,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/clients/'
       preLoaderRoute: typeof ClientsIndexRouteImport
       parentRoute: typeof ClientsRoute
+    }
+    '/care-callbacks/': {
+      id: '/care-callbacks/'
+      path: '/'
+      fullPath: '/care-callbacks/'
+      preLoaderRoute: typeof CareCallbacksIndexRouteImport
+      parentRoute: typeof CareCallbacksRoute
     }
     '/users/new': {
       id: '/users/new'
@@ -1057,6 +1154,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof ClientsRoute
     }
+    '/care-callbacks/worklist': {
+      id: '/care-callbacks/worklist'
+      path: '/worklist'
+      fullPath: '/care-callbacks/worklist'
+      preLoaderRoute: typeof CareCallbacksWorklistRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/care-callbacks/new': {
+      id: '/care-callbacks/new'
+      path: '/new'
+      fullPath: '/care-callbacks/new'
+      preLoaderRoute: typeof CareCallbacksNewRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/care-callbacks/$campaignId': {
+      id: '/care-callbacks/$campaignId'
+      path: '/$campaignId'
+      fullPath: '/care-callbacks/$campaignId'
+      preLoaderRoute: typeof CareCallbacksCampaignIdRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
     '/auth/signup': {
       id: '/auth/signup'
       path: '/signup'
@@ -1078,6 +1196,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/care-callbacks/worklist/': {
+      id: '/care-callbacks/worklist/'
+      path: '/'
+      fullPath: '/care-callbacks/worklist/'
+      preLoaderRoute: typeof CareCallbacksWorklistIndexRouteImport
+      parentRoute: typeof CareCallbacksWorklistRoute
+    }
+    '/care-callbacks/worklist/$caseId': {
+      id: '/care-callbacks/worklist/$caseId'
+      path: '/$caseId'
+      fullPath: '/care-callbacks/worklist/$caseId'
+      preLoaderRoute: typeof CareCallbacksWorklistCaseIdRouteImport
+      parentRoute: typeof CareCallbacksWorklistRoute
+    }
   }
 }
 
@@ -1094,6 +1226,39 @@ const AuthRouteChildren: AuthRouteChildren = {
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface CareCallbacksWorklistRouteChildren {
+  CareCallbacksWorklistCaseIdRoute: typeof CareCallbacksWorklistCaseIdRoute
+  CareCallbacksWorklistIndexRoute: typeof CareCallbacksWorklistIndexRoute
+}
+
+const CareCallbacksWorklistRouteChildren: CareCallbacksWorklistRouteChildren = {
+  CareCallbacksWorklistCaseIdRoute: CareCallbacksWorklistCaseIdRoute,
+  CareCallbacksWorklistIndexRoute: CareCallbacksWorklistIndexRoute,
+}
+
+const CareCallbacksWorklistRouteWithChildren =
+  CareCallbacksWorklistRoute._addFileChildren(
+    CareCallbacksWorklistRouteChildren,
+  )
+
+interface CareCallbacksRouteChildren {
+  CareCallbacksCampaignIdRoute: typeof CareCallbacksCampaignIdRoute
+  CareCallbacksNewRoute: typeof CareCallbacksNewRoute
+  CareCallbacksWorklistRoute: typeof CareCallbacksWorklistRouteWithChildren
+  CareCallbacksIndexRoute: typeof CareCallbacksIndexRoute
+}
+
+const CareCallbacksRouteChildren: CareCallbacksRouteChildren = {
+  CareCallbacksCampaignIdRoute: CareCallbacksCampaignIdRoute,
+  CareCallbacksNewRoute: CareCallbacksNewRoute,
+  CareCallbacksWorklistRoute: CareCallbacksWorklistRouteWithChildren,
+  CareCallbacksIndexRoute: CareCallbacksIndexRoute,
+}
+
+const CareCallbacksRouteWithChildren = CareCallbacksRoute._addFileChildren(
+  CareCallbacksRouteChildren,
+)
 
 interface ClientsRouteChildren {
   ClientsClientIdRoute: typeof ClientsClientIdRoute
@@ -1265,6 +1430,7 @@ const rootRouteChildren: RootRouteChildren = {
   AtRiskRoute: AtRiskRoute,
   AuditRoute: AuditRoute,
   AuthRoute: AuthRouteWithChildren,
+  CareCallbacksRoute: CareCallbacksRouteWithChildren,
   ClientsRoute: ClientsRouteWithChildren,
   ContactsRoute: ContactsRoute,
   ContractsRoute: ContractsRouteWithChildren,
