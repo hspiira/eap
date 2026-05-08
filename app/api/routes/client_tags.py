@@ -14,11 +14,13 @@ from app.api.schemas.client_tag_schemas import (
     ClientTagUpdate,
 )
 from app.application.use_cases.client_tag_use_cases import (
-    ActivateClientTagUseCase,
     CreateClientTagUseCase,
-    DeactivateClientTagUseCase,
     GetClientTagUseCase,
     UpdateClientTagUseCase,
+)
+from app.application.use_cases.transitions import (
+    ClientTagTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.entities.client_tag import ClientTagEntity
@@ -126,7 +128,9 @@ async def activate_client_tag(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a client tag."""
-    tag = await ActivateClientTagUseCase(tag_repo).execute(ClientTagId(tag_id))
+    use_case: TransitionUseCase = TransitionUseCase(tag_repo)
+    use_case.entity_name = "Tag"
+    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.ACTIVATE)
     await audit_entity_operation(
         entity=tag,
         audit_handler=audit_handler,
@@ -152,7 +156,9 @@ async def deactivate_client_tag(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a client tag."""
-    tag = await DeactivateClientTagUseCase(tag_repo).execute(ClientTagId(tag_id))
+    use_case: TransitionUseCase = TransitionUseCase(tag_repo)
+    use_case.entity_name = "Tag"
+    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.DEACTIVATE)
     await audit_entity_operation(
         entity=tag,
         audit_handler=audit_handler,

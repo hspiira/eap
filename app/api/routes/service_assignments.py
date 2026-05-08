@@ -14,11 +14,13 @@ from app.api.schemas.service_assignment_schemas import (
     ServiceAssignmentUpdate,
 )
 from app.application.use_cases.service_assignment_use_cases import (
-    ActivateServiceAssignmentUseCase,
     CreateServiceAssignmentUseCase,
-    DeactivateServiceAssignmentUseCase,
     GetServiceAssignmentUseCase,
     UpdateServiceAssignmentUseCase,
+)
+from app.application.use_cases.transitions import (
+    ServiceAssignmentTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import BaseStatus
@@ -129,8 +131,10 @@ async def activate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service assignment."""
-    assignment = await ActivateServiceAssignmentUseCase(assignment_repo).execute(
-        ServiceAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
     )
     await audit_entity_operation(
         entity=assignment,
@@ -157,8 +161,10 @@ async def deactivate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service assignment."""
-    assignment = await DeactivateServiceAssignmentUseCase(assignment_repo).execute(
-        ServiceAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
     )
     await audit_entity_operation(
         entity=assignment,

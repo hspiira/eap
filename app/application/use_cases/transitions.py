@@ -97,6 +97,8 @@ class UserTransition(str, Enum):
 class ClientTransition(str, Enum):
     ACTIVATE = "activate"
     DEACTIVATE = "deactivate"
+    SUSPEND = "suspend"
+    TERMINATE = "terminate"
     VERIFY = "verify"
     ARCHIVE = "archive"
     RESTORE = "restore"
@@ -104,6 +106,7 @@ class ClientTransition(str, Enum):
     UPDATE_BILLING_ADDRESS = "update_billing_address"
     UPDATE_INDUSTRY = "update_industry"
     UPDATE_NAME = "update_name"
+    UPDATE_PREFERRED_CONTACT_METHOD = "update_preferred_contact_method"
 
 
 class PersonTransition(str, Enum):
@@ -127,6 +130,7 @@ class ContractTransition(str, Enum):
     RENEW = "renew"
     TERMINATE = "terminate"
     ARCHIVE = "archive"
+    RESTORE = "restore"
     UPDATE_BILLING_RATE = "update_billing_rate"
     UPDATE_PAYMENT_FREQUENCY = "update_payment_frequency"
     UPDATE_PAYMENT_STATUS = "update_payment_status"
@@ -136,6 +140,8 @@ class ContractTransition(str, Enum):
 class ServiceTransition(str, Enum):
     ACTIVATE = "activate"
     DEACTIVATE = "deactivate"
+    ARCHIVE = "archive"
+    RESTORE = "restore"
     UPDATE_DESCRIPTION = "update_description"
     UPDATE_DURATION = "update_duration"
     UPDATE_MAX_PARTICIPANTS = "update_max_participants"
@@ -146,6 +152,8 @@ class ServiceSessionTransition(str, Enum):
     CANCEL = "cancel"
     RESCHEDULE = "reschedule"
     MARK_NO_SHOW = "mark_no_show"
+    ARCHIVE = "archive"
+    RESTORE = "restore"
     UPDATE_NOTES = "update_notes"
     UPDATE_FEEDBACK = "update_feedback"
     UPDATE_LOCATION = "update_location"
@@ -164,6 +172,11 @@ class KPITransition(str, Enum):
     UPDATE_TARGET_VALUE = "update_target_value"
     UPDATE_THRESHOLDS = "update_thresholds"
     UPDATE_DESCRIPTION = "update_description"
+
+
+class KPIAssignmentTransition(str, Enum):
+    ACTIVATE = "activate"
+    DEACTIVATE = "deactivate"
 
 
 class IndustryTransition(str, Enum):

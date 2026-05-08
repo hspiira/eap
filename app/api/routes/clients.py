@@ -32,17 +32,12 @@ from app.api.schemas.client_schemas import (
     ContactInfoSchema,
 )
 from app.application.use_cases.client_use_cases import (
-    ActivateClientUseCase,
-    ArchiveClientUseCase,
     CreateClientUseCase,
-    DeactivateClientUseCase,
-    RestoreClientUseCase,
-    SuspendClientUseCase,
-    TerminateClientUseCase,
-    UpdateClientBillingAddressUseCase,
-    UpdateClientContactInfoUseCase,
     UpdateClientUseCase,
-    VerifyClientUseCase,
+)
+from app.application.use_cases.transitions import (
+    ClientTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import BaseStatus
@@ -178,8 +173,10 @@ async def verify_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a client."""
-    client = await VerifyClientUseCase(client_repo).execute(
-        client.id, UserId(verified_by)
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(
+        client.id, ClientTransition.VERIFY, verified_by=UserId(verified_by)
     )
     await audit_entity_operation(
         entity=client,
@@ -206,7 +203,9 @@ async def activate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a client."""
-    client = await ActivateClientUseCase(client_repo).execute(client.id)
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.ACTIVATE)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -233,9 +232,9 @@ async def deactivate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a client."""
-    client = await DeactivateClientUseCase(client_repo).execute(
-        client.id, body.reason
-    )
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.DEACTIVATE, reason=body.reason)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -262,9 +261,9 @@ async def suspend_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a client."""
-    client = await SuspendClientUseCase(client_repo).execute(
-        client.id, body.reason
-    )
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.SUSPEND, reason=body.reason)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -291,9 +290,9 @@ async def terminate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a client."""
-    client = await TerminateClientUseCase(client_repo).execute(
-        client.id, body.reason
-    )
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.TERMINATE, reason=body.reason)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -319,7 +318,9 @@ async def archive_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a client."""
-    client = await ArchiveClientUseCase(client_repo).execute(client.id)
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.ARCHIVE)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -345,7 +346,9 @@ async def restore_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted client."""
-    client = await RestoreClientUseCase(client_repo).execute(client.id)
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(client.id, ClientTransition.RESTORE)
     await audit_entity_operation(
         entity=client,
         audit_handler=audit_handler,
@@ -409,8 +412,10 @@ async def update_client_contact_info(
         address=data.contact_info.address,
     )
 
-    client = await UpdateClientContactInfoUseCase(client_repo).execute(
-        client.id, contact_info
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(
+        client.id, ClientTransition.UPDATE_CONTACT_INFO, contact_info=contact_info
     )
     await audit_entity_operation(
         entity=client,
@@ -447,8 +452,10 @@ async def update_client_billing_address(
             postal_code=data.billing_address.postal_code,
         )
 
-    client = await UpdateClientBillingAddressUseCase(client_repo).execute(
-        client.id, billing_address
+    use_case: TransitionUseCase = TransitionUseCase(client_repo)
+    use_case.entity_name = "Client"
+    client = await use_case.execute(
+        client.id, ClientTransition.UPDATE_BILLING_ADDRESS, billing_address=billing_address
     )
     await audit_entity_operation(
         entity=client,

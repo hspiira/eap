@@ -5,7 +5,7 @@ Application services for Client aggregate operations.
 Refactored to use base use case classes to eliminate boilerplate.
 """
 
-from app.application.use_cases.base import BaseUseCase, EntityLifecycleUseCase
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.exceptions import SubscriptionLimitError
@@ -17,7 +17,6 @@ from app.domain.value_objects.core import (
     ContactInfo,
     IndustryId,
     TenantId,
-    UserId,
 )
 from app.shared.utils.datetime import utc_now
 
@@ -107,111 +106,16 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         return await self._save_and_publish_events(client)
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (using base class)
-# =============================================================================
+# Lifecycle and single-field updates dispatched via TransitionUseCase + ClientTransition.
+# UpdateClientUseCase (composite/partial) kept below.
 
 
-class VerifyClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for verifying a client."""
+class UpdateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
+    """Composite update for Client (multiple optional fields).
 
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, verified_by: UserId, **kwargs) -> None:
-        entity.verify(verified_by)
-
-    async def execute(self, client_id: ClientId, verified_by: UserId) -> ClientEntity:
-        """Execute with required verified_by parameter."""
-        return await super().execute(client_id, verified_by=verified_by)
-
-
-class ActivateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for activating a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
-        entity.activate()
-
-
-class DeactivateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for deactivating a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, reason: str | None = None, **kwargs) -> None:
-        entity.deactivate(reason)
-
-    async def execute(self, client_id: ClientId, reason: str | None = None) -> ClientEntity:
-        """Execute with optional reason parameter."""
-        return await super().execute(client_id, reason=reason)
-
-
-class SuspendClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for suspending a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, reason: str, **kwargs) -> None:
-        entity.suspend(reason)
-
-    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
-        """Execute with required reason parameter."""
-        return await super().execute(client_id, reason=reason)
-
-
-class TerminateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for terminating a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, reason: str, **kwargs) -> None:
-        entity.terminate(reason)
-
-    async def execute(self, client_id: ClientId, reason: str) -> ClientEntity:
-        """Execute with required reason parameter."""
-        return await super().execute(client_id, reason=reason)
-
-
-class ArchiveClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for archiving a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
-        entity.archive()
-
-
-class RestoreClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for restoring a client."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, *args, **kwargs) -> None:
-        entity.restore()
-
-
-# =============================================================================
-# UPDATE USE CASES (using base class)
-# =============================================================================
-
-
-class UpdateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for updating client basic information."""
-
-    entity_name = "Client"
-
-    async def _perform_action(
-        self,
-        entity: ClientEntity,
-        name: str | None = None,
-        preferred_contact_method: ContactMethod | None = None,
-        **kwargs,
-    ) -> None:
-        if name is not None:
-            entity.update_name(name)
-        if preferred_contact_method is not None:
-            entity.update_preferred_contact_method(preferred_contact_method)
+    Bespoke because partial updates touch multiple entity methods conditionally.
+    Single-method updates flow through TransitionUseCase + ClientTransition.
+    """
 
     async def execute(
         self,
@@ -219,38 +123,12 @@ class UpdateClientUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
         name: str | None = None,
         preferred_contact_method: ContactMethod | None = None,
     ) -> ClientEntity:
-        """Execute with optional update parameters."""
-        return await super().execute(
-            client_id,
-            name=name,
-            preferred_contact_method=preferred_contact_method,
-        )
-
-
-class UpdateClientContactInfoUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for updating client contact information."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, contact_info: ContactInfo, **kwargs) -> None:
-        entity.update_contact_info(contact_info)
-
-    async def execute(self, client_id: ClientId, contact_info: ContactInfo) -> ClientEntity:
-        """Execute with required contact_info parameter."""
-        return await super().execute(client_id, contact_info=contact_info)
-
-
-class UpdateClientBillingAddressUseCase(EntityLifecycleUseCase[ClientEntity, ClientId]):
-    """Use case for updating client billing address."""
-
-    entity_name = "Client"
-
-    async def _perform_action(self, entity: ClientEntity, billing_address: Address | None, **kwargs) -> None:
-        entity.update_billing_address(billing_address)
-
-    async def execute(self, client_id: ClientId, billing_address: Address | None) -> ClientEntity:
-        """Execute with billing_address parameter (can be None to clear)."""
-        return await super().execute(client_id, billing_address=billing_address)
+        client = await self._get_entity_or_raise(client_id, "Client")
+        if name is not None:
+            client.update_name(name)
+        if preferred_contact_method is not None:
+            client.update_preferred_contact_method(preferred_contact_method)
+        return await self._save_and_publish_events(client)
 
 
 # =============================================================================

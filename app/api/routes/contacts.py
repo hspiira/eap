@@ -14,11 +14,13 @@ from app.api.schemas.contact_schemas import (
     ContactUpdate,
 )
 from app.application.use_cases.contact_use_cases import (
-    ActivateContactUseCase,
     CreateContactUseCase,
-    DeactivateContactUseCase,
     GetContactUseCase,
     UpdateContactUseCase,
+)
+from app.application.use_cases.transitions import (
+    ContactTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.entities.contact import ContactEntity
@@ -140,7 +142,9 @@ async def activate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contact."""
-    contact = await ActivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
+    use_case.entity_name = "Contact"
+    contact = await use_case.execute(ContactId(contact_id), ContactTransition.ACTIVATE)
     await audit_entity_operation(
         entity=contact,
         audit_handler=audit_handler,
@@ -166,7 +170,9 @@ async def deactivate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a contact."""
-    contact = await DeactivateContactUseCase(contact_repo).execute(ContactId(contact_id))
+    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
+    use_case.entity_name = "Contact"
+    contact = await use_case.execute(ContactId(contact_id), ContactTransition.DEACTIVATE)
     await audit_entity_operation(
         entity=contact,
         audit_handler=audit_handler,

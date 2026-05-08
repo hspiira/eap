@@ -40,20 +40,13 @@ from app.api.schemas.person_schemas import (
     UpdateStaffInfoRequest,
 )
 from app.application.use_cases.person_use_cases import (
-    ActivatePersonUseCase,
     AddSecondaryRoleUseCase,
-    ArchivePersonUseCase,
     CreateClientEmployeeUseCase,
     CreateDependentUseCase,
-    DeactivatePersonUseCase,
-    RemoveSecondaryRoleUseCase,
-    RestorePersonUseCase,
-    TerminatePersonUseCase,
-    UpdateDependentInfoUseCase,
-    UpdateEmergencyContactUseCase,
-    UpdateEmploymentInfoUseCase,
-    UpdateLicenseInfoUseCase,
-    UpdateStaffInfoUseCase,
+)
+from app.application.use_cases.transitions import (
+    PersonTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import BaseStatus, PersonType
@@ -256,7 +249,9 @@ async def activate_person(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a person."""
-    person = await ActivatePersonUseCase(person_repo).execute(person.id)
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(person.id, PersonTransition.ACTIVATE)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -283,8 +278,10 @@ async def deactivate_person(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a person."""
-    person = await DeactivatePersonUseCase(person_repo).execute(
-        person.id, body.reason
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.DEACTIVATE, reason=body.reason
     )
     await audit_entity_operation(
         entity=person,
@@ -312,8 +309,10 @@ async def terminate_person(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a person."""
-    person = await TerminatePersonUseCase(person_repo).execute(
-        person.id, body.reason
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.TERMINATE, reason=body.reason
     )
     await audit_entity_operation(
         entity=person,
@@ -424,7 +423,9 @@ async def remove_secondary_role(
     db: AsyncSession = Depends(get_db),
 ):
     """Remove secondary role from a person."""
-    person = await RemoveSecondaryRoleUseCase(person_repo).execute(person.id)
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(person.id, PersonTransition.REMOVE_SECONDARY_ROLE)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -458,8 +459,10 @@ async def update_emergency_contact(
         if data.emergency_contact.email
         else None,
     )
-    person = await UpdateEmergencyContactUseCase(person_repo).execute(
-        person.id, contact
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.UPDATE_EMERGENCY_CONTACT, contact=contact
     )
     await audit_entity_operation(
         entity=person,
@@ -502,8 +505,10 @@ async def update_employment_info(
         employee_id=data.employment_info.employee_id,
         end_date=data.employment_info.end_date,
     )
-    person = await UpdateEmploymentInfoUseCase(person_repo).execute(
-        person.id, info
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.UPDATE_EMPLOYMENT_INFO, info=info
     )
     await audit_entity_operation(
         entity=person,
@@ -536,8 +541,10 @@ async def update_license_info(
         issuing_authority=data.license_info.issuing_authority,
         expiry_date=data.license_info.expiry_date,
     )
-    person = await UpdateLicenseInfoUseCase(person_repo).execute(
-        person.id, info
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.UPDATE_LICENSE_INFO, info=info
     )
     await audit_entity_operation(
         entity=person,
@@ -573,8 +580,10 @@ async def update_staff_info(
         can_manage_services=data.staff_info.can_manage_services,
         can_view_reports=data.staff_info.can_view_reports,
     )
-    person = await UpdateStaffInfoUseCase(person_repo).execute(
-        person.id, info
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id, PersonTransition.UPDATE_STAFF_INFO, info=info
     )
     await audit_entity_operation(
         entity=person,
@@ -608,8 +617,12 @@ async def update_dependent_info(
         relationship=dep.relationship,
         guardian_id=UserId(dep.guardian_id) if dep.guardian_id else None,
     )
-    person = await UpdateDependentInfoUseCase(person_repo).execute(
-        person.id, dependent_info_vo
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(
+        person.id,
+        PersonTransition.UPDATE_DEPENDENT_INFO,
+        info=dependent_info_vo,
     )
     await audit_entity_operation(
         entity=person,
@@ -636,7 +649,9 @@ async def archive_person(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a person."""
-    person = await ArchivePersonUseCase(person_repo).execute(person.id)
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(person.id, PersonTransition.ARCHIVE)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,
@@ -662,7 +677,9 @@ async def restore_person(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived person to active status."""
-    person = await RestorePersonUseCase(person_repo).execute(person.id)
+    use_case: TransitionUseCase = TransitionUseCase(person_repo)
+    use_case.entity_name = "Person"
+    person = await use_case.execute(person.id, PersonTransition.RESTORE)
     await audit_entity_operation(
         entity=person,
         audit_handler=audit_handler,

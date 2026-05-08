@@ -5,13 +5,7 @@ Application services for Service aggregate operations.
 Refactored to use base use case classes.
 """
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_archive_use_case,
-    create_deactivate_use_case,
-    create_restore_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service import ServiceEntity
 from app.domain.enums import BaseStatus
 from app.domain.repositories.service_repository import ServiceRepository
@@ -19,54 +13,7 @@ from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateServiceUseCase:
-    """Use case for activating a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self._use_case = create_activate_use_case(service_repository, "Service")
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        return await self._use_case.execute(service_id)
-
-
-class DeactivateServiceUseCase:
-    """Use case for deactivating a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self._use_case = create_deactivate_use_case(service_repository, "Service")
-
-    async def execute(self, service_id: ServiceId, reason: str | None = None) -> ServiceEntity:
-        return await self._use_case.execute(service_id, reason=reason)
-
-
-class ArchiveServiceUseCase:
-    """Use case for archiving a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self._use_case = create_archive_use_case(service_repository, "Service")
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        return await self._use_case.execute(service_id)
-
-
-class RestoreServiceUseCase:
-    """Use case for restoring a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        self._use_case = create_restore_use_case(service_repository, "Service")
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity:
-        return await self._use_case.execute(service_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + ServiceTransition.
 
 
 class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):

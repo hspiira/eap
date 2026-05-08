@@ -1,44 +1,13 @@
 """Contact Use Cases - Application services for Contact operations."""
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.contact import ContactEntity
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, Email, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateContactUseCase:
-    """Use case for activating a contact."""
-
-    def __init__(self, contact_repository: ContactRepository):
-        self._use_case = create_activate_use_case(contact_repository, "Contact")
-
-    async def execute(self, contact_id: ContactId) -> ContactEntity:
-        return await self._use_case.execute(contact_id)
-
-
-class DeactivateContactUseCase:
-    """Use case for deactivating a contact."""
-
-    def __init__(self, contact_repository: ContactRepository):
-        self._use_case = create_deactivate_use_case(contact_repository, "Contact")
-
-    async def execute(self, contact_id: ContactId) -> ContactEntity:
-        return await self._use_case.execute(contact_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + ContactTransition.
 
 
 class CreateContactUseCase(BaseUseCase[ContactEntity, ContactId]):

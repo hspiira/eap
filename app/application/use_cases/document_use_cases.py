@@ -7,10 +7,7 @@ Refactored to use base use case classes.
 
 from datetime import datetime
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_archive_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.document import DocumentEntity
 from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.repositories.document_repository import DocumentRepository
@@ -18,24 +15,7 @@ from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ArchiveDocumentUseCase:
-    """Use case for archiving a document."""
-
-    def __init__(self, document_repository: DocumentRepository):
-        self._use_case = create_archive_use_case(document_repository, "Document")
-
-    async def execute(self, document_id: DocumentId) -> DocumentEntity:
-        return await self._use_case.execute(document_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle (archive/publish) dispatched via TransitionUseCase + DocumentTransition.
 
 
 class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
@@ -103,19 +83,6 @@ class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
 # =============================================================================
 # SPECIALIZED COMMAND USE CASES
 # =============================================================================
-
-
-class PublishDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
-    """Use case for publishing a document."""
-
-    def __init__(self, document_repository: DocumentRepository):
-        super().__init__(document_repository)
-
-    async def execute(self, document_id: DocumentId) -> DocumentEntity:
-        """Publish a document."""
-        document = await self._get_entity_or_raise(document_id, "Document")
-        document.publish()
-        return await self._save_and_publish_events(document)
 
 
 class CreateDocumentVersionUseCase(BaseUseCase[DocumentEntity, DocumentId]):

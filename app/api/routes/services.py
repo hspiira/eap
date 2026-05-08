@@ -23,13 +23,13 @@ from app.api.schemas.service_schemas import (
     ServiceUpdateGroupSettings,
 )
 from app.application.use_cases.service_use_cases import (
-    ActivateServiceUseCase,
-    ArchiveServiceUseCase,
     CreateServiceUseCase,
-    DeactivateServiceUseCase,
-    RestoreServiceUseCase,
     UpdateServiceGroupSettingsUseCase,
     UpdateServiceUseCase,
+)
+from app.application.use_cases.transitions import (
+    ServiceTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import BaseStatus
@@ -114,7 +114,9 @@ async def activate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service."""
-    service = await ActivateServiceUseCase(service_repo).execute(service.id)
+    use_case: TransitionUseCase = TransitionUseCase(service_repo)
+    use_case.entity_name = "Service"
+    service = await use_case.execute(service.id, ServiceTransition.ACTIVATE)
     await audit_entity_operation(
         entity=service,
         audit_handler=audit_handler,
@@ -141,8 +143,10 @@ async def deactivate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service."""
-    service = await DeactivateServiceUseCase(service_repo).execute(
-        service.id, reason
+    use_case: TransitionUseCase = TransitionUseCase(service_repo)
+    use_case.entity_name = "Service"
+    service = await use_case.execute(
+        service.id, ServiceTransition.DEACTIVATE, reason=reason
     )
     await audit_entity_operation(
         entity=service,
@@ -169,7 +173,9 @@ async def archive_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service."""
-    service = await ArchiveServiceUseCase(service_repo).execute(service.id)
+    use_case: TransitionUseCase = TransitionUseCase(service_repo)
+    use_case.entity_name = "Service"
+    service = await use_case.execute(service.id, ServiceTransition.ARCHIVE)
     await audit_entity_operation(
         entity=service,
         audit_handler=audit_handler,
@@ -195,7 +201,9 @@ async def restore_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted service."""
-    service = await RestoreServiceUseCase(service_repo).execute(service.id)
+    use_case: TransitionUseCase = TransitionUseCase(service_repo)
+    use_case.entity_name = "Service"
+    service = await use_case.execute(service.id, ServiceTransition.RESTORE)
     await audit_entity_operation(
         entity=service,
         audit_handler=audit_handler,

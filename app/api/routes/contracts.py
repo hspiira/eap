@@ -30,16 +30,13 @@ from app.api.schemas.contract_schemas import (
     MoneySchema,
 )
 from app.application.use_cases.contract_use_cases import (
-    ActivateContractUseCase,
-    ArchiveContractUseCase,
     CreateContractUseCase,
     GetContractUseCase,
-    RenewContractUseCase,
-    RestoreContractUseCase,
-    SignContractUseCase,
-    TerminateContractUseCase,
-    UpdateContractPaymentStatusUseCase,
     UpdateContractUseCase,
+)
+from app.application.use_cases.transitions import (
+    ContractTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import ContractStatus, PaymentStatus
@@ -150,9 +147,9 @@ async def activate_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contract."""
-    contract = await ActivateContractUseCase(contract_repo).execute(
-        contract.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(contract.id, ContractTransition.ACTIVATE)
     await audit_entity_operation(
         entity=contract,
         audit_handler=audit_handler,
@@ -179,8 +176,10 @@ async def sign_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Sign a contract."""
-    contract = await SignContractUseCase(contract_repo).execute(
-        contract.id, body.signed_by
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(
+        contract.id, ContractTransition.SIGN, signed_by=body.signed_by
     )
     await audit_entity_operation(
         entity=contract,
@@ -218,8 +217,13 @@ async def renew_contract(
     # Convert datetime to date for renew method
     new_end_date = body.new_end_date.date()
 
-    contract = await RenewContractUseCase(contract_repo).execute(
-        contract.id, new_end_date, new_rate
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(
+        contract.id,
+        ContractTransition.RENEW,
+        new_end_date=new_end_date,
+        new_rate=new_rate,
     )
     await audit_entity_operation(
         entity=contract,
@@ -247,8 +251,10 @@ async def terminate_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a contract."""
-    contract = await TerminateContractUseCase(contract_repo).execute(
-        contract.id, body.reason
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(
+        contract.id, ContractTransition.TERMINATE, reason=body.reason
     )
     await audit_entity_operation(
         entity=contract,
@@ -275,9 +281,9 @@ async def archive_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a contract."""
-    contract = await ArchiveContractUseCase(contract_repo).execute(
-        contract.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(contract.id, ContractTransition.ARCHIVE)
     await audit_entity_operation(
         entity=contract,
         audit_handler=audit_handler,
@@ -303,9 +309,9 @@ async def restore_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore a terminated or expired contract."""
-    contract = await RestoreContractUseCase(contract_repo).execute(
-        contract.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(contract.id, ContractTransition.RESTORE)
     await audit_entity_operation(
         entity=contract,
         audit_handler=audit_handler,
@@ -371,8 +377,12 @@ async def update_contract_payment_status(
     db: AsyncSession = Depends(get_db),
 ):
     """Update contract payment status."""
-    contract = await UpdateContractPaymentStatusUseCase(contract_repo).execute(
-        contract.id, body.payment_status
+    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
+    use_case.entity_name = "Contract"
+    contract = await use_case.execute(
+        contract.id,
+        ContractTransition.UPDATE_PAYMENT_STATUS,
+        payment_status=body.payment_status,
     )
     await audit_entity_operation(
         entity=contract,

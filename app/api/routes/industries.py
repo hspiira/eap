@@ -19,11 +19,13 @@ from app.api.schemas.industry_schemas import (
     IndustryUpdate,
 )
 from app.application.use_cases.industry_use_cases import (
-    ActivateIndustryUseCase,
     CreateIndustryUseCase,
-    DeactivateIndustryUseCase,
     GetIndustryUseCase,
     UpdateIndustryUseCase,
+)
+from app.application.use_cases.transitions import (
+    IndustryTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.entities.industry import IndustryEntity
@@ -137,7 +139,9 @@ async def activate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate an industry."""
-    industry = await ActivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
+    use_case.entity_name = "Industry"
+    industry = await use_case.execute(IndustryId(industry_id), IndustryTransition.ACTIVATE)
     await audit_entity_operation(
         entity=industry,
         audit_handler=audit_handler,
@@ -163,7 +167,9 @@ async def deactivate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate an industry."""
-    industry = await DeactivateIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
+    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
+    use_case.entity_name = "Industry"
+    industry = await use_case.execute(IndustryId(industry_id), IndustryTransition.DEACTIVATE)
     await audit_entity_operation(
         entity=industry,
         audit_handler=audit_handler,

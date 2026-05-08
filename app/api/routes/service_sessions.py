@@ -26,16 +26,13 @@ from app.api.schemas.service_session_schemas import (
     ServiceSessionUpdateFeedback,
 )
 from app.application.use_cases.service_session_use_cases import (
-    ArchiveServiceSessionUseCase,
-    CancelServiceSessionUseCase,
-    CompleteServiceSessionUseCase,
     CreateServiceSessionUseCase,
     GetServiceSessionUseCase,
-    MarkNoShowServiceSessionUseCase,
-    RescheduleServiceSessionUseCase,
-    RestoreServiceSessionUseCase,
-    UpdateServiceSessionFeedbackUseCase,
     UpdateServiceSessionUseCase,
+)
+from app.application.use_cases.transitions import (
+    ServiceSessionTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import SessionStatus
@@ -134,8 +131,13 @@ async def complete_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Complete a service session."""
-    session = await CompleteServiceSessionUseCase(session_repo).execute(
-        session.id, body.duration, body.notes
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.COMPLETE,
+        duration=body.duration,
+        notes=body.notes,
     )
     await audit_entity_operation(
         entity=session,
@@ -163,8 +165,10 @@ async def cancel_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Cancel a service session."""
-    session = await CancelServiceSessionUseCase(session_repo).execute(
-        session.id, body.reason
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.CANCEL, reason=body.reason
     )
     await audit_entity_operation(
         entity=session,
@@ -192,8 +196,12 @@ async def reschedule_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Reschedule a service session."""
-    session = await RescheduleServiceSessionUseCase(session_repo).execute(
-        session.id, body.new_scheduled_at
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.RESCHEDULE,
+        new_scheduled_at=body.new_scheduled_at,
     )
     await audit_entity_operation(
         entity=session,
@@ -220,9 +228,9 @@ async def mark_no_show_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a service session as no-show."""
-    session = await MarkNoShowServiceSessionUseCase(session_repo).execute(
-        session.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.MARK_NO_SHOW)
     await audit_entity_operation(
         entity=session,
         audit_handler=audit_handler,
@@ -278,8 +286,12 @@ async def update_service_session_feedback(
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session feedback."""
-    session = await UpdateServiceSessionFeedbackUseCase(session_repo).execute(
-        session.id, body.feedback
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.UPDATE_FEEDBACK,
+        feedback=body.feedback,
     )
     await audit_entity_operation(
         entity=session,
@@ -306,9 +318,9 @@ async def archive_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service session."""
-    session = await ArchiveServiceSessionUseCase(session_repo).execute(
-        session.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.ARCHIVE)
     await audit_entity_operation(
         entity=session,
         audit_handler=audit_handler,
@@ -334,9 +346,9 @@ async def restore_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived service session."""
-    session = await RestoreServiceSessionUseCase(session_repo).execute(
-        session.id
-    )
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.RESTORE)
     await audit_entity_operation(
         entity=session,
         audit_handler=audit_handler,
