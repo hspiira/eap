@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from app.domain.value_objects.core import (
     TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId,
-    CriticalIncidentId,
+    CareCallbackCampaignId, CriticalIncidentId, OutreachRecordId,
+    SurveyCampaignId, SurveyResponseId,
 )
 from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
@@ -289,3 +290,80 @@ class CriticalIncidentClosed(DomainEvent):
     """Raised when an incident response is closed and the after-action is final."""
 
     incident_id: CriticalIncidentId
+
+
+@dataclass(frozen=True)
+class CareCallbackCampaignCreated(DomainEvent):
+    """Raised when a Care Callback campaign is drafted."""
+
+    campaign_id: "CareCallbackCampaignId"
+    client_id: ClientId
+
+
+@dataclass(frozen=True)
+class CareCallbackCampaignActivated(DomainEvent):
+    """Raised when a campaign is activated and outreach can begin."""
+
+    campaign_id: "CareCallbackCampaignId"
+
+
+@dataclass(frozen=True)
+class CareCallbackCampaignCompleted(DomainEvent):
+    """Raised when a campaign is closed; aggregated metrics are final."""
+
+    campaign_id: "CareCallbackCampaignId"
+    target_count: int
+    completed_count: int
+
+
+@dataclass(frozen=True)
+class OutreachAssigned(DomainEvent):
+    """Raised when an outreach record is routed to a counsellor."""
+
+    outreach_id: "OutreachRecordId"
+    counsellor_id: PersonId
+
+
+@dataclass(frozen=True)
+class OutreachCompleted(DomainEvent):
+    """Raised when an outreach is concluded (any terminal status)."""
+
+    outreach_id: "OutreachRecordId"
+    terminal_status: str
+
+
+@dataclass(frozen=True)
+class CrisisFlagRaised(DomainEvent):
+    """Raised when triage detects acute risk (e.g. PHQ-9 item-9 > 0).
+
+    Subscribed by a notify consumer that pages the on-call supervisor.
+    """
+
+    outreach_id: "OutreachRecordId"
+    person_id: PersonId
+    risk_level: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class SurveyCampaignCreated(DomainEvent):
+    campaign_id: "SurveyCampaignId"
+    tenant_id: TenantId
+    client_id: "ClientId"
+
+
+@dataclass(frozen=True)
+class SurveyCampaignActivated(DomainEvent):
+    campaign_id: "SurveyCampaignId"
+
+
+@dataclass(frozen=True)
+class SurveyCampaignClosed(DomainEvent):
+    campaign_id: "SurveyCampaignId"
+
+
+@dataclass(frozen=True)
+class SurveyResponseIngested(DomainEvent):
+    response_id: "SurveyResponseId"
+    campaign_id: "SurveyCampaignId"
+    external_response_id: str

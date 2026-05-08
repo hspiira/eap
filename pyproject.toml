@@ -105,6 +105,7 @@ ignore_imports = [
     # Composition-root wiring (intentional pattern):
     "app.api.dependencies -> app.infrastructure.repositories.activity_repository",
     "app.api.dependencies -> app.infrastructure.repositories.audit_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.care_callback_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
     "app.api.dependencies -> app.infrastructure.repositories.contact_repository",
@@ -125,6 +126,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.service_assignment_repository",
     "app.api.dependencies -> app.infrastructure.repositories.service_repository",
     "app.api.dependencies -> app.infrastructure.repositories.service_session_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.survey_repository",
     "app.api.dependencies -> app.infrastructure.repositories.tenant_repository",
     "app.api.dependencies -> app.infrastructure.repositories.user_repository",
     "app.core.authorization -> app.api.dependencies",

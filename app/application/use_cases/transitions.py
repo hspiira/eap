@@ -223,3 +223,25 @@ class ActivityTransition(str, Enum):
 class CriticalIncidentTransition(str, Enum):
     RECORD_PHASE = "record_phase"
     CLOSE = "close"
+
+
+class CareCallbackCampaignTransition(str, Enum):
+    ACTIVATE = "activate"
+    COMPLETE = "complete"
+    ARCHIVE = "archive"
+    UPDATE_COUNSELLOR_POOL = "update_counsellor_pool"
+
+
+class OutreachTransition(str, Enum):
+    ASSIGN = "assign"
+    RECORD_ATTEMPT = "record_attempt"
+    RECORD_TRIAGE = "record_triage"
+    COMPLETE = "complete"
+    MARK_UNREACHABLE = "mark_unreachable"
+    MARK_DECLINED = "mark_declined"
+    ESCALATE = "escalate"
+
+
+class SurveyCampaignTransition(str, Enum):
+    ACTIVATE = "activate"
+    CLOSE = "close"

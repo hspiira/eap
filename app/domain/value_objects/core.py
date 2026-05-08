@@ -182,6 +182,31 @@ class ReportRunId(Id):
 class UtilisationEventId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class CareCallbackCampaignId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class OutreachRecordId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class TriageResponseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SurveyCampaignId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SurveyResponseId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

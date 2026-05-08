@@ -19,7 +19,7 @@ from app.domain.entities.report import (
     ReportTemplate,
     TemplateSection,
 )
-from app.domain.enums import ReportRunStatus
+from app.domain.enums import ReportQueryType, ReportRunStatus
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.report_repository import (
     ReportRunRepository,
@@ -171,6 +171,118 @@ class GetReportRunUseCase:
 
     async def execute(self, run_id: ReportRunId) -> ReportRun | None:
         return await self._repo.get_by_id(run_id)
+
+
+RENEWAL_PACK_CODE = "renewal_pack_v1"
+
+
+def build_renewal_pack_sections(
+    *, client_id: str | None = None
+) -> list[TemplateSection]:
+    """Canonical 4-section renewal pack (Phase 3 #D-Reports v1 / SAD §15).
+
+    Each section names the concrete query the runner executes; the optional
+    ``client_id`` parameter scopes utilisation, callback outcomes, and survey
+    responses to a single client. Sessions-by-month stays tenant-wide for v1.
+    """
+    callback_params: dict[str, Any] = {}
+    utilisation_params: dict[str, Any] = {}
+    satisfaction_params: dict[str, Any] = {}
+    if client_id:
+        callback_params["client_id"] = client_id
+        utilisation_params["client_id"] = client_id
+        satisfaction_params["client_id"] = client_id
+    return [
+        TemplateSection(
+            title="Sessions delivered per month",
+            query_type=ReportQueryType.SESSIONS_BY_MONTH,
+            parameters={},
+            narrative=(
+                "Counselling delivery cadence: completed sessions per "
+                "calendar month within the renewal window."
+            ),
+        ),
+        TemplateSection(
+            title="Diagnosis prevalence",
+            query_type=ReportQueryType.DIAGNOSIS_PREVALENCE,
+            parameters={},
+            narrative=(
+                "Distribution of presenting concerns across the period. "
+                "Underlying source data lands with the session/diagnosis "
+                "association in a follow-up phase."
+            ),
+        ),
+        TemplateSection(
+            title="Care callback outcomes",
+            query_type=ReportQueryType.CARE_CALLBACK_OUTCOMES,
+            parameters=callback_params,
+            narrative=(
+                "Outreach status mix across the wave plus the count of "
+                "counsellor-detected crisis flags."
+            ),
+        ),
+        TemplateSection(
+            title="Satisfaction distribution",
+            query_type=ReportQueryType.SATISFACTION_DISTRIBUTION,
+            parameters=satisfaction_params,
+            narrative=(
+                "Per-question response frequencies from the satisfaction "
+                "survey waves; aggregate-only — no individual answers."
+            ),
+        ),
+        TemplateSection(
+            title="Contract utilisation",
+            query_type=ReportQueryType.CONTRACT_UTILISATION,
+            parameters=utilisation_params,
+            narrative=(
+                "Total billable units logged per contract for the period — "
+                "renewal-conversation input for retainer / FFS sizing."
+            ),
+        ),
+    ]
+
+
+class CreateRenewalPackTemplateUseCase:
+    """One-shot seeder that materialises the canonical v1 renewal pack template.
+
+    Idempotent: if a template with the v1 code already exists for the tenant, the
+    existing row is returned untouched. Use distinct ``client_id`` values to keep
+    per-client variants (each gets its own ``code`` suffix); pass ``None`` for the
+    tenant-wide default.
+    """
+
+    def __init__(self, repository: ReportTemplateRepository):
+        self._repo = repository
+
+    async def execute(
+        self,
+        *,
+        tenant_id: TenantId,
+        client_id: str | None = None,
+        name: str | None = None,
+    ) -> ReportTemplate:
+        suffix = f":{client_id}" if client_id else ""
+        code = f"{RENEWAL_PACK_CODE}{suffix}"
+        existing = await self._repo.get_by_code(tenant_id, code)
+        if existing is not None:
+            return existing
+        now = utc_now()
+        template = ReportTemplate(
+            id=ReportTemplateId(generate_cuid()),
+            tenant_id=tenant_id,
+            code=code,
+            name=name or f"Renewal pack v1{(' for ' + client_id) if client_id else ''}",
+            description=(
+                "Per-client renewal-pack v1: sessions, diagnoses (placeholder), "
+                "care-callback outcomes, satisfaction, contract utilisation."
+            ),
+            sections=build_renewal_pack_sections(client_id=client_id),
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
+        await self._repo.save(template)
+        return template
 
 
 def _isoformat(value: datetime) -> str:

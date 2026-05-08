@@ -229,6 +229,75 @@ class UtilisationEventType(str, Enum):
     CONSULTANCY_HOURS = "ConsultancyHours"
 
 
+class CareCallbackCampaignStatus(str, Enum):
+    """Lifecycle of a Counsellor-Initiated Care Call campaign."""
+
+    DRAFT = "Draft"
+    ACTIVE = "Active"
+    COMPLETED = "Completed"
+    ARCHIVED = "Archived"
+
+
+class OutreachStatus(str, Enum):
+    """Per-person outreach lifecycle within a campaign."""
+
+    PENDING = "Pending"
+    ASSIGNED = "Assigned"
+    CONTACTED = "Contacted"
+    COMPLETED = "Completed"
+    UNREACHABLE = "Unreachable"
+    DECLINED = "Declined"
+    ESCALATED = "Escalated"
+
+
+class TriageRiskLevel(str, Enum):
+    """Computed risk classification from a triage instrument response."""
+
+    LOW = "Low"
+    MODERATE = "Moderate"
+    HIGH = "High"
+    CRITICAL = "Critical"
+
+
+class TriageInstrumentCode(str, Enum):
+    """Versioned identifiers for the supported triage instruments.
+
+    ``JOSEPH7`` — Joseph's 7-variable counsellor-callback screen (SAD §B.4).
+    ``WOS5`` — 5-item Work Outcome Scale (SAD §2.3.1; pre/post case).
+    ``PHQ9`` — 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
+    """
+
+    JOSEPH7 = "JOSEPH7"
+    WOS5 = "WOS5"
+    PHQ9 = "PHQ9"
+
+
+class StageOfChange(str, Enum):
+    """Prochaska & DiClemente Transtheoretical Model stages."""
+
+    PRECONTEMPLATION = "Precontemplation"
+    CONTEMPLATION = "Contemplation"
+    PREPARATION = "Preparation"
+    ACTION = "Action"
+    MAINTENANCE = "Maintenance"
+
+
+class SurveyCampaignStatus(str, Enum):
+    """Lifecycle state of a survey campaign."""
+
+    DRAFT = "Draft"
+    ACTIVE = "Active"
+    CLOSED = "Closed"
+
+
+class SurveySource(str, Enum):
+    """Upstream survey provider (extensible)."""
+
+    GOOGLE_FORMS = "GoogleForms"
+    TYPEFORM = "Typeform"
+    MICROSOFT_FORMS = "MicrosoftForms"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"

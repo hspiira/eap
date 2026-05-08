@@ -14,6 +14,10 @@ from app.infrastructure.models.base import (
 )
 from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeModel
+from app.infrastructure.models.care_callback_model import (
+    CareCallbackCampaignModel,
+    OutreachRecordModel,
+)
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.infrastructure.models.contact_model import ContactModel
@@ -42,6 +46,10 @@ from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
 from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
+from app.infrastructure.models.survey_model import (
+    SurveyCampaignModel,
+    SurveyResponseModel,
+)
 from app.infrastructure.models.tenant_model import TenantModel
 from app.infrastructure.models.user_model import UserModel
 from app.infrastructure.models.utilisation_event_model import UtilisationEventModel
@@ -50,6 +58,7 @@ __all__ = [
     "ActivityModel",
     "AuditLogModel",
     "Base",
+    "CareCallbackCampaignModel",
     "ClientModel",
     "ClientTagModel",
     "ContactModel",
@@ -70,6 +79,7 @@ __all__ = [
     "LicenseInfoDict",
     "NonCompeteClauseModel",
     "OutboxEventModel",
+    "OutreachRecordModel",
     "PasswordSetTokenModel",
     "PersonModel",
     "ProviderProfileDict",
@@ -80,6 +90,8 @@ __all__ = [
     "ServiceSessionModel",
     "SoftDeleteMixin",
     "StaffInfoDict",
+    "SurveyCampaignModel",
+    "SurveyResponseModel",
     "TenantModel",
     "TenantMixin",
     "TimestampMixin",
