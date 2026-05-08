@@ -114,6 +114,20 @@ class Settings(BaseSettings):
         description="Redis URL for login rate limit when LOGIN_RATE_LIMIT_BACKEND=redis",
     )
 
+    LOGIN_LOCKOUT_THRESHOLD: int = Field(
+        default=5,
+        description="Consecutive failed logins before the user account is locked",
+    )
+    LOGIN_LOCKOUT_DURATION_MINUTES: int = Field(
+        default=30,
+        description="Minutes the account stays locked after threshold is reached",
+    )
+
+    ENCRYPTION_KEK: str = Field(
+        default="",
+        description="Base64-encoded 32-byte key-encryption key. Per-tenant DEKs are HKDF-derived from this. In production, source this from KMS.",
+    )
+
     # Security headers (middleware)
     SECURITY_HEADERS_X_FRAME_OPTIONS: str = Field(
         default="DENY",

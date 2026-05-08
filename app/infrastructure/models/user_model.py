@@ -94,5 +94,12 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    failed_login_count: Mapped[int] = mapped_column(
+        default=0, nullable=False, server_default="0"
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     def __repr__(self) -> str:
         return f"<UserModel(id={self.id}, status={self.status})>"

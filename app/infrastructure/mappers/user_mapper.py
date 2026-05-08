@@ -51,6 +51,8 @@ class UserMapper:
             _is_two_factor_enabled=model.is_two_factor_enabled,
             _last_login_at=ensure_utc(model.last_login_at),
             _role=role,
+            _failed_login_count=getattr(model, "failed_login_count", 0) or 0,
+            _locked_until=ensure_utc(getattr(model, "locked_until", None)),
             _created_at=ensure_utc(model.created_at),
             _updated_at=ensure_utc(model.updated_at),
             _deleted_at=ensure_utc(model.deleted_at),
@@ -84,6 +86,8 @@ class UserMapper:
             is_two_factor_enabled=entity._is_two_factor_enabled,
             last_login_at=entity._last_login_at,
             role=entity._role,
+            failed_login_count=entity._failed_login_count,
+            locked_until=entity._locked_until,
             deleted_at=entity._deleted_at,
         )
 

@@ -71,7 +71,6 @@ async def lifespan(app: FastAPI):
         settings.REDIS_URL or "",
     )
     if getattr(settings, "STRICT_ACTIVE_USER_CHECK", False):
-        from app.core.security import TokenData
         app.state.validate_active_user = _validate_active_user
     else:
         app.state.validate_active_user = None

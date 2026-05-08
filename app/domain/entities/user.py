@@ -6,10 +6,21 @@ Scoped to a Tenant for multi-tenancy.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.domain.enums import UserStatus, Language, TenantRole
-from app.domain.events import DomainEvent, UserActivated, UserSuspended, UserBanned, UserEmailVerified, UserDeactivated, UserTerminated
+from app.domain.events import (
+    DomainEvent,
+    UserActivated,
+    UserBanned,
+    UserDeactivated,
+    UserEmailVerified,
+    UserLockedOut,
+    UserLockoutCleared,
+    UserLoginFailed,
+    UserSuspended,
+    UserTerminated,
+)
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
 
@@ -33,6 +44,8 @@ class UserEntity:
     _last_login_at: datetime | None = None
     _deleted_at: datetime | None = None
     _role: TenantRole = TenantRole.USER
+    _failed_login_count: int = 0
+    _locked_until: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
@@ -147,7 +160,67 @@ class UserEntity:
         """Record user login"""
         self._last_login_at = utc_now()
         self._updated_at = utc_now()
-    
+
+    def is_locked(self, now: datetime | None = None) -> bool:
+        """Whether the account is in an active lockout window."""
+        if self._locked_until is None:
+            return False
+        return (now or utc_now()) < self._locked_until
+
+    def record_failed_login(
+        self,
+        threshold: int,
+        lock_duration: timedelta,
+        now: datetime | None = None,
+    ) -> None:
+        """Increment the failed-login counter; lock when the threshold is met.
+
+        Emits ``UserLoginFailed`` on every call and ``UserLockedOut`` when the
+        counter reaches ``threshold``. The caller passes policy explicitly so
+        the entity stays configuration-free.
+        """
+        if threshold < 1:
+            raise DomainError("Lockout threshold must be >= 1")
+        if lock_duration <= timedelta(0):
+            raise DomainError("Lockout duration must be positive")
+
+        now = now or utc_now()
+        self._failed_login_count += 1
+        self._updated_at = now
+        self._events.append(
+            UserLoginFailed(
+                occurred_at=now,
+                user_id=self._id,
+                failed_count=self._failed_login_count,
+            )
+        )
+        if self._failed_login_count >= threshold:
+            self._locked_until = now + lock_duration
+            self._events.append(
+                UserLockedOut(
+                    occurred_at=now,
+                    user_id=self._id,
+                    locked_until=self._locked_until,
+                    failed_count=self._failed_login_count,
+                )
+            )
+
+    def record_successful_login(self, now: datetime | None = None) -> None:
+        """Reset the failed-login counter and clear any lockout.
+
+        Emits ``UserLockoutCleared`` if the account had been locked.
+        """
+        now = now or utc_now()
+        was_locked = self._locked_until is not None
+        self._failed_login_count = 0
+        self._locked_until = None
+        self._last_login_at = now
+        self._updated_at = now
+        if was_locked:
+            self._events.append(
+                UserLockoutCleared(occurred_at=now, user_id=self._id)
+            )
+
     def is_active(self) -> bool:
         """Check if user is active"""
         return self._status == UserStatus.ACTIVE and self._deleted_at is None
@@ -228,6 +301,16 @@ class UserEntity:
     def role(self) -> TenantRole:
         """Get tenant role for RBAC."""
         return self._role
+
+    @property
+    def failed_login_count(self) -> int:
+        """Consecutive failed-login attempts since the last success."""
+        return self._failed_login_count
+
+    @property
+    def locked_until(self) -> datetime | None:
+        """When the current lockout window expires, or None if not locked."""
+        return self._locked_until
 
     @property
     def events(self) -> list[DomainEvent]:
