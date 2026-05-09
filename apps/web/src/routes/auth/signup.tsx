@@ -127,43 +127,43 @@ function SignupPage() {
 
   if (adminCredentials?.set_password_url) {
     return (
-      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-          <p className="text-white/70">Register as a new tenant</p>
+          <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+          <p className="text-fg-muted">Register as a new tenant</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-sm bg-brand-soft flex items-center justify-center shrink-0">
             <CheckCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Tenant created</h2>
-            <p className="text-white/70 text-sm">{adminCredentials.name}</p>
+            <h2 className="text-lg font-semibold text-fg">Tenant created</h2>
+            <p className="text-fg-muted text-sm">{adminCredentials.name}</p>
           </div>
         </div>
-        <p className="text-white/80 text-sm mb-4">Set your admin password, then sign in.</p>
+        <p className="text-fg-muted text-sm mb-4">Set your admin password, then sign in.</p>
         <dl className="space-y-0 mb-6">
-          <div className="flex items-baseline gap-4 py-3 border-b border-white/10">
-            <dt className="text-sm text-white/70 shrink-0 w-28">Tenant code</dt>
-            <dd className="text-sm font-mono text-white min-w-0">{adminCredentials.code}</dd>
+          <div className="flex items-baseline gap-4 py-3 border-b border-border-strong">
+            <dt className="text-sm text-fg-muted shrink-0 w-28">Tenant code</dt>
+            <dd className="text-sm font-mono text-fg min-w-0">{adminCredentials.code}</dd>
           </div>
-          <div className="flex items-baseline gap-4 py-3 border-b border-white/10">
-            <dt className="text-sm text-white/70 shrink-0 w-28">Email</dt>
-            <dd className="text-sm text-white min-w-0 break-all">{adminCredentials.admin_email}</dd>
+          <div className="flex items-baseline gap-4 py-3 border-b border-border-strong">
+            <dt className="text-sm text-fg-muted shrink-0 w-28">Email</dt>
+            <dd className="text-sm text-fg min-w-0 break-all">{adminCredentials.admin_email}</dd>
           </div>
         </dl>
         <div className="mb-4">
-          <span className="text-sm text-white/70">Set-password link</span>
+          <span className="text-sm text-fg-muted">Set-password link</span>
           <div className="mt-1 flex gap-2">
             <input
               readOnly
               value={adminCredentials.set_password_url}
-              className="flex-1 px-4 py-2 bg-white/10 border border-white/5 rounded-none text-white font-mono text-xs"
+              className="flex-1 px-4 py-2 bg-bg border border-border-strong rounded-sm text-fg font-mono text-xs"
             />
             <button
               type="button"
               onClick={handleCopySetPasswordLink}
-              className="px-4 py-2 bg-fg hover:bg-surface-slate-pressed text-white rounded-none transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-sm transition-colors flex items-center gap-2"
               title={copiedSetPasswordLink ? 'Copied!' : 'Copy link'}
             >
               <Copy className="w-4 h-4" />
@@ -174,16 +174,16 @@ function SignupPage() {
         <button
           type="button"
           onClick={goToSetPassword}
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors flex items-center justify-center gap-2 mb-4"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors flex items-center justify-center gap-2 mb-4"
         >
           <KeyRound className="w-4 h-4" />
           Set your password
         </button>
-        <p className="text-white/70 text-sm mt-6 mb-2">After you&apos;ve set your password:</p>
+        <p className="text-fg-muted text-sm mt-6 mb-2">After you&apos;ve set your password:</p>
         <button
           type="button"
           onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-danger-soft hover:bg-danger-soft-dark text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 border border-border-strong bg-bg hover:bg-surface-hover text-fg font-medium rounded-sm transition-colors"
         >
           Go to Sign in
         </button>
@@ -191,7 +191,7 @@ function SignupPage() {
           <button
             type="button"
             onClick={() => setAdminCredentials(null)}
-            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -203,37 +203,37 @@ function SignupPage() {
 
   if (adminCredentials) {
     return (
-      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-          <p className="text-white/70">Tenant created</p>
+          <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+          <p className="text-fg-muted">Tenant created</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-sm bg-brand-soft flex items-center justify-center shrink-0">
             <CheckCircle className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">{adminCredentials.name}</h2>
-            <p className="text-white/70 text-sm">Code: {adminCredentials.code}</p>
+            <h2 className="text-lg font-semibold text-fg">{adminCredentials.name}</h2>
+            <p className="text-fg-muted text-sm">Code: {adminCredentials.code}</p>
           </div>
         </div>
-        <p className="text-white/80 text-sm mb-4">Save these credentials. They cannot be retrieved later.</p>
+        <p className="text-fg-muted text-sm mb-4">Save these credentials. They cannot be retrieved later.</p>
         <dl className="space-y-2 mb-6">
-          <div className="flex items-baseline gap-4 py-2 border-b border-white/10">
-            <dt className="text-sm text-white/70 shrink-0 w-28">Admin email</dt>
-            <dd className="text-sm text-white break-all">{adminCredentials.admin_email}</dd>
+          <div className="flex items-baseline gap-4 py-2 border-b border-border-strong">
+            <dt className="text-sm text-fg-muted shrink-0 w-28">Admin email</dt>
+            <dd className="text-sm text-fg break-all">{adminCredentials.admin_email}</dd>
           </div>
           {adminCredentials.admin_password && (
-            <div className="flex items-baseline gap-4 py-2 border-b border-white/10">
-              <dt className="text-sm text-white/70 shrink-0 w-28">Admin password</dt>
-              <dd className="text-sm text-white font-mono">{adminCredentials.admin_password}</dd>
+            <div className="flex items-baseline gap-4 py-2 border-b border-border-strong">
+              <dt className="text-sm text-fg-muted shrink-0 w-28">Admin password</dt>
+              <dd className="text-sm text-fg font-mono">{adminCredentials.admin_password}</dd>
             </div>
           )}
         </dl>
         <button
           type="button"
           onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors"
         >
           Go to Sign in
         </button>
@@ -241,7 +241,7 @@ function SignupPage() {
           <button
             type="button"
             onClick={() => setAdminCredentials(null)}
-            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -254,37 +254,37 @@ function SignupPage() {
   const codeRegister = register('code')
 
   return (
-    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-        <p className="text-white/70">Register as a new tenant</p>
+        <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+        <p className="text-fg-muted">Register as a new tenant</p>
       </div>
 
       <form onSubmit={submit} className="space-y-4" noValidate>
         {serverError && (
-          <div className="p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm">
+          <div className="p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm">
             {serverError}
           </div>
         )}
 
         <div>
-          <label htmlFor="name" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="name" className="block text-fg text-sm font-medium mb-1">
             Tenant Name *
           </label>
           <input
             id="name"
             type="text"
             placeholder="Enter tenant name"
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('name')}
           />
           {formState.errors.name && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.name.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.name.message as string}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="code" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="code" className="block text-fg text-sm font-medium mb-1">
             Tenant Code *
           </label>
           <div className="relative">
@@ -292,7 +292,7 @@ function SignupPage() {
               id="code"
               type="text"
               placeholder="e.g., acme-corp"
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30 pr-10"
+              className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring pr-10"
               {...codeRegister}
               onChange={(e) => {
                 const formatted = formatCode(e.target.value)
@@ -302,17 +302,17 @@ function SignupPage() {
             {codeValue && codeIsValid && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
                 {codeAvailability.checking ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-fg-subtle border-t-transparent rounded-full animate-spin" />
                 ) : codeAvailability.available === true ? (
-                  <Check size={20} className="text-primary" />
+                  <Check size={20} className="text-success" />
                 ) : codeAvailability.available === false ? (
-                  <X size={20} className="text-red-400" />
+                  <X size={20} className="text-danger" />
                 ) : null}
               </div>
             )}
           </div>
           {formState.errors.code && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.code.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.code.message as string}</p>
           )}
         </div>
 
@@ -325,24 +325,24 @@ function SignupPage() {
             codeAvailability.checking ||
             codeAvailability.available === false
           }
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {formState.isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
         </button>
       </form>
 
       <div className="mt-6 text-center space-y-2">
-        <p className="text-white/70 text-sm">
+        <p className="text-fg-muted text-sm">
           Already have an account?{' '}
           <Link
             to="/auth/login"
             search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline font-medium"
           >
             Sign in
           </Link>
         </p>
-        <Link to="/" className="block text-white/80 hover:text-white text-sm">
+        <Link to="/" className="block text-fg-muted hover:text-fg text-sm">
           ← Back to Home
         </Link>
       </div>

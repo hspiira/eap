@@ -77,29 +77,29 @@ function SetPasswordPage() {
 
   if (success) {
     return (
-      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-          <p className="text-white/70">Password set</p>
+          <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+          <p className="text-fg-muted">Password set</p>
         </div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-none bg-primary/20 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-sm bg-brand-soft flex items-center justify-center shrink-0">
             <Check className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">You can now log in</h2>
-            <p className="text-white/70 text-sm">Use your admin email and your new password to sign in.</p>
+            <h2 className="text-lg font-semibold text-fg">You can now log in</h2>
+            <p className="text-fg-muted text-sm">Use your admin email and your new password to sign in.</p>
           </div>
         </div>
         <button
           type="button"
           onClick={goToLogin}
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors"
         >
           Go to Sign in
         </button>
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white/80 hover:text-white text-sm inline-flex items-center gap-2">
+          <Link to="/" className="text-fg-muted hover:text-fg text-sm inline-flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
@@ -110,16 +110,16 @@ function SetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-          <p className="text-white/70">Invalid link</p>
+          <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+          <p className="text-fg-muted">Invalid link</p>
         </div>
-        <p className="text-white/80 mb-6">{SET_PASSWORD_LINK_ERROR}</p>
+        <p className="text-fg mb-6">{SET_PASSWORD_LINK_ERROR}</p>
         <Link
           to="/auth/login"
           search={{ tenant_code: undefined, email: undefined, redirect: undefined }}
-          className="block w-full py-3 bg-danger-soft hover:bg-danger-soft-dark text-white font-semibold rounded-none transition-colors text-center"
+          className="block w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors text-center"
         >
           Go to Sign in
         </Link>
@@ -128,71 +128,71 @@ function SetPasswordPage() {
   }
 
   return (
-    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-        <p className="text-white/70">Set your password</p>
+        <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+        <p className="text-fg-muted">Set your password</p>
       </div>
-      <p className="text-white/80 text-sm mb-6 text-center">
+      <p className="text-fg-muted text-sm mb-6 text-center">
         Choose a password for your admin account (min 8 characters).
       </p>
 
       {serverError && (
-        <div className="mb-4 p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm">
+        <div className="mb-4 p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm">
           {serverError}
         </div>
       )}
 
       <form onSubmit={submit} className="space-y-4" noValidate>
         <div>
-          <label htmlFor="password" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
             Password *
           </label>
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('password')}
           />
           {formState.errors.password && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.password.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.password.message as string}</p>
           )}
         </div>
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="text-white/70 hover:text-primary text-sm"
+          className="text-fg-muted hover:text-primary text-sm"
         >
           {showPassword ? 'Hide' : 'Show'} password
         </button>
         <div>
-          <label htmlFor="password_confirm" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="password_confirm" className="block text-fg text-sm font-medium mb-1">
             Confirm password *
           </label>
           <input
             id="password_confirm"
             type="password"
             placeholder="••••••••"
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('password_confirm')}
           />
           {formState.errors.password_confirm && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.password_confirm.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.password_confirm.message as string}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={formState.isSubmitting}
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {formState.isSubmitting ? 'Setting password...' : 'Set password'}
         </button>
       </form>
 
       <div className="mt-6 text-center">
-        <Link to="/" className="text-white/80 hover:text-white text-sm inline-flex items-center gap-2">
+        <Link to="/" className="text-fg-muted hover:text-fg text-sm inline-flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
           Back to Home
         </Link>

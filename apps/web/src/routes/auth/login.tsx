@@ -93,32 +93,32 @@ function LoginPage() {
   const submitDisabled = formState.isSubmitting || isLocked
 
   return (
-    <div className="bg-black/20 backdrop-blur-xl p-8 rounded-none border border-white/5">
+    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Evexía</h1>
-        <p className="text-white/70">Sign in to your account</p>
+        <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
+        <p className="text-fg-muted">Sign in to your account</p>
       </div>
 
       <form onSubmit={submit} className="space-y-4" noValidate>
         {isLocked ? (
           <div
-            className="p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm"
+            className="p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm"
             role="alert"
             aria-live="polite"
           >
             <p className="font-semibold">Account temporarily locked</p>
-            <p className="mt-1 text-white/80">
+            <p className="mt-1">
               Too many failed attempts. Try again in {formatLockoutCountdown(lockoutSecondsLeft)}.
             </p>
           </div>
         ) : serverError ? (
-          <div className="p-3 bg-danger-soft/20 border border-danger-soft/30 text-white text-sm">
+          <div className="p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm">
             {serverError}
           </div>
         ) : null}
 
         <div>
-          <label htmlFor="tenant_code" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="tenant_code" className="block text-fg text-sm font-medium mb-1">
             Tenant Code *
           </label>
           <input
@@ -127,18 +127,18 @@ function LoginPage() {
             placeholder="Enter tenant code"
             autoComplete="organization"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30 disabled:opacity-50"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('tenant_code', {
               setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
             })}
           />
           {formState.errors.tenant_code && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.tenant_code.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.tenant_code.message as string}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="email" className="block text-fg text-sm font-medium mb-1">
             Email *
           </label>
           <input
@@ -147,16 +147,16 @@ function LoginPage() {
             placeholder="Enter your email"
             autoComplete="email"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30 disabled:opacity-50"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('email')}
           />
           {formState.errors.email && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.email.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.email.message as string}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-white/90 text-sm font-medium mb-1">
+          <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
             Password *
           </label>
           <input
@@ -165,18 +165,18 @@ function LoginPage() {
             placeholder="Enter your password"
             autoComplete="current-password"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 rounded-none focus:outline-none focus:ring-1 focus:ring-white/30 disabled:opacity-50"
+            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('password')}
           />
           {formState.errors.password && (
-            <p className="mt-1 text-sm text-danger-soft">{formState.errors.password.message as string}</p>
+            <p className="mt-1 text-sm text-danger">{formState.errors.password.message as string}</p>
           )}
         </div>
 
         <button
           type="submit"
           disabled={submitDisabled}
-          className="w-full py-3 bg-primary hover:bg-primary text-white font-semibold rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLocked
             ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
@@ -187,13 +187,13 @@ function LoginPage() {
       </form>
 
       <div className="mt-6 text-center space-y-2">
-        <p className="text-white/70 text-sm">
+        <p className="text-fg-muted text-sm">
           Don&apos;t have an account?{' '}
-          <Link to="/auth/signup" className="text-primary hover:underline">
+          <Link to="/auth/signup" className="text-primary hover:underline font-medium">
             Sign up
           </Link>
         </p>
-        <Link to="/" className="block text-white/80 hover:text-white text-sm">
+        <Link to="/" className="block text-fg-muted hover:text-fg text-sm">
           ← Back to Home
         </Link>
       </div>

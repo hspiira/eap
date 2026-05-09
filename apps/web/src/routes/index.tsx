@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowUpRight, ShieldCheck } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 
 import { AppLayout } from '@/components/AppLayout'
 import { Button } from '@/components/ui/button'
@@ -42,12 +42,12 @@ function LandingPage() {
             to="/"
             className="flex items-center gap-2 text-base font-semibold tracking-tight text-fg"
           >
-            <span
-              className="grid size-6 place-items-center rounded-sm bg-primary text-primary-foreground"
+            <img
+              src="/evexía.svg"
+              alt=""
               aria-hidden
-            >
-              <ShieldCheck className="size-3.5" />
-            </span>
+              className="size-6 shrink-0"
+            />
             Evexía
           </Link>
           <Button asChild variant="ghost" size="sm">
