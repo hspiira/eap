@@ -16,6 +16,11 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import {
+  nextSort,
+  SortHeader,
+  type SortState,
+} from "@/components/common/SortHeader"
 import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
 import { Button } from "@/components/ui/button"
@@ -58,12 +63,24 @@ function IndustriesPage() {
   const [searchInput, setSearchInput] = useState("")
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all")
   const [createOpen, setCreateOpen] = useState(false)
+  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+
+  const toggleSort = (field: string) => {
+    setSort((prev) => nextSort(prev, field))
+    setPage(1)
+  }
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
 
   const query = useEntityList({
     resource: "industries",
-    params: { page, limit, search: activeSearch },
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      sort_by: sort.field,
+      sort_desc: sort.field ? sort.desc : undefined,
+    },
     listFn: industriesApi.list,
   })
   const allItems = query.data?.items ?? []
@@ -76,49 +93,96 @@ function IndustriesPage() {
     [queryClient],
   )
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<{ id: string; hint: Industry | null } | null>(null)
+  const selectedId = selected?.id ?? null
   const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(null)
   const [parentIndustry, setParentIndustry] = useState<Industry | null>(null)
   const [childIndustries, setChildIndustries] = useState<Industry[]>([])
   const [detailsLoading, setDetailsLoading] = useState(false)
 
-  const loadDetails = useCallback(async (id: string) => {
-    setDetailsLoading(true)
-    try {
-      const [industry, children] = await Promise.all([
-        industriesApi.getById(id),
-        industriesApi.getChildren(id),
-      ])
-      setSelectedIndustry(industry)
-      setChildIndustries(children)
-      if (industry.parent_id) {
-        try {
-          const parent = await industriesApi.getById(industry.parent_id)
-          setParentIndustry(parent)
-        } catch {
-          setParentIndustry(null)
-        }
-      } else {
-        setParentIndustry(null)
-      }
-    } catch {
-      setSelectedIndustry(null)
-      setParentIndustry(null)
-      setChildIndustries([])
-    } finally {
-      setDetailsLoading(false)
-    }
+  const selectIndustry = useCallback((id: string | null, hint?: Industry | null) => {
+    if (id == null) setSelected(null)
+    else setSelected({ id, hint: hint ?? null })
   }, [])
 
+  /**
+   * Navigates to a specific industry: makes its row visible in the table by
+   * resetting filters/search to the target's name (so it lands on page 1)
+   * unless it's already in the visible items, then highlights + scrolls.
+   */
+  const navigateToIndustry = useCallback(
+    (id: string, hint?: Industry) => {
+      const visibleItems = query.data?.items ?? []
+      const inVisible = visibleItems.some((i) => i.id === id)
+      if (!inVisible && hint) {
+        setSearchInput(hint.code ?? hint.name)
+        setLevelFilter("all")
+        setPage(1)
+      }
+      selectIndustry(id, hint)
+    },
+    [query.data?.items, selectIndustry],
+  )
+
+  const loadDetails = useCallback(
+    async (id: string, rowHint?: Industry | null) => {
+      setDetailsLoading(true)
+      // Render immediately from the row payload while the network catches up.
+      if (rowHint) setSelectedIndustry(rowHint)
+      try {
+        const [industry, children] = await Promise.all([
+          industriesApi.getById(id),
+          industriesApi.getChildren(id),
+        ])
+        // Some endpoints drop parent_id from /industries/:id even when it
+        // exists on the list payload; fall back to the row hint.
+        const merged: Industry = {
+          ...industry,
+          parent_id: industry.parent_id ?? rowHint?.parent_id ?? null,
+        }
+        setSelectedIndustry(merged)
+        setChildIndustries(children)
+        if (merged.parent_id) {
+          try {
+            const parent = await industriesApi.getById(merged.parent_id)
+            setParentIndustry(parent)
+          } catch {
+            setParentIndustry(null)
+          }
+        } else {
+          setParentIndustry(null)
+        }
+      } catch {
+        if (!rowHint) setSelectedIndustry(null)
+        setParentIndustry(null)
+        setChildIndustries([])
+      } finally {
+        setDetailsLoading(false)
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
-    if (selectedId) {
-      loadDetails(selectedId)
-    } else {
+    if (!selected) {
       setSelectedIndustry(null)
       setParentIndustry(null)
       setChildIndustries([])
+      return
     }
-  }, [selectedId, loadDetails])
+    loadDetails(selected.id, selected.hint)
+  }, [selected, loadDetails])
+
+  // Scroll the selected row into view whenever it appears in the visible list
+  // (e.g. after navigating from the detail tree to a different page).
+  useEffect(() => {
+    if (!selectedId) return
+    const id = window.requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-row-id="${selectedId}"]`)
+      el?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [selectedId, items])
 
   const handleIndustryUpdated = useCallback(
     (updated: Industry) => {
@@ -211,9 +275,21 @@ function IndustriesPage() {
                   <table className="w-full caption-bottom text-sm">
                     <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                       <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                        <TableHead className="text-fg/65">Name</TableHead>
-                        <TableHead className="text-fg/65">Code</TableHead>
-                        <TableHead className="text-fg/65">Level</TableHead>
+                        <TableHead>
+                          <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                            Name
+                          </SortHeader>
+                        </TableHead>
+                        <TableHead>
+                          <SortHeader field="code" sort={sort} onToggle={toggleSort}>
+                            Code
+                          </SortHeader>
+                        </TableHead>
+                        <TableHead>
+                          <SortHeader field="level" sort={sort} onToggle={toggleSort}>
+                            Level
+                          </SortHeader>
+                        </TableHead>
                         <TableHead className="text-fg/65">Parent</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -221,7 +297,8 @@ function IndustriesPage() {
                       {items.map((row) => (
                         <TableRow
                           key={row.id}
-                          onClick={() => setSelectedId(row.id)}
+                          data-row-id={row.id}
+                          onClick={() => selectIndustry(row.id, row)}
                           className={cn(
                             "cursor-pointer",
                             ROW_BORDER,
@@ -280,8 +357,9 @@ function IndustriesPage() {
                 industry={selectedIndustry}
                 parent={parentIndustry}
                 children={childIndustries}
-                onClose={() => setSelectedId(null)}
+                onClose={() => selectIndustry(null)}
                 onUpdated={handleIndustryUpdated}
+                onSelectIndustry={navigateToIndustry}
               />
             ) : (
               <DetailsPlaceholder />

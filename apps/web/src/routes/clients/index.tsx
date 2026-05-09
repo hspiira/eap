@@ -24,6 +24,7 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
@@ -89,8 +90,14 @@ function ClientsListPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("12h")
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const limit = 20
   const queryClient = useQueryClient()
+
+  const toggleSort = (field: string) => {
+    setSort((prev) => nextSort(prev, field))
+    setPage(1)
+  }
 
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
@@ -115,7 +122,14 @@ function ClientsListPage() {
 
   const query = useEntityList({
     resource: "clients",
-    params: { page, limit, search: activeSearch, tier: activeTier },
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      tier: activeTier,
+      sort_by: sort.field,
+      sort_desc: sort.field ? sort.desc : undefined,
+    },
     listFn: clientsApi.list,
   })
   const items = query.data?.items ?? []
@@ -184,7 +198,7 @@ function ClientsListPage() {
       <ClientFormSheet
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
-        onCreated={refetch}
+        onSaved={() => refetch()}
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
@@ -225,10 +239,26 @@ function ClientsListPage() {
                         className="size-3.5 cursor-pointer accent-primary"
                       />
                     </TableHead>
-                    <TableHead className="text-fg/65">Client</TableHead>
-                    <TableHead className="text-fg/65">Code</TableHead>
-                    <TableHead className="text-fg/65">Tier</TableHead>
-                    <TableHead className="text-fg/65">Status</TableHead>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Client
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="code" sort={sort} onToggle={toggleSort}>
+                        Code
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="tier" sort={sort} onToggle={toggleSort}>
+                        Tier
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
                     <TableHead className="text-fg/65">Contact</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>

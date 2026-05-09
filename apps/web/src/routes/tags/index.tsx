@@ -20,6 +20,11 @@ import {
   FilterSearch,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import {
+  nextSort,
+  SortHeader,
+  type SortState,
+} from "@/components/common/SortHeader"
 import { TagFormSheet } from "@/components/TagFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -58,6 +63,12 @@ function TagsListPage() {
 
   const [creatingTag, setCreatingTag] = useState(false)
   const [editingTag, setEditingTag] = useState<ClientTag | null>(null)
+  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+
+  const toggleSort = (field: string) => {
+    setSort((prev) => nextSort(prev, field))
+    setPage(1)
+  }
 
   useEffect(() => {
     setPage(1)
@@ -65,7 +76,13 @@ function TagsListPage() {
 
   const query = useEntityList({
     resource: "client-tags",
-    params: { page, limit, search: activeSearch },
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      sort_by: sort.field,
+      sort_desc: sort.field ? sort.desc : undefined,
+    },
     listFn: clientTagsApi.list,
   })
   const items = query.data?.items ?? []
@@ -160,8 +177,16 @@ function TagsListPage() {
                         className="size-3.5 cursor-pointer accent-primary"
                       />
                     </TableHead>
-                    <TableHead className="text-fg/65">Tag</TableHead>
-                    <TableHead className="text-fg/65">Color</TableHead>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Tag
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="color" sort={sort} onToggle={toggleSort}>
+                        Color
+                      </SortHeader>
+                    </TableHead>
                     <TableHead className="text-fg/65">Description</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>

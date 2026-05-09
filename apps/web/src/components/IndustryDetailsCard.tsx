@@ -1,6 +1,5 @@
 import { useState } from "react"
 
-import { Link } from "@tanstack/react-router"
 import { ChevronRight, CornerDownRight, Pencil, X } from "lucide-react"
 
 import { IndustryFormSheet } from "@/components/IndustryFormSheet"
@@ -14,6 +13,7 @@ interface IndustryDetailsCardProps {
   children: Industry[]
   onClose: () => void
   onUpdated: (updated: Industry) => void
+  onSelectIndustry?: (id: string, hint?: Industry) => void
 }
 
 export function IndustryDetailsCard({
@@ -22,6 +22,7 @@ export function IndustryDetailsCard({
   children,
   onClose,
   onUpdated,
+  onSelectIndustry,
 }: IndustryDetailsCardProps) {
   const [editOpen, setEditOpen] = useState(false)
 
@@ -68,7 +69,12 @@ export function IndustryDetailsCard({
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
         <Section title="Hierarchy">
           {parent || children.length > 0 ? (
-            <Tree industry={industry} parent={parent} children={children} />
+            <Tree
+              industry={industry}
+              parent={parent}
+              children={children}
+              onSelect={onSelectIndustry}
+            />
           ) : (
             <p className="text-xs text-fg/55">Top-level industry — no parent or children.</p>
           )}
@@ -146,14 +152,15 @@ interface TreeProps {
   industry: Industry
   parent: Industry | null
   children: Industry[]
+  onSelect?: (id: string, hint?: Industry) => void
 }
 
-function Tree({ industry, parent, children }: TreeProps) {
+function Tree({ industry, parent, children, onSelect }: TreeProps) {
   return (
     <ul className="space-y-1 text-sm">
       {parent ? (
         <li>
-          <TreeNode industry={parent} kind="parent" />
+          <TreeNode industry={parent} kind="parent" onSelect={onSelect} />
         </li>
       ) : null}
       <li className={cn(parent && "ml-3 border-l border-fg/10 pl-3")}>
@@ -162,7 +169,7 @@ function Tree({ industry, parent, children }: TreeProps) {
           <ul className="mt-1 space-y-1">
             {children.map((c) => (
               <li key={c.id} className="ml-3 border-l border-fg/10 pl-3">
-                <TreeNode industry={c} kind="child" />
+                <TreeNode industry={c} kind="child" onSelect={onSelect} />
               </li>
             ))}
           </ul>
@@ -172,19 +179,19 @@ function Tree({ industry, parent, children }: TreeProps) {
   )
 }
 
-function TreeNode({
-  industry,
-  kind,
-}: {
+interface TreeNodeProps {
   industry: Industry
   kind: "parent" | "current" | "child"
-}) {
+  onSelect?: (id: string, hint?: Industry) => void
+}
+
+function TreeNode({ industry, kind, onSelect }: TreeNodeProps) {
   const Icon = kind === "parent" ? CornerDownRight : ChevronRight
-  const interactive = kind !== "current"
+  const interactive = kind !== "current" && Boolean(onSelect)
   const inner = (
     <span
       className={cn(
-        "flex items-center gap-1.5",
+        "flex w-full items-center gap-1.5",
         kind === "current" && "font-medium text-primary",
         kind !== "current" && "text-fg",
       )}
@@ -203,12 +210,13 @@ function TreeNode({
   )
   if (!interactive) return inner
   return (
-    <Link
-      to="/industries"
-      className="inline-flex w-full items-center hover:[&_span:not(.font-mono)]:text-primary"
+    <button
+      type="button"
+      onClick={() => onSelect?.(industry.id, industry)}
+      className="-mx-1 inline-flex w-[calc(100%+0.5rem)] items-center rounded-sm px-1 py-0.5 text-left transition-colors hover:bg-surface-hover hover:[&_span:not(.font-mono)]:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={`Open ${industry.name}`}
     >
       {inner}
-    </Link>
+    </button>
   )
 }

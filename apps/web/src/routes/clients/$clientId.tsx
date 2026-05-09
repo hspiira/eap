@@ -13,6 +13,7 @@ import {
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { ClientActivityCard } from "@/components/ClientActivityCard"
+import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientAlert } from "@/components/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
@@ -26,6 +27,12 @@ import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import {
+  compareSort,
+  nextSort,
+  SortHeader,
+  type SortState,
+} from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { TierBadge } from "@/components/common/TierBadge"
@@ -65,6 +72,7 @@ function ClientDetailPage() {
   const [tags, setTags] = useState<ClientTag[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
   const [tab, setTab] = useState<TabValue>("overview")
+  const [editOpen, setEditOpen] = useState(false)
 
   const fetchClient = useCallback(async () => {
     try {
@@ -296,7 +304,12 @@ function ClientDetailPage() {
             <RotateCw className="size-3.5" />
           </button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 px-2.5"
+            onClick={() => setEditOpen(true)}
+          >
             <Pencil className="size-3.5" />
             Edit
           </Button>
@@ -304,6 +317,13 @@ function ClientDetailPage() {
       }
     >
       <Hero client={client} verified={isVerified} />
+
+      <ClientFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        client={client}
+        onSaved={(updated) => setClient(updated)}
+      />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
@@ -396,6 +416,13 @@ function ContractsPanel({
   contracts: Contract[]
   loading: boolean
 }) {
+  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
+  const sorted = compareSort(contracts, sort, (row, field) => {
+    if (field === "number") return row.contract_number ?? row.id
+    return (row as unknown as Record<string, unknown>)[field]
+  })
+
   if (loading) {
     return <p className="text-sm text-fg/65">Loading contracts…</p>
   }
@@ -412,17 +439,33 @@ function ContractsPanel({
       <table className="w-full caption-bottom text-sm">
         <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
           <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-            <TableHead className="text-fg/65">Number</TableHead>
-            <TableHead className="text-fg/65">Status</TableHead>
-            <TableHead className="text-fg/65">Start</TableHead>
-            <TableHead className="text-fg/65">End</TableHead>
+            <TableHead>
+              <SortHeader field="number" sort={sort} onToggle={toggleSort}>
+                Number
+              </SortHeader>
+            </TableHead>
+            <TableHead>
+              <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                Status
+              </SortHeader>
+            </TableHead>
+            <TableHead>
+              <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
+                Start
+              </SortHeader>
+            </TableHead>
+            <TableHead>
+              <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
+                End
+              </SortHeader>
+            </TableHead>
             <TableHead className="w-10 text-right text-fg/65">
               <span className="sr-only">Open</span>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {contracts.map((c) => (
+          {sorted.map((c) => (
             <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
               <TableCell>
                 <Link
