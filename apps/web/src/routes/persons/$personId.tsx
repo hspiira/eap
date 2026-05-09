@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useState } from "react"
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Pencil, RotateCw, UserCog, Users } from "lucide-react"
+import {
+  ArrowLeft,
+  CalendarClock,
+  ChevronRight,
+  Pencil,
+  Plus,
+  RotateCw,
+  UserCog,
+  Users,
+} from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
+import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
@@ -14,8 +24,15 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
 import { PersonDetailSkeleton } from "@/components/PersonsPageSkeletons"
 import { Button } from "@/components/ui/button"
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import type { Client, Person, User } from "@/types/entities"
+import type { Client, Person, ServiceSession, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -23,7 +40,13 @@ export const Route = createFileRoute("/persons/$personId")({
   component: PersonDetailPage,
 })
 
-type TabValue = "overview" | "employment" | "family" | "emergency" | "history"
+type TabValue =
+  | "overview"
+  | "employment"
+  | "family"
+  | "emergency"
+  | "sessions"
+  | "history"
 
 function PersonDetailPage() {
   const { personId } = Route.useParams()
@@ -32,6 +55,8 @@ function PersonDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [primaryEmployee, setPrimaryEmployee] = useState<Person | null>(null)
+  const [sessions, setSessions] = useState<ServiceSession[]>([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [tab, setTab] = useState<TabValue>("overview")
@@ -109,6 +134,20 @@ function PersonDetailPage() {
       cancelled = true
     }
   }, [person?.dependent_info?.primary_employee_id])
+
+  useEffect(() => {
+    setSessionsLoading(true)
+    serviceSessionsApi
+      .list({
+        limit: 20,
+        ...({ person_id: personId } as Record<string, unknown>),
+      })
+      .then((res) =>
+        setSessions((res.items ?? []).filter((s) => s.person_id === personId)),
+      )
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false))
+  }, [personId])
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -224,6 +263,9 @@ function PersonDetailPage() {
                   Family
                 </Tab>
                 <Tab value="emergency">Emergency</Tab>
+                <Tab value="sessions" count={sessions.length}>
+                  Sessions
+                </Tab>
                 <Tab value="history">History</Tab>
               </TabsList>
 
@@ -412,10 +454,18 @@ function PersonDetailPage() {
                 )}
               </TabPanel>
 
+              <TabPanel value="sessions">
+                <SessionsPanel
+                  sessions={sessions}
+                  loading={sessionsLoading}
+                  personId={personId}
+                />
+              </TabPanel>
+
               <TabPanel value="history">
                 <EmptyState
                   title="No activity yet"
-                  description="Lifecycle changes and service sessions will appear here once the audit feed is wired up."
+                  description="Lifecycle changes will appear here once the audit feed is wired up."
                 />
               </TabPanel>
             </Tabs>
@@ -625,4 +675,94 @@ function clientInitial(name: string): string {
   const parts = trimmed.split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return trimmed.slice(0, 2).toUpperCase()
+}
+
+function SessionsPanel({
+  sessions,
+  loading,
+  personId,
+}: {
+  sessions: ServiceSession[]
+  loading: boolean
+  personId: string
+}) {
+  if (loading) return <p className="text-sm text-fg/65">Loading sessions…</p>
+  if (sessions.length === 0) {
+    return (
+      <EmptyState
+        icon={CalendarClock}
+        title="No sessions yet"
+        description="Sessions delivered to this person will show up here."
+        action={
+          <Link
+            to="/service-sessions"
+            search={{ new: true, person_id: personId }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-fg/15 bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-hover"
+          >
+            <Plus className="size-4" />
+            Schedule session
+          </Link>
+        }
+      />
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-fg/55">{sessions.length} recent sessions.</p>
+        <Link
+          to="/service-sessions"
+          search={{ person_id: personId }}
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          View all
+        </Link>
+      </div>
+      <div className="overflow-hidden border border-fg/10 bg-surface">
+        <table className="w-full caption-bottom text-sm">
+          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+            <TableRow className="border-fg/8 hover:bg-transparent">
+              <TableHead>Scheduled</TableHead>
+              <TableHead>Service</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-10 text-right text-fg/65">
+                <span className="sr-only">Open</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sessions.slice(0, 10).map((s) => (
+              <TableRow key={s.id} className="group border-fg/8">
+                <TableCell className="text-sm text-fg">
+                  {new Date(s.scheduled_at).toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  <Link
+                    to="/services/$serviceId"
+                    params={{ serviceId: s.service_id }}
+                    className="font-mono text-xs text-fg/75 hover:text-primary"
+                  >
+                    {s.service_id.slice(0, 8)}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={s.status} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    to="/service-sessions/$sessionId"
+                    params={{ sessionId: s.id }}
+                    aria-label="Open session"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </table>
+      </div>
+    </div>
+  )
 }

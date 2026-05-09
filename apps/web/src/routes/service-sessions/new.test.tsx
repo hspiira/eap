@@ -1,13 +1,14 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ServiceSessionFormSheet } from '@/components/ServiceSessionFormSheet'
 import { renderWithProviders } from '@/test/utils'
 import { ApiError } from '@/types/api'
 
 const createMock = vi.fn()
-const navigateMock = vi.fn()
+const listServicesMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listPersonsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listProvidersMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
 
 vi.mock('@/api/endpoints/service-sessions', () => ({
   serviceSessionsApi: {
@@ -15,53 +16,67 @@ vi.mock('@/api/endpoints/service-sessions', () => ({
   },
 }))
 
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-router')>(
-    '@tanstack/react-router',
-  )
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-    createFileRoute: () => (opts: Record<string, unknown>) => ({ options: opts }),
-  }
-})
+vi.mock('@/api/endpoints/services', () => ({
+  servicesApi: {
+    list: (...args: unknown[]) => listServicesMock(...args),
+  },
+}))
+
+vi.mock('@/api/endpoints/persons', () => ({
+  personsApi: {
+    list: (...args: unknown[]) => listPersonsMock(...args),
+  },
+}))
+
+vi.mock('@/api/endpoints/providers', () => ({
+  providersApi: {
+    list: (...args: unknown[]) => listProvidersMock(...args),
+  },
+}))
 
 beforeEach(() => {
   createMock.mockReset()
-  navigateMock.mockReset()
+  listServicesMock.mockClear()
+  listPersonsMock.mockClear()
+  listProvidersMock.mockClear()
 })
 afterEach(() => {
   createMock.mockReset()
-  navigateMock.mockReset()
 })
 
-async function importPage() {
-  const mod = await import('@/routes/service-sessions/new')
-  return mod
-}
-
-describe('service-sessions/new — ServiceSessionCreatePage', () => {
+describe('ServiceSessionFormSheet — create', () => {
   it('rejects empty submission with field errors', async () => {
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+    renderWithProviders(<ServiceSessionFormSheet open onOpenChange={() => {}} />)
 
     fireEvent.click(screen.getByRole('button', { name: /create session/i }))
-    expect(await screen.findByText(/service id is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/person id is required/i)).toBeInTheDocument()
+    expect(await screen.findByText(/service is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/person is required/i)).toBeInTheDocument()
     expect(screen.getByText(/scheduled time is required/i)).toBeInTheDocument()
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  it('converts datetime-local input to ISO before submit', async () => {
+  it('converts datetime-local input to ISO before submit (with locked subjects)', async () => {
     createMock.mockResolvedValue({ id: 'sess-1' })
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+    const onSaved = vi.fn()
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        personId="p-1"
+        service={{ id: 'svc-1', name: 'Counselling' } as never}
+        person={
+          {
+            id: 'p-1',
+            first_name: 'Ada',
+            last_name: 'Lovelace',
+            person_type: 'ClientEmployee',
+          } as never
+        }
+        onSaved={onSaved}
+      />,
+    )
 
-    await user.type(screen.getByLabelText(/service id/i), 'svc-1')
-    await user.type(screen.getByLabelText(/person id/i), 'p-1')
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: '2026-06-01T10:30' },
     })
@@ -72,40 +87,31 @@ describe('service-sessions/new — ServiceSessionCreatePage', () => {
     expect(args.service_id).toBe('svc-1')
     expect(args.person_id).toBe('p-1')
     expect(args.scheduled_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-  })
-
-  it('navigates to the list on success', async () => {
-    createMock.mockResolvedValue({ id: 'sess-1' })
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
-
-    await user.type(screen.getByLabelText(/service id/i), 's')
-    await user.type(screen.getByLabelText(/person id/i), 'p')
-    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
-      target: { value: '2026-06-01T10:30' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /create session/i }))
-
-    await waitFor(() =>
-      expect(navigateMock).toHaveBeenCalledWith(
-        expect.objectContaining({ to: '/service-sessions' }),
-      ),
-    )
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
   })
 
   it('maps server fieldErrors to fields', async () => {
     createMock.mockRejectedValue(
       new ApiError('Bad', 'VALIDATION', 422, { service_id: 'Service not found' }),
     )
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        personId="p-1"
+        service={{ id: 'svc-1', name: 'Counselling' } as never}
+        person={
+          {
+            id: 'p-1',
+            first_name: 'Ada',
+            last_name: 'Lovelace',
+            person_type: 'ClientEmployee',
+          } as never
+        }
+      />,
+    )
 
-    await user.type(screen.getByLabelText(/service id/i), 'bogus')
-    await user.type(screen.getByLabelText(/person id/i), 'p')
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: '2026-06-01T10:30' },
     })
