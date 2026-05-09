@@ -9,12 +9,11 @@ import { TagsPageHeader } from "@/components/TagsPageHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
+import { TAG_HEX_COLOR_REGEX } from "@/lib/tag-colors"
 
 export const Route = createFileRoute("/tags/$tagId")({
   component: TagEditPage,
 })
-
-const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/
 
 const tagEditSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -22,7 +21,7 @@ const tagEditSchema = z.object({
     .string()
     .trim()
     .optional()
-    .refine((v) => !v || hexColorRegex.test(v), "Must be a hex color (e.g. #103a10)"),
+    .refine((v) => !v || TAG_HEX_COLOR_REGEX.test(v), "Must be a hex color"),
   description: z.string().optional(),
 })
 
@@ -95,25 +94,25 @@ function TagEditPage() {
             <FormField
               label="Name"
               required
-              error={formState.errors.name?.message as string | undefined}
+              error={formState.errors.name?.message}
               htmlFor="name"
             >
               <Input id="name" className="rounded-none" {...register("name")} />
             </FormField>
             <FormField
               label="Color (hex)"
-              error={formState.errors.color?.message as string | undefined}
+              error={formState.errors.color?.message}
               htmlFor="color"
             >
               <div className="flex gap-2 items-center">
                 <Input
                   id="color"
                   type="text"
-                  placeholder="#103a10"
+                  placeholder="Hex e.g. 6 chars after #"
                   className="rounded-none flex-1"
                   {...register("color")}
                 />
-                {color && hexColorRegex.test(color) && (
+                {color && TAG_HEX_COLOR_REGEX.test(color) && (
                   <span
                     className="h-8 w-8 shrink-0 border border-fg/30"
                     style={{ backgroundColor: color }}
@@ -123,7 +122,7 @@ function TagEditPage() {
             </FormField>
             <FormField
               label="Description"
-              error={formState.errors.description?.message as string | undefined}
+              error={formState.errors.description?.message}
               htmlFor="description"
             >
               <Input id="description" className="rounded-none" {...register("description")} />

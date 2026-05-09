@@ -5,6 +5,7 @@ import { ArrowLeft, Check } from 'lucide-react'
 import { z } from 'zod'
 
 import { authApi } from '@/api/endpoints/auth'
+import { FormField } from '@/components/common/FormField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApiForm } from '@/hooks/useApiForm'
@@ -142,20 +143,19 @@ function SetPasswordPage() {
       )}
 
       <form onSubmit={submit} className="space-y-4" noValidate>
-        <div>
-          <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
-            Password *
-          </label>
+        <FormField
+          label="Password"
+          required
+          error={formState.errors.password?.message}
+          htmlFor="password"
+        >
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             {...register('password')}
           />
-          {formState.errors.password && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.password.message as string}</p>
-          )}
-        </div>
+        </FormField>
         <Button
           type="button"
           variant="ghost"
@@ -165,20 +165,19 @@ function SetPasswordPage() {
         >
           {showPassword ? 'Hide' : 'Show'} password
         </Button>
-        <div>
-          <label htmlFor="password_confirm" className="block text-fg text-sm font-medium mb-1">
-            Confirm password *
-          </label>
+        <FormField
+          label="Confirm password"
+          required
+          error={formState.errors.password_confirm?.message}
+          htmlFor="password_confirm"
+        >
           <Input
             id="password_confirm"
             type="password"
             placeholder="••••••••"
             {...register('password_confirm')}
           />
-          {formState.errors.password_confirm && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.password_confirm.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
         <Button
           type="submit"

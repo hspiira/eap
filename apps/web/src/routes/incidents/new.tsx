@@ -85,7 +85,7 @@ function IncidentCreatePage() {
           <FormField
             label="Client ID"
             required
-            error={formState.errors.client_id?.message as string | undefined}
+            error={formState.errors.client_id?.message}
             htmlFor="client_id"
           >
             <Input id="client_id" className="rounded-none" {...register("client_id")} />
@@ -93,7 +93,7 @@ function IncidentCreatePage() {
           <FormField
             label="Title"
             required
-            error={formState.errors.title?.message as string | undefined}
+            error={formState.errors.title?.message}
             htmlFor="title"
           >
             <Input id="title" className="rounded-none" {...register("title")} />
@@ -101,7 +101,7 @@ function IncidentCreatePage() {
           <FormField
             label="Description"
             required
-            error={formState.errors.description?.message as string | undefined}
+            error={formState.errors.description?.message}
             htmlFor="description"
           >
             <Textarea
@@ -115,7 +115,7 @@ function IncidentCreatePage() {
             <FormField
               label="Severity"
               required
-              error={formState.errors.severity?.message as string | undefined}
+              error={formState.errors.severity?.message}
               htmlFor="severity"
             >
               <Controller
@@ -140,7 +140,7 @@ function IncidentCreatePage() {
             <FormField
               label="Affected population"
               required
-              error={formState.errors.affected_population?.message as string | undefined}
+              error={formState.errors.affected_population?.message}
               htmlFor="affected_population"
             >
               <Input
@@ -155,7 +155,7 @@ function IncidentCreatePage() {
           <FormField
             label="Occurred at"
             required
-            error={formState.errors.occurred_at?.message as string | undefined}
+            error={formState.errors.occurred_at?.message}
             htmlFor="occurred_at"
           >
             <Input

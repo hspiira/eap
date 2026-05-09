@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 
+import { FormField } from '@/components/common/FormField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApiForm } from '@/hooks/useApiForm'
@@ -119,10 +120,12 @@ function LoginPage() {
           </div>
         ) : null}
 
-        <div>
-          <label htmlFor="tenant_code" className="block text-fg text-sm font-medium mb-1">
-            Tenant Code *
-          </label>
+        <FormField
+          label="Tenant code"
+          required
+          error={formState.errors.tenant_code?.message}
+          htmlFor="tenant_code"
+        >
           <Input
             id="tenant_code"
             type="text"
@@ -133,15 +136,14 @@ function LoginPage() {
               setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
             })}
           />
-          {formState.errors.tenant_code && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.tenant_code.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="email" className="block text-fg text-sm font-medium mb-1">
-            Email *
-          </label>
+        <FormField
+          label="Email"
+          required
+          error={formState.errors.email?.message}
+          htmlFor="email"
+        >
           <Input
             id="email"
             type="email"
@@ -150,15 +152,14 @@ function LoginPage() {
             disabled={isLocked}
             {...register('email')}
           />
-          {formState.errors.email && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.email.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
-            Password *
-          </label>
+        <FormField
+          label="Password"
+          required
+          error={formState.errors.password?.message}
+          htmlFor="password"
+        >
           <Input
             id="password"
             type="password"
@@ -167,10 +168,7 @@ function LoginPage() {
             disabled={isLocked}
             {...register('password')}
           />
-          {formState.errors.password && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.password.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
         <Button
           type="submit"

@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
+import { FormField } from '@/components/common/FormField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useApiForm } from '@/hooks/useApiForm'
@@ -262,25 +263,26 @@ function SignupPage() {
           </div>
         )}
 
-        <div>
-          <label htmlFor="name" className="block text-fg text-sm font-medium mb-1">
-            Tenant Name *
-          </label>
+        <FormField
+          label="Tenant name"
+          required
+          error={formState.errors.name?.message}
+          htmlFor="name"
+        >
           <Input
             id="name"
             type="text"
             placeholder="Enter tenant name"
             {...register('name')}
           />
-          {formState.errors.name && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.name.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="code" className="block text-fg text-sm font-medium mb-1">
-            Tenant Code *
-          </label>
+        <FormField
+          label="Tenant code"
+          required
+          error={formState.errors.code?.message}
+          htmlFor="code"
+        >
           <div className="relative">
             <Input
               id="code"
@@ -305,10 +307,7 @@ function SignupPage() {
               </div>
             )}
           </div>
-          {formState.errors.code && (
-            <p className="mt-1 text-sm text-danger">{formState.errors.code.message as string}</p>
-          )}
-        </div>
+        </FormField>
 
         <Button
           type="submit"
