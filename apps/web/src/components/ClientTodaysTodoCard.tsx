@@ -1,13 +1,7 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react"
 
+import { Panel } from "@/components/common/Panel"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { cn } from "@/lib/utils"
 
 export interface ClientTodaysTodoItem {
   id: string
@@ -36,56 +30,56 @@ export function ClientTodaysTodoCard({
   className,
 }: ClientTodaysTodoCardProps) {
   return (
-    <Card className={cn("rounded-md", className)}>
-      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
-        <CardTitle className="text-sm font-semibold text-fg">
-          Today's to-do
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-mr-2 h-7 px-2 text-xs text-fg-muted"
-        >
+    <Panel
+      icon={CalendarCheck}
+      title="Today's to-do"
+      count={items.length || null}
+      action={
+        <Button variant="ghost" size="sm" className="-mr-1 h-7 px-2 text-xs text-fg/60">
           View all
         </Button>
-      </CardHeader>
-      <CardContent className="grid gap-3 p-3">
-        <div className="flex items-center justify-between rounded-sm border border-border-subtle bg-surface px-2 py-1">
-          <Button variant="ghost" size="icon" className="size-6" aria-label="Previous day">
+      }
+      className={className}
+    >
+      <div className="grid gap-3">
+        <div className="flex h-7 items-center justify-between rounded-sm border border-fg/10 bg-bg px-1">
+          <button
+            type="button"
+            aria-label="Previous day"
+            className="grid size-5 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+          >
             <ChevronLeft className="size-3.5" />
-          </Button>
-          <span className="font-mono text-xs tabular-nums text-fg-muted">
+          </button>
+          <span className="font-mono text-xs tabular-nums text-fg/65">
             {formatTodayLabel()}
           </span>
-          <Button variant="ghost" size="icon" className="size-6" aria-label="Next day">
+          <button
+            type="button"
+            aria-label="Next day"
+            className="grid size-5 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+          >
             <ChevronRight className="size-3.5" />
-          </Button>
+          </button>
         </div>
         {items.length === 0 ? (
-          <p className="text-sm text-fg-muted">Nothing scheduled for today.</p>
+          <p className="text-sm text-fg/60">Nothing scheduled for today.</p>
         ) : (
           <ul className="grid gap-2">
             {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-baseline gap-3 text-sm text-fg"
-              >
+              <li key={item.id} className="flex items-baseline gap-3 text-sm text-fg">
                 {item.time ? (
-                  <span className="font-mono shrink-0 tabular-nums text-fg-subtle">
+                  <span className="shrink-0 font-mono tabular-nums text-fg/45">
                     {item.time}
                   </span>
                 ) : (
                   <span
-                    className="mt-1 size-1.5 shrink-0 rounded-full bg-fg-muted"
+                    className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg/40"
                     aria-hidden
                   />
                 )}
                 <span className="min-w-0 flex-1">
                   {item.link ? (
-                    <a
-                      href={item.link}
-                      className="hover:text-primary hover:underline"
-                    >
+                    <a href={item.link} className="hover:text-primary hover:underline">
                       {item.title}
                     </a>
                   ) : (
@@ -95,7 +89,7 @@ export function ClientTodaysTodoCard({
                 {item.link && item.linkLabel ? (
                   <a
                     href={item.link}
-                    className="shrink-0 text-xs text-fg-muted hover:text-primary"
+                    className="shrink-0 text-xs text-fg/55 hover:text-primary"
                   >
                     {item.linkLabel}
                   </a>
@@ -104,7 +98,7 @@ export function ClientTodaysTodoCard({
             ))}
           </ul>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   )
 }

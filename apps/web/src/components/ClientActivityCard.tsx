@@ -3,15 +3,8 @@ import { useEffect, useState } from "react"
 import { Activity, FileText, Mail, Phone, Users } from "lucide-react"
 
 import { activitiesApi } from "@/api/endpoints/activities"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Panel, PanelEmpty, PanelList } from "@/components/common/Panel"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
 import type { Activity as ActivityEntity } from "@/types/entities"
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
@@ -71,66 +64,56 @@ export function ClientActivityCard({
   }, [clientId, limit])
 
   return (
-    <Card className={cn("rounded-md", className)}>
-      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
-        <CardTitle className="text-sm font-semibold text-fg">Activity</CardTitle>
-        {!loading && activities.length > 0 ? (
-          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
-            {activities.length}
-          </Badge>
-        ) : null}
-      </CardHeader>
-      <CardContent className="p-0">
-        {loading ? (
-          <ul className="divide-y divide-border-subtle">
-            {[1, 2, 3].map((i) => (
-              <li key={i} className="flex gap-3 p-3">
-                <Skeleton className="size-9 shrink-0 rounded-md" />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <Skeleton className="h-3.5 w-2/3" />
-                  <Skeleton className="h-3 w-full" />
+    <Panel
+      icon={Activity}
+      title="Activity"
+      count={!loading && activities.length > 0 ? activities.length : null}
+      className={className}
+      bodyClassName="p-0"
+    >
+      {loading ? (
+        <PanelList>
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="flex gap-3 px-3 py-2.5">
+              <Skeleton className="size-8 shrink-0 rounded-sm" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </li>
+          ))}
+        </PanelList>
+      ) : activities.length === 0 ? (
+        <PanelEmpty>No recent activity.</PanelEmpty>
+      ) : (
+        <PanelList className="max-h-104 overflow-y-auto">
+          {activities.map((a) => {
+            const Icon = ACTIVITY_ICONS[a.activity_type] ?? Activity
+            const title = a.title ?? a.activity_type
+            return (
+              <li key={a.id} className="flex gap-3 px-3 py-2.5">
+                <span
+                  className="grid size-8 shrink-0 place-items-center rounded-sm bg-fg/8 text-fg/60"
+                  aria-hidden
+                >
+                  <Icon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-sm font-medium text-fg">{title}</span>
+                    <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-fg/45">
+                      {formatActivityTime(a.occurred_at)}
+                    </span>
+                  </div>
+                  {a.description ? (
+                    <p className="mt-0.5 text-sm text-fg/65">{a.description}</p>
+                  ) : null}
                 </div>
               </li>
-            ))}
-          </ul>
-        ) : activities.length === 0 ? (
-          <div className="px-3 py-6 text-center text-sm text-fg-muted">
-            No recent activity.
-          </div>
-        ) : (
-          <ul className="max-h-100 divide-y divide-border-subtle overflow-y-auto">
-            {activities.map((a) => {
-              const Icon = ACTIVITY_ICONS[a.activity_type] ?? Activity
-              const title = a.title ?? a.activity_type
-              return (
-                <li key={a.id} className="flex gap-3 p-3">
-                  <span
-                    className="grid size-9 shrink-0 place-items-center rounded-md bg-muted text-fg-muted"
-                    aria-hidden
-                  >
-                    <Icon className="size-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span className="text-sm font-medium text-fg">
-                        {title}
-                      </span>
-                      <span className="font-mono ml-auto shrink-0 text-xs tabular-nums text-fg-subtle">
-                        {formatActivityTime(a.occurred_at)}
-                      </span>
-                    </div>
-                    {a.description ? (
-                      <p className="mt-0.5 text-sm text-fg-muted">
-                        {a.description}
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+            )
+          })}
+        </PanelList>
+      )}
+    </Panel>
   )
 }

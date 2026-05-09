@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Users } from "lucide-react"
 
 import { personsApi } from "@/api/endpoints/persons"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Panel } from "@/components/common/Panel"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types/entities"
@@ -51,52 +45,47 @@ export function ClientStaffSummaryCard({
   const total = persons.length
 
   return (
-    <Card className={cn("rounded-md", className)}>
-      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
-        <CardTitle className="text-sm font-semibold text-fg">
-          Staff & people
-        </CardTitle>
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="-mr-2 h-7 gap-0.5 px-2 text-xs text-fg-muted"
+    <Panel
+      icon={Users}
+      title="Staff & people"
+      action={
+        <Link
+          to="/persons"
+          className="-mr-1 inline-flex h-7 items-center gap-0.5 rounded-sm px-2 text-xs text-fg/60 hover:bg-surface-hover hover:text-fg"
         >
-          <Link to="/persons">
-            View details
-            <ChevronRight className="size-3" />
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="grid gap-3 p-3">
-        {loading ? (
-          <div className="grid gap-2">
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-3 w-48" />
-            <Skeleton className="h-3.5 w-full" />
-            <Skeleton className="h-3.5 w-full" />
+          View details
+          <ChevronRight className="size-3" />
+        </Link>
+      }
+      className={className}
+    >
+      {loading ? (
+        <div className="grid gap-2">
+          <Skeleton className="h-7 w-16" />
+          <Skeleton className="h-3 w-48" />
+          <Skeleton className="h-3.5 w-full" />
+          <Skeleton className="h-3.5 w-full" />
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          <div>
+            <div className="font-mono text-2xl font-semibold tabular-nums text-fg">
+              {total}
+            </div>
+            <p className="text-xs text-fg/60">
+              Total people linked to this client
+            </p>
           </div>
-        ) : (
-          <>
-            <div>
-              <div className="font-mono text-2xl font-semibold tabular-nums text-fg">
-                {total}
-              </div>
-              <p className="text-xs text-fg-muted">
-                Total people linked to this client
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-border-subtle pt-2 text-xs">
-              <Row label="Employees" value={staff.length} />
-              <Row label="Dependents" value={dependents.length} />
-              {other.length > 0 ? (
-                <Row label="Other" value={other.length} className="col-span-2" />
-              ) : null}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-fg/8 pt-2 text-xs">
+            <Row label="Employees" value={staff.length} />
+            <Row label="Dependents" value={dependents.length} />
+            {other.length > 0 ? (
+              <Row label="Other" value={other.length} className="col-span-2" />
+            ) : null}
+          </div>
+        </div>
+      )}
+    </Panel>
   )
 }
 
@@ -111,10 +100,8 @@ function Row({
 }) {
   return (
     <div className={cn("flex justify-between py-1", className)}>
-      <span className="text-fg-muted">{label}</span>
-      <span className="font-mono font-medium tabular-nums text-fg">
-        {value}
-      </span>
+      <span className="text-fg/60">{label}</span>
+      <span className="font-mono font-medium tabular-nums text-fg">{value}</span>
     </div>
   )
 }

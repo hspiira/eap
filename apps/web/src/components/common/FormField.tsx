@@ -38,7 +38,7 @@ export function FormField({
           ) : null}
         </Label>
         {optional ? (
-          <span className="text-[10px] uppercase tracking-wider text-fg/45">
+          <span className="text-[10px] font-medium tracking-wide text-fg/45">
             Optional
           </span>
         ) : null}

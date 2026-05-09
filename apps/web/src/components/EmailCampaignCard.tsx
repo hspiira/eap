@@ -1,12 +1,6 @@
-import { Info } from "lucide-react"
+import { Mail } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Panel } from "@/components/common/Panel"
 import { cn } from "@/lib/utils"
 
 interface CampaignMetric {
@@ -65,30 +59,28 @@ export function EmailCampaignCard({
   className,
 }: EmailCampaignCardProps = {}) {
   return (
-    <Card className={cn("rounded-md", className)}>
-      <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
-        <div>
-          <CardTitle className="text-sm font-semibold text-fg">
-            {title}
-          </CardTitle>
-          <p className="mt-0.5 text-xs text-fg-muted">{subtitle}</p>
-        </div>
-        <Badge variant="outline" size="sm">
-          <Info className="size-3" />
+    <Panel
+      icon={Mail}
+      title={title}
+      subtitle={subtitle}
+      badge={
+        <span className="inline-flex items-center gap-1 rounded-sm border border-success/30 bg-success-soft px-1.5 py-0.5 text-[11px] font-medium text-success-fg">
+          <span className="size-1.5 rounded-full bg-success" aria-hidden />
           Live
-        </Badge>
-      </CardHeader>
-      <CardContent className="grid gap-0 p-0 sm:grid-cols-2">
-        {sections.map((s, i) => (
-          <SectionBlock
-            key={s.title}
-            section={s}
-            isFirstColumn={i === 0}
-            totalCols={sections.length}
-          />
-        ))}
-      </CardContent>
-    </Card>
+        </span>
+      }
+      className={className}
+      bodyClassName="grid grid-cols-1 sm:grid-cols-2"
+    >
+      {sections.map((s, i) => (
+        <SectionBlock
+          key={s.title}
+          section={s}
+          isFirstColumn={i === 0}
+          totalCols={sections.length}
+        />
+      ))}
+    </Panel>
   )
 }
 
@@ -104,12 +96,12 @@ function SectionBlock({
   return (
     <div
       className={cn(
-        "p-4",
-        !isFirstColumn && "border-t border-border-subtle sm:border-t-0",
-        !isFirstColumn && totalCols > 1 && "sm:border-l sm:border-l-border-subtle",
+        "p-3.5",
+        !isFirstColumn && "border-t border-fg/8 sm:border-t-0",
+        !isFirstColumn && totalCols > 1 && "sm:border-l sm:border-l-fg/8",
       )}
     >
-      <div className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+      <div className="text-xs font-semibold tracking-wide text-fg/55">
         {section.title}
       </div>
       <div className="mt-1 flex items-baseline gap-2">
@@ -117,7 +109,7 @@ function SectionBlock({
           {section.primaryMetric}
         </span>
         {section.primaryHint ? (
-          <span className="text-xs text-fg-subtle">{section.primaryHint}</span>
+          <span className="text-xs text-fg/45">{section.primaryHint}</span>
         ) : null}
       </div>
       <ul className="mt-3 grid gap-1.5">
@@ -126,7 +118,7 @@ function SectionBlock({
             key={r.label}
             className="flex items-center justify-between text-xs"
           >
-            <span className="flex items-center gap-2 text-fg-muted">
+            <span className="flex items-center gap-2 text-fg/65">
               {r.dot ? (
                 <span
                   className={cn("size-1.5 rounded-full", DOT_TONE[r.dot])}

@@ -99,7 +99,7 @@ export function ClientForm({
             id="client-code"
             placeholder="ACME"
             maxLength={5}
-            className="font-mono uppercase"
+            className="font-mono"
             {...register("code")}
           />
         </FormField>

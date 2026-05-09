@@ -165,7 +165,7 @@ export function ClientFormSheet({
             id="cs-code"
             placeholder="ACME"
             maxLength={5}
-            className="font-mono uppercase"
+            className="font-mono"
             {...register("code")}
           />
         </FormField>

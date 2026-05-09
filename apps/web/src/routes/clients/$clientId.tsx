@@ -395,12 +395,12 @@ function Hero({ client, verified }: { client: Client; verified: boolean }) {
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {client.name}
       </h1>
-      <span className="font-mono text-xs uppercase text-fg/55">{client.code}</span>
+      <span className="font-mono text-xs text-fg/55">{client.code}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={client.status} />
       <TierBadge tier={client.tier} />
       {verified ? (
-        <span className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+        <span className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
           <BadgeCheck className="size-3" />
           Verified
         </span>
@@ -642,7 +642,7 @@ function RailSection({
 }) {
   return (
     <section className={cn("space-y-2", className)}>
-      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-fg/55">
+      <h3 className="text-xs font-semibold tracking-wide text-fg/55">
         {title}
       </h3>
       {children}
@@ -653,7 +653,7 @@ function RailSection({
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+      <div className="text-[11px] font-medium tracking-wide text-fg/55">
         {label}
       </div>
       <div className="mt-0.5 font-mono text-base font-semibold text-fg">{value}</div>
@@ -676,7 +676,7 @@ function DetailRow({
 }) {
   return (
     <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+      <dt className="text-[11px] font-medium tracking-wide text-fg/55">
         {label}
       </dt>
       <dd className="mt-0.5 truncate text-sm text-fg">

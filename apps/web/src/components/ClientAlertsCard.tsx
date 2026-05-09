@@ -2,14 +2,7 @@ import { useState } from "react"
 
 import { AlertCircle, Bell, ChevronDown, ChevronUp } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Panel, PanelEmpty, PanelList } from "@/components/common/Panel"
 import { cn } from "@/lib/utils"
 
 export type ClientAlertSeverity = "low" | "medium" | "high" | "critical"
@@ -35,21 +28,26 @@ const SEVERITY_LABEL: Record<ClientAlertSeverity, string> = {
   critical: "Critical",
 }
 
-const SEVERITY_VARIANT: Record<
+const SEVERITY_TONE: Record<
   ClientAlertSeverity,
-  "default" | "secondary" | "destructive" | "outline"
+  { icon: string; pill: string }
 > = {
-  low: "outline",
-  medium: "secondary",
-  high: "destructive",
-  critical: "destructive",
-}
-
-const SEVERITY_ICON_TONE: Record<ClientAlertSeverity, string> = {
-  low: "text-fg-subtle",
-  medium: "text-warning",
-  high: "text-danger",
-  critical: "text-danger",
+  low: {
+    icon: "text-fg/45",
+    pill: "border border-fg/15 text-fg/70",
+  },
+  medium: {
+    icon: "text-warning",
+    pill: "border border-warning/30 bg-warning-soft text-warning-fg",
+  },
+  high: {
+    icon: "text-danger",
+    pill: "border border-danger/30 bg-danger-soft text-danger-fg",
+  },
+  critical: {
+    icon: "text-danger",
+    pill: "border border-danger/40 bg-danger-soft text-danger-fg",
+  },
 }
 
 export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
@@ -60,95 +58,89 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
   )
 
   return (
-    <Card className={cn("rounded-md", className)}>
-      <CardHeader className="flex-row items-center gap-2 space-y-0 border-b border-border p-3">
-        <span className="relative" aria-hidden>
-          <Bell className="size-4 text-fg-muted" />
-          {hasUnacked ? (
-            <span className="absolute right-0 top-0 size-1.5 -translate-y-0.5 translate-x-0.5 rounded-full bg-danger" />
-          ) : null}
-        </span>
-        <CardTitle className="text-sm font-semibold text-fg">Alerts</CardTitle>
-        {hasAlerts ? (
-          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
-            {alerts.length}
-          </Badge>
-        ) : null}
-      </CardHeader>
-
-      <CardContent className="p-0">
-        {!hasAlerts ? (
-          <div className="px-3 py-6 text-center text-sm text-fg-muted">
-            No alerts for this client.
-          </div>
-        ) : (
-          <ul className="max-h-70 divide-y divide-border overflow-y-auto">
-            {alerts.map((a) => {
-              const severity = a.severity ?? "medium"
-              const isExpanded = expandedId === a.id
-              const expandable = Boolean(a.description || a.link)
-              return (
-                <li key={a.id} className="p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle
-                      className={cn(
-                        "mt-0.5 size-4 shrink-0",
-                        SEVERITY_ICON_TONE[severity],
-                      )}
-                      aria-hidden
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <span className="text-sm font-medium text-fg">
-                          {a.title}
-                        </span>
-                        {expandable ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-6"
-                            aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
-                            aria-expanded={isExpanded}
-                            onClick={() =>
-                              setExpandedId(isExpanded ? null : a.id)
-                            }
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="size-3.5" />
-                            ) : (
-                              <ChevronDown className="size-3.5" />
-                            )}
-                          </Button>
-                        ) : null}
-                      </div>
-                      <Badge
-                        variant={SEVERITY_VARIANT[severity]}
-                        size="sm"
-                        className="mt-1"
-                      >
-                        {SEVERITY_LABEL[severity]}
-                      </Badge>
-                      {isExpanded && a.description ? (
-                        <p className="mt-2 text-xs leading-relaxed text-fg-muted">
-                          {a.description}
-                        </p>
-                      ) : null}
-                      {isExpanded && a.link ? (
-                        <a
-                          href={a.link}
-                          className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+    <Panel
+      icon={Bell}
+      title="Alerts"
+      count={hasAlerts ? alerts.length : null}
+      badge={
+        hasUnacked ? (
+          <span
+            aria-hidden
+            className="size-1.5 rounded-full bg-danger"
+            title="Unread high-priority alerts"
+          />
+        ) : null
+      }
+      className={className}
+      bodyClassName="p-0"
+    >
+      {!hasAlerts ? (
+        <PanelEmpty>No alerts for this client.</PanelEmpty>
+      ) : (
+        <PanelList className="max-h-72 overflow-y-auto">
+          {alerts.map((a) => {
+            const severity = a.severity ?? "medium"
+            const isExpanded = expandedId === a.id
+            const expandable = Boolean(a.description || a.link)
+            const tone = SEVERITY_TONE[severity]
+            return (
+              <li key={a.id} className="px-3 py-2.5">
+                <div className="flex items-start gap-2">
+                  <AlertCircle
+                    className={cn("mt-0.5 size-4 shrink-0", tone.icon)}
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <span className="text-sm font-medium text-fg">
+                        {a.title}
+                      </span>
+                      {expandable ? (
+                        <button
+                          type="button"
+                          aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
+                          aria-expanded={isExpanded}
+                          onClick={() =>
+                            setExpandedId(isExpanded ? null : a.id)
+                          }
+                          className="grid size-6 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
                         >
-                          {a.linkLabel ?? "View"}
-                        </a>
+                          {isExpanded ? (
+                            <ChevronUp className="size-3.5" />
+                          ) : (
+                            <ChevronDown className="size-3.5" />
+                          )}
+                        </button>
                       ) : null}
                     </div>
+                    <span
+                      className={cn(
+                        "mt-1 inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px] font-medium",
+                        tone.pill,
+                      )}
+                    >
+                      {SEVERITY_LABEL[severity]}
+                    </span>
+                    {isExpanded && a.description ? (
+                      <p className="mt-2 text-xs leading-relaxed text-fg/65">
+                        {a.description}
+                      </p>
+                    ) : null}
+                    {isExpanded && a.link ? (
+                      <a
+                        href={a.link}
+                        className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+                      >
+                        {a.linkLabel ?? "View"}
+                      </a>
+                    ) : null}
                   </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+                </div>
+              </li>
+            )
+          })}
+        </PanelList>
+      )}
+    </Panel>
   )
 }

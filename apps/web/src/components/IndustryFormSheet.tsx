@@ -117,7 +117,7 @@ export function IndustryFormSheet({
           id="ind-code"
           placeholder="ENR-REN"
           maxLength={12}
-          className="font-mono uppercase"
+          className="font-mono"
           {...register("code")}
         />
       </FormField>

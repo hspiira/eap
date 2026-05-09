@@ -34,7 +34,7 @@ export function IndustryDetailsCard({
             {industry.name}
           </h3>
           <div className="mt-1 flex items-center gap-2">
-            <span className="font-mono text-[11px] uppercase text-fg/55">
+            <span className="font-mono text-[11px] text-fg/55">
               {industry.code ?? "no code"}
             </span>
             {industry.level != null ? (
@@ -117,7 +117,7 @@ function Section({
 }) {
   return (
     <section className="space-y-2">
-      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-fg/55">
+      <h4 className="text-xs font-semibold tracking-wide text-fg/55">
         {title}
       </h4>
       {children}
@@ -138,7 +138,7 @@ function Field({
 }) {
   return (
     <div className={cn(fullWidth && "col-span-3")}>
-      <dt className="text-[10px] font-medium uppercase tracking-wider text-fg/55">
+      <dt className="text-[11px] font-medium tracking-wide text-fg/55">
         {label}
       </dt>
       <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "font-mono text-xs")}>

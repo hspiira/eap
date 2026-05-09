@@ -270,7 +270,7 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
               style={{ backgroundColor: swatch }}
               aria-hidden
             />
-            <span className="font-mono text-xs uppercase text-fg/65">{swatch}</span>
+            <span className="font-mono text-xs text-fg/65">{swatch}</span>
           </span>
         ) : (
           <span className="text-fg/40">—</span>

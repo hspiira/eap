@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { cn } from "@/lib/utils"
 
 export interface ConfirmDialogProps {
   open: boolean
@@ -52,7 +53,10 @@ export function ConfirmDialog({
               handleConfirm()
             }}
             disabled={loading}
-            className={destructive ? "bg-fg hover:bg-surface-slate-dim" : undefined}
+            className={cn(
+              destructive &&
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+            )}
           >
             {loading ? "…" : confirmLabel}
           </AlertDialogAction>

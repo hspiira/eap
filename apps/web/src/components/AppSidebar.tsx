@@ -206,7 +206,7 @@ function ExpandedSection({ label, items, open, onOpenChange }: ExpandedSectionPr
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&[data-state=open]>svg]:rotate-90"
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold tracking-wide text-sidebar-foreground/70 outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&[data-state=open]>svg]:rotate-90"
           >
             <ChevronRight className="size-3.5 shrink-0 transition-transform" />
             {label}

@@ -219,7 +219,7 @@ const SidebarGroupLabel = React.forwardRef<
     ref={ref}
     data-sidebar="group-label"
     className={cn(
-      "flex items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70",
+      "flex items-center justify-between px-2 py-1 text-xs font-semibold tracking-wide text-sidebar-foreground/70",
       className,
     )}
     {...props}

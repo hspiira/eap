@@ -19,7 +19,7 @@ export function FormSection({
     <section className={cn("space-y-3", className)}>
       {title ? (
         <header className="space-y-0.5">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-fg/65">
+          <h3 className="text-xs font-semibold tracking-wide text-fg/65">
             {title}
           </h3>
           {description ? (
