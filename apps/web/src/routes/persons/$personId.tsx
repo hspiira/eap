@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Client, Person, ServiceSession, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -47,6 +48,14 @@ type TabValue =
   | "emergency"
   | "sessions"
   | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = [
+  "overview",
+  "employment",
+  "family",
+  "emergency",
+  "sessions",
+  "history",
+]
 
 function PersonDetailPage() {
   const { personId } = Route.useParams()
@@ -59,7 +68,7 @@ function PersonDetailPage() {
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
   const fetchPerson = useCallback(async () => {

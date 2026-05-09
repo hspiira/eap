@@ -1,5 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowRight, FileText, type LucideIcon, PieChart, Ribbon, Sparkles } from "lucide-react"
+import {
+  ArrowRight,
+  FileBarChart,
+  FileText,
+  type LucideIcon,
+  PieChart,
+  Ribbon,
+  Sparkles,
+} from "lucide-react"
+
+import { PageShell } from "@/components/common/PageShell"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/reports/")({
   component: ReportsLandingPage,
@@ -44,7 +55,8 @@ const TEMPLATES: ReportTemplate[] = [
   {
     slug: "anchor-cohort-benchmark",
     title: "Anchor-cohort benchmark",
-    description: "Cross-tenant aggregate (k-floor 10) for benchmarking against the anchor cohort.",
+    description:
+      "Cross-tenant aggregate (k-floor 10) for benchmarking against the anchor cohort.",
     cadence: "Quarterly",
     icon: Sparkles,
     ready: false,
@@ -53,40 +65,42 @@ const TEMPLATES: ReportTemplate[] = [
 
 function ReportsLandingPage() {
   return (
-    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="flex items-baseline justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-fg">Reports</h1>
-            <p className="mt-1 text-sm text-fg/70">
+    <PageShell icon={FileBarChart} breadcrumb="Reports">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+        <div className="mx-auto max-w-5xl space-y-5 px-5 py-5">
+          <header>
+            <h1 className="text-base font-semibold text-fg">Templates</h1>
+            <p className="mt-1 text-xs text-fg/60">
               Reference templates for renewal, wave summaries, and tier portfolio reviews.
             </p>
-          </div>
-        </header>
+          </header>
 
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {TEMPLATES.map((tpl) => (
-            <li key={tpl.slug}>
-              <ReportTemplateCard template={tpl} />
-            </li>
-          ))}
-        </ul>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {TEMPLATES.map((tpl) => (
+              <li key={tpl.slug}>
+                <ReportTemplateCard template={tpl} />
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-    </div>
+    </PageShell>
   )
 }
 
 function ReportTemplateCard({ template }: { template: ReportTemplate }) {
   const Icon = template.icon
-  const cardClass =
-    "group flex h-full flex-col gap-3 border border-fg/20 bg-white p-4 rounded-none transition-colors"
+  const base =
+    "group flex h-full flex-col gap-3 rounded-sm border border-fg/10 bg-surface p-4 transition-colors"
 
   if (!template.ready) {
     return (
-      <div className={`${cardClass} opacity-60`} aria-disabled="true">
+      <div className={cn(base, "opacity-60")} aria-disabled="true">
         <CardHeader template={template} icon={Icon} />
-        <p className="text-sm text-fg/70">{template.description}</p>
-        <span className="mt-auto text-xs uppercase tracking-wide text-fg/50">Coming soon</span>
+        <p className="text-sm text-fg/65">{template.description}</p>
+        <span className="mt-auto inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg/55">
+          Coming soon
+        </span>
       </div>
     )
   }
@@ -95,26 +109,35 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
     <Link
       to="/reports/$templateSlug"
       params={{ templateSlug: template.slug }}
-      className={`${cardClass} hover:border-primary hover:bg-surface/30`}
+      className={cn(base, "hover:border-fg/25 hover:bg-surface-hover")}
     >
       <CardHeader template={template} icon={Icon} />
-      <p className="text-sm text-fg/70">{template.description}</p>
+      <p className="text-sm text-fg/65">{template.description}</p>
       <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
-        Open template <ArrowRight className="h-4 w-4" />
+        Open template <ArrowRight className="size-3.5" />
       </span>
     </Link>
   )
 }
 
-function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: LucideIcon }) {
+function CardHeader({
+  template,
+  icon: Icon,
+}: {
+  template: ReportTemplate
+  icon: LucideIcon
+}) {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-fg/20 bg-surface/40 text-primary">
-        <Icon className="h-4 w-4" />
+      <span
+        aria-hidden
+        className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+      >
+        <Icon className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
         <h2 className="text-sm font-semibold text-fg">{template.title}</h2>
-        <p className="text-xs text-fg/60">{template.cadence}</p>
+        <p className="text-[11px] text-fg/55">{template.cadence}</p>
       </div>
     </div>
   )

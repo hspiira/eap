@@ -48,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/clients/$clientId")({
 const ROW_BORDER = "border-fg/8"
 
 type TabValue = "overview" | "activity" | "contracts" | "staff"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts", "staff"]
 
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
@@ -75,7 +77,7 @@ function ClientDetailPage() {
   const [contractsLoading, setContractsLoading] = useState(false)
   const [tags, setTags] = useState<ClientTag[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addPersonOpen, setAddPersonOpen] = useState(false)

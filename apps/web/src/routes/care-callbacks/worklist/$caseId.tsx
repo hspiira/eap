@@ -2,6 +2,14 @@ import { useMemo, useState } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Headphones,
+  Phone,
+  PlayCircle,
+  RotateCw,
+} from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { questionnairesApi } from "@/api/endpoints/questionnaires"
@@ -11,15 +19,30 @@ import {
   type AnswersMap,
   QuestionnaireRenderer,
 } from "@/components/care-callbacks/QuestionnaireRenderer"
+import { CaseDetailSkeleton } from "@/components/CareCallbacksPageSkeletons"
+import { EmptyState } from "@/components/common/EmptyState"
+import { FormField } from "@/components/common/FormField"
+import { FormSection } from "@/components/common/FormSection"
+import { PageShell } from "@/components/common/PageShell"
+import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
+import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
+import type { CallbackCase, CallbackOutcome } from "@/types/entities"
 import { CallbackCaseStatus } from "@/types/enums"
 
 export const Route = createFileRoute("/care-callbacks/worklist/$caseId")({
   component: CaseTriagePage,
 })
+
+const SELECT_CLASS =
+  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+
+type TabValue = "triage" | "outcome" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["triage", "outcome", "history"]
 
 function CaseTriagePage() {
   const { caseId } = Route.useParams()
@@ -63,10 +86,13 @@ function CaseTriagePage() {
   })
   const followup = followupQuery.data
 
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "triage")
   const [preAnswers, setPreAnswers] = useState<AnswersMap>({})
   const [postAnswers, setPostAnswers] = useState<AnswersMap>({})
   const [counsellorNotes, setCounsellorNotes] = useState("")
-  const [finalStatus, setFinalStatus] = useState<CallbackCaseStatus>(CallbackCaseStatus.COMPLETED)
+  const [finalStatus, setFinalStatus] = useState<CallbackCaseStatus>(
+    CallbackCaseStatus.COMPLETED,
+  )
 
   const crisisReasons = useMemo(() => evaluateCrisisRules(preAnswers), [preAnswers])
   const crisisActive = crisisReasons.length > 0
@@ -89,14 +115,15 @@ function CaseTriagePage() {
         questionnaire_code: campaign!.questionnaire_code,
         followup_questionnaire_code: campaign!.followup_questionnaire_code ?? null,
         pre_answers: preAnswers,
-        post_answers:
-          followup && hasAnyAnswer(postAnswers) ? postAnswers : null,
+        post_answers: followup && hasAnyAnswer(postAnswers) ? postAnswers : null,
         counsellor_notes: counsellorNotes.trim() || null,
         final_status: finalStatus,
         recorded_by_user_id: userId,
       }),
     onSuccess: async (outcome) => {
-      showSuccess(outcome.crisis_flagged ? "Outcome saved · crisis escalated" : "Outcome saved")
+      showSuccess(
+        outcome.crisis_flagged ? "Outcome saved · crisis escalated" : "Outcome saved",
+      )
       await qc.invalidateQueries({ queryKey: ["care-callback-cases"] })
       await qc.invalidateQueries({
         queryKey: ["care-callback-campaigns", "detail", campaignId],
@@ -110,14 +137,39 @@ function CaseTriagePage() {
   })
 
   if (caseQuery.isPending) {
-    return <p className="p-6 text-sm text-fg/60">Loading case…</p>
+    return (
+      <PageShell icon={Headphones} breadcrumb="Care · My worklist · …">
+        <div className="min-h-0 flex-1 overflow-auto p-5">
+          <CaseDetailSkeleton />
+        </div>
+      </PageShell>
+    )
   }
   if (!caseQuery.data) {
-    return <p className="p-6 text-sm text-fg/60">Case not found.</p>
+    return (
+      <PageShell icon={Headphones} breadcrumb="Care · My worklist · Not found">
+        <EmptyState
+          icon={Headphones}
+          title="Case not found"
+          description="It may have been reassigned or closed."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => navigate({ to: "/care-callbacks/worklist" })}
+            >
+              <ArrowLeft className="size-4" />
+              Back to worklist
+            </Button>
+          }
+        />
+      </PageShell>
+    )
   }
-  const callCase = caseQuery.data
-  const existingOutcome = outcomeQuery.data
 
+  const callCase = caseQuery.data
+  const existingOutcome = outcomeQuery.data ?? null
   const isClosed =
     callCase.status === CallbackCaseStatus.COMPLETED ||
     callCase.status === CallbackCaseStatus.CRISIS_ESCALATED ||
@@ -126,153 +178,446 @@ function CaseTriagePage() {
   const canSubmit = !isClosed && triage && requiredAnswered(triage, preAnswers)
 
   return (
-    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
-      <div className="mx-auto max-w-3xl space-y-5">
-        <header>
-          <Link
-            to="/care-callbacks/worklist"
-            className="text-xs text-fg/60 hover:text-primary hover:underline"
+    <PageShell
+      icon={Headphones}
+      breadcrumb={`Care · My worklist · ${callCase.person_display_name}`}
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/care-callbacks/worklist" })}
+            aria-label="Back to worklist"
+            title="Back to worklist"
+            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
           >
-            ← My worklist
-          </Link>
-          <h1 className="mt-2 text-xl font-semibold text-fg">{callCase.person_display_name}</h1>
-          <p className="mt-1 text-sm text-fg/70">
-            Campaign: {campaign?.name ?? callCase.campaign_id} · status:{" "}
-            <span className="font-medium text-fg">{callCase.status}</span> · attempts:{" "}
-            {callCase.attempt_count}
-          </p>
-        </header>
-
-        {existingOutcome ? (
-          <ExistingOutcomeCard outcome={existingOutcome} />
-        ) : (
-          <>
-            {canStart && (
+            <ArrowLeft className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => caseQuery.refetch()}
+            aria-label="Refresh"
+            title="Refresh"
+            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+          >
+            <RotateCw className="size-3.5" />
+          </button>
+          {canStart ? (
+            <>
+              <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
               <Button
-                type="button"
+                size="sm"
+                className="h-7 gap-1.5 px-2.5"
                 disabled={startMutation.isPending}
                 onClick={() => startMutation.mutate()}
-                className="rounded-none bg-primary text-white hover:bg-primary"
               >
+                <PlayCircle className="size-3.5" />
                 {startMutation.isPending ? "Opening…" : "Open case"}
               </Button>
-            )}
+            </>
+          ) : null}
+        </>
+      }
+    >
+      <Hero callCase={callCase} campaignName={campaign?.name ?? null} />
 
-            {!triage ? (
-              <p className="text-sm text-fg/60">Loading triage form…</p>
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+        <div className="grid grid-cols-12 gap-5 px-5 py-5">
+          <div className="col-span-12 min-w-0 lg:col-span-8">
+            {existingOutcome ? (
+              <ExistingOutcomeCard outcome={existingOutcome} />
             ) : (
-              <>
-                <section className="border border-fg/20 bg-white p-4 space-y-4">
-                  <QuestionnaireRenderer
-                    questionnaire={triage}
-                    answers={preAnswers}
-                    onChange={(key, v) =>
-                      setPreAnswers((prev) => {
-                        const next = { ...prev }
-                        if (v === null) delete next[key]
-                        else next[key] = v
-                        return next
-                      })
-                    }
-                    readOnly={isClosed}
-                  />
-                </section>
+              <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+                <TabsList className="-mx-3 mb-4 px-3">
+                  <Tab value="triage">Triage</Tab>
+                  <Tab value="outcome">Outcome</Tab>
+                  <Tab value="history">History</Tab>
+                </TabsList>
 
-                {crisisActive && <CrisisAlert reasons={crisisReasons} />}
-
-                {followup && (
-                  <section className="border border-fg/20 bg-white p-4 space-y-4">
-                    <p className="text-xs uppercase tracking-wide text-fg/60">Post-call</p>
-                    <QuestionnaireRenderer
-                      questionnaire={followup}
-                      answers={postAnswers}
-                      onChange={(key, v) =>
-                        setPostAnswers((prev) => {
-                          const next = { ...prev }
-                          if (v === null) delete next[key]
-                          else next[key] = v
-                          return next
-                        })
-                      }
-                      readOnly={isClosed}
-                    />
-                  </section>
-                )}
-
-                <section className="border border-fg/20 bg-white p-4 space-y-2">
-                  <label
-                    htmlFor="notes"
-                    className="block text-sm font-medium text-fg"
-                  >
-                    Counsellor notes (not surfaced in aggregate report)
-                  </label>
-                  <textarea
-                    id="notes"
-                    rows={3}
-                    disabled={isClosed}
-                    value={counsellorNotes}
-                    onChange={(e) => setCounsellorNotes(e.target.value)}
-                    className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="final_status"
-                        className="block text-sm font-medium text-fg"
-                      >
-                        Outcome status
-                      </label>
-                      <select
-                        id="final_status"
-                        disabled={isClosed || crisisActive}
-                        value={finalStatus}
-                        onChange={(e) =>
-                          setFinalStatus(e.target.value as CallbackCaseStatus)
-                        }
-                        className="mt-1 flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
-                      >
-                        <option value={CallbackCaseStatus.COMPLETED}>Completed</option>
-                        <option value={CallbackCaseStatus.NO_ANSWER}>No answer</option>
-                        <option value={CallbackCaseStatus.DECLINED}>Declined</option>
-                      </select>
-                      {crisisActive && (
-                        <p className="mt-1 text-xs text-danger-soft">
-                          Crisis flag latches the case to <em>Crisis Escalated</em> on submit.
-                        </p>
-                      )}
+                <TabPanel value="triage">
+                  {!triage ? (
+                    <p className="text-sm text-fg/65">Loading triage form…</p>
+                  ) : (
+                    <div className="space-y-4">
+                      <DetailCard title={triage.title}>
+                        <QuestionnaireRenderer
+                          questionnaire={triage}
+                          answers={preAnswers}
+                          onChange={(key, v) =>
+                            setPreAnswers((prev) => {
+                              const next = { ...prev }
+                              if (v === null) delete next[key]
+                              else next[key] = v
+                              return next
+                            })
+                          }
+                          readOnly={isClosed}
+                        />
+                      </DetailCard>
+                      {crisisActive ? <CrisisAlert reasons={crisisReasons} /> : null}
+                      {followup ? (
+                        <DetailCard title={`Post-call · ${followup.title}`}>
+                          <QuestionnaireRenderer
+                            questionnaire={followup}
+                            answers={postAnswers}
+                            onChange={(key, v) =>
+                              setPostAnswers((prev) => {
+                                const next = { ...prev }
+                                if (v === null) delete next[key]
+                                else next[key] = v
+                                return next
+                              })
+                            }
+                            readOnly={isClosed}
+                          />
+                        </DetailCard>
+                      ) : null}
                     </div>
-                  </div>
-                </section>
+                  )}
+                </TabPanel>
 
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    disabled={!canSubmit || submitMutation.isPending}
-                    onClick={() => submitMutation.mutate()}
-                    className="rounded-none bg-primary text-white hover:bg-primary"
-                  >
-                    {submitMutation.isPending ? "Saving…" : "Save outcome"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="rounded-none border-fg/30 text-fg"
-                    onClick={() => navigate({ to: "/care-callbacks/worklist" })}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </>
+                <TabPanel value="outcome">
+                  <DetailCard title="Outcome">
+                    <FormSection
+                      title="Counsellor notes"
+                      description="Internal — never surfaced in aggregate reports."
+                    >
+                      <FormField label="Notes" optional htmlFor="cc-notes">
+                        <textarea
+                          id="cc-notes"
+                          rows={4}
+                          disabled={isClosed}
+                          value={counsellorNotes}
+                          onChange={(e) => setCounsellorNotes(e.target.value)}
+                          className="flex w-full rounded-sm border border-fg/20 bg-bg px-3 py-2 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                      </FormField>
+                    </FormSection>
+                    <FormSection title="Final status">
+                      <FormField
+                        label="Outcome status"
+                        required
+                        description={
+                          crisisActive
+                            ? "Crisis flag latches the case to Crisis Escalated on submit."
+                            : "Choose how this attempt closed."
+                        }
+                        htmlFor="cc-status"
+                      >
+                        <select
+                          id="cc-status"
+                          disabled={isClosed || crisisActive}
+                          value={finalStatus}
+                          onChange={(e) =>
+                            setFinalStatus(e.target.value as CallbackCaseStatus)
+                          }
+                          className={SELECT_CLASS}
+                        >
+                          <option value={CallbackCaseStatus.COMPLETED}>Completed</option>
+                          <option value={CallbackCaseStatus.NO_ANSWER}>No answer</option>
+                          <option value={CallbackCaseStatus.DECLINED}>Declined</option>
+                        </select>
+                      </FormField>
+                    </FormSection>
+                    <div className="flex justify-end gap-2 border-t border-fg/10 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate({ to: "/care-callbacks/worklist" })}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!canSubmit || submitMutation.isPending}
+                        onClick={() => submitMutation.mutate()}
+                      >
+                        {submitMutation.isPending ? "Saving…" : "Save outcome"}
+                      </Button>
+                    </div>
+                  </DetailCard>
+                </TabPanel>
+
+                <TabPanel value="history">
+                  <EmptyState
+                    title="No activity yet"
+                    description="Lifecycle events will appear here once the audit feed is wired up."
+                  />
+                </TabPanel>
+              </Tabs>
             )}
-          </>
-        )}
+          </div>
+
+          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+            <DetailRail
+              callCase={callCase}
+              campaignId={campaign?.id ?? callCase.campaign_id}
+              campaignName={campaign?.name ?? null}
+              crisisActive={crisisActive || callCase.crisis_flagged}
+            />
+          </aside>
+        </div>
       </div>
+    </PageShell>
+  )
+}
+
+function Hero({
+  callCase,
+  campaignName,
+}: {
+  callCase: CallbackCase
+  campaignName: string | null
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
+      <span
+        aria-hidden
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
+      >
+        {personInitial(callCase.person_display_name)}
+      </span>
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
+        {callCase.person_display_name}
+      </h1>
+      {campaignName ? (
+        <Link
+          to="/care-callbacks/$campaignId"
+          params={{ campaignId: callCase.campaign_id }}
+          className="text-xs text-fg/65 hover:text-primary"
+        >
+          {campaignName}
+        </Link>
+      ) : null}
+      <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
+      <CaseStatusPill status={callCase.status} />
+      {callCase.crisis_flagged ? (
+        <span className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[11px] font-medium text-danger-fg">
+          <AlertTriangle className="size-3" />
+          Crisis
+        </span>
+      ) : null}
     </div>
   )
 }
 
+function DetailRail({
+  callCase,
+  campaignId,
+  campaignName,
+  crisisActive,
+}: {
+  callCase: CallbackCase
+  campaignId: string
+  campaignName: string | null
+  crisisActive: boolean
+}) {
+  return (
+    <div className="space-y-5">
+      <RailSection title="Case state">
+        <div className="grid grid-cols-2 gap-3">
+          <Stat label="Attempts" value={callCase.attempt_count} />
+          <Stat label="Status" value={<CaseStatusPill status={callCase.status} />} />
+          <Stat
+            label="Started"
+            value={
+              callCase.started_at
+                ? new Date(callCase.started_at).toLocaleDateString()
+                : "—"
+            }
+          />
+          <Stat
+            label="Closed"
+            value={
+              callCase.closed_at
+                ? new Date(callCase.closed_at).toLocaleDateString()
+                : "—"
+            }
+          />
+        </div>
+      </RailSection>
+
+      <RailSection title="Campaign">
+        <Link
+          to="/care-callbacks/$campaignId"
+          params={{ campaignId }}
+          className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
+        >
+          <span
+            aria-hidden
+            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <Phone className="size-3.5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-fg">
+              {campaignName ?? campaignId}
+            </p>
+            <p className="truncate font-mono text-[11px] text-fg/55">{campaignId}</p>
+          </div>
+        </Link>
+      </RailSection>
+
+      <RailSection title="Subject">
+        <Link
+          to="/persons/$personId"
+          params={{ personId: callCase.person_id }}
+          className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
+        >
+          <span
+            aria-hidden
+            className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+          >
+            {personInitial(callCase.person_display_name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-fg">
+              {callCase.person_display_name}
+            </p>
+            <p className="truncate font-mono text-[11px] text-fg/55">
+              {callCase.person_id.slice(0, 8)}
+            </p>
+          </div>
+        </Link>
+      </RailSection>
+
+      {crisisActive ? (
+        <RailSection title="Crisis">
+          <p className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger-fg">
+            <AlertTriangle className="mr-1 inline size-3" />
+            Crisis protocol must be invoked. Submitting will latch this case to{" "}
+            <em>Crisis Escalated</em>.
+          </p>
+        </RailSection>
+      ) : null}
+    </div>
+  )
+}
+
+function ExistingOutcomeCard({ outcome }: { outcome: CallbackOutcome }) {
+  return (
+    <DetailCard title="Outcome on file">
+      <header className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-xs text-fg/55">
+          {new Date(outcome.recorded_at).toLocaleString()} · by{" "}
+          <span className="font-mono">{outcome.recorded_by_user_id}</span>
+        </span>
+      </header>
+      {outcome.crisis_flagged ? (
+        <CrisisAlert reasons={outcome.crisis_reasons} />
+      ) : null}
+      <div className="mt-3 space-y-3">
+        <AnswersBlock title="Pre-call answers" answers={outcome.pre_answers} />
+        {outcome.post_answers ? (
+          <AnswersBlock title="Post-call answers" answers={outcome.post_answers} />
+        ) : null}
+        {outcome.counsellor_notes ? (
+          <div>
+            <p className="text-[11px] font-semibold tracking-wide text-fg/55">
+              Counsellor notes
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-fg">
+              {outcome.counsellor_notes}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </DetailCard>
+  )
+}
+
+function AnswersBlock({
+  title,
+  answers,
+}: {
+  title: string
+  answers: Record<string, string | number | string[] | null>
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold tracking-wide text-fg/55">{title}</p>
+      <pre className="mt-1 whitespace-pre-wrap wrap-break-word rounded-sm border border-fg/10 bg-bg px-2.5 py-2 text-xs text-fg/80">
+        {JSON.stringify(answers, null, 2)}
+      </pre>
+    </div>
+  )
+}
+
+function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
+  const tone =
+    status === CallbackCaseStatus.CRISIS_ESCALATED
+      ? "border-danger/30 bg-danger-soft text-danger-fg"
+      : status === CallbackCaseStatus.COMPLETED
+        ? "border-primary/30 bg-primary/10 text-primary"
+        : status === CallbackCaseStatus.IN_PROGRESS
+          ? "border-fg/25 bg-bg text-fg"
+          : "border-fg/15 bg-bg text-fg/75"
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium",
+        tone,
+      )}
+    >
+      {status}
+    </span>
+  )
+}
+
+function DetailCard({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="rounded-sm border border-fg/10 bg-surface p-4">
+      <h3 className="mb-3 text-sm font-semibold text-fg">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function RailSection({
+  title,
+  children,
+  className,
+}: {
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn("space-y-2", className)}>
+      <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
+      <div className="text-[11px] font-medium tracking-wide text-fg/55">{label}</div>
+      <div className="mt-0.5 text-sm font-semibold text-fg">{value}</div>
+    </div>
+  )
+}
+
+function personInitial(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return "·"
+  const parts = trimmed.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return trimmed.slice(0, 2).toUpperCase()
+}
+
 function hasAnyAnswer(map: AnswersMap): boolean {
-  return Object.values(map).some((v) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0))
+  return Object.values(map).some(
+    (v) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0),
+  )
 }
 
 function requiredAnswered(
@@ -288,38 +633,3 @@ function requiredAnswered(
     return true
   })
 }
-
-function ExistingOutcomeCard({ outcome }: { outcome: NonNullable<Awaited<ReturnType<typeof careCallbacksApi.getOutcomeForCase>>> }) {
-  return (
-    <section className="border border-fg/20 bg-white p-4 space-y-3">
-      <header className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-fg">Outcome on file</h2>
-        <span className="text-xs text-fg/60">
-          {new Date(outcome.recorded_at).toLocaleString()} · by {outcome.recorded_by_user_id}
-        </span>
-      </header>
-      {outcome.crisis_flagged && <CrisisAlert reasons={outcome.crisis_reasons} />}
-      <div>
-        <p className="text-xs uppercase tracking-wide text-fg/60">Pre-call answers</p>
-        <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-fg/10 bg-neutral-50 p-2 text-xs text-fg/80">
-          {JSON.stringify(outcome.pre_answers, null, 2)}
-        </pre>
-      </div>
-      {outcome.post_answers ? (
-        <div>
-          <p className="text-xs uppercase tracking-wide text-fg/60">Post-call answers</p>
-          <pre className="mt-1 whitespace-pre-wrap wrap-break-word border border-fg/10 bg-neutral-50 p-2 text-xs text-fg/80">
-            {JSON.stringify(outcome.post_answers, null, 2)}
-          </pre>
-        </div>
-      ) : null}
-      {outcome.counsellor_notes ? (
-        <div>
-          <p className="text-xs uppercase tracking-wide text-fg/60">Counsellor notes</p>
-          <p className="mt-1 text-sm text-fg/80 whitespace-pre-wrap">{outcome.counsellor_notes}</p>
-        </div>
-      ) : null}
-    </section>
-  )
-}
-

@@ -21,6 +21,7 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { UserDetailSkeleton } from "@/components/UsersPageSkeletons"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/users/$userId")({
 })
 
 type TabValue = "overview" | "security" | "preferences" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "security", "preferences", "history"]
 
 function UserDetailPage() {
   const { userId } = Route.useParams()
@@ -38,7 +40,7 @@ function UserDetailPage() {
   const [person, setPerson] = useState<Person | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
   const fetchUser = useCallback(async () => {

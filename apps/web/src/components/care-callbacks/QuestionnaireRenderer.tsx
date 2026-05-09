@@ -95,7 +95,7 @@ function renderInput(
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
+          className="flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           <option value="">— Select —</option>
           {(q.options ?? []).map((opt) => (
@@ -114,8 +114,10 @@ function renderInput(
             return (
               <label
                 key={opt.value}
-                className={`inline-flex items-center gap-1.5 border px-2 py-1 text-sm cursor-pointer ${
-                  checked ? "border-primary bg-primary/10 text-fg" : "border-fg/30 text-fg/70"
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm border px-2 py-1 text-sm ${
+                  checked
+                    ? "border-primary/40 bg-primary/10 text-fg"
+                    : "border-fg/20 bg-bg text-fg/75 hover:bg-surface-hover"
                 }`}
               >
                 <input
@@ -144,7 +146,7 @@ function renderInput(
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
+          className="flex w-full rounded-sm border border-fg/20 bg-bg px-3 py-2 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         />
       )
   }
@@ -177,10 +179,10 @@ function ScaleInput({ inputId, min, max, minLabel, maxLabel, value, onChange, re
               id={t === min ? inputId : undefined}
               aria-pressed={selected}
               onClick={() => onChange(selected ? null : t)}
-              className={`min-w-9 border px-2 py-1 text-sm tabular-nums ${
+              className={`min-w-9 rounded-sm border px-2 py-1 text-sm tabular-nums ${
                 selected
-                  ? "border-primary bg-primary text-white"
-                  : "border-fg/30 bg-white text-fg hover:border-primary"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-fg/20 bg-bg text-fg hover:bg-surface-hover"
               } ${readOnly ? "cursor-not-allowed opacity-60" : ""}`}
             >
               {t}

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type {
   Person,
@@ -50,6 +51,7 @@ export const Route = createFileRoute("/service-sessions/$sessionId")({
 })
 
 type TabValue = "overview" | "feedback" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "feedback", "history"]
 
 function ServiceSessionDetailPage() {
   const { sessionId } = Route.useParams()
@@ -62,7 +64,7 @@ function ServiceSessionDetailPage() {
   const [provider, setProvider] = useState<Provider | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
 

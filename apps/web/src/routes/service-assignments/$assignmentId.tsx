@@ -21,6 +21,7 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { ServiceAssignmentDetailSkeleton } from "@/components/ServiceAssignmentsPageSkeletons"
 import { Button } from "@/components/ui/button"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/service-assignments/$assignmentId")({
 })
 
 type TabValue = "overview" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "history"]
 
 function ServiceAssignmentDetailPage() {
   const { assignmentId } = Route.useParams()
@@ -39,7 +41,7 @@ function ServiceAssignmentDetailPage() {
   const [service, setService] = useState<Service | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
   const fetchAssignment = useCallback(async () => {

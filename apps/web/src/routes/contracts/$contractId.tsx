@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/contracts/$contractId")({
 })
 
 type TabValue = "overview" | "services" | "billing" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "billing", "history"]
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
@@ -47,7 +49,7 @@ function ContractDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
-  const [tab, setTab] = useState<TabValue>("overview")
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
   const [assignments, setAssignments] = useState<ServiceAssignment[]>([])
