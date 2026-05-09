@@ -259,11 +259,11 @@ export enum ProviderTier {
 }
 
 export enum ProviderRegion {
-  NAIROBI = 'Nairobi',
-  COAST = 'Coast',
-  RIFT = 'Rift',
-  WESTERN = 'Western',
+  KAMPALA = 'Kampala',
   CENTRAL = 'Central',
+  EASTERN = 'Eastern',
+  WESTERN = 'Western',
+  NORTHERN = 'Northern',
   REMOTE = 'Remote / Telehealth',
 }
 

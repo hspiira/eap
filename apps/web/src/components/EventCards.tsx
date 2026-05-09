@@ -39,7 +39,7 @@ const DEFAULT_EVENTS: ReadonlyArray<ScheduledEvent> = [
     name: "Q2 wellness town hall",
     date: "April 27",
     time: "5:00 PM",
-    location: "Acme Holdings, Nairobi",
+    location: "Acme Holdings, Kampala",
     attendees: 45,
     avatarTones: ["info", "success", "warning"],
     amount: "$5,790.00",

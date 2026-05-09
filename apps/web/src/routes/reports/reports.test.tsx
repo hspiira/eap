@@ -46,7 +46,7 @@ describe('per-client renewal pack template', () => {
   it('renders all sections from the fixture', async () => {
     await renderRoute('@/routes/reports/$templateSlug')
 
-    expect(screen.getAllByText(/stanbic bank kenya/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/stanbic bank uganda/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/sessions delivered by month/i)).toBeInTheDocument()
     expect(screen.getByText(/diagnosis prevalence/i)).toBeInTheDocument()
     expect(screen.getByText(/care-callback outcomes/i)).toBeInTheDocument()

@@ -146,7 +146,7 @@ export function ClientForm({
           error={(errors["contact_info.phone"]?.message ?? errors.phone?.message) as string | undefined}
           htmlFor="client-phone"
         >
-          <Input id="client-phone" type="tel" placeholder="+254 …" {...register("phone")} />
+          <Input id="client-phone" type="tel" placeholder="+256 …" {...register("phone")} />
         </FormField>
       </FormSection>
 

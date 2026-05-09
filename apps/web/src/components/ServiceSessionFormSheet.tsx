@@ -22,20 +22,34 @@ const FREETEXT_FALLBACK_ENABLED =
   typeof import.meta !== "undefined" &&
   import.meta.env?.VITE_DIAGNOSIS_FREETEXT_FALLBACK === "true"
 
-const schema = z.object({
-  service_id: z.string().trim().min(1, "Service is required"),
-  person_id: z.string().trim().min(1, "Person is required"),
-  service_provider_id: z.string().optional(),
-  contract_id: z.string().optional(),
-  scheduled_at: z
-    .string()
-    .min(1, "Scheduled time is required")
-    .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
-  location: z.string().optional(),
-  notes: z.string().optional(),
-  diagnosis_id: z.string().nullable().optional(),
-  diagnosis_text: z.string().optional(),
-})
+const schema = z
+  .object({
+    service_id: z.string().trim().min(1, "Service is required"),
+    person_id: z.string().trim().min(1, "Person is required"),
+    service_provider_id: z.string().optional(),
+    contract_id: z.string().optional(),
+    scheduled_at: z
+      .string()
+      .min(1, "Scheduled time is required")
+      .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
+    location: z.string().optional(),
+    notes: z.string().optional(),
+    diagnosis_id: z.string().nullable().optional(),
+    diagnosis_text: z.string().optional(),
+    is_backfill: z.boolean().optional(),
+    backfill_reason: z.string().optional(),
+  })
+  .refine(
+    (d) => !d.is_backfill || new Date(d.scheduled_at).getTime() <= Date.now(),
+    {
+      path: ["scheduled_at"],
+      message: "Backfilled sessions must be in the past",
+    },
+  )
+  .refine((d) => !d.is_backfill || (d.backfill_reason?.trim().length ?? 0) > 0, {
+    path: ["backfill_reason"],
+    message: "Reason is required when logging a past session",
+  })
 
 type Values = z.infer<typeof schema>
 
@@ -49,6 +63,8 @@ const EMPTY: Values = {
   notes: "",
   diagnosis_id: null,
   diagnosis_text: "",
+  is_backfill: false,
+  backfill_reason: "",
 }
 
 interface ServiceSessionFormSheetProps {
@@ -90,6 +106,16 @@ export function ServiceSessionFormSheet({
       defaultValues: initial,
       successToast: isEdit ? "Session updated" : "Session created",
       onSubmit: async (values) => {
+        const isBackfill = !session && Boolean(values.is_backfill)
+        const backfillMetadata = isBackfill
+          ? {
+              backfill: {
+                logged_at: new Date().toISOString(),
+                reason: values.backfill_reason?.trim() || null,
+                source: "manual_entry",
+              },
+            }
+          : undefined
         const payload = {
           service_id: values.service_id,
           person_id: values.person_id,
@@ -102,12 +128,16 @@ export function ServiceSessionFormSheet({
           diagnosis_text: FREETEXT_FALLBACK_ENABLED
             ? values.diagnosis_text?.trim() || null
             : null,
+          ...(backfillMetadata ? { metadata: backfillMetadata } : {}),
         }
-        const result = session
+        let result = session
           ? await serviceSessionsApi.update(session.id, payload)
           : await serviceSessionsApi.create(
               payload as Parameters<typeof serviceSessionsApi.create>[0],
             )
+        if (isBackfill && result?.id) {
+          result = await serviceSessionsApi.complete(result.id)
+        }
         await queryClient.invalidateQueries({ queryKey: ["service-sessions", "list"] })
         if (session) {
           await queryClient.invalidateQueries({
@@ -123,6 +153,7 @@ export function ServiceSessionFormSheet({
   const watchedService = watch("service_id")
   const watchedPerson = watch("person_id")
   const watchedProvider = watch("service_provider_id")
+  const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
 
   useEffect(() => {
     if (!open) return
@@ -135,18 +166,32 @@ export function ServiceSessionFormSheet({
     <SheetForm
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? "Edit session" : "Schedule session"}
+      title={
+        isEdit
+          ? "Edit session"
+          : watchedBackfill
+            ? "Log past session"
+            : "Schedule session"
+      }
       description={
         isEdit
           ? "Update the time, location, or notes for this session."
-          : "Schedule a session for a person against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
+          : watchedBackfill
+            ? "Record a session that already happened. Marked Completed and tagged in the audit trail."
+            : "Schedule a session for a person against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
       }
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
       serverError={serverError}
-      submitLabel={isEdit ? "Save changes" : "Create session"}
-      submittingLabel={isEdit ? "Saving…" : "Creating…"}
+      submitLabel={
+        isEdit
+          ? "Save changes"
+          : watchedBackfill
+            ? "Log session"
+            : "Create session"
+      }
+      submittingLabel={isEdit ? "Saving…" : watchedBackfill ? "Logging…" : "Creating…"}
     >
       <FormSection title="Service">
         <FormField label="Service" required error={errors.service_id?.message}>
@@ -198,15 +243,48 @@ export function ServiceSessionFormSheet({
         <input type="hidden" {...register("service_provider_id")} />
       </FormSection>
 
-      <FormSection title="Schedule">
+      <FormSection title={watchedBackfill ? "When it happened" : "Schedule"}>
+        {!isEdit ? (
+          <label className="flex cursor-pointer items-start gap-2 rounded-sm border border-fg/10 bg-surface px-3 py-2.5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-3.5 cursor-pointer accent-primary"
+              {...register("is_backfill")}
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-fg">
+                This session already happened
+              </span>
+              <span className="block text-xs text-fg/55">
+                Backfill a past session. It will be marked Completed and tagged with
+                a logged-at timestamp + reason in the audit trail.
+              </span>
+            </span>
+          </label>
+        ) : null}
         <FormField
-          label="Scheduled at"
+          label={watchedBackfill ? "Occurred at" : "Scheduled at"}
           required
           error={errors.scheduled_at?.message}
           htmlFor="ss-scheduled"
         >
           <Input id="ss-scheduled" type="datetime-local" {...register("scheduled_at")} />
         </FormField>
+        {watchedBackfill ? (
+          <FormField
+            label="Reason for back-entry"
+            required
+            description="Why is this being logged after the fact? Visible in the audit log."
+            error={errors.backfill_reason?.message}
+            htmlFor="ss-backfill-reason"
+          >
+            <Input
+              id="ss-backfill-reason"
+              placeholder="e.g. Phone session — paper notes, entered next day"
+              {...register("backfill_reason")}
+            />
+          </FormField>
+        ) : null}
         <FormField
           label="Location"
           optional

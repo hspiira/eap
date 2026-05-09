@@ -202,7 +202,7 @@ export function ClientFormSheet({
           error={(errors["contact_info.phone"]?.message ?? errors.phone?.message) as string | undefined}
           htmlFor="cs-phone"
         >
-          <Input id="cs-phone" type="tel" placeholder="+254 …" {...register("phone")} />
+          <Input id="cs-phone" type="tel" placeholder="+256 …" {...register("phone")} />
         </FormField>
         <FormField
           label="Address"
@@ -250,7 +250,7 @@ export function ClientFormSheet({
           error={errors.billing_country?.message}
           htmlFor="cs-billing-country"
         >
-          <Input id="cs-billing-country" placeholder="Kenya" {...register("billing_country")} />
+          <Input id="cs-billing-country" placeholder="Uganda" {...register("billing_country")} />
         </FormField>
       </FormSection>
     </SheetForm>

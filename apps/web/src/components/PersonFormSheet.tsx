@@ -557,7 +557,7 @@ export function PersonFormSheet({
             error={errors.address_country?.message}
             htmlFor="ps-country"
           >
-            <Input id="ps-country" placeholder="Kenya" {...register("address_country")} />
+            <Input id="ps-country" placeholder="Uganda" {...register("address_country")} />
           </FormField>
         </div>
       </FormSection>

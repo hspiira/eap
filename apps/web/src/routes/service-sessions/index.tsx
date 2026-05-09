@@ -383,7 +383,17 @@ function SessionRow({ row }: { row: ServiceSession }) {
         </Link>
       </TableCell>
       <TableCell>
-        <StatusBadge status={row.status} />
+        <div className="flex items-center gap-1.5">
+          <StatusBadge status={row.status} />
+          {isBackfill(row) ? (
+            <span
+              title="Logged after the fact"
+              className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1 py-0.5 text-[10px] font-medium tracking-wide text-fg/65"
+            >
+              Backfilled
+            </span>
+          ) : null}
+        </div>
       </TableCell>
       <TableCell className="text-sm text-fg/75">
         {row.location ?? <span className="text-fg/40">—</span>}
@@ -494,4 +504,9 @@ function filterByRange(items: ServiceSession[], range: RangeFilter): ServiceSess
     const t = new Date(s.scheduled_at).getTime()
     return t >= now.getTime() && t <= horizon.getTime()
   })
+}
+
+function isBackfill(s: ServiceSession): boolean {
+  const meta = s.metadata as Record<string, unknown> | null | undefined
+  return Boolean(meta && typeof meta === "object" && "backfill" in meta && meta.backfill)
 }

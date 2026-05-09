@@ -271,6 +271,7 @@ function ServiceSessionDetailPage() {
               </TabsList>
 
               <TabPanel value="overview">
+                <BackfillNotice session={session} />
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DetailCard title="Schedule">
                     <DetailGrid>
@@ -798,5 +799,30 @@ function toLocalDatetime(iso: string): string {
   if (Number.isNaN(d.getTime())) return ""
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function BackfillNotice({ session }: { session: ServiceSession }) {
+  const backfill = (session.metadata as Record<string, unknown> | null | undefined)
+    ?.backfill as
+    | { logged_at?: string; reason?: string | null; source?: string }
+    | undefined
+  if (!backfill) return null
+  return (
+    <div className="mb-4 rounded-sm border border-fg/15 bg-surface px-3 py-2.5">
+      <div className="flex items-start gap-2.5">
+        <CalendarRange className="mt-0.5 size-3.5 shrink-0 text-fg/65" />
+        <div className="min-w-0 flex-1 text-xs">
+          <p className="font-medium text-fg">Logged after the fact</p>
+          <p className="mt-0.5 text-fg/65">
+            Entered{" "}
+            {backfill.logged_at
+              ? new Date(backfill.logged_at).toLocaleString()
+              : "later"}
+            {backfill.reason ? ` · ${backfill.reason}` : null}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
 }
 

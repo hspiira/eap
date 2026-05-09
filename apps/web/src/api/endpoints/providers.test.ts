@@ -18,26 +18,26 @@ describe('providersApi (fixture mode)', () => {
   })
 
   it('filters by region', async () => {
-    const coast = await providersApi.list({ region: ProviderRegion.COAST, limit: 50 })
-    for (const p of coast.items) expect(p.region).toBe(ProviderRegion.COAST)
+    const eastern = await providersApi.list({ region: ProviderRegion.EASTERN, limit: 50 })
+    for (const p of eastern.items) expect(p.region).toBe(ProviderRegion.EASTERN)
   })
 
   it('combines tier + region filters', async () => {
     const r = await providersApi.list({
       tier: ProviderTier.T2,
-      region: ProviderRegion.RIFT,
+      region: ProviderRegion.NORTHERN,
       limit: 50,
     })
     for (const p of r.items) {
       expect(p.tier).toBe(ProviderTier.T2)
-      expect(p.region).toBe(ProviderRegion.RIFT)
+      expect(p.region).toBe(ProviderRegion.NORTHERN)
     }
   })
 
   it('search matches name or registration number', async () => {
-    const byName = await providersApi.list({ search: 'wanjiru' })
+    const byName = await providersApi.list({ search: 'nakato' })
     expect(byName.items.length).toBeGreaterThan(0)
-    const byReg = await providersApi.list({ search: 'KCPB/2017' })
+    const byReg = await providersApi.list({ search: 'UCA/2017' })
     expect(byReg.items.length).toBeGreaterThan(0)
   })
 

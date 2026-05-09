@@ -37,7 +37,7 @@ const DEFAULT_SESSIONS: ReadonlyArray<ActiveSession> = [
     id: "s1",
     device: "desktop",
     label: "MacBook Pro · Safari",
-    location: "Nairobi, KE",
+    location: "Kampala, UG",
     lastActive: "Active now",
     current: true,
   },
@@ -45,7 +45,7 @@ const DEFAULT_SESSIONS: ReadonlyArray<ActiveSession> = [
     id: "s2",
     device: "mobile",
     label: "iPhone · Mobile app",
-    location: "Nairobi, KE",
+    location: "Kampala, UG",
     lastActive: "2h ago",
   },
   {

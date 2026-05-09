@@ -40,7 +40,7 @@ export interface RenewalPackData {
 }
 
 export const renewalPackFixture: RenewalPackData = {
-  client: { id: "fixture-stanbic", name: "Stanbic Bank Kenya", tier: ClientTier.A },
+  client: { id: "fixture-stanbic", name: "Stanbic Bank Uganda", tier: ClientTier.A },
   period: "Jun 2025 – May 2026",
   activeEmployees: 1840,
   sessionsByMonth: [

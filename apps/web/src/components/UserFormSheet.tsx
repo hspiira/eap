@@ -144,11 +144,11 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
         <FormField
           label="Timezone"
           optional
-          description="IANA tz, e.g. Africa/Nairobi."
+          description="IANA tz, e.g. Africa/Kampala."
           error={errors.timezone?.message}
           htmlFor="us-tz"
         >
-          <Input id="us-tz" placeholder="Africa/Nairobi" {...register("timezone")} />
+          <Input id="us-tz" placeholder="Africa/Kampala" {...register("timezone")} />
         </FormField>
       </FormSection>
     </SheetForm>
@@ -238,11 +238,11 @@ function UserEditSheet({
         <FormField
           label="Timezone"
           optional
-          description="IANA tz, e.g. Africa/Nairobi."
+          description="IANA tz, e.g. Africa/Kampala."
           error={errors.timezone?.message}
           htmlFor="us-tz"
         >
-          <Input id="us-tz" placeholder="Africa/Nairobi" {...register("timezone")} />
+          <Input id="us-tz" placeholder="Africa/Kampala" {...register("timezone")} />
         </FormField>
       </FormSection>
     </SheetForm>

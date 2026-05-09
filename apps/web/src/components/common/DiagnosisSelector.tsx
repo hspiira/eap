@@ -105,8 +105,8 @@ export function DiagnosisSelector({
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          'flex w-full items-center justify-between gap-2 border border-fg/30 bg-white px-3 py-2 text-left text-sm text-fg rounded-none',
-          'focus:outline-none focus:ring-1 focus:ring-natural disabled:opacity-50',
+          'flex h-9 w-full items-center justify-between gap-2 rounded-sm border border-fg/20 bg-bg px-3 text-left text-sm text-fg shadow-sm',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50',
           !value && 'text-fg/60',
         )}
       >
@@ -120,10 +120,10 @@ export function DiagnosisSelector({
 
       {open && (
         <div
-          className="absolute z-20 mt-1 w-full max-h-80 overflow-auto border border-fg/30 bg-white shadow-lg rounded-none"
+          className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-sm border border-fg/15 bg-bg shadow-lg"
           role="listbox"
         >
-          <div className="sticky top-0 border-b border-fg/15 bg-white p-2">
+          <div className="sticky top-0 border-b border-fg/10 bg-surface p-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg/60" />
               <Input
@@ -191,7 +191,7 @@ function SearchResults({
             disabled={leavesOnly && d.has_children}
             onClick={() => onSelect(d)}
             className={cn(
-              'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm text-fg rounded-none hover:bg-surface/50 disabled:cursor-not-allowed disabled:opacity-50',
+              'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm text-fg rounded-none hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50',
               d.id === selectedId && 'bg-primary/10',
             )}
           >
@@ -295,7 +295,7 @@ function TreeNode({
           disabled={!selectable}
           onClick={() => onSelect(node)}
           className={cn(
-            'flex flex-1 items-center gap-2 px-2 py-1 text-left text-sm text-fg rounded-none hover:bg-surface/50 disabled:cursor-not-allowed disabled:text-fg/60',
+            'flex flex-1 items-center gap-2 px-2 py-1 text-left text-sm text-fg rounded-none hover:bg-surface-hover disabled:cursor-not-allowed disabled:text-fg/60',
             node.id === selectedId && 'bg-primary/10',
           )}
         >
