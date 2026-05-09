@@ -1,17 +1,28 @@
 /**
- * Auth store slice
- * Single source of truth for authentication state.
+ * Auth store slice — single source of truth for authentication state.
  *
- * Always starts in loading state to avoid SSR hydration mismatch.
- * AppBootstrap calls authActions.initAuth() to hydrate from localStorage on mount.
+ * Initial state is hydrated synchronously from localStorage at module init, so
+ * `useAuthStore.getState().token` is correct before AppBootstrap mounts.
+ * Setters write through to storage; the apiClient reads/writes via this slice
+ * rather than touching storage directly.
  */
 
 import { create } from 'zustand'
 
 import { authStorage } from '@/lib/storage'
 
+function useCookies(): boolean {
+  return (
+    typeof import.meta !== 'undefined' &&
+    import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
+  )
+}
+
 export interface AuthState {
   token: string | null
+  refreshToken: string | null
+  csrfToken: string | null
+  tokenExpiresAt: number | null
   user_id: string | null
   email: string | null
   isAuthenticated: boolean
@@ -21,6 +32,9 @@ export interface AuthState {
 
 export interface AuthActions {
   setAuth: (token: string | null, user_id?: string | null, email?: string | null) => void
+  setToken: (token: string | null, expiresInSeconds?: number) => void
+  setRefreshToken: (token: string | null) => void
+  setCsrfToken: (token: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
@@ -29,23 +43,30 @@ export interface AuthActions {
 
 export type AuthStore = AuthState & AuthActions
 
-const initialState: AuthState = {
-  token: null,
-  user_id: null,
-  email: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
+function readInitialState(): AuthState {
+  const persisted = authStorage.read()
+  const token = useCookies() ? null : persisted.token
+  const refreshToken = useCookies() ? null : persisted.refresh_token
+  return {
+    token,
+    refreshToken,
+    csrfToken: persisted.csrf_token,
+    tokenExpiresAt: persisted.token_expires_at,
+    user_id: persisted.user_id,
+    email: persisted.email,
+    isAuthenticated: !!(token || persisted.user_id),
+    isLoading: true,
+    error: null,
+  }
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  ...initialState,
+  ...readInitialState(),
 
   setAuth: (token, user_id, email) => {
-    const useCookies =
-      typeof import.meta !== 'undefined' && import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
+    const cookieMode = useCookies()
     authStorage.patch({
-      token: useCookies ? null : token ?? null,
+      token: cookieMode ? null : token ?? null,
       user_id: user_id ?? null,
       email: email ?? null,
     })
@@ -58,6 +79,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
     })
   },
 
+  setToken: (token, expiresInSeconds) => {
+    const cookieMode = useCookies()
+    const tokenExpiresAt =
+      token && typeof expiresInSeconds === 'number'
+        ? Date.now() + expiresInSeconds * 1000
+        : null
+    if (!cookieMode) authStorage.patch({ token, token_expires_at: tokenExpiresAt })
+    set({ token, tokenExpiresAt })
+  },
+
+  setRefreshToken: (refreshToken) => {
+    if (!useCookies()) authStorage.patch({ refresh_token: refreshToken })
+    set({ refreshToken })
+  },
+
+  setCsrfToken: (csrfToken) => {
+    authStorage.patch({ csrf_token: csrfToken })
+    set({ csrfToken })
+  },
+
   setLoading: (isLoading) => set({ isLoading }),
 
   setError: (error) => set({ error }),
@@ -68,6 +109,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
     authStorage.clear()
     set({
       token: null,
+      refreshToken: null,
+      csrfToken: null,
+      tokenExpiresAt: null,
       user_id: null,
       email: null,
       isAuthenticated: false,

@@ -13,7 +13,6 @@ import { useNavigate } from '@tanstack/react-router'
 import apiClient from '@/api/client'
 import { useSilentRefresh } from '@/hooks/useSilentRefresh'
 import { authActions } from '@/lib/auth-store'
-import { tenantStorage } from '@/lib/storage'
 import { tenantActions } from '@/lib/tenant-actions'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
@@ -64,7 +63,7 @@ export function AppBootstrap() {
   // Restore current tenant by ID after auth is hydrated. No list fetch on bootstrap.
   useEffect(() => {
     if (authLoading || !isAuthenticated || !token) return
-    const storedTenantId = tenantStorage.readId()
+    const storedTenantId = useTenantStore.getState().currentTenantId
     if (storedTenantId && !currentTenant) {
       tenantActions.loadTenant(storedTenantId)
     } else if (!storedTenantId) {

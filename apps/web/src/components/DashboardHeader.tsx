@@ -34,7 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useTheme } from "@/contexts/ThemeContext"
+import { useUIStore } from "@/store/slices/uiSlice"
 import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
@@ -141,7 +141,7 @@ function NotificationsDropdown() {
 }
 
 function ThemeToggle() {
-  const { preference, setPreference } = useTheme()
+  const preference = useUIStore((s) => s.theme); const setPreference = useUIStore((s) => s.setTheme)
   const cycle = () => {
     const next: Array<"light" | "dark" | "system"> = ["light", "dark", "system"]
     const i = next.indexOf(preference)

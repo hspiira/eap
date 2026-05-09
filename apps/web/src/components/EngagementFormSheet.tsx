@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -10,8 +9,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Engagement, User } from "@/types/entities"
 import { EngagementType } from "@/types/enums"
@@ -86,45 +85,41 @@ export function EngagementFormSheet({
   client,
   onSaved,
 }: EngagementFormSheetProps) {
-  const queryClient = useQueryClient()
   const lockedClientId = clientId
 
-  const initial: Values = { ...EMPTY, client_id: clientId ?? "" }
-
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<Values>({
+  const { register, formState, submit, serverError, setValue, watch } =
+    useEntityFormSheet<
+      Values,
+      Parameters<typeof engagementsApi.create>[0],
+      Engagement,
+      Engagement
+    >({
+      resource: "engagements",
       schema,
-      defaultValues: initial,
-      successToast: "Engagement created",
-      onSubmit: async (values) => {
-        const created = await engagementsApi.create({
-          client_id: values.client_id,
-          name: values.name,
-          description: values.description?.trim() || null,
-          engagement_type: values.engagement_type as EngagementType,
-          start_date: values.start_date,
-          due_date: values.due_date || null,
-          hourly_rate: values.hourly_rate ? Number(values.hourly_rate) : null,
-          currency: values.currency?.trim() || null,
-          budget_hours: values.budget_hours ? Number(values.budget_hours) : null,
-          lead_user_id: values.lead_user_id || null,
-        })
-        await queryClient.invalidateQueries({ queryKey: ["engagements", "list"] })
-        onSaved?.(created)
-        onOpenChange(false)
-        reset(EMPTY)
-      },
+      defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+      open,
+      onOpenChange,
+      parsePayload: (values) => ({
+        client_id: values.client_id,
+        name: values.name,
+        description: values.description?.trim() || null,
+        engagement_type: values.engagement_type as EngagementType,
+        start_date: values.start_date,
+        due_date: values.due_date || null,
+        hourly_rate: values.hourly_rate ? Number(values.hourly_rate) : null,
+        currency: values.currency?.trim() || null,
+        budget_hours: values.budget_hours ? Number(values.budget_hours) : null,
+        lead_user_id: values.lead_user_id || null,
+      }),
+      save: ({ payload }) => engagementsApi.create(payload),
+      successToast: { create: "Engagement created" },
+      onSaved,
     })
 
   const watchedClient = watch("client_id")
   const watchedLead = watch("lead_user_id")
 
-  useEffect(() => {
-    if (!open) return
-    reset({ ...EMPTY, client_id: clientId ?? "" })
-  }, [open, clientId, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm

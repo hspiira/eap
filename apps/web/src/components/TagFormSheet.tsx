@@ -1,13 +1,10 @@
-import { useEffect } from "react"
-
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { FormField } from "@/components/common/FormField"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { ClientTag } from "@/types/entities"
 
 const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/
@@ -23,6 +20,8 @@ const tagSchema = z.object({
 })
 
 type TagFormValues = z.infer<typeof tagSchema>
+
+const DEFAULTS: TagFormValues = { name: "", color: "", description: "" }
 
 const SUGGESTED_COLORS = [
   "#0f5132",
@@ -41,44 +40,31 @@ interface TagFormSheetProps {
 }
 
 export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetProps) {
-  const isEdit = Boolean(tag)
-  const queryClient = useQueryClient()
-
-  const { register, watch, setValue, reset, formState, submit, serverError } = useApiForm<TagFormValues>({
-    schema: tagSchema,
-    defaultValues: { name: "", color: "", description: "" },
-    successToast: isEdit ? "Tag updated" : "Tag created",
-    onSubmit: async (values) => {
-      const payload = {
+  const { register, watch, setValue, formState, submit, serverError, isEdit } =
+    useEntityFormSheet<TagFormValues, Parameters<typeof clientTagsApi.create>[0], ClientTag, ClientTag>({
+      resource: "client-tags",
+      schema: tagSchema,
+      defaultValues: DEFAULTS,
+      open,
+      onOpenChange,
+      entity: tag,
+      toFormValues: (t) => ({
+        name: t.name,
+        color: t.color ?? "",
+        description: t.description ?? "",
+      }),
+      parsePayload: (values) => ({
         name: values.name,
         color: values.color || undefined,
         description: values.description || undefined,
-      }
-      if (tag) {
-        await clientTagsApi.update(tag.id, payload)
-      } else {
-        await clientTagsApi.create(payload)
-      }
-      await queryClient.invalidateQueries({ queryKey: ["client-tags", "list"] })
-      onSaved?.()
-      onOpenChange(false)
-      reset()
-    },
-  })
+      }),
+      save: ({ payload, entity, isEdit }) =>
+        isEdit && entity ? clientTagsApi.update(entity.id, payload) : clientTagsApi.create(payload),
+      successToast: { create: "Tag created", update: "Tag updated" },
+      onSaved: () => onSaved?.(),
+    })
 
-  useEffect(() => {
-    if (!open) return
-    if (tag) {
-      reset({
-        name: tag.name,
-        color: tag.color ?? "",
-        description: tag.description ?? "",
-      })
-    } else {
-      reset({ name: "", color: "", description: "" })
-    }
-  }, [open, tag, reset])
-
+  const errors = formState.errors
   const color = watch("color")
   const validHex = color ? hexColorRegex.test(color) : false
 
@@ -99,12 +85,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
       submitLabel={isEdit ? "Save changes" : "Create tag"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
-      <FormField
-        label="Name"
-        required
-        error={formState.errors.name?.message as string | undefined}
-        htmlFor="tag-name"
-      >
+      <FormField label="Name" required error={errors.name?.message} htmlFor="tag-name">
         <Input id="tag-name" placeholder="e.g. VIP" {...register("name")} />
       </FormField>
 
@@ -112,7 +93,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
         label="Color"
         optional
         description="Hex code shown as a swatch on the tag."
-        error={formState.errors.color?.message as string | undefined}
+        error={errors.color?.message}
         htmlFor="tag-color"
       >
         <div className="flex items-center gap-2">
@@ -146,7 +127,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
       <FormField
         label="Description"
         optional
-        error={formState.errors.description?.message as string | undefined}
+        error={errors.description?.message}
         htmlFor="tag-description"
       >
         <Input

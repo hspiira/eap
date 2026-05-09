@@ -1,6 +1,3 @@
-import { useEffect } from "react"
-
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -8,7 +5,7 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 
@@ -67,66 +64,55 @@ export function ClientFormSheet({
   client,
   onSaved,
 }: ClientFormSheetProps) {
-  const isEdit = Boolean(client)
-  const queryClient = useQueryClient()
-
-  const { register, reset, formState, submit, serverError } = useApiForm<ClientFormValues>({
+  const { register, formState, submit, serverError, isEdit } = useEntityFormSheet<
+    ClientFormValues,
+    Parameters<typeof clientsApi.create>[0],
+    Client,
+    Client
+  >({
+    resource: "clients",
     schema: clientSchema,
     defaultValues: EMPTY,
-    successToast: isEdit ? "Client updated" : "Client created",
-    onSubmit: async (values) => {
-      const payload = {
-        name: values.name,
-        code: values.code,
-        tier: values.tier ? (values.tier as ClientTier) : null,
-        contact_info: {
-          email: values.email || null,
-          phone: values.phone || null,
-          address: values.address || null,
-        },
-        billing_address: hasBillingFields(values)
-          ? {
-              street: values.billing_street || null,
-              city: values.billing_city || null,
-              postal_code: values.billing_postal || null,
-              country: values.billing_country || null,
-            }
-          : null,
-      }
-      const result = client
-        ? await clientsApi.update(client.id, payload)
-        : await clientsApi.create(payload as Parameters<typeof clientsApi.create>[0])
-      await queryClient.invalidateQueries({ queryKey: ["clients", "list"] })
-      if (client) {
-        await queryClient.invalidateQueries({ queryKey: ["clients", "detail", client.id] })
-      }
-      onSaved?.(result)
-      onOpenChange(false)
-      reset(EMPTY)
-    },
+    open,
+    onOpenChange,
+    entity: client,
+    toFormValues: (c) => ({
+      name: c.name,
+      code: c.code,
+      tier: c.tier ?? "",
+      email: c.contact_info?.email ?? "",
+      phone: c.contact_info?.phone ?? "",
+      address: c.contact_info?.address ?? "",
+      billing_street: c.billing_address?.street ?? "",
+      billing_city: c.billing_address?.city ?? "",
+      billing_postal: c.billing_address?.postal_code ?? "",
+      billing_country: c.billing_address?.country ?? "",
+    }),
+    parsePayload: (values) => ({
+      name: values.name,
+      code: values.code,
+      tier: values.tier ? (values.tier as ClientTier) : null,
+      contact_info: {
+        email: values.email || null,
+        phone: values.phone || null,
+        address: values.address || null,
+      },
+      billing_address: hasBillingFields(values)
+        ? {
+            street: values.billing_street || null,
+            city: values.billing_city || null,
+            postal_code: values.billing_postal || null,
+            country: values.billing_country || null,
+          }
+        : null,
+    }),
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity ? clientsApi.update(entity.id, payload) : clientsApi.create(payload),
+    successToast: { create: "Client created", update: "Client updated" },
+    onSaved,
   })
 
-  useEffect(() => {
-    if (!open) return
-    if (client) {
-      reset({
-        name: client.name,
-        code: client.code,
-        tier: client.tier ?? "",
-        email: client.contact_info?.email ?? "",
-        phone: client.contact_info?.phone ?? "",
-        address: client.contact_info?.address ?? "",
-        billing_street: client.billing_address?.street ?? "",
-        billing_city: client.billing_address?.city ?? "",
-        billing_postal: client.billing_address?.postal_code ?? "",
-        billing_country: client.billing_address?.country ?? "",
-      })
-    } else {
-      reset(EMPTY)
-    }
-  }, [open, client, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm
@@ -191,7 +177,7 @@ export function ClientFormSheet({
         <FormField
           label="Email"
           optional
-          error={(errors["contact_info.email"]?.message ?? errors.email?.message) as string | undefined}
+          error={errors.email?.message}
           htmlFor="cs-email"
         >
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
@@ -199,7 +185,7 @@ export function ClientFormSheet({
         <FormField
           label="Phone"
           optional
-          error={(errors["contact_info.phone"]?.message ?? errors.phone?.message) as string | undefined}
+          error={errors.phone?.message}
           htmlFor="cs-phone"
         >
           <Input id="cs-phone" type="tel" placeholder="+256 …" {...register("phone")} />

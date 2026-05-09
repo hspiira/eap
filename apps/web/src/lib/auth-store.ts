@@ -7,7 +7,6 @@ import apiClient from '@/api/client'
 import { authApi } from '@/api/endpoints/auth'
 import { tenantsApi } from '@/api/endpoints/tenants'
 import type { LoginRequest } from '@/api/types'
-import { authStorage } from '@/lib/storage'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { Tenant } from '@/types/entities'
@@ -77,28 +76,27 @@ export const authActions = {
   },
 
   async initAuth(): Promise<void> {
-    const persisted = authStorage.read()
-    // apiClient already restores tenantId from storage at module init.
+    const auth = useAuthStore.getState()
 
     if (useAuthCookies()) {
       const valid = await apiClient.validateSession()
       if (!valid) {
-        useAuthStore.getState().clearAuth()
-        useAuthStore.getState().setLoading(false)
+        auth.clearAuth()
+        auth.setLoading(false)
         return
       }
-      useAuthStore.getState().setAuth(null, persisted.user_id, persisted.email)
-      useAuthStore.getState().setLoading(false)
+      auth.setAuth(null, auth.user_id, auth.email)
+      auth.setLoading(false)
       return
     }
 
-    const token = apiClient.getToken()
+    const token = auth.token
     if (!token) {
-      useAuthStore.getState().setLoading(false)
+      auth.setLoading(false)
       return
     }
-    useAuthStore.getState().setAuth(token, persisted.user_id, persisted.email)
-    useAuthStore.getState().setLoading(false)
+    auth.setAuth(token, auth.user_id, auth.email)
+    auth.setLoading(false)
   },
 
   clearError(): void {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
@@ -9,8 +9,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Person } from "@/types/entities"
 import { ContactMethod, PersonType, type RelationType, WorkStatus } from "@/types/enums"
@@ -167,94 +167,92 @@ export function PersonFormSheet({
   lockType,
   onSaved,
 }: PersonFormSheetProps) {
-  const isEdit = Boolean(person)
-  const queryClient = useQueryClient()
   const lockedClientId = clientId ?? person?.client_id
+  const queryClient = useQueryClient()
 
   const initialValues: PersonFormValues = person
     ? personToValues(person)
     : { ...EMPTY, client_id: clientId ?? "", person_type: lockType ?? EMPTY.person_type }
 
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<PersonFormValues>({
+  const { register, formState, submit, serverError, setValue, watch, isEdit } =
+    useEntityFormSheet<
+      PersonFormValues,
+      Parameters<typeof personsApi.create>[0],
+      Person,
+      Person
+    >({
+      resource: "persons",
       schema: personSchema,
       defaultValues: initialValues,
-      successToast: isEdit ? "Person updated" : "Person created",
-      onSubmit: async (values) => {
-        const payload = {
-          first_name: values.first_name,
-          last_name: values.last_name,
-          middle_name: values.middle_name?.trim() || undefined,
-          person_type: values.person_type as PersonType,
-          date_of_birth: values.date_of_birth || undefined,
-          gender: values.gender?.trim() || undefined,
-          client_id:
-            values.person_type === PersonType.CLIENT_EMPLOYEE ||
-            values.person_type === PersonType.DEPENDENT
-              ? values.client_id || undefined
-              : undefined,
-          contact_info: hasContact(values)
+      open,
+      onOpenChange,
+      entity: person,
+      toFormValues: personToValues,
+      parsePayload: (values) => ({
+        first_name: values.first_name,
+        last_name: values.last_name,
+        middle_name: values.middle_name?.trim() || undefined,
+        person_type: values.person_type as PersonType,
+        date_of_birth: values.date_of_birth || undefined,
+        gender: values.gender?.trim() || undefined,
+        client_id:
+          values.person_type === PersonType.CLIENT_EMPLOYEE ||
+          values.person_type === PersonType.DEPENDENT
+            ? values.client_id || undefined
+            : undefined,
+        contact_info: hasContact(values)
+          ? {
+              email: values.email || null,
+              phone: values.phone || null,
+              mobile: values.mobile || null,
+              preferred_method: values.preferred_method || null,
+            }
+          : undefined,
+        address: hasAddress(values)
+          ? {
+              street: values.address_street || null,
+              city: values.address_city || null,
+              country: values.address_country || null,
+            }
+          : undefined,
+        employment_info:
+          values.person_type === PersonType.CLIENT_EMPLOYEE && hasEmployment(values)
             ? {
-                email: values.email || null,
-                phone: values.phone || null,
-                mobile: values.mobile || null,
-                preferred_method: values.preferred_method || null,
+                client_id: values.client_id || null,
+                employee_code: values.employee_code || null,
+                department: values.department || null,
+                role: values.role || null,
+                start_date: values.employment_start || null,
+                status: values.work_status ? (values.work_status as WorkStatus) : null,
               }
             : undefined,
-          address: hasAddress(values)
+        dependent_info:
+          values.person_type === PersonType.DEPENDENT &&
+          values.primary_employee_id &&
+          values.relationship
             ? {
-                street: values.address_street || null,
-                city: values.address_city || null,
-                country: values.address_country || null,
+                primary_employee_id: values.primary_employee_id,
+                relationship: values.relationship as RelationType,
               }
             : undefined,
-          employment_info:
-            values.person_type === PersonType.CLIENT_EMPLOYEE && hasEmployment(values)
-              ? {
-                  client_id: values.client_id || null,
-                  employee_code: values.employee_code || null,
-                  department: values.department || null,
-                  role: values.role || null,
-                  start_date: values.employment_start || null,
-                  status: values.work_status
-                    ? (values.work_status as WorkStatus)
-                    : null,
-                }
-              : undefined,
-          dependent_info:
-            values.person_type === PersonType.DEPENDENT &&
-            values.primary_employee_id &&
-            values.relationship
-              ? {
-                  primary_employee_id: values.primary_employee_id,
-                  relationship: values.relationship as RelationType,
-                }
-              : undefined,
-          emergency_contact: hasEmergency(values)
-            ? {
-                name: values.emergency_name || null,
-                phone: values.emergency_phone || null,
-                email: values.emergency_email || null,
-              }
-            : undefined,
-        }
-        const result = person
-          ? await personsApi.update(person.id, payload)
-          : await personsApi.create(payload as Parameters<typeof personsApi.create>[0])
-        await queryClient.invalidateQueries({ queryKey: ["persons", "list"] })
-        if (person) {
-          await queryClient.invalidateQueries({
-            queryKey: ["persons", "detail", person.id],
-          })
-        }
+        emergency_contact: hasEmergency(values)
+          ? {
+              name: values.emergency_name || null,
+              phone: values.emergency_phone || null,
+              email: values.emergency_email || null,
+            }
+          : undefined,
+      }),
+      save: ({ payload, entity, isEdit }) =>
+        isEdit && entity ? personsApi.update(entity.id, payload) : personsApi.create(payload),
+      successToast: { create: "Person created", update: "Person updated" },
+      onSaved: (result) => {
         if (lockedClientId) {
-          await queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: ["clients", "detail", lockedClientId],
           })
         }
         onSaved?.(result)
-        onOpenChange(false)
-        reset(EMPTY)
       },
     })
 
@@ -262,14 +260,7 @@ export function PersonFormSheet({
   const watchedClientId = watch("client_id")
   const watchedPrimaryEmployee = watch("primary_employee_id")
 
-  useEffect(() => {
-    if (!open) return
-    if (person) {
-      reset(personToValues(person))
-    }
-  }, [open, person, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
   const showClient =
     watchedType === PersonType.CLIENT_EMPLOYEE || watchedType === PersonType.DEPENDENT
   const showEmployment = watchedType === PersonType.CLIENT_EMPLOYEE

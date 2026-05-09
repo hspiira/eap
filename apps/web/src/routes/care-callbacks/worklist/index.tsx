@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
-import { WorklistSkeleton } from "@/components/CareCallbacksPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -202,7 +202,7 @@ function WorklistPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <WorklistSkeleton />
+            <TableSkeleton cols={4} rows={6} />
           </div>
         ) : items.length === 0 ? (
           <EmptyState

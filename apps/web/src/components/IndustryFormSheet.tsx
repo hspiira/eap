@@ -1,13 +1,10 @@
-import { useEffect } from "react"
-
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { industriesApi } from "@/api/endpoints/industries"
 import { FormField } from "@/components/common/FormField"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Industry } from "@/types/entities"
 
 const industrySchema = z.object({
@@ -29,6 +26,8 @@ const industrySchema = z.object({
 
 type IndustryFormValues = z.infer<typeof industrySchema>
 
+const DEFAULTS: IndustryFormValues = { name: "", code: "", level: "", parent_id: "" }
+
 interface IndustryFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -42,43 +41,37 @@ export function IndustryFormSheet({
   industry,
   onSaved,
 }: IndustryFormSheetProps) {
-  const isEdit = Boolean(industry)
-  const queryClient = useQueryClient()
-
-  const { register, reset, formState, submit, serverError } = useApiForm<IndustryFormValues>({
+  const { register, formState, submit, serverError, isEdit } = useEntityFormSheet<
+    IndustryFormValues,
+    Parameters<typeof industriesApi.create>[0],
+    Industry,
+    Industry
+  >({
+    resource: "industries",
     schema: industrySchema,
-    defaultValues: { name: "", code: "", level: "", parent_id: "" },
-    successToast: isEdit ? "Industry updated" : "Industry created",
-    onSubmit: async (values) => {
-      const payload = {
-        name: values.name,
-        code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
-        level: values.level?.trim() ? Number.parseInt(values.level, 10) : null,
-        parent_id: values.parent_id?.trim() ? values.parent_id.trim() : null,
-      }
-      const result = industry
-        ? await industriesApi.update(industry.id, payload)
-        : await industriesApi.create(payload)
-      await queryClient.invalidateQueries({ queryKey: ["industries", "list"] })
-      onSaved?.(result)
-      onOpenChange(false)
-      reset()
-    },
+    defaultValues: DEFAULTS,
+    open,
+    onOpenChange,
+    entity: industry,
+    toFormValues: (i) => ({
+      name: i.name,
+      code: i.code ?? "",
+      level: i.level != null ? String(i.level) : "",
+      parent_id: i.parent_id ?? "",
+    }),
+    parsePayload: (values) => ({
+      name: values.name,
+      code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
+      level: values.level?.trim() ? Number.parseInt(values.level, 10) : null,
+      parent_id: values.parent_id?.trim() ? values.parent_id.trim() : null,
+    }),
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity ? industriesApi.update(entity.id, payload) : industriesApi.create(payload),
+    successToast: { create: "Industry created", update: "Industry updated" },
+    onSaved,
   })
 
-  useEffect(() => {
-    if (!open) return
-    if (industry) {
-      reset({
-        name: industry.name,
-        code: industry.code ?? "",
-        level: industry.level != null ? String(industry.level) : "",
-        parent_id: industry.parent_id ?? "",
-      })
-    } else {
-      reset({ name: "", code: "", level: "", parent_id: "" })
-    }
-  }, [open, industry, reset])
+  const errors = formState.errors
 
   return (
     <SheetForm
@@ -97,12 +90,7 @@ export function IndustryFormSheet({
       submitLabel={isEdit ? "Save changes" : "Create industry"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
-      <FormField
-        label="Name"
-        required
-        error={formState.errors.name?.message as string | undefined}
-        htmlFor="ind-name"
-      >
+      <FormField label="Name" required error={errors.name?.message} htmlFor="ind-name">
         <Input id="ind-name" placeholder="e.g. Renewable Energy" {...register("name")} />
       </FormField>
 
@@ -110,7 +98,7 @@ export function IndustryFormSheet({
         label="Code"
         optional
         description="Short identifier shown next to the name (e.g. ENR-REN)."
-        error={formState.errors.code?.message as string | undefined}
+        error={errors.code?.message}
         htmlFor="ind-code"
       >
         <Input
@@ -126,23 +114,17 @@ export function IndustryFormSheet({
         label="Level"
         optional
         description="Depth in the hierarchy (0 = top level)."
-        error={formState.errors.level?.message as string | undefined}
+        error={errors.level?.message}
         htmlFor="ind-level"
       >
-        <Input
-          id="ind-level"
-          type="number"
-          min={0}
-          placeholder="0"
-          {...register("level")}
-        />
+        <Input id="ind-level" type="number" min={0} placeholder="0" {...register("level")} />
       </FormField>
 
       <FormField
         label="Parent industry"
         optional
         description="Paste the parent industry's ID. Leave empty for a top-level industry."
-        error={formState.errors.parent_id?.message as string | undefined}
+        error={errors.parent_id?.message}
         htmlFor="ind-parent"
       >
         <Input

@@ -19,7 +19,7 @@ import {
   type AnswersMap,
   QuestionnaireRenderer,
 } from "@/components/care-callbacks/QuestionnaireRenderer"
-import { CaseDetailSkeleton } from "@/components/CareCallbacksPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -140,7 +140,7 @@ function CaseTriagePage() {
     return (
       <PageShell icon={Headphones} breadcrumb="Care · My worklist · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <CaseDetailSkeleton />
+          <DetailSkeleton mainPanels={2} />
         </div>
       </PageShell>
     )

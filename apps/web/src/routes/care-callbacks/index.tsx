@@ -14,7 +14,7 @@ import {
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { CampaignFormSheet } from "@/components/CampaignFormSheet"
-import { CampaignsListSkeleton } from "@/components/CareCallbacksPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -175,7 +175,7 @@ function CampaignsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <CampaignsListSkeleton />
+            <TableSkeleton cols={5} rows={6} />
           </div>
         ) : error ? (
           <div className="flex flex-1 items-center justify-center">

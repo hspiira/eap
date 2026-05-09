@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
@@ -9,8 +9,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Contract } from "@/types/entities"
 import { PaymentFrequency, PaymentStatus } from "@/types/enums"
@@ -92,76 +92,66 @@ export function ContractFormSheet({
   client,
   onSaved,
 }: ContractFormSheetProps) {
-  const isEdit = Boolean(contract)
-  const queryClient = useQueryClient()
   const lockedClientId = clientId ?? contract?.client_id
+  const queryClient = useQueryClient()
 
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<ContractFormValues>({
+  const { register, formState, submit, serverError, setValue, watch, isEdit } =
+    useEntityFormSheet<
+      ContractFormValues,
+      Parameters<typeof contractsApi.create>[0],
+      Contract,
+      Contract
+    >({
+      resource: "contracts",
       schema: contractSchema,
-      defaultValues: EMPTY,
-      successToast: isEdit ? "Contract updated" : "Contract created",
-      onSubmit: async (values) => {
-        const payload = {
-          client_id: values.client_id,
-          contract_number: values.contract_number?.trim() || undefined,
-          start_date: values.start_date,
-          end_date: values.end_date || undefined,
-          renewal_date: values.renewal_date || undefined,
-          billing_frequency: values.billing_frequency
-            ? (values.billing_frequency as PaymentFrequency)
-            : undefined,
-          billing_amount: values.billing_amount
-            ? Number(values.billing_amount)
-            : undefined,
-          currency: values.currency?.trim() || undefined,
-          payment_status: values.payment_status
-            ? (values.payment_status as PaymentStatus)
-            : undefined,
-        }
-        const result = contract
-          ? await contractsApi.update(contract.id, payload)
-          : await contractsApi.create(payload as Parameters<typeof contractsApi.create>[0])
-        await queryClient.invalidateQueries({ queryKey: ["contracts", "list"] })
-        if (contract) {
-          await queryClient.invalidateQueries({
-            queryKey: ["contracts", "detail", contract.id],
-          })
-        }
+      defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+      open,
+      onOpenChange,
+      entity: contract,
+      toFormValues: (c) => ({
+        client_id: c.client_id,
+        contract_number: c.contract_number ?? "",
+        start_date: c.start_date,
+        end_date: c.end_date ?? "",
+        renewal_date: c.renewal_date ?? "",
+        billing_frequency: c.billing_frequency ?? "",
+        billing_amount: c.billing_amount != null ? String(c.billing_amount) : "",
+        currency: c.currency ?? "",
+        payment_status: c.payment_status ?? "",
+      }),
+      parsePayload: (values) => ({
+        client_id: values.client_id,
+        contract_number: values.contract_number?.trim() || undefined,
+        start_date: values.start_date,
+        end_date: values.end_date || undefined,
+        renewal_date: values.renewal_date || undefined,
+        billing_frequency: values.billing_frequency
+          ? (values.billing_frequency as PaymentFrequency)
+          : undefined,
+        billing_amount: values.billing_amount ? Number(values.billing_amount) : undefined,
+        currency: values.currency?.trim() || undefined,
+        payment_status: values.payment_status
+          ? (values.payment_status as PaymentStatus)
+          : undefined,
+      }),
+      save: ({ payload, entity, isEdit }) =>
+        isEdit && entity
+          ? contractsApi.update(entity.id, payload)
+          : contractsApi.create(payload),
+      successToast: { create: "Contract created", update: "Contract updated" },
+      onSaved: (result) => {
         if (lockedClientId) {
-          await queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: ["clients", "detail", lockedClientId],
           })
         }
         onSaved?.(result)
-        onOpenChange(false)
-        reset(EMPTY)
       },
     })
 
   const watchedClientId = watch("client_id")
 
-  useEffect(() => {
-    if (!open) return
-    if (contract) {
-      reset({
-        client_id: contract.client_id,
-        contract_number: contract.contract_number ?? "",
-        start_date: contract.start_date,
-        end_date: contract.end_date ?? "",
-        renewal_date: contract.renewal_date ?? "",
-        billing_frequency: contract.billing_frequency ?? "",
-        billing_amount:
-          contract.billing_amount != null ? String(contract.billing_amount) : "",
-        currency: contract.currency ?? "",
-        payment_status: contract.payment_status ?? "",
-      })
-    } else {
-      reset({ ...EMPTY, client_id: clientId ?? "" })
-    }
-  }, [open, contract, clientId, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm

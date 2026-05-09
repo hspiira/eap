@@ -9,8 +9,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { AppBootstrap } from '../components/AppBootstrap'
 import { ErrorBoundary } from '../components/ui/ErrorBoundary'
 import { NotFound } from '../components/ui/NotFound'
-import { ThemeProvider } from '../contexts/ThemeContext'
 import { ToastProvider } from '../contexts/ToastContext'
+import { useThemeEffect } from '../hooks/useThemeEffect'
 import { queryClient } from '../lib/query-client'
 import appCss from '../styles.css?url'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
@@ -33,6 +33,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setupGlobalErrorHandlers()
   }, [])
+  useThemeEffect()
 
   return (
     <html lang="en">
@@ -41,16 +42,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body style={{ minHeight: '100dvh' }}>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <ToastProvider>
-              <AppBootstrap />
-              <ErrorBoundary>
-                <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
-                  {children}
-                </div>
-              </ErrorBoundary>
-            </ToastProvider>
-          </ThemeProvider>
+          <ToastProvider>
+            <AppBootstrap />
+            <ErrorBoundary>
+              <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
+                {children}
+              </div>
+            </ErrorBoundary>
+          </ToastProvider>
           <TanStackDevtools
             config={{ position: 'bottom-right' }}
             plugins={[

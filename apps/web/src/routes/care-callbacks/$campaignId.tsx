@@ -13,7 +13,7 @@ import {
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import { clientsApi } from "@/api/endpoints/clients"
-import { CampaignDetailSkeleton } from "@/components/CareCallbacksPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
@@ -70,7 +70,7 @@ function CampaignDetailPage() {
     return (
       <PageShell icon={Phone} breadcrumb="Care · Callback campaigns · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <CampaignDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

@@ -19,7 +19,7 @@ import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
-import { ClientDetailSkeleton } from "@/components/ClientsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
@@ -267,7 +267,7 @@ function ClientDetailPage() {
     return (
       <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <ClientDetailSkeleton />
+          <DetailSkeleton railPanels={6} />
         </div>
       </PageShell>
     )

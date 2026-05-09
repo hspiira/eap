@@ -4,7 +4,8 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
-import { authStorage, tenantStorage } from '@/lib/storage'
+import { useAuthStore } from '@/store/slices/authSlice'
+import { useTenantStore } from '@/store/slices/tenantSlice'
 import type {
   ApiClientConfig,
   FieldErrors,
@@ -24,9 +25,6 @@ type AuthErrorCallback = () => void
 
 class ApiClient {
   private baseUrl: string
-  private token: string | null = null
-  private refreshToken: string | null = null
-  private tenantId: string | null = null
   private timeout: number
   private retryAttempts: number
   private retryDelay: number
@@ -53,50 +51,32 @@ class ApiClient {
    * expires; AppBootstrap uses that to schedule a silent refresh.
    */
   setToken(token: string | null, expiresInSeconds?: number): void {
-    this.token = token
-    if (!useCookies()) {
-      const token_expires_at =
-        token && typeof expiresInSeconds === 'number'
-          ? Date.now() + expiresInSeconds * 1000
-          : null
-      authStorage.patch({ token, token_expires_at })
-    }
+    useAuthStore.getState().setToken(token, expiresInSeconds)
   }
 
   /** Epoch ms when the current access token expires, or null if unknown. */
   getTokenExpiresAt(): number | null {
     if (useCookies()) return null
-    return authStorage.read().token_expires_at
+    return useAuthStore.getState().tokenExpiresAt
   }
 
   setCsrfToken(token: string | null): void {
-    authStorage.patch({ csrf_token: token })
+    useAuthStore.getState().setCsrfToken(token)
   }
   getCsrfToken(): string | null {
-    return authStorage.read().csrf_token
+    return useAuthStore.getState().csrfToken
   }
 
   getToken(): string | null {
-    if (useCookies()) return this.token
-    if (!this.token) {
-      this.token = authStorage.read().token
-    }
-    return this.token
+    return useAuthStore.getState().token
   }
 
   setRefreshToken(token: string | null): void {
-    this.refreshToken = token
-    if (!useCookies()) {
-      authStorage.patch({ refresh_token: token })
-    }
+    useAuthStore.getState().setRefreshToken(token)
   }
 
   getRefreshToken(): string | null {
-    if (useCookies()) return this.refreshToken
-    if (!this.refreshToken) {
-      this.refreshToken = authStorage.read().refresh_token
-    }
-    return this.refreshToken
+    return useAuthStore.getState().refreshToken
   }
 
   /**
@@ -164,32 +144,19 @@ class ApiClient {
   }
 
   setTenantId(tenantId: string | null): void {
-    this.tenantId = tenantId
-    tenantStorage.writeId(tenantId)
+    useTenantStore.getState().setCurrentTenantId(tenantId)
   }
 
-  /**
-   * Get tenant ID. Uses in-memory value, falling back to persisted storage.
-   * Ensures tenant is available even before AppBootstrap has restored it (e.g. after SSR hydrate).
-   */
   getTenantId(): string | null {
-    if (this.tenantId) return this.tenantId
-    const id = tenantStorage.readId()
-    if (id) this.tenantId = id
-    return id
+    return useTenantStore.getState().currentTenantId
   }
 
   /**
    * Clear authentication and tenant context
    */
   clearAuth(): void {
-    this.token = null
-    this.refreshToken = null
-    this.tenantId = null
-    if (!useCookies()) {
-      authStorage.clear()
-    }
-    tenantStorage.clear()
+    useAuthStore.getState().clearAuth()
+    useTenantStore.getState().clear()
   }
 
   /**
@@ -728,27 +695,11 @@ class ApiClient {
   }
 }
 
-// Create singleton instance
 const apiClient = new ApiClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   timeout: DEFAULT_TIMEOUT,
   retryAttempts: DEFAULT_RETRY_ATTEMPTS,
   retryDelay: DEFAULT_RETRY_DELAY,
 })
-
-// Initialize token and tenant from persisted storage (client-only).
-// When using cookie auth, tokens are not in localStorage; initAuth uses refresh to verify session.
-if (typeof window !== 'undefined') {
-  const storedTenantId = tenantStorage.readId()
-  if (storedTenantId) {
-    apiClient.setTenantId(storedTenantId)
-  }
-  if (!useCookies()) {
-    const storedToken = authStorage.read().token
-    if (storedToken) {
-      apiClient.setToken(storedToken)
-    }
-  }
-}
 
 export default apiClient

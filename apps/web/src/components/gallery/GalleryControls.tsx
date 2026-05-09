@@ -1,4 +1,4 @@
-import { type ThemePreference,useTheme } from '@/contexts/ThemeContext'
+import { useUIStore, type ThemePreference } from '@/store/slices/uiSlice'
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string }> = [
   { value: 'light', label: 'Light' },
@@ -15,7 +15,7 @@ interface GalleryControlsProps {
 }
 
 export function GalleryControls({ density, onDensityChange }: GalleryControlsProps) {
-  const { preference, setPreference } = useTheme()
+  const preference = useUIStore((s) => s.theme); const setPreference = useUIStore((s) => s.setTheme)
 
   return (
     <div className="sticky top-0 z-10 -mx-6 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-bg/95 px-6 py-3 backdrop-blur">

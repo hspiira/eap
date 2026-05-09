@@ -14,7 +14,7 @@ import {
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
-import { ClientsListSkeleton } from "@/components/ClientsPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -204,7 +204,7 @@ function ClientsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <ClientsListSkeleton />
+            <TableSkeleton cols={5} headers={["Name","Code","Status","Contact","Operation"]} withFilters withPagination />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={refetch} />
