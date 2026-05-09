@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { pricingApi } from "@/api/endpoints/pricing"
 import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -19,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import type { ContractPricing, InvoiceLinePreview } from "@/types/entities"
 import { PricingModel } from "@/types/enums"
 
@@ -317,13 +326,15 @@ function ValueAddInputs({
               }
             }}
           />
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={addService}
-            className="px-3 border border-fg/30 bg-white text-sm text-fg hover:bg-surface/50"
+            className="rounded-none border-fg/30 bg-white text-sm text-fg hover:bg-surface/50"
           >
             Add
-          </button>
+          </Button>
         </div>
       </FormField>
       {value.bundled_services.length > 0 && (
@@ -334,14 +345,16 @@ function ValueAddInputs({
               className="inline-flex items-center gap-1 border border-fg/20 bg-surface px-2 py-0.5 text-xs text-fg"
             >
               {svc}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => removeService(svc)}
                 aria-label={`Remove ${svc}`}
-                className="ml-1 text-fg/60 hover:text-fg"
+                className="ml-1 h-auto p-0 text-fg/60 hover:text-fg"
               >
                 ×
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -383,39 +396,39 @@ function InvoicePreview({
       {!debouncedReady || query.isPending ? (
         <p className="mt-3 text-sm text-fg/60">Calculating…</p>
       ) : (
-        <table className="mt-3 w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-fg/20 text-left text-xs uppercase text-fg/60">
-              <th className="py-2 pr-3 font-medium">Line</th>
-              <th className="py-2 pr-3 font-medium">Qty</th>
-              <th className="py-2 pr-3 font-medium">Unit</th>
-              <th className="py-2 pr-3 font-medium">Rate</th>
-              <th className="py-2 font-medium text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="mt-3 text-sm">
+          <TableHeader>
+            <TableRow className="border-b border-fg/20 text-left text-xs uppercase text-fg/60">
+              <TableHead className="py-2 pr-3 font-medium">Line</TableHead>
+              <TableHead className="py-2 pr-3 font-medium">Qty</TableHead>
+              <TableHead className="py-2 pr-3 font-medium">Unit</TableHead>
+              <TableHead className="py-2 pr-3 font-medium">Rate</TableHead>
+              <TableHead className="py-2 text-right font-medium">Subtotal</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {lines.map((l, i) => (
-              <tr key={`${l.label}-${i}`} className="border-b border-fg/10 align-top">
-                <td className="py-2 pr-3 text-fg">
+              <TableRow key={`${l.label}-${i}`} className="border-b border-fg/10 align-top">
+                <TableCell className="py-2 pr-3 text-fg">
                   {l.label}
                   {l.note && <p className="mt-1 text-xs text-danger">{l.note}</p>}
-                </td>
-                <td className="py-2 pr-3 text-fg">{l.quantity}</td>
-                <td className="py-2 pr-3 text-fg/70">{l.unit}</td>
-                <td className="py-2 pr-3 text-fg">{l.unit_rate.toFixed(2)}</td>
-                <td className="py-2 text-right text-fg">{l.subtotal.toFixed(2)}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-2 pr-3 text-fg">{l.quantity}</TableCell>
+                <TableCell className="py-2 pr-3 text-fg/70">{l.unit}</TableCell>
+                <TableCell className="py-2 pr-3 text-fg">{l.unit_rate.toFixed(2)}</TableCell>
+                <TableCell className="py-2 text-right text-fg">{l.subtotal.toFixed(2)}</TableCell>
+              </TableRow>
             ))}
-            <tr>
-              <td colSpan={4} className="py-2 pr-3 text-right text-xs uppercase text-fg/60">
+            <TableRow>
+              <TableCell colSpan={4} className="py-2 pr-3 text-right text-xs uppercase text-fg/60">
                 Total
-              </td>
-              <td className="py-2 text-right text-sm font-semibold text-fg">
+              </TableCell>
+              <TableCell className="py-2 text-right text-sm font-semibold text-fg">
                 {total.toFixed(2)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       )}
     </section>
   )

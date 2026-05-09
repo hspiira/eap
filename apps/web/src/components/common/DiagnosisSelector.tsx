@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react'
 
 import { diagnosesApi } from '@/api/endpoints/diagnoses'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { cn } from '@/lib/utils'
@@ -97,22 +98,22 @@ export function DiagnosisSelector({
 
   return (
     <div ref={containerRef} className="relative">
-      <button
+      <Button
         id={buttonId}
         type="button"
+        variant="outline"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          'flex h-9 w-full items-center justify-between gap-2 rounded-sm border border-fg/20 bg-bg px-3 text-left text-sm text-fg shadow-sm',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50',
+          'h-9 w-full justify-between gap-2 rounded-sm border-fg/20 bg-bg px-3 text-left text-sm shadow-sm',
           !value && 'text-fg/60',
         )}
       >
         <span className="min-w-0 truncate">{triggerLabel}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-fg/60" />
-      </button>
+      </Button>
 
       {showPath && selectedQuery.data && (
         <p className="mt-1 text-xs text-fg/60">{selectedQuery.data.path}</p>
@@ -186,12 +187,13 @@ function SearchResults({
     <ul className="p-1">
       {data.map((d) => (
         <li key={d.id}>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             disabled={leavesOnly && d.has_children}
             onClick={() => onSelect(d)}
             className={cn(
-              'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm text-fg rounded-none hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50',
+              'h-auto w-full items-start justify-start gap-2 rounded-none px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50',
               d.id === selectedId && 'bg-primary/10',
             )}
           >
@@ -204,7 +206,7 @@ function SearchResults({
               </span>
               <span className="block text-xs text-fg/60">{d.path}</span>
             </span>
-          </button>
+          </Button>
         </li>
       ))}
     </ul>
@@ -278,31 +280,33 @@ function TreeNode({
     <li>
       <div className="flex items-stretch">
         {node.has_children ? (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => onToggle(node.id)}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            className="flex h-8 w-6 shrink-0 items-center justify-center text-fg/60 hover:text-fg"
+            className="h-8 w-6 shrink-0 p-0 text-fg/60 hover:text-fg"
             style={{ marginLeft: indent }}
           >
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
+          </Button>
         ) : (
           <span className="h-8 w-6 shrink-0" style={{ marginLeft: indent }} />
         )}
-        <button
+        <Button
           type="button"
+          variant="ghost"
           disabled={!selectable}
           onClick={() => onSelect(node)}
           className={cn(
-            'flex flex-1 items-center gap-2 px-2 py-1 text-left text-sm text-fg rounded-none hover:bg-surface-hover disabled:cursor-not-allowed disabled:text-fg/60',
+            'h-auto flex-1 justify-start gap-2 rounded-none px-2 py-1 text-left text-sm text-fg hover:bg-surface-hover disabled:cursor-not-allowed disabled:text-fg/60',
             node.id === selectedId && 'bg-primary/10',
           )}
         >
           <span className="font-medium">{node.code}</span>
           <span className="text-fg/80">{node.label}</span>
           {node.id === selectedId && <Check className="ml-auto h-4 w-4 text-primary" />}
-        </button>
+        </Button>
       </div>
       {isExpanded && childrenQuery.data?.items && (
         <ul>

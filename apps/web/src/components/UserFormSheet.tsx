@@ -223,7 +223,7 @@ function UserEditSheet({
             readOnly
           />
         </FormField>
-        <input type="hidden" {...register("email")} />
+        <Input type="hidden" {...register("email")} />
       </FormSection>
       <FormSection title="Preferences">
         <FormField

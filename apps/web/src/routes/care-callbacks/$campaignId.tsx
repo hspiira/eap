@@ -19,6 +19,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -152,24 +153,28 @@ function CampaignDetail({
       breadcrumb={`Care · Callback campaigns · ${campaign.name}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/care-callbacks" })}
             aria-label="Back to campaigns"
             title="Back to campaigns"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onRefresh}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <RotateCw className="size-3.5" />
-          </button>
+          </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Link
             to="/reports/$templateSlug"
@@ -374,7 +379,7 @@ function CasesPanel({
   }
   return (
     <div className="overflow-hidden border border-fg/10 bg-surface">
-      <table className="w-full caption-bottom text-sm">
+      <Table className="w-full caption-bottom text-sm">
         <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
           <TableRow className="border-fg/8 hover:bg-transparent">
             <TableHead>Person</TableHead>
@@ -437,7 +442,7 @@ function CasesPanel({
             </TableRow>
           ))}
         </TableBody>
-      </table>
+      </Table>
     </div>
   )
 }
@@ -493,38 +498,38 @@ function AggregatePanel({
       </DetailCard>
 
       <DetailCard title="Question summaries">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-fg/65">
-              <th className="border-b border-fg/10 px-2 py-1.5 text-left text-xs font-medium tracking-wide">
+        <Table className="w-full text-sm">
+          <TableHeader>
+            <TableRow className="text-fg/65 hover:bg-transparent">
+              <TableHead className="px-2 py-1.5 text-xs font-medium tracking-wide">
                 Question
-              </th>
-              <th className="border-b border-fg/10 px-2 py-1.5 text-right text-xs font-medium tracking-wide">
+              </TableHead>
+              <TableHead className="px-2 py-1.5 text-right text-xs font-medium tracking-wide">
                 n
-              </th>
-              <th className="border-b border-fg/10 px-2 py-1.5 text-right text-xs font-medium tracking-wide">
+              </TableHead>
+              <TableHead className="px-2 py-1.5 text-right text-xs font-medium tracking-wide">
                 Mean / Top
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {aggregate.question_summaries.map((s) => (
-              <tr key={s.question_key} className="text-fg">
-                <td className="border-b border-fg/8 px-2 py-1.5">{s.prompt}</td>
-                <td className="border-b border-fg/8 px-2 py-1.5 text-right font-mono">
+              <TableRow key={s.question_key} className="border-fg/8">
+                <TableCell className="px-2 py-1.5">{s.prompt}</TableCell>
+                <TableCell className="px-2 py-1.5 text-right font-mono">
                   {s.n}
-                </td>
-                <td className="border-b border-fg/8 px-2 py-1.5 text-right font-mono">
+                </TableCell>
+                <TableCell className="px-2 py-1.5 text-right font-mono">
                   {s.mean !== null && s.mean !== undefined
                     ? s.mean.toFixed(2)
                     : s.histogram
                       ? topHistogramEntry(s.histogram)
                       : "—"}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </DetailCard>
     </div>
   )

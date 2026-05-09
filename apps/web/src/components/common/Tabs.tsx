@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface TabsContextValue {
@@ -68,9 +69,10 @@ export function Tab({ value, children, count, icon: Icon, disabled }: TabProps) 
   const { value: active, setValue, idBase } = useTabs()
   const selected = active === value
   return (
-    <button
+    <Button
       type="button"
       role="tab"
+      variant="ghost"
       id={`${idBase}-tab-${value}`}
       aria-controls={`${idBase}-panel-${value}`}
       aria-selected={selected}
@@ -79,7 +81,7 @@ export function Tab({ value, children, count, icon: Icon, disabled }: TabProps) 
       disabled={disabled}
       onClick={() => !disabled && setValue(value)}
       className={cn(
-        "relative -mb-px inline-flex h-9 shrink-0 items-center gap-1.5 rounded-none border-b-2 border-transparent px-2.5 text-sm font-medium text-fg/60 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "relative -mb-px h-9 shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 text-sm font-medium text-fg/60 hover:bg-transparent hover:text-fg",
         selected && "border-primary text-fg",
         disabled && "pointer-events-none opacity-50",
       )}
@@ -96,7 +98,7 @@ export function Tab({ value, children, count, icon: Icon, disabled }: TabProps) 
           {count}
         </span>
       ) : null}
-    </button>
+    </Button>
   )
 }
 

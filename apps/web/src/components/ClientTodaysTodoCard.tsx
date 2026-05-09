@@ -43,23 +43,27 @@ export function ClientTodaysTodoCard({
     >
       <div className="grid gap-3">
         <div className="flex h-7 items-center justify-between rounded-sm border border-fg/10 bg-bg px-1">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             aria-label="Previous day"
-            className="grid size-5 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-5 p-0 text-fg/55"
           >
             <ChevronLeft className="size-3.5" />
-          </button>
+          </Button>
           <span className="font-mono text-xs tabular-nums text-fg/65">
             {formatTodayLabel()}
           </span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             aria-label="Next day"
-            className="grid size-5 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-5 p-0 text-fg/55"
           >
             <ChevronRight className="size-3.5" />
-          </button>
+          </Button>
         </div>
         {items.length === 0 ? (
           <p className="text-sm text-fg/60">Nothing scheduled for today.</p>

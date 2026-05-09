@@ -10,6 +10,8 @@ import { useApiForm } from '@/hooks/useApiForm'
 import { isConflict } from '@/lib/errors'
 import { tenantActions } from '@/lib/tenant-actions'
 import { ApiError } from '@/types/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/auth/signup')({
   component: SignupPage,
@@ -155,47 +157,42 @@ function SignupPage() {
         <div className="mb-4">
           <span className="text-sm text-fg-muted">Set-password link</span>
           <div className="mt-1 flex gap-2">
-            <input
+            <Input
               readOnly
               value={adminCredentials.set_password_url}
-              className="flex-1 px-4 py-2 bg-bg border border-border-strong rounded-sm text-fg font-mono text-xs"
+              className="flex-1 font-mono text-xs"
             />
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleCopySetPasswordLink}
-              className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-sm transition-colors flex items-center gap-2"
               title={copiedSetPasswordLink ? 'Copied!' : 'Copy link'}
+              className="gap-2"
             >
               <Copy className="w-4 h-4" />
               {copiedSetPasswordLink ? 'Copied!' : 'Copy'}
-            </button>
+            </Button>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={goToSetPassword}
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors flex items-center justify-center gap-2 mb-4"
-        >
+        <Button type="button" onClick={goToSetPassword} className="w-full mb-4 gap-2">
           <KeyRound className="w-4 h-4" />
           Set your password
-        </button>
+        </Button>
         <p className="text-fg-muted text-sm mt-6 mb-2">After you&apos;ve set your password:</p>
-        <button
-          type="button"
-          onClick={goToLoginFromSuccess}
-          className="w-full py-3 border border-border-strong bg-bg hover:bg-surface-hover text-fg font-medium rounded-sm transition-colors"
-        >
+        <Button type="button" variant="outline" onClick={goToLoginFromSuccess} className="w-full">
           Go to Sign in
-        </button>
+        </Button>
         <div className="mt-6 text-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setAdminCredentials(null)}
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
+            className="h-auto gap-2 p-0 text-sm text-fg-muted hover:text-fg"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -230,22 +227,20 @@ function SignupPage() {
             </div>
           )}
         </dl>
-        <button
-          type="button"
-          onClick={goToLoginFromSuccess}
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors"
-        >
+        <Button type="button" onClick={goToLoginFromSuccess} className="w-full">
           Go to Sign in
-        </button>
+        </Button>
         <div className="mt-6 text-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setAdminCredentials(null)}
-            className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg transition-colors"
+            className="h-auto gap-2 p-0 text-sm text-fg-muted hover:text-fg"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -271,11 +266,10 @@ function SignupPage() {
           <label htmlFor="name" className="block text-fg text-sm font-medium mb-1">
             Tenant Name *
           </label>
-          <input
+          <Input
             id="name"
             type="text"
             placeholder="Enter tenant name"
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('name')}
           />
           {formState.errors.name && (
@@ -288,11 +282,11 @@ function SignupPage() {
             Tenant Code *
           </label>
           <div className="relative">
-            <input
+            <Input
               id="code"
               type="text"
               placeholder="e.g., acme-corp"
-              className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring pr-10"
+              className="pr-10"
               {...codeRegister}
               onChange={(e) => {
                 const formatted = formatCode(e.target.value)
@@ -316,7 +310,7 @@ function SignupPage() {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={
             formState.isSubmitting ||
@@ -325,10 +319,10 @@ function SignupPage() {
             codeAvailability.checking ||
             codeAvailability.available === false
           }
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full"
         >
           {formState.isSubmitting ? 'Creating tenant...' : 'Create Tenant'}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 text-center space-y-2">

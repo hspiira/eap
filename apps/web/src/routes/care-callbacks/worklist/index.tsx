@@ -25,6 +25,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { Button } from "@/components/ui/button"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -159,8 +160,10 @@ function WorklistPage() {
           options={STATUS_OPTIONS}
           onChange={handleStatusChange}
         />
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() =>
             navigate({
               search: (prev) => ({
@@ -171,15 +174,15 @@ function WorklistPage() {
             })
           }
           className={cn(
-            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-sm border bg-bg px-2 text-sm transition-colors",
+            "h-8 shrink-0 gap-1.5 rounded-sm px-2 text-sm",
             searchParams.crisis
-              ? "border-danger/40 bg-danger-soft text-danger-fg"
-              : "border-fg/25 text-fg/80 hover:bg-surface-hover",
+              ? "border-danger/40 bg-danger-soft text-danger-fg hover:bg-danger-soft"
+              : "border-fg/25 text-fg/80",
           )}
         >
           <AlertTriangle className="size-3.5" />
           Crisis only
-        </button>
+        </Button>
         <div className="ml-auto" />
         <FilterSearch
           value={searchInput}
@@ -216,7 +219,7 @@ function WorklistPage() {
           />
         ) : (
           <div className="relative min-h-0 flex-1 overflow-auto">
-            <table className="w-full caption-bottom text-sm">
+            <Table className="w-full caption-bottom text-sm">
               <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                 <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                   <TableHead>
@@ -250,7 +253,7 @@ function WorklistPage() {
                   <CaseRow key={c.id} row={c} />
                 ))}
               </TableBody>
-            </table>
+            </Table>
           </div>
         )}
       </div>
@@ -361,15 +364,17 @@ function IconButton({
   onClick?: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="size-7 p-0 text-fg/70"
     >
       <Icon className="size-3.5" />
-    </button>
+    </Button>
   )
 }
 

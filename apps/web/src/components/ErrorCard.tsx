@@ -1,5 +1,6 @@
 import { ChevronRight, RotateCcw } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export function ErrorCard() {
@@ -23,26 +24,28 @@ export function ErrorCard() {
         </div>
       </div>
       <div className="mt-4 flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="outline"
           className={cn(
-            "flex items-center gap-2 rounded-none border border-fg bg-surface-shadow px-3 py-2 text-sm text-white/95",
-            "hover:bg-fg"
+            "h-auto gap-2 rounded-none border-fg bg-surface-shadow px-3 py-2 text-sm text-white/95",
+            "hover:bg-fg hover:text-white/95"
           )}
         >
           <RotateCcw className="h-3.5 w-3.5" />
           Re-run
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           className={cn(
-            "flex items-center gap-1 rounded-none border border-fg bg-surface-shadow px-3 py-2 text-sm text-white/95",
-            "hover:bg-fg"
+            "h-auto gap-1 rounded-none border-fg bg-surface-shadow px-3 py-2 text-sm text-white/95",
+            "hover:bg-fg hover:text-white/95"
           )}
         >
           Full log
           <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </div>
     </div>
   )

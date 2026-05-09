@@ -35,11 +35,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+import { Checkbox } from "@/components/ui/checkbox"
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
@@ -238,15 +240,11 @@ function ServiceAssignmentsListPage() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <input
-                        type="checkbox"
-                        aria-label="Select all"
-                        className="size-3.5 cursor-pointer accent-primary"
-                      />
+                      <Checkbox aria-label="Select all" />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="contract_id" sort={sort} onToggle={toggleSort}>
@@ -283,7 +281,7 @@ function ServiceAssignmentsListPage() {
                     <AssignmentRow key={row.id} row={row} />
                   ))}
                 </TableBody>
-              </table>
+              </Table>
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
@@ -301,12 +299,7 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <input
-          type="checkbox"
-          aria-label={`Select ${row.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="size-3.5 cursor-pointer accent-primary"
-        />
+        <Checkbox aria-label={`Select ${row.id}`} onClick={(e) => e.stopPropagation()} />
       </TableCell>
       <TableCell>
         <Link
@@ -347,13 +340,7 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`More actions for assignment ${row.id.slice(0, 8)}`}
-                className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
-              >
-                <MoreHorizontal className="size-4" />
-              </button>
+              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for assignment ${row.id.slice(0, 8)}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
@@ -405,14 +392,16 @@ function IconButton({
   onClick?: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="size-7 p-0 text-fg/70"
     >
       <Icon className="size-3.5" />
-    </button>
+    </Button>
   )
 }

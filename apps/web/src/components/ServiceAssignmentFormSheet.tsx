@@ -132,7 +132,7 @@ export function ServiceAssignmentFormSheet({
             />
           </FormField>
         )}
-        <input type="hidden" {...register("contract_id")} />
+        <Input type="hidden" {...register("contract_id")} />
       </FormSection>
 
       <FormSection title="Service">
@@ -149,7 +149,7 @@ export function ServiceAssignmentFormSheet({
             }
           />
         </FormField>
-        <input type="hidden" {...register("service_id")} />
+        <Input type="hidden" {...register("service_id")} />
       </FormSection>
 
       <FormSection

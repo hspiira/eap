@@ -308,12 +308,14 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
                   <StatusCell status={row.status} />
                 </TableCell>
                 <TableCell>
-                  <button
+                  <Button
                     type="button"
-                    className="text-gray-700 hover:text-gray-900 hover:underline"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-gray-700 hover:text-gray-900"
                   >
                     View
-                  </button>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

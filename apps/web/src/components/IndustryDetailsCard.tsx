@@ -56,14 +56,16 @@ export function IndustryDetailsCard({
           <Pencil className="size-3.5" />
           Edit
         </Button>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onClose}
           aria-label="Close details"
-          className="grid size-7 shrink-0 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+          className="size-7 shrink-0 p-0 text-fg/55"
         >
           <X className="size-4" />
-        </button>
+        </Button>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
@@ -210,13 +212,14 @@ function TreeNode({ industry, kind, onSelect }: TreeNodeProps) {
   )
   if (!interactive) return inner
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onSelect?.(industry.id, industry)}
-      className="-mx-1 inline-flex w-[calc(100%+0.5rem)] items-center rounded-sm px-1 py-0.5 text-left transition-colors hover:bg-surface-hover hover:[&_span:not(.font-mono)]:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="-mx-1 h-auto w-[calc(100%+0.5rem)] justify-start rounded-sm px-1 py-0.5 hover:bg-surface-hover hover:[&_span:not(.font-mono)]:text-primary"
       aria-label={`Open ${industry.name}`}
     >
       {inner}
-    </button>
+    </Button>
   )
 }

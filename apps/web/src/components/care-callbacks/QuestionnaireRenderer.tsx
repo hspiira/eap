@@ -8,6 +8,16 @@
 
 import { useId } from "react"
 
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import type { Questionnaire, QuestionnaireQuestion } from "@/types/entities"
 import { QuestionnaireQuestionType } from "@/types/enums"
 
@@ -90,20 +100,22 @@ function renderInput(
     case QuestionnaireQuestionType.SINGLE_CHOICE:
     case QuestionnaireQuestionType.YES_NO:
       return (
-        <select
-          id={inputId}
+        <Select
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value || null)}
-          className="flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          onValueChange={(v) => onChange(v || null)}
         >
-          <option value="">— Select —</option>
-          {(q.options ?? []).map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id={inputId}>
+            <SelectValue placeholder="— Select —" />
+          </SelectTrigger>
+          <SelectContent>
+            {(q.options ?? []).map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )
     case QuestionnaireQuestionType.MULTI_CHOICE: {
       const arr = Array.isArray(value) ? value : []
@@ -120,14 +132,13 @@ function renderInput(
                     : "border-fg/20 bg-bg text-fg/75 hover:bg-surface-hover"
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   disabled={readOnly}
                   checked={checked}
-                  onChange={(e) => {
-                    const next = e.target.checked
+                  onCheckedChange={(v) => {
+                    const next = v
                       ? [...arr, opt.value]
-                      : arr.filter((v) => v !== opt.value)
+                      : arr.filter((x) => x !== opt.value)
                     onChange(next.length ? next : null)
                   }}
                 />
@@ -140,13 +151,12 @@ function renderInput(
     }
     case QuestionnaireQuestionType.TEXT:
       return (
-        <textarea
+        <Textarea
           id={inputId}
           rows={3}
           disabled={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="flex w-full rounded-sm border border-fg/20 bg-bg px-3 py-2 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         />
       )
   }
@@ -172,21 +182,19 @@ function ScaleInput({ inputId, min, max, minLabel, maxLabel, value, onChange, re
         {ticks.map((t) => {
           const selected = value === t
           return (
-            <button
+            <Button
               key={t}
               type="button"
               disabled={readOnly}
               id={t === min ? inputId : undefined}
               aria-pressed={selected}
               onClick={() => onChange(selected ? null : t)}
-              className={`min-w-9 rounded-sm border px-2 py-1 text-sm tabular-nums ${
-                selected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-fg/20 bg-bg text-fg hover:bg-surface-hover"
-              } ${readOnly ? "cursor-not-allowed opacity-60" : ""}`}
+              variant={selected ? "default" : "outline"}
+              size="sm"
+              className="min-w-9 rounded-sm px-2 py-1 text-sm tabular-nums"
             >
               {t}
-            </button>
+            </Button>
           )
         })}
       </div>

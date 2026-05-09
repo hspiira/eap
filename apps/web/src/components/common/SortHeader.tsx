@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export type SortState = {
@@ -54,12 +55,14 @@ export function SortHeader({
   const active = sort.field === field
   const Icon = active ? (sort.desc ? ArrowDown : ArrowUp) : ChevronsUpDown
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={() => onToggle(field)}
       aria-sort={active ? (sort.desc ? "descending" : "ascending") : "none"}
       className={cn(
-        "group inline-flex items-center gap-1 rounded-sm text-fg/65 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "group h-auto gap-1 rounded-sm p-0 text-fg/65 hover:bg-transparent hover:text-fg",
         align === "right" && "ml-auto",
         active && "text-fg",
         className,
@@ -72,6 +75,6 @@ export function SortHeader({
           active ? "text-primary" : "text-fg/35 group-hover:text-fg/60",
         )}
       />
-    </button>
+    </Button>
   )
 }

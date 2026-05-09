@@ -17,6 +17,14 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { WebhookSetupHelper } from "@/components/surveys/WebhookSetupHelper"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
@@ -120,27 +128,31 @@ function SurveyDetailPage() {
       breadcrumb={`Insights · Surveys · ${survey.name}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/surveys" })}
             aria-label="Back to surveys"
             title="Back to surveys"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => {
               surveyQuery.refetch()
               aggregateQuery.refetch()
             }}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <RotateCw className="size-3.5" />
-          </button>
+          </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {!isClosed ? (
             <Button

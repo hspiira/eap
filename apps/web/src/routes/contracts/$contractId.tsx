@@ -24,6 +24,7 @@ import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -167,24 +168,28 @@ function ContractDetailPage() {
       breadcrumb={`Commercial · Contracts · ${number}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/contracts" })}
             aria-label="Back to contracts"
             title="Back to contracts"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={fetchContract}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
-          >
+            className="size-7 p-0 text-fg/70"
+            >
             <RotateCw className="size-3.5" />
-          </button>
+            </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"
@@ -556,7 +561,7 @@ function ServicesPanel({
         </Button>
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
-        <table className="w-full caption-bottom text-sm">
+        <Table className="w-full caption-bottom text-sm">
           <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Service</TableHead>
@@ -598,7 +603,7 @@ function ServicesPanel({
               </TableRow>
             ))}
           </TableBody>
-        </table>
+        </Table>
       </div>
     </div>
   )

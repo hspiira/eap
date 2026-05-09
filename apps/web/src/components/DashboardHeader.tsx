@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import {
   Tooltip,
@@ -81,12 +82,12 @@ function HeaderSearch() {
         className="pointer-events-none absolute left-2.5 size-3.5 text-fg-subtle"
         aria-hidden
       />
-      <input
+      <Input
         ref={inputRef}
         type="search"
         placeholder="Search"
         aria-label="Search"
-        className="h-8 w-full rounded-sm border border-border-subtle bg-surface pl-8 pr-12 text-sm text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="h-8 rounded-sm border-border-subtle bg-surface pl-8 pr-12 text-sm text-fg placeholder:text-fg-subtle"
         onKeyDown={(e) => e.stopPropagation()}
       />
       <kbd

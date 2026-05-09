@@ -34,13 +34,15 @@ export function TagsPageHeader({ breadcrumb, children }: TagsPageHeaderProps) {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface-hover"
+                variant="ghost"
+                size="sm"
+                className="size-8 shrink-0 p-0 text-fg"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>Export</DropdownMenuItem>

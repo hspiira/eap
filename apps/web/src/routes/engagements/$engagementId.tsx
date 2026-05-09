@@ -23,6 +23,21 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
@@ -57,9 +72,6 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
   "hours",
   "timeline",
 ]
-
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
 
 const DELIVERABLE_STATUS_OPTIONS: DeliverableStatus[] = [
   DeliverableStatus.PENDING,
@@ -167,24 +179,28 @@ function EngagementDetailPage() {
       breadcrumb={`Commercial · Engagements · ${engagement.name}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/engagements" })}
             aria-label="Back to engagements"
             title="Back to engagements"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => engagementQuery.refetch()}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <RotateCw className="size-3.5" />
-          </button>
+          </Button>
         </>
       }
     >
@@ -533,23 +549,27 @@ function DeliverablesPanel({
                     : ""}
                 </p>
               </div>
-              <select
-                value={d.status}
+              <Select
                 disabled={updateMutation.isPending}
-                onChange={(e) =>
+                value={d.status}
+                onValueChange={(v) =>
                   updateMutation.mutate({
                     id: d.id,
-                    status: e.target.value as DeliverableStatus,
+                    status: v as DeliverableStatus,
                   })
                 }
-                className={cn(SELECT_CLASS, "w-36")}
               >
-                {DELIVERABLE_STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERABLE_STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </li>
           ))}
         </ul>
@@ -631,18 +651,18 @@ function HoursPanel({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <select
-          value={deliverableId}
-          onChange={(e) => setDeliverableId(e.target.value)}
-          className={SELECT_CLASS}
-        >
-          <option value="">— Deliverable —</option>
-          {deliverables.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.title}
-            </option>
-          ))}
-        </select>
+        <Select value={deliverableId} onValueChange={setDeliverableId}>
+          <SelectTrigger>
+            <SelectValue placeholder="— Deliverable —" />
+          </SelectTrigger>
+          <SelectContent>
+            {deliverables.map((d) => (
+              <SelectItem key={d.id} value={d.id}>
+                {d.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           type="button"
           size="sm"
@@ -664,32 +684,32 @@ function HoursPanel({
         />
       ) : (
         <div className="overflow-hidden rounded-sm border border-fg/10">
-          <table className="w-full text-sm">
-            <thead className="bg-bg">
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-fg/55">
-                <th className="border-b border-fg/15 px-3 py-2">Date</th>
-                <th className="w-20 border-b border-fg/15 px-3 py-2 text-right">Hours</th>
-                <th className="w-40 border-b border-fg/15 px-3 py-2">By</th>
-                <th className="border-b border-fg/15 px-3 py-2">Note</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-bg">
+              <TableRow className="text-left hover:bg-transparent">
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Date</TableHead>
+                <TableHead className="w-20 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">Hours</TableHead>
+                <TableHead className="w-40 px-3 py-2 text-[11px] font-semibold tracking-wide">By</TableHead>
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Note</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {entries.map((e) => (
-                <tr key={e.id} className="border-b border-fg/8 last:border-0 text-fg">
-                  <td className="px-3 py-2">
+                <TableRow key={e.id} className="border-fg/8 last:border-0">
+                  <TableCell className="px-3 py-2">
                     {new Date(e.occurred_on).toLocaleDateString()}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-right font-mono">
                     {e.hours.toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-fg/75">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 font-mono text-xs text-fg/75">
                     {e.user_id}
-                  </td>
-                  <td className="px-3 py-2 text-fg/80">{e.description ?? "—"}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-fg/80">{e.description ?? "—"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </DetailCard>

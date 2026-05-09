@@ -386,7 +386,7 @@ export function PersonFormSheet({
               />
             </FormField>
           )}
-          <input type="hidden" {...register("client_id")} />
+          <Input type="hidden" {...register("client_id")} />
         </FormSection>
       ) : null}
 
@@ -481,7 +481,7 @@ export function PersonFormSheet({
               }
             />
           </FormField>
-          <input type="hidden" {...register("primary_employee_id")} />
+          <Input type="hidden" {...register("primary_employee_id")} />
           <FormField
             label="Relationship"
             required

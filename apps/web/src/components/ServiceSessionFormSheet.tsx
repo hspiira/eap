@@ -12,6 +12,7 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
@@ -204,7 +205,7 @@ export function ServiceSessionFormSheet({
             />
           )}
         </FormField>
-        <input type="hidden" {...register("service_id")} />
+        <Input type="hidden" {...register("service_id")} />
       </FormSection>
 
       <FormSection title="Subject">
@@ -220,7 +221,7 @@ export function ServiceSessionFormSheet({
             />
           )}
         </FormField>
-        <input type="hidden" {...register("person_id")} />
+        <Input type="hidden" {...register("person_id")} />
       </FormSection>
 
       <FormSection
@@ -238,18 +239,25 @@ export function ServiceSessionFormSheet({
             }
           />
         </FormField>
-        <input type="hidden" {...register("service_provider_id")} />
+        <Input type="hidden" {...register("service_provider_id")} />
       </FormSection>
 
       <FormSection title={watchedBackfill ? "When it happened" : "Schedule"}>
         {!isEdit ? (
-          <label className="flex cursor-pointer items-start gap-2 rounded-sm border border-fg/10 bg-surface px-3 py-2.5">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-3.5 cursor-pointer accent-primary"
-              {...register("is_backfill")}
+          <div className="flex cursor-pointer items-start gap-2 rounded-sm border border-fg/10 bg-surface px-3 py-2.5">
+            <Controller
+              control={control}
+              name="is_backfill"
+              render={({ field }) => (
+                <Checkbox
+                  id="ss-backfill"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="mt-0.5"
+                />
+              )}
             />
-            <span className="min-w-0 flex-1">
+            <label htmlFor="ss-backfill" className="cursor-pointer min-w-0 flex-1">
               <span className="block text-sm font-medium text-fg">
                 This session already happened
               </span>
@@ -257,8 +265,8 @@ export function ServiceSessionFormSheet({
                 Backfill a past session. It will be marked Completed and tagged with
                 a logged-at timestamp + reason in the audit trail.
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
         ) : null}
         <FormField
           label={watchedBackfill ? "Occurred at" : "Scheduled at"}

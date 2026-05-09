@@ -8,6 +8,8 @@ import { authApi } from '@/api/endpoints/auth'
 import { useApiForm } from '@/hooks/useApiForm'
 import { isApiError, isValidationError } from '@/lib/errors'
 import { ApiError } from '@/types/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/auth/set-password')({
   component: SetPasswordPage,
@@ -91,13 +93,9 @@ function SetPasswordPage() {
             <p className="text-fg-muted text-sm">Use your admin email and your new password to sign in.</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={goToLogin}
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors"
-        >
+        <Button type="button" onClick={goToLogin} className="w-full">
           Go to Sign in
-        </button>
+        </Button>
         <div className="mt-6 text-center">
           <Link to="/" className="text-fg-muted hover:text-fg text-sm inline-flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
@@ -148,33 +146,33 @@ function SetPasswordPage() {
           <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
             Password *
           </label>
-          <input
+          <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('password')}
           />
           {formState.errors.password && (
             <p className="mt-1 text-sm text-danger">{formState.errors.password.message as string}</p>
           )}
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setShowPassword(!showPassword)}
-          className="text-fg-muted hover:text-primary text-sm"
+          className="h-auto p-0 text-fg-muted hover:text-primary text-sm"
         >
           {showPassword ? 'Hide' : 'Show'} password
-        </button>
+        </Button>
         <div>
           <label htmlFor="password_confirm" className="block text-fg text-sm font-medium mb-1">
             Confirm password *
           </label>
-          <input
+          <Input
             id="password_confirm"
             type="password"
             placeholder="••••••••"
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             {...register('password_confirm')}
           />
           {formState.errors.password_confirm && (
@@ -182,13 +180,13 @@ function SetPasswordPage() {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={formState.isSubmitting}
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full"
         >
           {formState.isSubmitting ? 'Setting password...' : 'Set password'}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 text-center">

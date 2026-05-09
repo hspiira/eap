@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 export function FilterBar({
@@ -76,14 +77,16 @@ export function FilterChip({ label, onRemove }: FilterChipProps) {
   return (
     <span className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border border-fg/25 bg-bg pl-2 pr-1 text-sm text-fg">
       <span className="truncate">{label}</span>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={onRemove}
         aria-label="Remove filter"
-        className="grid size-5 place-items-center rounded-sm text-fg/65 transition-colors hover:bg-surface-hover hover:text-fg"
+        className="size-5 p-0 text-fg/65"
       >
         <X className="size-3" />
-      </button>
+      </Button>
     </span>
   )
 }
@@ -112,14 +115,16 @@ export function FilterTrigger<T extends string>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
+        <Button
           type="button"
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-sm border border-fg/25 bg-bg px-2 text-sm text-fg hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0 gap-1.5 rounded-sm border-fg/25 bg-bg px-2 text-sm text-fg hover:bg-surface-hover"
         >
           {Icon ? <Icon className="size-3.5 text-fg/65" /> : null}
           <span className="whitespace-nowrap">{current}</span>
           <ChevronDown className="size-3.5 text-fg/55" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-44">
         {options.map((opt) => (
@@ -160,13 +165,13 @@ export function FilterSearch({
         aria-hidden
         className="pointer-events-none absolute left-2 size-3.5 text-fg/55"
       />
-      <input
+      <Input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-full w-44 bg-transparent text-sm text-fg placeholder:text-fg/55 focus:outline-none"
+        className="h-full w-44 border-0 bg-transparent p-0 text-sm text-fg shadow-none placeholder:text-fg/55 focus-visible:ring-0"
       />
       <kbd
         aria-hidden

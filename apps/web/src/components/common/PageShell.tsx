@@ -2,6 +2,7 @@ import * as React from "react"
 
 import { MoreHorizontal } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,13 +46,15 @@ function DefaultPageMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           aria-label="Page options"
-          className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+          className="size-7 p-0 text-fg/70"
         >
           <MoreHorizontal className="size-4" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem>View settings</DropdownMenuItem>

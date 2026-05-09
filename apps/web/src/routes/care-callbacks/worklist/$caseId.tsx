@@ -26,6 +26,14 @@ import { FormSection } from "@/components/common/FormSection"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
@@ -37,9 +45,6 @@ import { CallbackCaseStatus } from "@/types/enums"
 export const Route = createFileRoute("/care-callbacks/worklist/$caseId")({
   component: CaseTriagePage,
 })
-
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
 
 type TabValue = "triage" | "outcome" | "history"
 const TAB_VALUES: ReadonlyArray<TabValue> = ["triage", "outcome", "history"]
@@ -183,24 +188,28 @@ function CaseTriagePage() {
       breadcrumb={`Care · My worklist · ${callCase.person_display_name}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/care-callbacks/worklist" })}
             aria-label="Back to worklist"
             title="Back to worklist"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => caseQuery.refetch()}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <RotateCw className="size-3.5" />
-          </button>
+          </Button>
           {canStart ? (
             <>
               <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
@@ -282,13 +291,12 @@ function CaseTriagePage() {
                       description="Internal — never surfaced in aggregate reports."
                     >
                       <FormField label="Notes" optional htmlFor="cc-notes">
-                        <textarea
+                        <Textarea
                           id="cc-notes"
                           rows={4}
                           disabled={isClosed}
                           value={counsellorNotes}
                           onChange={(e) => setCounsellorNotes(e.target.value)}
-                          className="flex w-full rounded-sm border border-fg/20 bg-bg px-3 py-2 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
                       </FormField>
                     </FormSection>
@@ -303,19 +311,20 @@ function CaseTriagePage() {
                         }
                         htmlFor="cc-status"
                       >
-                        <select
-                          id="cc-status"
+                        <Select
                           disabled={isClosed || crisisActive}
                           value={finalStatus}
-                          onChange={(e) =>
-                            setFinalStatus(e.target.value as CallbackCaseStatus)
-                          }
-                          className={SELECT_CLASS}
+                          onValueChange={(v) => setFinalStatus(v as CallbackCaseStatus)}
                         >
-                          <option value={CallbackCaseStatus.COMPLETED}>Completed</option>
-                          <option value={CallbackCaseStatus.NO_ANSWER}>No answer</option>
-                          <option value={CallbackCaseStatus.DECLINED}>Declined</option>
-                        </select>
+                          <SelectTrigger id="cc-status">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={CallbackCaseStatus.COMPLETED}>Completed</SelectItem>
+                            <SelectItem value={CallbackCaseStatus.NO_ANSWER}>No answer</SelectItem>
+                            <SelectItem value={CallbackCaseStatus.DECLINED}>Declined</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </FormField>
                     </FormSection>
                     <div className="flex justify-end gap-2 border-t border-fg/10 pt-4">

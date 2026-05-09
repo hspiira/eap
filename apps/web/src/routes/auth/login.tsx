@@ -7,6 +7,8 @@ import { useApiForm } from '@/hooks/useApiForm'
 import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
 import { authActions } from '@/lib/auth-store'
 import { getLockoutSecondsRemaining, isAccountLocked } from '@/lib/errors'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 function safeRedirectPath(raw: unknown): string | undefined {
   const s = typeof raw === 'string' ? raw.trim() : ''
@@ -121,13 +123,12 @@ function LoginPage() {
           <label htmlFor="tenant_code" className="block text-fg text-sm font-medium mb-1">
             Tenant Code *
           </label>
-          <input
+          <Input
             id="tenant_code"
             type="text"
             placeholder="Enter tenant code"
             autoComplete="organization"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('tenant_code', {
               setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
             })}
@@ -141,13 +142,12 @@ function LoginPage() {
           <label htmlFor="email" className="block text-fg text-sm font-medium mb-1">
             Email *
           </label>
-          <input
+          <Input
             id="email"
             type="email"
             placeholder="Enter your email"
             autoComplete="email"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('email')}
           />
           {formState.errors.email && (
@@ -159,13 +159,12 @@ function LoginPage() {
           <label htmlFor="password" className="block text-fg text-sm font-medium mb-1">
             Password *
           </label>
-          <input
+          <Input
             id="password"
             type="password"
             placeholder="Enter your password"
             autoComplete="current-password"
             disabled={isLocked}
-            className="w-full px-4 py-2 bg-bg border border-border-strong text-fg placeholder:text-fg-subtle rounded-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:opacity-50"
             {...register('password')}
           />
           {formState.errors.password && (
@@ -173,17 +172,17 @@ function LoginPage() {
           )}
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={submitDisabled}
-          className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full"
         >
           {isLocked
             ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
             : formState.isSubmitting
               ? 'Signing in...'
               : 'Sign in'}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 text-center space-y-2">

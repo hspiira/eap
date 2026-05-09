@@ -149,24 +149,28 @@ function ServiceAssignmentDetailPage() {
       breadcrumb={`Commercial · Service Assignments · ${label}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/service-assignments" })}
             aria-label="Back to assignments"
             title="Back to assignments"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={fetchAssignment}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
-          >
+            className="size-7 p-0 text-fg/70"
+            >
             <RotateCw className="size-3.5" />
-          </button>
+            </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"

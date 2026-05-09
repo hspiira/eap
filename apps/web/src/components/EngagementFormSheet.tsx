@@ -153,7 +153,7 @@ export function EngagementFormSheet({
             />
           )}
         </FormField>
-        <input type="hidden" {...register("client_id")} />
+        <Input type="hidden" {...register("client_id")} />
       </FormSection>
 
       <FormSection title="Identity">
@@ -292,7 +292,7 @@ export function EngagementFormSheet({
             }
           />
         </FormField>
-        <input type="hidden" {...register("lead_user_id")} />
+        <Input type="hidden" {...register("lead_user_id")} />
       </FormSection>
     </SheetForm>
   )

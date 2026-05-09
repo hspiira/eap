@@ -128,7 +128,7 @@ export function SurveyFormSheet({
             />
           )}
         </FormField>
-        <input type="hidden" {...register("client_id")} />
+        <Input type="hidden" {...register("client_id")} />
       </FormSection>
 
       <FormSection title="Identity">

@@ -30,6 +30,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Sidebar,
@@ -207,13 +208,14 @@ function ExpandedSection({ label, items, open, onOpenChange }: ExpandedSectionPr
     <SidebarGroup>
       <Collapsible open={open} onOpenChange={onOpenChange} className="group/collapsible">
         <CollapsibleTrigger asChild>
-          <button
+          <Button
             type="button"
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold tracking-wide text-sidebar-foreground/70 outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar [&[data-state=open]>svg]:rotate-90"
+            variant="ghost"
+            className="h-auto w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold tracking-wide text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring focus-visible:ring-offset-sidebar [&[data-state=open]>svg]:rotate-90"
           >
             <ChevronRight className="size-3.5 shrink-0 transition-transform" />
             {label}
-          </button>
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarMenu>
@@ -318,14 +320,15 @@ function CollapsedHeader() {
     <SidebarHeader className="items-center gap-1 border-b border-sidebar-border pb-2">
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             aria-label={`${displayName} — expand sidebar`}
             onClick={() => setOpen(true)}
-            className="grid h-9 w-9 mx-auto place-items-center rounded-md transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            className="mx-auto size-9 p-0 rounded-md hover:bg-sidebar-accent focus-visible:ring-sidebar-ring"
           >
             <img src={PROJECT_LOGO} alt="" className="h-5 w-5 object-contain" />
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" className="font-medium">
           {displayName}
@@ -333,14 +336,15 @@ function CollapsedHeader() {
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             aria-label="Search"
             onClick={() => setOpen(true)}
             className={COLLAPSED_ICON_BTN}
           >
             <Search className="size-4" />
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="right" className="font-medium">
           Search

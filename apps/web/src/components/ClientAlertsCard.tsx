@@ -3,6 +3,7 @@ import { useState } from "react"
 import { AlertCircle, Bell, ChevronDown, ChevronUp } from "lucide-react"
 
 import { Panel, PanelEmpty, PanelList } from "@/components/common/Panel"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export type ClientAlertSeverity = "low" | "medium" | "high" | "critical"
@@ -96,21 +97,23 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
                         {a.title}
                       </span>
                       {expandable ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
                           aria-expanded={isExpanded}
                           onClick={() =>
                             setExpandedId(isExpanded ? null : a.id)
                           }
-                          className="grid size-6 place-items-center rounded-sm text-fg/55 transition-colors hover:bg-surface-hover hover:text-fg"
+                          className="size-6 p-0 text-fg/55"
                         >
                           {isExpanded ? (
                             <ChevronUp className="size-3.5" />
                           ) : (
                             <ChevronDown className="size-3.5" />
                           )}
-                        </button>
+                        </Button>
                       ) : null}
                     </div>
                     <span

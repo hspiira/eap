@@ -42,6 +42,7 @@ import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -297,24 +298,28 @@ function ClientDetailPage() {
       breadcrumb={`Organization & Clients · Clients · ${client.name}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/clients" })}
             aria-label="Back to clients"
             title="Back to clients"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={fetchClient}
             aria-label="Refresh"
             title="Refresh"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
-          >
+            className="size-7 p-0 text-fg/70"
+            >
             <RotateCw className="size-3.5" />
-          </button>
+            </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"
@@ -508,7 +513,7 @@ function ContractsPanel({
         </Button>
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
-      <table className="w-full caption-bottom text-sm">
+      <Table className="w-full caption-bottom text-sm">
         <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
           <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
             <TableHead>
@@ -566,7 +571,7 @@ function ContractsPanel({
             </TableRow>
           ))}
         </TableBody>
-      </table>
+      </Table>
       </div>
     </div>
   )

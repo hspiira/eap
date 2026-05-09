@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 const MODES = ["Search", "Ask"] as const
@@ -43,12 +44,12 @@ export function QueryInputCard({
           <label htmlFor="query-input" className="sr-only">
             Query
           </label>
-          <textarea
+          <Textarea
             id="query-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             rows={3}
-            className="block min-h-16 w-full resize-none border-0 bg-transparent text-sm leading-relaxed text-fg outline-none placeholder:text-fg-subtle"
+            className="min-h-16 resize-none border-0 bg-transparent text-sm leading-relaxed text-fg shadow-none outline-none placeholder:text-fg-subtle focus-visible:ring-0"
             placeholder="Ask anything about your tenant — clients, sessions, incidents, contracts."
           />
           <div className="mt-3 flex items-center justify-between border-t border-border-subtle pt-3">
@@ -93,21 +94,21 @@ function ModeToggle({
       {MODES.map((m) => {
         const selected = m === value
         return (
-          <button
+          <Button
             key={m}
             type="button"
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(m)}
+            variant={selected ? "default" : "ghost"}
+            size="sm"
             className={cn(
-              "rounded-sm px-3 py-1 text-xs font-medium transition-colors",
-              selected
-                ? "bg-primary text-primary-foreground"
-                : "text-fg-muted hover:text-fg",
+              "h-auto rounded-sm px-3 py-1 text-xs font-medium",
+              !selected && "text-fg-muted hover:text-fg",
             )}
           >
             {m}
-          </button>
+          </Button>
         )
       })}
     </div>
@@ -120,14 +121,16 @@ function FilterChips() {
     <div className="flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface p-0.5">
       <Sparkles className="ml-1.5 size-3.5 text-fg-subtle" aria-hidden />
       {chips.map((c) => (
-        <button
+        <Button
           key={c}
           type="button"
-          className="flex items-center gap-1 rounded-sm px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+          variant="ghost"
+          size="sm"
+          className="h-auto gap-1 rounded-sm px-2 py-1 text-xs text-fg-muted hover:text-fg"
         >
           {c}
           <ChevronDown className="size-3" />
-        </button>
+        </Button>
       ))}
     </div>
   )

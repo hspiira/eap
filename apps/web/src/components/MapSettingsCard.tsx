@@ -3,6 +3,7 @@ import { useState } from "react"
 import { BookOpen, ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import {
   Card,
   CardContent,
@@ -151,24 +152,10 @@ function Toggle({
   label: string
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
+    <Switch
+      checked={enabled}
+      onCheckedChange={onChange}
       aria-label={label}
-      onClick={() => onChange(!enabled)}
-      className={cn(
-        "relative inline-flex h-5 w-8 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        enabled ? "bg-primary" : "bg-muted",
-      )}
-    >
-      <span
-        className={cn(
-          "size-4 rounded-full bg-bg shadow-sm transition-transform",
-          enabled ? "translate-x-3.5" : "translate-x-0.5",
-        )}
-        aria-hidden
-      />
-    </button>
+    />
   )
 }

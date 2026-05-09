@@ -5,6 +5,7 @@ import { servicesApi } from "@/api/endpoints/services"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -231,14 +232,22 @@ export function ServiceFormSheet({
         title="Group settings"
         description="Enable to allow sessions with multiple subjects."
       >
-        <label className="flex items-center gap-2 text-sm text-fg">
-          <input
-            type="checkbox"
-            className="size-3.5 cursor-pointer accent-primary"
-            {...register("allow_group_sessions")}
+        <div className="flex items-center gap-2">
+          <Controller
+            control={control}
+            name="allow_group_sessions"
+            render={({ field }) => (
+              <Checkbox
+                id="sv-allow-group"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
-          Allow group sessions
-        </label>
+          <label htmlFor="sv-allow-group" className="cursor-pointer text-sm text-fg">
+            Allow group sessions
+          </label>
+        </div>
         {allowGroup ? (
           <div className="grid grid-cols-2 gap-3">
             <FormField
