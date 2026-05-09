@@ -8,7 +8,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "openapi:dump": "PYTHONPATH=../evexia_bk ../evexia_bk/.venv/bin/python ../evexia_bk/scripts/dump_openapi.py",
+    "openapi:gen": "openapi-typescript ../evexia_bk/schema/openapi.json -o src/api/generated/schema.ts",
+    "openapi:sync": "pnpm openapi:dump && pnpm openapi:gen",
+    "contracts:check": "pnpm openapi:sync && git diff --exit-code -- src/api/generated/ ../evexia_bk/schema/openapi.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -73,6 +77,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.6.0",
     "jsdom": "^27.0.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^7.1.7",

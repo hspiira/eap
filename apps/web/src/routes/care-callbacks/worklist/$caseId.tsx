@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
@@ -37,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
+import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { CallbackCase, CallbackOutcome } from "@/types/entities"
@@ -52,7 +53,6 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["triage", "outcome", "history"]
 function CaseTriagePage() {
   const { caseId } = Route.useParams()
   const navigate = useNavigate()
-  const qc = useQueryClient()
   const { showSuccess, showError } = useToast()
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
 
@@ -102,18 +102,18 @@ function CaseTriagePage() {
   const crisisReasons = useMemo(() => evaluateCrisisRules(preAnswers), [preAnswers])
   const crisisActive = crisisReasons.length > 0
 
-  const startMutation = useMutation({
+  const startMutation = useEntityMutation({
+    resource: "care-callback-cases",
     mutationFn: () => careCallbacksApi.startCase(caseId),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["care-callback-cases"] })
-      await qc.invalidateQueries({
-        queryKey: ["care-callback-campaigns", "detail", campaignId],
-      })
-    },
+    detailId: caseId,
+    invalidateKeys: campaignId
+      ? [["care-callback-campaigns", "detail", campaignId]]
+      : [],
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
-  const submitMutation = useMutation({
+  const submitMutation = useEntityMutation({
+    resource: "care-callback-cases",
     mutationFn: () =>
       careCallbacksApi.submitOutcome({
         case_id: caseId,
@@ -125,17 +125,17 @@ function CaseTriagePage() {
         final_status: finalStatus,
         recorded_by_user_id: userId,
       }),
-    onSuccess: async (outcome) => {
+    detailId: caseId,
+    invalidateKeys: campaignId
+      ? [
+          ["care-callback-campaigns", "detail", campaignId],
+          ["care-callback-campaigns", "aggregate", campaignId],
+        ]
+      : [],
+    onSuccess: (outcome) => {
       showSuccess(
         outcome.crisis_flagged ? "Outcome saved · crisis escalated" : "Outcome saved",
       )
-      await qc.invalidateQueries({ queryKey: ["care-callback-cases"] })
-      await qc.invalidateQueries({
-        queryKey: ["care-callback-campaigns", "detail", campaignId],
-      })
-      await qc.invalidateQueries({
-        queryKey: ["care-callback-campaigns", "aggregate", campaignId],
-      })
       navigate({ to: "/care-callbacks/worklist" })
     },
     onError: (err) => showError(defaultErrorMessage(err)),

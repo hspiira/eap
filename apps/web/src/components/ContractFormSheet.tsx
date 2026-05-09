@@ -3,12 +3,14 @@ import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
+import type { ContractCreate } from "@/api/generated"
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -21,7 +23,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Contract } from "@/types/entities"
-import { PaymentFrequency, PaymentStatus } from "@/types/enums"
+import { PaymentFrequency } from "@/types/enums"
 
 const FREQUENCY_VALUES = [
   PaymentFrequency.WEEKLY,
@@ -30,51 +32,53 @@ const FREQUENCY_VALUES = [
   PaymentFrequency.ANNUALLY,
 ] as const
 
-const PAYMENT_STATUS_VALUES = [
-  PaymentStatus.PENDING,
-  PaymentStatus.PAID,
-  PaymentStatus.OVERDUE,
-  PaymentStatus.CANCELLED,
-  PaymentStatus.REFUNDED,
-] as const
-
 const contractSchema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
-    contract_number: z.string().optional(),
     start_date: z.string().min(1, "Start date is required"),
-    end_date: z.string().optional(),
-    renewal_date: z.string().optional(),
-    billing_frequency: z.string().optional(),
-    billing_amount: z.string().optional(),
-    currency: z.string().optional(),
-    payment_status: z.string().optional(),
+    end_date: z.string().min(1, "End date is required"),
+    billing_amount: z
+      .string()
+      .trim()
+      .min(1, "Billing amount is required")
+      .refine((v) => /^\d+(\.\d+)?$/.test(v) && Number(v) > 0, "Must be a positive number"),
+    currency: z
+      .string()
+      .trim()
+      .length(3, "Use the ISO 3-letter currency code (e.g. KES, USD)"),
+    payment_frequency: z.enum(FREQUENCY_VALUES as readonly [string, ...string[]], {
+      message: "Payment frequency is required",
+    }),
+    is_auto_renew: z.boolean().optional(),
   })
-  .refine((d) => !d.end_date || d.end_date >= d.start_date, {
+  .refine((d) => d.end_date >= d.start_date, {
     path: ["end_date"],
     message: "End date must be on or after start date",
   })
-  .refine((d) => !d.renewal_date || d.renewal_date >= d.start_date, {
-    path: ["renewal_date"],
-    message: "Renewal date must be on or after start date",
-  })
-  .refine(
-    (d) => !d.billing_amount || !Number.isNaN(Number(d.billing_amount)),
-    { path: ["billing_amount"], message: "Must be a number" },
-  )
 
 type ContractFormValues = z.infer<typeof contractSchema>
 
 const EMPTY: ContractFormValues = {
   client_id: "",
-  contract_number: "",
   start_date: "",
   end_date: "",
-  renewal_date: "",
-  billing_frequency: "",
   billing_amount: "",
-  currency: "",
-  payment_status: "",
+  currency: "KES",
+  payment_frequency: PaymentFrequency.MONTHLY,
+  is_auto_renew: false,
+}
+
+/** Convert an HTML `date` input value (`YYYY-MM-DD`) to an ISO datetime BE will accept. */
+function toIsoDatetime(date: string): string {
+  if (!date) return ""
+  return `${date}T00:00:00Z`
+}
+
+/** Convert a BE ISO datetime back to a `YYYY-MM-DD` string for the date input. */
+function fromIsoDatetime(iso: string | null | undefined): string {
+  if (!iso) return ""
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(iso)
+  return m ? m[1] : ""
 }
 
 interface ContractFormSheetProps {

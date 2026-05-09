@@ -9,6 +9,7 @@ import { SeverityBadge } from "@/components/common/SeverityBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useEntityMutation } from "@/lib/queries"
 import type { IncidentTimelineEvent } from "@/types/entities"
 
 export const Route = createFileRoute("/incidents/$incidentId")({
@@ -17,7 +18,6 @@ export const Route = createFileRoute("/incidents/$incidentId")({
 
 function IncidentDetailPage() {
   const { incidentId } = Route.useParams()
-  const queryClient = useQueryClient()
 
   const incidentQuery = useQuery({
     queryKey: ["incidents", "detail", incidentId],
@@ -29,12 +29,13 @@ function IncidentDetailPage() {
   })
 
   const [note, setNote] = useState("")
-  const noteMutation = useMutation({
+  const noteMutation = useEntityMutation({
+    resource: "incidents",
     mutationFn: (message: string) => incidentsApi.appendNote(incidentId, message),
-    onSuccess: () => {
-      setNote("")
-      queryClient.invalidateQueries({ queryKey: ["incidents", "timeline", incidentId] })
-    },
+    detailId: incidentId,
+    skipListInvalidation: true,
+    invalidateKeys: [["incidents", "timeline", incidentId]],
+    onSuccess: () => setNote(""),
   })
 
   const handlePrint = () => {

@@ -260,16 +260,7 @@ function ServiceAssignmentsListPage() {
                         Status
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
-                      <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
-                        Start
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                        End
-                      </SortHeader>
-                    </TableHead>
+                    <TableHead>Notes</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -325,8 +316,9 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{row.start_date ?? "—"}</TableCell>
-      <TableCell className="text-sm text-fg/75">{row.end_date ?? "—"}</TableCell>
+      <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
+        {row.notes ?? <span className="text-fg/40">—</span>}
+      </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link

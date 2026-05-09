@@ -1,30 +1,20 @@
 /**
  * Services API Endpoints
+ *
+ * Shapes mirror BE OpenAPI (see `@/api/generated`).
+ * `is_group_service` and `max_participants` are flat on the BE — there is no
+ * `group_settings` wrapper or `min_group_size`. Group settings are configured
+ * via a dedicated PATCH `/services/{id}/group-settings` route.
  */
 
+import type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings } from '@/api/generated'
 
 import apiClient from '../client'
 import type { ListParams, PaginatedResponse, Service } from '../types'
 
-export interface ServiceCreate {
-  name: string
-  description?: string | null
-  service_type?: string | null
-  category?: string | null
-  duration_minutes?: number | null
-  group_settings?: {
-    max_group_size?: number | null
-    min_group_size?: number | null
-    allow_group_sessions?: boolean
-  } | null
-  metadata?: Record<string, unknown> | null
-}
-
-export interface GroupSettingsUpdate {
-  max_group_size?: number | null
-  min_group_size?: number | null
-  allow_group_sessions?: boolean
-}
+export type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings }
+/** @deprecated use `ServiceUpdateGroupSettings` from `@/api/generated`. */
+export type GroupSettingsUpdate = ServiceUpdateGroupSettings
 
 export const servicesApi = {
   /**
@@ -51,7 +41,7 @@ export const servicesApi = {
   /**
    * Update service
    */
-  async update(serviceId: string, data: Partial<ServiceCreate>): Promise<Service> {
+  async update(serviceId: string, data: ServiceUpdate): Promise<Service> {
     return apiClient.patch<Service>(`/services/${serviceId}`, data)
   },
 

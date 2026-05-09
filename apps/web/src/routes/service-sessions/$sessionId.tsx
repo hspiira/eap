@@ -132,9 +132,16 @@ function ServiceSessionDetailPage() {
     async (id: string, action: LifecycleAction) => {
       setActionLoading(true)
       try {
-        if (action === "complete") await serviceSessionsApi.complete(id)
-        else if (action === "cancel") await serviceSessionsApi.cancel(id)
-        else if (action === "no-show") await serviceSessionsApi.noShow(id)
+        // BE requires a body on complete/cancel; minimal sane defaults for now.
+        // TODO(P1): surface a dialog to capture duration+notes / cancel reason.
+        if (action === "complete") {
+          await serviceSessionsApi.complete(id, {
+            duration: 60,
+            notes: "Session completed.",
+          })
+        } else if (action === "cancel") {
+          await serviceSessionsApi.cancel(id, { reason: "Cancelled by counsellor." })
+        } else if (action === "no-show") await serviceSessionsApi.noShow(id)
         else if (action === "archive") await serviceSessionsApi.archive(id)
         else if (action === "restore") await serviceSessionsApi.restore(id)
         else if (action === "reschedule") setRescheduleOpen(true)
@@ -151,9 +158,20 @@ function ServiceSessionDetailPage() {
     async (rating: number | null, comments: string | null) => {
       if (!session) return
       try {
+        // BE accepts `{feedback: string≥1}` only — combine rating + comments
+        // into a single line until we surface a richer feedback shape on the BE.
+        const feedbackText = [
+          rating != null ? `Rating: ${rating}/5` : null,
+          comments?.trim() || null,
+        ]
+          .filter(Boolean)
+          .join(" — ")
+        if (!feedbackText) {
+          showError("Add a rating or comment before saving.")
+          return
+        }
         const updated = await serviceSessionsApi.updateFeedback(session.id, {
-          rating,
-          comments,
+          feedback: feedbackText,
         })
         setSession(updated)
         showSuccess("Feedback saved")
@@ -254,10 +272,14 @@ function ServiceSessionDetailPage() {
         onOpenChange={setRescheduleOpen}
         currentISO={session.scheduled_at}
         onConfirm={async (iso, notes) => {
+          // BE `ServiceSessionRescheduleRequest` only carries the new datetime.
+          // If reschedule notes are useful, we'd PATCH them via update() after.
           const updated = await serviceSessionsApi.reschedule(session.id, {
-            scheduled_at: iso,
-            notes: notes || null,
+            new_scheduled_at: iso,
           })
+          if (notes?.trim()) {
+            await serviceSessionsApi.update(session.id, { notes: notes.trim() })
+          }
           setSession(updated)
           await queryClient.invalidateQueries({
             queryKey: ["service-sessions", "list"],

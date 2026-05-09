@@ -74,7 +74,7 @@ export function useEntityDetail<T>({
   } as UseQueryOptions<T>)
 }
 
-export interface UseEntityMutationOptions<TVariables, TResult>
+export interface UseEntityMutationOptions<TVariables = void, TResult = unknown>
   extends Omit<UseMutationOptions<TResult, unknown, TVariables>, 'mutationFn'> {
   resource: string
   mutationFn: (vars: TVariables) => Promise<TResult>
@@ -90,7 +90,7 @@ export interface UseEntityMutationOptions<TVariables, TResult>
   invalidateKeys?: QueryKey[] | ((result: TResult, vars: TVariables) => QueryKey[])
 }
 
-export function useEntityMutation<TVariables, TResult>(
+export function useEntityMutation<TVariables = void, TResult = unknown>(
   opts: UseEntityMutationOptions<TVariables, TResult>,
 ) {
   const qc = useQueryClient()

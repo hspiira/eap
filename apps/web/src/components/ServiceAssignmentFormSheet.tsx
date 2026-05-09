@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { z } from "zod"
 
+import type { ServiceAssignmentCreate } from "@/api/generated"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
@@ -10,26 +11,24 @@ import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 
-const schema = z
-  .object({
-    contract_id: z.string().trim().min(1, "Contract is required"),
-    service_id: z.string().trim().min(1, "Service is required"),
-    start_date: z.string().optional(),
-    end_date: z.string().optional(),
-  })
-  .refine((d) => !d.end_date || !d.start_date || d.end_date >= d.start_date, {
-    path: ["end_date"],
-    message: "End date must be on or after start date",
-  })
+// Schema mirrors the BE `ServiceAssignmentCreate` (see openapi.json). Active-
+// period dates are intentionally derived from the parent contract on the BE,
+// so we don't collect them here.
+const schema = z.object({
+  contract_id: z.string().trim().min(1, "Contract is required"),
+  service_id: z.string().trim().min(1, "Service is required"),
+  notes: z.string().optional(),
+})
 
 type Values = z.infer<typeof schema>
 
-const EMPTY: Values = { contract_id: "", service_id: "", start_date: "", end_date: "" }
+const EMPTY: Values = { contract_id: "", service_id: "", notes: "" }
 
 interface ServiceAssignmentFormSheetProps {
   open: boolean
@@ -69,14 +68,12 @@ export function ServiceAssignmentFormSheet({
       toFormValues: (a) => ({
         contract_id: a.contract_id,
         service_id: a.service_id,
-        start_date: a.start_date ?? "",
-        end_date: a.end_date ?? "",
+        notes: a.notes ?? "",
       }),
-      parsePayload: (values) => ({
+      parsePayload: (values): ServiceAssignmentCreate => ({
         contract_id: values.contract_id,
         service_id: values.service_id,
-        start_date: values.start_date || undefined,
-        end_date: values.end_date || undefined,
+        notes: values.notes?.trim() || null,
       }),
       save: ({ payload, entity, isEdit }) =>
         isEdit && entity
@@ -153,27 +150,22 @@ export function ServiceAssignmentFormSheet({
       </FormSection>
 
       <FormSection
-        title="Active period"
-        description="Optional. Leave blank to inherit the contract's term."
+        title="Notes"
+        description="Optional. Active-period dates derive from the parent contract."
       >
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Start date"
-            optional
-            error={errors.start_date?.message}
-            htmlFor="sa-start"
-          >
-            <Input id="sa-start" type="date" {...register("start_date")} />
-          </FormField>
-          <FormField
-            label="End date"
-            optional
-            error={errors.end_date?.message}
-            htmlFor="sa-end"
-          >
-            <Input id="sa-end" type="date" {...register("end_date")} />
-          </FormField>
-        </div>
+        <FormField
+          label="Notes"
+          optional
+          error={errors.notes?.message}
+          htmlFor="sa-notes"
+        >
+          <Textarea
+            id="sa-notes"
+            rows={3}
+            placeholder="Internal notes about this service assignment…"
+            {...register("notes")}
+          />
+        </FormField>
       </FormSection>
     </SheetForm>
   )

@@ -13,6 +13,7 @@ export default tseslint.config(
       '.vinxi/**',
       'node_modules/**',
       'src/routeTree.gen.ts',
+      'src/api/generated/schema.ts',
     ],
   },
   js.configs.recommended,
@@ -73,7 +74,7 @@ export default tseslint.config(
   {
     files: ['src/components/**/*.{ts,tsx}', 'src/routes/**/*.{ts,tsx}'],
     ignores: [
-      'src/components/ui/chart.tsx',
+      'src/components/ui/**',
       'src/routes/tags/$tagId.tsx',
       'src/routes/tags/new.tsx',
     ],
@@ -89,6 +90,16 @@ export default tseslint.config(
           selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,6}\\b/]",
           message:
             'No raw hex literals in components/routes — use a CSS var (defined in src/theme/). See docs/CODING_GUIDELINES.md §1.8.',
+        },
+        // C22: Shadcn-only UI primitives. Use Input, Select, Textarea, Button,
+        // Table, Dialog, Collapsible, Progress, Checkbox, RadioGroup from
+        // @/components/ui/ instead of native HTML primitives.
+        // <form> is exempt: shadcn Form is FormProvider (RHF), not a <form> renderer.
+        {
+          selector:
+            "JSXOpeningElement[name.type='JSXIdentifier'][name.name=/^(input|select|textarea|button|table|dialog|details|progress)$/]",
+          message:
+            'No native HTML primitive in components/routes — use the shadcn equivalent from @/components/ui/. See docs/IMPLEMENTATION_PLAN.md (C22).',
         },
       ],
     },

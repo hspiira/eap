@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { type QueryKey, useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
@@ -41,6 +41,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
+import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import {
   EngagementStatusPill,
@@ -84,7 +85,6 @@ const DELIVERABLE_STATUS_OPTIONS: DeliverableStatus[] = [
 function EngagementDetailPage() {
   const { engagementId } = Route.useParams()
   const navigate = useNavigate()
-  const qc = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
@@ -119,12 +119,11 @@ function EngagementDetailPage() {
     enabled: !!leadId,
   })
 
-  const transitionMutation = useMutation({
+  const transitionMutation = useEntityMutation({
+    resource: "engagements",
     mutationFn: (to: EngagementStatus) => engagementsApi.transition(engagementId, to),
-    onSuccess: async (e) => {
-      showSuccess(`Status: ${e.status}`)
-      await qc.invalidateQueries({ queryKey: ["engagements"] })
-    },
+    detailId: engagementId,
+    onSuccess: (e) => showSuccess(`Status: ${e.status}`),
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
@@ -440,36 +439,40 @@ function DeliverablesPanel({
   deliverables: EngagementDeliverable[]
   loading: boolean
 }) {
-  const qc = useQueryClient()
   const { showError } = useToast()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [dueDate, setDueDate] = useState("")
 
-  const createMutation = useMutation({
+  const deliverableInvalidateKeys: QueryKey[] = [
+    ["engagements", "deliverables", engagementId],
+    ["engagements", "timeline", engagementId],
+  ]
+
+  const createMutation = useEntityMutation({
+    resource: "engagements",
     mutationFn: () =>
       engagementsApi.createDeliverable({
         engagement_id: engagementId,
         title: title.trim(),
         due_date: dueDate || null,
       }),
-    onSuccess: async () => {
+    skipListInvalidation: true,
+    invalidateKeys: deliverableInvalidateKeys,
+    onSuccess: () => {
       setTitle("")
       setDueDate("")
       setOpen(false)
-      await qc.invalidateQueries({ queryKey: ["engagements", "deliverables", engagementId] })
-      await qc.invalidateQueries({ queryKey: ["engagements", "timeline", engagementId] })
     },
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
-  const updateMutation = useMutation({
+  const updateMutation = useEntityMutation({
+    resource: "engagements",
     mutationFn: ({ id, status }: { id: string; status: DeliverableStatus }) =>
       engagementsApi.updateDeliverableStatus(id, status),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["engagements", "deliverables", engagementId] })
-      await qc.invalidateQueries({ queryKey: ["engagements", "timeline", engagementId] })
-    },
+    skipListInvalidation: true,
+    invalidateKeys: deliverableInvalidateKeys,
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
@@ -589,7 +592,6 @@ function HoursPanel({
   entries: EngagementTimeEntry[]
   loading: boolean
 }) {
-  const qc = useQueryClient()
   const { showError } = useToast()
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
 
@@ -600,7 +602,8 @@ function HoursPanel({
   const [description, setDescription] = useState("")
   const [deliverableId, setDeliverableId] = useState("")
 
-  const logMutation = useMutation({
+  const logMutation = useEntityMutation({
+    resource: "engagements",
     mutationFn: () =>
       engagementsApi.logTime({
         engagement_id: engagementId,
@@ -610,13 +613,16 @@ function HoursPanel({
         description: description.trim() || null,
         deliverable_id: deliverableId || null,
       }),
-    onSuccess: async () => {
+    detailId: engagementId,
+    skipListInvalidation: true,
+    invalidateKeys: [
+      ["engagements", "time", engagementId],
+      ["engagements", "timeline", engagementId],
+    ],
+    onSuccess: () => {
       setHours("")
       setDescription("")
       setDeliverableId("")
-      await qc.invalidateQueries({ queryKey: ["engagements", "time", engagementId] })
-      await qc.invalidateQueries({ queryKey: ["engagements", "detail", engagementId] })
-      await qc.invalidateQueries({ queryKey: ["engagements", "timeline", engagementId] })
     },
     onError: (err) => showError(defaultErrorMessage(err)),
   })

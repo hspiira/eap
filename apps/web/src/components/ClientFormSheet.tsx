@@ -1,6 +1,7 @@
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
+import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { clientsApi } from "@/api/endpoints/clients"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -19,26 +20,43 @@ import { ClientTier } from "@/types/enums"
 
 const TIER_VALUES = [ClientTier.A, ClientTier.B, ClientTier.C] as const
 
-const clientSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  code: z
-    .string()
-    .trim()
-    .min(3, "Code must be 3–5 characters")
-    .max(5, "Code must be 3–5 characters"),
-  tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
-  email: z
-    .string()
-    .trim()
-    .optional()
-    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  billing_street: z.string().optional(),
-  billing_city: z.string().optional(),
-  billing_postal: z.string().optional(),
-  billing_country: z.string().optional(),
-})
+const clientSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required"),
+    code: z
+      .string()
+      .trim()
+      .min(3, "Code must be 3–5 characters")
+      .max(5, "Code must be 3–5 characters"),
+    tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
+    email: z
+      .string()
+      .trim()
+      .optional()
+      .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    // BE `AddressCreate` requires street/city/country; postal_code is optional.
+    // If ANY billing field is set, the user must fill the required trio.
+    billing_street: z.string().optional(),
+    billing_city: z.string().optional(),
+    billing_postal: z.string().optional(),
+    billing_country: z.string().optional(),
+  })
+  .superRefine((d, ctx) => {
+    const anyBilling =
+      d.billing_street || d.billing_city || d.billing_postal || d.billing_country
+    if (!anyBilling) return
+    for (const f of ["billing_street", "billing_city", "billing_country"] as const) {
+      if (!d[f]?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          path: [f],
+          message: "Required when any billing field is set",
+        })
+      }
+    }
+  })
 
 type ClientFormValues = z.infer<typeof clientSchema>
 
@@ -71,7 +89,7 @@ export function ClientFormSheet({
 }: ClientFormSheetProps) {
   const { register, control, formState, submit, serverError, isEdit } = useEntityFormSheet<
     ClientFormValues,
-    Parameters<typeof clientsApi.create>[0],
+    ClientCreate & { __tier?: ClientTier | null },
     Client,
     Client
   >({
@@ -96,23 +114,42 @@ export function ClientFormSheet({
     parsePayload: (values) => ({
       name: values.name,
       code: values.code,
-      tier: values.tier ? (values.tier as ClientTier) : null,
       contact_info: {
         email: values.email || null,
         phone: values.phone || null,
         address: values.address || null,
       },
-      billing_address: hasBillingFields(values)
-        ? {
-            street: values.billing_street || null,
-            city: values.billing_city || null,
-            postal_code: values.billing_postal || null,
-            country: values.billing_country || null,
-          }
-        : null,
+      billing_address:
+        values.billing_street && values.billing_city && values.billing_country
+          ? {
+              street: values.billing_street,
+              city: values.billing_city,
+              country: values.billing_country,
+              postal_code: values.billing_postal || null,
+            }
+          : null,
+      // Carried out-of-band so create payload matches BE strict shape.
+      __tier: values.tier ? (values.tier as ClientTier) : null,
     }),
-    save: ({ payload, entity, isEdit }) =>
-      isEdit && entity ? clientsApi.update(entity.id, payload) : clientsApi.create(payload),
+    save: async ({ payload, entity, isEdit }) => {
+      const { __tier, ...createPayload } = payload
+      let saved: Client
+      if (isEdit && entity) {
+        // BE `ClientUpdate` only accepts `{name?, preferred_contact_method?, tier?}`.
+        // Send name in the basic update; tier goes through the dedicated route.
+        const update: ClientUpdate = { name: createPayload.name }
+        saved = await clientsApi.update(entity.id, update)
+        if (__tier !== (entity.tier ?? null)) {
+          saved = await clientsApi.setTier(entity.id, __tier ?? null)
+        }
+      } else {
+        saved = await clientsApi.create(createPayload)
+        if (__tier) {
+          saved = await clientsApi.setTier(saved.id, __tier)
+        }
+      }
+      return saved
+    },
     successToast: { create: "Client created", update: "Client updated" },
     onSaved,
   })
@@ -258,11 +295,3 @@ export function ClientFormSheet({
   )
 }
 
-function hasBillingFields(v: ClientFormValues): boolean {
-  return Boolean(
-    v.billing_street?.trim() ||
-      v.billing_city?.trim() ||
-      v.billing_postal?.trim() ||
-      v.billing_country?.trim(),
-  )
-}

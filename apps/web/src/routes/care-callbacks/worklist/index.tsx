@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   AlertTriangle,
@@ -79,7 +79,6 @@ function WorklistPage() {
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [sort, setSort] = useState<SortState>({ field: "next_attempt_at", desc: false })
-  const queryClient = useQueryClient()
 
   const query = useQuery({
     queryKey: [
@@ -100,8 +99,7 @@ function WorklistPage() {
     sort,
   })
   const loading = query.isPending
-  const refetch = () =>
-    queryClient.invalidateQueries({ queryKey: ["care-callback-cases", "list"] })
+  const refetch = () => void query.refetch()
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as CallbackCaseStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })

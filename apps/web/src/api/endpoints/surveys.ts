@@ -1,6 +1,16 @@
 /**
- * Survey API (Phase 3 #2). Fixture-driven until BE Phase 3 #3 lands.
+ * Survey API (Phase 3 #2). Fixture-driven until BE wire-up lands.
  * Toggle with `VITE_SURVEYS_USE_FIXTURE=false`.
+ *
+ * **Live-mode path drift (BE confirmed via openapi.json):**
+ * - BE base path is `/survey-campaigns` (not `/v1/surveys`).
+ * - BE `webhook_secret` is generated server-side; do not POST it from FE.
+ * - BE has no `rotate-token` route — webhook secret rotation flow TBD.
+ * - Live shape is `SurveyCampaignCreate` from `@/api/generated`, not the
+ *   fixture `SurveyCreateInput` (which is FE-form-shaped).
+ *
+ * When real BE is wired, replace the live branches below and adapt the form
+ * to consume the BE-returned `webhook_secret`.
  */
 
 import apiClient from '../client'

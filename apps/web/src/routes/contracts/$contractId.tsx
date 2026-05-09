@@ -566,8 +566,7 @@ function ServicesPanel({
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Service</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Start</TableHead>
-              <TableHead>End</TableHead>
+              <TableHead>Notes</TableHead>
               <TableHead className="w-10 text-right text-fg/65">
                 <span className="sr-only">Open</span>
               </TableHead>
@@ -588,8 +587,9 @@ function ServicesPanel({
                 <TableCell>
                   <StatusBadge status={a.status} />
                 </TableCell>
-                <TableCell className="text-sm text-fg/75">{a.start_date ?? "—"}</TableCell>
-                <TableCell className="text-sm text-fg/75">{a.end_date ?? "—"}</TableCell>
+                <TableCell className="text-sm text-fg/75 truncate max-w-[24ch]">
+                  {a.notes ?? <span className="text-fg/40">—</span>}
+                </TableCell>
                 <TableCell className="text-right">
                   <Link
                     to="/service-assignments/$assignmentId"

@@ -211,8 +211,7 @@ function ServiceAssignmentDetailPage() {
                         label="Status"
                         value={<StatusBadge status={assignment.status} />}
                       />
-                      <DetailRow label="Start date" value={assignment.start_date} />
-                      <DetailRow label="End date" value={assignment.end_date} />
+                      <DetailRow label="Notes" value={assignment.notes ?? "—"} fullWidth />
                       <DetailRow
                         label="Assignment ID"
                         value={
@@ -350,9 +349,10 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
     <div className="space-y-5">
       <RailSection title="Active period">
         <DetailGrid>
-          <DetailRow label="Start" value={assignment.start_date} />
-          <DetailRow label="End" value={assignment.end_date} />
+          <DetailRow label="Start" value={contract?.start_date ?? "—"} />
+          <DetailRow label="End" value={contract?.end_date ?? "—"} />
         </DetailGrid>
+        <p className="mt-2 text-[11px] text-fg/50">Inherited from the parent contract.</p>
       </RailSection>
 
       {contract ? (

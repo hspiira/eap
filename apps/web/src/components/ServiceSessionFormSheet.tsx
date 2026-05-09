@@ -102,6 +102,7 @@ export function ServiceSessionFormSheet({
       Values,
       Parameters<typeof serviceSessionsApi.create>[0] & {
         __isBackfill?: boolean
+        __backfillReason?: string | null
       },
       ServiceSession,
       ServiceSession
@@ -113,40 +114,41 @@ export function ServiceSessionFormSheet({
       onOpenChange,
       entity: session,
       toFormValues,
+      // BE `ServiceSessionCreate` only accepts `{service_id, provider_id,
+      // person_id, scheduled_at, location?}`. `notes`, `diagnosis_*`, and
+      // `metadata` are NOT accepted at create time — `notes` belongs on the
+      // complete-request, diagnosis is set via a separate flow, backfill
+      // intent is communicated by the FE via `__isBackfill` and translated
+      // into a `complete()` call after create.
       parsePayload: (values) => {
         const isBackfill = !session && Boolean(values.is_backfill)
-        const backfillMetadata = isBackfill
-          ? {
-              backfill: {
-                logged_at: new Date().toISOString(),
-                reason: values.backfill_reason?.trim() || null,
-                source: "manual_entry",
-              },
-            }
-          : undefined
         return {
           service_id: values.service_id,
           person_id: values.person_id,
-          service_provider_id: values.service_provider_id || null,
-          contract_id: values.contract_id || null,
+          provider_id: values.service_provider_id || "",
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
-          notes: values.notes?.trim() || null,
-          diagnosis_id: values.diagnosis_id || null,
-          diagnosis_text: FREETEXT_FALLBACK_ENABLED
-            ? values.diagnosis_text?.trim() || null
-            : null,
-          ...(backfillMetadata ? { metadata: backfillMetadata } : {}),
           __isBackfill: isBackfill,
+          __backfillReason: isBackfill ? (values.backfill_reason?.trim() || null) : null,
         }
       },
       save: async ({ payload, entity, isEdit }) => {
-        const { __isBackfill, ...body } = payload
+        const { __isBackfill, __backfillReason, ...body } = payload
+        // BE `ServiceSessionUpdate` (PATCH) shape may differ from create —
+        // for now we send the same body and the BE silently ignores extras
+        // on update. Once openapi.json exposes ServiceSessionUpdate we can
+        // tighten this.
         let result = isEdit && entity
           ? await serviceSessionsApi.update(entity.id, body)
           : await serviceSessionsApi.create(body)
         if (__isBackfill && result?.id) {
-          result = await serviceSessionsApi.complete(result.id)
+          // BE `ServiceSessionCompleteRequest` requires `{duration, notes}`.
+          // Backfill defaults to the service's scheduled duration; the user-
+          // typed reason becomes the completion note.
+          result = await serviceSessionsApi.complete(result.id, {
+            duration: 60, // TODO: read from selected Service.duration_minutes
+            notes: __backfillReason ?? "Backfilled from manual entry",
+          })
         }
         return result
       },

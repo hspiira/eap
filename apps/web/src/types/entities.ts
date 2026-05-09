@@ -266,14 +266,21 @@ export interface Service extends BaseEntity {
   name: string
   description?: string | null
   status: BaseStatus
-  service_type?: string | null
   category?: string | null
   duration_minutes?: number | null
+  /** Whether this is a group service per BE `ServiceResponse.is_group_service`. */
+  is_group_service?: boolean
+  /** Group session capacity cap per BE `ServiceResponse.max_participants`. */
+  max_participants?: number | null
+  /** @deprecated Not on BE — kept temporarily for legacy callers; will be removed. */
+  service_type?: string | null
+  /** @deprecated Use `is_group_service` + `max_participants`. */
   group_settings?: {
     max_group_size?: number | null
     min_group_size?: number | null
     allow_group_sessions?: boolean
   } | null
+  /** @deprecated Not on BE response. */
   metadata?: Record<string, unknown> | null
 }
 
@@ -457,9 +464,8 @@ export interface ServiceAssignment extends BaseEntity {
   contract_id: string
   service_id: string
   status: BaseStatus
-  start_date?: string | null
-  end_date?: string | null
-  metadata?: Record<string, unknown> | null
+  /** Internal notes per BE `ServiceAssignmentResponse.notes`. */
+  notes?: string | null
 }
 
 /**

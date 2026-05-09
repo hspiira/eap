@@ -1,6 +1,7 @@
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
+import type { ServiceCreate, ServiceUpdateGroupSettings } from "@/api/generated"
 import { servicesApi } from "@/api/endpoints/services"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -17,66 +18,49 @@ import {
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Service } from "@/types/entities"
 
-const SERVICE_TYPE_OPTIONS = [
-  "INDIVIDUAL_COUNSELLING",
-  "COUPLE_COUNSELLING",
-  "FAMILY_THERAPY",
-  "GROUP_COUNSELLING",
-  "HEALTH_TALK",
-  "EMPOWERMENT_TALK",
-  "COACHING",
-  "CARE_CALLBACK",
-  "POLICY_ADVISORY",
-  "SURVEY",
-  "AWARENESS",
-  "CISM_DEFUSING",
-  "CISM_DEBRIEFING",
-  "CRITICAL_INCIDENT_RESPONSE",
+// Note: BE `ServiceCreate` does not have a `service_type` field. The category
+// label below is freeform per BE; service_type is intentionally dropped from
+// the create payload until BE adds it (file ticket if needed).
+const CATEGORY_OPTIONS = [
+  "Individual counselling",
+  "Couple counselling",
+  "Family therapy",
+  "Group counselling",
+  "Health talk",
+  "Empowerment talk",
+  "Coaching",
+  "Care callback",
+  "Policy advisory",
+  "Survey",
+  "Awareness",
+  "CISM",
+  "Critical incident response",
 ] as const
 
-const schema = z
-  .object({
-    name: z.string().trim().min(1, "Name is required"),
-    description: z.string().optional(),
-    service_type: z.string().optional(),
-    category: z.string().optional(),
-    duration_minutes: z
-      .string()
-      .optional()
-      .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
-    allow_group_sessions: z.boolean().optional(),
-    min_group_size: z
-      .string()
-      .optional()
-      .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
-    max_group_size: z
-      .string()
-      .optional()
-      .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
-  })
-  .refine(
-    (d) =>
-      !d.allow_group_sessions ||
-      !d.min_group_size ||
-      !d.max_group_size ||
-      Number(d.min_group_size) <= Number(d.max_group_size),
-    {
-      path: ["max_group_size"],
-      message: "Max must be ≥ min",
-    },
-  )
+const schema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  duration_minutes: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+  is_group_service: z.boolean().optional(),
+  max_participants: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+})
 
 type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   name: "",
   description: "",
-  service_type: "",
   category: "",
   duration_minutes: "",
-  allow_group_sessions: false,
-  min_group_size: "",
-  max_group_size: "",
+  is_group_service: false,
+  max_participants: "",
 }
 
 interface ServiceFormSheetProps {
@@ -105,28 +89,43 @@ export function ServiceFormSheet({
     onOpenChange,
     entity: service,
     toFormValues,
-    parsePayload: (values) => ({
+    parsePayload: (values): ServiceCreate => ({
       name: values.name,
-      description: values.description?.trim() || undefined,
-      service_type: values.service_type?.trim() || undefined,
-      category: values.category?.trim() || undefined,
-      duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : undefined,
-      group_settings:
-        values.allow_group_sessions || values.min_group_size || values.max_group_size
-          ? {
-              allow_group_sessions: Boolean(values.allow_group_sessions),
-              min_group_size: values.min_group_size ? Number(values.min_group_size) : null,
-              max_group_size: values.max_group_size ? Number(values.max_group_size) : null,
-            }
-          : undefined,
+      description: values.description?.trim() || null,
+      category: values.category?.trim() || null,
+      duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : null,
+      is_group_service: Boolean(values.is_group_service),
+      max_participants:
+        values.is_group_service && values.max_participants
+          ? Number(values.max_participants)
+          : null,
     }),
-    save: ({ payload, entity, isEdit }) =>
-      isEdit && entity ? servicesApi.update(entity.id, payload) : servicesApi.create(payload),
+    save: async ({ payload, entity, isEdit }) => {
+      if (isEdit && entity) {
+        // BE `ServiceUpdate` doesn't accept `is_group_service`/`max_participants`.
+        // Send the basic fields first, then PATCH group settings via the
+        // dedicated route if they changed.
+        const { is_group_service, max_participants, ...basic } = payload
+        const updated = await servicesApi.update(entity.id, basic)
+        const groupSettings: ServiceUpdateGroupSettings = {
+          is_group_service,
+          max_participants,
+        }
+        if (
+          is_group_service !== entity.is_group_service ||
+          max_participants !== entity.max_participants
+        ) {
+          return servicesApi.updateGroupSettings(entity.id, groupSettings)
+        }
+        return updated
+      }
+      return servicesApi.create(payload)
+    },
     successToast: { create: "Service created", update: "Service updated" },
     onSaved,
   })
 
-  const allowGroup = watch("allow_group_sessions")
+  const allowGroup = watch("is_group_service")
 
   const errors = formState.errors
 
@@ -170,41 +169,33 @@ export function ServiceFormSheet({
       </FormSection>
 
       <FormSection
-        title="Classification"
+        title="Category"
         description="Used by reports and to map to delivery taxonomies."
       >
-        <FormField
-          label="Type"
-          optional
-          error={errors.service_type?.message}
-          htmlFor="sv-type"
-        >
-          <Controller
-            control={control}
-            name="service_type"
-            render={({ field }) => (
-              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                <SelectTrigger id="sv-type">
-                  <SelectValue placeholder="Unset" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SERVICE_TYPE_OPTIONS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {humanize(t)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </FormField>
         <FormField
           label="Category"
           optional
           error={errors.category?.message}
           htmlFor="sv-category"
         >
-          <Input id="sv-category" placeholder="e.g. Counselling" {...register("category")} />
+          <Controller
+            control={control}
+            name="category"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="sv-category">
+                  <SelectValue placeholder="Unset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
 
@@ -235,52 +226,35 @@ export function ServiceFormSheet({
         <div className="flex items-center gap-2">
           <Controller
             control={control}
-            name="allow_group_sessions"
+            name="is_group_service"
             render={({ field }) => (
               <Checkbox
-                id="sv-allow-group"
+                id="sv-is-group"
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />
             )}
           />
-          <label htmlFor="sv-allow-group" className="cursor-pointer text-sm text-fg">
-            Allow group sessions
+          <label htmlFor="sv-is-group" className="cursor-pointer text-sm text-fg">
+            This is a group service
           </label>
         </div>
         {allowGroup ? (
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              label="Min group size"
-              optional
-              error={errors.min_group_size?.message}
-              htmlFor="sv-min"
-            >
-              <Input
-                id="sv-min"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                className="font-mono"
-                {...register("min_group_size")}
-              />
-            </FormField>
-            <FormField
-              label="Max group size"
-              optional
-              error={errors.max_group_size?.message}
-              htmlFor="sv-max"
-            >
-              <Input
-                id="sv-max"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                className="font-mono"
-                {...register("max_group_size")}
-              />
-            </FormField>
-          </div>
+          <FormField
+            label="Max participants"
+            optional
+            error={errors.max_participants?.message}
+            htmlFor="sv-max"
+          >
+            <Input
+              id="sv-max"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              className="font-mono"
+              {...register("max_participants")}
+            />
+          </FormField>
         ) : null}
       </FormSection>
     </SheetForm>
@@ -291,27 +265,18 @@ function toFormValues(s: Service): Values {
   return {
     name: s.name,
     description: s.description ?? "",
-    service_type: s.service_type ?? "",
     category: s.category ?? "",
     duration_minutes:
       s.duration_minutes != null ? String(s.duration_minutes) : "",
-    allow_group_sessions: Boolean(s.group_settings?.allow_group_sessions),
-    min_group_size:
-      s.group_settings?.min_group_size != null
-        ? String(s.group_settings.min_group_size)
-        : "",
-    max_group_size:
-      s.group_settings?.max_group_size != null
-        ? String(s.group_settings.max_group_size)
-        : "",
+    is_group_service: Boolean(s.is_group_service),
+    max_participants:
+      s.max_participants != null ? String(s.max_participants) : "",
   }
 }
 
-function humanize(value: string): string {
+export function humanizeServiceType(value: string): string {
   return value
     .split("_")
     .map((w) => w[0] + w.slice(1).toLowerCase())
     .join(" ")
 }
-
-export { humanize as humanizeServiceType }
