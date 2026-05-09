@@ -10,17 +10,17 @@ import {
 } from 'lucide-react'
 
 import {
-  ActivityFeedCard,
   type Activity,
+  ActivityFeedCard,
 } from '@/components/ActivityFeedCard'
-import { ClientAlertsCard, type ClientAlert } from '@/components/ClientAlertsCard'
-import { OnboardingProgressCard } from '@/components/OnboardingProgressCard'
-import { GalleryControls } from '@/components/gallery/GalleryControls'
-import { GallerySection, GallerySpecimen } from '@/components/gallery/GallerySection'
+import { type ClientAlert,ClientAlertsCard } from '@/components/ClientAlertsCard'
 import { ProviderTierBadge } from '@/components/common/ProviderTierBadge'
 import { SeverityBadge } from '@/components/common/SeverityBadge'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { TierBadge } from '@/components/common/TierBadge'
+import { GalleryControls } from '@/components/gallery/GalleryControls'
+import { GallerySection, GallerySpecimen } from '@/components/gallery/GallerySection'
+import { OnboardingProgressCard } from '@/components/OnboardingProgressCard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

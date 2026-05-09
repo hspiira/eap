@@ -1,6 +1,5 @@
-import { ArrowUpRight, ShieldCheck } from 'lucide-react'
-
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { ArrowUpRight, ShieldCheck } from 'lucide-react'
 
 import { AppLayout } from '@/components/AppLayout'
 import { Button } from '@/components/ui/button'

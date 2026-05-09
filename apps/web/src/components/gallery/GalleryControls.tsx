@@ -1,4 +1,4 @@
-import { useTheme, type ThemePreference } from '@/contexts/ThemeContext'
+import { type ThemePreference,useTheme } from '@/contexts/ThemeContext'
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string }> = [
   { value: 'light', label: 'Light' },

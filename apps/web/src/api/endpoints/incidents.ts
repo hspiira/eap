@@ -3,9 +3,10 @@
  * Toggle with `VITE_INCIDENTS_USE_FIXTURE=false` once the BE endpoint is live.
  */
 
+import type { IncidentSeverity } from '@/types/enums'
+
 import apiClient from '../client'
 import type { Incident, IncidentTimelineEvent, PaginatedResponse } from '../types'
-
 import {
   fixtureAppendNote,
   fixtureCreate,
@@ -13,7 +14,6 @@ import {
   fixtureGetById,
   fixtureGetTimeline,
 } from './incidents-fixture'
-import type { IncidentSeverity } from '@/types/enums'
 
 export interface IncidentCreate {
   client_id: string

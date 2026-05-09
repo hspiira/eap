@@ -6,7 +6,6 @@ import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
 import { industriesApi } from "@/api/endpoints/industries"
 import { AppLayout } from "@/components/AppLayout"
-import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -23,6 +22,7 @@ import {
 } from "@/components/common/SortHeader"
 import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
+import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import {

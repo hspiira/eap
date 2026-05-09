@@ -7,15 +7,16 @@ import {
   Building2,
   ChevronRight,
   Pencil,
+  Plus,
   RotateCw,
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { ClientActivityCard } from "@/components/ClientActivityCard"
-import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientAlert } from "@/components/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/ClientAlertsCard"
+import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
 import { ClientDetailSkeleton } from "@/components/ClientsPageSkeletons"
@@ -36,6 +37,7 @@ import {
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { TierBadge } from "@/components/common/TierBadge"
+import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -73,6 +75,7 @@ function ClientDetailPage() {
   const [tagsLoading, setTagsLoading] = useState(false)
   const [tab, setTab] = useState<TabValue>("overview")
   const [editOpen, setEditOpen] = useState(false)
+  const [addContractOpen, setAddContractOpen] = useState(false)
 
   const fetchClient = useCallback(async () => {
     try {
@@ -90,11 +93,22 @@ function ClientDetailPage() {
     fetchClient()
   }, [fetchClient])
 
+  const fetchContracts = useCallback(() => {
+    setContractsLoading(true)
+    return contractsApi
+      .list({ limit: 20, ...({ client_id: clientId } as Record<string, unknown>) })
+      .then((res) => {
+        const items = (res.items ?? []).filter((c: Contract) => c.client_id === clientId)
+        setContracts(items.slice(0, 10))
+      })
+      .catch(() => setContracts([]))
+      .finally(() => setContractsLoading(false))
+  }, [clientId])
+
   useEffect(() => {
     if (!client) return
     setStatsLoading(true)
     setChildrenLoading(true)
-    setContractsLoading(true)
     setTagsLoading(true)
 
     clientsApi
@@ -109,21 +123,14 @@ function ClientDetailPage() {
       .catch(() => setChildren([]))
       .finally(() => setChildrenLoading(false))
 
-    contractsApi
-      .list({ limit: 20, ...({ client_id: clientId } as Record<string, unknown>) })
-      .then((res) => {
-        const items = (res.items ?? []).filter((c: Contract) => c.client_id === clientId)
-        setContracts(items.slice(0, 10))
-      })
-      .catch(() => setContracts([]))
-      .finally(() => setContractsLoading(false))
+    fetchContracts()
 
     clientsApi
       .getTags(clientId)
       .then(setTags)
       .catch(() => setTags([]))
       .finally(() => setTagsLoading(false))
-  }, [client, clientId])
+  }, [client, clientId, fetchContracts])
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -325,6 +332,17 @@ function ClientDetailPage() {
         onSaved={(updated) => setClient(updated)}
       />
 
+      <ContractFormSheet
+        open={addContractOpen}
+        onOpenChange={setAddContractOpen}
+        clientId={clientId}
+        client={client}
+        onSaved={() => {
+          fetchContracts()
+          setTab("contracts")
+        }}
+      />
+
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
@@ -355,7 +373,11 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="contracts">
-                <ContractsPanel contracts={contracts} loading={contractsLoading} />
+                <ContractsPanel
+                  contracts={contracts}
+                  loading={contractsLoading}
+                  onAdd={() => setAddContractOpen(true)}
+                />
               </TabPanel>
 
               <TabPanel value="staff">
@@ -412,9 +434,11 @@ function Hero({ client, verified }: { client: Client; verified: boolean }) {
 function ContractsPanel({
   contracts,
   loading,
+  onAdd,
 }: {
   contracts: Contract[]
   loading: boolean
+  onAdd: () => void
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
@@ -431,11 +455,27 @@ function ContractsPanel({
       <EmptyState
         title="No contracts yet"
         description="Add a contract once it's signed."
+        action={
+          <Button size="sm" className="gap-1.5" onClick={onAdd}>
+            <Plus className="size-4" />
+            Add contract
+          </Button>
+        }
       />
     )
   }
   return (
-    <div className="overflow-hidden border border-fg/10 bg-surface">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-fg/55">
+          {contracts.length} contract{contracts.length === 1 ? "" : "s"}
+        </p>
+        <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+          <Plus className="size-3.5" />
+          Add contract
+        </Button>
+      </div>
+      <div className="overflow-hidden border border-fg/10 bg-surface">
       <table className="w-full caption-bottom text-sm">
         <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
           <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
@@ -495,6 +535,7 @@ function ContractsPanel({
           ))}
         </TableBody>
       </table>
+      </div>
     </div>
   )
 }

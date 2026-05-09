@@ -1,6 +1,7 @@
+import { useState } from "react"
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useState } from "react"
 
 import { engagementsApi } from "@/api/endpoints/engagements"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { defaultErrorMessage } from "@/lib/errors"
 import { useAuthStore } from "@/store/slices/authSlice"
-import { DeliverableStatus, EngagementStatus } from "@/types/enums"
+import type { EngagementStatus } from "@/types/enums";
+import { DeliverableStatus } from "@/types/enums"
 
 export const Route = createFileRoute("/engagements/$engagementId")({
   component: EngagementDetailPage,

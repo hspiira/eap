@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import {
   ArrowUpRight,
   Building2,
@@ -8,10 +9,8 @@ import {
   Users,
 } from "lucide-react"
 
-import { Link } from "@tanstack/react-router"
-
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { ClientAlertsCard, type ClientAlert } from "@/components/ClientAlertsCard"
+import { type ClientAlert,ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

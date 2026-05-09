@@ -5,7 +5,6 @@
 
 import apiClient from '../client'
 import type { PaginatedResponse, Survey, SurveyAggregate } from '../types'
-
 import {
   fixtureCloseSurvey,
   fixtureCreateSurvey,

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   CalendarClock,
@@ -6,8 +7,6 @@ import {
   MessageSquare,
   Settings,
 } from "lucide-react"
-
-import { useQuery } from "@tanstack/react-query"
 
 import { auditApi } from "@/api/endpoints/audit"
 import { Badge } from "@/components/ui/badge"

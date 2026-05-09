@@ -3,6 +3,8 @@
  * Toggle with `VITE_ENGAGEMENTS_USE_FIXTURE=false`.
  */
 
+import type { DeliverableStatus, EngagementStatus } from '@/types/enums'
+
 import apiClient from '../client'
 import type {
   Engagement,
@@ -11,7 +13,6 @@ import type {
   EngagementTimelineEvent,
   PaginatedResponse,
 } from '../types'
-
 import {
   type DeliverableCreateInput,
   type EngagementCreateInput,
@@ -28,7 +29,6 @@ import {
   fixtureUpdateDeliverableStatus,
   type TimeEntryCreateInput,
 } from './engagements-fixture'
-import type { DeliverableStatus, EngagementStatus } from '@/types/enums'
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true

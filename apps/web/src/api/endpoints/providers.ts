@@ -3,11 +3,11 @@
  * Toggle with `VITE_PROVIDERS_USE_FIXTURE=false` once the BE endpoint is live.
  */
 
+import type { ProviderRegion, ProviderTier } from '@/types/enums'
+
 import apiClient from '../client'
 import type { ListParams, PaginatedResponse, Provider } from '../types'
-
 import { providersFixture } from './providers-fixture'
-import type { ProviderRegion, ProviderTier } from '@/types/enums'
 
 export interface ProviderListParams extends ListParams {
   tier?: ProviderTier

@@ -4,10 +4,10 @@
  * return values; flip `VITE_PRICING_USE_FIXTURE=false` to swap.
  */
 
+import { PricingModel } from '@/types/enums'
+
 import apiClient from '../client'
 import type { ContractPricing, InvoiceLinePreview } from '../types'
-
-import { PricingModel } from '@/types/enums'
 
 export interface PricingPreviewParams {
   /** Optional projected sessions / utilisation per month for preview math. */

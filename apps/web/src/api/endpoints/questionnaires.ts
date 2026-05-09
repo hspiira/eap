@@ -7,7 +7,6 @@
 
 import apiClient from '../client'
 import type { Questionnaire } from '../types'
-
 import {
   fixtureGetAllQuestionnaires,
   fixtureGetQuestionnaireByCode,

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { careCallbacksApi } from '@/api/endpoints/care-callbacks'
 import {
-  K_ANON_FLOOR,
   fixtureSubmitOutcome,
+  K_ANON_FLOOR,
 } from '@/api/endpoints/care-callbacks-fixture'
 import { PHQ9_ITEM9_KEY } from '@/api/endpoints/questionnaires-fixture'
 import {

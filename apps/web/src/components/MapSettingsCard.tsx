@@ -1,5 +1,6 @@
-import { BookOpen, ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
+
+import { BookOpen, ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {

@@ -5,6 +5,8 @@
  * `VITE_CARE_CALLBACKS_USE_FIXTURE=false` to switch the FE to the live endpoints.
  */
 
+import type { CallbackCaseStatus } from '@/types/enums'
+
 import apiClient from '../client'
 import type {
   CallbackCampaign,
@@ -13,7 +15,6 @@ import type {
   CallbackOutcome,
   PaginatedResponse,
 } from '../types'
-
 import {
   type CampaignCreateInput,
   fixtureAggregateCampaign,
@@ -27,7 +28,6 @@ import {
   fixtureSubmitOutcome,
   type OutcomeSubmitInput,
 } from './care-callbacks-fixture'
-import type { CallbackCaseStatus } from '@/types/enums'
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
