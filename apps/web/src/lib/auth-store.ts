@@ -65,7 +65,7 @@ export const authActions = {
   async logout(): Promise<void> {
     try {
       await authApi.logout()
-    } catch {
+    } catch (_err) {
       // server-side logout is best-effort; always tear down client state
     }
     apiClient.clearAuth()

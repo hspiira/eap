@@ -140,13 +140,13 @@ function IndustriesPage() {
           try {
             const parent = await industriesApi.getById(merged.parent_id)
             setParentIndustry(parent)
-          } catch {
+          } catch (_err) {
             setParentIndustry(null)
           }
         } else {
           setParentIndustry(null)
         }
-      } catch {
+      } catch (_err) {
         if (!rowHint) setSelectedIndustry(null)
         setParentIndustry(null)
         setChildIndustries([])

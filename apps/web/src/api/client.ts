@@ -104,11 +104,11 @@ class ApiClient {
           try {
             const data = await response.clone().json()
             if (data && typeof data.csrf_token === 'string') this.setCsrfToken(data.csrf_token)
-          } catch {
+          } catch (_err) {
             // body may be empty — fine
           }
           return true
-        } catch {
+        } catch (_err) {
           return false
         } finally {
           this.refreshPromise = null
@@ -133,7 +133,7 @@ class ApiClient {
         this.setToken(data.access_token, expiresIn)
         this.setRefreshToken(data.refresh_token)
         return true
-      } catch {
+      } catch (_err) {
         return false
       } finally {
         this.refreshPromise = null
@@ -173,7 +173,7 @@ class ApiClient {
         credentials: 'include',
       })
       return response.ok
-    } catch {
+    } catch (_err) {
       return false
     }
   }
@@ -377,7 +377,7 @@ class ApiClient {
     let body: unknown
     try {
       body = await response.json()
-    } catch {
+    } catch (_err) {
       body = null
     }
 

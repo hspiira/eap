@@ -76,7 +76,7 @@ function PersonDetailPage() {
     try {
       setLoading(true)
       setPerson(await personsApi.getById(personId))
-    } catch {
+    } catch (_err) {
       setPerson(null)
     } finally {
       setLoading(false)

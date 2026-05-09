@@ -107,7 +107,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
       setCopied(true)
       showSuccess(`${label} copied`)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
+    } catch (_err) {
       showError(`Couldn't copy ${label}`)
     }
   }

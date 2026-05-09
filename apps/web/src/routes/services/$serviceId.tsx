@@ -59,7 +59,7 @@ function ServiceDetailPage() {
     try {
       setLoading(true)
       setService(await servicesApi.getById(serviceId))
-    } catch {
+    } catch (_err) {
       setService(null)
     } finally {
       setLoading(false)

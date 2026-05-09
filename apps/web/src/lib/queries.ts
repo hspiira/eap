@@ -82,13 +82,27 @@ export interface UseEntityMutationOptions<TVariables, TResult>
   detailId?: string | ((result: TResult, vars: TVariables) => string | null | undefined)
   /** Skip invalidating list queries (rare). Defaults to false. */
   skipListInvalidation?: boolean
+  /**
+   * Extra query keys to invalidate after success (for nested/related caches).
+   * Can be static or computed from result + variables. Use the broadest prefix
+   * that should refetch (e.g. `['engagements', 'timeline', engagementId]`).
+   */
+  invalidateKeys?: QueryKey[] | ((result: TResult, vars: TVariables) => QueryKey[])
 }
 
 export function useEntityMutation<TVariables, TResult>(
   opts: UseEntityMutationOptions<TVariables, TResult>,
 ) {
   const qc = useQueryClient()
-  const { resource, mutationFn, detailId, skipListInvalidation, onSuccess, ...rest } = opts
+  const {
+    resource,
+    mutationFn,
+    detailId,
+    skipListInvalidation,
+    invalidateKeys,
+    onSuccess,
+    ...rest
+  } = opts
 
   return useMutation({
     mutationFn,
@@ -100,6 +114,13 @@ export function useEntityMutation<TVariables, TResult>(
         typeof detailId === 'function' ? detailId(result, vars) : detailId
       if (id) {
         await qc.invalidateQueries({ queryKey: entityDetailKey(resource, id) })
+      }
+      const extras =
+        typeof invalidateKeys === 'function' ? invalidateKeys(result, vars) : invalidateKeys
+      if (extras && extras.length > 0) {
+        await Promise.all(
+          extras.map((key) => qc.invalidateQueries({ queryKey: key })),
+        )
       }
       onSuccess?.(result, vars, ...rest_args)
     },

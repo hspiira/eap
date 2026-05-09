@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
+import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { SurveyStatusPill } from "@/routes/surveys/index"
 import type { Client, Survey, SurveyAggregate } from "@/types/entities"
@@ -48,7 +49,6 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
 function SurveyDetailPage() {
   const { surveyId } = Route.useParams()
   const navigate = useNavigate()
-  const qc = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
@@ -67,20 +67,23 @@ function SurveyDetailPage() {
     enabled: !!clientId,
   })
 
-  const rotateMutation = useMutation({
+  const rotateMutation = useEntityMutation({
+    resource: "surveys",
     mutationFn: () => surveysApi.rotateWebhookToken(surveyId),
-    onSuccess: async () => {
+    detailId: surveyId,
+    skipListInvalidation: true,
+    onSuccess: () => {
       showSuccess("Webhook token rotated — update the survey provider")
-      await qc.invalidateQueries({ queryKey: ["surveys", "detail", surveyId] })
     },
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
-  const closeMutation = useMutation({
+  const closeMutation = useEntityMutation({
+    resource: "surveys",
     mutationFn: () => surveysApi.close(surveyId),
-    onSuccess: async () => {
+    detailId: surveyId,
+    onSuccess: () => {
       showSuccess("Survey closed")
-      await qc.invalidateQueries({ queryKey: ["surveys"] })
     },
     onError: (err) => showError(defaultErrorMessage(err)),
   })

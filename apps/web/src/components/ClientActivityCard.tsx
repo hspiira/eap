@@ -30,7 +30,7 @@ function formatActivityTime(iso: string): string {
       day: "numeric",
       year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
     })
-  } catch {
+  } catch (_err) {
     return iso
   }
 }

@@ -60,7 +60,7 @@ function ContractDetailPage() {
     try {
       setLoading(true)
       setContract(await contractsApi.getById(contractId))
-    } catch {
+    } catch (_err) {
       setContract(null)
     } finally {
       setLoading(false)

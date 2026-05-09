@@ -72,7 +72,7 @@ function ServiceSessionDetailPage() {
     try {
       setLoading(true)
       setSession(await serviceSessionsApi.getById(sessionId))
-    } catch {
+    } catch (_err) {
       setSession(null)
     } finally {
       setLoading(false)

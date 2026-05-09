@@ -88,7 +88,7 @@ function ClientDetailPage() {
       setLoading(true)
       const data = await clientsApi.getById(clientId)
       setClient(data)
-    } catch {
+    } catch (_err) {
       setClient(null)
     } finally {
       setLoading(false)

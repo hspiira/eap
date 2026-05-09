@@ -83,7 +83,7 @@ function SignupPage() {
       try {
         const result = await tenantsApi.checkCode(codeValue.trim())
         setCodeAvailability({ checking: false, available: result.available })
-      } catch {
+      } catch (_err) {
         setCodeAvailability({ checking: false, available: null })
       }
     }, 500)
@@ -102,7 +102,7 @@ function SignupPage() {
       } else {
         window.location.href = adminCredentials.set_password_url
       }
-    } catch {
+    } catch (_err) {
       window.location.href = adminCredentials.set_password_url
     }
   }

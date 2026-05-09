@@ -43,7 +43,7 @@ export const authApi = {
     if (useAuthCookies()) {
       try {
         await apiClient.post<unknown>('/auth/logout', undefined)
-      } catch {
+      } catch (_err) {
         // Ignore
       }
     } else {
@@ -51,7 +51,7 @@ export const authApi = {
       if (refreshToken) {
         try {
           await apiClient.post<unknown>('/auth/logout', { refresh_token: refreshToken })
-        } catch {
+        } catch (_err) {
           // Ignore
         }
       }

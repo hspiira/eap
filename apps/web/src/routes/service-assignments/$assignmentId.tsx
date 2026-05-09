@@ -48,7 +48,7 @@ function ServiceAssignmentDetailPage() {
     try {
       setLoading(true)
       setAssignment(await serviceAssignmentsApi.getById(assignmentId))
-    } catch {
+    } catch (_err) {
       setAssignment(null)
     } finally {
       setLoading(false)

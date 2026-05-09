@@ -47,7 +47,7 @@ function UserDetailPage() {
     try {
       setLoading(true)
       setUser(await usersApi.getById(userId))
-    } catch {
+    } catch (_err) {
       setUser(null)
     } finally {
       setLoading(false)

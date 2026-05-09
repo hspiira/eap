@@ -19,7 +19,7 @@ function readJson<T>(key: string): Partial<T> {
     if (!raw) return {}
     const parsed = JSON.parse(raw) as unknown
     return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : {}
-  } catch {
+  } catch (_err) {
     return {}
   }
 }
@@ -28,7 +28,7 @@ function writeJson<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
+  } catch (_err) {
     // quota exceeded or storage disabled — ignore
   }
 }
@@ -37,7 +37,7 @@ function remove(key: string): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.removeItem(key)
-  } catch {
+  } catch (_err) {
     // quota exceeded or storage disabled — ignore
   }
 }

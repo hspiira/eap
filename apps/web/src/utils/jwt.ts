@@ -23,7 +23,7 @@ export function decodeJWT(token: string): Record<string, unknown> | null {
     // Decode
     const decoded = atob(padded)
     return JSON.parse(decoded) as Record<string, unknown>
-  } catch {
+  } catch (_err) {
     return null
   }
 }
