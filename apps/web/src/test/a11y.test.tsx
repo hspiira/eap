@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { configureAxe } from 'vitest-axe'
 
 import { ClientForm } from '@/components/ClientForm'
+import { PersonFormSheet } from '@/components/PersonFormSheet'
 import { renderWithProviders } from '@/test/utils'
 
 const axe = configureAxe({
@@ -21,7 +22,7 @@ vi.mock('@/api/endpoints/clients', () => ({
   clientsApi: { create: vi.fn() },
 }))
 vi.mock('@/api/endpoints/persons', () => ({
-  personsApi: { create: vi.fn() },
+  personsApi: { create: vi.fn(), list: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
 }))
 vi.mock('@/api/endpoints/service-sessions', () => ({
   serviceSessionsApi: { create: vi.fn() },
@@ -52,8 +53,10 @@ describe('a11y — gated routes (zero serious/critical issues)', () => {
     await expect(await axe(container)).toHaveNoViolations()
   })
 
-  it('persons/new is accessible', async () => {
-    const container = await renderRoutePage('@/routes/persons/new')
+  it('person form sheet is accessible', async () => {
+    const { container } = renderWithProviders(
+      <PersonFormSheet open onOpenChange={() => {}} />,
+    )
     await expect(await axe(container)).toHaveNoViolations()
   })
 

@@ -51,6 +51,7 @@ export function ClientStaffSummaryCard({
       action={
         <Link
           to="/persons"
+          search={{ client_id: clientId }}
           className="-mr-1 inline-flex h-7 items-center gap-0.5 rounded-sm px-2 text-xs text-fg/60 hover:bg-surface-hover hover:text-fg"
         >
           View details

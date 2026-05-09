@@ -39,6 +39,7 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { TierBadge } from "@/components/common/TierBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
+import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import {
   TableBody,
@@ -49,6 +50,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
+import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -76,6 +78,7 @@ function ClientDetailPage() {
   const [tab, setTab] = useState<TabValue>("overview")
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
+  const [addPersonOpen, setAddPersonOpen] = useState(false)
 
   const fetchClient = useCallback(async () => {
     try {
@@ -343,6 +346,17 @@ function ClientDetailPage() {
         }}
       />
 
+      <PersonFormSheet
+        open={addPersonOpen}
+        onOpenChange={setAddPersonOpen}
+        clientId={clientId}
+        client={client}
+        lockType={PersonType.CLIENT_EMPLOYEE}
+        onSaved={() => {
+          setTab("staff")
+        }}
+      />
+
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
@@ -381,7 +395,23 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="staff">
-                <ClientStaffSummaryCard clientId={clientId} />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-fg/55">
+                      Employees, dependents and providers linked to this client.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1.5 px-2.5"
+                      onClick={() => setAddPersonOpen(true)}
+                    >
+                      <Plus className="size-3.5" />
+                      Add person
+                    </Button>
+                  </div>
+                  <ClientStaffSummaryCard clientId={clientId} />
+                </div>
               </TabPanel>
             </Tabs>
           </div>

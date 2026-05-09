@@ -1,50 +1,39 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { PersonFormSheet } from '@/components/PersonFormSheet'
 import { renderWithProviders } from '@/test/utils'
 import { ApiError } from '@/types/api'
 
 const createMock = vi.fn()
-const navigateMock = vi.fn()
+const listClientsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listPersonsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
 
 vi.mock('@/api/endpoints/persons', () => ({
   personsApi: {
     create: (...args: unknown[]) => createMock(...args),
+    list: (...args: unknown[]) => listPersonsMock(...args),
   },
 }))
 
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-router')>(
-    '@tanstack/react-router',
-  )
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-    createFileRoute: () => (opts: Record<string, unknown>) => ({ options: opts }),
-  }
-})
+vi.mock('@/api/endpoints/clients', () => ({
+  clientsApi: {
+    list: (...args: unknown[]) => listClientsMock(...args),
+  },
+}))
 
 beforeEach(() => {
   createMock.mockReset()
-  navigateMock.mockReset()
+  listClientsMock.mockClear()
+  listPersonsMock.mockClear()
 })
 afterEach(() => {
   createMock.mockReset()
-  navigateMock.mockReset()
 })
 
-async function importPage() {
-  const mod = await import('@/routes/persons/new')
-  return mod
-}
-
-describe('persons/new — PersonCreatePage', () => {
+describe('PersonFormSheet — create', () => {
   it('rejects submission with empty required fields', async () => {
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+    renderWithProviders(<PersonFormSheet open onOpenChange={() => {}} />)
 
     fireEvent.click(screen.getByRole('button', { name: /create person/i }))
     expect(await screen.findByText(/first name is required/i)).toBeInTheDocument()
@@ -52,70 +41,65 @@ describe('persons/new — PersonCreatePage', () => {
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  it('submits valid values and navigates', async () => {
-    createMock.mockResolvedValue({ id: 'p1' })
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+  it('client_id is required for ClientEmployee role', async () => {
+    renderWithProviders(<PersonFormSheet open onOpenChange={() => {}} />)
 
-    await user.type(screen.getByLabelText(/first name/i), 'Ada')
-    await user.type(screen.getByLabelText(/last name/i), 'Lovelace')
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Ada' } })
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Lovelace' } })
+    fireEvent.click(screen.getByRole('button', { name: /create person/i }))
+
+    expect(
+      await screen.findByText(/client is required for employees/i),
+    ).toBeInTheDocument()
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('submits valid values when client is locked', async () => {
+    createMock.mockResolvedValue({ id: 'p1', first_name: 'Ada', last_name: 'Lovelace' })
+    const onSaved = vi.fn()
+    const onOpenChange = vi.fn()
+    renderWithProviders(
+      <PersonFormSheet
+        open
+        onOpenChange={onOpenChange}
+        clientId="client-123"
+        client={{
+          id: 'client-123',
+          name: 'Acme Corp',
+          code: 'ACME',
+        } as never}
+        onSaved={onSaved}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Ada' } })
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Lovelace' } })
     fireEvent.click(screen.getByRole('button', { name: /create person/i }))
 
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1))
     expect(createMock.mock.calls[0][0]).toMatchObject({
       first_name: 'Ada',
       last_name: 'Lovelace',
+      client_id: 'client-123',
     })
-    await waitFor(() =>
-      expect(navigateMock).toHaveBeenCalledWith(expect.objectContaining({ to: '/persons' })),
-    )
-  })
-
-  it('default person_type submits as CLIENT_EMPLOYEE', async () => {
-    createMock.mockResolvedValue({ id: 'p1' })
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
-
-    await user.type(screen.getByLabelText(/first name/i), 'Ada')
-    await user.type(screen.getByLabelText(/last name/i), 'Lovelace')
-    fireEvent.click(screen.getByRole('button', { name: /create person/i }))
-
-    await waitFor(() => expect(createMock).toHaveBeenCalled())
-    expect(createMock.mock.calls[0][0].person_type).toBeTruthy()
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
   })
 
   it('shows server error banner on 500', async () => {
     createMock.mockRejectedValue(new ApiError('boom', 'X', 500))
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
+    renderWithProviders(
+      <PersonFormSheet
+        open
+        onOpenChange={() => {}}
+        clientId="client-123"
+        client={{ id: 'client-123', name: 'Acme', code: 'ACME' } as never}
+      />,
+    )
 
-    await user.type(screen.getByLabelText(/first name/i), 'Ada')
-    await user.type(screen.getByLabelText(/last name/i), 'Lovelace')
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Ada' } })
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'Lovelace' } })
     fireEvent.click(screen.getByRole('button', { name: /create person/i }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
-    expect(navigateMock).not.toHaveBeenCalled()
-  })
-
-  it('client_id passed through when provided', async () => {
-    createMock.mockResolvedValue({ id: 'p1' })
-    const user = userEvent.setup()
-    const { Route } = await importPage()
-    const Page = (Route.options.component ?? (() => null)) as () => ReactElement | null
-    renderWithProviders(<Page />)
-
-    await user.type(screen.getByLabelText(/first name/i), 'Ada')
-    await user.type(screen.getByLabelText(/last name/i), 'Lovelace')
-    await user.type(screen.getByLabelText(/client id/i), 'client-123')
-    fireEvent.click(screen.getByRole('button', { name: /create person/i }))
-
-    await waitFor(() => expect(createMock).toHaveBeenCalled())
-    expect(createMock.mock.calls[0][0].client_id).toBe('client-123')
   })
 })
