@@ -55,13 +55,15 @@ export function OnSiteBehaviorCard({
           </CardTitle>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
                 type="button"
-                className="text-fg-subtle hover:text-fg"
+                variant="ghost"
+                size="icon"
+                className="size-5 text-fg-subtle hover:text-fg"
                 aria-label="Funnel info"
               >
                 <Info className="size-3.5" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               Counts are scoped to {subtitle.toLowerCase()}.

@@ -96,7 +96,7 @@ function IncidentDetailPage() {
 
         <article className="space-y-6 border border-fg/20 bg-white p-6 print:border-0 print:p-0">
           <section>
-            <p className="text-xs uppercase tracking-wide text-fg/60">Critical incident</p>
+            <p className="text-xs tracking-wide text-fg/60">Critical incident</p>
             <h2 className="mt-1 text-2xl font-semibold text-fg">{inc.title}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <SeverityBadge severity={inc.severity} />
@@ -177,7 +177,7 @@ function TimelineRow({ event }: { event: IncidentTimelineEvent }) {
         className="absolute -left-4.75 top-1.5 inline-block h-3 w-3 rounded-full bg-primary"
         aria-hidden
       />
-      <p className="text-xs uppercase tracking-wide text-fg/60">
+      <p className="text-xs tracking-wide text-fg/60">
         {event.kind} · {new Date(event.at).toLocaleString()} · {event.actor}
       </p>
       <p className="mt-1 text-sm text-fg">{event.message}</p>

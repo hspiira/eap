@@ -4,6 +4,7 @@ import * as React from "react"
 
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
+import { Button } from "@/components/ui/button"
 import {
   type ChartConfig,
   ChartContainer,
@@ -12,6 +13,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { cn } from "@/lib/utils"
 
 export interface ChartSeries {
   key: string
@@ -91,7 +93,7 @@ export function ChartAreaInteractive({
   return (
     <div className={className}>
       <div className="mb-3 flex items-center justify-between">
-        <div className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <div className="text-xs font-medium tracking-wide text-fg-muted">
           Trend
         </div>
         <RangeToggle value={timeRange} onChange={setTimeRange} />
@@ -191,21 +193,23 @@ function RangeToggle({
       {RANGE_OPTIONS.map((opt) => {
         const selected = opt.value === value
         return (
-          <button
+          <Button
             key={opt.value}
             type="button"
+            variant="ghost"
+            size="sm"
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(opt.value)}
-            className={
-              "rounded-sm px-2 py-0.5 font-mono text-xs tabular-nums transition-colors " +
-              (selected
-                ? "bg-primary text-primary-foreground"
-                : "text-fg-muted hover:text-fg")
-            }
+            className={cn(
+              "h-auto rounded-sm px-2 py-0.5 font-mono text-xs tabular-nums",
+              selected
+                ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                : "text-fg-muted hover:bg-transparent hover:text-fg",
+            )}
           >
             {opt.label}
-          </button>
+          </Button>
         )
       })}
     </div>

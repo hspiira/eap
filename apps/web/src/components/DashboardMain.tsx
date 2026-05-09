@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import {
+  AlertTriangle,
   ArrowUpRight,
   Building2,
   CalendarClock,
@@ -24,14 +25,25 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { formatKpi, useDashboardKpis } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
 
+type KpiTone = "info" | "danger" | "success" | "warning"
+
 interface KpiSpec {
   id: string
   label: string
   value: string
+  icon: React.ElementType
+  tone: KpiTone
   loading?: boolean
   error?: boolean
   delta?: { value: string; direction: "up" | "down"; tone: "success" | "danger" | "muted" }
   hint?: string
+}
+
+const TONE_BADGE: Record<KpiTone, string> = {
+  info: "bg-info-soft text-info ring-info/20",
+  danger: "bg-danger-soft text-danger ring-danger/20",
+  success: "bg-success-soft text-success ring-success/20",
+  warning: "bg-warning-soft text-warning ring-warning/20",
 }
 
 interface QuickAction {
@@ -86,6 +98,8 @@ export function DashboardMain() {
       id: "clients",
       label: "Clients",
       value: formatKpi(kpis.clients.value),
+      icon: Building2,
+      tone: "info",
       loading: kpis.clients.loading,
       error: kpis.clients.error,
     },
@@ -93,6 +107,8 @@ export function DashboardMain() {
       id: "incidents",
       label: "Incidents",
       value: formatKpi(kpis.incidents.value),
+      icon: AlertTriangle,
+      tone: "danger",
       loading: kpis.incidents.loading,
       error: kpis.incidents.error,
     },
@@ -100,6 +116,8 @@ export function DashboardMain() {
       id: "sessions",
       label: "Sessions",
       value: formatKpi(kpis.sessions.value),
+      icon: CalendarClock,
+      tone: "success",
       loading: kpis.sessions.loading,
       error: kpis.sessions.error,
     },
@@ -107,6 +125,8 @@ export function DashboardMain() {
       id: "contracts",
       label: "Contracts",
       value: formatKpi(kpis.contracts.value),
+      icon: FileSignature,
+      tone: "warning",
       loading: kpis.contracts.loading,
       error: kpis.contracts.error,
     },
@@ -162,53 +182,55 @@ function DashboardHeader() {
 function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
   return (
     <Card className="rounded-md">
-      <CardContent className="grid grid-cols-2 gap-0 p-0 md:grid-cols-4">
+      <CardContent className="flex flex-col p-0 md:flex-row">
         {kpis.map((kpi, i) => (
           <div
             key={kpi.id}
             className={cn(
-              "p-4",
-              i > 0 && "border-l border-border-subtle",
-              i === 2 && "border-l-0 md:border-l",
-              "border-t border-border-subtle md:border-t-0",
-              i < 2 && "border-t-0",
+              "flex flex-1 items-center gap-3 px-4 py-3",
+              i > 0 && "border-t border-border-subtle md:border-l md:border-t-0",
             )}
           >
-            <div className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-              {kpi.label}
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              {kpi.loading ? (
-                <Skeleton className="h-7 w-12" />
-              ) : kpi.error ? (
-                <span className="font-mono text-2xl font-semibold tabular-nums text-fg-subtle">
-                  —
-                </span>
-              ) : (
-                <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-                  {kpi.value}
-                </span>
+            <span
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-md ring-1",
+                TONE_BADGE[kpi.tone],
               )}
-              {kpi.delta ? (
-                <Badge
-                  variant={
-                    kpi.delta.tone === "success"
-                      ? "secondary"
-                      : kpi.delta.tone === "danger"
-                        ? "destructive"
-                        : "outline"
-                  }
-                  size="sm"
-                  className="font-mono tabular-nums"
-                >
-                  {kpi.delta.direction === "up" ? "↑" : "↓"} {kpi.delta.value}
-                </Badge>
-              ) : null}
-            </div>
-            {kpi.error ? (
-              <p className="mt-1 text-xs text-danger">Failed to load</p>
-            ) : kpi.hint ? (
-              <p className="mt-1 text-xs text-fg-subtle">{kpi.hint}</p>
+              aria-hidden
+            >
+              <kpi.icon className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
+              {kpi.label}
+            </span>
+            {kpi.loading ? (
+              <Skeleton className="h-6 w-10" />
+            ) : kpi.error ? (
+              <span
+                className="font-mono text-xl font-semibold tabular-nums text-fg-subtle"
+                title="Failed to load"
+              >
+                —
+              </span>
+            ) : (
+              <span className="font-mono text-xl font-semibold tabular-nums text-fg">
+                {kpi.value}
+              </span>
+            )}
+            {kpi.delta ? (
+              <Badge
+                variant={
+                  kpi.delta.tone === "success"
+                    ? "secondary"
+                    : kpi.delta.tone === "danger"
+                      ? "destructive"
+                      : "outline"
+                }
+                size="sm"
+                className="font-mono tabular-nums"
+              >
+                {kpi.delta.direction === "up" ? "↑" : "↓"} {kpi.delta.value}
+              </Badge>
             ) : null}
           </div>
         ))}

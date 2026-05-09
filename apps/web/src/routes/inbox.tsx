@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeftRight, ArrowUpDown, BellPlus, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Heart, Infinity as InfinityIcon, Info, Monitor, Plus, Search, Share2, User, Users } from "lucide-react"
 
 import { AppLayout } from "@/components/AppLayout"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -14,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import {
   Table,
   TableBody,
@@ -234,23 +237,11 @@ function TrainingCard({
           </div>
           <span className="font-medium text-gray-900 truncate">{program.title}</span>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={program.enabled}
-          onClick={() => onToggle(program.id)}
-          className={cn(
-            "relative inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors",
-            program.enabled ? "bg-blue-500 border-blue-500" : "bg-gray-200 border-gray-300"
-          )}
-        >
-          <span
-            className={cn(
-              "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition absolute top-0.5",
-              program.enabled ? "left-6" : "left-0.5"
-            )}
-          />
-        </button>
+        <Switch
+          checked={program.enabled}
+          onCheckedChange={() => onToggle(program.id)}
+          aria-label={`Toggle ${program.title}`}
+        />
       </div>
       <div className="space-y-1.5 text-sm text-gray-600 mb-3">
         <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-700">
@@ -283,18 +274,12 @@ function TrainingCard({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-50"
-            >
+            <Button type="button" variant="outline" size="sm">
               Data
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-50"
-            >
+            </Button>
+            <Button type="button" variant="outline" size="sm">
               Details
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -341,47 +326,48 @@ function InboxPagination({
 
   return (
     <div className="flex items-center justify-end gap-1">
-      <button
+      <Button
         type="button"
-        className="h-8 w-8 rounded-md border border-gray-300 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="outline"
+        size="icon"
+        className="size-8"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
         aria-label="Previous page"
       >
         <ChevronLeft className="h-4 w-4" />
-      </button>
+      </Button>
       {pages.map((p, i) =>
         p === "ellipsis" ? (
           <span key={`e-${i}`} className="px-2 text-gray-500">
             …
           </span>
         ) : (
-          <button
+          <Button
             key={p}
             type="button"
-            className={cn(
-              "min-w-8 h-8 rounded-md flex items-center justify-center text-sm font-medium",
-              p === page
-                ? "bg-blue-500 text-white border border-blue-500"
-                : "border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-            )}
+            variant={p === page ? "default" : "outline"}
+            size="sm"
+            className="h-8 min-w-8 px-2"
             onClick={() => onPageChange(p)}
             aria-label={`Page ${p}`}
             aria-current={p === page ? "page" : undefined}
           >
             {p}
-          </button>
+          </Button>
         )
       )}
-      <button
+      <Button
         type="button"
-        className="h-8 w-8 rounded-md border border-gray-300 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="outline"
+        size="icon"
+        className="size-8"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
         aria-label="Next page"
       >
         <ChevronRight className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   )
 }
@@ -467,51 +453,32 @@ function InboxPage() {
   const isAllSelected =
     filteredRows.length > 0 && selectedIds.size === filteredRows.length
   const isSomeSelected = selectedIds.size > 0
-  const selectAllRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (selectAllRef.current)
-      selectAllRef.current.indeterminate = isSomeSelected && !isAllSelected
-  }, [isSomeSelected, isAllSelected])
+  const selectAllChecked: boolean | "indeterminate" = isAllSelected
+    ? true
+    : isSomeSelected
+      ? "indeterminate"
+      : false
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-6 border-b border-gray-200">
-        <button
-          type="button"
-          onClick={() => setView("inbox")}
-          className={cn(
-            "pb-3 text-sm font-medium border-b-2 -mb-px transition-colors",
-            view === "inbox"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          )}
-        >
-          Inbox
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("training")}
-          className={cn(
-            "pb-3 text-sm font-medium border-b-2 -mb-px transition-colors",
-            view === "training"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          )}
-        >
-          Training list
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("details")}
-          className={cn(
-            "pb-3 text-sm font-medium border-b-2 -mb-px transition-colors",
-            view === "details"
-              ? "border-blue-500 text-blue-500"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          )}
-        >
-          Details
-        </button>
+        {(["inbox", "training", "details"] as const).map((id) => (
+          <Button
+            key={id}
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setView(id)}
+            className={cn(
+              "h-auto rounded-none border-b-2 px-0 pb-3 -mb-px text-sm font-medium hover:bg-transparent",
+              view === id
+                ? "border-blue-500 text-blue-500"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            )}
+          >
+            {id === "inbox" ? "Inbox" : id === "training" ? "Training list" : "Details"}
+          </Button>
+        ))}
       </div>
 
       {view === "details" ? (
@@ -526,36 +493,40 @@ function InboxPage() {
         <>
           <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2">
             {MAIN_TABS.map((tab) => (
-              <button
+              <Button
                 key={tab.id}
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setMainTab(tab.id)}
                 className={cn(
-                  "px-1 py-2 text-sm font-medium border-b-2 -mb-0.5 transition-colors",
+                  "h-auto rounded-none border-b-2 px-1 py-2 -mb-0.5 text-sm font-medium hover:bg-transparent",
                   mainTab === tab.id
                     ? "border-blue-500 text-blue-500"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2 pb-2">
             {DEPT_FILTERS.map((d) => (
-              <button
+              <Button
                 key={d.id}
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setDeptFilter(d.id)}
                 className={cn(
-                  "px-3 py-1 rounded-full text-sm",
+                  "h-auto rounded-full px-3 py-1 text-sm",
                   deptFilter === d.id
-                    ? "bg-blue-50 text-blue-600 font-medium"
+                    ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-50"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 )}
               >
                 {d.label} {d.count}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
@@ -568,12 +539,12 @@ function InboxPage() {
               />
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
-            <button
+            <Button
               type="button"
-              className="h-9 px-4 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 shrink-0"
+              className="h-9 shrink-0 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
             >
               Add new
-            </button>
+            </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {MOCK_TRAINING.map((program) => (
@@ -628,42 +599,46 @@ function InboxPage() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
-            className="h-9 px-4 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-600"
+            className="h-9 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
           >
             Query
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={() => {
               setRuleIdFilter("")
               setStatusFilter("")
             }}
-            className="h-9 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50"
+            className="h-9 px-4 text-sm font-medium"
           >
             Reset
-          </button>
-          <button className="h-9 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 inline-flex items-center gap-1">
+          </Button>
+          <Button type="button" variant="outline" className="h-9 gap-1 px-4 text-sm font-medium">
             Expand
             <ChevronDown className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 inline-flex items-center gap-1">
+          <Button
+            type="button"
+            className="h-9 gap-1 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
+          >
             <Plus className="h-4 w-4" />
             New
-          </button>
-          <button className="h-9 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">
+          </Button>
+          <Button type="button" variant="outline" className="h-9 px-4 text-sm font-medium">
             Batch operations
-          </button>
-          <button className="h-9 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 inline-flex items-center gap-1">
+          </Button>
+          <Button type="button" variant="outline" className="h-9 gap-1 px-4 text-sm font-medium">
             More
             <ChevronDown className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
         {selectedCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-md text-gray-700 text-sm">
@@ -675,13 +650,15 @@ function InboxPage() {
                 : selectedTotalCalls.toFixed(1)}{" "}
               万
             </span>
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={clearSelection}
-              className="text-blue-500 hover:underline ml-1"
+              className="ml-1 h-auto p-0 text-blue-500"
             >
               Clear
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -691,12 +668,10 @@ function InboxPage() {
           <TableHeader>
             <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-transparent">
               <TableHead className="w-9 h-8 px-2 rounded-none border-gray-200 bg-gray-50">
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  checked={isAllSelected}
-                  onChange={toggleSelectAll}
-                  className="rounded-full border-gray-400"
+                <Checkbox
+                  checked={selectAllChecked}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all rows"
                 />
               </TableHead>
               <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-28">
@@ -738,11 +713,10 @@ function InboxPage() {
                 )}
               >
                 <TableCell className="px-2 py-1.5 rounded-none w-9">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedIds.has(row.id)}
-                    onChange={() => toggleSelect(row.id)}
-                    className="rounded-full border-gray-400"
+                    onCheckedChange={() => toggleSelect(row.id)}
+                    aria-label={`Select rule ${row.ruleId}`}
                   />
                 </TableCell>
                 <TableCell className="px-2 py-1.5 rounded-none text-gray-800 overflow-hidden">
@@ -776,14 +750,16 @@ function InboxPage() {
                 </TableCell>
                 <TableCell className="px-2 py-1.5 rounded-none whitespace-nowrap">
                   <span className="flex items-center gap-1.5">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon"
                       title="Subscribe alert"
-                      className="p-1 text-blue-500 hover:bg-blue-50 rounded"
                       aria-label="Subscribe alert"
+                      className="size-7 text-blue-500 hover:bg-blue-50 hover:text-blue-500"
                     >
                       <BellPlus className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </span>
                 </TableCell>
               </TableRow>

@@ -322,7 +322,7 @@ export function ContractFormSheet({
               id="cf-currency"
               placeholder="KES"
               maxLength={3}
-              className="font-mono uppercase"
+              className="font-mono"
               {...register("currency")}
             />
           </FormField>

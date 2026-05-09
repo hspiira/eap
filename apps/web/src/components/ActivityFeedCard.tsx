@@ -96,20 +96,22 @@ export function ActivityFeedCard({
         {TABS.map((tab, i) => {
           const active = i === 0
           return (
-            <button
+            <Button
               key={tab}
               type="button"
+              variant="ghost"
+              size="sm"
               role="tab"
               aria-selected={active}
               className={cn(
-                "border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                "h-auto rounded-none border-b-2 px-3 py-2 text-sm font-medium hover:bg-transparent",
                 active
                   ? "border-primary text-fg"
                   : "border-transparent text-fg-muted hover:text-fg",
               )}
             >
               {tab}
-            </button>
+            </Button>
           )
         })}
       </div>

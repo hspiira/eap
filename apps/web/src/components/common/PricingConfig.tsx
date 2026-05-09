@@ -202,7 +202,7 @@ function FrameworkInputs({
         </FormField>
       </div>
       <div className="border border-fg/20 bg-surface/30 p-3" aria-label="Framework deposit drawdown">
-        <p className="text-xs uppercase tracking-wide text-fg/60">Deposit drawdown</p>
+        <p className="text-xs tracking-wide text-fg/60">Deposit drawdown</p>
         <div className="mt-2 h-3 w-full bg-white border border-fg/15">
           <div
             className="h-full bg-primary"
@@ -398,7 +398,7 @@ function InvoicePreview({
       ) : (
         <Table className="mt-3 text-sm">
           <TableHeader>
-            <TableRow className="border-b border-fg/20 text-left text-xs uppercase text-fg/60">
+            <TableRow className="border-b border-fg/20 text-left text-xs text-fg/60">
               <TableHead className="py-2 pr-3 font-medium">Line</TableHead>
               <TableHead className="py-2 pr-3 font-medium">Qty</TableHead>
               <TableHead className="py-2 pr-3 font-medium">Unit</TableHead>
@@ -420,7 +420,7 @@ function InvoicePreview({
               </TableRow>
             ))}
             <TableRow>
-              <TableCell colSpan={4} className="py-2 pr-3 text-right text-xs uppercase text-fg/60">
+              <TableCell colSpan={4} className="py-2 pr-3 text-right text-xs text-fg/60">
                 Total
               </TableCell>
               <TableCell className="py-2 text-right text-sm font-semibold text-fg">

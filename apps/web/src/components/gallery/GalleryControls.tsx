@@ -1,4 +1,6 @@
-import { type ThemePreference,useUIStore } from '@/store/slices/uiSlice'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { type ThemePreference, useUIStore } from '@/store/slices/uiSlice'
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string }> = [
   { value: 'light', label: 'Light' },
@@ -56,7 +58,7 @@ function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+      <span className="text-xs font-medium tracking-wide text-fg-muted">
         {label}
       </span>
       <div
@@ -67,21 +69,23 @@ function SegmentedControl<T extends string>({
         {options.map((opt) => {
           const selected = opt.value === value
           return (
-            <button
+            <Button
               key={opt.value}
               type="button"
+              variant="ghost"
+              size="sm"
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
-              className={
-                'rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ' +
-                (selected
-                  ? 'bg-brand text-fg-on-brand'
-                  : 'text-fg-muted hover:text-fg')
-              }
+              className={cn(
+                'h-auto rounded-sm px-2.5 py-1 text-xs font-medium',
+                selected
+                  ? 'bg-brand text-fg-on-brand hover:bg-brand hover:text-fg-on-brand'
+                  : 'text-fg-muted hover:bg-transparent hover:text-fg',
+              )}
             >
               {opt.label}
-            </button>
+            </Button>
           )
         })}
       </div>

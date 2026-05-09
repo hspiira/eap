@@ -157,25 +157,28 @@ function FilterBar() {
       {activeFilter && (
         <div className="flex h-8 shrink-0 items-center gap-1 border border-fg/30 bg-surface px-2 py-0">
           <span className="text-sm text-fg">{activeFilter}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setActiveFilter(null)}
-            className="p-0.5 text-fg hover:bg-fg/10"
+            className="size-5 rounded-none p-0 text-fg hover:bg-fg/10"
             aria-label="Remove filter"
           >
             ×
-          </button>
+          </Button>
         </div>
       )}
 
       <DropdownMenu open={assigneeOpen} onOpenChange={setAssigneeOpen}>
         <DropdownMenuTrigger asChild>
-          <button
+          <Button
             type="button"
-            className="flex h-8 min-w-30 shrink-0 items-center gap-2 border border-fg/30 bg-surface px-2 py-0 text-left text-sm text-fg"
+            variant="outline"
+            className="h-8 min-w-30 shrink-0 justify-start gap-2 rounded-none border-fg/30 bg-surface px-2 py-0 text-left text-sm font-normal text-fg"
           >
             Assignee
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-50">
           <DropdownMenuItem className="gap-2">
@@ -257,31 +260,37 @@ export function AtRiskPage() {
         )}
       >
         <div className="flex w-full items-center gap-1.5 px-2 py-0">
-          <button
+          <Button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-none text-fg hover:bg-surface"
             aria-label="Back"
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-none text-fg hover:bg-surface"
             aria-label="Forward"
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
           <Code className="h-4 w-4 shrink-0 text-fg/70" />
           <span className="min-w-0 flex-1 truncate text-sm text-fg">{BREADCRUMB}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
                 type="button"
-                className="flex h-8 w-8 shrink-0 items-center justify-center py-0 text-fg hover:bg-surface"
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-none text-fg hover:bg-surface"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>View settings</DropdownMenuItem>

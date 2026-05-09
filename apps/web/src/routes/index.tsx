@@ -61,7 +61,7 @@ function LandingPage() {
       <main className="flex-1">
         <div className="mx-auto grid w-full max-w-6xl gap-16 px-6 py-16 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:py-24">
           <div className="grid gap-6">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-sm border border-border-subtle bg-surface px-2 py-1 font-mono text-xs uppercase tracking-wider text-fg-muted">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-sm border border-border-subtle bg-surface px-2 py-1 font-mono text-xs tracking-wider text-fg-muted">
               EAP operations platform
             </span>
             <h1 className="text-4xl font-semibold tracking-tight text-fg md:text-5xl lg:text-6xl">

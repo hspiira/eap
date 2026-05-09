@@ -679,7 +679,7 @@ function ComponentRegistry() {
                     <code className="font-mono text-xs text-fg-subtle">{item.path}</code>
                   </div>
                   <span
-                    className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${STATUS_TONE[item.status]}`}
+                    className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-medium tracking-wide ${STATUS_TONE[item.status]}`}
                   >
                     {item.status}
                   </span>

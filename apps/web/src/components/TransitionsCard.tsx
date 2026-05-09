@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 const TRANSITION_TYPES = [
@@ -72,21 +73,23 @@ export function TransitionsCard() {
           {TRANSITION_TYPES.map(({ id, label, icon: Icon }) => {
             const selected = id === transition
             return (
-              <button
+              <Button
                 key={id}
                 type="button"
+                variant="outline"
+                size="sm"
                 aria-pressed={selected}
                 onClick={() => setTransition(id)}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm font-medium transition-colors",
+                  "h-auto gap-2 rounded-sm px-3 py-1.5 text-sm font-medium",
                   selected
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary hover:bg-primary/15"
                     : "border-border-subtle bg-surface text-fg hover:bg-surface-hover",
                 )}
               >
                 <Icon className="size-3.5" />
                 {label}
-              </button>
+              </Button>
             )
           })}
           <Button
@@ -108,21 +111,23 @@ export function TransitionsCard() {
             {APPLY_OPTIONS.map((opt) => {
               const selected = opt === apply
               return (
-                <button
+                <Button
                   key={opt}
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setApply(opt)}
                   className={cn(
-                    "rounded-sm px-2.5 py-1 text-xs font-medium transition-colors",
+                    "h-auto rounded-sm px-2.5 py-1 text-xs font-medium",
                     selected
-                      ? "bg-primary text-primary-foreground"
-                      : "text-fg-muted hover:text-fg",
+                      ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                      : "text-fg-muted hover:bg-transparent hover:text-fg",
                   )}
                 >
                   {opt}
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -130,21 +135,23 @@ export function TransitionsCard() {
             {DIRECTIONS.map(({ id, label, icon: Icon }) => {
               const selected = id === direction
               return (
-                <button
+                <Button
                   key={id}
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   aria-pressed={selected}
                   aria-label={label}
                   onClick={() => setDirection(id)}
                   className={cn(
-                    "rounded-sm p-1.5 transition-colors",
+                    "size-7 rounded-sm",
                     selected
-                      ? "bg-primary text-primary-foreground"
-                      : "text-fg-muted hover:text-fg",
+                      ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                      : "text-fg-muted hover:bg-transparent hover:text-fg",
                   )}
                 >
                   <Icon className="size-3.5" />
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -154,24 +161,26 @@ export function TransitionsCard() {
         <div className="grid gap-2 rounded-sm border border-border-subtle bg-surface p-3">
           <div className="flex flex-wrap gap-2">
             {QUICK_PROMPTS.map((p) => (
-              <button
+              <Button
                 key={p}
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setPrompt(p)}
-                className="rounded-sm border border-border-subtle bg-bg px-2.5 py-1 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+                className="h-auto rounded-sm border-border-subtle bg-bg px-2.5 py-1 text-xs text-fg-muted hover:bg-surface-hover hover:text-fg"
               >
                 {p}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe a transition…"
               aria-label="Transition prompt"
-              className="flex-1 rounded-sm border border-border-subtle bg-bg px-2.5 py-1.5 text-sm text-fg outline-none placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex-1 rounded-sm bg-bg"
             />
             <Button
               size="icon"

@@ -358,7 +358,7 @@ function EngagementRow({ row }: { row: Engagement }) {
           {overdue ? (
             <span
               title="Past due date and not yet delivered"
-              className="inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600"
+              className="inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-amber-600"
             >
               <AlertTriangle className="size-3" />
               Overdue

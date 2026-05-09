@@ -417,7 +417,7 @@ function CasesPanel({
                   <CaseStatusPill status={c.status} />
                   {c.crisis_flagged ? (
                     <span
-                      className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-danger-fg"
+                      className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger-fg"
                       title="Crisis protocol invoked"
                     >
                       <AlertTriangle className="size-3" />

@@ -107,7 +107,7 @@ function PerClientRenewalPack() {
 function RenewalPackHeader({ data }: { data: RenewalPackData }) {
   return (
     <section>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-fg/55">
+      <p className="text-[11px] font-semibold tracking-wide text-fg/55">
         Renewal pack
       </p>
       <h2 className="mt-1 text-2xl font-semibold text-fg">{data.client.name}</h2>
@@ -210,7 +210,7 @@ function SatisfactionDistribution({ data }: { data: RenewalPackData }) {
             key={s.bucket}
             className="rounded-sm border border-fg/15 bg-bg p-2 print:bg-white"
           >
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-fg/55">
+            <div className="text-[10px] font-semibold tracking-wide text-fg/55">
               {s.bucket}
             </div>
             <div className="mt-1 font-mono text-lg font-semibold text-fg">{s.count}</div>
@@ -328,7 +328,7 @@ function WaveSummaryBody({
   return (
     <>
       <section>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-fg/55">
+        <p className="text-[11px] font-semibold tracking-wide text-fg/55">
           Wave summary
         </p>
         <div className="mt-1 flex flex-wrap items-baseline gap-3">
@@ -508,7 +508,7 @@ function Field({
 }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-fg/55">
+      <dt className="text-[11px] font-semibold tracking-wide text-fg/55">
         {label}
       </dt>
       <dd className="mt-0.5 text-sm text-fg">{value}</dd>
@@ -537,7 +537,7 @@ function SummaryStat({
     >
       <div
         className={cn(
-          "flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide",
+          "flex items-center gap-1 text-[10px] font-semibold tracking-wide",
           isDanger ? "text-danger-fg" : "text-fg/55",
         )}
       >

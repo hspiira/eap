@@ -136,14 +136,16 @@ export function HRDashboard() {
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {QUICK_APPS.map(({ icon: Icon, label }) => (
-              <button
+              <Button
                 key={label}
                 type="button"
-                className="grid place-items-center gap-1 rounded-sm border border-border-subtle bg-surface p-2 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+                variant="outline"
+                size="sm"
+                className="grid h-auto place-items-center gap-1 rounded-sm border-border-subtle bg-surface p-2 text-fg-muted hover:bg-surface-hover hover:text-fg"
               >
                 <Icon className="size-4" />
                 <span className="text-[11px]">{label}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </SectionCard>
@@ -229,18 +231,22 @@ export function HRDashboard() {
         </div>
         <div className="border-t border-border-subtle pt-3">
           <div className="mb-2 flex gap-3">
-            <button
+            <Button
               type="button"
-              className="border-b-2 border-primary pb-1 text-xs font-medium text-fg"
+              variant="ghost"
+              size="sm"
+              className="h-auto rounded-none border-b-2 border-primary px-0 pb-1 text-xs font-medium text-fg hover:bg-transparent"
             >
               New persons
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="border-b-2 border-transparent pb-1 text-xs text-fg-muted hover:text-fg"
+              variant="ghost"
+              size="sm"
+              className="h-auto rounded-none border-b-2 border-transparent px-0 pb-1 text-xs text-fg-muted hover:bg-transparent hover:text-fg"
             >
               Archived
-            </button>
+            </Button>
           </div>
           <ul className="grid gap-2">
             {RECENT_HIRES.map((p) => (
@@ -274,12 +280,14 @@ export function HRDashboard() {
               key={i}
               className="border-b border-border-subtle pb-2 last:border-b-0 last:pb-0"
             >
-              <button
+              <Button
                 type="button"
-                className="text-left text-fg-muted transition-colors hover:text-primary"
+                variant="link"
+                size="sm"
+                className="h-auto justify-start whitespace-normal p-0 text-left text-fg-muted hover:text-primary hover:no-underline"
               >
                 {text}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

@@ -224,7 +224,7 @@ function AuditPanel({ provider }: { provider: Provider }) {
             className="absolute -left-4.75 top-1.5 inline-block h-3 w-3 rounded-full bg-primary"
             aria-hidden
           />
-          <p className="text-xs uppercase tracking-wide text-fg/60">
+          <p className="text-xs tracking-wide text-fg/60">
             {new Date(t.at).toLocaleString()} · {t.actor}
           </p>
           <p className="mt-1 text-sm text-fg">

@@ -31,7 +31,7 @@ export function GallerySpecimen({ label, source, children }: GallerySpecimenProp
   return (
     <div className="grid gap-2">
       <div className="flex items-baseline justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <span className="text-xs font-medium tracking-wide text-fg-muted">
           {label}
         </span>
         {source ? (

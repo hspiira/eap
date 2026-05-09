@@ -256,7 +256,7 @@ export function EngagementFormSheet({
             <Input
               id="ef-currency"
               maxLength={3}
-              className="font-mono uppercase"
+              className="font-mono"
               {...register("currency")}
             />
           </FormField>

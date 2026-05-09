@@ -63,7 +63,7 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken, onRotateToken, ro
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto p-0 text-[11px] font-semibold uppercase tracking-wide text-fg/70 hover:bg-transparent hover:text-fg"
+            className="h-auto p-0 text-[11px] font-semibold tracking-wide text-fg/70 hover:bg-transparent hover:text-fg"
           >
             Google Forms — step-by-step
           </Button>
@@ -116,7 +116,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
 
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-fg/55">
+      <p className="text-[11px] font-semibold tracking-wide text-fg/55">
         {label}
       </p>
       <div className="mt-1 flex items-stretch overflow-hidden rounded-sm border border-fg/15">
@@ -128,7 +128,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
             type="button"
             variant="ghost"
             onClick={() => setRevealed((v) => !v)}
-            className="h-auto rounded-none border-l border-fg/15 px-3 text-[10px] font-semibold uppercase tracking-wide text-fg/70"
+            className="h-auto rounded-none border-l border-fg/15 px-3 text-[10px] font-semibold tracking-wide text-fg/70"
           >
             {revealed ? "Hide" : "Show"}
           </Button>

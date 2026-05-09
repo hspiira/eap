@@ -26,7 +26,7 @@ export function CrisisAlert({ reasons }: Props) {
     >
       <div className="flex items-center gap-2 text-danger-soft">
         <AlertTriangle className="h-4 w-4" />
-        <p className="text-sm font-semibold uppercase tracking-wide">Crisis flag triggered</p>
+        <p className="text-sm font-semibold tracking-wide">Crisis flag triggered</p>
       </div>
       <ul className="list-disc pl-5 text-sm text-fg space-y-1">
         {reasons.map((r) => (
@@ -34,7 +34,7 @@ export function CrisisAlert({ reasons }: Props) {
         ))}
       </ul>
       <div>
-        <p className="text-xs font-semibold text-fg/80 uppercase tracking-wide">
+        <p className="text-xs font-semibold text-fg/80 tracking-wide">
           Crisis protocol checklist
         </p>
         <ol className="mt-1 list-decimal pl-5 text-sm text-fg/80 space-y-1">
