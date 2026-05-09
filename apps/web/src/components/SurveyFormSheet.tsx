@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -9,13 +8,14 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Survey } from "@/types/entities"
 import { SurveySource } from "@/types/enums"
 
 const SOURCE_VALUES = [
+  SurveySource.MICROSOFT_FORMS,
   SurveySource.GOOGLE_FORMS,
   SurveySource.TYPEFORM,
   SurveySource.SURVEY_MONKEY,
@@ -66,40 +66,35 @@ export function SurveyFormSheet({
   client,
   onSaved,
 }: SurveyFormSheetProps) {
-  const queryClient = useQueryClient()
   const lockedClientId = clientId
 
-  const initial: Values = { ...EMPTY, client_id: clientId ?? "" }
-
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<Values>({
-      schema,
-      defaultValues: initial,
-      successToast: "Survey created — webhook ready to wire",
-      onSubmit: async (values) => {
-        const created = await surveysApi.create({
-          client_id: values.client_id,
-          name: values.name,
-          description: values.description?.trim() || null,
-          source: values.source as SurveySource,
-          period_start: values.period_start,
-          period_end: values.period_end,
-        })
-        await queryClient.invalidateQueries({ queryKey: ["surveys", "list"] })
-        onSaved?.(created)
-        onOpenChange(false)
-        reset(EMPTY)
-      },
-    })
+  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+    Values,
+    Parameters<typeof surveysApi.create>[0],
+    Survey,
+    Survey
+  >({
+    resource: "surveys",
+    schema,
+    defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+    open,
+    onOpenChange,
+    parsePayload: (values) => ({
+      client_id: values.client_id,
+      name: values.name,
+      description: values.description?.trim() || null,
+      source: values.source as SurveySource,
+      period_start: values.period_start,
+      period_end: values.period_end,
+    }),
+    save: ({ payload }) => surveysApi.create(payload),
+    successToast: { create: "Survey created — webhook ready to wire" },
+    onSaved,
+  })
 
   const watchedClient = watch("client_id")
 
-  useEffect(() => {
-    if (!open) return
-    reset({ ...EMPTY, client_id: clientId ?? "" })
-  }, [open, clientId, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm

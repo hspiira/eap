@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { z } from "zod"
@@ -13,8 +12,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { CallbackCampaign, Client, User } from "@/types/entities"
 import {
@@ -89,7 +88,6 @@ export function CampaignFormSheet({
   client,
   onSaved,
 }: CampaignFormSheetProps) {
-  const queryClient = useQueryClient()
   const lockedClientId = clientId
 
   const questionnairesQuery = useQuery({
@@ -105,48 +103,42 @@ export function CampaignFormSheet({
     (q) => q.administration === QuestionnaireAdministration.POST,
   )
 
-  const initial: Values = { ...EMPTY, client_id: clientId ?? "" }
-
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<Values>({
-      schema,
-      defaultValues: initial,
-      successToast: "Campaign created",
-      onSubmit: async (values) => {
-        const created = await careCallbacksApi.createCampaign({
-          client_id: values.client_id,
-          name: values.name,
-          description: values.description?.trim() || null,
-          period_start: values.period_start,
-          period_end: values.period_end,
-          sampling: values.sampling as CallbackSamplingStrategy,
-          sample_size:
-            values.sampling === CallbackSamplingStrategy.FULL
-              ? null
-              : Number(values.sample_size),
-          counsellor_user_ids: values.counsellor_user_ids,
-          questionnaire_code: values.questionnaire_code,
-          followup_questionnaire_code: values.followup_questionnaire_code || null,
-        })
-        await queryClient.invalidateQueries({
-          queryKey: ["care-callback-campaigns", "list"],
-        })
-        onSaved?.(created)
-        onOpenChange(false)
-        reset(EMPTY)
-      },
-    })
+  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+    Values,
+    Parameters<typeof careCallbacksApi.createCampaign>[0],
+    CallbackCampaign,
+    CallbackCampaign
+  >({
+    resource: "care-callback-campaigns",
+    schema,
+    defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+    open,
+    onOpenChange,
+    parsePayload: (values) => ({
+      client_id: values.client_id,
+      name: values.name,
+      description: values.description?.trim() || null,
+      period_start: values.period_start,
+      period_end: values.period_end,
+      sampling: values.sampling as CallbackSamplingStrategy,
+      sample_size:
+        values.sampling === CallbackSamplingStrategy.FULL
+          ? null
+          : Number(values.sample_size),
+      counsellor_user_ids: values.counsellor_user_ids,
+      questionnaire_code: values.questionnaire_code,
+      followup_questionnaire_code: values.followup_questionnaire_code || null,
+    }),
+    save: ({ payload }) => careCallbacksApi.createCampaign(payload),
+    successToast: { create: "Campaign created" },
+    onSaved,
+  })
 
   const watchedClient = watch("client_id")
   const watchedSampling = watch("sampling")
   const watchedCounsellors = watch("counsellor_user_ids")
 
-  useEffect(() => {
-    if (!open) return
-    reset({ ...EMPTY, client_id: clientId ?? "" })
-  }, [open, clientId, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
   const showSampleSize = watchedSampling !== CallbackSamplingStrategy.FULL
 
   return (

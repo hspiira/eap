@@ -358,6 +358,7 @@ export enum SurveyStatus {
  * the union open so we can add SurveyMonkey / Typeform without a schema change.
  */
 export enum SurveySource {
+  MICROSOFT_FORMS = 'Microsoft Forms',
   GOOGLE_FORMS = 'Google Forms',
   TYPEFORM = 'Typeform',
   SURVEY_MONKEY = 'SurveyMonkey',

@@ -1,6 +1,3 @@
-import { useEffect } from "react"
-
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { usersApi } from "@/api/endpoints/users"
@@ -8,7 +5,7 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { User } from "@/types/entities"
 import { Language } from "@/types/enums"
 
@@ -61,30 +58,29 @@ export function UserFormSheet(props: UserFormSheetProps) {
 }
 
 function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
-  const queryClient = useQueryClient()
-  const { register, reset, formState, submit, serverError } = useApiForm<CreateValues>({
+  const { register, formState, submit, serverError } = useEntityFormSheet<
+    CreateValues,
+    Parameters<typeof usersApi.create>[0],
+    User,
+    User
+  >({
+    resource: "users",
     schema: createSchema,
     defaultValues: { email: "", password: "", preferred_language: "", timezone: "" },
-    successToast: "User created",
-    onSubmit: async (values) => {
-      const result = await usersApi.create({
-        email: values.email,
-        password: values.password || undefined,
-        preferred_language: values.preferred_language || undefined,
-        timezone: values.timezone || undefined,
-      })
-      await queryClient.invalidateQueries({ queryKey: ["users", "list"] })
-      onSaved?.(result)
-      onOpenChange(false)
-      reset({ email: "", password: "", preferred_language: "", timezone: "" })
-    },
+    open,
+    onOpenChange,
+    parsePayload: (values) => ({
+      email: values.email,
+      password: values.password || undefined,
+      preferred_language: values.preferred_language || undefined,
+      timezone: values.timezone || undefined,
+    }),
+    save: ({ payload }) => usersApi.create(payload),
+    successToast: { create: "User created" },
+    onSaved,
   })
 
-  const errors = formState.errors as Record<string, { message?: string }>
-
-  useEffect(() => {
-    if (!open) reset({ email: "", password: "", preferred_language: "", timezone: "" })
-  }, [open, reset])
+  const errors = formState.errors
 
   return (
     <SheetForm
@@ -161,38 +157,37 @@ function UserEditSheet({
   user,
   onSaved,
 }: UserFormSheetProps & { user: User }) {
-  const queryClient = useQueryClient()
-
-  const { register, reset, formState, submit, serverError } = useApiForm<EditValues>({
+  const { register, formState, submit, serverError } = useEntityFormSheet<
+    EditValues,
+    Parameters<typeof usersApi.updatePreferences>[1],
+    User,
+    User
+  >({
+    resource: "users",
     schema: editSchema,
     defaultValues: {
       email: user.email,
       preferred_language: user.preferred_language ?? "",
       timezone: user.timezone ?? "",
     },
-    successToast: "User updated",
-    onSubmit: async (values) => {
-      const result = await usersApi.updatePreferences(user.id, {
-        preferred_language: values.preferred_language || undefined,
-        timezone: values.timezone || undefined,
-      })
-      await queryClient.invalidateQueries({ queryKey: ["users", "list"] })
-      await queryClient.invalidateQueries({ queryKey: ["users", "detail", user.id] })
-      onSaved?.(result)
-      onOpenChange(false)
-    },
+    open,
+    onOpenChange,
+    entity: user,
+    toFormValues: (u) => ({
+      email: u.email,
+      preferred_language: u.preferred_language ?? "",
+      timezone: u.timezone ?? "",
+    }),
+    parsePayload: (values) => ({
+      preferred_language: values.preferred_language || undefined,
+      timezone: values.timezone || undefined,
+    }),
+    save: ({ payload, entity }) => usersApi.updatePreferences(entity!.id, payload),
+    successToast: { update: "User updated" },
+    onSaved,
   })
 
-  const errors = formState.errors as Record<string, { message?: string }>
-
-  useEffect(() => {
-    if (!open) return
-    reset({
-      email: user.email,
-      preferred_language: user.preferred_language ?? "",
-      timezone: user.timezone ?? "",
-    })
-  }, [open, user, reset])
+  const errors = formState.errors
 
   return (
     <SheetForm

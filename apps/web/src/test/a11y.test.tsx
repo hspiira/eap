@@ -6,7 +6,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { configureAxe } from 'vitest-axe'
 
-import { ClientForm } from '@/components/ClientForm'
+import { ClientFormSheet } from '@/components/ClientFormSheet'
 import { PersonFormSheet } from '@/components/PersonFormSheet'
 import { ServiceSessionFormSheet } from '@/components/ServiceSessionFormSheet'
 import { renderWithProviders } from '@/test/utils'
@@ -46,7 +46,9 @@ vi.mock('@tanstack/react-router', async () => {
 
 describe('a11y — gated routes (zero serious/critical issues)', () => {
   it('client-create form is accessible', async () => {
-    const { container } = renderWithProviders(<ClientForm />)
+    const { container } = renderWithProviders(
+      <ClientFormSheet open onOpenChange={() => {}} />,
+    )
     await expect(await axe(container)).toHaveNoViolations()
   })
 

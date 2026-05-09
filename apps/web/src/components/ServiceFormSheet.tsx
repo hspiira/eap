@@ -1,6 +1,3 @@
-import { useEffect } from "react"
-
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { servicesApi } from "@/api/endpoints/services"
@@ -8,7 +5,7 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Service } from "@/types/entities"
 
 const SERVICE_TYPE_OPTIONS = [
@@ -89,56 +86,43 @@ export function ServiceFormSheet({
   service,
   onSaved,
 }: ServiceFormSheetProps) {
-  const isEdit = Boolean(service)
-  const queryClient = useQueryClient()
-
-  const initialValues: Values = service ? toValues(service) : EMPTY
-
-  const { register, reset, formState, submit, serverError, watch } = useApiForm<Values>({
+  const { register, formState, submit, serverError, watch, isEdit } = useEntityFormSheet<
+    Values,
+    Parameters<typeof servicesApi.create>[0],
+    Service,
+    Service
+  >({
+    resource: "services",
     schema,
-    defaultValues: initialValues,
-    successToast: isEdit ? "Service updated" : "Service created",
-    onSubmit: async (values) => {
-      const payload = {
-        name: values.name,
-        description: values.description?.trim() || undefined,
-        service_type: values.service_type?.trim() || undefined,
-        category: values.category?.trim() || undefined,
-        duration_minutes: values.duration_minutes
-          ? Number(values.duration_minutes)
+    defaultValues: EMPTY,
+    open,
+    onOpenChange,
+    entity: service,
+    toFormValues,
+    parsePayload: (values) => ({
+      name: values.name,
+      description: values.description?.trim() || undefined,
+      service_type: values.service_type?.trim() || undefined,
+      category: values.category?.trim() || undefined,
+      duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : undefined,
+      group_settings:
+        values.allow_group_sessions || values.min_group_size || values.max_group_size
+          ? {
+              allow_group_sessions: Boolean(values.allow_group_sessions),
+              min_group_size: values.min_group_size ? Number(values.min_group_size) : null,
+              max_group_size: values.max_group_size ? Number(values.max_group_size) : null,
+            }
           : undefined,
-        group_settings:
-          values.allow_group_sessions || values.min_group_size || values.max_group_size
-            ? {
-                allow_group_sessions: Boolean(values.allow_group_sessions),
-                min_group_size: values.min_group_size ? Number(values.min_group_size) : null,
-                max_group_size: values.max_group_size ? Number(values.max_group_size) : null,
-              }
-            : undefined,
-      }
-      const result = service
-        ? await servicesApi.update(service.id, payload)
-        : await servicesApi.create(payload as Parameters<typeof servicesApi.create>[0])
-      await queryClient.invalidateQueries({ queryKey: ["services", "list"] })
-      if (service) {
-        await queryClient.invalidateQueries({
-          queryKey: ["services", "detail", service.id],
-        })
-      }
-      onSaved?.(result)
-      onOpenChange(false)
-      reset(EMPTY)
-    },
+    }),
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity ? servicesApi.update(entity.id, payload) : servicesApi.create(payload),
+    successToast: { create: "Service created", update: "Service updated" },
+    onSaved,
   })
 
   const allowGroup = watch("allow_group_sessions")
 
-  useEffect(() => {
-    if (!open) return
-    if (service) reset(toValues(service))
-  }, [open, service, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm
@@ -279,7 +263,7 @@ export function ServiceFormSheet({
   )
 }
 
-function toValues(s: Service): Values {
+function toFormValues(s: Service): Values {
   return {
     name: s.name,
     description: s.description ?? "",

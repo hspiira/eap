@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
@@ -10,8 +10,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 
@@ -51,71 +51,53 @@ export function ServiceAssignmentFormSheet({
   contract,
   onSaved,
 }: ServiceAssignmentFormSheetProps) {
-  const isEdit = Boolean(assignment)
-  const queryClient = useQueryClient()
   const lockedContractId = contractId ?? assignment?.contract_id
+  const queryClient = useQueryClient()
 
-  const initial: Values = assignment
-    ? {
-        contract_id: assignment.contract_id,
-        service_id: assignment.service_id,
-        start_date: assignment.start_date ?? "",
-        end_date: assignment.end_date ?? "",
-      }
-    : { ...EMPTY, contract_id: contractId ?? "" }
-
-  const { register, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<Values>({
+  const { register, formState, submit, serverError, setValue, watch, isEdit } =
+    useEntityFormSheet<
+      Values,
+      Parameters<typeof serviceAssignmentsApi.create>[0],
+      ServiceAssignment,
+      ServiceAssignment
+    >({
+      resource: "service-assignments",
       schema,
-      defaultValues: initial,
-      successToast: isEdit ? "Assignment updated" : "Assignment created",
-      onSubmit: async (values) => {
-        const payload = {
-          contract_id: values.contract_id,
-          service_id: values.service_id,
-          start_date: values.start_date || undefined,
-          end_date: values.end_date || undefined,
-        }
-        const result = assignment
-          ? await serviceAssignmentsApi.update(assignment.id, payload)
-          : await serviceAssignmentsApi.create(
-              payload as Parameters<typeof serviceAssignmentsApi.create>[0],
-            )
-        await queryClient.invalidateQueries({
-          queryKey: ["service-assignments", "list"],
-        })
-        if (assignment) {
-          await queryClient.invalidateQueries({
-            queryKey: ["service-assignments", "detail", assignment.id],
-          })
-        }
+      defaultValues: { ...EMPTY, contract_id: contractId ?? "" },
+      open,
+      onOpenChange,
+      entity: assignment,
+      toFormValues: (a) => ({
+        contract_id: a.contract_id,
+        service_id: a.service_id,
+        start_date: a.start_date ?? "",
+        end_date: a.end_date ?? "",
+      }),
+      parsePayload: (values) => ({
+        contract_id: values.contract_id,
+        service_id: values.service_id,
+        start_date: values.start_date || undefined,
+        end_date: values.end_date || undefined,
+      }),
+      save: ({ payload, entity, isEdit }) =>
+        isEdit && entity
+          ? serviceAssignmentsApi.update(entity.id, payload)
+          : serviceAssignmentsApi.create(payload),
+      successToast: { create: "Assignment created", update: "Assignment updated" },
+      onSaved: (result) => {
         if (lockedContractId) {
-          await queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: ["contracts", "detail", lockedContractId],
           })
         }
         onSaved?.(result)
-        onOpenChange(false)
-        reset(EMPTY)
       },
     })
 
   const watchedContract = watch("contract_id")
   const watchedService = watch("service_id")
 
-  useEffect(() => {
-    if (!open) return
-    if (assignment) {
-      reset({
-        contract_id: assignment.contract_id,
-        service_id: assignment.service_id,
-        start_date: assignment.start_date ?? "",
-        end_date: assignment.end_date ?? "",
-      })
-    }
-  }, [open, assignment, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm

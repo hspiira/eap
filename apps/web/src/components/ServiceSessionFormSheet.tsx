@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
@@ -13,8 +12,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import { useApiForm } from "@/hooks/useApiForm"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
 
@@ -93,19 +92,26 @@ export function ServiceSessionFormSheet({
   person,
   onSaved,
 }: ServiceSessionFormSheetProps) {
-  const isEdit = Boolean(session)
-  const queryClient = useQueryClient()
   const lockedServiceId = serviceId ?? session?.service_id
   const lockedPersonId = personId ?? session?.person_id
 
-  const initial: Values = session ? toValues(session) : { ...EMPTY, service_id: serviceId ?? "", person_id: personId ?? "" }
-
-  const { register, control, reset, formState, submit, serverError, setValue, watch } =
-    useApiForm<Values>({
+  const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
+    useEntityFormSheet<
+      Values,
+      Parameters<typeof serviceSessionsApi.create>[0] & {
+        __isBackfill?: boolean
+      },
+      ServiceSession,
+      ServiceSession
+    >({
+      resource: "service-sessions",
       schema,
-      defaultValues: initial,
-      successToast: isEdit ? "Session updated" : "Session created",
-      onSubmit: async (values) => {
+      defaultValues: { ...EMPTY, service_id: serviceId ?? "", person_id: personId ?? "" },
+      open,
+      onOpenChange,
+      entity: session,
+      toFormValues,
+      parsePayload: (values) => {
         const isBackfill = !session && Boolean(values.is_backfill)
         const backfillMetadata = isBackfill
           ? {
@@ -116,7 +122,7 @@ export function ServiceSessionFormSheet({
               },
             }
           : undefined
-        const payload = {
+        return {
           service_id: values.service_id,
           person_id: values.person_id,
           service_provider_id: values.service_provider_id || null,
@@ -129,25 +135,21 @@ export function ServiceSessionFormSheet({
             ? values.diagnosis_text?.trim() || null
             : null,
           ...(backfillMetadata ? { metadata: backfillMetadata } : {}),
+          __isBackfill: isBackfill,
         }
-        let result = session
-          ? await serviceSessionsApi.update(session.id, payload)
-          : await serviceSessionsApi.create(
-              payload as Parameters<typeof serviceSessionsApi.create>[0],
-            )
-        if (isBackfill && result?.id) {
+      },
+      save: async ({ payload, entity, isEdit }) => {
+        const { __isBackfill, ...body } = payload
+        let result = isEdit && entity
+          ? await serviceSessionsApi.update(entity.id, body)
+          : await serviceSessionsApi.create(body)
+        if (__isBackfill && result?.id) {
           result = await serviceSessionsApi.complete(result.id)
         }
-        await queryClient.invalidateQueries({ queryKey: ["service-sessions", "list"] })
-        if (session) {
-          await queryClient.invalidateQueries({
-            queryKey: ["service-sessions", "detail", session.id],
-          })
-        }
-        onSaved?.(result)
-        onOpenChange(false)
-        reset(EMPTY)
+        return result
       },
+      successToast: { create: "Session created", update: "Session updated" },
+      onSaved,
     })
 
   const watchedService = watch("service_id")
@@ -155,12 +157,7 @@ export function ServiceSessionFormSheet({
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
 
-  useEffect(() => {
-    if (!open) return
-    if (session) reset(toValues(session))
-  }, [open, session, reset])
-
-  const errors = formState.errors as Record<string, { message?: string }>
+  const errors = formState.errors
 
   return (
     <SheetForm
@@ -338,7 +335,7 @@ export function ServiceSessionFormSheet({
   )
 }
 
-function toValues(s: ServiceSession): Values {
+function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
     person_id: s.person_id,

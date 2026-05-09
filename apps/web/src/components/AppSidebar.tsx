@@ -47,6 +47,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { featureFlags, type FeatureFlag } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 
@@ -57,6 +58,7 @@ type NavItem = {
   label: string
   icon: React.ElementType
   iconClassName?: string
+  flag?: FeatureFlag
 }
 
 type NavSection = {
@@ -82,6 +84,7 @@ const SECTIONS: ReadonlyArray<NavSection> = [
   {
     label: "People",
     items: [
+      { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
       { to: "/persons", label: "Persons", icon: Users },
       { to: "/users", label: "Platform Users", icon: UserCog },
     ],
@@ -117,17 +120,17 @@ const SECTIONS: ReadonlyArray<NavSection> = [
   },
   {
     label: "Analytics & Performance",
-    items: [{ to: "/kpis", label: "KPIs", icon: BarChart3 }],
+    items: [{ to: "/kpis", label: "KPIs", icon: BarChart3, flag: "kpis" }],
   },
   {
     label: "Documents",
-    items: [{ to: "/documents", label: "Documents", icon: FolderOpen }],
+    items: [{ to: "/documents", label: "Documents", icon: FolderOpen, flag: "documents" }],
   },
   {
     label: "Audit & Compliance",
     items: [
-      { to: "/audit", label: "Audits", icon: ClipboardCheck },
-      { to: "/activities", label: "Activity Logs", icon: Activity },
+      { to: "/audit", label: "Audits", icon: ClipboardCheck, flag: "audit" },
+      { to: "/activities", label: "Activity Logs", icon: Activity, flag: "activities" },
     ],
   },
 ]
