@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { WebhookSetupHelper } from "@/components/surveys/WebhookSetupHelper"
-import { SurveyDetailSkeleton } from "@/components/SurveysPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
@@ -81,7 +81,7 @@ function SurveyDetailPage() {
     return (
       <PageShell icon={ClipboardList} breadcrumb="Insights · Surveys · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <SurveyDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

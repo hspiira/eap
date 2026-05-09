@@ -19,7 +19,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
-import { ServiceAssignmentDetailSkeleton } from "@/components/ServiceAssignmentsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
@@ -107,7 +107,7 @@ function ServiceAssignmentDetailPage() {
     return (
       <PageShell icon={FileCheck} breadcrumb="Commercial · Service Assignments · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <ServiceAssignmentDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

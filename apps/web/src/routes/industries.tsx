@@ -20,7 +20,7 @@ import {
   SortHeader,
   type SortState,
 } from "@/components/common/SortHeader"
-import { IndustriesListSkeleton } from "@/components/IndustriesPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
 import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Industry } from "@/types/entities"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/industries")({
   component: IndustriesPage,
@@ -256,7 +256,7 @@ function IndustriesPage() {
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
           <div className="col-span-12 flex min-w-0 flex-col overflow-hidden lg:col-span-8">
             {loading ? (
-              <IndustriesListSkeleton />
+              <TableSkeleton cols={3} headers={["Name","Code","Level"]} withPagination />
             ) : error ? (
               <ErrorBlock message={error} onRetry={refetch} />
             ) : items.length === 0 ? (

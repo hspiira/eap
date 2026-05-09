@@ -78,3 +78,13 @@ export function defaultErrorMessage(err: unknown, fallback = 'Something went wro
   if (err instanceof Error && err.message) return err.message
   return fallback
 }
+
+/**
+ * Normalize any thrown value to a string message for display.
+ * Use in catch blocks with a context-specific fallback (e.g. "Failed to load clients").
+ */
+export function normalizeErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message
+  if (typeof err === 'string') return err
+  return fallback
+}

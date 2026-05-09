@@ -22,7 +22,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
-import { PersonDetailSkeleton } from "@/components/PersonsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   TableBody,
@@ -179,7 +179,7 @@ function PersonDetailPage() {
     return (
       <PageShell icon={Users} breadcrumb="People · Persons · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <PersonDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

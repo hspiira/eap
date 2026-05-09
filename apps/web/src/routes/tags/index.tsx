@@ -45,7 +45,7 @@ import {
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/tags/")({
   component: TagsListPage,

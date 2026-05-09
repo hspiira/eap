@@ -20,7 +20,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
-import { ServiceDetailSkeleton } from "@/components/ServicesPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   TableBody,
@@ -119,7 +119,7 @@ function ServiceDetailPage() {
     return (
       <PageShell icon={Wrench} breadcrumb="Catalog · Services · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <ServiceDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

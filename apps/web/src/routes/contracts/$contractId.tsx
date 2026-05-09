@@ -20,7 +20,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
-import { ContractDetailSkeleton } from "@/components/ContractsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -130,7 +130,7 @@ function ContractDetailPage() {
     return (
       <PageShell icon={FileSignature} breadcrumb="Commercial · Contracts · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <ContractDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

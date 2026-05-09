@@ -25,7 +25,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
-import { ContractsListSkeleton } from "@/components/ContractsPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -46,7 +46,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
 import type { Contract } from "@/types/entities"
 import { ContractStatus } from "@/types/enums"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 function isStatus(value: unknown): value is ContractStatus {
   return (
@@ -208,7 +208,7 @@ function ContractsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <ContractsListSkeleton />
+            <TableSkeleton cols={6} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={refetch} />

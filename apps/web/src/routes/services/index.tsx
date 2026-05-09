@@ -24,7 +24,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
-import { ServicesListSkeleton } from "@/components/ServicesPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
 import type { Service } from "@/types/entities"
 import { BaseStatus } from "@/types/enums"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 function isStatus(value: unknown): value is BaseStatus {
   return (
@@ -200,7 +200,7 @@ function ServicesListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <ServicesListSkeleton />
+            <TableSkeleton cols={5} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={refetch} />

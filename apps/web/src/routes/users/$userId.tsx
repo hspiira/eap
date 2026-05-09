@@ -20,7 +20,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import { UserFormSheet } from "@/components/UserFormSheet"
-import { UserDetailSkeleton } from "@/components/UsersPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
@@ -98,7 +98,7 @@ function UserDetailPage() {
     return (
       <PageShell icon={UserCog} breadcrumb="People · Platform Users · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <UserDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

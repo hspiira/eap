@@ -24,7 +24,7 @@ import {
 import { PageShell } from "@/components/common/PageShell"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { EngagementFormSheet } from "@/components/EngagementFormSheet"
-import { EngagementsListSkeleton } from "@/components/EngagementsPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -253,7 +253,7 @@ function EngagementsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <EngagementsListSkeleton />
+            <TableSkeleton cols={5} />
           </div>
         ) : items.length === 0 ? (
           <EmptyState

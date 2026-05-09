@@ -47,7 +47,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 function isTier(value: unknown): value is ClientTier {
   return value === ClientTier.A || value === ClientTier.B || value === ClientTier.C

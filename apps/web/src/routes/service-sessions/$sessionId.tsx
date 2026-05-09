@@ -24,7 +24,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
-import { ServiceSessionDetailSkeleton } from "@/components/ServiceSessionsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -168,7 +168,7 @@ function ServiceSessionDetailPage() {
     return (
       <PageShell icon={CalendarClock} breadcrumb="Delivery · Sessions · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <ServiceSessionDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )

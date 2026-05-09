@@ -43,12 +43,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
-import { UsersListSkeleton } from "@/components/UsersPageSkeletons"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { UserStatus } from "@/types/enums"
-import { normalizeErrorMessage } from "@/utils/errorHandler"
+import { normalizeErrorMessage } from "@/lib/errors"
 
 function isStatus(value: unknown): value is UserStatus {
   return (
@@ -210,7 +210,7 @@ function UsersListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <UsersListSkeleton />
+            <TableSkeleton cols={5} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={refetch} />

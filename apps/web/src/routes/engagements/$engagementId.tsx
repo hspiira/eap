@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { EngagementDetailSkeleton } from "@/components/EngagementsPageSkeletons"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
@@ -120,7 +120,7 @@ function EngagementDetailPage() {
     return (
       <PageShell icon={Briefcase} breadcrumb="Commercial · Engagements · …">
         <div className="min-h-0 flex-1 overflow-auto p-5">
-          <EngagementDetailSkeleton />
+          <DetailSkeleton />
         </div>
       </PageShell>
     )
