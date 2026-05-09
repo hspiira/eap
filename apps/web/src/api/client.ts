@@ -529,7 +529,7 @@ class ApiClient {
     const sanitizedHeaders = isSameOrigin
       ? (headers as Record<string, string>)
       : (() => {
-          const { Authorization, 'x-tenant-id': xTenantId, ...rest } =
+          const { Authorization: _auth, 'x-tenant-id': _tenant, ...rest } =
             (headers as Record<string, string>) || {}
           return rest
         })()

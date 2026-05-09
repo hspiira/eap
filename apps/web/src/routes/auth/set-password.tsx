@@ -5,11 +5,11 @@ import { ArrowLeft, Check } from 'lucide-react'
 import { z } from 'zod'
 
 import { authApi } from '@/api/endpoints/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useApiForm } from '@/hooks/useApiForm'
 import { isApiError, isValidationError } from '@/lib/errors'
 import { ApiError } from '@/types/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/auth/set-password')({
   component: SetPasswordPage,

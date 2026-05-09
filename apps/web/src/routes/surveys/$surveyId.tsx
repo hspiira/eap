@@ -13,9 +13,9 @@ import { surveysApi } from "@/api/endpoints/surveys"
 import { SURVEY_K_FLOOR } from "@/api/endpoints/surveys-fixture"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { WebhookSetupHelper } from "@/components/surveys/WebhookSetupHelper"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -358,32 +358,32 @@ function AggregatePanel({
       </DetailCard>
       <DetailCard title="Per-question outcomes">
         <div className="overflow-hidden rounded-sm border border-fg/10">
-          <table className="w-full text-sm">
-            <thead className="bg-bg">
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-fg/55">
-                <th className="border-b border-fg/15 px-3 py-2">Question</th>
-                <th className="w-16 border-b border-fg/15 px-3 py-2 text-right">n</th>
-                <th className="w-32 border-b border-fg/15 px-3 py-2 text-right">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-bg">
+              <TableRow className="text-left hover:bg-transparent">
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Question</TableHead>
+                <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">n</TableHead>
+                <TableHead className="w-32 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
                   Mean / Top
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {aggregate.question_summaries.map((s) => (
-                <tr key={s.question_key} className="border-b border-fg/10 last:border-0">
-                  <td className="px-3 py-2 text-fg">{s.prompt}</td>
-                  <td className="px-3 py-2 text-right font-mono text-fg">{s.n}</td>
-                  <td className="px-3 py-2 text-right font-mono text-fg/80">
+                <TableRow key={s.question_key} className="border-fg/10 last:border-0">
+                  <TableCell className="px-3 py-2 text-fg">{s.prompt}</TableCell>
+                  <TableCell className="px-3 py-2 text-right font-mono text-fg">{s.n}</TableCell>
+                  <TableCell className="px-3 py-2 text-right font-mono text-fg/80">
                     {s.mean !== null && s.mean !== undefined
                       ? s.mean.toFixed(2)
                       : s.histogram
                         ? topHistogramEntry(s.histogram)
                         : "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </DetailCard>
     </div>

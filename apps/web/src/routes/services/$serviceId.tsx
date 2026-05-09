@@ -17,10 +17,10 @@ import { servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   Table,

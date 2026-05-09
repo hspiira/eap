@@ -1,4 +1,4 @@
-import { useUIStore, type ThemePreference } from '@/store/slices/uiSlice'
+import { type ThemePreference,useUIStore } from '@/store/slices/uiSlice'
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string }> = [
   { value: 'light', label: 'Light' },

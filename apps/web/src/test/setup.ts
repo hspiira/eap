@@ -51,6 +51,15 @@ Object.defineProperty(window, 'sessionStorage', {
   value: new InMemoryStorage(),
 })
 
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class ResizeObserverPolyfill {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  globalThis.ResizeObserver = ResizeObserverPolyfill as unknown as typeof ResizeObserver
+}
+
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

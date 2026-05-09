@@ -470,7 +470,7 @@ const GALLERY_ACTIVITIES: Activity[] = [
     icon: MessageSquare,
     tone: "info",
     title: "New thread",
-    description: "Care manager replied to engagement #4221.",
+    description: "Care manager replied to engagement 4221.",
     time: "3d ago",
   },
 ]

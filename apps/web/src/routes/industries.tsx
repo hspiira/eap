@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
 
-
 import { createFileRoute } from "@tanstack/react-router"
 import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
@@ -15,17 +14,18 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import {
   nextSort,
   SortHeader,
   type SortState,
 } from "@/components/common/SortHeader"
-import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
 import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -33,11 +33,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Industry } from "@/types/entities"
-import { normalizeErrorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/industries")({
   component: IndustriesPage,
@@ -264,7 +264,7 @@ function IndustriesPage() {
             ) : (
               <>
                 <div className="relative min-h-0 flex-1 overflow-auto bg-surface">
-                  <table className="w-full caption-bottom text-sm">
+                  <Table className="w-full caption-bottom text-sm">
                     <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                       <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                         <TableHead>
@@ -323,7 +323,7 @@ function IndustriesPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </table>
+                  </Table>
                 </div>
                 {total > 0 && (
                   <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
@@ -373,15 +373,17 @@ function IconButton({
   onClick?: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+      className="size-7 p-0 text-fg/70"
     >
       <Icon className="size-3.5" />
-    </button>
+    </Button>
   )
 }
 

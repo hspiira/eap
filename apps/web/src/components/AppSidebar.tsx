@@ -25,12 +25,12 @@ import {
   Users,
 } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Sidebar,
@@ -48,7 +48,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { featureFlags, type FeatureFlag } from "@/lib/featureFlags"
+import { type FeatureFlag,featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 
@@ -136,6 +136,16 @@ const SECTIONS: ReadonlyArray<NavSection> = [
   },
 ]
 
+function isItemEnabled(item: NavItem): boolean {
+  return !item.flag || featureFlags[item.flag]
+}
+
+function visibleSections(): NavSection[] {
+  return SECTIONS.map((s) => ({ ...s, items: s.items.filter(isItemEnabled) })).filter(
+    (s) => s.items.length > 0,
+  )
+}
+
 function toProperCase(s: string): string {
   return s
     .split(/\s+/)
@@ -148,9 +158,12 @@ function isRouteActive(pathname: string, to: string): boolean {
   return pathname === to || pathname.startsWith(to + "/")
 }
 
-function findActiveSectionLabel(pathname: string): string | null {
+function findActiveSectionLabel(
+  sections: ReadonlyArray<NavSection>,
+  pathname: string,
+): string | null {
   return (
-    SECTIONS.find((s) => s.items.some((i) => isRouteActive(pathname, i.to)))?.label ?? null
+    sections.find((s) => s.items.some((i) => isRouteActive(pathname, i.to)))?.label ?? null
   )
 }
 
@@ -238,14 +251,15 @@ function ExpandedSection({ label, items, open, onOpenChange }: ExpandedSectionPr
 
 function ExpandedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const sections = visibleSections()
   const [openSection, setOpenSection] = useState<string | null>(
-    () => findActiveSectionLabel(pathname) ?? SECTIONS[0]?.label ?? null,
+    () => findActiveSectionLabel(sections, pathname) ?? sections[0]?.label ?? null,
   )
 
   useEffect(() => {
-    const active = findActiveSectionLabel(pathname)
+    const active = findActiveSectionLabel(sections, pathname)
     if (active) setOpenSection(active)
-  }, [pathname])
+  }, [pathname, sections])
 
   return (
     <>
@@ -254,7 +268,7 @@ function ExpandedSidebar() {
         <SidebarGroup>
           <ExpandedTopItems />
         </SidebarGroup>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <ExpandedSection
             key={section.label}
             {...section}
@@ -359,6 +373,7 @@ function CollapsedHeader() {
 
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const sections = visibleSections()
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       <CollapsedHeader />
@@ -377,7 +392,7 @@ function CollapsedSidebar() {
         </div>
         <div className="mx-2 h-px bg-sidebar-border" role="separator" />
         <div className="flex flex-col gap-0.5">
-          {SECTIONS.map((section) => {
+          {sections.map((section) => {
             const primary = section.items[0]
             const sectionActive = section.items.some((i) => isRouteActive(pathname, i.to))
             return (

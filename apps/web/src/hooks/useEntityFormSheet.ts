@@ -108,8 +108,6 @@ export function useEntityFormSheet<
     } else {
       form.reset(defaultValues)
     }
-    // form is stable; defaultValues reference is owned by the caller
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, entity])
 
   return { ...form, isEdit }

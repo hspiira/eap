@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react"
 
 import { providersApi } from "@/api/endpoints/providers"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { Provider } from "@/types/entities"
 import { AccreditationStatus } from "@/types/enums"
@@ -108,16 +109,17 @@ function TabButton({
 }) {
   const active = current === value
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onClick(value)}
       className={cn(
-        "px-3 py-2 text-sm border-b-2 -mb-px",
+        "h-auto rounded-none border-b-2 px-3 py-2 text-sm hover:bg-transparent -mb-px",
         active ? "border-primary text-fg font-medium" : "border-transparent text-fg/70 hover:text-fg",
       )}
     >
       {children}
-    </button>
+    </Button>
   )
 }
 

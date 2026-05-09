@@ -19,10 +19,10 @@ import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   Table,

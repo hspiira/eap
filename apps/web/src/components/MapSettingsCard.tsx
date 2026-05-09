@@ -3,7 +3,6 @@ import { useState } from "react"
 import { BookOpen, ChevronDown, ChevronUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
 import {
   Card,
   CardContent,
@@ -15,6 +14,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 
 interface ToggleSetting {

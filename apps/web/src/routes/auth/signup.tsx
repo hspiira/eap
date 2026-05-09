@@ -6,12 +6,12 @@ import { z } from 'zod'
 
 import type { TenantCreateResponse } from '@/api/endpoints/tenants'
 import { tenantsApi } from '@/api/endpoints/tenants'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useApiForm } from '@/hooks/useApiForm'
 import { isConflict } from '@/lib/errors'
 import { tenantActions } from '@/lib/tenant-actions'
 import { ApiError } from '@/types/api'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/auth/signup')({
   component: SignupPage,

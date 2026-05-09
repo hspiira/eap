@@ -12,7 +12,6 @@ import {
 } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
-import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -22,6 +21,7 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { Button } from "@/components/ui/button"
 import {

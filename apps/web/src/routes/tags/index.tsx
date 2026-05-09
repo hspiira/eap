@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 
-
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Download,
@@ -27,6 +26,7 @@ import {
 } from "@/components/common/SortHeader"
 import { TagFormSheet } from "@/components/TagFormSheet"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,12 +42,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-import { Checkbox } from "@/components/ui/checkbox"
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
-import { normalizeErrorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/tags/")({
   component: TagsListPage,

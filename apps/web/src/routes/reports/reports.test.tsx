@@ -1,3 +1,4 @@
+import type * as TanstackRouter from '@tanstack/react-router'
 import { screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -5,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from '@/test/utils'
 
 vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-router')>(
+  const actual = await vi.importActual<typeof TanstackRouter>(
     '@tanstack/react-router',
   )
   return {

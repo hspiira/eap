@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeftRight, ArrowUpDown, BellPlus, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Heart, Infinity, Info, Monitor, Plus, Search, Share2, User, Users } from "lucide-react"
+import { ArrowLeftRight, ArrowUpDown, BellPlus, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Heart, Infinity as InfinityIcon, Info, Monitor, Plus, Search, Share2, User, Users } from "lucide-react"
 
 import { AppLayout } from "@/components/AppLayout"
 import { Input } from "@/components/ui/input"
@@ -146,7 +146,7 @@ function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
       </div>
       <div className="mt-3 grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_1fr] gap-3 items-center">
         <div className="flex items-center gap-2">
-          <Infinity className="h-5 w-5 text-gray-600" />
+          <InfinityIcon className="h-5 w-5 text-gray-600" />
           <span className="font-semibold text-gray-900">{row.platformName}</span>
         </div>
         <span className="font-bold text-gray-900">{row.metric1}</span>

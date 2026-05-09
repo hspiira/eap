@@ -25,7 +25,7 @@ export function requireAuthBeforeLoad(intendedPath?: string): void {
     )
     throw redirect({
       to: '/auth/login',
-      search: { redirect: redirectPath },
+      search: { redirect: redirectPath, tenant_code: undefined, email: undefined },
       replace: true,
     })
   }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 
-
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Building2,
@@ -14,7 +13,6 @@ import {
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
-import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -24,10 +22,12 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Table,
   TableBody,
@@ -46,10 +45,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
-import { normalizeErrorMessage } from "@/lib/errors"
 
 function isTier(value: unknown): value is ClientTier {
   return value === ClientTier.A || value === ClientTier.B || value === ClientTier.C

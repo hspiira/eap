@@ -6,9 +6,8 @@ import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { TAG_HEX_COLOR_REGEX, TAG_SUGGESTED_COLORS } from "@/lib/tag-colors"
 import type { ClientTag } from "@/types/entities"
-
-const hexColorRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/
 
 const tagSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -16,22 +15,13 @@ const tagSchema = z.object({
     .string()
     .trim()
     .optional()
-    .refine((v) => !v || hexColorRegex.test(v), "Use a hex color e.g. #103a10"),
+    .refine((v) => !v || TAG_HEX_COLOR_REGEX.test(v), "Use a hex color"),
   description: z.string().optional(),
 })
 
 type TagFormValues = z.infer<typeof tagSchema>
 
 const DEFAULTS: TagFormValues = { name: "", color: "", description: "" }
-
-const SUGGESTED_COLORS = [
-  "#0f5132",
-  "#15803d",
-  "#1d4ed8",
-  "#b45309",
-  "#b91c1c",
-  "#737373",
-] as const
 
 interface TagFormSheetProps {
   open: boolean
@@ -67,7 +57,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
 
   const errors = formState.errors
   const color = watch("color")
-  const validHex = color ? hexColorRegex.test(color) : false
+  const validHex = color ? TAG_HEX_COLOR_REGEX.test(color) : false
 
   return (
     <SheetForm
@@ -101,7 +91,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
           <Input
             id="tag-color"
             type="text"
-            placeholder="#103a10"
+            placeholder="Hex e.g. 6 chars after #"
             className="font-mono"
             {...register("color")}
           />
@@ -112,7 +102,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
           />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {SUGGESTED_COLORS.map((c) => (
+          {TAG_SUGGESTED_COLORS.map((c) => (
             <Button
               key={c}
               type="button"

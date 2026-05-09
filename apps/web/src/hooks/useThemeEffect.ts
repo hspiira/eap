@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { useUIStore, type EffectiveTheme } from '@/store/slices/uiSlice'
+import { type EffectiveTheme,useUIStore } from '@/store/slices/uiSlice'
 
 function getSystemTheme(): EffectiveTheme {
   if (typeof window === 'undefined') return 'light'

@@ -19,11 +19,11 @@ import {
   type AnswersMap,
   QuestionnaireRenderer,
 } from "@/components/care-callbacks/QuestionnaireRenderer"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import {

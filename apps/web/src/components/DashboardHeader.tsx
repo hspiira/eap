@@ -35,11 +35,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useUIStore } from "@/store/slices/uiSlice"
 import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
+import { useUIStore } from "@/store/slices/uiSlice"
 
 const ROUTE_TITLES: Record<string, string> = {
   "/": "Home",

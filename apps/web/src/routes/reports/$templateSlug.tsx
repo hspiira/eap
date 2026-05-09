@@ -17,6 +17,14 @@ import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign, CallbackCampaignAggregate } from "@/types/entities"
 import { CallbackCampaignStatus } from "@/types/enums"
@@ -171,24 +179,24 @@ function DiagnosisPrevalence({ data }: { data: RenewalPackData }) {
 function CareCallbackOutcomes({ data }: { data: RenewalPackData }) {
   return (
     <ReportSection title="Care-callback outcomes">
-      <table className="mt-3 w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-fg/15 text-left text-[11px] font-semibold uppercase tracking-wide text-fg/55">
-            <th className="py-2 pr-3">Outcome</th>
-            <th className="py-2 pr-3">Count</th>
-            <th className="py-2">Share</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="mt-3 w-full border-collapse text-sm">
+        <TableHeader>
+          <TableRow className="border-fg/15 text-left hover:bg-transparent">
+            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">Outcome</TableHead>
+            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">Count</TableHead>
+            <TableHead className="py-2 text-[11px] font-semibold tracking-wide">Share</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data.careCallbacks.map((row) => (
-            <tr key={row.outcome} className="border-b border-fg/10">
-              <td className="py-2 pr-3 text-fg">{row.outcome}</td>
-              <td className="py-2 pr-3 font-mono text-fg">{row.count}</td>
-              <td className="py-2 font-mono text-fg/65">{row.share}%</td>
-            </tr>
+            <TableRow key={row.outcome} className="border-fg/10">
+              <TableCell className="py-2 pr-3 text-fg">{row.outcome}</TableCell>
+              <TableCell className="py-2 pr-3 font-mono text-fg">{row.count}</TableCell>
+              <TableCell className="py-2 font-mono text-fg/65">{row.share}%</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </ReportSection>
   )
 }
@@ -389,32 +397,32 @@ function WaveSummaryBody({
               : "WOS-5 follow-up not collected for this wave."}
           </p>
           <div className="mt-3 overflow-hidden rounded-sm border border-fg/10">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-bg print:bg-white">
-                <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-fg/55">
-                  <th className="border-b border-fg/15 px-3 py-2">Question</th>
-                  <th className="w-16 border-b border-fg/15 px-3 py-2 text-right">n</th>
-                  <th className="w-32 border-b border-fg/15 px-3 py-2 text-right">
+            <Table className="w-full border-collapse text-sm">
+              <TableHeader className="bg-bg print:bg-white">
+                <TableRow className="text-left hover:bg-transparent">
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Question</TableHead>
+                  <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">n</TableHead>
+                  <TableHead className="w-32 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
                     Mean / Top
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {aggregate.question_summaries.map((s) => (
-                  <tr key={s.question_key} className="border-b border-fg/10 last:border-0">
-                    <td className="px-3 py-2 text-fg">{s.prompt}</td>
-                    <td className="px-3 py-2 text-right font-mono text-fg">{s.n}</td>
-                    <td className="px-3 py-2 text-right font-mono text-fg/80">
+                  <TableRow key={s.question_key} className="border-fg/10 last:border-0">
+                    <TableCell className="px-3 py-2 text-fg">{s.prompt}</TableCell>
+                    <TableCell className="px-3 py-2 text-right font-mono text-fg">{s.n}</TableCell>
+                    <TableCell className="px-3 py-2 text-right font-mono text-fg/80">
                       {s.mean !== null && s.mean !== undefined
                         ? s.mean.toFixed(2)
                         : s.histogram
                           ? topHistogramEntry(s.histogram)
                           : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </ReportSection>
       )}

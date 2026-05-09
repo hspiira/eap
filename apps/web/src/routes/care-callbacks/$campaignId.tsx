@@ -13,9 +13,9 @@ import {
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import { clientsApi } from "@/api/endpoints/clients"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import {

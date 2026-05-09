@@ -27,7 +27,11 @@ function AtRiskRoute() {
     return (
       <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-surface">
         <p className="text-fg">Sign in to view At Risk.</p>
-        <Link to="/auth/login" className="text-primary hover:underline">
+        <Link
+          to="/auth/login"
+          search={{ redirect: undefined, tenant_code: undefined, email: undefined }}
+          className="text-primary hover:underline"
+        >
           Sign in
         </Link>
       </div>

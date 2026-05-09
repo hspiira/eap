@@ -21,10 +21,10 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -203,15 +203,17 @@ function ServiceSessionDetailPage() {
       breadcrumb={`Delivery · Sessions · ${new Date(session.scheduled_at).toLocaleString()}`}
       actions={
         <>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate({ to: "/service-sessions" })}
             aria-label="Back to sessions"
             title="Back to sessions"
-            className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+            className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </button>
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -597,13 +599,15 @@ function FeedbackPanel({
         <FormField label="Rating" optional>
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button
+              <Button
                 key={n}
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setRating(rating === n ? null : n)}
                 aria-label={`${n} stars`}
                 className={cn(
-                  "grid size-8 place-items-center rounded-sm transition-colors hover:bg-surface-hover",
+                  "size-8 p-0 hover:bg-surface-hover",
                   rating != null && n <= rating ? "text-primary" : "text-fg/35",
                 )}
               >
@@ -613,16 +617,18 @@ function FeedbackPanel({
                     rating != null && n <= rating ? "fill-primary" : "",
                   )}
                 />
-              </button>
+              </Button>
             ))}
             {rating != null ? (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setRating(null)}
-                className="ml-2 text-xs text-fg/55 hover:text-fg"
+                className="ml-2 h-auto p-0 text-xs text-fg/55 hover:bg-transparent hover:text-fg"
               >
                 Clear
-              </button>
+              </Button>
             ) : null}
           </div>
         </FormField>

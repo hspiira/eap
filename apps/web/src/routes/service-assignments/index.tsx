@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 
-
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Download,
@@ -21,11 +20,12 @@ import {
   FilterTrigger,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
-import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,13 +41,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-import { Checkbox } from "@/components/ui/checkbox"
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ServiceAssignment } from "@/types/entities"
 import { BaseStatus } from "@/types/enums"
-import { normalizeErrorMessage } from "@/lib/errors"
 
 function isStatus(value: unknown): value is BaseStatus {
   return (

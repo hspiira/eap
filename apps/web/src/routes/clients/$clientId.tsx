@@ -19,7 +19,6 @@ import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
@@ -28,6 +27,7 @@ import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import {
   compareSort,
   nextSort,

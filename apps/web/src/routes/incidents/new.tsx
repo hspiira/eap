@@ -1,10 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { incidentsApi } from "@/api/endpoints/incidents"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useApiForm } from "@/hooks/useApiForm"
 import { useEntityMutation } from "@/lib/queries"
 import { IncidentSeverity } from "@/types/enums"
@@ -39,7 +48,7 @@ function IncidentCreatePage() {
     mutationFn: incidentsApi.create,
   })
 
-  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof incidentCreateSchema>>({
+  const { register, control, formState, submit, serverError } = useApiForm<z.infer<typeof incidentCreateSchema>>({
     schema: incidentCreateSchema,
     defaultValues: {
       client_id: "",
@@ -95,10 +104,10 @@ function IncidentCreatePage() {
             error={formState.errors.description?.message as string | undefined}
             htmlFor="description"
           >
-            <textarea
+            <Textarea
               id="description"
               rows={4}
-              className="flex w-full border border-fg/30 bg-white px-3 py-2 text-sm text-fg rounded-none"
+              className="rounded-none"
               {...register("description")}
             />
           </FormField>
@@ -109,17 +118,24 @@ function IncidentCreatePage() {
               error={formState.errors.severity?.message as string | undefined}
               htmlFor="severity"
             >
-              <select
-                id="severity"
-                className="flex h-9 w-full border border-fg/30 bg-white px-3 py-2 rounded-none text-fg"
-                {...register("severity")}
-              >
-                {SEVERITY_VALUES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="severity"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="severity">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SEVERITY_VALUES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <FormField
               label="Affected population"

@@ -142,7 +142,6 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
     setPage(1)
   }
 
-  const totalPages = Math.max(1, Math.ceil(TOTAL_MOCK / LIMIT))
   const displayData = MOCK_DATA
 
   return (

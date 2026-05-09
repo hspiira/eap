@@ -3,6 +3,7 @@
  * axe-core issues. Pairs with the keyboard-walkthrough manual QA in Phase 1 #5.
  */
 
+import type * as TanstackRouter from '@tanstack/react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { configureAxe } from 'vitest-axe'
 
@@ -34,7 +35,7 @@ vi.mock('@/api/endpoints/providers', () => ({
   providersApi: { list: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
 }))
 vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-router')>(
+  const actual = await vi.importActual<typeof TanstackRouter>(
     '@tanstack/react-router',
   )
   return {
