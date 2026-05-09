@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, FileSignature, Pencil, RotateCw } from "lucide-react"
+import {
+  ArrowLeft,
+  ChevronRight,
+  FileCheck,
+  FileSignature,
+  Pencil,
+  Plus,
+  RotateCw,
+} from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
+import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
@@ -12,16 +21,24 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { ContractDetailSkeleton } from "@/components/ContractsPageSkeletons"
+import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import type { Client, Contract } from "@/types/entities"
+import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/contracts/$contractId")({
   component: ContractDetailPage,
 })
 
-type TabValue = "overview" | "billing" | "history"
+type TabValue = "overview" | "services" | "billing" | "history"
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
@@ -32,6 +49,9 @@ function ContractDetailPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [tab, setTab] = useState<TabValue>("overview")
   const [editOpen, setEditOpen] = useState(false)
+  const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
+  const [assignments, setAssignments] = useState<ServiceAssignment[]>([])
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false)
 
   const fetchContract = useCallback(async () => {
     try {
@@ -47,6 +67,26 @@ function ContractDetailPage() {
   useEffect(() => {
     fetchContract()
   }, [fetchContract])
+
+  const fetchAssignments = useCallback(() => {
+    setAssignmentsLoading(true)
+    return serviceAssignmentsApi
+      .list({
+        limit: 50,
+        ...({ contract_id: contractId } as Record<string, unknown>),
+      })
+      .then((res) =>
+        setAssignments(
+          (res.items ?? []).filter((a) => a.contract_id === contractId),
+        ),
+      )
+      .catch(() => setAssignments([]))
+      .finally(() => setAssignmentsLoading(false))
+  }, [contractId])
+
+  useEffect(() => {
+    fetchAssignments()
+  }, [fetchAssignments])
 
   useEffect(() => {
     if (!contract?.client_id) {
@@ -166,12 +206,26 @@ function ContractDetailPage() {
         onSaved={(updated) => setContract(updated)}
       />
 
+      <ServiceAssignmentFormSheet
+        open={addAssignmentOpen}
+        onOpenChange={setAddAssignmentOpen}
+        contractId={contract.id}
+        contract={contract}
+        onSaved={() => {
+          fetchAssignments()
+          setTab("services")
+        }}
+      />
+
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
               <TabsList className="-mx-3 mb-4 px-3">
                 <Tab value="overview">Overview</Tab>
+                <Tab value="services" count={assignments.length}>
+                  Services
+                </Tab>
                 <Tab value="billing">Billing</Tab>
                 <Tab value="history">History</Tab>
               </TabsList>
@@ -210,6 +264,14 @@ function ContractDetailPage() {
                     </DetailGrid>
                   </DetailCard>
                 </div>
+              </TabPanel>
+
+              <TabPanel value="services">
+                <ServicesPanel
+                  assignments={assignments}
+                  loading={assignmentsLoading}
+                  onAdd={() => setAddAssignmentOpen(true)}
+                />
               </TabPanel>
 
               <TabPanel value="billing">
@@ -450,4 +512,92 @@ function initial(name: string): string {
   const parts = trimmed.split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   return trimmed.slice(0, 2).toUpperCase()
+}
+
+function ServicesPanel({
+  assignments,
+  loading,
+  onAdd,
+}: {
+  assignments: ServiceAssignment[]
+  loading: boolean
+  onAdd: () => void
+}) {
+  if (loading) {
+    return <p className="text-sm text-fg/65">Loading assignments…</p>
+  }
+  if (assignments.length === 0) {
+    return (
+      <EmptyState
+        icon={FileCheck}
+        title="No services assigned yet"
+        description="Link a service to start billing sessions against this contract."
+        action={
+          <Button size="sm" className="gap-1.5" onClick={onAdd}>
+            <Plus className="size-4" />
+            Add service
+          </Button>
+        }
+      />
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-fg/55">
+          {assignments.length} service
+          {assignments.length === 1 ? "" : "s"} covered.
+        </p>
+        <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+          <Plus className="size-3.5" />
+          Add service
+        </Button>
+      </div>
+      <div className="overflow-hidden border border-fg/10 bg-surface">
+        <table className="w-full caption-bottom text-sm">
+          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+            <TableRow className="border-fg/8 hover:bg-transparent">
+              <TableHead>Service</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Start</TableHead>
+              <TableHead>End</TableHead>
+              <TableHead className="w-10 text-right text-fg/65">
+                <span className="sr-only">Open</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {assignments.map((a) => (
+              <TableRow key={a.id} className="group border-fg/8">
+                <TableCell>
+                  <Link
+                    to="/service-assignments/$assignmentId"
+                    params={{ assignmentId: a.id }}
+                    className="font-mono text-sm text-fg group-hover:text-primary"
+                  >
+                    {a.service_id.slice(0, 8)}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={a.status} />
+                </TableCell>
+                <TableCell className="text-sm text-fg/75">{a.start_date ?? "—"}</TableCell>
+                <TableCell className="text-sm text-fg/75">{a.end_date ?? "—"}</TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    to="/service-assignments/$assignmentId"
+                    params={{ assignmentId: a.id }}
+                    aria-label="Open assignment"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </table>
+      </div>
+    </div>
+  )
 }
