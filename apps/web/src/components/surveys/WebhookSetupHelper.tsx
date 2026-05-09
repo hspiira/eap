@@ -24,12 +24,12 @@ interface Props {
 
 export function WebhookSetupHelper({ webhookUrl, webhookToken, onRotateToken, rotating, readOnly }: Props) {
   return (
-    <section className="border border-fg/20 bg-white p-4 space-y-4">
+    <section className="space-y-4 rounded-sm border border-fg/10 bg-surface p-4">
       <header>
         <h2 className="text-sm font-semibold text-fg">Webhook setup</h2>
         <p className="mt-1 text-xs text-fg/60">
           Configure your survey provider to POST each response to this endpoint with the
-          shared secret in the <code>X-Evexia-Token</code> header.
+          shared secret in the <code className="font-mono">X-Evexia-Token</code> header.
         </p>
       </header>
 
@@ -41,19 +41,19 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken, onRotateToken, ro
       <div className="flex justify-end">
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
           disabled={readOnly || rotating}
           onClick={() => onRotateToken()}
-          className="rounded-none border-fg/30 text-fg"
+          className="gap-1.5"
         >
-          <RefreshCcw className="mr-2 h-4 w-4" />
+          <RefreshCcw className="size-3.5" />
           {rotating ? "Rotating…" : "Rotate token"}
         </Button>
       </div>
 
       <details className="border-t border-fg/10 pt-3">
-        <summary className="cursor-pointer text-xs uppercase tracking-wide text-fg/70">
+        <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-fg/70">
           Google Forms — step-by-step
         </summary>
         <ol className="mt-2 list-decimal pl-5 text-sm text-fg/80 space-y-1">
@@ -102,16 +102,18 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
 
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-fg/60">{label}</p>
-      <div className="mt-1 flex items-stretch border border-fg/20">
-        <code className="flex-1 truncate bg-neutral-50 px-3 py-2 text-sm text-fg">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-fg/55">
+        {label}
+      </p>
+      <div className="mt-1 flex items-stretch overflow-hidden rounded-sm border border-fg/15">
+        <code className="flex-1 truncate bg-bg px-3 py-2 font-mono text-xs text-fg">
           {display}
         </code>
         {mask && (
           <button
             type="button"
             onClick={() => setRevealed((v) => !v)}
-            className="border-l border-fg/20 px-3 text-xs uppercase tracking-wide text-fg/70 hover:text-fg"
+            className="border-l border-fg/15 bg-bg px-3 text-[10px] font-semibold uppercase tracking-wide text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
           >
             {revealed ? "Hide" : "Show"}
           </button>
@@ -119,10 +121,10 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
         <button
           type="button"
           onClick={handleCopy}
-          className="border-l border-fg/20 px-3 text-fg/70 hover:text-fg"
+          className="grid size-9 place-items-center border-l border-fg/15 bg-bg text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
           aria-label={`Copy ${label}`}
         >
-          {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+          {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
         </button>
       </div>
     </div>

@@ -1,124 +1,552 @@
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { Plus } from "lucide-react"
+import { useEffect, useState } from "react"
+
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import {
+  AlertTriangle,
+  Briefcase,
+  Download,
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  RotateCw,
+} from "lucide-react"
 
 import { engagementsApi } from "@/api/endpoints/engagements"
-import { EngagementStatus } from "@/types/enums"
+import { EmptyState } from "@/components/common/EmptyState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterChip,
+  FilterSearch,
+  FilterTrigger,
+} from "@/components/common/FilterBar"
+import { PageShell } from "@/components/common/PageShell"
+import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { EngagementFormSheet } from "@/components/EngagementFormSheet"
+import { EngagementsListSkeleton } from "@/components/EngagementsPageSkeletons"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import type { Engagement } from "@/types/entities"
+import { EngagementStatus, EngagementType } from "@/types/enums"
+
+function isStatus(v: unknown): v is EngagementStatus {
+  return (
+    v === EngagementStatus.SCOPING ||
+    v === EngagementStatus.ACTIVE ||
+    v === EngagementStatus.DELIVERED ||
+    v === EngagementStatus.CLOSED ||
+    v === EngagementStatus.CANCELLED
+  )
+}
+
+function isType(v: unknown): v is EngagementType {
+  return (
+    v === EngagementType.POLICY_DRAFT ||
+    v === EngagementType.TRAINING ||
+    v === EngagementType.ASSESSMENT ||
+    v === EngagementType.ADVISORY ||
+    v === EngagementType.AUDIT ||
+    v === EngagementType.OTHER
+  )
+}
 
 export const Route = createFileRoute("/engagements/")({
   component: EngagementsListPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    const out: {
+      new?: boolean
+      search?: string
+      status?: EngagementStatus
+      type?: EngagementType
+      overdue?: boolean
+    } = {}
+    if (search.new === "1" || search.new === true) out.new = true
+    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
+    if (isStatus(search.status)) out.status = search.status
+    if (isType(search.type)) out.type = search.type
+    if (search.overdue === "1" || search.overdue === true) out.overdue = true
+    return out
+  },
 })
 
-function statusBadgeClass(status: EngagementStatus): string {
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: EngagementStatus.SCOPING, label: "Scoping" },
+  { value: EngagementStatus.ACTIVE, label: "Active" },
+  { value: EngagementStatus.DELIVERED, label: "Delivered" },
+  { value: EngagementStatus.CLOSED, label: "Closed" },
+  { value: EngagementStatus.CANCELLED, label: "Cancelled" },
+] as const
+
+const TYPE_OPTIONS = [
+  { value: "all", label: "All types" },
+  { value: EngagementType.POLICY_DRAFT, label: "Policy draft" },
+  { value: EngagementType.TRAINING, label: "Training" },
+  { value: EngagementType.ASSESSMENT, label: "Assessment" },
+  { value: EngagementType.ADVISORY, label: "Advisory" },
+  { value: EngagementType.AUDIT, label: "Audit" },
+  { value: EngagementType.OTHER, label: "Other" },
+] as const
+
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+type TypeFilter = (typeof TYPE_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
+
+function EngagementsListPage() {
+  const searchParams = useSearch({ from: "/engagements/" })
+  const navigate = useNavigate({ from: "/engagements/" })
+  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
+  const [addOpen, setAddOpen] = useState(false)
+  const [sort, setSort] = useState<SortState>({ field: "due_date", desc: false })
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (searchParams.new) {
+      setAddOpen(true)
+      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
+    }
+  }, [searchParams.new, navigate])
+
+  const query = useQuery({
+    queryKey: ["engagements", "list"],
+    queryFn: () => engagementsApi.list(),
+    staleTime: 30_000,
+  })
+  const allItems = query.data?.items ?? []
+  const items = filterAndSort(allItems, {
+    search: searchInput.trim(),
+    status: searchParams.status,
+    type: searchParams.type,
+    overdueOnly: searchParams.overdue ?? false,
+    sort,
+  })
+  const loading = query.isPending
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["engagements", "list"] })
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : (next as EngagementStatus)
+    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
+  }
+  const handleTypeChange = (next: TypeFilter) => {
+    const type = next === "all" ? undefined : (next as EngagementType)
+    navigate({ search: (prev) => ({ ...prev, type }), replace: true })
+  }
+  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
+  const overdueCount = allItems.filter((e) => isOverdue(e.due_date, e.status)).length
+  const hasFilters =
+    Boolean(searchInput) ||
+    Boolean(searchParams.status) ||
+    Boolean(searchParams.type) ||
+    Boolean(searchParams.overdue)
+
+  return (
+    <PageShell
+      icon={Briefcase}
+      breadcrumb="Commercial · Consultancy engagements"
+      actions={
+        <>
+          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Plus className="size-3.5" />
+            New engagement
+          </Button>
+        </>
+      }
+    >
+      <FilterBar>
+        <FilterButton
+          options={[
+            { id: "status", label: "Status" },
+            { id: "type", label: "Type" },
+            { id: "client", label: "Client" },
+          ]}
+        />
+        {searchParams.status ? (
+          <FilterChip
+            label={`Status is ${searchParams.status}`}
+            onRemove={() => handleStatusChange("all")}
+          />
+        ) : null}
+        {searchParams.type ? (
+          <FilterChip
+            label={`Type is ${searchParams.type}`}
+            onRemove={() => handleTypeChange("all")}
+          />
+        ) : null}
+        {searchParams.overdue ? (
+          <FilterChip
+            label="Overdue"
+            onRemove={() =>
+              navigate({
+                search: (prev) => ({ ...prev, overdue: undefined }),
+                replace: true,
+              })
+            }
+          />
+        ) : null}
+        <FilterTrigger
+          label="All statuses"
+          value={(searchParams.status ?? "all") as StatusFilter}
+          options={STATUS_OPTIONS}
+          onChange={handleStatusChange}
+        />
+        <FilterTrigger
+          label="All types"
+          value={(searchParams.type ?? "all") as TypeFilter}
+          options={TYPE_OPTIONS}
+          onChange={handleTypeChange}
+        />
+        <button
+          type="button"
+          onClick={() =>
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                overdue: searchParams.overdue ? undefined : true,
+              }),
+              replace: true,
+            })
+          }
+          className={cn(
+            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-sm border px-2 text-sm transition-colors",
+            searchParams.overdue
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-600"
+              : "border-fg/25 bg-bg text-fg/80 hover:bg-surface-hover",
+          )}
+        >
+          <AlertTriangle className="size-3.5" />
+          Overdue only
+          {overdueCount > 0 ? (
+            <span className="font-mono text-[10px] text-fg/55">({overdueCount})</span>
+          ) : null}
+        </button>
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search engagements…"
+        />
+      </FilterBar>
+
+      <EngagementFormSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSaved={() => refetch()}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
+        {loading ? (
+          <div className="flex-1 overflow-auto p-5">
+            <EngagementsListSkeleton />
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={Briefcase}
+            title={hasFilters ? "No engagements match your filters" : "No engagements yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear filters."
+                : "Create a consultancy engagement to track scope, deliverables, and hours."
+            }
+            action={
+              hasFilters ? null : (
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  New engagement
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <div className="relative min-h-0 flex-1 overflow-auto">
+            <table className="w-full caption-bottom text-sm">
+              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                  <TableHead className="w-10 px-3">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all"
+                      className="size-3.5 cursor-pointer accent-primary"
+                    />
+                  </TableHead>
+                  <TableHead>
+                    <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                      Engagement
+                    </SortHeader>
+                  </TableHead>
+                  <TableHead>
+                    <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                      Status
+                    </SortHeader>
+                  </TableHead>
+                  <TableHead>
+                    <SortHeader field="engagement_type" sort={sort} onToggle={toggleSort}>
+                      Type
+                    </SortHeader>
+                  </TableHead>
+                  <TableHead>
+                    <SortHeader field="due_date" sort={sort} onToggle={toggleSort}>
+                      Due
+                    </SortHeader>
+                  </TableHead>
+                  <TableHead className="text-fg/65">Hours</TableHead>
+                  <TableHead className="w-16 text-right text-fg/65">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((e) => (
+                  <EngagementRow key={e.id} row={e} />
+                ))}
+              </TableBody>
+            </table>
+          </div>
+        )}
+      </div>
+    </PageShell>
+  )
+}
+
+function EngagementRow({ row }: { row: Engagement }) {
+  const overdue = isOverdue(row.due_date, row.status)
+  const budgetPct = row.budget_hours
+    ? Math.round((row.hours_logged / row.budget_hours) * 100)
+    : null
+  return (
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
+        <input
+          type="checkbox"
+          aria-label={`Select ${row.name}`}
+          onClick={(e) => e.stopPropagation()}
+          className="size-3.5 cursor-pointer accent-primary"
+        />
+      </TableCell>
+      <TableCell>
+        <Link
+          to="/engagements/$engagementId"
+          params={{ engagementId: row.id }}
+          className="flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <Briefcase className="size-3" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
+              {row.name}
+            </span>
+            <span className="block truncate text-xs text-fg/55">
+              Started {new Date(row.start_date).toLocaleDateString()}
+            </span>
+          </span>
+        </Link>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1.5">
+          <EngagementStatusPill status={row.status} />
+          {overdue ? (
+            <span
+              title="Past due date and not yet delivered"
+              className="inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600"
+            >
+              <AlertTriangle className="size-3" />
+              Overdue
+            </span>
+          ) : null}
+        </div>
+      </TableCell>
+      <TableCell className="text-xs text-fg/75">{row.engagement_type}</TableCell>
+      <TableCell className="text-sm text-fg/75">
+        {row.due_date ? new Date(row.due_date).toLocaleDateString() : "—"}
+      </TableCell>
+      <TableCell>
+        <div className="min-w-32">
+          <div className="flex items-center justify-between text-xs text-fg/65">
+            <span className="font-mono">
+              {row.hours_logged.toFixed(1)}
+              {row.budget_hours ? `/${row.budget_hours}` : ""}
+            </span>
+            {budgetPct !== null ? (
+              <span
+                className={cn(
+                  "font-mono",
+                  budgetPct > 100 ? "text-amber-600" : "text-fg/55",
+                )}
+              >
+                {budgetPct}%
+              </span>
+            ) : null}
+          </div>
+          {budgetPct !== null ? (
+            <div
+              className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10"
+              aria-hidden
+            >
+              <div
+                className={cn(
+                  "h-full",
+                  budgetPct > 100 ? "bg-amber-500" : "bg-primary",
+                )}
+                style={{ width: `${Math.min(100, budgetPct)}%` }}
+              />
+            </div>
+          ) : null}
+        </div>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/engagements/$engagementId"
+            params={{ engagementId: row.id }}
+            aria-label={`Open ${row.name}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={`More actions for ${row.name}`}
+                className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+              >
+                <MoreHorizontal className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/engagements/$engagementId"
+                  params={{ engagementId: row.id }}
+                >
+                  View details
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+export function EngagementStatusPill({ status }: { status: EngagementStatus }) {
+  const tone = statusTone(status)
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium",
+        tone,
+      )}
+    >
+      {status}
+    </span>
+  )
+}
+
+function statusTone(status: EngagementStatus): string {
   switch (status) {
     case EngagementStatus.ACTIVE:
-      return "border-primary/40 bg-primary/10 text-primary"
+      return "border-primary/30 bg-primary/10 text-primary"
     case EngagementStatus.SCOPING:
-      return "border-fg/30 bg-neutral-50 text-fg"
+      return "border-fg/20 bg-bg text-fg"
     case EngagementStatus.DELIVERED:
-      return "border-stone/40 bg-danger/10 text-fg"
+      return "border-amber-500/40 bg-amber-500/10 text-amber-600"
     case EngagementStatus.CLOSED:
-      return "border-fg/20 bg-white text-fg/60"
+      return "border-fg/15 bg-bg text-fg/60"
     case EngagementStatus.CANCELLED:
-      return "border-danger-soft/40 bg-danger-soft/10 text-danger-soft"
+      return "border-danger/30 bg-danger-soft text-danger-fg"
     default:
-      return "border-fg/30 bg-white text-fg"
+      return "border-fg/15 bg-bg text-fg/65"
   }
 }
 
-/**
- * `true` when the engagement's due date has passed but it is not yet delivered/closed.
- * Drives the inline yellow indicator in the list.
- */
-function isOverdue(due: string | null | undefined, status: EngagementStatus): boolean {
+export function isOverdue(
+  due: string | null | undefined,
+  status: EngagementStatus,
+): boolean {
   if (!due) return false
   if (status === EngagementStatus.DELIVERED || status === EngagementStatus.CLOSED) return false
   if (status === EngagementStatus.CANCELLED) return false
   return Date.parse(due) < Date.now()
 }
 
-function EngagementsListPage() {
-  const query = useQuery({
-    queryKey: ["engagements", "list"],
-    queryFn: () => engagementsApi.list(),
-    staleTime: 30_000,
-  })
-  const items = query.data?.items ?? []
-
+function IconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick?: () => void
+}) {
   return (
-    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
-      <div className="mx-auto max-w-5xl space-y-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-fg">Engagements</h1>
-            <p className="mt-1 text-sm text-fg/70">
-              Consultancy work — policy drafts, training, audits, advisory. Tracks scope,
-              deliverables, and hours-logged.
-            </p>
-          </div>
-          <Link
-            to="/engagements/new"
-            className="inline-flex h-9 items-center gap-1.5 px-4 bg-primary text-white font-medium rounded-none hover:bg-primary"
-          >
-            <Plus className="h-4 w-4" />
-            New engagement
-          </Link>
-        </header>
-
-        {query.isPending ? (
-          <p className="text-sm text-fg/60">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-fg/60">No engagements yet.</p>
-        ) : (
-          <ul className="divide-y divide-ink/10 border border-fg/20 bg-white">
-            {items.map((e) => {
-              const overdue = isOverdue(e.due_date, e.status)
-              const budgetPct = e.budget_hours
-                ? Math.round((e.hours_logged / e.budget_hours) * 100)
-                : null
-              return (
-                <li key={e.id} className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        to="/engagements/$engagementId"
-                        params={{ engagementId: e.id }}
-                        className="text-sm font-semibold text-fg hover:text-primary hover:underline"
-                      >
-                        {e.name}
-                      </Link>
-                      <p className="mt-1 text-xs text-fg/60">
-                        {e.engagement_type} · started{" "}
-                        {new Date(e.start_date).toLocaleDateString()}
-                        {e.due_date
-                          ? ` · due ${new Date(e.due_date).toLocaleDateString()}`
-                          : ""}
-                        {overdue && (
-                          <span className="ml-2 border border-amber-500/40 bg-amber-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-700">
-                            Overdue
-                          </span>
-                        )}
-                      </p>
-                      {e.description ? (
-                        <p className="mt-1 text-sm text-fg/70 line-clamp-2">{e.description}</p>
-                      ) : null}
-                      <p className="mt-2 text-xs text-fg/60">
-                        Hours: {e.hours_logged}
-                        {e.budget_hours ? ` / ${e.budget_hours} (${budgetPct}%)` : ""}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 border px-2 py-0.5 text-[11px] uppercase tracking-wide ${statusBadgeClass(e.status)}`}
-                    >
-                      {e.status}
-                    </span>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="grid size-7 place-items-center rounded-sm text-fg/70 transition-colors hover:bg-surface-hover hover:text-fg"
+    >
+      <Icon className="size-3.5" />
+    </button>
   )
+}
+
+function filterAndSort(
+  items: Engagement[],
+  opts: {
+    search: string
+    status?: EngagementStatus
+    type?: EngagementType
+    overdueOnly: boolean
+    sort: SortState
+  },
+): Engagement[] {
+  let out = items
+  if (opts.status) out = out.filter((e) => e.status === opts.status)
+  if (opts.type) out = out.filter((e) => e.engagement_type === opts.type)
+  if (opts.overdueOnly) out = out.filter((e) => isOverdue(e.due_date, e.status))
+  if (opts.search) {
+    const q = opts.search.toLowerCase()
+    out = out.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.description?.toLowerCase().includes(q) ||
+        e.client_id.toLowerCase().includes(q),
+    )
+  }
+  if (opts.sort.field) {
+    const dir = opts.sort.desc ? -1 : 1
+    out = [...out].sort((a, b) => {
+      const av = (a as unknown as Record<string, unknown>)[opts.sort.field as string]
+      const bv = (b as unknown as Record<string, unknown>)[opts.sort.field as string]
+      if (av == null && bv == null) return 0
+      if (av == null) return 1
+      if (bv == null) return -1
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir
+      return String(av).localeCompare(String(bv)) * dir
+    })
+  }
+  return out
 }
