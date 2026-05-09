@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   BadgeCheck,
@@ -104,8 +104,6 @@ function UsersListPage() {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const limit = 20
-  const queryClient = useQueryClient()
-
   const toggleSort = (field: string) => {
     setSort((prev) => nextSort(prev, field))
     setPage(1)
@@ -152,7 +150,6 @@ function UsersListPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const refetch = () => queryClient.invalidateQueries({ queryKey: ["users", "list"] })
   const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || security !== "all"
 
   return (
@@ -161,7 +158,7 @@ function UsersListPage() {
       breadcrumb="People · Platform Users"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
@@ -205,7 +202,7 @@ function UsersListPage() {
         />
       </FilterBar>
 
-      <UserFormSheet open={addOpen} onOpenChange={setAddOpen} onSaved={() => refetch()} />
+      <UserFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -213,7 +210,7 @@ function UsersListPage() {
             <TableSkeleton cols={5} />
           </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={refetch} />
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={UserCog}

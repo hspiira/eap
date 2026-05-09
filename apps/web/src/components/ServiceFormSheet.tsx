@@ -1,10 +1,18 @@
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { servicesApi } from "@/api/endpoints/services"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Service } from "@/types/entities"
 
@@ -59,9 +67,6 @@ const schema = z
 
 type Values = z.infer<typeof schema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 const EMPTY: Values = {
   name: "",
   description: "",
@@ -86,7 +91,7 @@ export function ServiceFormSheet({
   service,
   onSaved,
 }: ServiceFormSheetProps) {
-  const { register, formState, submit, serverError, watch, isEdit } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError, watch, isEdit } = useEntityFormSheet<
     Values,
     Parameters<typeof servicesApi.create>[0],
     Service,
@@ -173,14 +178,24 @@ export function ServiceFormSheet({
           error={errors.service_type?.message}
           htmlFor="sv-type"
         >
-          <select id="sv-type" className={SELECT_CLASS} {...register("service_type")}>
-            <option value="">Unset</option>
-            {SERVICE_TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {humanize(t)}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="service_type"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="sv-type">
+                  <SelectValue placeholder="Unset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SERVICE_TYPE_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {humanize(t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
         <FormField
           label="Category"

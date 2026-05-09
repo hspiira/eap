@@ -1,14 +1,22 @@
 import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
@@ -57,9 +65,6 @@ const contractSchema = z
 
 type ContractFormValues = z.infer<typeof contractSchema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 const EMPTY: ContractFormValues = {
   client_id: "",
   contract_number: "",
@@ -93,9 +98,8 @@ export function ContractFormSheet({
   onSaved,
 }: ContractFormSheetProps) {
   const lockedClientId = clientId ?? contract?.client_id
-  const queryClient = useQueryClient()
 
-  const { register, formState, submit, serverError, setValue, watch, isEdit } =
+  const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
       ContractFormValues,
       Parameters<typeof contractsApi.create>[0],
@@ -139,14 +143,10 @@ export function ContractFormSheet({
           ? contractsApi.update(entity.id, payload)
           : contractsApi.create(payload),
       successToast: { create: "Contract created", update: "Contract updated" },
-      onSaved: (result) => {
-        if (lockedClientId) {
-          void queryClient.invalidateQueries({
-            queryKey: ["clients", "detail", lockedClientId],
-          })
-        }
-        onSaved?.(result)
-      },
+      extraInvalidations: lockedClientId
+        ? [{ queryKey: ["clients", "detail", lockedClientId] }]
+        : undefined,
+      onSaved,
     })
 
   const watchedClientId = watch("client_id")
@@ -249,18 +249,24 @@ export function ContractFormSheet({
             error={errors.billing_frequency?.message}
             htmlFor="cf-frequency"
           >
-            <select
-              id="cf-frequency"
-              className={SELECT_CLASS}
-              {...register("billing_frequency")}
-            >
-              <option value="">Unset</option>
-              {FREQUENCY_VALUES.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="billing_frequency"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="cf-frequency">
+                    <SelectValue placeholder="Unset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCY_VALUES.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
           <FormField
             label="Payment status"
@@ -268,18 +274,24 @@ export function ContractFormSheet({
             error={errors.payment_status?.message}
             htmlFor="cf-payment-status"
           >
-            <select
-              id="cf-payment-status"
-              className={SELECT_CLASS}
-              {...register("payment_status")}
-            >
-              <option value="">Unset</option>
-              {PAYMENT_STATUS_VALUES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="payment_status"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="cf-payment-status">
+                    <SelectValue placeholder="Unset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_STATUS_VALUES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
         </div>
         <div className="grid grid-cols-[1fr_6rem] gap-3">
@@ -388,13 +400,15 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
           <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -417,10 +431,11 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
           <ul className="divide-y divide-fg/8">
             {items.map((c) => (
               <li key={c.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(c.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -436,7 +451,7 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
                       {c.code}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

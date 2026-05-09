@@ -37,7 +37,8 @@ export const authActions = {
           )
           if (tenant) tenantId = tenant.id
         } catch (e) {
-          console.warn('Could not resolve tenant by code after login:', e)
+          console.error('[auth] Could not resolve tenant by code after login:', e)
+          useAuthStore.getState().setError('Tenant lookup failed — your workspace context may be incomplete. Please refresh.')
         }
       }
       if (tenantId) {
@@ -46,7 +47,8 @@ export const authActions = {
           const tenant = await tenantsApi.getById(tenantId)
           useTenantStore.getState().setCurrentTenant(tenant as Tenant)
         } catch (e) {
-          console.warn('Could not load tenant details after login:', e)
+          console.error('[auth] Could not load tenant details after login:', e)
+          useAuthStore.getState().setError('Could not load workspace details — please refresh the page.')
         }
       }
       useAuthStore.getState().setLoading(false)

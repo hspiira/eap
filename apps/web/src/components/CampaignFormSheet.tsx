@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { clientsApi } from "@/api/endpoints/clients"
@@ -11,7 +12,15 @@ import { usersApi } from "@/api/endpoints/users"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
@@ -55,9 +64,6 @@ const schema = z
   )
 
 type Values = z.infer<typeof schema>
-
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
 
 const EMPTY: Values = {
   client_id: "",
@@ -103,7 +109,7 @@ export function CampaignFormSheet({
     (q) => q.administration === QuestionnaireAdministration.POST,
   )
 
-  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
     Values,
     Parameters<typeof careCallbacksApi.createCampaign>[0],
     CallbackCampaign,
@@ -225,13 +231,24 @@ export function CampaignFormSheet({
             error={errors.sampling?.message}
             htmlFor="cf-sampling"
           >
-            <select id="cf-sampling" className={SELECT_CLASS} {...register("sampling")}>
-              {SAMPLING_VALUES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="sampling"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="cf-sampling">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SAMPLING_VALUES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
           {showSampleSize ? (
             <FormField
@@ -283,18 +300,24 @@ export function CampaignFormSheet({
           error={errors.questionnaire_code?.message}
           htmlFor="cf-triage"
         >
-          <select
-            id="cf-triage"
-            className={SELECT_CLASS}
-            {...register("questionnaire_code")}
-          >
-            <option value="">— Select —</option>
-            {triageOptions.map((q) => (
-              <option key={q.code} value={q.code}>
-                {q.title}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="questionnaire_code"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="cf-triage">
+                  <SelectValue placeholder="— Select —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {triageOptions.map((q) => (
+                    <SelectItem key={q.code} value={q.code}>
+                      {q.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
         <FormField
           label="Follow-up questionnaire"
@@ -303,18 +326,24 @@ export function CampaignFormSheet({
           error={errors.followup_questionnaire_code?.message}
           htmlFor="cf-followup"
         >
-          <select
-            id="cf-followup"
-            className={SELECT_CLASS}
-            {...register("followup_questionnaire_code")}
-          >
-            <option value="">— None —</option>
-            {followupOptions.map((q) => (
-              <option key={q.code} value={q.code}>
-                {q.title}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="followup_questionnaire_code"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="cf-followup">
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {followupOptions.map((q) => (
+                    <SelectItem key={q.code} value={q.code}>
+                      {q.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
     </SheetForm>
@@ -390,13 +419,15 @@ function ClientPicker({
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
           <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -418,10 +449,11 @@ function ClientPicker({
           <ul className="divide-y divide-fg/8">
             {items.map((c) => (
               <li key={c.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(c.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -437,7 +469,7 @@ function ClientPicker({
                       {c.code}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -481,14 +513,16 @@ function CounsellorMultiPicker({
                 className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs text-primary"
               >
                 {user?.email ?? id.slice(0, 12)}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => toggle(id)}
                   aria-label={`Remove ${user?.email ?? id}`}
-                  className="grid size-4 place-items-center rounded-sm hover:bg-primary/15"
+                  className="size-4 p-0 hover:bg-primary/15"
                 >
                   <X className="size-3" />
-                </button>
+                </Button>
               </span>
             )
           })}
@@ -512,10 +546,11 @@ function CounsellorMultiPicker({
               const active = selectedSet.has(u.id)
               return (
                 <li key={u.id}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => toggle(u.id)}
-                    className="flex w-full items-center justify-between gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                    className="flex h-auto w-full items-center justify-between gap-2.5 px-3 py-2 text-left"
                   >
                     <span className="min-w-0 truncate text-sm text-fg">{u.email}</span>
                     {active ? (
@@ -523,7 +558,7 @@ function CounsellorMultiPicker({
                         Selected
                       </span>
                     ) : null}
-                  </button>
+                  </Button>
                 </li>
               )
             })}

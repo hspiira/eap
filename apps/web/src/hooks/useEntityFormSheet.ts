@@ -37,6 +37,8 @@ export interface UseEntityFormSheetOptions<
   successToast?: { create?: string; update?: string }
   /** Detail id to invalidate after success. Defaults to `entity.id` if `entity` has an id. */
   detailId?: string | null
+  /** Additional query keys to invalidate after success (e.g. a parent entity's detail). */
+  extraInvalidations?: Array<{ queryKey: unknown[] }>
   onSaved?: (result: TResult) => void
 }
 
@@ -71,6 +73,7 @@ export function useEntityFormSheet<
     save,
     successToast,
     detailId,
+    extraInvalidations,
     onSaved,
   } = opts
 
@@ -87,6 +90,11 @@ export function useEntityFormSheet<
       await qc.invalidateQueries({ queryKey: [resource, 'list'] })
       const id = detailId ?? entityId(entity)
       if (id) await qc.invalidateQueries({ queryKey: [resource, 'detail', id] })
+      if (extraInvalidations) {
+        await Promise.all(
+          extraInvalidations.map((entry) => qc.invalidateQueries({ queryKey: entry.queryKey }))
+        )
+      }
       onSaved?.(result)
       onOpenChange(false)
       form.reset()

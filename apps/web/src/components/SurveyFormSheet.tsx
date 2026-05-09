@@ -1,13 +1,22 @@
 import { useState } from "react"
 
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { surveysApi } from "@/api/endpoints/surveys"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
@@ -38,9 +47,6 @@ const schema = z
 
 type Values = z.infer<typeof schema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 const EMPTY: Values = {
   client_id: "",
   name: "",
@@ -68,7 +74,7 @@ export function SurveyFormSheet({
 }: SurveyFormSheetProps) {
   const lockedClientId = clientId
 
-  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
     Values,
     Parameters<typeof surveysApi.create>[0],
     Survey,
@@ -149,13 +155,24 @@ export function SurveyFormSheet({
 
       <FormSection title="Source" description="The platform hosting the form.">
         <FormField label="Provider" required error={errors.source?.message} htmlFor="sf-source">
-          <select id="sf-source" className={SELECT_CLASS} {...register("source")}>
-            {SOURCE_VALUES.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="source"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="sf-source">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCE_VALUES.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
 
@@ -253,13 +270,15 @@ function ClientPicker({
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
           <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -281,10 +300,11 @@ function ClientPicker({
           <ul className="divide-y divide-fg/8">
             {items.map((c) => (
               <li key={c.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(c.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -300,7 +320,7 @@ function ClientPicker({
                       {c.code}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

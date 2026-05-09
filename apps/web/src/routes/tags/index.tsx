@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Download,
@@ -59,8 +59,6 @@ function TagsListPage() {
   const [searchInput, setSearchInput] = useState("")
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
-  const queryClient = useQueryClient()
-
   const [creatingTag, setCreatingTag] = useState(false)
   const [editingTag, setEditingTag] = useState<ClientTag | null>(null)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
@@ -89,8 +87,6 @@ function TagsListPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const refetch = () => queryClient.invalidateQueries({ queryKey: ["client-tags", "list"] })
-
   const sheetOpen = creatingTag || Boolean(editingTag)
   const handleSheetOpenChange = (open: boolean) => {
     if (!open) {
@@ -105,7 +101,7 @@ function TagsListPage() {
       breadcrumb="Organization & Clients · Tags"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
@@ -138,14 +134,13 @@ function TagsListPage() {
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
         tag={editingTag}
-        onSaved={refetch}
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5 text-sm text-fg/65">Loading…</div>
         ) : error ? (
-          <ErrorState message={error} onRetry={refetch} />
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={Tag}

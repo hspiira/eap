@@ -1,6 +1,5 @@
 import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -9,6 +8,7 @@ import { servicesApi } from "@/api/endpoints/services"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
@@ -52,7 +52,6 @@ export function ServiceAssignmentFormSheet({
   onSaved,
 }: ServiceAssignmentFormSheetProps) {
   const lockedContractId = contractId ?? assignment?.contract_id
-  const queryClient = useQueryClient()
 
   const { register, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
@@ -84,14 +83,10 @@ export function ServiceAssignmentFormSheet({
           ? serviceAssignmentsApi.update(entity.id, payload)
           : serviceAssignmentsApi.create(payload),
       successToast: { create: "Assignment created", update: "Assignment updated" },
-      onSaved: (result) => {
-        if (lockedContractId) {
-          void queryClient.invalidateQueries({
-            queryKey: ["contracts", "detail", lockedContractId],
-          })
-        }
-        onSaved?.(result)
-      },
+      extraInvalidations: lockedContractId
+        ? [{ queryKey: ["contracts", "detail", lockedContractId] }]
+        : undefined,
+      onSaved,
     })
 
   const watchedContract = watch("contract_id")
@@ -256,13 +251,15 @@ function ContractPicker({
             Client {selected.client_id.slice(0, 8)}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -285,10 +282,11 @@ function ContractPicker({
           <ul className="divide-y divide-fg/8">
             {items.map((c) => (
               <li key={c.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(c.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -304,7 +302,7 @@ function ContractPicker({
                       Client {c.client_id.slice(0, 8)} · {c.status}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -346,13 +344,15 @@ function ServicePicker({
             {selected.service_type ?? selected.category ?? selected.id.slice(0, 8)}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -375,10 +375,11 @@ function ServicePicker({
           <ul className="divide-y divide-fg/8">
             {items.map((s) => (
               <li key={s.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(s.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -394,7 +395,7 @@ function ServicePicker({
                       {s.service_type ?? s.category ?? "—"}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

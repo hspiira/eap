@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Building2,
@@ -92,8 +92,6 @@ function ClientsListPage() {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const limit = 20
-  const queryClient = useQueryClient()
-
   const toggleSort = (field: string) => {
     setSort((prev) => nextSort(prev, field))
     setPage(1)
@@ -136,7 +134,6 @@ function ClientsListPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const refetch = () => queryClient.invalidateQueries({ queryKey: ["clients", "list"] })
   const hasFilters = Boolean(activeSearch) || Boolean(activeTier)
 
   return (
@@ -145,7 +142,7 @@ function ClientsListPage() {
       breadcrumb="Organization & Clients · Clients"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
@@ -198,7 +195,6 @@ function ClientsListPage() {
       <ClientFormSheet
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
-        onSaved={() => refetch()}
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
@@ -207,7 +203,7 @@ function ClientsListPage() {
             <TableSkeleton cols={5} headers={["Name","Code","Status","Contact","Operation"]} withFilters withPagination />
           </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={refetch} />
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
         ) : items.length === 0 ? (
           <EmptyState
             icon={Building2}

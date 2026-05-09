@@ -1,10 +1,18 @@
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
@@ -34,9 +42,6 @@ const clientSchema = z.object({
 
 type ClientFormValues = z.infer<typeof clientSchema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 const EMPTY: ClientFormValues = {
   name: "",
   code: "",
@@ -64,7 +69,7 @@ export function ClientFormSheet({
   client,
   onSaved,
 }: ClientFormSheetProps) {
-  const { register, formState, submit, serverError, isEdit } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError, isEdit } = useEntityFormSheet<
     ClientFormValues,
     Parameters<typeof clientsApi.create>[0],
     Client,
@@ -159,14 +164,24 @@ export function ClientFormSheet({
 
       <FormSection title="Tiering">
         <FormField label="Tier" optional error={errors.tier?.message} htmlFor="cs-tier">
-          <select id="cs-tier" className={SELECT_CLASS} {...register("tier")}>
-            <option value="">Unassigned</option>
-            {TIER_VALUES.map((t) => (
-              <option key={t} value={t}>
-                Tier {t}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="tier"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="cs-tier">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIER_VALUES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      Tier {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
 

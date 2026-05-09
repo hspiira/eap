@@ -3,6 +3,7 @@ import { z } from "zod"
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { FormField } from "@/components/common/FormField"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { ClientTag } from "@/types/entities"
@@ -112,12 +113,13 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {SUGGESTED_COLORS.map((c) => (
-            <button
+            <Button
               key={c}
               type="button"
+              variant="ghost"
               aria-label={`Use color ${c}`}
               onClick={() => setValue("color", c, { shouldDirty: true, shouldValidate: true })}
-              className="size-5 rounded-sm border border-fg/15 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg"
+              className="size-5 rounded-sm border border-fg/15 p-0 transition-transform hover:scale-110 hover:bg-transparent focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg"
               style={{ backgroundColor: c }}
             />
           ))}

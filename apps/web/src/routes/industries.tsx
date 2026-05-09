@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+
 import { createFileRoute } from "@tanstack/react-router"
 import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
@@ -57,7 +57,6 @@ const ROW_BORDER = "border-fg/8"
 
 function IndustriesPage() {
   const { isAuthenticated, isLoading } = useAuthStore()
-  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const limit = 20
   const [searchInput, setSearchInput] = useState("")
@@ -88,11 +87,6 @@ function IndustriesPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const refetch = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ["industries", "list"] }),
-    [queryClient],
-  )
-
   const [selected, setSelected] = useState<{ id: string; hint: Industry | null } | null>(null)
   const selectedId = selected?.id ?? null
   const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(null)
@@ -187,9 +181,8 @@ function IndustriesPage() {
   const handleIndustryUpdated = useCallback(
     (updated: Industry) => {
       setSelectedIndustry(updated)
-      refetch()
     },
-    [refetch],
+    [],
   )
 
   if (isLoading) return <div className="p-8 text-fg">Loading…</div>
@@ -205,7 +198,7 @@ function IndustriesPage() {
         breadcrumb="Organization & Clients · Industries"
         actions={
           <>
-            <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+            <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
             <IconButton label="Export" icon={Download} />
             <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
             <Button
@@ -250,7 +243,6 @@ function IndustriesPage() {
         <IndustryFormSheet
           open={createOpen}
           onOpenChange={setCreateOpen}
-          onSaved={() => refetch()}
         />
 
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
@@ -258,7 +250,7 @@ function IndustriesPage() {
             {loading ? (
               <TableSkeleton cols={3} headers={["Name","Code","Level"]} withPagination />
             ) : error ? (
-              <ErrorBlock message={error} onRetry={refetch} />
+              <ErrorBlock message={error} onRetry={() => void query.refetch()} />
             ) : items.length === 0 ? (
               <EmptyState
                 icon={BarChart3}

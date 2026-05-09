@@ -1,10 +1,18 @@
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { usersApi } from "@/api/endpoints/users"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { User } from "@/types/entities"
 import { Language } from "@/types/enums"
@@ -39,9 +47,6 @@ const editSchema = baseSchema
 type CreateValues = z.infer<typeof createSchema>
 type EditValues = z.infer<typeof editSchema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 interface UserFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -58,7 +63,7 @@ export function UserFormSheet(props: UserFormSheetProps) {
 }
 
 function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
-  const { register, formState, submit, serverError } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError } = useEntityFormSheet<
     CreateValues,
     Parameters<typeof usersApi.create>[0],
     User,
@@ -124,18 +129,24 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
           error={errors.preferred_language?.message}
           htmlFor="us-lang"
         >
-          <select
-            id="us-lang"
-            className={SELECT_CLASS}
-            {...register("preferred_language")}
-          >
-            <option value="">Unset</option>
-            {LANGUAGE_OPTIONS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="preferred_language"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="us-lang">
+                  <SelectValue placeholder="Unset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
         <FormField
           label="Timezone"
@@ -157,7 +168,7 @@ function UserEditSheet({
   user,
   onSaved,
 }: UserFormSheetProps & { user: User }) {
-  const { register, formState, submit, serverError } = useEntityFormSheet<
+  const { register, control, formState, submit, serverError } = useEntityFormSheet<
     EditValues,
     Parameters<typeof usersApi.updatePreferences>[1],
     User,
@@ -221,14 +232,24 @@ function UserEditSheet({
           error={errors.preferred_language?.message}
           htmlFor="us-lang"
         >
-          <select id="us-lang" className={SELECT_CLASS} {...register("preferred_language")}>
-            <option value="">Unset</option>
-            {LANGUAGE_OPTIONS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="preferred_language"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="us-lang">
+                  <SelectValue placeholder="Unset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
         <FormField
           label="Timezone"

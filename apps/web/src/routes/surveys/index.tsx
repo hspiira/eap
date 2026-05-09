@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   ClipboardList,
@@ -78,8 +78,6 @@ function SurveysListPage() {
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
   const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
-  const queryClient = useQueryClient()
-
   useEffect(() => {
     if (searchParams.new) {
       setAddOpen(true)
@@ -99,7 +97,6 @@ function SurveysListPage() {
     sort,
   })
   const loading = query.isPending
-  const refetch = () => queryClient.invalidateQueries({ queryKey: ["surveys", "list"] })
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as SurveyStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
@@ -113,7 +110,7 @@ function SurveysListPage() {
       breadcrumb="Insights · Surveys"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
@@ -151,7 +148,7 @@ function SurveysListPage() {
         />
       </FilterBar>
 
-      <SurveyFormSheet open={addOpen} onOpenChange={setAddOpen} onSaved={() => refetch()} />
+      <SurveyFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (

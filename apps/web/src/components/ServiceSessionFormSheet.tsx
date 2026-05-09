@@ -11,6 +11,7 @@ import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
@@ -482,10 +483,11 @@ function ServicePicker({
       loading={list.isPending}
       items={items}
       renderItem={(s) => (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => onChange(s.id)}
-          className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
         >
           <span
             aria-hidden
@@ -499,7 +501,7 @@ function ServicePicker({
               {s.service_type ?? "—"}
             </span>
           </span>
-        </button>
+        </Button>
       )}
     />
   )
@@ -550,10 +552,11 @@ function PersonPicker({
       loading={list.isPending}
       items={items}
       renderItem={(p) => (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => onChange(p.id)}
-          className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
         >
           <span
             aria-hidden
@@ -567,7 +570,7 @@ function PersonPicker({
             </span>
             <span className="block truncate text-[11px] text-fg/55">{p.person_type}</span>
           </span>
-        </button>
+        </Button>
       )}
     />
   )
@@ -618,10 +621,11 @@ function ProviderPicker({
       loading={list.isPending}
       items={items}
       renderItem={(p) => (
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => onChange(p.id)}
-          className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
         >
           <span
             aria-hidden
@@ -635,7 +639,7 @@ function ProviderPicker({
               {p.tier} · {p.region}
             </span>
           </span>
-        </button>
+        </Button>
       )}
     />
   )
@@ -684,13 +688,15 @@ function PickerShell<T extends { id: string }>({
 
 function ChangeButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
-      className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+      className="shrink-0 text-xs text-fg/65"
     >
       Change
-    </button>
+    </Button>
   )
 }
 

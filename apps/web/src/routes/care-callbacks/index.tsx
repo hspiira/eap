@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Download,
@@ -83,8 +83,6 @@ function CampaignsListPage() {
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
   const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
-  const queryClient = useQueryClient()
-
   useEffect(() => {
     if (searchParams.new) {
       setAddOpen(true)
@@ -105,8 +103,6 @@ function CampaignsListPage() {
   })
   const loading = query.isPending
   const error = query.isError ? "Failed to load campaigns." : null
-  const refetch = () =>
-    queryClient.invalidateQueries({ queryKey: ["care-callback-campaigns", "list"] })
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as CallbackCampaignStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
@@ -120,7 +116,7 @@ function CampaignsListPage() {
       breadcrumb="Care · Callback campaigns"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
+          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
@@ -169,7 +165,6 @@ function CampaignsListPage() {
       <CampaignFormSheet
         open={addOpen}
         onOpenChange={setAddOpen}
-        onSaved={() => refetch()}
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
@@ -179,7 +174,7 @@ function CampaignsListPage() {
           </div>
         ) : error ? (
           <div className="flex flex-1 items-center justify-center">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={refetch}>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void query.refetch()}>
               <RotateCw className="size-4" />
               {error} Try again
             </Button>

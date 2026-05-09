@@ -1,14 +1,22 @@
 import { useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
+import { Controller } from "react-hook-form"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
@@ -114,9 +122,6 @@ const personSchema = z
 
 type PersonFormValues = z.infer<typeof personSchema>
 
-const SELECT_CLASS =
-  "flex h-9 w-full rounded-sm border border-fg/20 bg-bg px-3 text-sm text-fg shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-
 const EMPTY: PersonFormValues = {
   first_name: "",
   last_name: "",
@@ -168,13 +173,12 @@ export function PersonFormSheet({
   onSaved,
 }: PersonFormSheetProps) {
   const lockedClientId = clientId ?? person?.client_id
-  const queryClient = useQueryClient()
 
   const initialValues: PersonFormValues = person
     ? personToValues(person)
     : { ...EMPTY, client_id: clientId ?? "", person_type: lockType ?? EMPTY.person_type }
 
-  const { register, formState, submit, serverError, setValue, watch, isEdit } =
+  const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
       PersonFormValues,
       Parameters<typeof personsApi.create>[0],
@@ -246,14 +250,10 @@ export function PersonFormSheet({
       save: ({ payload, entity, isEdit }) =>
         isEdit && entity ? personsApi.update(entity.id, payload) : personsApi.create(payload),
       successToast: { create: "Person created", update: "Person updated" },
-      onSaved: (result) => {
-        if (lockedClientId) {
-          void queryClient.invalidateQueries({
-            queryKey: ["clients", "detail", lockedClientId],
-          })
-        }
-        onSaved?.(result)
-      },
+      extraInvalidations: lockedClientId
+        ? [{ queryKey: ["clients", "detail", lockedClientId] }]
+        : undefined,
+      onSaved,
     })
 
   const watchedType = watch("person_type")
@@ -342,18 +342,28 @@ export function PersonFormSheet({
               : "Determines which sections are required below."
           }
         >
-          <select
-            id="ps-type"
-            className={SELECT_CLASS}
-            disabled={Boolean(lockType)}
-            {...register("person_type")}
-          >
-            {PERSON_TYPE_VALUES.map((t) => (
-              <option key={t} value={t}>
-                {PERSON_TYPE_LABELS[t]}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="person_type"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                disabled={Boolean(lockType)}
+              >
+                <SelectTrigger id="ps-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERSON_TYPE_VALUES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {PERSON_TYPE_LABELS[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
 
@@ -427,14 +437,24 @@ export function PersonFormSheet({
             error={errors.work_status?.message}
             htmlFor="ps-workstatus"
           >
-            <select id="ps-workstatus" className={SELECT_CLASS} {...register("work_status")}>
-              <option value="">Unset</option>
-              {WORK_STATUS_VALUES.map((w) => (
-                <option key={w} value={w}>
-                  {w}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="work_status"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="ps-workstatus">
+                    <SelectValue placeholder="Unset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORK_STATUS_VALUES.map((w) => (
+                      <SelectItem key={w} value={w}>
+                        {w}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
         </FormSection>
       ) : null}
@@ -468,18 +488,24 @@ export function PersonFormSheet({
             error={errors.relationship?.message}
             htmlFor="ps-relationship"
           >
-            <select
-              id="ps-relationship"
-              className={SELECT_CLASS}
-              {...register("relationship")}
-            >
-              <option value="">Select…</option>
-              {RELATION_VALUES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="relationship"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="ps-relationship">
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELATION_VALUES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
         </FormSection>
       ) : null}
@@ -500,18 +526,24 @@ export function PersonFormSheet({
             error={errors.preferred_method?.message}
             htmlFor="ps-prefmethod"
           >
-            <select
-              id="ps-prefmethod"
-              className={SELECT_CLASS}
-              {...register("preferred_method")}
-            >
-              <option value="">Unset</option>
-              {CONTACT_METHOD_VALUES.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="preferred_method"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="ps-prefmethod">
+                    <SelectValue placeholder="Unset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTACT_METHOD_VALUES.map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -696,13 +728,15 @@ function ClientPicker({
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
           <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -725,10 +759,11 @@ function ClientPicker({
           <ul className="divide-y divide-fg/8">
             {items.map((c) => (
               <li key={c.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(c.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -744,7 +779,7 @@ function ClientPicker({
                       {c.code}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -807,13 +842,15 @@ function PrimaryEmployeePicker({
             {selected.employment_info?.employee_code ?? selected.id.slice(0, 8)}
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-fg/65 hover:bg-surface-hover hover:text-fg"
+          className="shrink-0 text-xs text-fg/65"
         >
           Change
-        </button>
+        </Button>
       </div>
     )
   }
@@ -836,10 +873,11 @@ function PrimaryEmployeePicker({
           <ul className="divide-y divide-fg/8">
             {items.map((p) => (
               <li key={p.id}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => onChange(p.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none"
+                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
                 >
                   <span
                     aria-hidden
@@ -855,7 +893,7 @@ function PrimaryEmployeePicker({
                       {p.employment_info?.employee_code ?? p.id.slice(0, 8)}
                     </span>
                   </span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
