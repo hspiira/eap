@@ -1,3 +1,19 @@
+/**
+ * Person create / edit sheet. **BE-canonical 2-step flow.**
+ *
+ * Create:
+ *   1. POST /users   → returns user_id
+ *   2. POST /persons → with {person_type, user_id, tenant_id, employment_info? | dependent_info?, family_id?}
+ *
+ * Edit (mirrors the BE PATCH surface):
+ *   - CLIENT_EMPLOYEE → PATCH /persons/{id}/employment-info
+ *   - DEPENDENT       → PATCH /persons/{id}/dependent-info
+ *
+ * Demographic fields (first/last name, dob, gender, contact info, address)
+ * are NOT collected — BE doesn't carry them. Display is derived via
+ * `displayName(person, user)` from the linked User's email.
+ */
+
 import { useState } from "react"
 
 import { Controller } from "react-hook-form"
@@ -5,6 +21,8 @@ import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
+import { usersApi } from "@/api/endpoints/users"
+import type { EmploymentInfoCreateSchema } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -20,15 +38,11 @@ import {
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Client, Person } from "@/types/entities"
-import { ContactMethod, PersonType, type RelationType, WorkStatus } from "@/types/enums"
+import { PersonType, type RelationType, WorkStatus } from "@/types/enums"
 
-const PERSON_TYPE_VALUES = [
-  PersonType.CLIENT_EMPLOYEE,
-  PersonType.DEPENDENT,
-  PersonType.SERVICE_PROVIDER,
-  PersonType.PLATFORM_STAFF,
-] as const
+const PERSON_TYPE_VALUES = [PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT] as const
 
 const PERSON_TYPE_LABELS: Record<PersonType, string> = {
   [PersonType.CLIENT_EMPLOYEE]: "Client employee",
@@ -56,109 +70,71 @@ const RELATION_VALUES: ReadonlyArray<RelationType> = [
   "Other",
 ]
 
-const CONTACT_METHOD_VALUES = [
-  ContactMethod.EMAIL,
-  ContactMethod.PHONE,
-  ContactMethod.SMS,
-  ContactMethod.WHATSAPP,
-  ContactMethod.WECHAT,
-] as const
-
 const personSchema = z
   .object({
-    first_name: z.string().trim().min(1, "First name is required"),
-    last_name: z.string().trim().min(1, "Last name is required"),
-    middle_name: z.string().optional(),
-    person_type: z.enum([
-      PersonType.CLIENT_EMPLOYEE,
-      PersonType.DEPENDENT,
-      PersonType.SERVICE_PROVIDER,
-      PersonType.PLATFORM_STAFF,
-    ]),
-    date_of_birth: z.string().optional(),
-    gender: z.string().optional(),
-    client_id: z.string().optional(),
-    email: z
+    email: z.email("Invalid email"),
+    password: z
       .string()
-      .trim()
       .optional()
-      .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
-    phone: z.string().optional(),
-    mobile: z.string().optional(),
-    preferred_method: z.string().optional(),
-    address_street: z.string().optional(),
-    address_city: z.string().optional(),
-    address_country: z.string().optional(),
-    employee_code: z.string().optional(),
-    department: z.string().optional(),
+      .refine((v) => !v || v.length >= 8, "Min 8 characters"),
+    person_type: z.enum([PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT]),
+    family_id: z.string().optional(),
+    client_id: z.string().optional(),
     role: z.string().optional(),
+    department: z.string().optional(),
+    employee_id: z.string().optional(),
+    /** Optional per UX. Defaulted to today's date on submit if blank. */
     employment_start: z.string().optional(),
+    employment_end: z.string().optional(),
     work_status: z.string().optional(),
     primary_employee_id: z.string().optional(),
     relationship: z.string().optional(),
-    emergency_name: z.string().optional(),
-    emergency_phone: z.string().optional(),
-    emergency_email: z
-      .string()
-      .trim()
-      .optional()
-      .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
+    guardian_id: z.string().optional(),
   })
-  .refine(
-    (d) => d.person_type !== PersonType.CLIENT_EMPLOYEE || Boolean(d.client_id),
-    { path: ["client_id"], message: "Client is required for employees" },
-  )
-  .refine(
-    (d) => d.person_type !== PersonType.DEPENDENT || Boolean(d.primary_employee_id),
-    {
-      path: ["primary_employee_id"],
-      message: "Primary employee is required for dependents",
-    },
-  )
-  .refine(
-    (d) => d.person_type !== PersonType.DEPENDENT || Boolean(d.relationship),
-    { path: ["relationship"], message: "Relationship is required" },
-  )
+  .superRefine((d, ctx) => {
+    if (d.person_type === PersonType.CLIENT_EMPLOYEE) {
+      if (!d.client_id?.trim())
+        ctx.addIssue({ code: "custom", path: ["client_id"], message: "Required" })
+      if (!d.role?.trim())
+        ctx.addIssue({ code: "custom", path: ["role"], message: "Required" })
+    }
+    if (d.person_type === PersonType.DEPENDENT) {
+      if (!d.primary_employee_id?.trim())
+        ctx.addIssue({ code: "custom", path: ["primary_employee_id"], message: "Required" })
+      if (!d.relationship?.trim())
+        ctx.addIssue({ code: "custom", path: ["relationship"], message: "Required" })
+    }
+  })
 
 type PersonFormValues = z.infer<typeof personSchema>
 
 const EMPTY: PersonFormValues = {
-  first_name: "",
-  last_name: "",
-  middle_name: "",
-  person_type: PersonType.CLIENT_EMPLOYEE,
-  date_of_birth: "",
-  gender: "",
-  client_id: "",
   email: "",
-  phone: "",
-  mobile: "",
-  preferred_method: "",
-  address_street: "",
-  address_city: "",
-  address_country: "",
-  employee_code: "",
-  department: "",
+  password: "",
+  person_type: PersonType.CLIENT_EMPLOYEE,
+  family_id: "",
+  client_id: "",
   role: "",
+  department: "",
+  employee_id: "",
   employment_start: "",
+  employment_end: "",
   work_status: "",
   primary_employee_id: "",
   relationship: "",
-  emergency_name: "",
-  emergency_phone: "",
-  emergency_email: "",
+  guardian_id: "",
 }
 
 interface PersonFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Pass a person to edit; omit/null to create a new one. */
+  /** Pass a person to edit; omit/null to create. */
   person?: Person | null
-  /** When set, locks the client and prefills it (e.g. launched from client detail). */
+  /** When set, locks the client picker (e.g. launched from client detail). */
   clientId?: string
   /** Pre-resolved client used for the locked summary. */
   client?: Client | null
-  /** Restrict the type picker to a fixed value (e.g. force ClientEmployee from client detail). */
+  /** Restrict the type picker to a fixed value. */
   lockType?: PersonType
   onSaved?: (person: Person) => void
 }
@@ -172,19 +148,24 @@ export function PersonFormSheet({
   lockType,
   onSaved,
 }: PersonFormSheetProps) {
-  const lockedClientId = clientId ?? person?.client_id
+  const tenantId = useTenantStore((s) => s.currentTenantId)
+  const lockedClientId = clientId ?? person?.employment_info?.client_id ?? person?.client_id
 
+  // For create: build a fresh form with defaults. For edit: hydrate from the
+  // existing employment_info / dependent_info — email/password aren't editable
+  // here (those go through the dedicated user routes).
   const initialValues: PersonFormValues = person
     ? personToValues(person)
-    : { ...EMPTY, client_id: clientId ?? "", person_type: lockType ?? EMPTY.person_type }
+    : {
+        ...EMPTY,
+        client_id: clientId ?? "",
+        person_type: lockType && lockType !== PersonType.CLIENT_EMPLOYEE && lockType !== PersonType.DEPENDENT
+          ? PersonType.CLIENT_EMPLOYEE
+          : (lockType ?? EMPTY.person_type),
+      }
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
-    useEntityFormSheet<
-      PersonFormValues,
-      Parameters<typeof personsApi.create>[0],
-      Person,
-      Person
-    >({
+    useEntityFormSheet<PersonFormValues, PersonFormValues, Person, Person>({
       resource: "persons",
       schema: personSchema,
       defaultValues: initialValues,
@@ -192,63 +173,57 @@ export function PersonFormSheet({
       onOpenChange,
       entity: person,
       toFormValues: personToValues,
-      parsePayload: (values) => ({
-        first_name: values.first_name,
-        last_name: values.last_name,
-        middle_name: values.middle_name?.trim() || undefined,
-        person_type: values.person_type as PersonType,
-        date_of_birth: values.date_of_birth || undefined,
-        gender: values.gender?.trim() || undefined,
-        client_id:
-          values.person_type === PersonType.CLIENT_EMPLOYEE ||
-          values.person_type === PersonType.DEPENDENT
-            ? values.client_id || undefined
-            : undefined,
-        contact_info: hasContact(values)
-          ? {
-              email: values.email || null,
-              phone: values.phone || null,
-              mobile: values.mobile || null,
-              preferred_method: values.preferred_method || null,
-            }
-          : undefined,
-        address: hasAddress(values)
-          ? {
-              street: values.address_street || null,
-              city: values.address_city || null,
-              country: values.address_country || null,
-            }
-          : undefined,
-        employment_info:
-          values.person_type === PersonType.CLIENT_EMPLOYEE && hasEmployment(values)
+      // Carry the validated form values through unchanged; the save handler
+      // does the BE-shape mapping (and the 2-step user-then-person call).
+      parsePayload: (values) => values,
+      save: async ({ payload, entity, isEdit }) => {
+        if (isEdit && entity) {
+          // BE has no top-level Person update; route to the sub-PATCH that
+          // matches the role of the existing person.
+          if (entity.person_type === PersonType.CLIENT_EMPLOYEE) {
+            const employmentInfo = buildEmploymentInfo(payload, entity.user_id)
+            return personsApi.updateEmploymentInfo(entity.id, employmentInfo)
+          }
+          if (entity.person_type === PersonType.DEPENDENT) {
+            return personsApi.updateDependentInfo(entity.id, {
+              primary_employee_id: payload.primary_employee_id ?? "",
+              relationship: payload.relationship as RelationType,
+              ...(payload.guardian_id ? { guardian_id: payload.guardian_id } : {}),
+            })
+          }
+          // Other person types aren't editable through this sheet today.
+          return entity
+        }
+
+        // 2-step create.
+        if (!tenantId) {
+          throw new Error("No active tenant — sign in first.")
+        }
+        const user = await usersApi.create({
+          email: payload.email,
+          ...(payload.password ? { password: payload.password } : {}),
+        })
+
+        const personType = payload.person_type as PersonType
+        return personsApi.create({
+          person_type: personType,
+          user_id: user.id,
+          tenant_id: tenantId,
+          ...(payload.family_id ? { family_id: payload.family_id } : {}),
+          ...(personType === PersonType.CLIENT_EMPLOYEE
+            ? { employment_info: buildEmploymentInfo(payload, user.id) }
+            : {}),
+          ...(personType === PersonType.DEPENDENT
             ? {
-                client_id: values.client_id || null,
-                employee_code: values.employee_code || null,
-                department: values.department || null,
-                role: values.role || null,
-                start_date: values.employment_start || null,
-                status: values.work_status ? (values.work_status as WorkStatus) : null,
+                dependent_info: {
+                  primary_employee_id: payload.primary_employee_id ?? "",
+                  relationship: payload.relationship as RelationType,
+                  ...(payload.guardian_id ? { guardian_id: payload.guardian_id } : {}),
+                },
               }
-            : undefined,
-        dependent_info:
-          values.person_type === PersonType.DEPENDENT &&
-          values.primary_employee_id &&
-          values.relationship
-            ? {
-                primary_employee_id: values.primary_employee_id,
-                relationship: values.relationship as RelationType,
-              }
-            : undefined,
-        emergency_contact: hasEmergency(values)
-          ? {
-              name: values.emergency_name || null,
-              phone: values.emergency_phone || null,
-              email: values.emergency_email || null,
-            }
-          : undefined,
-      }),
-      save: ({ payload, entity, isEdit }) =>
-        isEdit && entity ? personsApi.update(entity.id, payload) : personsApi.create(payload),
+            : {}),
+        })
+      },
       successToast: { create: "Person created", update: "Person updated" },
       extraInvalidations: lockedClientId
         ? [{ queryKey: ["clients", "detail", lockedClientId] }]
@@ -261,8 +236,6 @@ export function PersonFormSheet({
   const watchedPrimaryEmployee = watch("primary_employee_id")
 
   const errors = formState.errors
-  const showClient =
-    watchedType === PersonType.CLIENT_EMPLOYEE || watchedType === PersonType.DEPENDENT
   const showEmployment = watchedType === PersonType.CLIENT_EMPLOYEE
   const showDependent = watchedType === PersonType.DEPENDENT
 
@@ -271,77 +244,34 @@ export function PersonFormSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? "Edit person" : "Add person"}
-      description={
-        isEdit
-          ? "Update identity, employment, and contact details."
-          : "Register an employee, dependent, service provider, or platform staff member."
-      }
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
       serverError={serverError}
-      submitLabel={isEdit ? "Save changes" : "Create person"}
+      submitLabel={isEdit ? "Save" : "Create"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
-      <FormSection title="Identity">
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="First name"
-            required
-            error={errors.first_name?.message}
-            htmlFor="ps-first"
-          >
-            <Input id="ps-first" placeholder="Ada" {...register("first_name")} />
-          </FormField>
-          <FormField
-            label="Last name"
-            required
-            error={errors.last_name?.message}
-            htmlFor="ps-last"
-          >
-            <Input id="ps-last" placeholder="Lovelace" {...register("last_name")} />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Middle name"
-            optional
-            error={errors.middle_name?.message}
-            htmlFor="ps-middle"
-          >
-            <Input id="ps-middle" {...register("middle_name")} />
-          </FormField>
-          <FormField
-            label="Date of birth"
-            optional
-            error={errors.date_of_birth?.message}
-            htmlFor="ps-dob"
-          >
-            <Input id="ps-dob" type="date" {...register("date_of_birth")} />
-          </FormField>
-        </div>
-        <FormField
-          label="Gender"
-          optional
-          error={errors.gender?.message}
-          htmlFor="ps-gender"
-        >
-          <Input id="ps-gender" placeholder="e.g. female / male / non-binary" {...register("gender")} />
-        </FormField>
-      </FormSection>
+      {!isEdit ? (
+        <FormSection title="Account">
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Email" required error={errors.email?.message} htmlFor="ps-email">
+              <Input id="ps-email" type="email" placeholder="ada@acme.com" {...register("email")} />
+            </FormField>
+            <FormField label="Password" optional error={errors.password?.message} htmlFor="ps-password">
+              <Input
+                id="ps-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Optional"
+                {...register("password")}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+      ) : null}
 
       <FormSection title="Role">
-        <FormField
-          label="Person type"
-          required
-          error={errors.person_type?.message}
-          htmlFor="ps-type"
-          description={
-            lockType
-              ? "Locked to this role for the current context."
-              : "Determines which sections are required below."
-          }
-        >
+        <FormField label="Type" required error={errors.person_type?.message} htmlFor="ps-type">
           <Controller
             control={control}
             name="person_type"
@@ -349,7 +279,7 @@ export function PersonFormSheet({
               <Select
                 value={field.value}
                 onValueChange={field.onChange}
-                disabled={Boolean(lockType)}
+                disabled={Boolean(lockType) || isEdit}
               >
                 <SelectTrigger id="ps-type">
                   <SelectValue />
@@ -367,17 +297,12 @@ export function PersonFormSheet({
         </FormField>
       </FormSection>
 
-      {showClient ? (
-        <FormSection title="Client">
+      {showEmployment ? (
+        <FormSection title="Employment">
           {lockedClientId ? (
             <LockedClientSummary clientId={lockedClientId} client={client ?? null} />
           ) : (
-            <FormField
-              label="Client"
-              required
-              error={errors.client_id?.message}
-              description="Which corporate client this person belongs to."
-            >
+            <FormField label="Client" required error={errors.client_id?.message}>
               <ClientPicker
                 value={watchedClientId ?? ""}
                 onChange={(id) =>
@@ -387,276 +312,149 @@ export function PersonFormSheet({
             </FormField>
           )}
           <Input type="hidden" {...register("client_id")} />
-        </FormSection>
-      ) : null}
-
-      {showEmployment ? (
-        <FormSection
-          title="Employment"
-          description="Optional but recommended — used by reports and assignments."
-        >
           <div className="grid grid-cols-2 gap-3">
-            <FormField
-              label="Employee code"
-              optional
-              error={errors.employee_code?.message}
-              htmlFor="ps-empcode"
-            >
-              <Input
-                id="ps-empcode"
-                placeholder="MNT-014"
-                className="font-mono"
-                {...register("employee_code")}
-              />
+            <FormField label="Role" required error={errors.role?.message} htmlFor="ps-role">
+              <Input id="ps-role" placeholder="Counsellor" {...register("role")} />
             </FormField>
-            <FormField
-              label="Department"
-              optional
-              error={errors.department?.message}
-              htmlFor="ps-dept"
-            >
+            <FormField label="Department" optional error={errors.department?.message} htmlFor="ps-dept">
               <Input id="ps-dept" placeholder="People Ops" {...register("department")} />
             </FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Role" optional error={errors.role?.message} htmlFor="ps-role">
-              <Input id="ps-role" placeholder="Engineer" {...register("role")} />
+            <FormField label="Employee ID" optional error={errors.employee_id?.message} htmlFor="ps-empid">
+              <Input
+                id="ps-empid"
+                placeholder="MNT-014"
+                className="font-mono"
+                {...register("employee_id")}
+              />
             </FormField>
-            <FormField
-              label="Start date"
-              optional
-              error={errors.employment_start?.message}
-              htmlFor="ps-empstart"
-            >
-              <Input id="ps-empstart" type="date" {...register("employment_start")} />
+            <FormField label="Family ID" optional error={errors.family_id?.message} htmlFor="ps-family">
+              <Input id="ps-family" className="font-mono" {...register("family_id")} />
             </FormField>
           </div>
-          <FormField
-            label="Work status"
-            optional
-            error={errors.work_status?.message}
-            htmlFor="ps-workstatus"
-          >
-            <Controller
-              control={control}
-              name="work_status"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="ps-workstatus">
-                    <SelectValue placeholder="Unset" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WORK_STATUS_VALUES.map((w) => (
-                      <SelectItem key={w} value={w}>
-                        {w}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Start date" optional error={errors.employment_start?.message} htmlFor="ps-empstart">
+              <Input id="ps-empstart" type="date" {...register("employment_start")} />
+            </FormField>
+            <FormField label="End date" optional error={errors.employment_end?.message} htmlFor="ps-empend">
+              <Input id="ps-empend" type="date" {...register("employment_end")} />
+            </FormField>
+          </div>
+          {isEdit ? (
+            <FormField
+              label="Work status"
+              optional
+              error={errors.work_status?.message}
+              htmlFor="ps-workstatus"
+            >
+              <Controller
+                control={control}
+                name="work_status"
+                render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger id="ps-workstatus">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WORK_STATUS_VALUES.map((w) => (
+                        <SelectItem key={w} value={w}>
+                          {w}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+          ) : null}
         </FormSection>
       ) : null}
 
       {showDependent ? (
-        <FormSection
-          title="Dependent"
-          description="Link this dependent to a primary employee."
-        >
-          <FormField
-            label="Primary employee"
-            required
-            error={errors.primary_employee_id?.message}
-            description="The employee this dependent is associated with."
-          >
+        <FormSection title="Dependent">
+          <FormField label="Primary employee" required error={errors.primary_employee_id?.message}>
             <PrimaryEmployeePicker
-              clientId={watchedClientId || lockedClientId || undefined}
               value={watchedPrimaryEmployee ?? ""}
               onChange={(id) =>
-                setValue("primary_employee_id", id, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
+                setValue("primary_employee_id", id, { shouldValidate: true, shouldDirty: true })
               }
             />
           </FormField>
           <Input type="hidden" {...register("primary_employee_id")} />
-          <FormField
-            label="Relationship"
-            required
-            error={errors.relationship?.message}
-            htmlFor="ps-relationship"
-          >
-            <Controller
-              control={control}
-              name="relationship"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="ps-relationship">
-                    <SelectValue placeholder="Select…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RELATION_VALUES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Relationship" required error={errors.relationship?.message} htmlFor="ps-relationship">
+              <Controller
+                control={control}
+                name="relationship"
+                render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger id="ps-relationship">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELATION_VALUES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField label="Guardian user ID" optional error={errors.guardian_id?.message} htmlFor="ps-guardian">
+              <Input id="ps-guardian" className="font-mono" {...register("guardian_id")} />
+            </FormField>
+          </div>
         </FormSection>
       ) : null}
-
-      <FormSection title="Contact" description="Used for notifications and outreach.">
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Email" optional error={errors.email?.message} htmlFor="ps-email">
-            <Input
-              id="ps-email"
-              type="email"
-              placeholder="ada@example.com"
-              {...register("email")}
-            />
-          </FormField>
-          <FormField
-            label="Preferred method"
-            optional
-            error={errors.preferred_method?.message}
-            htmlFor="ps-prefmethod"
-          >
-            <Controller
-              control={control}
-              name="preferred_method"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="ps-prefmethod">
-                    <SelectValue placeholder="Unset" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTACT_METHOD_VALUES.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Phone" optional error={errors.phone?.message} htmlFor="ps-phone">
-            <Input id="ps-phone" type="tel" {...register("phone")} />
-          </FormField>
-          <FormField label="Mobile" optional error={errors.mobile?.message} htmlFor="ps-mobile">
-            <Input id="ps-mobile" type="tel" {...register("mobile")} />
-          </FormField>
-        </div>
-      </FormSection>
-
-      <FormSection title="Address" description="Optional. Used for in-person visits and shipping.">
-        <FormField
-          label="Street"
-          optional
-          error={errors.address_street?.message}
-          htmlFor="ps-street"
-        >
-          <Input id="ps-street" {...register("address_street")} />
-        </FormField>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="City"
-            optional
-            error={errors.address_city?.message}
-            htmlFor="ps-city"
-          >
-            <Input id="ps-city" {...register("address_city")} />
-          </FormField>
-          <FormField
-            label="Country"
-            optional
-            error={errors.address_country?.message}
-            htmlFor="ps-country"
-          >
-            <Input id="ps-country" placeholder="Uganda" {...register("address_country")} />
-          </FormField>
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="Emergency contact"
-        description="Optional. Recommended for employees and dependents."
-      >
-        <FormField
-          label="Name"
-          optional
-          error={errors.emergency_name?.message}
-          htmlFor="ps-ename"
-        >
-          <Input id="ps-ename" {...register("emergency_name")} />
-        </FormField>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Phone"
-            optional
-            error={errors.emergency_phone?.message}
-            htmlFor="ps-ephone"
-          >
-            <Input id="ps-ephone" type="tel" {...register("emergency_phone")} />
-          </FormField>
-          <FormField
-            label="Email"
-            optional
-            error={errors.emergency_email?.message}
-            htmlFor="ps-eemail"
-          >
-            <Input
-              id="ps-eemail"
-              type="email"
-              {...register("emergency_email")}
-            />
-          </FormField>
-        </div>
-      </FormSection>
     </SheetForm>
   )
 }
 
-function hasContact(v: PersonFormValues): boolean {
-  return Boolean(
-    v.email?.trim() ||
-      v.phone?.trim() ||
-      v.mobile?.trim() ||
-      v.preferred_method?.trim(),
-  )
+function buildEmploymentInfo(
+  values: PersonFormValues,
+  _userId: string,
+): EmploymentInfoCreateSchema {
+  // BE requires `start_date` and `status` on employment_info. The UX leaves
+  // start_date optional ("we don't ask when they joined"); default to today.
+  const today = new Date().toISOString().slice(0, 10)
+  return {
+    client_id: values.client_id ?? "",
+    role: values.role ?? "",
+    start_date: values.employment_start?.trim() || today,
+    status: (values.work_status as WorkStatus) || WorkStatus.ACTIVE,
+    ...(values.department ? { department: values.department } : {}),
+    ...(values.employee_id ? { employee_id: values.employee_id } : {}),
+    ...(values.employment_end ? { end_date: values.employment_end } : {}),
+  }
 }
 
-function hasAddress(v: PersonFormValues): boolean {
-  return Boolean(
-    v.address_street?.trim() ||
-      v.address_city?.trim() ||
-      v.address_country?.trim(),
-  )
-}
-
-function hasEmployment(v: PersonFormValues): boolean {
-  return Boolean(
-    v.employee_code?.trim() ||
-      v.department?.trim() ||
-      v.role?.trim() ||
-      v.employment_start?.trim() ||
-      v.work_status?.trim(),
-  )
-}
-
-function hasEmergency(v: PersonFormValues): boolean {
-  return Boolean(
-    v.emergency_name?.trim() ||
-      v.emergency_phone?.trim() ||
-      v.emergency_email?.trim(),
-  )
+function personToValues(person: Person): PersonFormValues {
+  return {
+    email: "", // not editable here; would come from linked User
+    password: "",
+    person_type:
+      person.person_type === PersonType.CLIENT_EMPLOYEE ||
+      person.person_type === PersonType.DEPENDENT
+        ? person.person_type
+        : PersonType.CLIENT_EMPLOYEE,
+    family_id: person.family_id ?? "",
+    client_id: person.employment_info?.client_id ?? person.client_id ?? "",
+    role: person.employment_info?.role ?? "",
+    department: person.employment_info?.department ?? "",
+    employee_id:
+      (person.employment_info as { employee_id?: string | null } | undefined)?.employee_id ?? "",
+    employment_start: person.employment_info?.start_date ?? "",
+    employment_end:
+      (person.employment_info as { end_date?: string | null } | undefined)?.end_date ?? "",
+    work_status: person.employment_info?.status ?? "",
+    primary_employee_id: person.dependent_info?.primary_employee_id ?? "",
+    relationship: person.dependent_info?.relationship ?? "",
+    guardian_id:
+      (person.dependent_info as { guardian_id?: string | null } | undefined)?.guardian_id ?? "",
+  }
 }
 
 function LockedClientSummary({
@@ -790,11 +588,9 @@ function ClientPicker({
 }
 
 function PrimaryEmployeePicker({
-  clientId,
   value,
   onChange,
 }: {
-  clientId?: string
   value: string
   onChange: (id: string) => void
 }) {
@@ -806,24 +602,13 @@ function PrimaryEmployeePicker({
       page: 1,
       limit: 8,
       search: debounced || undefined,
-      ...(clientId ? ({ client_id: clientId } as Record<string, unknown>) : {}),
-      ...({ person_type: PersonType.CLIENT_EMPLOYEE } as Record<string, unknown>),
-    },
+    } as Record<string, unknown>,
     listFn: personsApi.list,
-    enabled: Boolean(clientId),
   })
   const items = (list.data?.items ?? []).filter(
     (p) => p.person_type === PersonType.CLIENT_EMPLOYEE,
   )
   const selected = items.find((p) => p.id === value)
-
-  if (!clientId) {
-    return (
-      <p className="rounded-sm border border-dashed border-fg/15 bg-bg px-3 py-2 text-xs text-fg/55">
-        Select a client first to choose a primary employee.
-      </p>
-    )
-  }
 
   if (selected) {
     return (
@@ -832,14 +617,12 @@ function PrimaryEmployeePicker({
           aria-hidden
           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
         >
-          {personInitial(selected)}
+          {employeeShortLabel(selected).slice(0, 2).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">
-            {selected.first_name} {selected.last_name}
-          </p>
+          <p className="truncate text-sm font-medium text-fg">{employeeShortLabel(selected)}</p>
           <p className="truncate font-mono text-[11px] text-fg/55">
-            {selected.employment_info?.employee_code ?? selected.id.slice(0, 8)}
+            {selected.id.slice(0, 8)}
           </p>
         </div>
         <Button
@@ -858,7 +641,7 @@ function PrimaryEmployeePicker({
   return (
     <div className="space-y-1.5">
       <Input
-        placeholder="Search employees…"
+        placeholder="Search employees by ID or role…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
@@ -883,14 +666,14 @@ function PrimaryEmployeePicker({
                     aria-hidden
                     className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                   >
-                    {personInitial(p)}
+                    {employeeShortLabel(p).slice(0, 2).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-fg">
-                      {p.first_name} {p.last_name}
+                      {employeeShortLabel(p)}
                     </span>
                     <span className="block truncate font-mono text-[11px] text-fg/55">
-                      {p.employment_info?.employee_code ?? p.id.slice(0, 8)}
+                      {p.id.slice(0, 8)}
                     </span>
                   </span>
                 </Button>
@@ -911,39 +694,12 @@ function clientInitial(name: string): string {
   return trimmed.slice(0, 2).toUpperCase()
 }
 
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
-}
-
-function personToValues(person: Person): PersonFormValues {
-  return {
-    first_name: person.first_name,
-    last_name: person.last_name,
-    middle_name: person.middle_name ?? "",
-    person_type: person.person_type,
-    date_of_birth: person.date_of_birth ?? "",
-    gender: person.gender ?? "",
-    client_id: person.client_id ?? "",
-    email: person.contact_info?.email ?? "",
-    phone: person.contact_info?.phone ?? "",
-    mobile: person.contact_info?.mobile ?? "",
-    preferred_method: person.contact_info?.preferred_method ?? "",
-    address_street: person.address?.street ?? "",
-    address_city: person.address?.city ?? "",
-    address_country: person.address?.country ?? "",
-    employee_code: person.employment_info?.employee_code ?? "",
-    department: person.employment_info?.department ?? "",
-    role: person.employment_info?.role ?? "",
-    employment_start: person.employment_info?.start_date ?? "",
-    work_status: person.employment_info?.status ?? "",
-    primary_employee_id: person.dependent_info?.primary_employee_id ?? "",
-    relationship: person.dependent_info?.relationship ?? "",
-    emergency_name: person.emergency_contact?.name ?? "",
-    emergency_phone: person.emergency_contact?.phone ?? "",
-    emergency_email: person.emergency_contact?.email ?? "",
-  }
+function employeeShortLabel(p: Person): string {
+  const role = p.employment_info?.role
+  const dept = p.employment_info?.department
+  if (role && dept) return `${role} · ${dept}`
+  if (role) return role
+  return p.id.slice(0, 8)
 }
 
 export { PERSON_TYPE_LABELS }

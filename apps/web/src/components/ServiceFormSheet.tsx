@@ -1,8 +1,8 @@
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
-import type { ServiceCreate, ServiceUpdateGroupSettings } from "@/api/generated"
 import { servicesApi } from "@/api/endpoints/services"
+import type { ServiceCreate, ServiceUpdateGroupSettings } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"

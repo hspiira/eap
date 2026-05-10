@@ -10,7 +10,7 @@ import { z } from 'zod'
  */
 export const validators = {
   // Email validation
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
+  email: z.email('Invalid email address'),
 
   // Password validation
   password: z

@@ -168,32 +168,55 @@ export interface User extends BaseEntity {
 }
 
 /**
- * Person (employee, dependent, service provider, platform staff)
+ * Person — BE-canonical: a thin link between a User and a Client (via
+ * employment_info) or a primary employee (via dependent_info).
+ *
+ * BE `PersonResponse` only carries: `id, tenant_id, user_id, person_type,
+ * status, is_dual_role, is_eligible_for_services, secondary_person_type,
+ * last_service_date, family_id, employment_info?, dependent_info?,
+ * emergency_contact?, license_info?, staff_info?`.
+ *
+ * The legacy demographic fields (first_name/last_name/contact_info/address)
+ * are NOT on the BE response. They remain optional here only so legacy
+ * display callers compile while we migrate them to email/role-derived display
+ * via `displayName(person, user?)`. **Do not introduce new code that reads
+ * these.**
  */
 export interface Person extends BaseEntity {
-  first_name: string
-  last_name: string
-  middle_name?: string | null
   person_type: PersonType
-  date_of_birth?: string | null
-  gender?: string | null
   status: BaseStatus
   user_id: string
   is_dual_role?: boolean
   secondary_person_type?: PersonType | null
   last_service_date?: string | null
   is_eligible_for_services?: boolean
-  client_id?: string | null // For ClientEmployee and Dependent
-  parent_person_id?: string | null // DEPRECATED: For Dependent - use dependent_info instead
   family_id?: string | null
-  dependent_info?: DependentInfo | null // For Dependent - replaces parent_person_id usage
-  contact_info?: ContactInfo | null
-  address?: Address | null
-  emergency_contact?: EmergencyContact | null
+  dependent_info?: DependentInfo | null
   employment_info?: EmploymentInfo | null
   license_info?: LicenseInfo | null
   staff_info?: StaffInfo | null
+  emergency_contact?: EmergencyContact | null
+  /** @deprecated Not on BE response. Display via `displayName(person, user)`. */
+  first_name?: string
+  /** @deprecated Not on BE response. Display via `displayName(person, user)`. */
+  last_name?: string
+  /** @deprecated Not on BE response. */
+  middle_name?: string | null
+  /** @deprecated Not on BE response (PII; out of scope for v1). */
+  date_of_birth?: string | null
+  /** @deprecated Not on BE response. */
+  gender?: string | null
+  /** @deprecated Use `employment_info.client_id` instead. */
+  client_id?: string | null
+  /** @deprecated Use `dependent_info` instead. */
+  parent_person_id?: string | null
+  /** @deprecated Not on BE Person response — contact lives on the linked User. */
+  contact_info?: ContactInfo | null
+  /** @deprecated Not on BE Person response. */
+  address?: Address | null
+  /** @deprecated Use `secondary_person_type` instead. */
   secondary_roles?: PersonType[]
+  /** @deprecated Not on BE response. */
   metadata?: Record<string, unknown> | null
 }
 
@@ -247,15 +270,26 @@ export interface ClientStats {
  */
 export interface Contract extends BaseEntity {
   client_id: string
-  contract_number?: string | null
   status: ContractStatus
+  /** ISO datetime per BE `ContractResponse.start_date`. */
   start_date: string
+  /** ISO datetime; required on BE create but response may show legacy nullable rows. */
   end_date?: string | null
-  renewal_date?: string | null
+  /** Per BE `ContractResponse.is_auto_renew`. */
+  is_auto_renew?: boolean
+  /** Per BE `ContractResponse.payment_frequency`. Aliased into the legacy `billing_frequency` slot for back-compat. */
   billing_frequency?: PaymentFrequency | null
+  /** Per BE `ContractResponse.billing_rate.amount` (string-decimal on the wire). */
   billing_amount?: number | null
+  /** Per BE `ContractResponse.billing_rate.currency`. */
   currency?: string | null
+  /** @deprecated Not on BE — payment status moved to invoice/utilisation events. */
   payment_status?: PaymentStatus | null
+  /** @deprecated Not on BE — renewal handled via dedicated `renew` route. */
+  renewal_date?: string | null
+  /** @deprecated Not on BE response. */
+  contract_number?: string | null
+  /** @deprecated Not on BE response. */
   metadata?: Record<string, unknown> | null
 }
 

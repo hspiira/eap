@@ -3,9 +3,9 @@ import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
-import type { ContractCreate } from "@/api/generated"
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
+import type { ContractCreate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -104,12 +104,7 @@ export function ContractFormSheet({
   const lockedClientId = clientId ?? contract?.client_id
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
-    useEntityFormSheet<
-      ContractFormValues,
-      Parameters<typeof contractsApi.create>[0],
-      Contract,
-      Contract
-    >({
+    useEntityFormSheet<ContractFormValues, ContractCreate, Contract, Contract>({
       resource: "contracts",
       schema: contractSchema,
       defaultValues: { ...EMPTY, client_id: clientId ?? "" },
@@ -118,34 +113,36 @@ export function ContractFormSheet({
       entity: contract,
       toFormValues: (c) => ({
         client_id: c.client_id,
-        contract_number: c.contract_number ?? "",
-        start_date: c.start_date,
-        end_date: c.end_date ?? "",
-        renewal_date: c.renewal_date ?? "",
-        billing_frequency: c.billing_frequency ?? "",
+        start_date: fromIsoDatetime(c.start_date),
+        end_date: fromIsoDatetime(c.end_date),
         billing_amount: c.billing_amount != null ? String(c.billing_amount) : "",
-        currency: c.currency ?? "",
-        payment_status: c.payment_status ?? "",
+        currency: c.currency ?? "KES",
+        payment_frequency: c.billing_frequency ?? PaymentFrequency.MONTHLY,
+        is_auto_renew: Boolean(c.is_auto_renew),
       }),
-      parsePayload: (values) => ({
+      parsePayload: (values): ContractCreate => ({
         client_id: values.client_id,
-        contract_number: values.contract_number?.trim() || undefined,
-        start_date: values.start_date,
-        end_date: values.end_date || undefined,
-        renewal_date: values.renewal_date || undefined,
-        billing_frequency: values.billing_frequency
-          ? (values.billing_frequency as PaymentFrequency)
-          : undefined,
-        billing_amount: values.billing_amount ? Number(values.billing_amount) : undefined,
-        currency: values.currency?.trim() || undefined,
-        payment_status: values.payment_status
-          ? (values.payment_status as PaymentStatus)
-          : undefined,
+        start_date: toIsoDatetime(values.start_date),
+        end_date: toIsoDatetime(values.end_date),
+        billing_rate: {
+          amount: values.billing_amount,
+          currency: values.currency.toUpperCase(),
+        },
+        payment_frequency: values.payment_frequency as PaymentFrequency,
+        is_auto_renew: Boolean(values.is_auto_renew),
       }),
-      save: ({ payload, entity, isEdit }) =>
-        isEdit && entity
-          ? contractsApi.update(entity.id, payload)
-          : contractsApi.create(payload),
+      save: async ({ payload, entity, isEdit }) => {
+        if (isEdit && entity) {
+          // BE `ContractUpdate` only accepts `{billing_rate?, payment_frequency?, is_auto_renew?}`.
+          // Date changes go via the dedicated `renew` route; client_id is immutable.
+          return contractsApi.update(entity.id, {
+            billing_rate: payload.billing_rate,
+            payment_frequency: payload.payment_frequency,
+            is_auto_renew: payload.is_auto_renew,
+          })
+        }
+        return contractsApi.create(payload)
+      },
       successToast: { create: "Contract created", update: "Contract updated" },
       extraInvalidations: lockedClientId
         ? [{ queryKey: ["clients", "detail", lockedClientId] }]
@@ -195,24 +192,7 @@ export function ContractFormSheet({
         <Input type="hidden" {...register("client_id")} />
       </FormSection>
 
-      <FormSection title="Identity">
-        <FormField
-          label="Contract number"
-          optional
-          description="Reference shown on invoices and reports."
-          error={errors.contract_number?.message}
-          htmlFor="cf-number"
-        >
-          <Input
-            id="cf-number"
-            placeholder="e.g. MSA-2026-014"
-            className="font-mono"
-            {...register("contract_number")}
-          />
-        </FormField>
-      </FormSection>
-
-      <FormSection title="Lifecycle dates">
+      <FormSection title="Term">
         <div className="grid grid-cols-2 gap-3">
           <FormField
             label="Start date"
@@ -224,84 +204,67 @@ export function ContractFormSheet({
           </FormField>
           <FormField
             label="End date"
-            optional
+            required
             error={errors.end_date?.message}
             htmlFor="cf-end"
           >
             <Input id="cf-end" type="date" {...register("end_date")} />
           </FormField>
         </div>
-        <FormField
-          label="Renewal date"
-          optional
-          description="When this contract is up for renewal review."
-          error={errors.renewal_date?.message}
-          htmlFor="cf-renewal"
-        >
-          <Input id="cf-renewal" type="date" {...register("renewal_date")} />
-        </FormField>
+        <div className="flex items-center gap-2 pt-1">
+          <Controller
+            control={control}
+            name="is_auto_renew"
+            render={({ field }) => (
+              <Checkbox
+                id="cf-auto-renew"
+                checked={Boolean(field.value)}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <label
+            htmlFor="cf-auto-renew"
+            className="cursor-pointer text-sm text-fg"
+          >
+            Auto-renew at end of term
+          </label>
+        </div>
       </FormSection>
 
       <FormSection
         title="Billing"
-        description="Optional. Used for invoicing and revenue reporting."
+        description="Pricing model (retainer, framework, fee-for-service…) is configured separately on the contract detail page."
       >
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Frequency"
-            optional
-            error={errors.billing_frequency?.message}
-            htmlFor="cf-frequency"
-          >
-            <Controller
-              control={control}
-              name="billing_frequency"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="cf-frequency">
-                    <SelectValue placeholder="Unset" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FREQUENCY_VALUES.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-          <FormField
-            label="Payment status"
-            optional
-            error={errors.payment_status?.message}
-            htmlFor="cf-payment-status"
-          >
-            <Controller
-              control={control}
-              name="payment_status"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="cf-payment-status">
-                    <SelectValue placeholder="Unset" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_STATUS_VALUES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-        </div>
+        <FormField
+          label="Payment frequency"
+          required
+          error={errors.payment_frequency?.message}
+          htmlFor="cf-frequency"
+        >
+          <Controller
+            control={control}
+            name="payment_frequency"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="cf-frequency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FREQUENCY_VALUES.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
         <div className="grid grid-cols-[1fr_6rem] gap-3">
           <FormField
-            label="Amount"
-            optional
+            label="Billing rate"
+            required
             error={errors.billing_amount?.message}
             htmlFor="cf-amount"
           >
@@ -318,7 +281,7 @@ export function ContractFormSheet({
           </FormField>
           <FormField
             label="Currency"
-            optional
+            required
             error={errors.currency?.message}
             htmlFor="cf-currency"
           >
@@ -326,7 +289,7 @@ export function ContractFormSheet({
               id="cf-currency"
               placeholder="KES"
               maxLength={3}
-              className="font-mono"
+              className="font-mono uppercase"
               {...register("currency")}
             />
           </FormField>

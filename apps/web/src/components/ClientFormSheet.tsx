@@ -1,8 +1,8 @@
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
-import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { clientsApi } from "@/api/endpoints/clients"
+import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"

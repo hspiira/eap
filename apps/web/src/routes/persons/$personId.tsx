@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { displayName } from "@/lib/display"
 import { cn } from "@/lib/utils"
 import type { Client, Person, ServiceSession, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -209,7 +210,7 @@ function PersonDetailPage() {
     )
   }
 
-  const fullName = `${person.first_name} ${person.last_name}`.trim()
+  const fullName = displayName(person, user)
   const isDependent = person.person_type === PersonType.DEPENDENT
   const isEmployee = person.person_type === PersonType.CLIENT_EMPLOYEE
 
@@ -501,7 +502,7 @@ function PersonDetailPage() {
 }
 
 function Hero({ person, client }: { person: Person; client: Client | null }) {
-  const fullName = `${person.first_name} ${person.last_name}`.trim()
+  const fullName = displayName(person)
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span

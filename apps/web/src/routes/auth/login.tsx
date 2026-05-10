@@ -29,7 +29,7 @@ export const Route = createFileRoute('/auth/login')({
 
 const loginSchema = z.object({
   tenant_code: z.string().trim().min(1, 'Tenant code is required'),
-  email: z.string().trim().min(1, 'Email is required').email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 })
 

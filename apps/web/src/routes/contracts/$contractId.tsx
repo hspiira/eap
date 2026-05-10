@@ -115,8 +115,18 @@ function ContractDetailPage() {
       setActionLoading(true)
       try {
         if (action === "activate") await contractsApi.activate(id)
-        else if (action === "terminate") await contractsApi.terminate(id, "Terminated from UI")
-        else if (action === "renew") await contractsApi.renew(id, {})
+        else if (action === "terminate") {
+          // BE `ContractTerminateRequest` requires `{reason}`.
+          // TODO(P1): surface a dialog to capture the reason.
+          await contractsApi.terminate(id, { reason: "Terminated from UI" })
+        } else if (action === "renew") {
+          // BE `ContractRenewRequest` requires `{new_end_date}` (ISO datetime).
+          // Stub: extend by 12 months. TODO(P1): surface a date picker.
+          if (!contract?.end_date) return
+          const next = new Date(contract.end_date)
+          next.setFullYear(next.getFullYear() + 1)
+          await contractsApi.renew(id, { new_end_date: next.toISOString() })
+        }
         await fetchContract()
       } finally {
         setActionLoading(false)

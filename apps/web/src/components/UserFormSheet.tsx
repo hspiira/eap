@@ -30,7 +30,7 @@ const LANGUAGE_OPTIONS = [
 ] as const
 
 const baseSchema = z.object({
-  email: z.string().trim().min(1, "Email is required").email("Invalid email"),
+  email: z.email("Invalid email"),
   preferred_language: z.string().optional(),
   timezone: z.string().optional(),
 })

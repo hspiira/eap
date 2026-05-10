@@ -6,9 +6,9 @@
  * Use `setTier()` after `create()` to set initial tier.
  */
 
+import type { ClientCreate, ClientUpdate, Schemas } from '@/api/generated'
 import type { ClientTier } from '@/types/enums'
 
-import type { ClientCreate, ClientUpdate, Schemas } from '@/api/generated'
 import apiClient from '../client'
 import type {
   Client,
