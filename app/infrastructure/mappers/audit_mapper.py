@@ -52,6 +52,7 @@ class AuditMapper:
             user_agent=model.user_agent,
             occurred_at=ensure_utc(model.occurred_at),
             metadata=model.extra_metadata,
+            is_special_category=getattr(model, "is_special_category", False),
         )
 
     @staticmethod
@@ -82,8 +83,9 @@ class AuditMapper:
             user_agent=entity._user_agent,
             occurred_at=ensure_utc(entity.occurred_at),
             extrametadata=metadata_dict,
-            created_at=ensure_utc(entity.occurred_at),  # Use occurred_at for created_at
-            updated_at=ensure_utc(entity.occurred_at),  # Immutable, so same as created_at
+            is_special_category=getattr(entity, "is_special_category", False),
+            created_at=ensure_utc(entity.occurred_at),
+            updated_at=ensure_utc(entity.occurred_at),
         )
 
     @staticmethod

@@ -242,6 +242,31 @@ class EligibleMemberId(Id):
 class ClinicalSubjectId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class CaseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class AuthorizationId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EAPProgrammeId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClinicalNoteId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class NoteAmendmentId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:
