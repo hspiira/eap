@@ -30,13 +30,21 @@ COOKIE_REFRESH_TOKEN = "evexia_refresh_token"
 
 
 class TokenData(BaseModel):
-    """Data extracted from JWT token."""
+    """Data extracted from JWT token.
+
+    ``access_scopes`` carries the bounded-context split that gates the privacy
+    wall (see ``AccessScope`` / 5A.2). Tokens minted before the scope rollout
+    have an empty list; the route guards treat that as legacy
+    PLATFORM_ADMIN — clinical-only routes will still refuse them once the
+    auth backend starts emitting explicit scopes.
+    """
 
     user_id: str
     tenant_id: str
     email: str | None = None
     exp: datetime | None = None
-    jti: str | None = None  # refresh token id for revocation
+    jti: str | None = None
+    access_scopes: list[str] = []
 
 
 class Token(BaseModel):
@@ -98,6 +106,7 @@ def create_access_token(
     email: str | None = None,
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
+    access_scopes: list[str] | None = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -128,6 +137,9 @@ def create_access_token(
 
     if email:
         to_encode["email"] = email
+
+    if access_scopes:
+        to_encode["access_scopes"] = list(access_scopes)
 
     if additional_claims:
         to_encode.update(additional_claims)
@@ -204,11 +216,15 @@ def decode_token(token: str) -> TokenData:
         if user_id is None or tenant_id is None:
             raise AuthenticationException("Invalid token: missing required claims")
 
+        scopes_claim = payload.get("access_scopes") or []
+        if not isinstance(scopes_claim, list):
+            scopes_claim = []
         return TokenData(
             user_id=user_id,
             tenant_id=tenant_id,
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
+            access_scopes=[str(s) for s in scopes_claim],
         )
     except JWTError as e:
         raise AuthenticationException(f"Invalid token: {str(e)}")

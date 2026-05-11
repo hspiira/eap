@@ -21,12 +21,12 @@ from starlette.responses import Response
 
 HEADER_NAME = "X-Request-Id"
 
-# Accept canonical UUIDs only. Clients sending arbitrary tokens get a fresh
-# server-side UUID instead, so log correlation can't be spoofed with junk.
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
+"""Inbound IDs must be canonical UUIDs; otherwise we generate fresh ones so
+log correlation can't be spoofed with junk."""
 
 
 current_request_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(

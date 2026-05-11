@@ -359,6 +359,38 @@ class TenantConsentStatus(str, Enum):
     WITHDRAWN = "Withdrawn"
 
 
+class EligibilityStatus(str, Enum):
+    """Lifecycle of an EAP-eligible member as supplied by the employer."""
+
+    ACTIVE = "Active"
+    SUSPENDED = "Suspended"
+    TERMINATED = "Terminated"
+    PENDING = "Pending"
+
+
+class MemberRelation(str, Enum):
+    """Relationship of an eligible member to the primary employee."""
+
+    EMPLOYEE = "Employee"
+    SPOUSE = "Spouse"
+    CHILD = "Child"
+    DOMESTIC_PARTNER = "DomesticPartner"
+    DEPENDENT_OTHER = "DependentOther"
+
+
+class AccessScope(str, Enum):
+    """Bounded-context split between the employer-facing and clinical surfaces.
+
+    A token's scope determines which routes it may reach. The clinical scope is
+    a strict superset of nothing: a clinical user has zero employer-side
+    privilege and vice versa, even within the same tenant.
+    """
+
+    EMPLOYER_PORTAL = "EmployerPortal"
+    CLINICAL = "Clinical"
+    PLATFORM_ADMIN = "PlatformAdmin"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"

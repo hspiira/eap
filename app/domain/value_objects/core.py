@@ -232,6 +232,16 @@ class DSARRequestId(Id):
 class BenchmarkConsentId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class EligibleMemberId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClinicalSubjectId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

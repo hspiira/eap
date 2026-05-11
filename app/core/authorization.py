@@ -28,6 +28,7 @@ from app.api.dependencies import (
 )
 from app.core.config import settings
 from app.core.security import TokenData, get_current_user, get_current_user_optional
+from app.domain.enums import AccessScope
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.contract import ContractEntity
@@ -113,6 +114,53 @@ async def require_same_tenant(
             detail="Access denied to this tenant",
         )
     return current_user
+
+
+def _token_has_scope(token: TokenData, scope: AccessScope) -> bool:
+    return scope.value in (token.access_scopes or [])
+
+
+def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = False):
+    """Dependency factory enforcing the privacy-wall split (Phase 5A #5A.2).
+
+    A token is admitted when *any* of ``allowed_scopes`` appears in its
+    ``access_scopes`` claim. Legacy tokens (no scopes claim) are admitted by
+    default to keep the rollout incremental; pass ``fail_closed_on_legacy=True``
+    on clinical-only routes to refuse legacy tokens — that flips to the default
+    once the auth backend emits explicit scopes everywhere.
+    """
+
+    allowed = {s.value for s in allowed_scopes}
+
+    async def _require(
+        current_user: TokenData = Depends(get_current_user),
+    ) -> TokenData:
+        scopes = current_user.access_scopes or []
+        if not scopes and not fail_closed_on_legacy:
+            return current_user
+        if any(s in allowed for s in scopes):
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Access scope insufficient for this route; "
+                f"required one of {sorted(allowed)}"
+            ),
+        )
+
+    return _require
+
+
+require_clinical_scope = require_scope(
+    AccessScope.CLINICAL, AccessScope.PLATFORM_ADMIN
+)
+"""Use as ``Depends(require_clinical_scope)`` on every clinical-only route."""
+
+
+require_employer_scope = require_scope(
+    AccessScope.EMPLOYER_PORTAL, AccessScope.PLATFORM_ADMIN
+)
+"""Use as ``Depends(require_employer_scope)`` on employer-portal routes."""
 
 
 async def require_platform_admin(
