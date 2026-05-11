@@ -21,6 +21,7 @@ from app.api.dependencies import (
     get_client_repository,
     get_contract_repository,
     get_document_repository,
+    get_industry_repository,
     get_person_repository,
     get_service_repository,
     get_service_session_repository,
@@ -33,6 +34,7 @@ from app.domain.entities.audit import AuditLog
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.contract import ContractEntity
 from app.domain.entities.document import DocumentEntity
+from app.domain.entities.industry import IndustryEntity
 from app.domain.entities.person import PersonEntity
 from app.domain.entities.service import ServiceEntity
 from app.domain.entities.service_session import ServiceSessionEntity
@@ -41,6 +43,7 @@ from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
@@ -51,6 +54,7 @@ from app.domain.value_objects.core import (
     ClientId,
     ContractId,
     DocumentId,
+    IndustryId,
     PersonId,
     ServiceId,
     SessionId,
@@ -96,6 +100,34 @@ def require_tenant_role(*allowed_roles: TenantRole):
                 detail="Insufficient role for this action",
             )
         return current_user_entity
+
+    return _require
+
+
+def require_self_or_role(*allowed_roles: TenantRole):
+    """
+    Dependency factory: allow self-actions (caller acts on their own user_id)
+    OR users whose tenant role is in allowed_roles.
+
+    Use for endpoints that should be self-service for the target user but
+    overridable by admins — e.g. password change, 2FA toggle, preferences.
+
+    Requires the route to declare `user_id: str` as a path/query param so
+    FastAPI resolves it before this dependency runs.
+    """
+
+    async def _require(
+        user_id: str,
+        current_user_entity: UserEntity = Depends(get_current_user_entity),
+    ) -> UserEntity:
+        if current_user_entity.id.value == user_id:
+            return current_user_entity
+        if current_user_entity.role in allowed_roles:
+            return current_user_entity
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only perform this action on yourself, or as an admin",
+        )
 
     return _require
 
@@ -230,6 +262,29 @@ async def get_user_in_tenant(
             detail="Access denied to this tenant",
         )
     return user
+
+
+async def get_industry_in_tenant(
+    industry_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    industry_repo: IndustryRepository = Depends(get_industry_repository),
+) -> IndustryEntity:
+    """
+    Load industry by ID and require that it belongs to the current user's tenant.
+    Returns 404 if not found, 403 if cross-tenant.
+    """
+    industry = await industry_repo.get_by_id(IndustryId(industry_id))
+    if not industry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Industry not found",
+        )
+    if industry.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this tenant",
+        )
+    return industry
 
 
 async def get_audit_log_for_current_tenant(

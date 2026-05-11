@@ -101,3 +101,4 @@ class MeResponse(BaseModel):
     user_id: str = Field(..., description="User identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
     email: str = Field(..., description="User email address")
+    role: str | None = Field(None, description="Tenant role (Admin/User/Viewer)")

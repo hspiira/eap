@@ -83,6 +83,15 @@ class Settings(BaseSettings):
         default=False,
         description="If True, POST /tenants requires platform admin",
     )
+    ENFORCE_SUBSCRIPTION_LIMITS: bool = Field(
+        default=False,
+        description=(
+            "If True, CreateClient/CreateUser use cases reject creation past "
+            "the tenant's max_clients/max_users quota with a 402. When False "
+            "(default), quotas are advisory only — pricing tiers are not yet "
+            "wired up and we don't want to block onboarding."
+        ),
+    )
     # Base URL for set-password link after tenant registration (e.g. https://app.example.com or http://localhost:3000).
     # When set, tenant creation returns set_password_url instead of admin_password; user sets password then logs in.
     SET_PASSWORD_BASE_URL: str = Field(

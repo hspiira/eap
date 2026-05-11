@@ -22,6 +22,16 @@ class UserCreate(BaseModel):
     password: str | None = Field(None, min_length=8, description="User password (will be hashed)")
     preferred_language: Language | None = Field(None, description="Preferred language")
     timezone: str | None = Field(None, description="User timezone")
+    role: TenantRole = Field(
+        default=TenantRole.USER,
+        description="Initial tenant role (Admin/User/Viewer). Defaults to User.",
+    )
+
+
+class UserUpdateRoleRequest(BaseModel):
+    """Request schema for changing a user's tenant role."""
+
+    role: TenantRole = Field(..., description="New tenant role (Admin/User/Viewer).")
 
 
 class UserSuspendRequest(BaseModel):
@@ -52,6 +62,11 @@ class UserUpdatePasswordRequest(BaseModel):
     """Request schema for updating user password."""
 
     password: str = Field(..., min_length=8, description="New password (will be hashed)")
+    current_password: str | None = Field(
+        None,
+        description="Existing password. REQUIRED for self-service change; "
+        "ignored when an admin is resetting another user's password.",
+    )
 
 
 class UserUpdatePreferencesRequest(BaseModel):
