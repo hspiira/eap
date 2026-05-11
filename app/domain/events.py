@@ -13,6 +13,8 @@ from app.domain.value_objects.core import (
     SurveyCampaignId, SurveyResponseId,
     EngagementId, DSARRequestId,
     CaseId, ClinicalNoteId, ClinicalSubjectId, AuthorizationId, EAPProgrammeId,
+    CrisisContactId, RiskAssessmentId, SafetyPlanId, MandatoryReportId,
+    CaringContactId,
 )
 from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
@@ -529,3 +531,67 @@ class EAPProgrammeCreated(DomainEvent):
     programme_id: "EAPProgrammeId"
     tenant_id: TenantId
     contract_id: ContractId
+
+
+@dataclass(frozen=True)
+class CrisisContactLogged(DomainEvent):
+    crisis_contact_id: "CrisisContactId"
+    tenant_id: TenantId
+
+
+@dataclass(frozen=True)
+class CrisisContactClosed(DomainEvent):
+    crisis_contact_id: "CrisisContactId"
+    outcome: str
+
+
+@dataclass(frozen=True)
+class RiskAssessmentRecorded(DomainEvent):
+    risk_assessment_id: "RiskAssessmentId"
+    case_id: "CaseId | None"
+    crisis_contact_id: "CrisisContactId | None"
+    risk_level: str
+    requires_safety_plan: bool
+    requires_mandatory_report: bool
+
+
+@dataclass(frozen=True)
+class SafetyPlanCreated(DomainEvent):
+    safety_plan_id: "SafetyPlanId"
+    clinical_subject_id: "ClinicalSubjectId"
+
+
+@dataclass(frozen=True)
+class SafetyPlanActivated(DomainEvent):
+    safety_plan_id: "SafetyPlanId"
+
+
+@dataclass(frozen=True)
+class SafetyPlanReviewed(DomainEvent):
+    safety_plan_id: "SafetyPlanId"
+    reviewer_id: UserId
+
+
+@dataclass(frozen=True)
+class SafetyPlanSuperseded(DomainEvent):
+    superseded_safety_plan_id: "SafetyPlanId"
+    successor_safety_plan_id: "SafetyPlanId"
+
+
+@dataclass(frozen=True)
+class MandatoryReportSubmitted(DomainEvent):
+    mandatory_report_id: "MandatoryReportId"
+    report_type: str
+    submitted_to: str
+
+
+@dataclass(frozen=True)
+class CaringContactScheduled(DomainEvent):
+    caring_contact_id: "CaringContactId"
+    due_at: datetime
+
+
+@dataclass(frozen=True)
+class CaringContactCompleted(DomainEvent):
+    caring_contact_id: "CaringContactId"
+    outcome: str

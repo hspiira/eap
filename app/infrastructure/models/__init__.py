@@ -17,9 +17,16 @@ from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeMod
 from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
 from app.infrastructure.models.case_model import CaseModel
 from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
+from app.infrastructure.models.crisis_contact_model import CrisisContactModel
 from app.infrastructure.models.eap_programme_model import (
     AuthorizationModel,
     EAPProgrammeModel,
+)
+from app.infrastructure.models.risk_safety_models import (
+    CaringContactModel,
+    MandatoryReportModel,
+    RiskAssessmentModel,
+    SafetyPlanModel,
 )
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
@@ -75,10 +82,15 @@ __all__ = [
     "Base",
     "BenchmarkConsentModel",
     "CareCallbackCampaignModel",
+    "CaringContactModel",
     "CaseModel",
     "ClinicalNoteModel",
     "ClinicalSubjectModel",
+    "CrisisContactModel",
     "EAPProgrammeModel",
+    "MandatoryReportModel",
+    "RiskAssessmentModel",
+    "SafetyPlanModel",
     "ClientModel",
     "ClientTagModel",
     "ContactModel",
