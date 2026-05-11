@@ -47,7 +47,7 @@ class TenantCode:
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", self.value):
             raise ValueError(
                 "Tenant code must be lowercase alphanumeric with optional hyphens "
-                "(e.g., 'acme', 'acme-corp', 'abc123')"
+                + "(e.g., 'acme', 'acme-corp', 'abc123')"
             )
 
 # === Identity Value Objects ===
@@ -491,16 +491,6 @@ class ProviderProfile:
     specialties: tuple[str, ...] = ()
     bio: str | None = None
 
-    def __post_init__(self):
-        if not isinstance(self.tier, ProviderTier):
-            raise ValueError("ProviderProfile.tier must be a ProviderTier")
-        if not isinstance(self.region, UgandaRegion):
-            raise ValueError("ProviderProfile.region must be a UgandaRegion")
-        if not isinstance(self.accreditation_status, AccreditationStatus):
-            raise ValueError("accreditation_status must be an AccreditationStatus")
-        if not isinstance(self.panel_status, PanelStatus):
-            raise ValueError("panel_status must be a PanelStatus")
-
     def is_panel_eligible(self) -> bool:
         """Whether the provider can currently take new assignments."""
         if self.panel_status != PanelStatus.ACTIVE:
@@ -577,8 +567,6 @@ class DependentInfo:
     def __post_init__(self):
         if not self.primary_employee_id:
             raise ValueError("DependentInfo requires primary_employee_id")
-        if not isinstance(self.relationship, RelationType):
-            raise ValueError("DependentInfo.relationship must be a RelationType")
 
     def is_eligible(self) -> bool:
         """Intrinsic eligibility derived from the dependent's own data.

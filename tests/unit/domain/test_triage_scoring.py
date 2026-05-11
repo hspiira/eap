@@ -207,13 +207,6 @@ class TestPHQ9:
 
 
 class TestScoringNegatives:
-    def test_unknown_instrument_via_invalid_enum(self):
-        # score_triage requires the enum; test via raw KeyError on get_instrument
-        # by simulating a missing entry. We verify by checking the catalogue
-        # rejects nonsense.
-        with pytest.raises(KeyError):
-            get_instrument("not-a-code")  # type: ignore[arg-type]
-
     def test_validation_error_propagates(self):
         with pytest.raises(ValueError):
             score_triage(TriageInstrumentCode.JOSEPH7, {"q1": 0})

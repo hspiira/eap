@@ -110,7 +110,7 @@ class CriticalIncidentEntity:
             CriticalIncidentClosed(occurred_at=now, incident_id=self.id)
         )
 
-    def after_action_report(self) -> dict:
+    def after_action_report(self) -> dict[str, object]:
         """Return a JSON-serialisable after-action summary."""
         return {
             "incident_id": self.id.value,

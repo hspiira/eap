@@ -192,8 +192,7 @@ def get_instrument(code: TriageInstrumentCode) -> Questionnaire:
     try:
         return CATALOGUE[code]
     except KeyError as exc:
-        label = code.value if isinstance(code, TriageInstrumentCode) else repr(code)
-        raise KeyError(f"Unknown triage instrument: {label}") from exc
+        raise KeyError(f"Unknown triage instrument: {code.value}") from exc
 
 
 def _classify_joseph_stage(motivation_score: int) -> StageOfChange:

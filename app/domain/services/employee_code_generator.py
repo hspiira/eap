@@ -111,8 +111,8 @@ class EmployeeCodeGenerator:
 
         if family_head.employment_info.client_id != client_id:
             raise ValueError(
-                f"Family head belongs to different client. "
-                f"Expected {client_id.value}, got {family_head.employment_info.client_id.value}"
+                "Family head belongs to different client. "
+                + f"Expected {client_id.value}, got {family_head.employment_info.client_id.value}"
             )
 
         employee_code = family_head.employment_info.employee_code
@@ -135,7 +135,7 @@ class EmployeeCodeGenerator:
             tenant_id, PersonType.CLIENT_EMPLOYEE
         )
 
-        family_codes = set()
+        family_codes: set[str] = set()
         for employee in employees:
             if (
                 employee.employment_info
@@ -172,7 +172,7 @@ class EmployeeCodeGenerator:
             tenant_id, PersonType.CLIENT_EMPLOYEE
         )
 
-        member_codes = set()
+        member_codes: set[str] = set()
         for employee in employees:
             if (
                 employee.employment_info
@@ -209,5 +209,5 @@ class EmployeeCodeGenerator:
             if next_code > 99:
                 raise ValueError(
                     f"Maximum member codes (99) reached for family {family_code} "
-                    f"in client {client_id.value}"
+                    + f"in client {client_id.value}"
                 )

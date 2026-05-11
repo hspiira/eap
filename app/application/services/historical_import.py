@@ -47,11 +47,13 @@ class CanonicalMappings:
     notices missing canonical entries before the import runs.
     """
 
-    client_codes: dict[str, str] = field(default_factory=dict)
-    service_codes: dict[str, str] = field(default_factory=dict)
-    provider_codes: dict[str, str] = field(default_factory=dict)
-    person_codes: dict[str, str] = field(default_factory=dict)
-    status_text: dict[str, SessionStatus] = field(default_factory=dict)
+    client_codes: dict[str, str] = field(default_factory=dict[str, str])
+    service_codes: dict[str, str] = field(default_factory=dict[str, str])
+    provider_codes: dict[str, str] = field(default_factory=dict[str, str])
+    person_codes: dict[str, str] = field(default_factory=dict[str, str])
+    status_text: dict[str, SessionStatus] = field(
+        default_factory=dict[str, SessionStatus]
+    )
 
 
 @dataclass(frozen=True)
