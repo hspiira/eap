@@ -147,8 +147,8 @@ class Case:
             raise DomainError("closure screener admin_id is required")
         if self.status != CaseStatus.ACTIVE:
             raise InvalidStateError(
-                "Closure screeners are recorded while the case is still ACTIVE,"
-                " before transitioning to CLOSED"
+                "Closure screeners are recorded while the case is still ACTIVE, "
+                + "before transitioning to CLOSED"
             )
         if admin_id not in self.closure_screener_admin_ids:
             self.closure_screener_admin_ids = (
@@ -200,8 +200,8 @@ class Case:
             and not self.closure_screener_admin_ids
         ):
             raise DomainError(
-                "Closing an Active case with goals_met requires at least one"
-                " closure screener administration"
+                "Closing an Active case with goals_met requires at least one "
+                + "closure screener administration"
             )
         now = now or utc_now()
         old = self.status

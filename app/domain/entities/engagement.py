@@ -272,7 +272,7 @@ class Engagement:
         if outstanding:
             raise DomainError(
                 f"Cannot mark engagement delivered: {len(outstanding)} deliverable(s) "
-                "are still outstanding"
+                + "are still outstanding"
             )
         now = now or utc_now()
         self.status = EngagementStatus.DELIVERED

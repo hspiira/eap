@@ -30,8 +30,6 @@ class DomainEvent:
     
     def __post_init__(self) -> None:
         """Validate that occurred_at is timezone-aware UTC datetime."""
-        if self.occurred_at is None:
-            raise ValueError("occurred_at cannot be None")
         if self.occurred_at.tzinfo is None:
             raise ValueError("occurred_at must be timezone-aware")
         if self.occurred_at.tzinfo != UTC:
@@ -172,8 +170,6 @@ class ContractRenewed(DomainEvent):
     def __post_init__(self) -> None:
         """Validate that new_end_date is timezone-aware UTC datetime."""
         super().__post_init__()
-        if self.new_end_date is None:
-            raise ValueError("new_end_date cannot be None")
         if self.new_end_date.tzinfo is None:
             raise ValueError("new_end_date must be timezone-aware")
         if self.new_end_date.tzinfo != UTC:
@@ -248,8 +244,6 @@ class SessionRescheduled(DomainEvent):
     def __post_init__(self) -> None:
         """Validate that new_scheduled_at is timezone-aware UTC datetime."""
         super().__post_init__()
-        if self.new_scheduled_at is None:
-            raise ValueError("new_scheduled_at cannot be None")
         if self.new_scheduled_at.tzinfo is None:
             raise ValueError("new_scheduled_at must be timezone-aware")
         if self.new_scheduled_at.tzinfo != UTC:

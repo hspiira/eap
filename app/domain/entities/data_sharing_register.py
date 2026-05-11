@@ -48,7 +48,7 @@ class DataSharingRegisterEntry:
         if self.consent_id is None and not self.legal_basis:
             raise DomainError(
                 "A data-sharing entry without a consent_id requires a "
-                "legal_basis (e.g. statutory order, mandatory report)"
+                + "legal_basis (e.g. statutory order, mandatory report)"
             )
         if not self.events:
             self.events.append(

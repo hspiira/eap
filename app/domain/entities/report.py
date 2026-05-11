@@ -22,7 +22,7 @@ class TemplateSection:
 
     title: str
     query_type: ReportQueryType
-    parameters: dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict[str, Any])
     narrative: str | None = None
 
     def __post_init__(self) -> None:

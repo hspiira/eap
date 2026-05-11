@@ -39,8 +39,8 @@ class SafetyPlan:
     warning_signs: tuple[str, ...]
     internal_coping_strategies: tuple[str, ...]
     social_distractions: tuple[str, ...]
-    social_contacts_for_help: tuple[dict, ...]
-    professional_help_resources: tuple[dict, ...]
+    social_contacts_for_help: tuple[dict[str, object], ...]
+    professional_help_resources: tuple[dict[str, object], ...]
     means_restriction_plan: tuple[str, ...]
     created_at: datetime
     updated_at: datetime

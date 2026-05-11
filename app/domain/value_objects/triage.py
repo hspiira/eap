@@ -9,6 +9,7 @@ administration. Instrument definitions are immutable in-process catalogue entrie
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any
 
 from app.domain.enums import TriageInstrumentCode, TriageRiskLevel
@@ -69,7 +70,7 @@ class Questionnaire:
                 return it
         raise KeyError(f"Unknown item code for {self.code.value}: {code}")
 
-    def validate_responses(self, responses: dict[str, int]) -> None:
+    def validate_responses(self, responses: Mapping[str, object]) -> None:
         """Reject malformed responses: unknown keys, out-of-range values, missing items."""
         expected = {it.code for it in self.items}
         provided = set(responses.keys())
@@ -77,7 +78,7 @@ class Questionnaire:
         if missing:
             raise ValueError(
                 f"{self.code.value} v{self.version}: missing answers for "
-                f"{sorted(missing)}"
+                + f"{sorted(missing)}"
             )
         unknown = provided - expected
         if unknown:
@@ -112,7 +113,7 @@ class QuestionnaireResponse:
     risk_level: TriageRiskLevel
     crisis_flag: bool = False
     crisis_reason: str | None = None
-    derived: dict[str, Any] = field(default_factory=dict)
+    derived: dict[str, Any] = field(default_factory=dict[str, Any])
 
     def __post_init__(self) -> None:
         if self.crisis_flag and not self.crisis_reason:

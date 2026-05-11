@@ -252,7 +252,7 @@ class PersonEntity:
     
     def _check_max_clients_rule(self, new_client_id: ClientId) -> None:
         """Check that person is not already employee/dependent for more than 1 client."""
-        clients = set()
+        clients: set[ClientId] = set()
         
         if self.person_type == PersonType.CLIENT_EMPLOYEE and self.employment_info:
             clients.add(self.employment_info.client_id)
