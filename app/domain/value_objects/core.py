@@ -292,6 +292,41 @@ class MandatoryReportId(Id):
 class CaringContactId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class ManagerConsultId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class WorkLifeReferralId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class WorkLifeProviderId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class TrainingEnrolmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class OutcomeMeasureId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class FitnessForDutyId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReturnToWorkPlanId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:
