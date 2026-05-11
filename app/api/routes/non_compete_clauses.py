@@ -113,6 +113,10 @@ async def sign_non_compete(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    # Tenant guard: fail-closed 404 on cross-tenant access — don't reveal existence.
+    existing = await repo.get_by_id(NonCompeteClauseId(clause_id))
+    if existing is None or existing.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Non-compete clause not found")
     use_case: TransitionUseCase = TransitionUseCase(repo)
     use_case.entity_name = "NonCompeteClause"
     clause = await use_case.execute(
@@ -145,6 +149,9 @@ async def revoke_non_compete(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    existing = await repo.get_by_id(NonCompeteClauseId(clause_id))
+    if existing is None or existing.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Non-compete clause not found")
     use_case: TransitionUseCase = TransitionUseCase(repo)
     use_case.entity_name = "NonCompeteClause"
     clause = await use_case.execute(
@@ -170,12 +177,13 @@ async def revoke_non_compete(
 @readonly()
 async def get_non_compete(
     clause_id: str,
-    _user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(get_current_user),
     repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
     clause = await repo.get_by_id(NonCompeteClauseId(clause_id))
-    if clause is None:
+    # Fail-closed 404 on cross-tenant access — don't reveal existence.
+    if clause is None or clause.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Non-compete clause not found")
     return _to_response(clause)
 

@@ -61,11 +61,14 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
             tenant = await self.tenant_repository.get_by_id(tenant_id)
             if not tenant:
                 raise ValueError(f"Tenant not found: {tenant_id.value}")
-            user_count = await self.user_repository.count(tenant_id=tenant_id)
-            if not tenant.can_create_users(user_count):
-                raise SubscriptionLimitError(
-                    "Tenant user limit reached; upgrade subscription to add more users."
-                )
+            from app.core.config import settings as _settings  # local import to avoid cycle
+
+            if getattr(_settings, "ENFORCE_SUBSCRIPTION_LIMITS", False):
+                user_count = await self.user_repository.count(tenant_id=tenant_id)
+                if not tenant.can_create_users(user_count):
+                    raise SubscriptionLimitError(
+                        "Tenant user limit reached; upgrade subscription to add more users."
+                    )
 
         # Check if user already exists
         existing = await self.user_repository.get_by_email(email, tenant_id)

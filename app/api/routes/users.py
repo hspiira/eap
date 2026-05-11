@@ -12,9 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.authorization import (
     get_user_in_tenant,
     require_same_tenant,
+    require_self_or_role,
     require_tenant_role,
 )
-from app.core.security import TokenData, get_current_user
+from app.core.security import TokenData, get_current_user, verify_password
 from app.domain.enums import TenantRole
 
 from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
@@ -28,6 +29,7 @@ from app.api.schemas.user_schemas import (
     UserTerminateRequest,
     UserUpdatePasswordRequest,
     UserUpdatePreferencesRequest,
+    UserUpdateRoleRequest,
 )
 from app.application.use_cases.transitions import (
     TransitionUseCase,
@@ -108,6 +110,7 @@ async def create_user(
             tenant_id=TenantId(tenant_id),
             email=Email(data.email),
             password_hash=password_hash,
+            role=data.role,
         )
     except EvexiaException as e:
         raise HTTPException(status_code=e.http_status, detail=e.message)
@@ -151,6 +154,52 @@ async def verify_user_email(
     use_case: TransitionUseCase = TransitionUseCase(user_repo)
     use_case.entity_name = "User"
     updated_user = await use_case.execute(user.id, UserTransition.VERIFY_EMAIL)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
+
+
+@router.patch(
+    "/{user_id}/role",
+    response_model=UserResponse,
+    summary="Change a user's tenant role (Admin/User/Viewer)",
+)
+@transactional()
+async def update_user_role(
+    request: Request,
+    body: UserUpdateRoleRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Change a user's tenant role. ADMIN-only.
+
+    Guards against demoting the last admin in a tenant — that would leave the
+    tenant unmanageable.
+    """
+    if user.role == TenantRole.ADMIN and body.role != TenantRole.ADMIN:
+        # count remaining admins in the tenant
+        admins = await user_repo.list_all(
+            tenant_id=user.tenant_id,
+        )
+        admin_count = sum(1 for u in admins if u.role == TenantRole.ADMIN)
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot demote the last admin in this tenant",
+            )
+
+    user.role = body.role
+    updated_user = await user_repo.save(user)
     await audit_entity_operation(
         entity=updated_user,
         audit_handler=audit_handler,
@@ -321,11 +370,31 @@ async def update_user_password(
     body: UserUpdatePasswordRequest,
     current_user: TokenData = Depends(get_current_user),
     user: UserEntity = Depends(get_user_in_tenant),
+    caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update user password."""
+    """
+    Update user password.
+
+    - Self-service (caller == target): `current_password` MUST be provided and verified.
+    - Admin override (caller has ADMIN role, different user): `current_password` is not required.
+    """
+    is_self = caller.id.value == user.id.value
+    if is_self:
+        if not body.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="current_password is required when changing your own password",
+            )
+        stored = getattr(user, "_password_hash", None)
+        if not stored or not verify_password(body.current_password, stored):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect",
+            )
+
     password_hash = _hash_password(body.password)
     use_case: TransitionUseCase = TransitionUseCase(user_repo)
     use_case.entity_name = "User"
@@ -353,11 +422,12 @@ async def update_user_preferences(
     body: UserUpdatePreferencesRequest,
     current_user: TokenData = Depends(get_current_user),
     user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update user preferences."""
+    """Update user preferences. Self-service or ADMIN-only override."""
     use_case: TransitionUseCase = TransitionUseCase(user_repo)
     use_case.entity_name = "User"
     updated_user = await use_case.execute(
@@ -386,11 +456,12 @@ async def enable_two_factor(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Enable two-factor authentication for a user."""
+    """Enable two-factor authentication. Self-service or ADMIN-only override."""
     use_case: TransitionUseCase = TransitionUseCase(user_repo)
     use_case.entity_name = "User"
     updated_user = await use_case.execute(user.id, UserTransition.ENABLE_TWO_FACTOR)
@@ -414,11 +485,12 @@ async def disable_two_factor(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Disable two-factor authentication for a user."""
+    """Disable two-factor authentication. Self-service or ADMIN-only override."""
     use_case: TransitionUseCase = TransitionUseCase(user_repo)
     use_case.entity_name = "User"
     updated_user = await use_case.execute(user.id, UserTransition.DISABLE_TWO_FACTOR)
@@ -432,32 +504,10 @@ async def disable_two_factor(
     return _to_user_response(updated_user)
 
 
-@router.post(
-    "/{user_id}/record-login",
-    response_model=UserResponse,
-    summary="Record user login",
-)
-@transactional()
-async def record_user_login(
-    request: Request,
-    current_user: TokenData = Depends(get_current_user),
-    user: UserEntity = Depends(get_user_in_tenant),
-    user_repo: UserRepository = Depends(get_user_repository),
-    audit_handler=Depends(get_audit_event_handler),
-    db: AsyncSession = Depends(get_db),
-):
-    """Record user login (updates last_login_at)."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
-    updated_user = await use_case.execute(user.id, UserTransition.RECORD_LOGIN)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
-    return _to_user_response(updated_user)
+# record-login is intentionally NOT exposed as an HTTP route. last_login_at is
+# updated internally by the auth login handler via UserEntity.record_successful_login().
+# Exposing this as a public endpoint allows tenant users to falsify each other's
+# last-login timestamps and pollute the audit trail.
 
 
 # ==================== QUERIES (Direct Repository) ====================

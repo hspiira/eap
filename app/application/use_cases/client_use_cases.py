@@ -73,11 +73,14 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             tenant = await self.tenant_repository.get_by_id(tenant_id)
             if not tenant:
                 raise ValueError(f"Tenant not found: {tenant_id.value}")
-            client_count = await self.client_repository.count(tenant_id=tenant_id)
-            if not tenant.can_create_clients(client_count):
-                raise SubscriptionLimitError(
-                    "Tenant client limit reached; upgrade subscription to add more clients."
-                )
+            from app.core.config import settings as _settings  # local import to avoid cycle
+
+            if getattr(_settings, "ENFORCE_SUBSCRIPTION_LIMITS", False):
+                client_count = await self.client_repository.count(tenant_id=tenant_id)
+                if not tenant.can_create_clients(client_count):
+                    raise SubscriptionLimitError(
+                        "Tenant client limit reached; upgrade subscription to add more clients."
+                    )
 
         if not code or len(code) < 3 or len(code) > 5:
             raise ValueError("Client code must be 3-5 characters")

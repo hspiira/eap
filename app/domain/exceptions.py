@@ -243,7 +243,13 @@ class InvariantViolation(EvexiaException):
 
 
 class SubscriptionLimitError(EvexiaException):
-    """Raised when tenant subscription limit is reached (e.g. max users or max clients)."""
+    """
+    Raised when a tenant has hit a subscription limit (max users, max clients, etc).
+
+    Returns 402 Payment Required — semantically "you need to upgrade your plan",
+    NOT 403 Forbidden (which implies an authorization failure and confuses
+    clients into thinking it's a role/permission issue).
+    """
 
     def __init__(self, message: str = "Subscription limit reached"):
-        super().__init__(message, "SUBSCRIPTION_LIMIT", http_status=403)
+        super().__init__(message, "SUBSCRIPTION_LIMIT", http_status=402)

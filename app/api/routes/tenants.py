@@ -13,7 +13,7 @@ from app.core.authorization import (
     require_same_tenant,
     require_tenant_role,
 )
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.enums import TenantRole
 
 from app.api.dependencies import (
@@ -502,10 +502,28 @@ async def list_tenants(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """List tenants with filtering, searching, and pagination."""
+    """
+    List tenants. Platform-admin users (members of PLATFORM_TENANT_ID) see all
+    tenants; everyone else sees only their own tenant.
+    """
+    platform_tenant_id = (getattr(settings, "PLATFORM_TENANT_ID", "") or "").strip()
+    is_platform_admin = bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
+
+    if not is_platform_admin:
+        own = await tenant_repo.get_by_id(TenantId(current_user.tenant_id))
+        items = [own] if own else []
+        return TenantListResponse(
+            items=[_to_tenant_response(t) for t in items],
+            total=len(items),
+            page=1,
+            limit=limit,
+            has_more=False,
+        )
+
     offset = (page - 1) * limit
 
     tenants = await tenant_repo.list_all(
@@ -620,11 +638,26 @@ async def get_tenant(
 @readonly()
 async def get_tenant_by_code(
     code: str,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get tenant by code."""
+    """
+    Get tenant by code.
+
+    Non-platform users can only resolve their own tenant by code (prevents
+    cross-tenant enumeration via known codes).
+    """
     tenant = await tenant_repo.get_by_code(code)
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found"
+        )
+    platform_tenant_id = (getattr(settings, "PLATFORM_TENANT_ID", "") or "").strip()
+    is_platform_admin = bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
+    if not is_platform_admin and tenant.id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only resolve your own tenant by code",
+        )
     return _to_tenant_response(tenant)

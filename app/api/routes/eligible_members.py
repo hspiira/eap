@@ -21,7 +21,6 @@ from app.api.schemas.eligible_member_schemas import (
 from app.application.use_cases.eligible_member_use_cases import (
     EnrolEligibleMemberUseCase,
 )
-from app.core.authorization import require_same_tenant
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
@@ -158,7 +157,6 @@ async def get_eligible_member(
     db: AsyncSession = Depends(get_db),
 ):
     m = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if m is None:
+    if m is None or m.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Eligible member not found")
-    require_same_tenant(current_user, m.tenant_id.value)
     return _to_response(m)

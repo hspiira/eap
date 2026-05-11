@@ -8,7 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
+from app.core.authorization import (
+    get_industry_in_tenant,
+    require_same_tenant,
+    require_tenant_role,
+)
+from app.domain.enums import TenantRole
 from app.core.security import TokenData, get_current_user
 
 from app.api.dependencies import get_audit_event_handler, get_industry_repository
@@ -20,7 +25,6 @@ from app.api.schemas.industry_schemas import (
 )
 from app.application.use_cases.industry_use_cases import (
     CreateIndustryUseCase,
-    GetIndustryUseCase,
     UpdateIndustryUseCase,
 )
 from app.application.use_cases.transitions import (
@@ -68,6 +72,7 @@ async def create_industry(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -98,17 +103,18 @@ async def create_industry(
 )
 @transactional()
 async def update_industry(
-    industry_id: str,
     data: IndustryUpdate,
     request: Request,
+    industry: IndustryEntity = Depends(get_industry_in_tenant),
     current_user: TokenData = Depends(get_current_user),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an industry."""
+    """Update an industry. Requires ADMIN role + same-tenant ownership."""
     industry = await UpdateIndustryUseCase(industry_repo).execute(
-        IndustryId(industry_id),
+        industry.id,
         name=data.name,
         description=data.description,
         code=data.code,
@@ -131,17 +137,18 @@ async def update_industry(
 )
 @transactional()
 async def activate_industry(
-    industry_id: str,
     request: Request,
+    industry: IndustryEntity = Depends(get_industry_in_tenant),
     current_user: TokenData = Depends(get_current_user),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Activate an industry."""
+    """Activate an industry. ADMIN-only, same-tenant."""
     use_case: TransitionUseCase = TransitionUseCase(industry_repo)
     use_case.entity_name = "Industry"
-    industry = await use_case.execute(IndustryId(industry_id), IndustryTransition.ACTIVATE)
+    industry = await use_case.execute(industry.id, IndustryTransition.ACTIVATE)
     await audit_entity_operation(
         entity=industry,
         audit_handler=audit_handler,
@@ -159,17 +166,18 @@ async def activate_industry(
 )
 @transactional()
 async def deactivate_industry(
-    industry_id: str,
     request: Request,
+    industry: IndustryEntity = Depends(get_industry_in_tenant),
     current_user: TokenData = Depends(get_current_user),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Deactivate an industry."""
+    """Deactivate an industry. ADMIN-only, same-tenant."""
     use_case: TransitionUseCase = TransitionUseCase(industry_repo)
     use_case.entity_name = "Industry"
-    industry = await use_case.execute(IndustryId(industry_id), IndustryTransition.DEACTIVATE)
+    industry = await use_case.execute(industry.id, IndustryTransition.DEACTIVATE)
     await audit_entity_operation(
         entity=industry,
         audit_handler=audit_handler,
@@ -235,14 +243,10 @@ async def list_industries(
 )
 @readonly()
 async def get_industry(
-    industry_id: str,
-    industry_repo: IndustryRepository = Depends(get_industry_repository),
+    industry: IndustryEntity = Depends(get_industry_in_tenant),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get industry by ID."""
-    industry = await GetIndustryUseCase(industry_repo).execute(IndustryId(industry_id))
-    if not industry:
-        raise ValueError("Industry not found")
+    """Get industry by ID. Same-tenant ownership enforced."""
     return _to_industry_response(industry)
 
 

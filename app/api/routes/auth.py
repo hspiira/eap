@@ -98,12 +98,28 @@ async def set_initial_password(
 )
 async def auth_me(
     current_user: TokenData = Depends(get_current_user),
+    user_repo: UserRepository = Depends(get_user_repository),
 ):
-    """Return current user identity (user_id, tenant_id, email). Used for cookie-based auth init."""
+    """
+    Return current user identity (user_id, tenant_id, email, role).
+
+    Falls back to the DB for email and role since legacy JWTs may not carry
+    them; the BE is the source of truth.
+    """
+    email = current_user.email or ""
+    role: str | None = None
+    try:
+        user = await user_repo.get_by_id(UserId(current_user.user_id))
+        if user:
+            email = user.email.value
+            role = user.role.value
+    except Exception:
+        pass
     return MeResponse(
         user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
-        email=current_user.email or "",
+        email=email,
+        role=role,
     )
 
 
