@@ -35,7 +35,13 @@ from app.application.use_cases.transitions import (
     TransitionUseCase,
 )
 from app.core.database import get_db
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
@@ -73,6 +79,19 @@ def _to_service_session_response(
         feedback=session.feedback,
         cancellation_reason=session.cancellation_reason,
         is_active=session.is_active(),
+        session_type=session.session_type,
+        category=session.category,
+        rate_ugx=session.rate_ugx,
+        issue_topic=session.issue_topic,
+        diagnosis_type_id=session.diagnosis_type_id,
+        diagnosis_id=session.diagnosis_id,
+        approved_by=session.approved_by,
+        session_number=session.session_number,
+        partner_name=session.partner_name,
+        partner_relationship=session.partner_relationship,
+        headcount=session.headcount,
+        client_type=session.client_type,
+        clinical_outcome=session.clinical_outcome,
     )
 
 
@@ -104,6 +123,19 @@ async def create_service_session(
         person_id=PersonId(data.person_id),
         scheduled_at=data.scheduled_at,
         location=data.location,
+        session_type=data.session_type,
+        category=data.category,
+        rate_ugx=data.rate_ugx,
+        issue_topic=data.issue_topic,
+        diagnosis_type_id=data.diagnosis_type_id,
+        diagnosis_id=data.diagnosis_id,
+        approved_by=data.approved_by,
+        session_number=data.session_number,
+        partner_name=data.partner_name,
+        partner_relationship=data.partner_relationship,
+        headcount=data.headcount,
+        client_type=data.client_type,
+        clinical_outcome=data.clinical_outcome,
     )
     await audit_entity_operation(
         entity=session,
@@ -258,7 +290,21 @@ async def update_service_session(
 ):
     """Update service session information."""
     session = await UpdateServiceSessionUseCase(session_repo).execute(
-        session.id, location=data.location, notes=data.notes
+        session.id,
+        location=data.location,
+        notes=data.notes,
+        session_type=data.session_type,
+        category=data.category,
+        headcount=data.headcount,
+        rate_ugx=data.rate_ugx,
+        issue_topic=data.issue_topic,
+        diagnosis_type_id=data.diagnosis_type_id,
+        diagnosis_id=data.diagnosis_id,
+        approved_by=data.approved_by,
+        partner_name=data.partner_name,
+        partner_relationship=data.partner_relationship,
+        client_type=data.client_type,
+        clinical_outcome=data.clinical_outcome,
     )
     await audit_entity_operation(
         entity=session,

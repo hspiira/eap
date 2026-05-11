@@ -6,6 +6,7 @@ Use these helpers instead of datetime.now() or datetime.utcnow().
 """
 
 from datetime import UTC, datetime
+from typing import overload
 
 
 def utc_now() -> datetime:
@@ -23,6 +24,12 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+@overload
+def ensure_utc(dt: datetime) -> datetime: ...
+@overload
+def ensure_utc(dt: None) -> None: ...
+@overload
+def ensure_utc(dt: datetime | None) -> datetime | None: ...
 def ensure_utc(dt: datetime | None) -> datetime | None:
     """
     Ensure a datetime is UTC-aware.
@@ -32,21 +39,11 @@ def ensure_utc(dt: datetime | None) -> datetime | None:
     - If aware, converts to UTC
 
     Use at repository/persistence boundaries to normalize datetimes.
-
-    Args:
-        dt: A datetime that may be naive or aware
-
-    Returns:
-        UTC-aware datetime or None
     """
     if dt is None:
         return None
-
     if dt.tzinfo is None:
-        # Naive datetime - assume it's UTC and attach timezone
         return dt.replace(tzinfo=UTC)
-
-    # Aware datetime - convert to UTC
     return dt.astimezone(UTC)
 
 

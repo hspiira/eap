@@ -6,7 +6,13 @@ Converts between ServiceSessionEntity (domain) and ServiceSessionModel (persiste
 
 from app.core.encryption import decrypt, encrypt
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.value_objects.core import (
     PersonId,
     ServiceId,
@@ -61,6 +67,19 @@ class ServiceSessionMapper:
             cancellation_reason=model.cancellation_reason,
             incident_id=getattr(model, "incident_id", None),
             deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            session_type=SessionType(model.session_type) if model.session_type else None,
+            category=SessionCategory(model.category) if model.category else None,
+            rate_ugx=model.rate_ugx,
+            issue_topic=decrypt(model.issue_topic, tenant_id=model.tenant_id),
+            diagnosis_type_id=model.diagnosis_type_id,
+            diagnosis_id=model.diagnosis_id,
+            approved_by=model.approved_by,
+            session_number=model.session_number,
+            partner_name=decrypt(model.partner_name, tenant_id=model.tenant_id),
+            partner_relationship=model.partner_relationship,
+            headcount=model.headcount,
+            client_type=ClientType(model.client_type) if model.client_type else None,
+            clinical_outcome=SessionClinicalStatus(model.clinical_outcome) if model.clinical_outcome else None,
         )
 
     @staticmethod
@@ -94,4 +113,17 @@ class ServiceSessionMapper:
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
             deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
+            session_type=entity.session_type,
+            category=entity.category,
+            rate_ugx=entity.rate_ugx,
+            issue_topic=encrypt(entity.issue_topic, tenant_id=entity.tenant_id.value),
+            diagnosis_type_id=entity.diagnosis_type_id,
+            diagnosis_id=entity.diagnosis_id,
+            approved_by=entity.approved_by,
+            session_number=entity.session_number,
+            partner_name=encrypt(entity.partner_name, tenant_id=entity.tenant_id.value),
+            partner_relationship=entity.partner_relationship,
+            headcount=entity.headcount,
+            client_type=entity.client_type,
+            clinical_outcome=entity.clinical_outcome,
         )

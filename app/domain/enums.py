@@ -88,6 +88,36 @@ class SessionStatus(str, Enum):
     NO_SHOW = "No Show"
 
 
+class SessionType(str, Enum):
+    PHYSICAL = "Physical"
+    ONLINE = "Online"
+
+
+class SessionCategory(str, Enum):
+    INDIVIDUAL = "Individual"
+    GROUP = "Group"
+    FAMILY = "Family"
+    COUPLES = "Couples"
+
+
+class ClientType(str, Enum):
+    NEW = "New"
+    REPEAT = "Repeat"
+
+
+class SessionClinicalStatus(str, Enum):
+    """Clinical continuation outcome recorded by the counsellor at session end.
+
+    Distinct from SessionStatus (scheduling lifecycle).
+    TO_BE_CONTINUED — client returns for follow-up (xlsx: T).
+    REFERRED        — client referred elsewhere (xlsx: R).
+    COMPLETED       — case episode closed this session (xlsx: C).
+    """
+    TO_BE_CONTINUED = "ToBeContinued"
+    REFERRED = "Referred"
+    COMPLETED = "Completed"
+
+
 class ClientTier(str, Enum):
     """Joseph's A/B/C clustering for client engagement tiering.
 

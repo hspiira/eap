@@ -7,7 +7,7 @@ Represents an individual service delivery session.
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import SessionId, TenantId, ServiceId, PersonId
-from app.domain.enums import SessionStatus
+from app.domain.enums import SessionStatus, SessionType, SessionCategory, ClientType, SessionClinicalStatus
 from app.domain.events import DomainEvent, SessionCompleted, SessionCancelled, SessionRescheduled
 from app.domain.exceptions import DomainError
 from app.shared.utils.datetime import utc_now
@@ -35,6 +35,22 @@ class ServiceSessionEntity:
     cancellation_reason: str | None = None
     incident_id: str | None = None
     deleted_at: datetime | None = None
+
+    # Care Activity Log fields
+    session_type: SessionType | None = None          # Physical / Online
+    category: SessionCategory | None = None          # Individual / Group / Family / Couples
+    rate_ugx: int | None = None                      # Per-session rate in UGX
+    issue_topic: str | None = None                   # Presenting issue for this session (encrypted at rest)
+    diagnosis_type_id: str | None = None             # Ref to DiagnosisType.id
+    diagnosis_id: str | None = None                  # Ref to Diagnosis.id
+    approved_by: str | None = None                   # UserId who approved the session
+    session_number: int | None = None                # Ordinal session number for this client
+    partner_name: str | None = None                  # Couples/family partner (encrypted at rest)
+    partner_relationship: str | None = None          # Relationship of partner to primary client
+    headcount: int | None = None                     # Participant count for group sessions
+    client_type: ClientType | None = None            # New / Repeat
+    clinical_outcome: SessionClinicalStatus | None = None  # ToBeContinued / Referred / Completed
+
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def complete(self, duration: int, notes: str | None = None) -> None:
@@ -126,6 +142,76 @@ class ServiceSessionEntity:
         self.deleted_at = None
         self.updated_at = utc_now()
     
+    def set_session_type(self, session_type: SessionType) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        self.session_type = session_type
+        self.updated_at = utc_now()
+
+    def set_category(
+        self,
+        category: SessionCategory,
+        headcount: int | None = None,
+    ) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        if category == SessionCategory.GROUP:
+            if headcount is not None and headcount < 2:
+                raise DomainError("Group sessions require at least 2 participants")
+        self.category = category
+        if headcount is not None:
+            self.headcount = headcount
+        self.updated_at = utc_now()
+
+    def set_clinical_details(
+        self,
+        issue_topic: str | None = None,
+        diagnosis_type_id: str | None = None,
+        diagnosis_id: str | None = None,
+        approved_by: str | None = None,
+        rate_ugx: int | None = None,
+    ) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        if issue_topic is not None:
+            self.issue_topic = issue_topic
+        if diagnosis_type_id is not None:
+            self.diagnosis_type_id = diagnosis_type_id
+        if diagnosis_id is not None:
+            self.diagnosis_id = diagnosis_id
+        if approved_by is not None:
+            self.approved_by = approved_by
+        if rate_ugx is not None:
+            if rate_ugx < 0:
+                raise DomainError("Rate cannot be negative")
+            self.rate_ugx = rate_ugx
+        self.updated_at = utc_now()
+
+    def set_partner_details(
+        self,
+        partner_name: str | None,
+        partner_relationship: str | None,
+    ) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        if self.category not in {SessionCategory.FAMILY, SessionCategory.COUPLES}:
+            raise DomainError("Partner details only apply to family or couples sessions")
+        self.partner_name = partner_name
+        self.partner_relationship = partner_relationship
+        self.updated_at = utc_now()
+
+    def set_clinical_outcome(self, outcome: SessionClinicalStatus) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        self.clinical_outcome = outcome
+        self.updated_at = utc_now()
+
+    def set_client_type(self, client_type: ClientType) -> None:
+        if self.deleted_at:
+            raise DomainError("Cannot update deleted session")
+        self.client_type = client_type
+        self.updated_at = utc_now()
+
     def is_active(self) -> bool:
         """Check if session is active (scheduled or rescheduled)"""
         return self.status in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED} and self.deleted_at is None
