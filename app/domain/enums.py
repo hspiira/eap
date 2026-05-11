@@ -262,14 +262,32 @@ class TriageRiskLevel(str, Enum):
 class TriageInstrumentCode(str, Enum):
     """Versioned identifiers for the supported triage instruments.
 
-    ``JOSEPH7`` — Joseph's 7-variable counsellor-callback screen (SAD §B.4).
-    ``WOS5`` — 5-item Work Outcome Scale (SAD §2.3.1; pre/post case).
+    ``JOSEPH7`` — Joseph's 7-variable counsellor-callback screen.
+    ``WOS5`` — 5-item Work Outcome Scale (pre/post case).
     ``PHQ9`` — 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
+    ``GAD7`` — 7-item Generalized Anxiety Disorder screen.
+    ``CSSRS`` — Columbia Suicide Severity Rating Scale (brief).
+    ``AUDIT_C`` — 3-item alcohol-use disorders screener.
+    ``DAST10`` — 10-item Drug Abuse Screening Test.
+    ``WHO5`` — 5-item WHO wellbeing index.
+    ``K10`` — Kessler 10 psychological distress.
+    ``WSAS`` — Work and Social Adjustment Scale.
+    ``DASS21`` — Depression, Anxiety, Stress 21-item scale.
+    ``PCL5`` — PTSD Checklist for DSM-5 (post-CISM).
     """
 
     JOSEPH7 = "JOSEPH7"
     WOS5 = "WOS5"
     PHQ9 = "PHQ9"
+    GAD7 = "GAD7"
+    CSSRS = "CSSRS"
+    AUDIT_C = "AUDIT_C"
+    DAST10 = "DAST10"
+    WHO5 = "WHO5"
+    K10 = "K10"
+    WSAS = "WSAS"
+    DASS21 = "DASS21"
+    PCL5 = "PCL5"
 
 
 class StageOfChange(str, Enum):
@@ -581,6 +599,32 @@ class ReturnToWorkPlanStatus(str, Enum):
     ACTIVE = "Active"
     COMPLETED = "Completed"
     CANCELLED = "Cancelled"
+
+
+class ConsentStatus(str, Enum):
+    PENDING = "Pending"
+    ACTIVE = "Active"
+    EXPIRED = "Expired"
+    REVOKED = "Revoked"
+
+
+class ConsentScope(str, Enum):
+    """Granular disclosure scope for a Release-of-Information consent."""
+
+    ATTENDANCE_ONLY = "AttendanceOnly"
+    DIAGNOSIS = "Diagnosis"
+    RISK_ONLY = "RiskOnly"
+    FULL_CASE_DETAIL = "FullCaseDetail"
+
+
+class ConsentPurpose(str, Enum):
+    EMPLOYER_MANDATORY_REFERRAL = "EmployerMandatoryReferral"
+    SPECIALIST_HANDOFF = "SpecialistHandoff"
+    FAMILY_INCLUSION = "FamilyInclusion"
+    COURT_ORDER = "CourtOrder"
+    INSURANCE = "Insurance"
+    RESEARCH_DEIDENTIFIED = "ResearchDeIdentified"
+    OTHER = "Other"
 
 
 class SubscriptionTier(str, Enum):

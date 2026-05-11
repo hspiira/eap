@@ -327,6 +327,21 @@ class FitnessForDutyId(Id):
 class ReturnToWorkPlanId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class ConsentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DataSharingRegisterEntryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DPOContactId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:
