@@ -1,4 +1,4 @@
-"""Eligible-member + clinical-subject mappers (Phase 5A #5A.1)."""
+"""Eligible-member + clinical-subject mappers."""
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember

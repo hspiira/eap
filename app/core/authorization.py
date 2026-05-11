@@ -121,13 +121,13 @@ def _token_has_scope(token: TokenData, scope: AccessScope) -> bool:
 
 
 def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = False):
-    """Dependency factory enforcing the privacy-wall split (Phase 5A #5A.2).
+    """Dependency factory enforcing the bounded-context access-scope split.
 
     A token is admitted when *any* of ``allowed_scopes`` appears in its
     ``access_scopes`` claim. Legacy tokens (no scopes claim) are admitted by
     default to keep the rollout incremental; pass ``fail_closed_on_legacy=True``
-    on clinical-only routes to refuse legacy tokens — that flips to the default
-    once the auth backend emits explicit scopes everywhere.
+    on clinical-only routes to refuse legacy tokens — flip the default once the
+    auth backend emits explicit scopes everywhere.
     """
 
     allowed = {s.value for s in allowed_scopes}

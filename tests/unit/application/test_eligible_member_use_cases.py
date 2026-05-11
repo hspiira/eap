@@ -1,4 +1,4 @@
-"""EnrolEligibleMember use case + privacy-wall resolver tests (Phase 5A #5A.1)."""
+"""EnrolEligibleMember use case + privacy-wall resolver tests."""
 
 import logging
 

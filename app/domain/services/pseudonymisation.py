@@ -1,4 +1,4 @@
-"""Pseudonymisation helpers (Phase 5A #5A.1).
+"""Pseudonymisation helpers.
 
 Generates an opaque pseudonym for a ``ClinicalSubject`` that cannot be reversed
 to the source ``EligibleMember`` without the audited link table. Implementation

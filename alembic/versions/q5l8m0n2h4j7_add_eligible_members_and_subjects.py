@@ -1,4 +1,4 @@
-"""Add eligible_members + clinical_subjects + audited link (Phase 5A #5A.1)
+"""Add eligible_members + clinical_subjects + audited link
 
 Revision ID: q5l8m0n2h4j7
 Revises: p4k7l9m1g3i6

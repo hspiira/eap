@@ -1,4 +1,4 @@
-"""Eligible-member + clinical-subject repository ports (Phase 5A #5A.1)."""
+"""Eligible-member + clinical-subject repository ports."""
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
@@ -42,8 +42,8 @@ class EligibleMemberClinicalLinkRepository:
     """Audited 1:1 mapping between EligibleMember and ClinicalSubject.
 
     Implemented separately from the two aggregates because *every* read of this
-    table is a privacy event that must be logged as such (DPPA "special data
-    accessed"). The repository is the only structural join site.
+    table is a privacy event that must be logged as such (special-category-data
+    access). The repository is the only structural join site.
     """
 
     async def link(

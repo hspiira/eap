@@ -1,8 +1,8 @@
-"""Eligible-member routes (Phase 5A #5A.1).
+"""Eligible-member routes.
 
 Employer-side routes for managing the EAP eligibility roster. Clinical-scope
-endpoints (subject lookup, continuity metadata) live separately and will gain
-their scope guard in 5A.2.
+endpoints (subject lookup, continuity metadata) live separately under their own
+scope guard.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status

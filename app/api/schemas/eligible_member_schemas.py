@@ -1,4 +1,4 @@
-"""Eligible-member API schemas (Phase 5A #5A.1)."""
+"""Eligible-member API schemas."""
 
 from datetime import date, datetime
 

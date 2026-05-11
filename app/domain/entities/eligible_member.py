@@ -1,4 +1,4 @@
-"""Eligible member aggregate (Phase 5A #5A.1 / SAD §5.2.4 — EAP eligibility).
+"""Eligible member aggregate.
 
 The HR-known view of one EAP-eligible person. Carries the employer's HRIS
 identifier and the relationship to the primary employee. Lives on the

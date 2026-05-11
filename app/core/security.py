@@ -33,10 +33,10 @@ class TokenData(BaseModel):
     """Data extracted from JWT token.
 
     ``access_scopes`` carries the bounded-context split that gates the privacy
-    wall (see ``AccessScope`` / 5A.2). Tokens minted before the scope rollout
-    have an empty list; the route guards treat that as legacy
-    PLATFORM_ADMIN — clinical-only routes will still refuse them once the
-    auth backend starts emitting explicit scopes.
+    wall (see :class:`~app.domain.enums.AccessScope`). Tokens minted before the
+    scope rollout have an empty list; route guards treat that as legacy
+    PLATFORM_ADMIN — clinical-only routes will refuse them once the auth backend
+    emits explicit scopes everywhere.
     """
 
     user_id: str
