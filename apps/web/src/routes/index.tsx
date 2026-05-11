@@ -75,14 +75,9 @@ function LandingPage() {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <Button asChild size="lg">
-                <Link to="/auth/signup">
-                  Get started
-                  <ArrowUpRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
                 <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
                   Sign in
+                  <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
             </div>

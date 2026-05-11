@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 
+import { authApi } from '@/api/endpoints/auth'
 import { FormField } from '@/components/common/FormField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +15,7 @@ import { getLockoutSecondsRemaining, isAccountLocked } from '@/lib/errors'
 function safeRedirectPath(raw: unknown): string | undefined {
   const s = typeof raw === 'string' ? raw.trim() : ''
   if (!s || !s.startsWith('/') || s.startsWith('//')) return undefined
-  if (s === '/auth/login' || s === '/auth/signup' || s === '/auth/set-password') return undefined
+  if (s === '/auth/login' || s === '/auth/set-password' || s.startsWith('/auth/azure')) return undefined
   return s
 }
 
@@ -48,6 +49,7 @@ function LoginPage() {
   const search = Route.useSearch()
   const redirectTo = search.redirect ?? '/'
   const isAuthenticated = useRedirectIfAuthenticated(redirectTo)
+  const azureEnabled = authApi.isAzureSsoEnabled()
 
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -95,6 +97,10 @@ function LoginPage() {
 
   const submitDisabled = formState.isSubmitting || isLocked
 
+  function startAzureLogin() {
+    window.location.href = authApi.azureLoginUrl()
+  }
+
   return (
     <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
       <div className="text-center mb-8">
@@ -102,7 +108,37 @@ function LoginPage() {
         <p className="text-fg-muted">Sign in to your account</p>
       </div>
 
-      <form onSubmit={submit} className="space-y-4" noValidate>
+      {azureEnabled ? (
+        <div className="space-y-5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={startAzureLogin}
+            disabled={isLocked}
+            className="w-full h-11 gap-3"
+          >
+            <img
+              src="/microsoft-logo.svg"
+              alt=""
+              aria-hidden="true"
+              width={18}
+              height={18}
+            />
+            Continue with Microsoft
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-wider">
+              <span className="bg-surface text-fg-subtle px-2">or continue with email</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <form onSubmit={submit} className={`space-y-4 ${azureEnabled ? 'mt-5' : ''}`} noValidate>
         {isLocked ? (
           <div
             className="p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm"
@@ -147,7 +183,7 @@ function LoginPage() {
           <Input
             id="email"
             type="email"
-            placeholder="Enter your email"
+            placeholder="you@company.com"
             autoComplete="email"
             disabled={isLocked}
             {...register('email')}
@@ -163,37 +199,21 @@ function LoginPage() {
           <Input
             id="password"
             type="password"
-            placeholder="Enter your password"
+            placeholder="••••••••"
             autoComplete="current-password"
             disabled={isLocked}
             {...register('password')}
           />
         </FormField>
 
-        <Button
-          type="submit"
-          disabled={submitDisabled}
-          className="w-full"
-        >
+        <Button type="submit" disabled={submitDisabled} className="w-full h-11">
           {isLocked
             ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
             : formState.isSubmitting
-              ? 'Signing in...'
+              ? 'Signing in…'
               : 'Sign in'}
         </Button>
       </form>
-
-      <div className="mt-6 text-center space-y-2">
-        <p className="text-fg-muted text-sm">
-          Don&apos;t have an account?{' '}
-          <Link to="/auth/signup" className="text-primary hover:underline font-medium">
-            Sign up
-          </Link>
-        </p>
-        <Link to="/" className="block text-fg-muted hover:text-fg text-sm">
-          ← Back to Home
-        </Link>
-      </div>
     </div>
   )
 }

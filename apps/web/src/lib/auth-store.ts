@@ -62,6 +62,36 @@ export const authActions = {
     }
   },
 
+  /**
+   * Hydrate auth + tenant state from server-set cookies after Azure SSO callback.
+   * The BE has already set HttpOnly cookies on this domain; we call /auth/me to
+   * resolve who we are, then load the tenant.
+   */
+  async bootstrapFromCookies(): Promise<void> {
+    const { setAuth, setLoading, setError, clearAuth } = useAuthStore.getState()
+    setLoading(true)
+    setError(null)
+    try {
+      const me = await authApi.me()
+      setAuth(null, me.user_id, me.email)
+      apiClient.setTenantId(me.tenant_id)
+      try {
+        const tenant = await tenantsApi.getById(me.tenant_id)
+        useTenantStore.getState().setCurrentTenant(tenant as Tenant)
+      } catch (e) {
+        console.error('[auth] Could not load tenant after Azure SSO:', e)
+        setError('Signed in, but workspace details failed to load. Please refresh.')
+      }
+      useAuthStore.getState().setLoading(false)
+    } catch (error) {
+      clearAuth()
+      const message = error instanceof Error ? error.message : 'Sign-in failed'
+      setError(message)
+      useAuthStore.getState().setLoading(false)
+      throw error
+    }
+  },
+
   async logout(): Promise<void> {
     try {
       await authApi.logout()

@@ -17,7 +17,11 @@ import { tenantActions } from '@/lib/tenant-actions'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 
-const AUTH_PAGES = new Set(['/auth/login', '/auth/signup', '/auth/set-password'])
+const AUTH_PAGES = new Set([
+  '/auth/login',
+  '/auth/set-password',
+  '/auth/azure/callback',
+])
 
 export function AppBootstrap() {
   const navigate = useNavigate()

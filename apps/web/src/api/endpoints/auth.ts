@@ -1,5 +1,9 @@
 /**
  * Authentication API Endpoints
+ *
+ * Two sign-in paths supported by the backend:
+ *  - Password: POST /auth/login (tenant_code + email + password)
+ *  - Azure AD: GET /auth/azure/login → 302 to Microsoft → callback sets cookies on FE domain
  */
 
 import apiClient from '../client'
@@ -9,24 +13,31 @@ function useAuthCookies(): boolean {
   return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
 }
 
+function azureSsoEnabled(): boolean {
+  return import.meta.env.VITE_AZURE_SSO_ENABLED === 'true'
+}
+
+function apiBaseUrl(): string {
+  return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+}
+
+export interface MeResponse {
+  user_id: string
+  tenant_id: string
+  email: string
+}
+
 export const authApi = {
   /**
-   * Login with email and password.
-   * When using cookie auth, tokens are set by the backend via Set-Cookie; do not store in client.
+   * Password login (tenant_code + email + password).
+   * Cookie mode: tokens set by Set-Cookie. Bearer mode: tokens stored client-side.
    */
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(
-      '/auth/login',
-      credentials
-    )
+    const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
 
     if (!useAuthCookies()) {
-      if (response.access_token) {
-        apiClient.setToken(response.access_token, response.expires_in)
-      }
-      if (response.refresh_token) {
-        apiClient.setRefreshToken(response.refresh_token)
-      }
+      if (response.access_token) apiClient.setToken(response.access_token, response.expires_in)
+      if (response.refresh_token) apiClient.setRefreshToken(response.refresh_token)
     } else {
       const csrf = (response as AuthResponse & { csrf_token?: string }).csrf_token
       if (typeof csrf === 'string') apiClient.setCsrfToken(csrf)
@@ -36,15 +47,14 @@ export const authApi = {
   },
 
   /**
-   * Logout: revoke refresh token on backend then clear client state.
-   * With cookie auth, POST is called with credentials so backend clears cookies and revokes.
+   * Best-effort logout. Server revokes refresh token; client always tears down state.
    */
   async logout(): Promise<void> {
     if (useAuthCookies()) {
       try {
         await apiClient.post<unknown>('/auth/logout', undefined)
       } catch (_err) {
-        // Ignore
+        // ignore — client clears state below
       }
     } else {
       const refreshToken = apiClient.getRefreshToken()
@@ -52,32 +62,24 @@ export const authApi = {
         try {
           await apiClient.post<unknown>('/auth/logout', { refresh_token: refreshToken })
         } catch (_err) {
-          // Ignore
+          // ignore
         }
       }
     }
     apiClient.clearAuth()
   },
 
-  /**
-   * Check if user is authenticated
-   */
   isAuthenticated(): boolean {
-    if (useAuthCookies()) {
-      return false
-    }
+    if (useAuthCookies()) return false
     return apiClient.getToken() !== null
   },
 
-  /**
-   * Get current token
-   */
   getToken(): string | null {
     return apiClient.getToken()
   },
 
   /**
-   * Set initial password using one-time token (from set_password_url after tenant creation).
+   * Consume the one-time set-password link issued at tenant creation.
    */
   async setInitialPassword(data: {
     token: string
@@ -85,5 +87,29 @@ export const authApi = {
     password_confirm: string
   }): Promise<void> {
     await apiClient.post<unknown>('/auth/set-initial-password', data)
+  },
+
+  /**
+   * Get the current authenticated user from token/cookie.
+   * Used to hydrate auth state after the Azure callback redirect (where cookies
+   * are pre-set by the BE but the FE has no in-memory state yet).
+   */
+  async me(): Promise<MeResponse> {
+    return apiClient.get<MeResponse>('/auth/me')
+  },
+
+  /**
+   * Whether Azure SSO is enabled on this build (FE flag — BE must also be configured).
+   */
+  isAzureSsoEnabled(): boolean {
+    return azureSsoEnabled()
+  },
+
+  /**
+   * Absolute URL to the BE Azure login redirect endpoint.
+   * The browser must hard-navigate here (not fetch) so Azure can perform the OAuth dance.
+   */
+  azureLoginUrl(): string {
+    return `${apiBaseUrl()}/auth/azure/login`
   },
 }

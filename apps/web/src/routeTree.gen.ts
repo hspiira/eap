@@ -18,6 +18,7 @@ import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignm
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as PersonsRouteImport } from './routes/persons'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as IncidentsRouteImport } from './routes/incidents'
@@ -75,11 +76,11 @@ import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
 import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
 import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
-import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CareCallbacksWorklistIndexRouteImport } from './routes/care-callbacks/worklist/index'
 import { Route as CareCallbacksWorklistCaseIdRouteImport } from './routes/care-callbacks/worklist/$caseId'
+import { Route as AuthAzureCallbackRouteImport } from './routes/auth/azure/callback'
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
@@ -124,6 +125,11 @@ const ProvidersRoute = ProvidersRouteImport.update({
 const PersonsRoute = PersonsRouteImport.update({
   id: '/persons',
   path: '/persons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KpisRoute = KpisRouteImport.update({
@@ -413,11 +419,6 @@ const CareCallbacksCampaignIdRoute = CareCallbacksCampaignIdRouteImport.update({
   path: '/$campaignId',
   getParentRoute: () => CareCallbacksRoute,
 } as any)
-const AuthSignupRoute = AuthSignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/set-password',
   path: '/set-password',
@@ -440,6 +441,11 @@ const CareCallbacksWorklistCaseIdRoute =
     path: '/$caseId',
     getParentRoute: () => CareCallbacksWorklistRoute,
   } as any)
+const AuthAzureCallbackRoute = AuthAzureCallbackRouteImport.update({
+  id: '/azure/callback',
+  path: '/azure/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -458,6 +464,7 @@ export interface FileRoutesByFullPath {
   '/incidents': typeof IncidentsRouteWithChildren
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
+  '/me': typeof MeRoute
   '/persons': typeof PersonsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -469,7 +476,6 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/signup': typeof AuthSignupRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
@@ -511,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
   '/care-callbacks/worklist/': typeof CareCallbacksWorklistIndexRoute
 }
@@ -526,9 +533,9 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxRoute
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
+  '/me': typeof MeRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/signup': typeof AuthSignupRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
@@ -569,6 +576,7 @@ export interface FileRoutesByTo {
   '/surveys': typeof SurveysIndexRoute
   '/tags': typeof TagsIndexRoute
   '/users': typeof UsersIndexRoute
+  '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistIndexRoute
 }
@@ -590,6 +598,7 @@ export interface FileRoutesById {
   '/incidents': typeof IncidentsRouteWithChildren
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
+  '/me': typeof MeRoute
   '/persons': typeof PersonsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -601,7 +610,6 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/signup': typeof AuthSignupRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
@@ -643,6 +651,7 @@ export interface FileRoutesById {
   '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
   '/care-callbacks/worklist/': typeof CareCallbacksWorklistIndexRoute
 }
@@ -665,6 +674,7 @@ export interface FileRouteTypes {
     | '/incidents'
     | '/industries'
     | '/kpis'
+    | '/me'
     | '/persons'
     | '/providers'
     | '/reports'
@@ -676,7 +686,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/auth/login'
     | '/auth/set-password'
-    | '/auth/signup'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
@@ -718,6 +727,7 @@ export interface FileRouteTypes {
     | '/surveys/'
     | '/tags/'
     | '/users/'
+    | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
     | '/care-callbacks/worklist/'
   fileRoutesByTo: FileRoutesByTo
@@ -733,9 +743,9 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/industries'
     | '/kpis'
+    | '/me'
     | '/auth/login'
     | '/auth/set-password'
-    | '/auth/signup'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/clients/$clientId'
@@ -776,6 +786,7 @@ export interface FileRouteTypes {
     | '/surveys'
     | '/tags'
     | '/users'
+    | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
     | '/care-callbacks/worklist'
   id:
@@ -796,6 +807,7 @@ export interface FileRouteTypes {
     | '/incidents'
     | '/industries'
     | '/kpis'
+    | '/me'
     | '/persons'
     | '/providers'
     | '/reports'
@@ -807,7 +819,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/auth/login'
     | '/auth/set-password'
-    | '/auth/signup'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
@@ -849,6 +860,7 @@ export interface FileRouteTypes {
     | '/surveys/'
     | '/tags/'
     | '/users/'
+    | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
     | '/care-callbacks/worklist/'
   fileRoutesById: FileRoutesById
@@ -870,6 +882,7 @@ export interface RootRouteChildren {
   IncidentsRoute: typeof IncidentsRouteWithChildren
   IndustriesRoute: typeof IndustriesRoute
   KpisRoute: typeof KpisRoute
+  MeRoute: typeof MeRoute
   PersonsRoute: typeof PersonsRouteWithChildren
   ProvidersRoute: typeof ProvidersRouteWithChildren
   ReportsRoute: typeof ReportsRouteWithChildren
@@ -944,6 +957,13 @@ declare module '@tanstack/react-router' {
       path: '/persons'
       fullPath: '/persons'
       preLoaderRoute: typeof PersonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kpis': {
@@ -1345,13 +1365,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareCallbacksCampaignIdRouteImport
       parentRoute: typeof CareCallbacksRoute
     }
-    '/auth/signup': {
-      id: '/auth/signup'
-      path: '/signup'
-      fullPath: '/auth/signup'
-      preLoaderRoute: typeof AuthSignupRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/auth/set-password': {
       id: '/auth/set-password'
       path: '/set-password'
@@ -1380,19 +1393,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareCallbacksWorklistCaseIdRouteImport
       parentRoute: typeof CareCallbacksWorklistRoute
     }
+    '/auth/azure/callback': {
+      id: '/auth/azure/callback'
+      path: '/azure/callback'
+      fullPath: '/auth/azure/callback'
+      preLoaderRoute: typeof AuthAzureCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
 interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
-  AuthSignupRoute: typeof AuthSignupRoute
+  AuthAzureCallbackRoute: typeof AuthAzureCallbackRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
-  AuthSignupRoute: AuthSignupRoute,
+  AuthAzureCallbackRoute: AuthAzureCallbackRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -1642,6 +1662,7 @@ const rootRouteChildren: RootRouteChildren = {
   IncidentsRoute: IncidentsRouteWithChildren,
   IndustriesRoute: IndustriesRoute,
   KpisRoute: KpisRoute,
+  MeRoute: MeRoute,
   PersonsRoute: PersonsRouteWithChildren,
   ProvidersRoute: ProvidersRouteWithChildren,
   ReportsRoute: ReportsRouteWithChildren,

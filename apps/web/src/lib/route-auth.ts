@@ -12,7 +12,7 @@ import apiClient from '@/api/client'
 
 function safeRedirectPath(path: string): string {
   const p = path?.trim() || '/'
-  if (p === '/auth/login' || p === '/auth/signup' || p === '/auth/set-password') return '/'
+  if (p === '/auth/login' || p === '/auth/set-password' || p.startsWith('/auth/azure')) return '/'
   return p.startsWith('/') && !p.startsWith('//') ? p : '/'
 }
 
