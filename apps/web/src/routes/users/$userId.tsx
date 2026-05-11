@@ -4,6 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   BadgeCheck,
+  KeyRound,
   Pencil,
   RotateCw,
   ShieldCheck,
@@ -24,6 +25,7 @@ import { UserFormSheet } from "@/components/UserFormSheet"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
+import { AuthProvider } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/users/$userId")({
@@ -288,6 +290,37 @@ function UserDetailPage() {
                             <span className="inline-flex items-center gap-1 text-fg/55">
                               <ShieldOff className="size-3.5" /> Disabled
                             </span>
+                          )
+                        }
+                      />
+                    </DetailGrid>
+                  </DetailCard>
+                </div>
+
+                <div className="mt-4">
+                  <DetailCard title="Sign-in method">
+                    <DetailGrid>
+                      <DetailRow
+                        label="Provider"
+                        value={
+                          user.auth_provider === AuthProvider.AZURE_AD ? (
+                            <span className="inline-flex items-center gap-1 text-fg">
+                              <KeyRound className="size-3.5 text-primary" /> Microsoft (Azure AD)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-fg/75">
+                              <KeyRound className="size-3.5" /> Tenant password
+                            </span>
+                          )
+                        }
+                      />
+                      <DetailRow
+                        label="Azure OID"
+                        value={
+                          user.azure_oid ? (
+                            <span className="font-mono text-xs">{user.azure_oid}</span>
+                          ) : (
+                            <span className="text-fg/55">Not linked</span>
                           )
                         }
                       />

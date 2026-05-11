@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   Download,
   ExternalLink,
+  KeyRound,
   MoreHorizontal,
   Plus,
   RotateCw,
@@ -49,7 +50,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
-import { UserStatus } from "@/types/enums"
+import { AuthProvider, UserStatus } from "@/types/enums"
 
 function isStatus(value: unknown): value is UserStatus {
   return (
@@ -251,6 +252,7 @@ function UsersListPage() {
                     </TableHead>
                     <TableHead className="text-fg/65">Email verified</TableHead>
                     <TableHead className="text-fg/65">2FA</TableHead>
+                    <TableHead className="text-fg/65">Sign-in</TableHead>
                     <TableHead>
                       <SortHeader field="last_login_at" sort={sort} onToggle={toggleSort}>
                         Last login
@@ -323,6 +325,17 @@ function UserRow({ row }: { row: User }) {
         ) : (
           <span className="inline-flex items-center gap-1 text-xs text-fg/55">
             <ShieldOff className="size-3" /> Off
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        {row.auth_provider === AuthProvider.AZURE_AD ? (
+          <span className="inline-flex items-center gap-1 text-xs text-fg">
+            <KeyRound className="size-3 text-primary" /> Microsoft
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+            <KeyRound className="size-3" /> Password
           </span>
         )}
       </TableCell>

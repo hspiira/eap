@@ -429,3 +429,20 @@ export enum ActionType {
   EXPORT = 'EXPORT',
   IMPORT = 'IMPORT',
 }
+
+/**
+ * Authentication credential type per user.
+ */
+export enum AuthProvider {
+  PASSWORD = 'password',
+  AZURE_AD = 'azure_ad',
+}
+
+/**
+ * Role of a user within their tenant (RBAC).
+ */
+export enum TenantRole {
+  ADMIN = 'Admin',
+  USER = 'User',
+  VIEWER = 'Viewer',
+}

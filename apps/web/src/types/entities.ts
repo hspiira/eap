@@ -6,6 +6,7 @@
 import type {
   AccreditationStatus,
   ActivityType,
+  AuthProvider,
   BaseStatus,
   CallbackCampaignStatus,
   CallbackCaseStatus,
@@ -38,6 +39,7 @@ import type {
   StaffRole,
   SurveySource,
   SurveyStatus,
+  TenantRole,
   TenantStatus,
   UserStatus,
   WorkStatus,
@@ -176,6 +178,9 @@ export interface User extends BaseEntity {
   last_login_at?: string | null
   status_changed_at?: string | null
   is_active: boolean
+  role?: TenantRole | null
+  azure_oid?: string | null
+  auth_provider?: AuthProvider
 }
 
 /**
