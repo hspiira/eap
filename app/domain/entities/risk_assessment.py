@@ -49,7 +49,7 @@ class RiskAssessment:
     questionnaire_response_ids: tuple[str, ...] = ()
     requires_safety_plan: bool = False
     requires_mandatory_report: bool = False
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.rationale:

@@ -47,7 +47,7 @@ class SurveyCampaign:
     activated_at: datetime | None = None
     closed_at: datetime | None = None
     response_count: int = 0
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.name:

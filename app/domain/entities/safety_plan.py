@@ -53,7 +53,7 @@ class SafetyPlan:
     supersedes_safety_plan_id: SafetyPlanId | None = None
     superseded_by: SafetyPlanId | None = None
     superseded_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         for name, value in {

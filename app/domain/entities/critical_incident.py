@@ -57,8 +57,8 @@ class CriticalIncidentEntity:
     updated_at: datetime
     after_action_summary: str | None = None
     closed_at: datetime | None = None
-    phases: list[IncidentPhaseEntry] = field(default_factory=list)
-    events: list[DomainEvent] = field(default_factory=list)
+    phases: list[IncidentPhaseEntry] = field(default_factory=list[IncidentPhaseEntry])
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.event_description:

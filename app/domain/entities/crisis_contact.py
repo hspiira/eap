@@ -55,7 +55,7 @@ class CrisisContact:
     outcome: CrisisContactOutcome | None = None
     resolved_at: datetime | None = None
     transcript_summary: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.presenting_concern:

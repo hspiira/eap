@@ -53,7 +53,7 @@ class ContractEntity:
     termination_reason: str | None = None
     deleted_at: datetime | None = None
     pricing: ContractPricing | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def update_pricing(self, pricing: ContractPricing) -> None:
         """Set or replace the contract's pricing configuration."""

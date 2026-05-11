@@ -36,7 +36,7 @@ class BenchmarkConsent:
     withdrawn_at: datetime | None = None
     withdrawn_by: UserId | None = None
     withdrawn_reason: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.version:

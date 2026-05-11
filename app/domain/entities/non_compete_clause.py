@@ -39,7 +39,7 @@ class NonCompeteClauseEntity:
     revoked_at: datetime | None = None
     revoked_reason: str | None = None
     document_id: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.terms_summary:

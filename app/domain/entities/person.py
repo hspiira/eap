@@ -86,7 +86,7 @@ class PersonEntity:
     family_id: PersonId | None = None  # Points to primary employee in family (for family code grouping)
     last_service_date: date | None = None
     deleted_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     # === Behaviors ===
     

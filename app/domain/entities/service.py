@@ -32,7 +32,7 @@ class ServiceEntity:
     is_group_service: bool = False
     max_participants: int | None = None
     deleted_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def activate(self) -> None:
         """Activate service for use"""

@@ -55,7 +55,7 @@ class Consent:
     signed_artifact_document_id: DocumentId | None = None
     revoked_at: datetime | None = None
     revoked_reason: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.disclosure_to:

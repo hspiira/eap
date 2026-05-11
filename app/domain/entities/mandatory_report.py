@@ -40,21 +40,17 @@ class MandatoryReport:
     external_reference_number: str | None = None
     contact_email: str | None = None
     contact_phone: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.submitted_to:
             raise DomainError("submitted_to is required")
         if not self.events:
-            object.__setattr__(
-                self,
-                "events",
-                [
-                    MandatoryReportSubmitted(
-                        occurred_at=self.submitted_at,
-                        mandatory_report_id=self.id,
-                        report_type=self.report_type.value,
-                        submitted_to=self.submitted_to,
-                    )
-                ],
+            self.events.append(
+                MandatoryReportSubmitted(
+                    occurred_at=self.submitted_at,
+                    mandatory_report_id=self.id,
+                    report_type=self.report_type.value,
+                    submitted_to=self.submitted_to,
+                )
             )

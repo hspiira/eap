@@ -81,7 +81,7 @@ class ReportRun:
     completed_at: datetime | None = None
     output: dict[str, Any] | None = None
     error: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def mark_running(self, now: datetime | None = None) -> None:
         if self.status != ReportRunStatus.PENDING:

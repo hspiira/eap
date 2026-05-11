@@ -86,7 +86,7 @@ class Case:
     closure_summary_note_id: str | None = None
     intake_screener_admin_ids: tuple[str, ...] = ()
     closure_screener_admin_ids: tuple[str, ...] = ()
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if self.created_at == self.updated_at and not self.events:

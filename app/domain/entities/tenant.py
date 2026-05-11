@@ -30,7 +30,7 @@ class TenantEntity:
     updated_at: datetime | None = None
 
     # Domain Events
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         self._ensure_invariants()
