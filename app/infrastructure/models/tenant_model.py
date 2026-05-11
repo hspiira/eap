@@ -5,7 +5,7 @@ Database representation of Tenant aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, Enum, JSON, String
+from sqlalchemy import Boolean, CheckConstraint, Enum, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import SubscriptionTier, TenantStatus
@@ -65,6 +65,14 @@ class TenantModel(CuidMixin, Base, TimestampMixin, SoftDeleteMixin):
         ),
         nullable=False,
         default=SubscriptionTier.FREE,
+    )
+
+    # Azure SSO
+    azure_tenant_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, unique=True, index=True
+    )
+    azure_sso_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
     )
 
     def __repr__(self) -> str:

@@ -657,6 +657,13 @@ class ConsentPurpose(str, Enum):
     OTHER = "Other"
 
 
+class AuthProvider(str, Enum):
+    """How a user authenticates. PASSWORD = tenant code + email + password; AZURE_AD = Microsoft SSO."""
+
+    PASSWORD = "password"
+    AZURE_AD = "azure_ad"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"

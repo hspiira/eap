@@ -86,6 +86,19 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         """
 
     @abstractmethod
+    async def get_by_azure_oid(self, azure_oid: str, tenant_id: TenantId) -> UserEntity | None:
+        """
+        Get a user by their Azure Object ID within a tenant.
+
+        Args:
+            azure_oid: The Azure AD object ID (oid claim from Azure token)
+            tenant_id: Tenant identifier
+
+        Returns:
+            UserEntity if found and not soft-deleted, None otherwise
+        """
+
+    @abstractmethod
     async def update_password(self, user_id: UserId, password_hash: str) -> bool:
         """
         Update a user's password hash (e.g. after set-initial-password).
