@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums import BaseStatus
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ServiceAssignmentId, TenantId, ServiceId, ContractId
 from app.shared.utils.datetime import utc_now
@@ -29,7 +30,7 @@ class ServiceAssignmentEntity:
     assigned_by: str | None = None  # User ID
     notes: str | None = None
     deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list)
     
     # === Behaviors ===
     
