@@ -22,6 +22,10 @@ from app.domain.repositories.critical_incident_repository import (
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.dsar_repository import DSARRequestRepository
+from app.domain.repositories.eap_programme_repository import (
+    AuthorizationRepository,
+    EAPProgrammeRepository,
+)
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
     EligibleMemberClinicalLinkRepository,
@@ -486,6 +490,26 @@ async def get_case_repository(
     )
 
     return CaseRepositoryImpl(db)
+
+
+async def get_eap_programme_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EAPProgrammeRepository":
+    from app.infrastructure.repositories.eap_programme_repository import (
+        EAPProgrammeRepositoryImpl,
+    )
+
+    return EAPProgrammeRepositoryImpl(db)
+
+
+async def get_authorization_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "AuthorizationRepository":
+    from app.infrastructure.repositories.eap_programme_repository import (
+        AuthorizationRepositoryImpl,
+    )
+
+    return AuthorizationRepositoryImpl(db)
 
 
 async def get_eligible_member_repository(
