@@ -20,6 +20,7 @@ from app.domain.repositories.critical_incident_repository import (
     CriticalIncidentRepository,
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.dsar_repository import DSARRequestRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
@@ -475,6 +476,16 @@ async def get_dsar_collector(db: AsyncSession = Depends(get_db)):
     from app.infrastructure.services.dsar_service import SqlDSARDataCollector
 
     return SqlDSARDataCollector(db)
+
+
+async def get_case_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CaseRepository":
+    from app.infrastructure.repositories.case_repository import (
+        CaseRepositoryImpl,
+    )
+
+    return CaseRepositoryImpl(db)
 
 
 async def get_eligible_member_repository(

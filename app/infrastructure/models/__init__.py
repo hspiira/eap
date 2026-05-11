@@ -15,6 +15,7 @@ from app.infrastructure.models.base import (
 from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeModel
 from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
+from app.infrastructure.models.case_model import CaseModel
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
     EligibleMemberClinicalLinkModel,
@@ -67,8 +68,9 @@ __all__ = [
     "AuditLogModel",
     "Base",
     "BenchmarkConsentModel",
-    "ClinicalSubjectModel",
     "CareCallbackCampaignModel",
+    "CaseModel",
+    "ClinicalSubjectModel",
     "ClientModel",
     "ClientTagModel",
     "ContactModel",

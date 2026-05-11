@@ -391,6 +391,89 @@ class AccessScope(str, Enum):
     PLATFORM_ADMIN = "PlatformAdmin"
 
 
+class CaseStatus(str, Enum):
+    """Lifecycle of a clinical case."""
+
+    INTAKE = "Intake"
+    ASSESSMENT = "Assessment"
+    ACTIVE = "Active"
+    CLOSED = "Closed"
+    REFERRED_OUT = "ReferredOut"
+    NO_SHOW_CLOSED = "NoShowClosed"
+
+
+class CaseReferralSource(str, Enum):
+    """Origin of a case — drives downstream disclosure and reporting rules."""
+
+    SELF = "Self"
+    INFORMAL_MANAGER = "InformalManager"
+    FORMAL_MANDATORY = "FormalMandatory"
+    HR = "HR"
+    CISM_FOLLOWUP = "CISMFollowUp"
+    EMPLOYER_PROACTIVE = "EmployerProactive"
+
+
+class PresentingProblem(str, Enum):
+    """Top-level category of the presenting concern at intake."""
+
+    MENTAL_HEALTH = "MentalHealth"
+    STRESS = "Stress"
+    RELATIONSHIP = "Relationship"
+    WORK = "Work"
+    FINANCIAL = "Financial"
+    SUBSTANCE = "Substance"
+    BEREAVEMENT = "Bereavement"
+    TRAUMA = "Trauma"
+    FAMILY_CHILD = "FamilyChild"
+    OTHER = "Other"
+
+
+class CaseClosureReason(str, Enum):
+    """Why a case was closed; recorded at the closure transition."""
+
+    GOALS_MET = "GoalsMet"
+    CLIENT_DISCONTINUED = "ClientDiscontinued"
+    REFERRED_OUT = "ReferredOut"
+    NO_SHOW = "NoShow"
+    SESSION_CAP_REACHED = "SessionCapReached"
+    INELIGIBLE = "Ineligible"
+    OTHER = "Other"
+
+
+class ClinicalNoteType(str, Enum):
+    """Shape of a clinical note record."""
+
+    DAP = "DAP"
+    SOAP = "SOAP"
+    PHONE_CONTACT = "PhoneContact"
+    CRISIS_CONTACT = "CrisisContact"
+    CLOSURE_SUMMARY = "ClosureSummary"
+    SUPERVISION = "Supervision"
+
+
+class AuthorizationStatus(str, Enum):
+    """State of a per-case session-cap authorization."""
+
+    ACTIVE = "Active"
+    EXTENSION_REQUESTED = "ExtensionRequested"
+    EXTENDED = "Extended"
+    EXHAUSTED = "Exhausted"
+    EXPIRED = "Expired"
+    CLOSED = "Closed"
+
+
+class ServiceCategory(str, Enum):
+    """Coarse grouping used by EAP programme caps and authorization rules."""
+
+    SHORT_TERM_COUNSELLING = "ShortTermCounselling"
+    CRISIS_INTERVENTION = "CrisisIntervention"
+    SUBSTANCE_USE = "SubstanceUse"
+    MANAGER_CONSULT = "ManagerConsult"
+    WORK_LIFE_REFERRAL = "WorkLifeReferral"
+    CISM_RESPONSE = "CISMResponse"
+    WELLNESS_COACHING = "WellnessCoaching"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"
