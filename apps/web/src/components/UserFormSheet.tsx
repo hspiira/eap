@@ -15,7 +15,14 @@ import {
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { User } from "@/types/entities"
-import { Language } from "@/types/enums"
+import { Language, TenantRole } from "@/types/enums"
+
+const ROLE_VALUES = [TenantRole.ADMIN, TenantRole.USER, TenantRole.VIEWER] as const
+const ROLE_LABELS: Record<TenantRole, string> = {
+  [TenantRole.ADMIN]: "Admin — full tenant management",
+  [TenantRole.USER]: "User — standard access",
+  [TenantRole.VIEWER]: "Viewer — read-only",
+}
 
 const LANGUAGE_OPTIONS = [
   { value: Language.EN, label: "English" },
@@ -40,6 +47,7 @@ const createSchema = baseSchema.extend({
     .string()
     .optional()
     .refine((v) => !v || v.length >= 8, "Password must be at least 8 characters"),
+  role: z.enum(ROLE_VALUES),
 })
 
 const editSchema = baseSchema
@@ -71,7 +79,13 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
   >({
     resource: "users",
     schema: createSchema,
-    defaultValues: { email: "", password: "", preferred_language: "", timezone: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+      preferred_language: "",
+      timezone: "",
+      role: TenantRole.USER,
+    },
     open,
     onOpenChange,
     parsePayload: (values) => ({
@@ -79,6 +93,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
       password: values.password || undefined,
       preferred_language: values.preferred_language || undefined,
       timezone: values.timezone || undefined,
+      role: values.role,
     }),
     save: ({ payload }) => usersApi.create(payload),
     successToast: { create: "User created" },
@@ -117,6 +132,32 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
           htmlFor="us-password"
         >
           <Input id="us-password" type="password" {...register("password")} />
+        </FormField>
+        <FormField
+          label="Role"
+          required
+          description="Admins can manage tenant settings, users, and SSO."
+          error={errors.role?.message}
+          htmlFor="us-role"
+        >
+          <Controller
+            control={control}
+            name="role"
+            render={({ field }) => (
+              <Select value={field.value ?? TenantRole.USER} onValueChange={field.onChange}>
+                <SelectTrigger id="us-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_VALUES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </FormField>
       </FormSection>
       <FormSection

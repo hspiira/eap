@@ -10,11 +10,17 @@ export interface UserCreate extends CreateRequest {
   password?: string
   preferred_language?: string
   timezone?: string
+  role?: 'Admin' | 'User' | 'Viewer'
 }
 
 export interface UserUpdatePasswordRequest {
-  current_password: string
   password: string
+  /** REQUIRED when the caller is changing their OWN password. Admins resetting another user can omit. */
+  current_password?: string
+}
+
+export interface UserUpdateRoleRequest {
+  role: 'Admin' | 'User' | 'Viewer'
 }
 
 export interface UserUpdatePreferencesRequest {
@@ -77,6 +83,13 @@ export const usersApi = {
    */
   async updatePreferences(userId: string, data: UserUpdatePreferencesRequest): Promise<User> {
     return apiClient.patch<User>(`/users/${userId}/preferences`, data)
+  },
+
+  /**
+   * Change a user's tenant role. ADMIN-only on the BE.
+   */
+  async updateRole(userId: string, data: UserUpdateRoleRequest): Promise<User> {
+    return apiClient.patch<User>(`/users/${userId}/role`, data)
   },
 
   /**

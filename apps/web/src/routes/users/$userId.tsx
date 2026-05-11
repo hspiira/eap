@@ -15,17 +15,36 @@ import {
 import { personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
+import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { UserFormSheet } from "@/components/UserFormSheet"
+import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
-import { AuthProvider } from "@/types/enums"
+import { AuthProvider, TenantRole } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/users/$userId")({
@@ -79,15 +98,22 @@ function UserDetailPage() {
     }
   }, [user])
 
+  const [reasonPrompt, setReasonPrompt] = useState<{
+    action: "suspend" | "ban" | "terminate" | "deactivate"
+    id: string
+  } | null>(null)
+  const [reasonValue, setReasonValue] = useState("")
+
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
+      if (action === "suspend" || action === "ban" || action === "terminate" || action === "deactivate") {
+        setReasonPrompt({ action, id })
+        setReasonValue("")
+        return
+      }
       setActionLoading(true)
       try {
         if (action === "activate") await usersApi.activate(id)
-        else if (action === "suspend") await usersApi.suspend(id)
-        else if (action === "ban") await usersApi.ban(id)
-        else if (action === "terminate") await usersApi.terminate(id, "Terminated from UI")
-        else if (action === "deactivate") await usersApi.deactivate(id)
         await fetchUser()
       } finally {
         setActionLoading(false)
@@ -95,6 +121,26 @@ function UserDetailPage() {
     },
     [fetchUser],
   )
+
+  const confirmReasonAction = useCallback(async () => {
+    if (!reasonPrompt) return
+    const reason = reasonValue.trim()
+    if (!reason && reasonPrompt.action !== "deactivate") return
+    setActionLoading(true)
+    try {
+      const { action, id } = reasonPrompt
+      if (action === "suspend") await usersApi.suspend(id, reason)
+      else if (action === "ban") await usersApi.ban(id, reason)
+      else if (action === "terminate") await usersApi.terminate(id, reason)
+      else if (action === "deactivate")
+        await usersApi.deactivate(id, reason || undefined)
+      await fetchUser()
+      setReasonPrompt(null)
+      setReasonValue("")
+    } finally {
+      setActionLoading(false)
+    }
+  }, [reasonPrompt, reasonValue, fetchUser])
 
   if (loading) {
     return (
@@ -247,6 +293,10 @@ function UserDetailPage() {
                       </p>
                     )}
                   </DetailCard>
+
+                  <div className="mt-4">
+                    <RoleCard user={user} onChanged={(updated) => setUser(updated)} />
+                  </div>
                 </div>
               </TabPanel>
 
@@ -381,6 +431,75 @@ function UserDetailPage() {
           </aside>
         </div>
       </div>
+
+      <Dialog
+        open={reasonPrompt !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setReasonPrompt(null)
+            setReasonValue("")
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {reasonPrompt?.action === "ban"
+                ? "Ban user"
+                : reasonPrompt?.action === "terminate"
+                  ? "Terminate user"
+                  : reasonPrompt?.action === "deactivate"
+                    ? "Deactivate user"
+                    : "Suspend user"}
+            </DialogTitle>
+            <DialogDescription>
+              {reasonPrompt?.action === "terminate"
+                ? "Termination is permanent. The user cannot be reactivated afterwards."
+                : reasonPrompt?.action === "ban"
+                  ? "The user will be banned from signing in. Audit trail captures this reason."
+                  : reasonPrompt?.action === "deactivate"
+                    ? "The user will be deactivated. A reason is optional."
+                    : "The user cannot sign in while suspended. Reason is required and logged."}
+            </DialogDescription>
+          </DialogHeader>
+          <FormField
+            label="Reason"
+            htmlFor="user-action-reason"
+            required={reasonPrompt?.action !== "deactivate"}
+          >
+            <Input
+              id="user-action-reason"
+              placeholder="e.g. role transferred"
+              value={reasonValue}
+              onChange={(e) => setReasonValue(e.target.value)}
+              autoFocus
+            />
+          </FormField>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setReasonPrompt(null)
+                setReasonValue("")
+              }}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={confirmReasonAction}
+              disabled={
+                actionLoading ||
+                (reasonPrompt?.action !== "deactivate" && !reasonValue.trim())
+              }
+            >
+              {actionLoading ? "Submitting…" : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   )
 }
@@ -494,6 +613,97 @@ function DetailCard({
       <h3 className="mb-3 text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
       {children}
     </section>
+  )
+}
+
+const ROLE_LABEL: Record<TenantRole, string> = {
+  [TenantRole.ADMIN]: "Admin",
+  [TenantRole.USER]: "User",
+  [TenantRole.VIEWER]: "Viewer",
+}
+
+function RoleCard({
+  user,
+  onChanged,
+}: {
+  user: User
+  onChanged: (updated: User) => void
+}) {
+  const toast = useToast()
+  const currentRole = (user.role ?? TenantRole.USER) as TenantRole
+  const [editing, setEditing] = useState(false)
+  const [nextRole, setNextRole] = useState<TenantRole>(currentRole)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function save() {
+    if (nextRole === currentRole) {
+      setEditing(false)
+      return
+    }
+    setSubmitting(true)
+    try {
+      const updated = await usersApi.updateRole(user.id, { role: nextRole })
+      onChanged(updated)
+      toast.showSuccess(`Role changed to ${ROLE_LABEL[nextRole]}`)
+      setEditing(false)
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Could not change role"))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <DetailCard title="Tenant role">
+      {editing ? (
+        <div className="space-y-3">
+          <Select value={nextRole} onValueChange={(v) => setNextRole(v as TenantRole)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[TenantRole.ADMIN, TenantRole.USER, TenantRole.VIEWER].map((r) => (
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={save} disabled={submitting}>
+              {submitting ? "Saving…" : "Save"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setNextRole(currentRole)
+                setEditing(false)
+              }}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-fg">{ROLE_LABEL[currentRole]}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setNextRole(currentRole)
+              setEditing(true)
+            }}
+          >
+            Change
+          </Button>
+        </div>
+      )}
+    </DetailCard>
   )
 }
 

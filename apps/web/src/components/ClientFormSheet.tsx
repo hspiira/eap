@@ -1,7 +1,9 @@
+import { useQuery } from "@tanstack/react-query"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { industriesApi } from "@/api/endpoints/industries"
 import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -42,6 +44,7 @@ const clientSchema = z
     billing_city: z.string().optional(),
     billing_postal: z.string().optional(),
     billing_country: z.string().optional(),
+    industry_id: z.string().optional(),
   })
   .superRefine((d, ctx) => {
     const anyBilling =
@@ -71,6 +74,7 @@ const EMPTY: ClientFormValues = {
   billing_city: "",
   billing_postal: "",
   billing_country: "",
+  industry_id: "",
 }
 
 interface ClientFormSheetProps {
@@ -87,6 +91,14 @@ export function ClientFormSheet({
   client,
   onSaved,
 }: ClientFormSheetProps) {
+  const { data: industriesPage } = useQuery({
+    queryKey: ["industries", "picker"],
+    queryFn: () => industriesApi.list({ limit: 200 }),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  })
+  const industryOptions = industriesPage?.items ?? []
+
   const { register, control, formState, submit, serverError, isEdit } = useEntityFormSheet<
     ClientFormValues,
     ClientCreate & { __tier?: ClientTier | null },
@@ -110,6 +122,7 @@ export function ClientFormSheet({
       billing_city: c.billing_address?.city ?? "",
       billing_postal: c.billing_address?.postal_code ?? "",
       billing_country: c.billing_address?.country ?? "",
+      industry_id: c.industry_id ?? "",
     }),
     parsePayload: (values) => ({
       name: values.name,
@@ -128,6 +141,7 @@ export function ClientFormSheet({
               postal_code: values.billing_postal || null,
             }
           : null,
+      industry_id: values.industry_id || null,
       // Carried out-of-band so create payload matches BE strict shape.
       __tier: values.tier ? (values.tier as ClientTier) : null,
     }),
@@ -199,7 +213,7 @@ export function ClientFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection title="Tiering">
+      <FormSection title="Tiering & sector">
         <FormField label="Tier" optional error={errors.tier?.message} htmlFor="cs-tier">
           <Controller
             control={control}
@@ -213,6 +227,41 @@ export function ClientFormSheet({
                   {TIER_VALUES.map((t) => (
                     <SelectItem key={t} value={t}>
                       Tier {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
+        <FormField
+          label="Industry"
+          optional
+          description={
+            isEdit
+              ? "Industry is set at creation only — contact platform admin to change."
+              : "The sector this client operates in. Drives benchmarking and reporting."
+          }
+          error={errors.industry_id?.message}
+          htmlFor="cs-industry"
+        >
+          <Controller
+            control={control}
+            name="industry_id"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? ""}
+                onValueChange={(v) => field.onChange(v === "__none" ? "" : v)}
+                disabled={isEdit}
+              >
+                <SelectTrigger id="cs-industry">
+                  <SelectValue placeholder="No industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No industry</SelectItem>
+                  {industryOptions.map((ind) => (
+                    <SelectItem key={ind.id} value={ind.id}>
+                      {ind.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

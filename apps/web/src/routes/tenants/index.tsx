@@ -9,7 +9,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 
-import { tenantsApi } from '@/api/endpoints/tenants'
+import { type TenantCreateResponse,tenantsApi } from '@/api/endpoints/tenants'
 import { AppLayout } from '@/components/AppLayout'
 import { EmptyState } from '@/components/common/EmptyState'
 import {
@@ -23,6 +23,14 @@ import { RequirePlatformAdmin } from '@/components/common/RequirePlatformAdmin'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { TenantFormSheet } from '@/components/TenantFormSheet'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Pagination } from '@/components/ui/pagination'
 import {
   Table,
@@ -83,6 +91,7 @@ function TenantsListBody() {
   const [searchInput, setSearchInput] = useState(searchParams.search ?? '')
   const [page, setPage] = useState(1)
   const [addOpen, setAddOpen] = useState(false)
+  const [credentials, setCredentials] = useState<TenantCreateResponse | null>(null)
   const limit = 20
 
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
@@ -250,10 +259,83 @@ function TenantsListBody() {
         onOpenChange={setAddOpen}
         onSaved={(t) => {
           setAddOpen(false)
-          navigate({ to: '/tenants/$tenantId', params: { tenantId: t.id } })
+          const resp = t as TenantCreateResponse
+          if (resp.admin_password || resp.set_password_url) {
+            setCredentials(resp)
+          } else {
+            navigate({ to: '/tenants/$tenantId', params: { tenantId: t.id } })
+          }
+        }}
+      />
+
+      <AdminCredentialsDialog
+        creds={credentials}
+        onClose={() => {
+          const id = credentials?.id
+          setCredentials(null)
+          if (id) navigate({ to: '/tenants/$tenantId', params: { tenantId: id } })
         }}
       />
     </AppLayout>
+  )
+}
+
+function AdminCredentialsDialog({
+  creds,
+  onClose,
+}: {
+  creds: TenantCreateResponse | null
+  onClose: () => void
+}) {
+  return (
+    <Dialog open={!!creds} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Tenant created — save these credentials</DialogTitle>
+          <DialogDescription>
+            You will only see this once. Send the link or password to the tenant admin securely.
+          </DialogDescription>
+        </DialogHeader>
+        {creds ? (
+          <dl className="space-y-3 rounded-sm border border-border-subtle bg-bg p-4">
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-fg-subtle">Tenant code</dt>
+              <dd className="font-mono text-sm text-fg">{creds.code}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-fg-subtle">Admin email</dt>
+              <dd className="text-sm text-fg">{creds.admin_email ?? '—'}</dd>
+            </div>
+            {creds.admin_password ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-fg-subtle">Admin password</dt>
+                <dd className="font-mono text-sm text-fg break-all">{creds.admin_password}</dd>
+              </div>
+            ) : null}
+            {creds.set_password_url ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-fg-subtle">Set-password link</dt>
+                <dd className="text-sm text-fg break-all">
+                  <a href={creds.set_password_url} className="text-primary underline">
+                    {creds.set_password_url}
+                  </a>
+                </dd>
+                {creds.set_password_expires_at ? (
+                  <p className="mt-1 text-xs text-fg-muted">
+                    Expires {new Date(creds.set_password_expires_at).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+        <DialogFooter>
+          <Button type="button" onClick={onClose}>
+            I've saved them — open tenant
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

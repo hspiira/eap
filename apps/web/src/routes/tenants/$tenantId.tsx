@@ -35,6 +35,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/contexts/ToastContext'
 import { normalizeErrorMessage } from '@/lib/errors'
 import type { Tenant } from '@/types/entities'
@@ -94,6 +101,7 @@ function TenantDetailBody() {
           ) : (
             <>
               <OverviewCard tenant={tenant} />
+              <SubscriptionAndQuotasCard tenant={tenant} />
               <AzureSsoCard tenant={tenant} />
               <LifecycleCard tenant={tenant} />
             </>
@@ -156,6 +164,158 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="text-xs uppercase tracking-wider text-fg-subtle">{label}</dt>
       <dd className="text-fg">{value}</dd>
     </div>
+  )
+}
+
+const SUBSCRIPTION_TIERS = ['Free', 'Basic', 'Professional', 'Enterprise'] as const
+
+function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
+  const queryClient = useQueryClient()
+  const toast = useToast()
+  const [tier, setTier] = useState<string>(tenant.subscription_tier ?? 'Free')
+  const [maxUsers, setMaxUsers] = useState<string>(String(tenant.settings?.max_users ?? 10))
+  const [maxClients, setMaxClients] = useState<string>(String(tenant.settings?.max_clients ?? 5))
+  const [customBranding, setCustomBranding] = useState<boolean>(
+    tenant.settings?.custom_branding ?? false,
+  )
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  function refresh(updated: Tenant) {
+    queryClient.setQueryData(['tenants', 'detail', tenant.id], updated)
+    queryClient.invalidateQueries({ queryKey: ['tenants'] })
+  }
+
+  const tierMutation = useMutation({
+    mutationFn: () => tenantsApi.updateSubscription(tenant.id, tier),
+    onSuccess: (t) => {
+      refresh(t)
+      toast.showSuccess('Subscription tier updated')
+      setErrorMsg(null)
+    },
+    onError: (e) => {
+      const msg = normalizeErrorMessage(e, 'Could not update subscription tier')
+      setErrorMsg(msg)
+      toast.showError(msg)
+    },
+  })
+
+  const settingsMutation = useMutation({
+    mutationFn: () =>
+      tenantsApi.updateSettings(tenant.id, {
+        max_users: Number.parseInt(maxUsers, 10),
+        max_clients: Number.parseInt(maxClients, 10),
+        custom_branding: customBranding,
+      }),
+    onSuccess: (t) => {
+      refresh(t)
+      toast.showSuccess('Settings saved')
+      setErrorMsg(null)
+    },
+    onError: (e) => {
+      const msg = normalizeErrorMessage(e, 'Could not save settings')
+      setErrorMsg(msg)
+      toast.showError(msg)
+    },
+  })
+
+  const tierDirty = tier !== (tenant.subscription_tier ?? 'Free')
+  const settingsDirty =
+    Number.parseInt(maxUsers, 10) !== (tenant.settings?.max_users ?? 10) ||
+    Number.parseInt(maxClients, 10) !== (tenant.settings?.max_clients ?? 5) ||
+    customBranding !== (tenant.settings?.custom_branding ?? false)
+  const validQuotas =
+    /^\d+$/.test(maxUsers.trim()) &&
+    Number.parseInt(maxUsers, 10) >= 1 &&
+    /^\d+$/.test(maxClients.trim()) &&
+    Number.parseInt(maxClients, 10) >= 1
+
+  return (
+    <section className="rounded-sm border border-border-subtle bg-surface p-6">
+      <header className="mb-4">
+        <h2 className="text-lg font-semibold text-fg">Subscription & quotas</h2>
+        <p className="text-sm text-fg-muted">
+          Change the subscription tier or adjust user/client quotas.
+        </p>
+        <p className="mt-2 inline-block rounded-sm border border-fg/15 bg-bg px-2 py-1 text-xs text-fg-muted">
+          Advisory only — pricing tiers and quota enforcement are not yet wired
+          up. Values save but do not block creation.
+        </p>
+      </header>
+
+      {errorMsg ? (
+        <div className="mb-4 rounded-sm border border-danger/30 bg-danger-soft p-3 text-sm text-danger-fg">
+          {errorMsg}
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-3">
+          <FormField label="Subscription tier" htmlFor="sub-tier">
+            <Select value={tier} onValueChange={setTier}>
+              <SelectTrigger id="sub-tier">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBSCRIPTION_TIERS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => tierMutation.mutate()}
+            disabled={!tierDirty || tierMutation.isPending}
+          >
+            {tierMutation.isPending ? 'Saving…' : 'Save tier'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Max users" htmlFor="max-users">
+              <Input
+                id="max-users"
+                type="number"
+                min={1}
+                value={maxUsers}
+                onChange={(e) => setMaxUsers(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Max clients" htmlFor="max-clients">
+              <Input
+                id="max-clients"
+                type="number"
+                min={1}
+                value={maxClients}
+                onChange={(e) => setMaxClients(e.target.value)}
+              />
+            </FormField>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="custom-branding"
+              checked={customBranding}
+              onCheckedChange={(v) => setCustomBranding(v === true)}
+            />
+            <label htmlFor="custom-branding" className="text-sm text-fg">
+              Allow custom branding
+            </label>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => settingsMutation.mutate()}
+            disabled={!settingsDirty || !validQuotas || settingsMutation.isPending}
+          >
+            {settingsMutation.isPending ? 'Saving…' : 'Save quotas'}
+          </Button>
+        </div>
+      </div>
+    </section>
   )
 }
 
