@@ -32,7 +32,7 @@ class ClientEntity:
     preferred_contact_method: ContactMethod | None = None
     tier: ClientTier | None = None
     deleted_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def verify(self, verified_by: UserId) -> None:
         self.is_verified = True

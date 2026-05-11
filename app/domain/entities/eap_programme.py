@@ -38,7 +38,7 @@ class EAPProgramme:
     description: str | None = None
     created_by: UserId | None = None
     is_active: bool = True
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.name:

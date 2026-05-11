@@ -99,8 +99,8 @@ class RejectedRow:
 
 @dataclass
 class ImportReport:
-    accepted: list[AcceptedRow] = field(default_factory=list)
-    rejected: list[RejectedRow] = field(default_factory=list)
+    accepted: list[AcceptedRow] = field(default_factory=list[AcceptedRow])
+    rejected: list[RejectedRow] = field(default_factory=list[RejectedRow])
 
     @property
     def accepted_count(self) -> int:

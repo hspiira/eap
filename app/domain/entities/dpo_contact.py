@@ -32,7 +32,7 @@ class DPOContact:
     role_title: str | None = None
     effective_until: date | None = None
     appointed_by: UserId | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.full_name:

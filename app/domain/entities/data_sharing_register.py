@@ -38,7 +38,7 @@ class DataSharingRegisterEntry:
     case_id: CaseId | None = None
     delivery_channel: str | None = None
     delivery_reference: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.shared_with:
@@ -51,16 +51,12 @@ class DataSharingRegisterEntry:
                 "legal_basis (e.g. statutory order, mandatory report)"
             )
         if not self.events:
-            object.__setattr__(
-                self,
-                "events",
-                [
-                    DataShareLogged(
-                        occurred_at=self.shared_at,
-                        entry_id=self.id,
-                        consent_id=self.consent_id,
-                        shared_with=self.shared_with,
-                        scope=self.scope.value,
-                    )
-                ],
+            self.events.append(
+                DataShareLogged(
+                    occurred_at=self.shared_at,
+                    entry_id=self.id,
+                    consent_id=self.consent_id,
+                    shared_with=self.shared_with,
+                    scope=self.scope.value,
+                )
             )

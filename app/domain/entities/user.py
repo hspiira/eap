@@ -46,7 +46,7 @@ class UserEntity:
     role: TenantRole = TenantRole.USER
     failed_login_count: int = 0
     locked_until: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

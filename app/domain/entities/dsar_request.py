@@ -44,7 +44,7 @@ class DSARRequest:
     """Export bundle or erasure summary; ``None`` until COMPLETED."""
     erasure_executes_at: datetime | None = None
     """Reversible-window deadline: erasure runs only on/after this time."""
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if self.created_at == self.updated_at and not self.events:

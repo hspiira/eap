@@ -35,7 +35,7 @@ class ServiceSessionEntity:
     cancellation_reason: str | None = None
     incident_id: str | None = None
     deleted_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def complete(self, duration: int, notes: str | None = None) -> None:
         if self.status not in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED}:

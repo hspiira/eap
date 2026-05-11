@@ -70,7 +70,7 @@ class ClinicalNote:
     locked_at: datetime | None = None
     lock_window: timedelta = DEFAULT_LOCK_WINDOW
     amendments: tuple[NoteAmendment, ...] = ()
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.body:

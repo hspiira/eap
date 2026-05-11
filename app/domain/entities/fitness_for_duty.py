@@ -56,7 +56,7 @@ class FitnessForDuty:
     assessor_id: UserId | None = None
     accommodation_recommendations: tuple[str, ...] = ()
     employer_report_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.business_necessity_rationale:
@@ -153,7 +153,7 @@ class ReturnToWorkPlan:
     cancelled_at: datetime | None = None
     cancellation_reason: str | None = None
     review_at: date | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.accommodations:

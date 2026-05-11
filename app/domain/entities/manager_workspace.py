@@ -60,7 +60,7 @@ class ManagerConsult:
     client_id: ClientId | None = None
     triggered_referral_case_id: CaseId | None = None
     closed_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.notes:
@@ -159,7 +159,7 @@ class WorkLifeReferral:
     requested_by: UserId | None = None
     resolution_notes: str | None = None
     resolved_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if self.created_at == self.updated_at and not self.events:
@@ -235,7 +235,7 @@ class TrainingEnrolment:
     expires_on: date | None = None
     revoked_at: datetime | None = None
     revoked_reason: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if self.created_at == self.updated_at and not self.events:

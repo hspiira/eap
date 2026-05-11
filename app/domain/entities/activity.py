@@ -32,7 +32,7 @@ class ActivityEntity:
     next_follow_up: datetime | None = None
     is_important: bool = False
     deleted_at: datetime | None = None
-    _events: list[DomainEvent] = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

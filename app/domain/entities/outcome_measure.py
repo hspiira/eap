@@ -58,7 +58,7 @@ class OutcomeMeasure:
     recorded_at: datetime
     created_at: datetime
     updated_at: datetime
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.intake_response_id or not self.closure_response_id:

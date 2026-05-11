@@ -42,7 +42,7 @@ class EligibleMember:
     suspended_at: datetime | None = None
     terminated_at: datetime | None = None
     created_by: UserId | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.employer_member_id:

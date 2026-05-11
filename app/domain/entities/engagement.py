@@ -110,13 +110,13 @@ class Engagement:
     description: str | None = None
     period_start: date | None = None
     period_end: date | None = None
-    deliverables: list[Deliverable] = field(default_factory=list)
-    hours_log: list[HoursLogEntry] = field(default_factory=list)
+    deliverables: list[Deliverable] = field(default_factory=list[Deliverable])
+    hours_log: list[HoursLogEntry] = field(default_factory=list[HoursLogEntry])
     activated_at: datetime | None = None
     delivered_at: datetime | None = None
     invoiced_at: datetime | None = None
     closed_at: datetime | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if not self.name:

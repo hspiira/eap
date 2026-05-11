@@ -56,7 +56,7 @@ class OutreachRecord:
     triage_risk_level: TriageRiskLevel | None = None
     crisis_flag: bool = False
     notes: str | None = None
-    events: list[DomainEvent] = field(default_factory=list)
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         if self.contact_attempts < 0:
