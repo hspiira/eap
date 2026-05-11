@@ -1,4 +1,4 @@
-"""SQL implementations of the eligible-member + clinical-subject repos (Phase 5A #5A.1)."""
+"""SQL implementations of the eligible-member + clinical-subject repositories."""
 
 import logging
 
@@ -159,10 +159,10 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
 class EligibleMemberClinicalLinkRepositoryImpl(
     EligibleMemberClinicalLinkRepository
 ):
-    """Every read here emits a structured `subject-identity-disclosure` log line.
+    """Every read here emits a structured ``subject-identity-disclosure`` log line.
 
     The DPO uses this stream to demonstrate that re-identification accesses are
-    discoverable and bounded to declared purposes (Uganda DPPA 2019 §10).
+    discoverable and bounded to declared purposes.
     """
 
     def __init__(self, session: AsyncSession):

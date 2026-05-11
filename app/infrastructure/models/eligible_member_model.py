@@ -1,4 +1,4 @@
-"""Eligible-member + clinical-subject + audited link models (Phase 5A #5A.1)."""
+"""Eligible-member + clinical-subject + audited link models."""
 
 from datetime import date, datetime
 

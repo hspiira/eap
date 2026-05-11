@@ -1,4 +1,4 @@
-"""Eligible-member use cases (Phase 5A #5A.1).
+"""Eligible-member use cases.
 
 Creating an eligible member always creates a paired ``ClinicalSubject`` and the
 audited link in one transactional unit. The pseudonym is generated server-side

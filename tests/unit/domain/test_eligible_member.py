@@ -1,4 +1,4 @@
-"""EligibleMember + ClinicalSubject + pseudonymisation tests (Phase 5A #5A.1)."""
+"""EligibleMember + ClinicalSubject + pseudonymisation tests."""
 
 from datetime import UTC, date, datetime, timedelta
 
