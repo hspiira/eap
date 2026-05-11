@@ -7,6 +7,7 @@ Represents a client interaction log entry.
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
@@ -31,7 +32,7 @@ class ActivityEntity:
     next_follow_up: datetime | None = None
     is_important: bool = False
     deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

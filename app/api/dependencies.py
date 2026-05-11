@@ -21,6 +21,9 @@ from app.domain.repositories.critical_incident_repository import (
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.clinical_note_repository import (
+    ClinicalNoteRepository,
+)
 from app.domain.repositories.dsar_repository import DSARRequestRepository
 from app.domain.repositories.eap_programme_repository import (
     AuthorizationRepository,
@@ -490,6 +493,16 @@ async def get_case_repository(
     )
 
     return CaseRepositoryImpl(db)
+
+
+async def get_clinical_note_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ClinicalNoteRepository":
+    from app.infrastructure.repositories.clinical_note_repository import (
+        ClinicalNoteRepositoryImpl,
+    )
+
+    return ClinicalNoteRepositoryImpl(db)
 
 
 async def get_eap_programme_repository(

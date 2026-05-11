@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import re
 
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.shared.utils.datetime import utc_now
@@ -27,7 +28,7 @@ class ClientTagEntity:
     color: str | None = None  # Hex color code for UI display
     _is_active: bool = True
     deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    _events: list[DomainEvent] = field(default_factory=list)
     
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

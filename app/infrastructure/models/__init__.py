@@ -16,6 +16,7 @@ from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeModel
 from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
 from app.infrastructure.models.case_model import CaseModel
+from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
 from app.infrastructure.models.eap_programme_model import (
     AuthorizationModel,
     EAPProgrammeModel,
@@ -75,6 +76,7 @@ __all__ = [
     "BenchmarkConsentModel",
     "CareCallbackCampaignModel",
     "CaseModel",
+    "ClinicalNoteModel",
     "ClinicalSubjectModel",
     "EAPProgrammeModel",
     "ClientModel",
