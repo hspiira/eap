@@ -22,6 +22,17 @@ from app.infrastructure.models.eap_programme_model import (
     AuthorizationModel,
     EAPProgrammeModel,
 )
+from app.infrastructure.models.manager_workspace_models import (
+    ManagerConsultModel,
+    TrainingEnrolmentModel,
+    WorkLifeProviderModel,
+    WorkLifeReferralModel,
+)
+from app.infrastructure.models.outcomes_models import (
+    FitnessForDutyModel,
+    OutcomeMeasureModel,
+    ReturnToWorkPlanModel,
+)
 from app.infrastructure.models.risk_safety_models import (
     CaringContactModel,
     MandatoryReportModel,
@@ -88,9 +99,16 @@ __all__ = [
     "ClinicalSubjectModel",
     "CrisisContactModel",
     "EAPProgrammeModel",
+    "FitnessForDutyModel",
+    "ManagerConsultModel",
     "MandatoryReportModel",
+    "OutcomeMeasureModel",
+    "ReturnToWorkPlanModel",
     "RiskAssessmentModel",
     "SafetyPlanModel",
+    "TrainingEnrolmentModel",
+    "WorkLifeProviderModel",
+    "WorkLifeReferralModel",
     "ClientModel",
     "ClientTagModel",
     "ContactModel",
