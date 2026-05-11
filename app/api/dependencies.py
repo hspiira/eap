@@ -24,7 +24,16 @@ from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.clinical_note_repository import (
     ClinicalNoteRepository,
 )
+from app.domain.repositories.crisis_contact_repository import (
+    CrisisContactRepository,
+)
 from app.domain.repositories.dsar_repository import DSARRequestRepository
+from app.domain.repositories.risk_safety_repository import (
+    CaringContactRepository,
+    MandatoryReportRepository,
+    RiskAssessmentRepository,
+    SafetyPlanRepository,
+)
 from app.domain.repositories.eap_programme_repository import (
     AuthorizationRepository,
     EAPProgrammeRepository,
@@ -503,6 +512,56 @@ async def get_clinical_note_repository(
     )
 
     return ClinicalNoteRepositoryImpl(db)
+
+
+async def get_crisis_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CrisisContactRepository":
+    from app.infrastructure.repositories.crisis_contact_repository import (
+        CrisisContactRepositoryImpl,
+    )
+
+    return CrisisContactRepositoryImpl(db)
+
+
+async def get_risk_assessment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "RiskAssessmentRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        RiskAssessmentRepositoryImpl,
+    )
+
+    return RiskAssessmentRepositoryImpl(db)
+
+
+async def get_safety_plan_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SafetyPlanRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        SafetyPlanRepositoryImpl,
+    )
+
+    return SafetyPlanRepositoryImpl(db)
+
+
+async def get_mandatory_report_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "MandatoryReportRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        MandatoryReportRepositoryImpl,
+    )
+
+    return MandatoryReportRepositoryImpl(db)
+
+
+async def get_caring_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CaringContactRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        CaringContactRepositoryImpl,
+    )
+
+    return CaringContactRepositoryImpl(db)
 
 
 async def get_eap_programme_repository(

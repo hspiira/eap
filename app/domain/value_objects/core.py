@@ -267,6 +267,31 @@ class ClinicalNoteId(Id):
 class NoteAmendmentId(Id):
     pass
 
+
+@dataclass(frozen=True)
+class CrisisContactId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class RiskAssessmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SafetyPlanId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class MandatoryReportId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CaringContactId(Id):
+    pass
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:

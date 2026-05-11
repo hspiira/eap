@@ -474,6 +474,61 @@ class ServiceCategory(str, Enum):
     WELLNESS_COACHING = "WellnessCoaching"
 
 
+class CrisisCallerRelation(str, Enum):
+    SELF = "Self"
+    FAMILY = "Family"
+    MANAGER = "Manager"
+    COLLEAGUE = "Colleague"
+    ANONYMOUS = "Anonymous"
+
+
+class CrisisWarmHandoff(str, Enum):
+    NONE = "None"
+    MOBILE_CRISIS_TEAM = "MobileCrisisTeam"
+    EMERGENCY_DEPARTMENT = "EmergencyDepartment"
+    ON_CALL_CLINICIAN = "OnCallClinician"
+    NATIONAL_HOTLINE = "NationalHotline"
+    LAW_ENFORCEMENT = "LawEnforcement"
+
+
+class CrisisContactOutcome(str, Enum):
+    INFORMATION_ONLY = "InformationOnly"
+    BOOKED_APPOINTMENT = "BookedAppointment"
+    REFERRED_INTERNAL = "ReferredInternal"
+    REFERRED_EXTERNAL = "ReferredExternal"
+    EMERGENCY_DISPATCHED = "EmergencyDispatched"
+    CALLER_DISCONNECTED = "CallerDisconnected"
+
+
+class SafetyPlanStatus(str, Enum):
+    DRAFT = "Draft"
+    ACTIVE = "Active"
+    REVIEWED = "Reviewed"
+    SUPERSEDED = "Superseded"
+
+
+class MandatoryReportType(str, Enum):
+    TARASOFF = "Tarasoff"
+    CHILD_ABUSE = "ChildAbuse"
+    VULNERABLE_ADULT = "VulnerableAdult"
+    SUICIDE_ATTEMPT = "SuicideAttempt"
+
+
+class CaringContactChannel(str, Enum):
+    CALL = "Call"
+    SMS = "SMS"
+    EMAIL = "Email"
+    POSTCARD = "Postcard"
+
+
+class CaringContactOutcome(str, Enum):
+    PENDING = "Pending"
+    COMPLETED = "Completed"
+    NO_RESPONSE = "NoResponse"
+    REFUSED = "Refused"
+    LOST_CONTACT = "LostContact"
+
+
 class SubscriptionTier(str, Enum):
     FREE = "Free"
     BASIC = "Basic"
