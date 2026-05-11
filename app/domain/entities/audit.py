@@ -33,7 +33,13 @@ class EntityChange:
 
 @dataclass(frozen=True)
 class AuditLog:
-    """High-level audit log entry. Immutable; never updated or deleted."""
+    """High-level audit log entry. Immutable; never updated or deleted.
+
+    ``is_special_category`` flags accesses that touch health / clinical data —
+    used by the DPO to produce a separate "special-category data accessed"
+    report alongside ordinary audit output, satisfying jurisdictional special-
+    category-data accountability requirements.
+    """
 
     id: AuditLogId
     tenant_id: TenantId
@@ -46,6 +52,7 @@ class AuditLog:
     user_agent: str | None
     occurred_at: datetime
     metadata: Mapping[str, Any] | None
+    is_special_category: bool = False
 
     def __post_init__(self) -> None:
         if not self.resource_type:

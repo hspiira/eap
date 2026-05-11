@@ -1,4 +1,4 @@
-"""Report query runner (Phase 2 #D-Reports / Phase 3 #D-Reports v1 / SAD §5.2.10).
+"""Report query runner.
 
 Routes the :class:`ReportQueryType` enum to a concrete async runner that
 returns a JSON-serialisable result. The Phase 3 v1 renewal pack adds end-to-end
@@ -17,6 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.report import TemplateSection
 from app.domain.enums import ReportQueryType, SessionStatus
+from app.domain.services.cell_suppression import (
+    DEFAULT_MIN_CELL_SIZE,
+    suppress_bucket_list,
+    suppress_count,
+    suppress_count_dict,
+)
 from app.infrastructure.models.care_callback_model import (
     CareCallbackCampaignModel,
     OutreachRecordModel,
@@ -33,8 +39,14 @@ from app.infrastructure.models.utilisation_event_model import UtilisationEventMo
 class ReportQueryRunner:
     """Dispatches a :class:`TemplateSection` to its query implementation."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        min_cell_size: int = DEFAULT_MIN_CELL_SIZE,
+    ):
         self._session = session
+        self._min_cell_size = min_cell_size
 
     async def run(
         self,
@@ -101,10 +113,12 @@ class ReportQueryRunner:
 
         result = await self._session.execute(stmt)
         rows = [{"month": row.month, "count": row.count} for row in result]
+        total = sum(r["count"] for r in rows)
         return {
             "query_type": ReportQueryType.SESSIONS_BY_MONTH.value,
-            "buckets": rows,
-            "total": sum(r["count"] for r in rows),
+            "buckets": suppress_bucket_list(rows, floor=self._min_cell_size),
+            "total": suppress_count(total, floor=self._min_cell_size),
+            "min_cell_size": self._min_cell_size,
         }
 
 
@@ -146,10 +160,14 @@ class ReportQueryRunner:
             for r in rows
         ]
         buckets.sort(key=lambda b: b["total_units"], reverse=True)
+        total_units = sum(b["total_units"] for b in buckets)
         return {
             "query_type": ReportQueryType.CONTRACT_UTILISATION.value,
-            "buckets": buckets,
-            "total_units": sum(b["total_units"] for b in buckets),
+            "buckets": suppress_bucket_list(
+                buckets, count_field="event_count", floor=self._min_cell_size
+            ),
+            "total_units": suppress_count(total_units, floor=self._min_cell_size),
+            "min_cell_size": self._min_cell_size,
         }
 
     async def _care_callback_outcomes(
@@ -199,11 +217,17 @@ class ReportQueryRunner:
             (await self._session.execute(crisis_stmt)).scalar_one() or 0
         )
 
+        total = sum(by_status.values())
         return {
             "query_type": ReportQueryType.CARE_CALLBACK_OUTCOMES.value,
-            "by_status": by_status,
-            "total": sum(by_status.values()),
-            "crisis_flags": crisis_flags,
+            "by_status": suppress_count_dict(
+                by_status, floor=self._min_cell_size
+            ),
+            "total": suppress_count(total, floor=self._min_cell_size),
+            "crisis_flags": suppress_count(
+                crisis_flags, floor=self._min_cell_size
+            ),
+            "min_cell_size": self._min_cell_size,
         }
 
     async def _satisfaction_distribution(
@@ -236,10 +260,15 @@ class ReportQueryRunner:
                 bucket = per_question.setdefault(k, {})
                 key = str(v)
                 bucket[key] = bucket.get(key, 0) + 1
+        suppressed_freqs = {
+            question: suppress_count_dict(answers, floor=self._min_cell_size)
+            for question, answers in per_question.items()
+        }
         return {
             "query_type": ReportQueryType.SATISFACTION_DISTRIBUTION.value,
-            "answer_frequencies": per_question,
-            "response_total": total,
+            "answer_frequencies": suppressed_freqs,
+            "response_total": suppress_count(total, floor=self._min_cell_size),
+            "min_cell_size": self._min_cell_size,
         }
 
 
