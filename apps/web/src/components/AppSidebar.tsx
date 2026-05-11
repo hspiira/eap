@@ -20,6 +20,7 @@ import {
   MessageSquare,
   PhoneCall,
   Search,
+  ShieldCheck,
   Tag,
   UserCog,
   Users,
@@ -60,6 +61,11 @@ type NavItem = {
   icon: React.ElementType
   iconClassName?: string
   flag?: FeatureFlag
+  platformAdmin?: boolean
+}
+
+function platformTenantId(): string {
+  return (import.meta.env.VITE_PLATFORM_TENANT_ID ?? '').trim()
 }
 
 type NavSection = {
@@ -134,16 +140,28 @@ const SECTIONS: ReadonlyArray<NavSection> = [
       { to: "/activities", label: "Activity Logs", icon: Activity, flag: "activities" },
     ],
   },
+  {
+    label: "Platform Admin",
+    items: [
+      { to: "/tenants", label: "Tenants", icon: ShieldCheck, platformAdmin: true },
+    ],
+  },
 ]
 
-function isItemEnabled(item: NavItem): boolean {
-  return !item.flag || featureFlags[item.flag]
+function isItemEnabled(item: NavItem, currentTenantId: string | null): boolean {
+  if (item.flag && !featureFlags[item.flag]) return false
+  if (item.platformAdmin) {
+    const required = platformTenantId()
+    if (required && currentTenantId !== required) return false
+  }
+  return true
 }
 
-function visibleSections(): NavSection[] {
-  return SECTIONS.map((s) => ({ ...s, items: s.items.filter(isItemEnabled) })).filter(
-    (s) => s.items.length > 0,
-  )
+function visibleSections(currentTenantId: string | null): NavSection[] {
+  return SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((it) => isItemEnabled(it, currentTenantId)),
+  })).filter((s) => s.items.length > 0)
 }
 
 function toProperCase(s: string): string {
@@ -251,7 +269,8 @@ function ExpandedSection({ label, items, open, onOpenChange }: ExpandedSectionPr
 
 function ExpandedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const sections = visibleSections()
+  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const sections = visibleSections(currentTenantId)
   const [openSection, setOpenSection] = useState<string | null>(
     () => findActiveSectionLabel(sections, pathname) ?? sections[0]?.label ?? null,
   )
@@ -373,7 +392,8 @@ function CollapsedHeader() {
 
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const sections = visibleSections()
+  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const sections = visibleSections(currentTenantId)
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       <CollapsedHeader />

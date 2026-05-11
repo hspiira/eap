@@ -36,6 +36,7 @@ import { Route as AtRiskRouteImport } from './routes/at-risk'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
 import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as SurveysIndexRouteImport } from './routes/surveys/index'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
@@ -51,6 +52,8 @@ import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
 import { Route as UsersNewRouteImport } from './routes/users/new'
 import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
+import { Route as TenantsNewRouteImport } from './routes/tenants/new'
+import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
 import { Route as TagsNewRouteImport } from './routes/tags/new'
 import { Route as TagsTagIdRouteImport } from './routes/tags/$tagId'
 import { Route as SurveysNewRouteImport } from './routes/surveys/new'
@@ -217,6 +220,11 @@ const UsersIndexRoute = UsersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => UsersRoute,
 } as any)
+const TenantsIndexRoute = TenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TagsIndexRoute = TagsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -291,6 +299,16 @@ const UsersUserIdRoute = UsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
   getParentRoute: () => UsersRoute,
+} as any)
+const TenantsNewRoute = TenantsNewRouteImport.update({
+  id: '/tenants/new',
+  path: '/tenants/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
+  id: '/tenants/$tenantId',
+  path: '/tenants/$tenantId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const TagsNewRoute = TagsNewRouteImport.update({
   id: '/new',
@@ -501,6 +519,8 @@ export interface FileRoutesByFullPath {
   '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRoute
+  '/tenants/new': typeof TenantsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks/': typeof CareCallbacksIndexRoute
@@ -516,6 +536,7 @@ export interface FileRoutesByFullPath {
   '/services/': typeof ServicesIndexRoute
   '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
+  '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -560,6 +581,8 @@ export interface FileRoutesByTo {
   '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRoute
+  '/tenants/new': typeof TenantsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks': typeof CareCallbacksIndexRoute
@@ -575,6 +598,7 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesIndexRoute
   '/surveys': typeof SurveysIndexRoute
   '/tags': typeof TagsIndexRoute
+  '/tenants': typeof TenantsIndexRoute
   '/users': typeof UsersIndexRoute
   '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -635,6 +659,8 @@ export interface FileRoutesById {
   '/surveys/new': typeof SurveysNewRoute
   '/tags/$tagId': typeof TagsTagIdRoute
   '/tags/new': typeof TagsNewRoute
+  '/tenants/$tenantId': typeof TenantsTenantIdRoute
+  '/tenants/new': typeof TenantsNewRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks/': typeof CareCallbacksIndexRoute
@@ -650,6 +676,7 @@ export interface FileRoutesById {
   '/services/': typeof ServicesIndexRoute
   '/surveys/': typeof SurveysIndexRoute
   '/tags/': typeof TagsIndexRoute
+  '/tenants/': typeof TenantsIndexRoute
   '/users/': typeof UsersIndexRoute
   '/auth/azure/callback': typeof AuthAzureCallbackRoute
   '/care-callbacks/worklist/$caseId': typeof CareCallbacksWorklistCaseIdRoute
@@ -711,6 +738,8 @@ export interface FileRouteTypes {
     | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
+    | '/tenants/$tenantId'
+    | '/tenants/new'
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks/'
@@ -726,6 +755,7 @@ export interface FileRouteTypes {
     | '/services/'
     | '/surveys/'
     | '/tags/'
+    | '/tenants/'
     | '/users/'
     | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
@@ -770,6 +800,8 @@ export interface FileRouteTypes {
     | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
+    | '/tenants/$tenantId'
+    | '/tenants/new'
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks'
@@ -785,6 +817,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/surveys'
     | '/tags'
+    | '/tenants'
     | '/users'
     | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
@@ -844,6 +877,8 @@ export interface FileRouteTypes {
     | '/surveys/new'
     | '/tags/$tagId'
     | '/tags/new'
+    | '/tenants/$tenantId'
+    | '/tenants/new'
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks/'
@@ -859,6 +894,7 @@ export interface FileRouteTypes {
     | '/services/'
     | '/surveys/'
     | '/tags/'
+    | '/tenants/'
     | '/users/'
     | '/auth/azure/callback'
     | '/care-callbacks/worklist/$caseId'
@@ -892,6 +928,9 @@ export interface RootRouteChildren {
   SurveysRoute: typeof SurveysRouteWithChildren
   TagsRoute: typeof TagsRouteWithChildren
   UsersRoute: typeof UsersRouteWithChildren
+  TenantsTenantIdRoute: typeof TenantsTenantIdRoute
+  TenantsNewRoute: typeof TenantsNewRoute
+  TenantsIndexRoute: typeof TenantsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1085,6 +1124,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersIndexRouteImport
       parentRoute: typeof UsersRoute
     }
+    '/tenants/': {
+      id: '/tenants/'
+      path: '/tenants'
+      fullPath: '/tenants/'
+      preLoaderRoute: typeof TenantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tags/': {
       id: '/tags/'
       path: '/'
@@ -1189,6 +1235,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/$userId'
       preLoaderRoute: typeof UsersUserIdRouteImport
       parentRoute: typeof UsersRoute
+    }
+    '/tenants/new': {
+      id: '/tenants/new'
+      path: '/tenants/new'
+      fullPath: '/tenants/new'
+      preLoaderRoute: typeof TenantsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/$tenantId': {
+      id: '/tenants/$tenantId'
+      path: '/tenants/$tenantId'
+      fullPath: '/tenants/$tenantId'
+      preLoaderRoute: typeof TenantsTenantIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/tags/new': {
       id: '/tags/new'
@@ -1672,6 +1732,9 @@ const rootRouteChildren: RootRouteChildren = {
   SurveysRoute: SurveysRouteWithChildren,
   TagsRoute: TagsRouteWithChildren,
   UsersRoute: UsersRouteWithChildren,
+  TenantsTenantIdRoute: TenantsTenantIdRoute,
+  TenantsNewRoute: TenantsNewRoute,
+  TenantsIndexRoute: TenantsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,75 +1,122 @@
 /**
  * Tenants API Endpoints
+ *
+ * Mirrors the BE `/tenants` router. Includes lifecycle transitions, settings,
+ * subscription, and Azure AD SSO config.
  */
 
 import apiClient from '../client'
 import type { ListParams, PaginatedResponse, Tenant } from '../types'
 
-export interface TenantCreate {
-  name: string // Required, 1-255 characters
-  code: string // Required, 3-15 characters, lowercase alphanumeric with hyphens
-  subscription_tier?: string // Optional, default: "Free"
-  settings?: {
-    max_users?: number // Optional, default: 10, minimum: 1
-    max_clients?: number // Optional, default: 5, minimum: 1
-    features_enabled?: string[] // Optional, default: []
-    custom_branding?: boolean // Optional, default: false
-  }
+export interface TenantSettingsInput {
+  max_users?: number
+  max_clients?: number
+  features_enabled?: string[]
+  custom_branding?: boolean
 }
 
-export interface TenantCreateResponse {
-  id: string // Tenant ID (CUID)
+export interface TenantCreate {
   name: string
   code: string
-  status: string // Always "Active" on creation
-  subscription_tier: string
-  settings: {
-    max_users: number
-    max_clients: number
-    features_enabled: string[]
-    custom_branding: boolean
-  }
-  is_active: boolean // Always true on creation
-  admin_email: string // ⚠️ ONLY present on creation: "admin@{code}.local"
-  admin_password?: string // Present when backend returns generated password
-  set_password_url?: string | null // When set, user is prompted to set password then login (ui.timeline-style)
+  subscription_tier?: string
+  settings?: TenantSettingsInput
+}
+
+export interface TenantUpdate {
+  name?: string
+}
+
+export interface TenantUpdateSettings {
+  max_users?: number
+  max_clients?: number
+  features_enabled?: string[]
+  custom_branding?: boolean
+}
+
+export interface TenantAzureSsoUpdate {
+  azure_tenant_id?: string | null
+  enabled: boolean
+}
+
+export interface TenantCreateResponse extends Tenant {
+  admin_email?: string
+  admin_password?: string
+  set_password_url?: string | null
   set_password_expires_at?: string | null
 }
 
+export interface TenantStats {
+  tenant_id: string
+  current_user_count: number
+  current_client_count: number
+  max_users: number
+  max_clients: number
+}
+
 export const tenantsApi = {
-  /**
-   * Create a new tenant (also creates admin user in background)
-   * Returns tenant info and admin password
-   */
-  async create(tenantData: TenantCreate): Promise<TenantCreateResponse> {
-    return apiClient.post<TenantCreateResponse>('/tenants', tenantData)
+  async create(data: TenantCreate): Promise<TenantCreateResponse> {
+    return apiClient.post<TenantCreateResponse>('/tenants', data)
   },
 
-  /**
-   * Get tenant by ID
-   */
   async getById(tenantId: string): Promise<Tenant> {
     return apiClient.get<Tenant>(`/tenants/${tenantId}`)
   },
 
-  /**
-   * List tenants
-   */
   async list(params?: ListParams): Promise<PaginatedResponse<Tenant>> {
-    return apiClient.get<PaginatedResponse<Tenant>>('/tenants', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Tenant>>(
+      '/tenants',
+      params as Record<string, unknown>,
+    )
   },
 
-  /**
-   * Update tenant
-   */
-  async update(tenantId: string, data: Partial<TenantCreate>): Promise<Tenant> {
+  async update(tenantId: string, data: TenantUpdate): Promise<Tenant> {
     return apiClient.patch<Tenant>(`/tenants/${tenantId}`, data)
   },
 
-  /**
-   * Check if tenant code is available
-   */
+  async updateSettings(tenantId: string, data: TenantUpdateSettings): Promise<Tenant> {
+    return apiClient.patch<Tenant>(`/tenants/${tenantId}/settings`, data)
+  },
+
+  async updateSubscription(tenantId: string, tier: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/subscription`, {
+      subscription_tier: tier,
+    })
+  },
+
+  async updateAzureSso(
+    tenantId: string,
+    data: TenantAzureSsoUpdate,
+  ): Promise<Tenant> {
+    return apiClient.patch<Tenant>(`/tenants/${tenantId}/azure-sso`, data)
+  },
+
+  async activate(tenantId: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/activate`, {})
+  },
+
+  async suspend(tenantId: string, reason: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/suspend`, { reason })
+  },
+
+  async terminate(tenantId: string, reason: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/terminate`, { reason })
+  },
+
+  async archive(tenantId: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/archive`, {})
+  },
+
+  async restore(tenantId: string): Promise<Tenant> {
+    return apiClient.post<Tenant>(`/tenants/${tenantId}/restore`, {})
+  },
+
+  async stats(tenantId: string): Promise<TenantStats> {
+    return apiClient.get<TenantStats>(`/tenants/${tenantId}/stats`)
+  },
+
   async checkCode(code: string): Promise<{ available: boolean; code: string }> {
-    return apiClient.get<{ available: boolean; code: string }>(`/tenants/check-code/${code}`)
+    return apiClient.get<{ available: boolean; code: string }>(
+      `/tenants/check-code/${code}`,
+    )
   },
 }

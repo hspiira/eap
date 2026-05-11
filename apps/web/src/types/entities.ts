@@ -131,11 +131,22 @@ export interface EmergencyContact {
 /**
  * Tenant/Organization
  */
+export interface TenantSettings {
+  max_users: number
+  max_clients: number
+  features_enabled: string[]
+  custom_branding: boolean
+}
+
 export interface Tenant extends BaseEntity {
   name: string
-  code?: string | null // Tenant code (e.g., "acme-corp")
+  code?: string | null
   status: TenantStatus
-  subscription_tier?: string | null // Subscription tier (e.g., "Free", "Pro", "Enterprise")
+  subscription_tier?: string | null
+  settings?: TenantSettings | null
+  is_active?: boolean
+  azure_tenant_id?: string | null
+  azure_sso_enabled?: boolean
   industry_id?: string | null
   tax_id?: string | null
   registration_number?: string | null
