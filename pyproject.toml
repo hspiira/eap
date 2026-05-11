@@ -109,6 +109,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.benchmark_consent_repository",
     "app.api.dependencies -> app.infrastructure.services.benchmark_collector",
     "app.api.dependencies -> app.infrastructure.repositories.care_callback_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.case_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_repository",
     "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
     "app.api.dependencies -> app.infrastructure.repositories.contact_repository",
