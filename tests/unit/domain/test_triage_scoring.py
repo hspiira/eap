@@ -26,12 +26,13 @@ from app.domain.value_objects.triage import (
 
 
 class TestCatalogue:
-    def test_three_instruments_registered(self):
-        assert set(CATALOGUE.keys()) == {
+    def test_v1_instruments_registered(self):
+        for code in {
             TriageInstrumentCode.JOSEPH7,
             TriageInstrumentCode.WOS5,
             TriageInstrumentCode.PHQ9,
-        }
+        }:
+            assert code in CATALOGUE
 
     def test_get_instrument_returns_definition(self):
         q = get_instrument(TriageInstrumentCode.JOSEPH7)

@@ -24,6 +24,11 @@ from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.clinical_note_repository import (
     ClinicalNoteRepository,
 )
+from app.domain.repositories.consent_repository import (
+    ConsentRepository,
+    DataSharingRegisterRepository,
+    DPOContactRepository,
+)
 from app.domain.repositories.crisis_contact_repository import (
     CrisisContactRepository,
 )
@@ -643,6 +648,36 @@ async def get_return_to_work_plan_repository(
     )
 
     return ReturnToWorkPlanRepositoryImpl(db)
+
+
+async def get_consent_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ConsentRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        ConsentRepositoryImpl,
+    )
+
+    return ConsentRepositoryImpl(db)
+
+
+async def get_data_sharing_register_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DataSharingRegisterRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        DataSharingRegisterRepositoryImpl,
+    )
+
+    return DataSharingRegisterRepositoryImpl(db)
+
+
+async def get_dpo_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DPOContactRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        DPOContactRepositoryImpl,
+    )
+
+    return DPOContactRepositoryImpl(db)
 
 
 async def get_eap_programme_repository(

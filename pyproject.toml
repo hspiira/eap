@@ -111,6 +111,7 @@ ignore_imports = [
     "app.api.dependencies -> app.infrastructure.repositories.care_callback_repository",
     "app.api.dependencies -> app.infrastructure.repositories.case_repository",
     "app.api.dependencies -> app.infrastructure.repositories.clinical_note_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.consent_repository",
     "app.api.dependencies -> app.infrastructure.repositories.crisis_contact_repository",
     "app.api.dependencies -> app.infrastructure.repositories.eap_programme_repository",
     "app.api.dependencies -> app.infrastructure.repositories.manager_workspace_repository",

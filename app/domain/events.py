@@ -18,6 +18,7 @@ from app.domain.value_objects.core import (
     ManagerConsultId, WorkLifeReferralId,
     TrainingEnrolmentId,
     OutcomeMeasureId, FitnessForDutyId, ReturnToWorkPlanId,
+    ConsentId, DataSharingRegisterEntryId,
 )
 from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
@@ -667,3 +668,37 @@ class ReturnToWorkPlanActivated(DomainEvent):
 @dataclass(frozen=True)
 class ReturnToWorkPlanCompleted(DomainEvent):
     plan_id: "ReturnToWorkPlanId"
+
+
+@dataclass(frozen=True)
+class ConsentRequested(DomainEvent):
+    consent_id: "ConsentId"
+    subject_clinical_subject_id: "ClinicalSubjectId"
+    scope: str
+    purpose: str
+
+
+@dataclass(frozen=True)
+class ConsentGranted(DomainEvent):
+    consent_id: "ConsentId"
+    scope: str
+    expires_on: object | None
+
+
+@dataclass(frozen=True)
+class ConsentRevoked(DomainEvent):
+    consent_id: "ConsentId"
+    reason: str
+
+
+@dataclass(frozen=True)
+class ConsentExpired(DomainEvent):
+    consent_id: "ConsentId"
+
+
+@dataclass(frozen=True)
+class DataShareLogged(DomainEvent):
+    entry_id: "DataSharingRegisterEntryId"
+    consent_id: "ConsentId | None"
+    shared_with: str
+    scope: str

@@ -17,6 +17,11 @@ from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeMod
 from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
 from app.infrastructure.models.case_model import CaseModel
 from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
+from app.infrastructure.models.consent_models import (
+    ConsentModel,
+    DPOContactModel,
+    DataSharingRegisterEntryModel,
+)
 from app.infrastructure.models.crisis_contact_model import CrisisContactModel
 from app.infrastructure.models.eap_programme_model import (
     AuthorizationModel,
@@ -97,7 +102,10 @@ __all__ = [
     "CaseModel",
     "ClinicalNoteModel",
     "ClinicalSubjectModel",
+    "ConsentModel",
     "CrisisContactModel",
+    "DPOContactModel",
+    "DataSharingRegisterEntryModel",
     "EAPProgrammeModel",
     "FitnessForDutyModel",
     "ManagerConsultModel",

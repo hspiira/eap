@@ -76,10 +76,114 @@ PHQ9 = Questionnaire(
 )
 
 
+GAD7 = Questionnaire(
+    code=TriageInstrumentCode.GAD7,
+    version="1",
+    title="Generalized Anxiety Disorder (GAD-7)",
+    items=tuple(
+        QuestionnaireItem(f"g{i}", f"Item {i}", 0, 3) for i in range(1, 8)
+    ),
+)
+
+CSSRS = Questionnaire(
+    code=TriageInstrumentCode.CSSRS,
+    version="1-brief",
+    title="Columbia Suicide Severity Rating Scale (brief)",
+    items=(
+        QuestionnaireItem("c1", "Wish to be dead", 0, 1),
+        QuestionnaireItem("c2", "Non-specific active suicidal thoughts", 0, 1),
+        QuestionnaireItem("c3", "Active ideation with method (without plan)", 0, 1),
+        QuestionnaireItem("c4", "Active ideation with intent (without specific plan)", 0, 1),
+        QuestionnaireItem("c5", "Active ideation with specific plan and intent", 0, 1),
+        QuestionnaireItem(
+            "c6", "Suicide behaviour in lifetime", 0, 1
+        ),
+        QuestionnaireItem(
+            "c6_recent",
+            "Suicide behaviour within past 3 months",
+            0,
+            1,
+        ),
+    ),
+)
+
+AUDIT_C = Questionnaire(
+    code=TriageInstrumentCode.AUDIT_C,
+    version="1",
+    title="AUDIT-C alcohol-use screen",
+    items=tuple(
+        QuestionnaireItem(f"a{i}", f"Item {i}", 0, 4) for i in range(1, 4)
+    ),
+)
+
+DAST10 = Questionnaire(
+    code=TriageInstrumentCode.DAST10,
+    version="1",
+    title="Drug Abuse Screening Test (10-item)",
+    items=tuple(
+        QuestionnaireItem(f"d{i}", f"Item {i}", 0, 1) for i in range(1, 11)
+    ),
+)
+
+WHO5 = Questionnaire(
+    code=TriageInstrumentCode.WHO5,
+    version="1",
+    title="WHO-5 Wellbeing Index",
+    items=tuple(
+        QuestionnaireItem(f"h{i}", f"Item {i}", 0, 5) for i in range(1, 6)
+    ),
+)
+
+K10 = Questionnaire(
+    code=TriageInstrumentCode.K10,
+    version="1",
+    title="Kessler Psychological Distress Scale (K10)",
+    items=tuple(
+        QuestionnaireItem(f"k{i}", f"Item {i}", 1, 5) for i in range(1, 11)
+    ),
+)
+
+WSAS = Questionnaire(
+    code=TriageInstrumentCode.WSAS,
+    version="1",
+    title="Work and Social Adjustment Scale",
+    items=tuple(
+        QuestionnaireItem(f"s{i}", f"Item {i}", 0, 8) for i in range(1, 6)
+    ),
+)
+
+DASS21 = Questionnaire(
+    code=TriageInstrumentCode.DASS21,
+    version="1",
+    title="Depression, Anxiety, Stress Scale (21-item)",
+    items=tuple(
+        QuestionnaireItem(f"da{i}", f"Item {i}", 0, 3) for i in range(1, 22)
+    ),
+)
+
+PCL5 = Questionnaire(
+    code=TriageInstrumentCode.PCL5,
+    version="1",
+    title="PTSD Checklist for DSM-5 (PCL-5)",
+    items=tuple(
+        QuestionnaireItem(f"p{i}", f"Item {i}", 0, 4) for i in range(1, 21)
+    ),
+)
+
+
 CATALOGUE: dict[TriageInstrumentCode, Questionnaire] = {
     TriageInstrumentCode.JOSEPH7: JOSEPH7,
     TriageInstrumentCode.WOS5: WOS5,
     TriageInstrumentCode.PHQ9: PHQ9,
+    TriageInstrumentCode.GAD7: GAD7,
+    TriageInstrumentCode.CSSRS: CSSRS,
+    TriageInstrumentCode.AUDIT_C: AUDIT_C,
+    TriageInstrumentCode.DAST10: DAST10,
+    TriageInstrumentCode.WHO5: WHO5,
+    TriageInstrumentCode.K10: K10,
+    TriageInstrumentCode.WSAS: WSAS,
+    TriageInstrumentCode.DASS21: DASS21,
+    TriageInstrumentCode.PCL5: PCL5,
 }
 
 
@@ -179,10 +283,230 @@ def _score_phq9(responses: dict[str, int]) -> QuestionnaireResponse:
     )
 
 
+def _band_total(total: int, *, max_score: int, code: TriageInstrumentCode) -> TriageRiskLevel:
+    """Standard four-band classifier scaling against the instrument's max."""
+    if max_score <= 0:
+        return TriageRiskLevel.LOW
+    pct = total / max_score
+    if pct >= 0.75:
+        return TriageRiskLevel.CRITICAL
+    if pct >= 0.5:
+        return TriageRiskLevel.HIGH
+    if pct >= 0.25:
+        return TriageRiskLevel.MODERATE
+    return TriageRiskLevel.LOW
+
+
+def _score_gad7(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 15:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 10:
+        risk = TriageRiskLevel.MODERATE
+    elif total >= 5:
+        risk = TriageRiskLevel.LOW
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.GAD7,
+        instrument_version=GAD7.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 21},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_cssrs(responses: dict[str, int]) -> QuestionnaireResponse:
+    """C-SSRS brief: any non-zero answer to items 3-5 (active ideation with
+    method/intent/plan) or items 6 (lifetime behaviour) flips CRITICAL +
+    crisis. Items 1-2 alone are MODERATE; all zero is LOW."""
+    high_risk_items = ("c3", "c4", "c5", "c6_recent")
+    lifetime_behaviour = responses.get("c6", 0) > 0
+    has_high = any(responses.get(k, 0) > 0 for k in high_risk_items)
+    if has_high:
+        risk = TriageRiskLevel.CRITICAL
+        crisis = True
+        reason = "C-SSRS active ideation with plan/intent or recent behaviour"
+    elif lifetime_behaviour:
+        risk = TriageRiskLevel.HIGH
+        crisis = True
+        reason = "C-SSRS lifetime suicide behaviour reported"
+    elif responses.get("c1", 0) > 0 or responses.get("c2", 0) > 0:
+        risk = TriageRiskLevel.MODERATE
+        crisis = False
+        reason = None
+    else:
+        risk = TriageRiskLevel.LOW
+        crisis = False
+        reason = None
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.CSSRS,
+        instrument_version=CSSRS.version,
+        responses=dict(responses),
+        scores={"any_high_risk": has_high, "lifetime_behaviour": lifetime_behaviour},
+        risk_level=risk,
+        crisis_flag=crisis,
+        crisis_reason=reason,
+        derived={},
+    )
+
+
+def _score_audit_c(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 8:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 4:
+        risk = TriageRiskLevel.MODERATE
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.AUDIT_C,
+        instrument_version=AUDIT_C.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 12},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_dast10(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 9:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 6:
+        risk = TriageRiskLevel.MODERATE
+    elif total >= 3:
+        risk = TriageRiskLevel.LOW
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.DAST10,
+        instrument_version=DAST10.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 10},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_who5(responses: dict[str, int]) -> QuestionnaireResponse:
+    raw = sum(responses.values())
+    normalised = raw * 4
+    if normalised <= 28:
+        risk = TriageRiskLevel.HIGH
+    elif normalised <= 50:
+        risk = TriageRiskLevel.MODERATE
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.WHO5,
+        instrument_version=WHO5.version,
+        responses=dict(responses),
+        scores={"raw": raw, "normalised_0_100": normalised, "max": 25},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_k10(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 30:
+        risk = TriageRiskLevel.CRITICAL
+    elif total >= 25:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 20:
+        risk = TriageRiskLevel.MODERATE
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.K10,
+        instrument_version=K10.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 50},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_wsas(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 21:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 10:
+        risk = TriageRiskLevel.MODERATE
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.WSAS,
+        instrument_version=WSAS.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 40},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_dass21(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    risk = _band_total(total, max_score=63, code=TriageInstrumentCode.DASS21)
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.DASS21,
+        instrument_version=DASS21.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 63},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
+def _score_pcl5(responses: dict[str, int]) -> QuestionnaireResponse:
+    total = sum(responses.values())
+    if total >= 33:
+        risk = TriageRiskLevel.HIGH
+    elif total >= 21:
+        risk = TriageRiskLevel.MODERATE
+    else:
+        risk = TriageRiskLevel.LOW
+    return QuestionnaireResponse(
+        instrument_code=TriageInstrumentCode.PCL5,
+        instrument_version=PCL5.version,
+        responses=dict(responses),
+        scores={"total": total, "max": 80},
+        risk_level=risk,
+        crisis_flag=False,
+        crisis_reason=None,
+        derived={},
+    )
+
+
 _SCORERS = {
     TriageInstrumentCode.JOSEPH7: _score_joseph7,
     TriageInstrumentCode.WOS5: _score_wos5,
     TriageInstrumentCode.PHQ9: _score_phq9,
+    TriageInstrumentCode.GAD7: _score_gad7,
+    TriageInstrumentCode.CSSRS: _score_cssrs,
+    TriageInstrumentCode.AUDIT_C: _score_audit_c,
+    TriageInstrumentCode.DAST10: _score_dast10,
+    TriageInstrumentCode.WHO5: _score_who5,
+    TriageInstrumentCode.K10: _score_k10,
+    TriageInstrumentCode.WSAS: _score_wsas,
+    TriageInstrumentCode.DASS21: _score_dass21,
+    TriageInstrumentCode.PCL5: _score_pcl5,
 }
 
 
