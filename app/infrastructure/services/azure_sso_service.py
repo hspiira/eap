@@ -40,7 +40,9 @@ class AzureSSOService:
     """
 
     _STATE_TTL_SECONDS = 300  # 5-minute window for the OAuth round-trip
-    _SCOPES = ["openid", "profile", "email"]
+    # MSAL Python auto-appends openid + profile + offline_access; passing them
+    # explicitly raises "reserved scope" ValueError. Only list resource scopes.
+    _SCOPES: list[str] = []
     # Use /organizations so only work/school accounts can log in (not personal MSAs)
     _AUTHORITY = "https://login.microsoftonline.com/organizations"
 

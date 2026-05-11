@@ -507,11 +507,19 @@ async def azure_callback(
         )
 
     # Resolve Evexia tenant from Azure directory ID
+    import logging
+    logging.getLogger(__name__).info(
+        "[azure-callback] received claims tid=%s email=%s oid=%s",
+        claims.tid, claims.email, claims.oid,
+    )
     tenant = await tenant_repo.get_by_azure_tenant_id(claims.tid)
     if not tenant:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your organisation is not registered in Evexia. Contact your administrator.",
+            detail=(
+                f"Your organisation is not registered in Evexia "
+                f"(Azure directory {claims.tid}). Contact your administrator."
+            ),
         )
     if not tenant.azure_sso_enabled:
         raise HTTPException(
