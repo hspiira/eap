@@ -15,6 +15,11 @@ from app.infrastructure.models.base import (
 from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeModel
 from app.infrastructure.models.benchmark_consent_model import BenchmarkConsentModel
+from app.infrastructure.models.eligible_member_model import (
+    ClinicalSubjectModel,
+    EligibleMemberClinicalLinkModel,
+    EligibleMemberModel,
+)
 from app.infrastructure.models.care_callback_model import (
     CareCallbackCampaignModel,
     OutreachRecordModel,
@@ -62,6 +67,7 @@ __all__ = [
     "AuditLogModel",
     "Base",
     "BenchmarkConsentModel",
+    "ClinicalSubjectModel",
     "CareCallbackCampaignModel",
     "ClientModel",
     "ClientTagModel",
@@ -72,6 +78,8 @@ __all__ = [
     "DependentInfoDict",
     "DSARRequestModel",
     "DiagnosisModel",
+    "EligibleMemberClinicalLinkModel",
+    "EligibleMemberModel",
     "DiagnosisTypeModel",
     "DocumentModel",
     "EmergencyContactDict",

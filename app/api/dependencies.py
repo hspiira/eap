@@ -21,6 +21,11 @@ from app.domain.repositories.critical_incident_repository import (
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.dsar_repository import DSARRequestRepository
+from app.domain.repositories.eligible_member_repository import (
+    ClinicalSubjectRepository,
+    EligibleMemberClinicalLinkRepository,
+    EligibleMemberRepository,
+)
 from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
@@ -470,6 +475,36 @@ async def get_dsar_collector(db: AsyncSession = Depends(get_db)):
     from app.infrastructure.services.dsar_service import SqlDSARDataCollector
 
     return SqlDSARDataCollector(db)
+
+
+async def get_eligible_member_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EligibleMemberRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        EligibleMemberRepositoryImpl,
+    )
+
+    return EligibleMemberRepositoryImpl(db)
+
+
+async def get_clinical_subject_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ClinicalSubjectRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        ClinicalSubjectRepositoryImpl,
+    )
+
+    return ClinicalSubjectRepositoryImpl(db)
+
+
+async def get_eligible_member_clinical_link_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EligibleMemberClinicalLinkRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        EligibleMemberClinicalLinkRepositoryImpl,
+    )
+
+    return EligibleMemberClinicalLinkRepositoryImpl(db)
 
 
 async def get_benchmark_consent_repository(
