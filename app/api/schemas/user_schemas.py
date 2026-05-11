@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import Language, TenantRole, UserStatus
+from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 
 
 # === Request Schemas ===
@@ -85,6 +85,13 @@ class UserResponse(BaseModel):
     status_changed_at: datetime | None = Field(None, description="Status change timestamp")
     is_active: bool = Field(..., description="Whether user is active")
     role: TenantRole = Field(..., description="Tenant role (Admin, User, Viewer)")
+    azure_oid: str | None = Field(
+        None, description="Azure AD Object ID. Populated after the user's first SSO sign-in."
+    )
+    auth_provider: AuthProvider = Field(
+        default=AuthProvider.PASSWORD,
+        description="Credential type used to sign in (password or azure_ad).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
