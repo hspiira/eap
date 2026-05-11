@@ -12,6 +12,7 @@ from app.api.routes.benchmark import router as benchmark_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.care_callbacks import router as care_callbacks_router
 from app.api.routes.cases import router as cases_router
+from app.api.routes.clinical_notes import router as clinical_notes_router
 from app.api.routes.client_tags import router as client_tags_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contacts import router as contacts_router
@@ -62,6 +63,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(pricing_router)
     app.include_router(care_callbacks_router)
     app.include_router(cases_router)
+    app.include_router(clinical_notes_router)
     app.include_router(surveys_router)
     app.include_router(engagements_router)
     app.include_router(dsar_router)
@@ -79,6 +81,7 @@ __all__ = [
     "benchmark_router",
     "care_callbacks_router",
     "cases_router",
+    "clinical_notes_router",
     "client_tags_router",
     "clients_router",
     "contacts_router",
