@@ -1,16 +1,28 @@
 /**
- * Person create / edit sheet. **BE-canonical 2-step flow.**
+ * Person create / edit sheet. **BE-canonical 2-step (3-step on create) flow.**
  *
  * Create:
- *   1. POST /users   → returns user_id
- *   2. POST /persons → with {person_type, user_id, tenant_id, employment_info? | dependent_info?, family_id?}
+ *   1. POST /users                                  → returns user_id
+ *   2. POST /persons                                → person record with role link
+ *   3. PATCH /persons/{id}/emergency-contact        → if filled in (optional)
  *
  * Edit (mirrors the BE PATCH surface):
  *   - CLIENT_EMPLOYEE → PATCH /persons/{id}/employment-info
  *   - DEPENDENT       → PATCH /persons/{id}/dependent-info
  *
+ * Field surface = exactly what BE accepts. Audited against `openapi.json`:
+ *   - UserCreate:   email (req), password?, preferred_language?, timezone?
+ *   - PersonCreate: person_type, user_id, tenant_id, family_id?,
+ *                   employment_info | dependent_info
+ *   - EmploymentInfoCreateSchema: client_id (req), role (req, free-text),
+ *                   start_date (req), status: WorkStatus (req),
+ *                   department?, employee_id?, end_date?
+ *   - DependentInfoSchema: primary_employee_id (req), relationship (req),
+ *                   guardian_id?
+ *   - EmergencyContactSchema: name (req), phone?, email?
+ *
  * Demographic fields (first/last name, dob, gender, contact info, address)
- * are NOT collected — BE doesn't carry them. Display is derived via
+ * are NOT collected — BE doesn't carry them at all. Display is derived via
  * `displayName(person, user)` from the linked User's email.
  */
 
@@ -40,7 +52,7 @@ import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Client, Person } from "@/types/entities"
-import { PersonType, type RelationType, WorkStatus } from "@/types/enums"
+import { Language, PersonType, type RelationType, WorkStatus } from "@/types/enums"
 
 const PERSON_TYPE_VALUES = [PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT] as const
 
@@ -70,15 +82,59 @@ const RELATION_VALUES: ReadonlyArray<RelationType> = [
   "Other",
 ]
 
+const LANGUAGE_OPTIONS: ReadonlyArray<{ value: Language; label: string }> = [
+  { value: Language.EN, label: "English" },
+  { value: Language.ES, label: "Spanish" },
+  { value: Language.FR, label: "French" },
+  { value: Language.DE, label: "German" },
+  { value: Language.IT, label: "Italian" },
+  { value: Language.PT, label: "Portuguese" },
+  { value: Language.ZH, label: "Chinese" },
+  { value: Language.JA, label: "Japanese" },
+  { value: Language.KO, label: "Korean" },
+]
+
+/**
+ * Common roles in EAP / corporate wellbeing context. BE treats `role` as
+ * free-text (no enum), so we suggest these via a datalist but allow any value.
+ */
+const ROLE_SUGGESTIONS = [
+  "Counsellor",
+  "Senior Counsellor",
+  "Therapist",
+  "Psychologist",
+  "Coach",
+  "HR Manager",
+  "People Ops",
+  "Manager",
+  "Team Lead",
+  "Engineer",
+  "Analyst",
+  "Administrator",
+  "Operations",
+  "Finance",
+  "Sales",
+  "Marketing",
+  "Legal",
+  "Other",
+]
+
 const personSchema = z
   .object({
+    // User account (BE UserCreate)
     email: z.email("Invalid email"),
     password: z
       .string()
       .optional()
       .refine((v) => !v || v.length >= 8, "Min 8 characters"),
+    preferred_language: z.string().optional(),
+    timezone: z.string().optional(),
+
+    // Person link (BE PersonCreate)
     person_type: z.enum([PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT]),
     family_id: z.string().optional(),
+
+    // Employment info (BE EmploymentInfoCreateSchema — required when employee)
     client_id: z.string().optional(),
     role: z.string().optional(),
     department: z.string().optional(),
@@ -87,9 +143,23 @@ const personSchema = z
     employment_start: z.string().optional(),
     employment_end: z.string().optional(),
     work_status: z.string().optional(),
+
+    // Dependent info (BE DependentInfoSchema — required when dependent)
     primary_employee_id: z.string().optional(),
     relationship: z.string().optional(),
     guardian_id: z.string().optional(),
+
+    // Emergency contact (BE EmergencyContactSchema — optional, posted as a
+    // follow-up PATCH after person create. `name` is required if any field set.)
+    emergency_name: z.string().optional(),
+    emergency_phone: z.string().optional(),
+    emergency_email: z
+      .string()
+      .optional()
+      .refine(
+        (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+        "Invalid email",
+      ),
   })
   .superRefine((d, ctx) => {
     if (d.person_type === PersonType.CLIENT_EMPLOYEE) {
@@ -104,6 +174,15 @@ const personSchema = z
       if (!d.relationship?.trim())
         ctx.addIssue({ code: "custom", path: ["relationship"], message: "Required" })
     }
+    // Emergency contact: name is required if any other emergency field is set.
+    const anyEmergency = d.emergency_name || d.emergency_phone || d.emergency_email
+    if (anyEmergency && !d.emergency_name?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["emergency_name"],
+        message: "Required when any emergency field is set",
+      })
+    }
   })
 
 type PersonFormValues = z.infer<typeof personSchema>
@@ -111,6 +190,8 @@ type PersonFormValues = z.infer<typeof personSchema>
 const EMPTY: PersonFormValues = {
   email: "",
   password: "",
+  preferred_language: "",
+  timezone: "",
   person_type: PersonType.CLIENT_EMPLOYEE,
   family_id: "",
   client_id: "",
@@ -119,10 +200,13 @@ const EMPTY: PersonFormValues = {
   employee_id: "",
   employment_start: "",
   employment_end: "",
-  work_status: "",
+  work_status: WorkStatus.ACTIVE,
   primary_employee_id: "",
   relationship: "",
   guardian_id: "",
+  emergency_name: "",
+  emergency_phone: "",
+  emergency_email: "",
 }
 
 interface PersonFormSheetProps {
@@ -180,32 +264,47 @@ export function PersonFormSheet({
         if (isEdit && entity) {
           // BE has no top-level Person update; route to the sub-PATCH that
           // matches the role of the existing person.
+          let saved: Person
           if (entity.person_type === PersonType.CLIENT_EMPLOYEE) {
-            const employmentInfo = buildEmploymentInfo(payload, entity.user_id)
-            return personsApi.updateEmploymentInfo(entity.id, employmentInfo)
-          }
-          if (entity.person_type === PersonType.DEPENDENT) {
-            return personsApi.updateDependentInfo(entity.id, {
+            saved = await personsApi.updateEmploymentInfo(
+              entity.id,
+              buildEmploymentInfo(payload, entity.user_id),
+            )
+          } else if (entity.person_type === PersonType.DEPENDENT) {
+            saved = await personsApi.updateDependentInfo(entity.id, {
               primary_employee_id: payload.primary_employee_id ?? "",
               relationship: payload.relationship as RelationType,
               ...(payload.guardian_id ? { guardian_id: payload.guardian_id } : {}),
             })
+          } else {
+            saved = entity
           }
-          // Other person types aren't editable through this sheet today.
-          return entity
+          // Update emergency contact if user touched it.
+          if (payload.emergency_name?.trim()) {
+            saved = await personsApi.updateEmergencyContact(saved.id, {
+              name: payload.emergency_name.trim(),
+              phone: payload.emergency_phone?.trim() || null,
+              email: payload.emergency_email?.trim() || null,
+            })
+          }
+          return saved
         }
 
-        // 2-step create.
+        // 2-step (3-step with emergency contact) create.
         if (!tenantId) {
           throw new Error("No active tenant — sign in first.")
         }
         const user = await usersApi.create({
           email: payload.email,
           ...(payload.password ? { password: payload.password } : {}),
+          ...(payload.preferred_language
+            ? { preferred_language: payload.preferred_language as Language }
+            : {}),
+          ...(payload.timezone?.trim() ? { timezone: payload.timezone.trim() } : {}),
         })
 
         const personType = payload.person_type as PersonType
-        return personsApi.create({
+        let saved = await personsApi.create({
           person_type: personType,
           user_id: user.id,
           tenant_id: tenantId,
@@ -223,6 +322,16 @@ export function PersonFormSheet({
               }
             : {}),
         })
+
+        // Step 3: emergency contact (BE has it as a separate PATCH route).
+        if (payload.emergency_name?.trim()) {
+          saved = await personsApi.updateEmergencyContact(saved.id, {
+            name: payload.emergency_name.trim(),
+            phone: payload.emergency_phone?.trim() || null,
+            email: payload.emergency_email?.trim() || null,
+          })
+        }
+        return saved
       },
       successToast: { create: "Person created", update: "Person updated" },
       extraInvalidations: lockedClientId
@@ -251,52 +360,43 @@ export function PersonFormSheet({
       submitLabel={isEdit ? "Save" : "Create"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
-      {!isEdit ? (
-        <FormSection title="Account">
-          <div className="grid grid-cols-2 gap-3">
+      {/* 1. Identity — who is this person? Type first because it gates the
+            rest, then email (the only "name" BE carries). */}
+      <FormSection title="Identity">
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Type" required error={errors.person_type?.message} htmlFor="ps-type">
+            <Controller
+              control={control}
+              name="person_type"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={Boolean(lockType) || isEdit}
+                >
+                  <SelectTrigger id="ps-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERSON_TYPE_VALUES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {PERSON_TYPE_LABELS[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
+          {!isEdit ? (
             <FormField label="Email" required error={errors.email?.message} htmlFor="ps-email">
-              <Input id="ps-email" type="email" placeholder="ada@acme.com" {...register("email")} />
+              <Input id="ps-email" type="email" placeholder="henry.ssekibo@minet.co.ug" {...register("email")} />
             </FormField>
-            <FormField label="Password" optional error={errors.password?.message} htmlFor="ps-password">
-              <Input
-                id="ps-password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Optional"
-                {...register("password")}
-              />
-            </FormField>
-          </div>
-        </FormSection>
-      ) : null}
-
-      <FormSection title="Role">
-        <FormField label="Type" required error={errors.person_type?.message} htmlFor="ps-type">
-          <Controller
-            control={control}
-            name="person_type"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={Boolean(lockType) || isEdit}
-              >
-                <SelectTrigger id="ps-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PERSON_TYPE_VALUES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {PERSON_TYPE_LABELS[t]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </FormField>
+          ) : null}
+        </div>
       </FormSection>
 
+      {/* 2. The meat — what they do (employee) or who they're a dependent of. */}
       {showEmployment ? (
         <FormSection title="Employment">
           {lockedClientId ? (
@@ -314,7 +414,19 @@ export function PersonFormSheet({
           <Input type="hidden" {...register("client_id")} />
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Role" required error={errors.role?.message} htmlFor="ps-role">
-              <Input id="ps-role" placeholder="Counsellor" {...register("role")} />
+              {/* BE accepts `role` as free-text; the datalist suggests common
+                  values without restricting input. */}
+              <Input
+                id="ps-role"
+                list="ps-role-options"
+                placeholder="Counsellor"
+                {...register("role")}
+              />
+              <datalist id="ps-role-options">
+                {ROLE_SUGGESTIONS.map((r) => (
+                  <option key={r} value={r} />
+                ))}
+              </datalist>
             </FormField>
             <FormField label="Department" optional error={errors.department?.message} htmlFor="ps-dept">
               <Input id="ps-dept" placeholder="People Ops" {...register("department")} />
@@ -341,33 +453,34 @@ export function PersonFormSheet({
               <Input id="ps-empend" type="date" {...register("employment_end")} />
             </FormField>
           </div>
-          {isEdit ? (
-            <FormField
-              label="Work status"
-              optional
-              error={errors.work_status?.message}
-              htmlFor="ps-workstatus"
-            >
-              <Controller
-                control={control}
-                name="work_status"
-                render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                    <SelectTrigger id="ps-workstatus">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {WORK_STATUS_VALUES.map((w) => (
-                        <SelectItem key={w} value={w}>
-                          {w}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </FormField>
-          ) : null}
+          <FormField
+            label="Work status"
+            required
+            error={errors.work_status?.message}
+            htmlFor="ps-workstatus"
+          >
+            <Controller
+              control={control}
+              name="work_status"
+              render={({ field }) => (
+                <Select
+                  value={field.value || WorkStatus.ACTIVE}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger id="ps-workstatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORK_STATUS_VALUES.map((w) => (
+                      <SelectItem key={w} value={w}>
+                        {w}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
         </FormSection>
       ) : null}
 
@@ -409,6 +522,67 @@ export function PersonFormSheet({
           </div>
         </FormSection>
       ) : null}
+
+      {/* 3. Safety net — emergency contact next, before admin trivia. */}
+      <FormSection title="Emergency contact">
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Name" optional error={errors.emergency_name?.message} htmlFor="ps-ename">
+            <Input id="ps-ename" placeholder="Jane Doe" {...register("emergency_name")} />
+          </FormField>
+          <FormField label="Phone" optional error={errors.emergency_phone?.message} htmlFor="ps-ephone">
+            <Input id="ps-ephone" type="tel" placeholder="+256 …" {...register("emergency_phone")} />
+          </FormField>
+        </div>
+        <FormField label="Email" optional error={errors.emergency_email?.message} htmlFor="ps-eemail">
+          <Input id="ps-eemail" type="email" placeholder="jane@example.com" {...register("emergency_email")} />
+        </FormField>
+      </FormSection>
+
+      {/* 4. Admin / account preferences last. Only shown on create — these
+          fields configure the User entity that backs the person. */}
+      {!isEdit ? (
+        <FormSection title="Account preferences">
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="Password" optional error={errors.password?.message} htmlFor="ps-password">
+              <Input
+                id="ps-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Email a reset link"
+                {...register("password")}
+              />
+            </FormField>
+            <FormField label="Language" optional error={errors.preferred_language?.message} htmlFor="ps-lang">
+              <Controller
+                control={control}
+                name="preferred_language"
+                render={({ field }) => (
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger id="ps-lang">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField label="Timezone" optional error={errors.timezone?.message} htmlFor="ps-tz">
+              <Input
+                id="ps-tz"
+                placeholder="Africa/Kampala"
+                className="font-mono"
+                {...register("timezone")}
+              />
+            </FormField>
+          </div>
+        </FormSection>
+      ) : null}
     </SheetForm>
   )
 }
@@ -433,8 +607,10 @@ function buildEmploymentInfo(
 
 function personToValues(person: Person): PersonFormValues {
   return {
-    email: "", // not editable here; would come from linked User
+    email: "", // not editable here; managed via the linked User
     password: "",
+    preferred_language: "",
+    timezone: "",
     person_type:
       person.person_type === PersonType.CLIENT_EMPLOYEE ||
       person.person_type === PersonType.DEPENDENT
@@ -449,11 +625,14 @@ function personToValues(person: Person): PersonFormValues {
     employment_start: person.employment_info?.start_date ?? "",
     employment_end:
       (person.employment_info as { end_date?: string | null } | undefined)?.end_date ?? "",
-    work_status: person.employment_info?.status ?? "",
+    work_status: person.employment_info?.status ?? WorkStatus.ACTIVE,
     primary_employee_id: person.dependent_info?.primary_employee_id ?? "",
     relationship: person.dependent_info?.relationship ?? "",
     guardian_id:
       (person.dependent_info as { guardian_id?: string | null } | undefined)?.guardian_id ?? "",
+    emergency_name: person.emergency_contact?.name ?? "",
+    emergency_phone: person.emergency_contact?.phone ?? "",
+    emergency_email: person.emergency_contact?.email ?? "",
   }
 }
 

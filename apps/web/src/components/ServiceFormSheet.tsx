@@ -148,81 +148,47 @@ export function ServiceFormSheet({
     >
       <FormSection title="Identity">
         <FormField label="Name" required error={errors.name?.message} htmlFor="sv-name">
-          <Input
-            id="sv-name"
-            placeholder="e.g. Individual counselling"
-            {...register("name")}
-          />
+          <Input id="sv-name" placeholder="Individual counselling" {...register("name")} />
         </FormField>
-        <FormField
-          label="Description"
-          optional
-          error={errors.description?.message}
-          htmlFor="sv-description"
-        >
-          <Input
-            id="sv-description"
-            placeholder="Short description used on contracts and reports."
-            {...register("description")}
-          />
-        </FormField>
-      </FormSection>
-
-      <FormSection
-        title="Category"
-        description="Used by reports and to map to delivery taxonomies."
-      >
-        <FormField
-          label="Category"
-          optional
-          error={errors.category?.message}
-          htmlFor="sv-category"
-        >
-          <Controller
-            control={control}
-            name="category"
-            render={({ field }) => (
-              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                <SelectTrigger id="sv-category">
-                  <SelectValue placeholder="Unset" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+        <div className="grid grid-cols-[1fr_8rem] gap-3">
+          <FormField label="Category" optional error={errors.category?.message} htmlFor="sv-category">
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger id="sv-category">
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
+          <FormField label="Duration (min)" optional error={errors.duration_minutes?.message} htmlFor="sv-duration">
+            <Input
+              id="sv-duration"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder="60"
+              className="font-mono"
+              {...register("duration_minutes")}
+            />
+          </FormField>
+        </div>
+        <FormField label="Description" optional error={errors.description?.message} htmlFor="sv-description">
+          <Input id="sv-description" {...register("description")} />
         </FormField>
       </FormSection>
 
-      <FormSection title="Defaults">
-        <FormField
-          label="Default duration (minutes)"
-          optional
-          description="Used to pre-fill session length."
-          error={errors.duration_minutes?.message}
-          htmlFor="sv-duration"
-        >
-          <Input
-            id="sv-duration"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="60"
-            className="font-mono"
-            {...register("duration_minutes")}
-          />
-        </FormField>
-      </FormSection>
-
-      <FormSection
-        title="Group settings"
-        description="Enable to allow sessions with multiple subjects."
-      >
+      <FormSection title="Group settings">
         <div className="flex items-center gap-2">
           <Controller
             control={control}
