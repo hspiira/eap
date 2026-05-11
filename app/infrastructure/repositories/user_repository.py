@@ -44,6 +44,19 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
 
     # Domain-specific queries (not in base class)
 
+    async def get_by_azure_oid(self, azure_oid: str, tenant_id: TenantId) -> UserEntity | None:
+        """Get user by Azure Object ID within tenant, excluding soft-deleted users."""
+        stmt = select(UserModel).where(
+            UserModel.azure_oid == azure_oid,
+            UserModel.tenant_id == tenant_id.value,
+            UserModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        return self._to_entity(model)
+
     async def get_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """Get user by email within tenant, excluding soft-deleted users."""
         stmt = select(UserModel).where(

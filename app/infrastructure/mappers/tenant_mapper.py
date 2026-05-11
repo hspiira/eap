@@ -51,7 +51,9 @@ class TenantMapper:
             settings=tenant_settings,
             subscription_tier=subscription_tier,
             deleted_at=ensure_utc(model.deleted_at),
-            updated_at=ensure_utc(model.updated_at)
+            updated_at=ensure_utc(model.updated_at),
+            azure_tenant_id=model.azure_tenant_id,
+            azure_sso_enabled=model.azure_sso_enabled,
         )
     
     @staticmethod
@@ -81,10 +83,12 @@ class TenantMapper:
             id=entity.id.value,
             name=entity.name,
             code=entity.code.value,
-            status=entity.status,  # SQLEnum should handle conversion, but ensure it's the enum object
+            status=entity.status,
             settings=settings_dict,
-            subscription_tier=entity.subscription_tier,  # SQLEnum should handle conversion
-            deleted_at=entity.deleted_at
+            subscription_tier=entity.subscription_tier,
+            deleted_at=entity.deleted_at,
+            azure_tenant_id=entity.azure_tenant_id,
+            azure_sso_enabled=entity.azure_sso_enabled,
         )
         
         # Set updated_at if provided (otherwise TimestampMixin will handle it)

@@ -8,7 +8,7 @@ Scoped to a Tenant for multi-tenancy.
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.domain.enums import UserStatus, Language, TenantRole
+from app.domain.enums import AuthProvider, UserStatus, Language, TenantRole
 from app.domain.events import (
     DomainEvent,
     UserActivated,
@@ -46,6 +46,8 @@ class UserEntity:
     role: TenantRole = TenantRole.USER
     failed_login_count: int = 0
     locked_until: datetime | None = None
+    azure_oid: str | None = None
+    auth_provider: AuthProvider = AuthProvider.PASSWORD
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def __post_init__(self) -> None:
@@ -220,6 +222,16 @@ class UserEntity:
             self.events.append(
                 UserLockoutCleared(occurred_at=now, user_id=self.id)
             )
+
+    def link_azure_identity(self, azure_oid: str) -> None:
+        """Link this user to an Azure AD identity (called on first SSO login)."""
+        if not azure_oid or not azure_oid.strip():
+            raise DomainError("Azure OID cannot be empty")
+        if self.deleted_at:
+            raise DomainError("Cannot link Azure identity to deleted user")
+        self.azure_oid = azure_oid.strip()
+        self.auth_provider = AuthProvider.AZURE_AD
+        self.updated_at = utc_now()
 
     def is_active(self) -> bool:
         """Check if user is active"""

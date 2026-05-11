@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import Language, TenantRole, UserStatus
+from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -42,6 +42,10 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         CheckConstraint(
             "role IN (" + ", ".join(f"'{e.value}'" for e in TenantRole) + ")",
             name="user_role_check",
+        ),
+        CheckConstraint(
+            "auth_provider IN (" + ", ".join(f"'{e.value}'" for e in AuthProvider) + ")",
+            name="user_auth_provider_check",
         ),
     )
 
@@ -99,6 +103,15 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
     locked_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
+    azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    auth_provider: Mapped[AuthProvider] = mapped_column(
+        EnumValueType(AuthProvider),
+        nullable=False,
+        default=AuthProvider.PASSWORD,
+        server_default=AuthProvider.PASSWORD.value,
     )
 
     def __repr__(self) -> str:

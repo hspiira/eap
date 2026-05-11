@@ -62,6 +62,18 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
         """
     
     @abstractmethod
+    async def get_by_azure_tenant_id(self, azure_tenant_id: str) -> TenantEntity | None:
+        """
+        Get a tenant by its Azure AD directory (tenant) ID.
+
+        Args:
+            azure_tenant_id: The Azure AD tenant ID (tid claim from Azure token)
+
+        Returns:
+            TenantEntity if found and not soft-deleted, None otherwise
+        """
+
+    @abstractmethod
     async def count(
         self,
         status: TenantStatus | None = None,

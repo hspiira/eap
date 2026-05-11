@@ -128,6 +128,24 @@ class Settings(BaseSettings):
         description="Base64-encoded 32-byte key-encryption key. Per-tenant DEKs are HKDF-derived from this. In production, source this from KMS.",
     )
 
+    # Azure AD SSO (Option C: Sign in with Microsoft)
+    AZURE_CLIENT_ID: str = Field(
+        default="",
+        description="Azure AD app registration client ID (Minet's single multi-tenant app)",
+    )
+    AZURE_CLIENT_SECRET: str = Field(
+        default="",
+        description="Azure AD app registration client secret",
+    )
+    AZURE_REDIRECT_URI: str = Field(
+        default="",
+        description="OAuth2 callback URI registered in Azure (e.g. https://api.evexia.minet.co.ug/auth/azure/callback)",
+    )
+    AZURE_FRONTEND_REDIRECT_URI: str = Field(
+        default="",
+        description="Frontend URL to redirect to after successful Azure login (e.g. https://app.evexia.minet.co.ug)",
+    )
+
     # Security headers (middleware)
     SECURITY_HEADERS_X_FRAME_OPTIONS: str = Field(
         default="DENY",
@@ -247,6 +265,16 @@ class Settings(BaseSettings):
             )
 
         return self
+
+    @property
+    def azure_sso_configured(self) -> bool:
+        """True when all four Azure SSO env vars are present."""
+        return bool(
+            self.AZURE_CLIENT_ID
+            and self.AZURE_CLIENT_SECRET
+            and self.AZURE_REDIRECT_URI
+            and self.AZURE_FRONTEND_REDIRECT_URI
+        )
 
     @property
     def cors_origins_list(self) -> list[str]:

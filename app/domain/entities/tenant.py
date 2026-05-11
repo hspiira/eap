@@ -12,7 +12,7 @@ Responsibilities:
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
-from app.domain.enums import SubscriptionTier, TenantStatus
+from app.domain.enums import SubscriptionTier, TenantStatus, AuthProvider
 from app.domain.events import DomainEvent, TenantActivated, TenantSuspended, TenantTerminated
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
@@ -28,6 +28,8 @@ class TenantEntity:
     subscription_tier: SubscriptionTier
     deleted_at: datetime | None = None
     updated_at: datetime | None = None
+    azure_tenant_id: str | None = None
+    azure_sso_enabled: bool = False
 
     # Domain Events
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
@@ -144,6 +146,21 @@ class TenantEntity:
     def can_create_clients(self, current_client_count: int) -> bool:
         """Check if tenant can create new clients based on settings"""
         return self.is_active() and self.settings.allows_more_clients(current_client_count)
+
+    def configure_azure_sso(self, azure_tenant_id: str, enabled: bool = True) -> None:
+        """Set or update Azure AD SSO configuration for this tenant."""
+        if self.status == TenantStatus.TERMINATED:
+            raise DomainError("Cannot configure SSO for terminated tenant")
+        if not azure_tenant_id or not azure_tenant_id.strip():
+            raise DomainError("Azure tenant ID cannot be empty")
+        self.azure_tenant_id = azure_tenant_id.strip()
+        self.azure_sso_enabled = enabled
+        self.updated_at = utc_now()
+
+    def disable_azure_sso(self) -> None:
+        """Disable Azure SSO without removing the stored tenant ID."""
+        self.azure_sso_enabled = False
+        self.updated_at = utc_now()
     
     # === Invariants ===
     
