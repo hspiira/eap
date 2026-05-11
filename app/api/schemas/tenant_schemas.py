@@ -75,6 +75,12 @@ class TenantResponse(BaseModel):
     subscription_tier: SubscriptionTier = Field(..., description="Subscription tier")
     settings: TenantSettingsResponse = Field(..., description="Tenant settings")
     is_active: bool = Field(..., description="Whether tenant is active")
+    azure_tenant_id: str | None = Field(
+        None, description="Azure AD directory ID for SSO (tid claim)"
+    )
+    azure_sso_enabled: bool = Field(
+        default=False, description="Whether Azure SSO is enabled"
+    )
     admin_email: str | None = Field(
         None, description="Admin user email (only returned on creation)"
     )
@@ -123,6 +129,21 @@ class TenantUpdate(BaseModel):
     """Request schema for updating tenant basic information."""
 
     name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Tenant name")
+
+
+class TenantAzureSsoRequest(BaseModel):
+    """Request schema for configuring or disabling Azure AD SSO on a tenant."""
+
+    azure_tenant_id: str | None = Field(
+        None,
+        min_length=1,
+        max_length=64,
+        description="Azure AD directory ID (tid). Required when enabling SSO.",
+    )
+    enabled: bool = Field(
+        default=True,
+        description="Whether SSO is active. Set false to keep the ID but pause sign-in.",
+    )
 
 
 class SubscriptionUpdateRequest(BaseModel):

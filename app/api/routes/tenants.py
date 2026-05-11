@@ -5,7 +5,7 @@ FastAPI routes for Tenant operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.authorization import (
@@ -29,6 +29,7 @@ from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.api.schemas.tenant_schemas import (
     SubscriptionUpdateRequest,
+    TenantAzureSsoRequest,
     TenantCreate,
     TenantListResponse,
     TenantResponse,
@@ -90,6 +91,8 @@ def _to_tenant_response(
             custom_branding=tenant.settings.custom_branding,
         ),
         is_active=tenant.is_active(),
+        azure_tenant_id=tenant.azure_tenant_id,
+        azure_sso_enabled=tenant.azure_sso_enabled,
         admin_email=admin_email,
         admin_password=admin_password,
         set_password_url=set_password_url,
@@ -363,6 +366,55 @@ async def update_subscription(
         TenantTransition.UPDATE_SUBSCRIPTION_TIER,
         tier=data.subscription_tier,
     )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_tenant_response(tenant)
+
+
+@router.patch(
+    "/{tenant_id}/azure-sso",
+    response_model=TenantResponse,
+    summary="Configure or disable Azure AD SSO for a tenant",
+)
+@transactional()
+async def update_azure_sso(
+    tenant_id: str,
+    data: TenantAzureSsoRequest,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Set or update Azure AD SSO config for a tenant.
+
+    - Pass `azure_tenant_id` + `enabled=true` to wire SSO.
+    - Pass `enabled=false` (with or without `azure_tenant_id`) to pause SSO without losing the stored ID.
+    - Pass `azure_tenant_id=null` + `enabled=false` to fully clear.
+    """
+    tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
+    if data.azure_tenant_id:
+        tenant.configure_azure_sso(data.azure_tenant_id, enabled=data.enabled)
+    else:
+        # No new ID provided — just toggle the existing one (or no-op if never set).
+        if data.enabled and not tenant.azure_tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot enable Azure SSO without an azure_tenant_id",
+            )
+        tenant.azure_sso_enabled = data.enabled
+
+    await tenant_repo.save(tenant)
     await audit_entity_operation(
         entity=tenant,
         audit_handler=audit_handler,
