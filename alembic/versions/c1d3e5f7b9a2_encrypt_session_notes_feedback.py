@@ -23,6 +23,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        # SQLite has no ALTER COLUMN; VARCHAR and TEXT are the same storage class.
+        return
     op.alter_column(
         "service_sessions",
         "notes",
@@ -40,6 +44,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    if bind.dialect.name == "sqlite":
+        return
     op.alter_column(
         "service_sessions",
         "feedback",

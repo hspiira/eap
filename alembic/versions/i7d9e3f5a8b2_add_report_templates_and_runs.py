@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "i7d9e3f5a8b2"
@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column("code", sa.String(length=100), nullable=False, index=True),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("sections", postgresql.JSONB(), nullable=False, server_default="[]"),
+        sa.Column("sections", sa.JSON(), nullable=False, server_default="[]"),
         sa.Column(
             "is_active",
             sa.Boolean(),
@@ -54,7 +54,7 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.String(length=25), nullable=False, index=True),
         sa.Column("template_id", sa.String(length=25), nullable=False, index=True),
         sa.Column("requested_by", sa.String(length=25), nullable=False),
-        sa.Column("parameters", postgresql.JSONB(), nullable=False, server_default="{}"),
+        sa.Column("parameters", sa.JSON(), nullable=False, server_default="{}"),
         sa.Column(
             "status",
             sa.String(length=20),
@@ -64,7 +64,7 @@ def upgrade() -> None:
         ),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True, index=True),
-        sa.Column("output", postgresql.JSONB(), nullable=True),
+        sa.Column("output", sa.JSON(), nullable=True),
         sa.Column("error", sa.Text(), nullable=True),
         sa.Column(
             "created_at",

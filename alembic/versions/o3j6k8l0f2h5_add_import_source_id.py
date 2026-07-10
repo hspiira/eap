@@ -27,14 +27,22 @@ def upgrade() -> None:
         "service_sessions",
         ["import_source_id"],
     )
-    # Partial unique index: enforce idempotency only for rows that came from import.
-    op.create_index(
-        "uq_service_sessions_tenant_import_source",
-        "service_sessions",
-        ["tenant_id", "import_source_id"],
-        unique=True,
-        postgresql_where=sa.text("import_source_id IS NOT NULL"),
-    )
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.create_index(
+            "uq_service_sessions_tenant_import_source",
+            "service_sessions",
+            ["tenant_id", "import_source_id"],
+            unique=True,
+            postgresql_where=sa.text("import_source_id IS NOT NULL"),
+        )
+    else:
+        op.create_index(
+            "uq_service_sessions_tenant_import_source",
+            "service_sessions",
+            ["tenant_id", "import_source_id"],
+            unique=True,
+        )
 
 
 def downgrade() -> None:
