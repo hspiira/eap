@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
 import { CallbackCampaignStatus } from "@/types/enums"
@@ -85,6 +86,7 @@ function CampaignsListPage() {
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
   const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
+  const canWrite = useCanWrite()
   useEffect(() => {
     if (searchParams.new) {
       setAddOpen(true)
@@ -129,10 +131,12 @@ function CampaignsListPage() {
             <Headphones className="size-3.5" />
             My worklist
           </Button>
-          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
-            <Plus className="size-3.5" />
-            New campaign
-          </Button>
+          {canWrite && (
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+              <Plus className="size-3.5" />
+              New campaign
+            </Button>
+          )}
         </>
       }
     >
@@ -190,7 +194,7 @@ function CampaignsListPage() {
                 : "Create a campaign to start a wellbeing follow-up wave."
             }
             action={
-              hasFilters ? null : (
+              hasFilters || !canWrite ? null : (
                 <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   New campaign

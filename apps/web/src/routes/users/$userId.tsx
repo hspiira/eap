@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useToast } from "@/contexts/ToastContext"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -65,6 +66,8 @@ function UserDetailPage() {
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const canWrite = useCanWrite()
 
   const fetchUser = useCallback(async () => {
     try {
@@ -126,6 +129,19 @@ function UserDetailPage() {
     },
     [fetchUser, toast],
   )
+
+  const handleVerifyEmail = useCallback(async () => {
+    setVerifyLoading(true)
+    try {
+      await usersApi.verifyEmail(userId)
+      await fetchUser()
+      toast.showSuccess("Email marked as verified")
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Could not verify email — please try again"))
+    } finally {
+      setVerifyLoading(false)
+    }
+  }, [fetchUser, toast, userId])
 
   const confirmReasonAction = useCallback(async () => {
     if (!reasonPrompt) return
@@ -212,15 +228,17 @@ function UserDetailPage() {
             <RotateCw className="size-3.5" />
             </Button>
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="size-3.5" />
-            Edit
-          </Button>
+          {canWrite && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          )}
         </>
       }
     >
@@ -435,6 +453,8 @@ function UserDetailPage() {
               person={person}
               onAction={handleAction}
               actionLoading={actionLoading}
+              onVerifyEmail={handleVerifyEmail}
+              verifyLoading={verifyLoading}
             />
           </aside>
         </div>
@@ -547,9 +567,11 @@ interface DetailRailProps {
   person: Person | null
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
+  onVerifyEmail: () => Promise<void>
+  verifyLoading: boolean
 }
 
-function DetailRail({ user, person, onAction, actionLoading }: DetailRailProps) {
+function DetailRail({ user, person, onAction, actionLoading, onVerifyEmail, verifyLoading }: DetailRailProps) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
@@ -595,6 +617,21 @@ function DetailRail({ user, person, onAction, actionLoading }: DetailRailProps) 
           <p className="text-xs text-fg/55">No person profile linked.</p>
         )}
       </RailSection>
+
+      {!user.is_email_verified && (
+        <RailSection title="Account">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={onVerifyEmail}
+            disabled={verifyLoading}
+          >
+            <BadgeCheck className="size-3.5" />
+            {verifyLoading ? "Verifying…" : "Mark email as verified"}
+          </Button>
+        </RailSection>
+      )}
 
       <RailSection title="Lifecycle">
         <LifecycleActions

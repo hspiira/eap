@@ -46,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
@@ -105,6 +106,7 @@ function UsersListPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const canWrite = useCanWrite()
   const limit = 20
   const toggleSort = (field: string) => {
     setSort((prev) => nextSort(prev, field))
@@ -162,10 +164,12 @@ function UsersListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
-            <Plus className="size-3.5" />
-            Add user
-          </Button>
+          {canWrite && (
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+              <Plus className="size-3.5" />
+              Add user
+            </Button>
+          )}
         </>
       }
     >
@@ -222,7 +226,7 @@ function UsersListPage() {
                 : "Add the first platform user to get started."
             }
             action={
-              hasFilters ? null : (
+              hasFilters || !canWrite ? null : (
                 <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   Add user

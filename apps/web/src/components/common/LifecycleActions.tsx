@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import {
   getAllowedLifecycleActions,
   type LifecycleAction,
@@ -52,8 +53,9 @@ export function LifecycleActions({
     open: boolean
   } | null>(null)
 
+  const canWrite = useCanWrite()
   const allowed = getAllowedLifecycleActions(currentStatus, kind)
-  if (allowed.length === 0) return null
+  if (!canWrite || allowed.length === 0) return null
 
   const handleClick = (action: LifecycleAction) => {
     if (DESTRUCTIVE_ACTIONS.includes(action)) {
