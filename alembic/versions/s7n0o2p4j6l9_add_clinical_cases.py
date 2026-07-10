@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "s7n0o2p4j6l9"
@@ -56,13 +56,13 @@ def upgrade() -> None:
         sa.Column("closure_summary_note_id", sa.String(length=25), nullable=True),
         sa.Column(
             "intake_screener_admin_ids",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "closure_screener_admin_ids",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),

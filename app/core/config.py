@@ -202,6 +202,22 @@ class Settings(BaseSettings):
         description="Comma-separated resource types to skip for LIST/VIEW (e.g., 'AuditLog,Health')"
     )
 
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """Ensure asyncpg driver and ssl=require for PostgreSQL URLs (Neon integration compat)."""
+        if v.startswith("postgres://") or v.startswith("postgresql://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1).replace(
+                "postgresql://", "postgresql+asyncpg://", 1
+            )
+        # Replace legacy ssl params Neon sometimes injects
+        for old in ("sslmode=require", "channel_binding=require"):
+            v = v.replace(old, "ssl=require")
+        # Deduplicate ssl=require if both were present
+        while "ssl=require&ssl=require" in v:
+            v = v.replace("ssl=require&ssl=require", "ssl=require")
+        return v
+
     @field_validator("ENVIRONMENT")
     @classmethod
     def validate_environment(cls, v: str) -> str:

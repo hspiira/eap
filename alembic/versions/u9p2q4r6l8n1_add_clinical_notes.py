@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "u9p2q4r6l8n1"
@@ -37,7 +37,7 @@ def upgrade() -> None:
             index=True,
         ),
         sa.Column("note_type", sa.String(length=20), nullable=False, index=True),
-        sa.Column("body", postgresql.JSONB(), nullable=False),
+        sa.Column("body", sa.JSON(), nullable=False),
         sa.Column("author_id", sa.String(length=25), nullable=False, index=True),
         sa.Column("session_id", sa.String(length=25), nullable=True, index=True),
         sa.Column("signed_at", sa.DateTime(timezone=True), nullable=True),
@@ -51,7 +51,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "amendments",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),

@@ -60,6 +60,7 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         max_clients: int = 5,
         features_enabled: tuple[str, ...] = (),
         custom_branding: bool = False,
+        admin_email: str | None = None,
     ) -> tuple[
         TenantEntity,
         str,
@@ -114,7 +115,7 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             await seed_industries_for_tenant(tenant.id, self.industry_repository)
 
         # Create admin user if user_repository is provided
-        admin_email = f"admin_{tenant.code.value}@evexia.test"
+        resolved_admin_email = admin_email or f"admin_{tenant.code.value}@evexia.test"
         admin_password: str | None = None
         set_password_token: str | None = None
         set_password_expires_at: datetime | None = None
@@ -124,18 +125,18 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
                 admin_password,
                 set_password_token,
                 set_password_expires_at,
-            ) = await self._create_admin_user(tenant)
+            ) = await self._create_admin_user(tenant, email_override=resolved_admin_email)
 
         return (
             tenant,
-            admin_email,
+            resolved_admin_email,
             admin_password,
             set_password_token,
             set_password_expires_at,
         )
 
     async def _create_admin_user(
-        self, tenant: TenantEntity
+        self, tenant: TenantEntity, email_override: str | None = None
     ) -> tuple[str | None, str | None, datetime | None]:
         """
         Create an admin user for the tenant.
@@ -163,7 +164,7 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             admin_password = generate_secure_password(length=16)
             password_hash = hash_password(admin_password)
 
-        admin_email = Email(f"admin_{tenant.code.value}@evexia.test")
+        admin_email = Email(email_override or f"admin_{tenant.code.value}@evexia.test")
         user_id = UserId(generate_cuid())
 
         create_user_use_case = CreateUserUseCase(self.user_repository)
