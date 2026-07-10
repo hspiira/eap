@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { authApi } from '@/api/endpoints/auth'
@@ -214,6 +214,26 @@ function LoginPage() {
               : 'Sign in'}
         </Button>
       </form>
+
+      <div className="mt-5 text-center text-sm text-fg-muted space-y-2">
+        <p>
+          Forgot your password?{' '}
+          <span className="text-fg-subtle">
+            Contact your administrator — they can issue a new sign-in link.
+          </span>
+        </p>
+        {azureEnabled && (
+          <p>
+            <Link
+              to="/auth/sso"
+              search={{ tenant_code: undefined, redirect: undefined }}
+              className="text-primary hover:underline"
+            >
+              Sign in with Microsoft (SSO)
+            </Link>
+          </p>
+        )}
+      </div>
     </div>
   )
 }

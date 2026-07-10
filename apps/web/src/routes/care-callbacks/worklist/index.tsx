@@ -98,7 +98,6 @@ function WorklistPage() {
     sort,
   })
   const loading = query.isPending
-  const refetch = () => void query.refetch()
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as CallbackCaseStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
@@ -347,30 +346,6 @@ function Pip({ label, value }: { label: string; value: number }) {
       <span className="text-fg/55">{label}</span>
       <span className="font-mono text-sm font-semibold text-fg">{value}</span>
     </span>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
   )
 }
 

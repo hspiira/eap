@@ -79,6 +79,7 @@ import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
 import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
 import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
+import { Route as AuthSsoRouteImport } from './routes/auth/sso'
 import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CareCallbacksWorklistIndexRouteImport } from './routes/care-callbacks/worklist/index'
@@ -437,6 +438,11 @@ const CareCallbacksCampaignIdRoute = CareCallbacksCampaignIdRouteImport.update({
   path: '/$campaignId',
   getParentRoute: () => CareCallbacksRoute,
 } as any)
+const AuthSsoRoute = AuthSsoRouteImport.update({
+  id: '/sso',
+  path: '/sso',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
   id: '/set-password',
   path: '/set-password',
@@ -494,6 +500,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/sso': typeof AuthSsoRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
@@ -557,6 +564,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/sso': typeof AuthSsoRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
@@ -634,6 +642,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/sso': typeof AuthSsoRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
@@ -713,6 +722,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/auth/login'
     | '/auth/set-password'
+    | '/auth/sso'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
@@ -776,6 +786,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/auth/login'
     | '/auth/set-password'
+    | '/auth/sso'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/clients/$clientId'
@@ -852,6 +863,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/auth/login'
     | '/auth/set-password'
+    | '/auth/sso'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
@@ -1425,6 +1437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareCallbacksCampaignIdRouteImport
       parentRoute: typeof CareCallbacksRoute
     }
+    '/auth/sso': {
+      id: '/auth/sso'
+      path: '/sso'
+      fullPath: '/auth/sso'
+      preLoaderRoute: typeof AuthSsoRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/set-password': {
       id: '/auth/set-password'
       path: '/set-password'
@@ -1466,12 +1485,14 @@ declare module '@tanstack/react-router' {
 interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSetPasswordRoute: typeof AuthSetPasswordRoute
+  AuthSsoRoute: typeof AuthSsoRoute
   AuthAzureCallbackRoute: typeof AuthAzureCallbackRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthSetPasswordRoute: AuthSetPasswordRoute,
+  AuthSsoRoute: AuthSsoRoute,
   AuthAzureCallbackRoute: AuthAzureCallbackRoute,
 }
 
