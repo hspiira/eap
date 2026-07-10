@@ -44,7 +44,10 @@ from app.application.use_cases.person_use_cases import (
     CreateClientEmployeeUseCase,
     CreateDependentUseCase,
 )
-from app.api.schemas.provider_profile_schemas import ProviderProfileUpdate
+from app.api.schemas.provider_profile_schemas import (
+    ProviderProfileSchema,
+    ProviderProfileUpdate,
+)
 from app.application.use_cases.transitions import (
     PersonTransition,
     TransitionUseCase,
@@ -126,6 +129,19 @@ def _to_person_response(person: PersonEntity) -> PersonResponse:
             email=person.emergency_contact.email.value if person.emergency_contact.email else None,
         )
 
+    provider_profile = None
+    if person.provider_profile:
+        provider_profile = ProviderProfileSchema(
+            tier=person.provider_profile.tier,
+            region=person.provider_profile.region,
+            accreditation_status=person.provider_profile.accreditation_status,
+            panel_status=person.provider_profile.panel_status,
+            accreditation_authority=person.provider_profile.accreditation_authority,
+            accreditation_expiry=person.provider_profile.accreditation_expiry,
+            specialties=list(person.provider_profile.specialties),
+            bio=person.provider_profile.bio,
+        )
+
     return PersonResponse(
         id=person.id.value,
         tenant_id=person.tenant_id.value,
@@ -139,6 +155,7 @@ def _to_person_response(person: PersonEntity) -> PersonResponse:
         staff_info=staff_info,
         dependent_info=dependent_info,
         emergency_contact=emergency_contact,
+        provider_profile=provider_profile,
         family_id=person.family_id.value if person.family_id else None,
         last_service_date=person.last_service_date,
         is_eligible_for_services=person.is_eligible_for_services(),

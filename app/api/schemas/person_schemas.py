@@ -232,11 +232,24 @@ class PersonResponse(BaseModel):
     emergency_contact: EmergencyContactSchema | None = Field(
         None, description="Emergency contact"
     )
+    provider_profile: "ProviderProfileSchema | None" = Field(
+        None,
+        description=(
+            "Provider panel profile. Populated when person_type is SERVICE_PROVIDER. "
+            "Carries tier, region, accreditation, panel status, specialties."
+        ),
+    )
     family_id: str | None = Field(None, description="Family identifier (points to primary employee)")
     last_service_date: date | None = Field(None, description="Last service date")
     is_eligible_for_services: bool = Field(..., description="Eligible for services")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# Late import to keep schema files modular without circular issues at runtime.
+from app.api.schemas.provider_profile_schemas import ProviderProfileSchema  # noqa: E402
+
+PersonResponse.model_rebuild()
 
 
 class PersonListResponse(BaseModel):
