@@ -21,6 +21,8 @@ export interface TenantCreate {
   admin_email?: string | null
   subscription_tier?: string
   settings?: TenantSettingsInput
+  azure_tenant_id?: string | null
+  azure_sso_enabled?: boolean
 }
 
 export interface TenantUpdate {
