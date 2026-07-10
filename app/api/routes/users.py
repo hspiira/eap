@@ -199,15 +199,15 @@ async def update_user_role(
             )
 
     user.role = body.role
-    updated_user = await user_repo.save(user)
+    await user_repo.save(user)
     await audit_entity_operation(
-        entity=updated_user,
+        entity=user,
         audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
+        tenant_id=user.tenant_id,
         user_id=current_user.user_id,
         request=request,
     )
-    return _to_user_response(updated_user)
+    return _to_user_response(user)
 
 
 @router.post(

@@ -824,7 +824,7 @@ async def get_person(
 
 
 @router.get(
-    "/user/{user_id}",
+    "/by-user/{user_id}",
     response_model=PersonResponse,
     summary="Get person by user ID",
 )
