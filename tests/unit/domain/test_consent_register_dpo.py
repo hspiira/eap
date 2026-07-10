@@ -1,6 +1,8 @@
 """Consent + DataSharingRegister + DPOContact aggregate tests."""
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
+from app.shared.utils.datetime import utc_now
 
 import pytest
 
@@ -104,7 +106,7 @@ class TestConsentLifecycle:
     def test_expire_if_due_after_window(self):
         c = _consent()
         c.grant(granted_by_subject_reference="x")
-        c.expires_on = date.today() - timedelta(days=1)
+        c.expires_on = utc_now().date() - timedelta(days=1)
         flipped = c.expire_if_due()
         assert flipped is True
         assert c.status == ConsentStatus.EXPIRED
@@ -169,7 +171,7 @@ class TestDPOContact:
                 tenant_id=TenantId("t-1"),
                 full_name="",
                 email=Email("dpo@example.com"),
-                effective_from=date.today(),
+                effective_from=utc_now().date(),
                 created_at=now,
                 updated_at=now,
             )
@@ -182,8 +184,8 @@ class TestDPOContact:
                 tenant_id=TenantId("t-1"),
                 full_name="Alice",
                 email=Email("a@example.com"),
-                effective_from=date.today(),
-                effective_until=date.today() - timedelta(days=1),
+                effective_from=utc_now().date(),
+                effective_until=utc_now().date() - timedelta(days=1),
                 created_at=now,
                 updated_at=now,
             )
@@ -195,11 +197,11 @@ class TestDPOContact:
             tenant_id=TenantId("t-1"),
             full_name="Alice",
             email=Email("a@example.com"),
-            effective_from=date.today() - timedelta(days=30),
+            effective_from=utc_now().date() - timedelta(days=30),
             created_at=now,
             updated_at=now,
         )
-        c.archive(ending_on=date.today())
-        assert c.effective_until == date.today()
+        c.archive(ending_on=utc_now().date())
+        assert c.effective_until == utc_now().date()
         with pytest.raises(DomainError):
-            c.archive(ending_on=date.today())
+            c.archive(ending_on=utc_now().date())
