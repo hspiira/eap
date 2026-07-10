@@ -151,6 +151,8 @@ async def create_tenant(
             features_enabled=tuple(data.settings.features_enabled),
             custom_branding=data.settings.custom_branding,
             admin_email=data.admin_email,
+            azure_tenant_id=data.azure_tenant_id,
+            azure_sso_enabled=data.azure_sso_enabled,
         )
     )
     await audit_entity_operation(
