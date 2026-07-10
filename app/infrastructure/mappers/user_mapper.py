@@ -55,6 +55,7 @@ class UserMapper:
             failed_login_count=getattr(model, "failed_login_count", 0) or 0,
             locked_until=ensure_utc(getattr(model, "locked_until", None)),
             azure_oid=model.azure_oid,
+            display_name=getattr(model, "display_name", None),
             auth_provider=auth_provider,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -92,6 +93,7 @@ class UserMapper:
             failed_login_count=entity.failed_login_count,
             locked_until=entity.locked_until,
             azure_oid=entity.azure_oid,
+            display_name=entity.display_name,
             auth_provider=entity.auth_provider,
             deleted_at=entity.deleted_at,
         )

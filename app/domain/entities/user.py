@@ -48,6 +48,7 @@ class UserEntity:
     locked_until: datetime | None = None
     azure_oid: str | None = None
     auth_provider: AuthProvider = AuthProvider.PASSWORD
+    display_name: str | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     def __post_init__(self) -> None:
@@ -231,6 +232,16 @@ class UserEntity:
             raise DomainError("Cannot link Azure identity to deleted user")
         self.azure_oid = azure_oid.strip()
         self.auth_provider = AuthProvider.AZURE_AD
+        self.updated_at = utc_now()
+
+    def update_display_name(self, name: str | None) -> None:
+        """Refresh the display name sourced from an external identity provider."""
+        if self.deleted_at:
+            raise DomainError("Cannot update display name for deleted user")
+        cleaned = name.strip() if name else None
+        if cleaned == self.display_name:
+            return
+        self.display_name = cleaned or None
         self.updated_at = utc_now()
 
     def is_active(self) -> bool:

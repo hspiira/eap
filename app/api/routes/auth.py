@@ -567,6 +567,8 @@ async def azure_callback(
             detail=f"User account is {user.status.value.lower()}. Access denied.",
         )
 
+    # Refresh display name from Azure on every SSO login (picks up profile renames)
+    user.update_display_name(claims.name)
     user.record_successful_login()
     await user_repo.save(user)
 
