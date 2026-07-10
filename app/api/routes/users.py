@@ -76,6 +76,7 @@ def _to_user_response(user: UserEntity) -> UserResponse:
         is_active=user.is_active(),
         role=user.role,
         azure_oid=user.azure_oid,
+        display_name=user.display_name,
         auth_provider=user.auth_provider,
     )
 

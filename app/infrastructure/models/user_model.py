@@ -107,6 +107,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
     azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     auth_provider: Mapped[AuthProvider] = mapped_column(
         EnumValueType(AuthProvider),
         nullable=False,

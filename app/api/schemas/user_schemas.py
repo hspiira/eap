@@ -103,6 +103,9 @@ class UserResponse(BaseModel):
     azure_oid: str | None = Field(
         None, description="Azure AD Object ID. Populated after the user's first SSO sign-in."
     )
+    display_name: str | None = Field(
+        None, description="Display name sourced from the identity provider (e.g. Azure AD). Null for password-only users unless set by an admin."
+    )
     auth_provider: AuthProvider = Field(
         default=AuthProvider.PASSWORD,
         description="Credential type used to sign in (password or azure_ad).",
