@@ -36,6 +36,11 @@ class TenantCreate(BaseModel):
         max_length=15,
         description="Tenant code (lowercase alphanumeric with hyphens)",
     )
+    admin_email: str | None = Field(
+        None,
+        max_length=255,
+        description="Email for the tenant admin user. Defaults to admin_{code}@evexia.test if not provided.",
+    )
     subscription_tier: SubscriptionTier = Field(
         default=SubscriptionTier.FREE, description="Subscription tier"
     )
@@ -54,6 +59,16 @@ class TenantCreate(BaseModel):
                 "Code must be lowercase alphanumeric with optional hyphens"
             )
         return v.lower()
+
+    @field_validator("admin_email")
+    @classmethod
+    def validate_admin_email(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        import re
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", v):
+            raise ValueError("Invalid email address")
+        return v.lower().strip()
 
 
 class TenantSettingsResponse(BaseModel):

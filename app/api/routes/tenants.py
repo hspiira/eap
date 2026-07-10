@@ -150,6 +150,7 @@ async def create_tenant(
             max_clients=data.settings.max_clients,
             features_enabled=tuple(data.settings.features_enabled),
             custom_branding=data.settings.custom_branding,
+            admin_email=data.admin_email,
         )
     )
     await audit_entity_operation(
