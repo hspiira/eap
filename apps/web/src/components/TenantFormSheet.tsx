@@ -31,12 +31,6 @@ const tenantSchema = z.object({
   admin_email: z
     .union([z.string().trim().email('Enter a valid email address').max(255), z.literal('')])
     .optional(),
-  azure_tenant_id: z
-    .string()
-    .trim()
-    .max(64, 'Max 64 characters')
-    .optional(),
-  azure_sso_enabled: z.boolean(),
   subscription_tier: z.enum(SUBSCRIPTION_TIERS),
   max_users: z
     .string()
@@ -55,8 +49,6 @@ const DEFAULTS: TenantFormValues = {
   name: '',
   code: '',
   admin_email: '',
-  azure_tenant_id: '',
-  azure_sso_enabled: false,
   subscription_tier: 'Free',
   max_users: '10',
   max_clients: '5',
@@ -88,30 +80,23 @@ export function TenantFormSheet({
         name: t.name,
         code: t.code ?? '',
         admin_email: '',
-        azure_tenant_id: '',
-        azure_sso_enabled: false,
         subscription_tier: ((t.subscription_tier as TenantFormValues['subscription_tier']) ?? 'Free'),
         max_users: String(t.settings?.max_users ?? 10),
         max_clients: String(t.settings?.max_clients ?? 5),
         custom_branding: t.settings?.custom_branding ?? false,
       }),
-      parsePayload: (v) => {
-        const azureId = v.azure_tenant_id?.trim() || null
-        return {
-          name: v.name.trim(),
-          code: v.code.trim().toLowerCase(),
-          admin_email: v.admin_email?.trim() || null,
-          azure_tenant_id: azureId,
-          azure_sso_enabled: azureId ? v.azure_sso_enabled : false,
-          subscription_tier: v.subscription_tier,
-          settings: {
-            max_users: Number.parseInt(v.max_users, 10),
-            max_clients: Number.parseInt(v.max_clients, 10),
-            features_enabled: [],
-            custom_branding: v.custom_branding,
-          },
-        }
-      },
+      parsePayload: (v) => ({
+        name: v.name.trim(),
+        code: v.code.trim().toLowerCase(),
+        admin_email: v.admin_email?.trim() || null,
+        subscription_tier: v.subscription_tier,
+        settings: {
+          max_users: Number.parseInt(v.max_users, 10),
+          max_clients: Number.parseInt(v.max_clients, 10),
+          features_enabled: [],
+          custom_branding: v.custom_branding,
+        },
+      }),
       save: ({ payload, entity, isEdit }) =>
         isEdit && entity
           ? tenantsApi.update(entity.id, { name: payload.name })
@@ -123,8 +108,6 @@ export function TenantFormSheet({
   const errors = formState.errors
   const currentTier = watch('subscription_tier')
   const currentBranding = watch('custom_branding')
-  const currentAzureId = watch('azure_tenant_id')
-  const currentAzureSso = watch('azure_sso_enabled')
 
   return (
     <SheetForm
@@ -134,7 +117,7 @@ export function TenantFormSheet({
       description={
         isEdit
           ? 'Edit basic tenant info. Use the detail page for lifecycle and SSO config.'
-          : 'Create a tenant and its first admin user. Optionally configure Azure SSO now.'
+          : 'Create a tenant and its first admin user. SSO can be configured after creation.'
       }
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -175,57 +158,20 @@ export function TenantFormSheet({
       </FormField>
 
       {!isEdit ? (
-        <>
-          <FormField
-            label="Admin email"
-            description="The tenant's first admin user. Leave blank to use a placeholder (admin_{code}@evexia.test)."
-            error={errors.admin_email?.message}
-            htmlFor="tenant-admin-email"
-          >
-            <Input
-              id="tenant-admin-email"
-              type="email"
-              placeholder="admin@company.com"
-              autoComplete="off"
-              {...register('admin_email')}
-            />
-          </FormField>
-
-          <FormField
-            label="Azure tenant ID"
-            description="Azure AD directory (tenant) ID from Azure Portal → Azure Active Directory → Properties. Leave blank to configure SSO later."
-            error={errors.azure_tenant_id?.message}
-            htmlFor="tenant-azure-id"
-          >
-            <Input
-              id="tenant-azure-id"
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              autoComplete="off"
-              className="font-mono"
-              {...register('azure_tenant_id')}
-            />
-          </FormField>
-
-          {currentAzureId?.trim() ? (
-            <FormField
-              label="Enable Azure SSO"
-              description="Allow users in this Azure directory to sign in immediately."
-              error={errors.azure_sso_enabled?.message}
-              htmlFor="tenant-azure-sso"
-            >
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="tenant-azure-sso"
-                  checked={currentAzureSso}
-                  onCheckedChange={(v) =>
-                    setValue('azure_sso_enabled', v === true, { shouldDirty: true })
-                  }
-                />
-                <span className="text-sm text-fg-muted">Enable on creation</span>
-              </div>
-            </FormField>
-          ) : null}
-        </>
+        <FormField
+          label="Admin email"
+          description="The tenant's first admin user. Leave blank to use a placeholder (admin_{code}@evexia.test)."
+          error={errors.admin_email?.message}
+          htmlFor="tenant-admin-email"
+        >
+          <Input
+            id="tenant-admin-email"
+            type="email"
+            placeholder="admin@company.com"
+            autoComplete="off"
+            {...register('admin_email')}
+          />
+        </FormField>
       ) : null}
 
       <FormField
