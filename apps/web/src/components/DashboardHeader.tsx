@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react"
 
-import { useRouterState } from "@tanstack/react-router"
-import { Link } from "@tanstack/react-router"
-import { useNavigate } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   Bell,
   ChevronDown,
@@ -13,11 +12,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  Settings,
   Sun,
   User,
 } from "lucide-react"
 
+import { usersApi } from "@/api/endpoints/users"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -39,6 +38,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 import { useUIStore } from "@/store/slices/uiSlice"
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -175,10 +175,21 @@ function ThemeToggle() {
 
 function UserMenu() {
   const email = useAuthStore((s) => s.email)
+  const userId = useAuthStore((s) => s.user_id)
+  const tenantName = useTenantStore((s) => s.currentTenant?.name)
   const navigate = useNavigate()
   const { showSuccess } = useToast()
+
+  const { data: user } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => usersApi.getById(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60_000,
+  })
+
   const displayEmail = email ?? "Account"
   const initial = displayEmail.charAt(0).toUpperCase()
+  const role = user?.role ?? null
 
   const handleSignOut = async () => {
     await authActions.logout()
@@ -188,6 +199,7 @@ function UserMenu() {
       search: { tenant_code: undefined, email: undefined, redirect: undefined },
     })
   }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -198,7 +210,7 @@ function UserMenu() {
           aria-label="Account menu"
         >
           <span
-            className="grid size-6 shrink-0 place-items-center rounded-sm bg-muted font-mono text-xs font-medium text-fg"
+            className="grid size-6 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-[10px] font-semibold text-primary"
             aria-hidden
           >
             {initial}
@@ -209,21 +221,30 @@ function UserMenu() {
           <ChevronDown className="size-3.5 shrink-0" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal text-fg">
-          <span className="truncate">{displayEmail}</span>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-sm font-semibold text-primary"
+              aria-hidden
+            >
+              {initial}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-fg">{displayEmail}</p>
+              <p className="truncate text-xs text-fg-muted">
+                {role ?? ""}
+                {role && tenantName ? " · " : ""}
+                {tenantName ?? ""}
+              </p>
+            </div>
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/" className="cursor-pointer">
+          <Link to="/me" className="cursor-pointer">
             <User className="size-4" />
             Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/" className="cursor-pointer">
-            <Settings className="size-4" />
-            Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -231,7 +252,7 @@ function UserMenu() {
           className="cursor-pointer"
           onSelect={(e) => {
             e.preventDefault()
-            handleSignOut()
+            void handleSignOut()
           }}
         >
           <LogOut className="size-4" />

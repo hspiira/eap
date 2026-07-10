@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { LogOut, User as UserIcon } from 'lucide-react'
+import { Building2, LogOut, User as UserIcon } from 'lucide-react'
 import { z } from 'zod'
 
 import { usersApi } from '@/api/endpoints/users'
@@ -11,6 +11,7 @@ import { FormField } from '@/components/common/FormField'
 import { PageShell } from '@/components/common/PageShell'
 import { DetailSkeleton } from '@/components/common/PageSkeletons'
 import { RequireAuth } from '@/components/common/RequireAuth'
+import { StatusBadge } from '@/components/common/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -24,6 +25,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { useApiForm } from '@/hooks/useApiForm'
 import { authActions } from '@/lib/auth-store'
 import { useAuthStore } from '@/store/slices/authSlice'
+import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { User } from '@/types/entities'
 import { Language } from '@/types/enums'
 
@@ -134,6 +136,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
   return (
     <div className="space-y-8">
       <AccountSummary user={user} onLogout={handleLogout} />
+      <TenantSummary />
 
       <section className="space-y-4">
         <header>
@@ -211,24 +214,29 @@ interface AccountSummaryProps {
 }
 
 function AccountSummary({ user, onLogout }: AccountSummaryProps) {
+  const initial = user.email.charAt(0).toUpperCase()
   return (
     <section className="rounded-sm border border-border-subtle bg-surface p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-wider text-fg-subtle">Signed in as</p>
-          <p className="text-base font-semibold text-fg">{user.email}</p>
-          <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1 text-sm text-fg-muted sm:grid-cols-2">
-            <div className="flex gap-2">
-              <dt className="text-fg-subtle">User ID</dt>
-              <dd className="font-mono text-xs">{user.id}</dd>
+        <div className="flex items-center gap-4">
+          <span
+            className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-lg font-semibold text-primary"
+            aria-hidden
+          >
+            {initial}
+          </span>
+          <div className="space-y-0.5">
+            <p className="text-base font-semibold text-fg">{user.email}</p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+              {user.role ? (
+                <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
+                  {user.role}
+                </span>
+              ) : null}
+              {user.status ? <StatusBadge status={user.status} /> : null}
             </div>
-            {user.status ? (
-              <div className="flex gap-2">
-                <dt className="text-fg-subtle">Status</dt>
-                <dd>{user.status}</dd>
-              </div>
-            ) : null}
-          </dl>
+            <p className="font-mono text-xs text-fg-subtle">{user.id}</p>
+          </div>
         </div>
 
         <Button type="button" variant="outline" onClick={onLogout}>
@@ -236,6 +244,41 @@ function AccountSummary({ user, onLogout }: AccountSummaryProps) {
           Sign out
         </Button>
       </div>
+    </section>
+  )
+}
+
+function TenantSummary() {
+  const tenant = useTenantStore((s) => s.currentTenant)
+  if (!tenant) return null
+  return (
+    <section className="rounded-sm border border-border-subtle bg-surface p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <Building2 className="size-4 text-fg-subtle" aria-hidden />
+        <h2 className="text-sm font-semibold text-fg">Workspace</h2>
+      </div>
+      <dl className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-xs font-medium text-fg-subtle">Name</dt>
+          <dd className="mt-0.5 text-fg">{tenant.name}</dd>
+        </div>
+        {tenant.code ? (
+          <div>
+            <dt className="text-xs font-medium text-fg-subtle">Code</dt>
+            <dd className="mt-0.5 font-mono text-xs text-fg">{tenant.code}</dd>
+          </div>
+        ) : null}
+        {tenant.subscription_tier ? (
+          <div>
+            <dt className="text-xs font-medium text-fg-subtle">Plan</dt>
+            <dd className="mt-0.5 text-fg">{tenant.subscription_tier}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt className="text-xs font-medium text-fg-subtle">Status</dt>
+          <dd className="mt-0.5"><StatusBadge status={tenant.status} /></dd>
+        </div>
+      </dl>
     </section>
   )
 }
