@@ -28,6 +28,9 @@ const tenantSchema = z.object({
       /^[a-z0-9-]+$/,
       'Lowercase letters, digits, and hyphens only',
     ),
+  admin_email: z
+    .union([z.string().trim().email('Enter a valid email address').max(255), z.literal('')])
+    .optional(),
   subscription_tier: z.enum(SUBSCRIPTION_TIERS),
   max_users: z
     .string()
@@ -45,6 +48,7 @@ type TenantFormValues = z.infer<typeof tenantSchema>
 const DEFAULTS: TenantFormValues = {
   name: '',
   code: '',
+  admin_email: '',
   subscription_tier: 'Free',
   max_users: '10',
   max_clients: '5',
@@ -75,6 +79,7 @@ export function TenantFormSheet({
       toFormValues: (t) => ({
         name: t.name,
         code: t.code ?? '',
+        admin_email: '',
         subscription_tier: ((t.subscription_tier as TenantFormValues['subscription_tier']) ?? 'Free'),
         max_users: String(t.settings?.max_users ?? 10),
         max_clients: String(t.settings?.max_clients ?? 5),
@@ -83,6 +88,7 @@ export function TenantFormSheet({
       parsePayload: (v) => ({
         name: v.name.trim(),
         code: v.code.trim().toLowerCase(),
+        admin_email: v.admin_email?.trim() || null,
         subscription_tier: v.subscription_tier,
         settings: {
           max_users: Number.parseInt(v.max_users, 10),
@@ -150,6 +156,23 @@ export function TenantFormSheet({
           })}
         />
       </FormField>
+
+      {!isEdit ? (
+        <FormField
+          label="Admin email"
+          description="The tenant's first admin user. Leave blank to use a placeholder (admin_{code}@evexia.test)."
+          error={errors.admin_email?.message}
+          htmlFor="tenant-admin-email"
+        >
+          <Input
+            id="tenant-admin-email"
+            type="email"
+            placeholder="admin@company.com"
+            autoComplete="off"
+            {...register('admin_email')}
+          />
+        </FormField>
+      ) : null}
 
       <FormField
         label="Subscription tier"
