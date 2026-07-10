@@ -8,10 +8,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from pydantic import BaseModel
+
+JWTError = jwt.PyJWTError
 
 from app.core.config import settings
 from app.domain.exceptions import AuthenticationException
