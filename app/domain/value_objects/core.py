@@ -1,5 +1,5 @@
 """
-Domain value objects for the Allevia core domain.
+Domain value objects for the Evexía core domain.
 
 Value objects are immutable types that represent domain concepts with self-validation.
 They have no identity, only value.
@@ -9,8 +9,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import decimal
 import re
-from app.domain.enums import WorkStatus, StaffRole, RelationType
-from app.domain.enums import WorkStatus, StaffRole, RelationType
+from app.domain.enums import (
+    AccreditationStatus,
+    PanelStatus,
+    ProviderTier,
+    RelationType,
+    StaffRole,
+    UgandaRegion,
+    WorkStatus,
+)
 from app.shared.utils.datetime import utc_now
 
 
@@ -40,42 +47,300 @@ class TenantCode:
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", self.value):
             raise ValueError(
                 "Tenant code must be lowercase alphanumeric with optional hyphens "
-                "(e.g., 'acme', 'acme-corp', 'abc123')"
+                + "(e.g., 'acme', 'acme-corp', 'abc123')"
             )
 
 # === Identity Value Objects ===
+#
+# Each entity has its own ID subclass so the type checker can flag
+# cross-type misuse (e.g. passing a PersonId where a UserId is expected).
+# Runtime behaviour is identical to the base `Id`: same string validation,
+# same equality semantics. Subclasses exist purely for nominal typing.
+
 
 @dataclass(frozen=True)
 class Id:
-    """
-    Represents a unique identifier for an entity.
+    """Base identifier value object.
 
     Attributes:
-    - <25 characters
-    - immutable once activated
+    - 1..25 characters
+    - immutable
     """
     value: str
+
     def __post_init__(self):
         if not self.value or len(self.value) > 25:
-            raise ValueError("ID must be less than 25 characters")
+            raise ValueError("ID must be 1..25 characters")
 
-TenantId = Id
-PersonId = Id
-ContractId = Id
-ServiceId = Id
-SessionId = Id
-UserId = Id
-ClientId = Id
-IndustryId = Id
-AuditLogId = Id
-EntityChangeId = Id
-DocumentId = Id
-KPIId = Id
-KPIAssignmentId = Id
-ClientTagId = Id
-ContactId = Id
-ActivityId = Id
-ServiceAssignmentId = Id
+
+@dataclass(frozen=True)
+class TenantId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class PersonId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ContractId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ServiceId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SessionId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class UserId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClientId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class IndustryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class AuditLogId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EntityChangeId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DocumentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class KPIId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class KPIAssignmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClientTagId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ContactId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ActivityId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ServiceAssignmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CriticalIncidentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class NonCompeteClauseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReportTemplateId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReportRunId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class UtilisationEventId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CareCallbackCampaignId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class OutreachRecordId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class TriageResponseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SurveyCampaignId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SurveyResponseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EngagementId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DeliverableId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class HoursLogEntryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DSARRequestId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class BenchmarkConsentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EligibleMemberId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClinicalSubjectId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CaseId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class AuthorizationId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class EAPProgrammeId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ClinicalNoteId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class NoteAmendmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CrisisContactId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class RiskAssessmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class SafetyPlanId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class MandatoryReportId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class CaringContactId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ManagerConsultId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class WorkLifeReferralId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class WorkLifeProviderId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class TrainingEnrolmentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class OutcomeMeasureId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class FitnessForDutyId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ReturnToWorkPlanId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class ConsentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DataSharingRegisterEntryId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class DPOContactId(Id):
+    pass
 
 # === Domain Value Objects ===
 @dataclass(frozen=True)
@@ -163,6 +428,9 @@ class TenantSettings:
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
 
+    def allows_more_clients(self, current_count: int) -> bool:
+        return current_count < self.max_clients
+
 @dataclass(frozen=True)
 class ContactInfo:
     phone: str | None = None
@@ -209,8 +477,66 @@ class LicenseInfo:
             return True
         return self.expiry_date >= utc_now().date()
 
+
+@dataclass(frozen=True)
+class ProviderProfile:
+    """Panel-level metadata about a service provider (Joseph's framework)."""
+
+    tier: ProviderTier
+    region: UgandaRegion
+    accreditation_status: AccreditationStatus
+    panel_status: PanelStatus = PanelStatus.ACTIVE
+    accreditation_authority: str | None = None
+    accreditation_expiry: date | None = None
+    specialties: tuple[str, ...] = ()
+    bio: str | None = None
+
+    def is_panel_eligible(self) -> bool:
+        """Whether the provider can currently take new assignments."""
+        if self.panel_status != PanelStatus.ACTIVE:
+            return False
+        if self.accreditation_status != AccreditationStatus.ACCREDITED:
+            return False
+        if self.accreditation_expiry is not None and self.accreditation_expiry < utc_now().date():
+            return False
+        return True
+
+@dataclass(frozen=True)
+class ClientEmployeeCode:
+    client_code: str
+    family_code: str
+    member_code: str
+    
+    def __post_init__(self):
+        if not self.client_code or len(self.client_code) < 3 or len(self.client_code) > 5:
+            raise ValueError("Client code must be 3-5 characters")
+        if not self.family_code or len(self.family_code) != 2:
+            raise ValueError("Family code must be 2 digits")
+        if not self.member_code or len(self.member_code) != 2:
+            raise ValueError("Member code must be 2 digits")
+        if not self.family_code.isdigit():
+            raise ValueError("Family code must be numeric")
+        if not self.member_code.isdigit():
+            raise ValueError("Member code must be numeric")
+    
+    def __str__(self) -> str:
+        return f"{self.client_code}-{self.family_code}-{self.member_code}"
+    
+    @classmethod
+    def from_string(cls, code_str: str) -> 'ClientEmployeeCode':
+        parts = code_str.split('-')
+        if len(parts) != 3:
+            raise ValueError(f"Invalid code format: {code_str}. Expected format: CLIENT-FAMILY-MEMBER")
+        return cls(
+            client_code=parts[0],
+            family_code=parts[1],
+            member_code=parts[2]
+        )
+
 @dataclass(frozen=True)
 class EmploymentInfo:
+    client_id: ClientId
+    employee_code: ClientEmployeeCode
     role: str
     start_date: date
     status: WorkStatus
@@ -237,5 +563,24 @@ class DependentInfo:
     primary_employee_id: PersonId
     relationship: RelationType
     guardian_id: UserId | None = None
+
+    def __post_init__(self):
+        if not self.primary_employee_id:
+            raise ValueError("DependentInfo requires primary_employee_id")
+
     def is_eligible(self) -> bool:
-        return NotImplementedError("Dependent eligibility is not implemented")
+        """Intrinsic eligibility derived from the dependent's own data.
+
+        Cross-aggregate eligibility (the primary employee's active status)
+        is composed at PersonEntity.is_eligible_for_services. Here we check
+        only what this VO can know: the relationship type is one we accept,
+        and the linkage to a primary employee is present.
+        """
+        return self.relationship in {
+            RelationType.SPOUSE,
+            RelationType.CHILD,
+            RelationType.PARENT,
+            RelationType.SIBLING,
+            RelationType.GRANDPARENT,
+            RelationType.GUARDIAN,
+        }

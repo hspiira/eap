@@ -7,11 +7,7 @@ Refactored to use base use case classes.
 
 from decimal import Decimal
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.repositories.kpi_repository import (
@@ -22,34 +18,7 @@ from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# KPI LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateKPIUseCase:
-    """Use case for activating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self._use_case = create_activate_use_case(kpi_repository, "KPI")
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        return await self._use_case.execute(kpi_id)
-
-
-class DeactivateKPIUseCase:
-    """Use case for deactivating a KPI."""
-
-    def __init__(self, kpi_repository: KPIRepository):
-        self._use_case = create_deactivate_use_case(kpi_repository, "KPI")
-
-    async def execute(self, kpi_id: KPIId) -> KPIEntity:
-        return await self._use_case.execute(kpi_id)
-
-
-# =============================================================================
-# KPI CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + KPITransition / KPIAssignmentTransition.
 
 
 class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
@@ -80,19 +49,19 @@ class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
 
         # Create KPI entity
         kpi = KPIEntity(
-            _id=kpi_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _category=category,
-            _measurement_unit=measurement_unit,
-            _description=description,
-            _target_value=target_value,
-            _threshold_min=threshold_min,
-            _threshold_max=threshold_max,
-            _formula=formula,
+            id=kpi_id,
+            tenant_id=tenant_id,
+            name=name,
+            category=category,
+            measurement_unit=measurement_unit,
+            description=description,
+            target_value=target_value,
+            threshold_min=threshold_min,
+            threshold_max=threshold_max,
+            formula=formula,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(kpi)
@@ -158,31 +127,6 @@ class GetKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
 
 
 # =============================================================================
-# KPI ASSIGNMENT LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateKPIAssignmentUseCase:
-    """Use case for activating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-class DeactivateKPIAssignmentUseCase:
-    """Use case for deactivating a KPI assignment."""
-
-    def __init__(self, assignment_repository: KPIAssignmentRepository):
-        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: KPIAssignmentId) -> KPIAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-# =============================================================================
 # KPI ASSIGNMENT CREATE USE CASE
 # =============================================================================
 
@@ -221,15 +165,15 @@ class CreateKPIAssignmentUseCase(BaseUseCase[KPIAssignmentEntity, KPIAssignmentI
 
         # Create assignment entity
         assignment = KPIAssignmentEntity(
-            _id=assignment_id,
-            _kpi_id=kpi_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _contract_id=contract_id,
-            _target_value=target_value,
+            id=assignment_id,
+            kpi_id=kpi_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            contract_id=contract_id,
+            target_value=target_value,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(assignment)

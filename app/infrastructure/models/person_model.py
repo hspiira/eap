@@ -7,14 +7,13 @@ This is a data container only - no business logic.
 
 from datetime import date
 
-from sqlalchemy import CheckConstraint, ForeignKey, JSON, String
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
-    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -24,6 +23,7 @@ from app.infrastructure.models.json_schemas import (
     EmergencyContactDict,
     EmploymentInfoDict,
     LicenseInfoDict,
+    ProviderProfileDict,
     StaffInfoDict,
 )
 
@@ -52,13 +52,25 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         ),
     )
 
-    # Type discriminator
+    # Type discriminator - use native PG enum (create_type=False)
     person_type: Mapped[PersonType] = mapped_column(
-        EnumValueType(PersonType), nullable=False
+        Enum(
+            PersonType,
+            name="persontype",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
     )
     is_dual_role: Mapped[bool] = mapped_column(default=False, nullable=False)
     secondary_person_type: Mapped[PersonType | None] = mapped_column(
-        EnumValueType(PersonType), nullable=True
+        Enum(
+            PersonType,
+            name="persontype",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=True,
     )
 
     # Core relationships
@@ -66,6 +78,12 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         String(25),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+    family_id: Mapped[str | None] = mapped_column(
+        String(25),
+        ForeignKey("persons.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
 
@@ -77,6 +95,8 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     Employment information for CLIENT_EMPLOYEE person types.
     
     Schema: {
+        "client_id": str,
+        "employee_code": str (format: CLIENT-FAMILY-MEMBER, e.g., "MNT-00-00"),
         "role": str,
         "start_date": str (ISO date: YYYY-MM-DD),
         "status": str (WorkStatus enum value),
@@ -89,14 +109,17 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     license_info: Mapped[LicenseInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Professional license information for SERVICE_PROVIDER person types.
-    
+
     Schema: {
         "number": str,
         "issuing_authority": str,
         "expiry_date": str | None (ISO date: YYYY-MM-DD)
     }
     """
-    
+
+    provider_profile: Mapped["ProviderProfileDict | None"] = mapped_column(JSON, nullable=True)
+    """Panel metadata for SERVICE_PROVIDER persons (tier, region, accreditation)."""
+
     staff_info: Mapped[StaffInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Staff information for PLATFORM_STAFF person types.
@@ -124,7 +147,14 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Shared
     status: Mapped[BaseStatus] = mapped_column(
-        EnumValueType(BaseStatus), nullable=False, default=BaseStatus.PENDING
+        Enum(
+            BaseStatus,
+            name="basestatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=BaseStatus.PENDING,
     )
     
     emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(

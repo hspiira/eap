@@ -15,13 +15,17 @@ class EmploymentInfoDict(TypedDict):
     Represents employment information for CLIENT_EMPLOYEE person types.
     
     Fields:
+        client_id: Client identifier (required)
+        employee_code: Employee code in format CLIENT-FAMILY-MEMBER (e.g., "MNT-00-00") (required)
         role: Job title or role name (required)
         start_date: Employment start date in ISO format (YYYY-MM-DD) (required)
         status: Work status enum value (e.g., "Active", "Inactive") (required)
         department: Department name (optional)
-        employee_id: Employee identifier (optional)
+        employee_id: External employee identifier (optional)
         end_date: Employment end date in ISO format (YYYY-MM-DD) (optional)
     """
+    client_id: str
+    employee_code: str  # Format: CLIENT-FAMILY-MEMBER (e.g., "MNT-00-00")
     role: str
     start_date: str  # ISO date format: YYYY-MM-DD
     status: str  # WorkStatus enum value
@@ -82,6 +86,19 @@ class DependentInfoDict(TypedDict):
     primary_employee_id: str
     relationship: str  # RelationType enum value
     guardian_id: NotRequired[str | None]
+
+
+class ProviderProfileDict(TypedDict):
+    """JSON schema for provider_profile column (SERVICE_PROVIDER panel metadata)."""
+
+    tier: str  # ProviderTier enum value
+    region: str  # UgandaRegion enum value
+    accreditation_status: str  # AccreditationStatus enum value
+    panel_status: NotRequired[str]  # PanelStatus enum value (default Active)
+    accreditation_authority: NotRequired[str | None]
+    accreditation_expiry: NotRequired[str | None]  # ISO date YYYY-MM-DD
+    specialties: NotRequired[list[str]]
+    bio: NotRequired[str | None]
 
 
 class EmergencyContactDict(TypedDict):

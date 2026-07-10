@@ -1,10 +1,6 @@
 """ServiceAssignment Use Cases - Application services for ServiceAssignment operations."""
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
 from app.domain.enums import BaseStatus
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
@@ -12,34 +8,7 @@ from app.domain.value_objects.core import ContractId, ServiceAssignmentId, Servi
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateServiceAssignmentUseCase:
-    """Use case for activating a service assignment."""
-
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self._use_case = create_activate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-class DeactivateServiceAssignmentUseCase:
-    """Use case for deactivating a service assignment."""
-
-    def __init__(self, assignment_repository: ServiceAssignmentRepository):
-        self._use_case = create_deactivate_use_case(assignment_repository, "Assignment")
-
-    async def execute(self, assignment_id: ServiceAssignmentId) -> ServiceAssignmentEntity:
-        return await self._use_case.execute(assignment_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + ServiceAssignmentTransition.
 
 
 class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, ServiceAssignmentId]):
@@ -70,15 +39,15 @@ class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, Servic
             )
 
         assignment = ServiceAssignmentEntity(
-            _id=assignment_id,
-            _tenant_id=tenant_id,
-            _service_id=service_id,
-            _contract_id=contract_id,
-            _status=BaseStatus.PENDING,
-            _assigned_by=assigned_by,
-            _notes=notes,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            id=assignment_id,
+            tenant_id=tenant_id,
+            service_id=service_id,
+            contract_id=contract_id,
+            status=BaseStatus.PENDING,
+            assigned_by=assigned_by,
+            notes=notes,
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(assignment)

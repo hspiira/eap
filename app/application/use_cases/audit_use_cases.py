@@ -42,33 +42,33 @@ class LogAuditActionUseCase:
         ip_address: str | None = None,
         user_agent: str | None = None,
         metadata: dict[str, Any] | None = None,
+        is_special_category: bool = False,
     ) -> AuditLog | None:
+        """Persist one audit log entry, honouring the action-filter policy.
+
+        ``is_special_category`` flags clinical / health-data accesses so the DPO
+        can produce a separate report. Defaults to False; callers in the audit
+        event handler set it from the clinical-data classifier.
+
+        Returns ``None`` when the action is filtered out by
+        :class:`AuditFilterService`.
         """
-        Log an audit action.
-        
-        Applies configurable filtering for high-volume actions (LIST, VIEW)
-        to prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)
-        are always logged.
-        
-        Returns:
-            AuditLog if action was logged, None if filtered out
-        """
-        # Check if action should be logged based on filtering rules
         if not AuditFilterService.should_log_action(action_type, resource_type):
             return None
 
         audit_log = AuditLog(
-            _id=AuditLogId(generate_cuid()),
-            _tenant_id=tenant_id,
-            _user_id=user_id,
-            _action_type=action_type,
-            _resource_type=resource_type,
-            _resource_id=resource_id,
-            _description=description,
-            _ip_address=ip_address,
-            _user_agent=user_agent,
-            _occurred_at=utc_now(),
-            _metadata=metadata,
+            id=AuditLogId(generate_cuid()),
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action_type=action_type,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            description=description,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            occurred_at=utc_now(),
+            metadata=metadata,
+            is_special_category=is_special_category,
         )
 
         await self.audit_repository.save_audit_log(audit_log)
@@ -90,11 +90,11 @@ class LogEntityChangeUseCase:
     ) -> EntityChange:
         """Log entity changes associated with an audit log."""
         entity_change = EntityChange(
-            _id=EntityChangeId(generate_cuid()),
-            _audit_log_id=audit_log_id,
-            _entity_type=entity_type,
-            _entity_id=entity_id,
-            _field_changes=tuple(field_changes),
+            id=EntityChangeId(generate_cuid()),
+            audit_log_id=audit_log_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            field_changes=tuple(field_changes),
         )
 
         await self.audit_repository.save_entity_change(entity_change)

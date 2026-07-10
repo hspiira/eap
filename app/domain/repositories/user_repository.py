@@ -74,13 +74,39 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
     ) -> int:
         """
         Count users matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by user status
             is_email_verified: Filter by email verification status
             search: Search in user email
-            
+
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def get_by_azure_oid(self, azure_oid: str, tenant_id: TenantId) -> UserEntity | None:
+        """
+        Get a user by their Azure Object ID within a tenant.
+
+        Args:
+            azure_oid: The Azure AD object ID (oid claim from Azure token)
+            tenant_id: Tenant identifier
+
+        Returns:
+            UserEntity if found and not soft-deleted, None otherwise
+        """
+
+    @abstractmethod
+    async def update_password(self, user_id: UserId, password_hash: str) -> bool:
+        """
+        Update a user's password hash (e.g. after set-initial-password).
+
+        Args:
+            user_id: User identifier
+            password_hash: New hashed password
+
+        Returns:
+            True if user was found and updated, False otherwise
         """

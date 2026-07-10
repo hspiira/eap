@@ -7,10 +7,16 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -36,6 +42,30 @@ class ServiceSessionModel(
         CheckConstraint(
             "status IN (" + ", ".join(f"'{e.value}'" for e in SessionStatus) + ")",
             name="session_status_check",
+        ),
+        CheckConstraint(
+            "session_type IS NULL OR session_type IN ("
+            + ", ".join(f"'{e.value}'" for e in SessionType)
+            + ")",
+            name="session_type_check",
+        ),
+        CheckConstraint(
+            "category IS NULL OR category IN ("
+            + ", ".join(f"'{e.value}'" for e in SessionCategory)
+            + ")",
+            name="session_category_check",
+        ),
+        CheckConstraint(
+            "client_type IS NULL OR client_type IN ("
+            + ", ".join(f"'{e.value}'" for e in ClientType)
+            + ")",
+            name="session_client_type_check",
+        ),
+        CheckConstraint(
+            "clinical_outcome IS NULL OR clinical_outcome IN ("
+            + ", ".join(f"'{e.value}'" for e in SessionClinicalStatus)
+            + ")",
+            name="session_clinical_outcome_check",
         ),
     )
 
@@ -69,10 +99,50 @@ class ServiceSessionModel(
 
     # Details
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    feedback: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(
         String(500), nullable=True
+    )
+
+    # Optional link to a CISM critical-incident response
+    incident_id: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+
+    # Phase 4 #D-Import: idempotency key for re-runnable historical loads.
+    # Unique per tenant; absent for organic in-app sessions.
+    import_source_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+
+    # Care Activity Log fields
+    session_type: Mapped[SessionType | None] = mapped_column(
+        EnumValueType(SessionType), nullable=True, index=True
+    )
+    category: Mapped[SessionCategory | None] = mapped_column(
+        EnumValueType(SessionCategory), nullable=True, index=True
+    )
+    rate_ugx: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    issue_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diagnosis_type_id: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+    diagnosis_id: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+    approved_by: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+    session_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    partner_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    partner_relationship: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    headcount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    client_type: Mapped[ClientType | None] = mapped_column(
+        EnumValueType(ClientType), nullable=True, index=True
+    )
+    clinical_outcome: Mapped[SessionClinicalStatus | None] = mapped_column(
+        EnumValueType(SessionClinicalStatus), nullable=True, index=True
     )
 
     def __repr__(self) -> str:

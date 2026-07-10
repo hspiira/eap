@@ -9,6 +9,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import SanitizedStr
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 
 
@@ -58,13 +59,13 @@ class ContractRenewRequest(BaseModel):
 class ContractTerminateRequest(BaseModel):
     """Request schema for terminating a contract."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class ContractSignRequest(BaseModel):
     """Request schema for signing a contract."""
 
-    signed_by: str = Field(..., min_length=1, description="Name of person signing")
+    signed_by: SanitizedStr = Field(..., min_length=1, description="Name of person signing")
 
 
 class ContractUpdate(BaseModel):

@@ -9,7 +9,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.domain.enums import Language, UserStatus
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 
 
 # === Request Schemas ===
@@ -21,36 +22,51 @@ class UserCreate(BaseModel):
     password: str | None = Field(None, min_length=8, description="User password (will be hashed)")
     preferred_language: Language | None = Field(None, description="Preferred language")
     timezone: str | None = Field(None, description="User timezone")
+    role: TenantRole = Field(
+        default=TenantRole.USER,
+        description="Initial tenant role (Admin/User/Viewer). Defaults to User.",
+    )
+
+
+class UserUpdateRoleRequest(BaseModel):
+    """Request schema for changing a user's tenant role."""
+
+    role: TenantRole = Field(..., description="New tenant role (Admin/User/Viewer).")
 
 
 class UserSuspendRequest(BaseModel):
     """Request schema for suspending a user."""
 
-    reason: str = Field(..., min_length=1, description="Suspension reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Suspension reason")
 
 
 class UserBanRequest(BaseModel):
     """Request schema for banning a user."""
 
-    reason: str = Field(..., min_length=1, description="Ban reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Ban reason")
 
 
 class UserDeactivateRequest(BaseModel):
     """Request schema for deactivating a user."""
 
-    reason: str | None = Field(None, description="Deactivation reason")
+    reason: OptionalSanitizedStr = Field(None, description="Deactivation reason")
 
 
 class UserTerminateRequest(BaseModel):
     """Request schema for terminating a user."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class UserUpdatePasswordRequest(BaseModel):
     """Request schema for updating user password."""
 
     password: str = Field(..., min_length=8, description="New password (will be hashed)")
+    current_password: str | None = Field(
+        None,
+        description="Existing password. REQUIRED for self-service change; "
+        "ignored when an admin is resetting another user's password.",
+    )
 
 
 class UserUpdatePreferencesRequest(BaseModel):
@@ -83,6 +99,17 @@ class UserResponse(BaseModel):
     last_login_at: datetime | None = Field(None, description="Last login timestamp")
     status_changed_at: datetime | None = Field(None, description="Status change timestamp")
     is_active: bool = Field(..., description="Whether user is active")
+    role: TenantRole = Field(..., description="Tenant role (Admin, User, Viewer)")
+    azure_oid: str | None = Field(
+        None, description="Azure AD Object ID. Populated after the user's first SSO sign-in."
+    )
+    display_name: str | None = Field(
+        None, description="Display name sourced from the identity provider (e.g. Azure AD). Null for password-only users unless set by an admin."
+    )
+    auth_provider: AuthProvider = Field(
+        default=AuthProvider.PASSWORD,
+        description="Credential type used to sign in (password or azure_ad).",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

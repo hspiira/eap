@@ -57,12 +57,14 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         "metadata", JSON, nullable=True
     )  # Column name is 'metadata' in DB, attribute is 'extra_metadata' in Python
 
-    # Timestamp (immutable)
     occurred_at: Mapped[datetime] = mapped_column(
         nullable=False, index=True
     )
 
-    # Relationship to entity changes
+    is_special_category: Mapped[bool] = mapped_column(
+        nullable=False, default=False, server_default="false", index=True
+    )
+
     entity_changes: Mapped[list["EntityChangeModel"]] = relationship(
         "EntityChangeModel",
         back_populates="audit_log",

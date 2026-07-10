@@ -49,6 +49,17 @@ class IndustryRepositoryImpl(TenantScopedRepositoryImpl[IndustryEntity, Industry
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_code(self, code: str, tenant_id: TenantId) -> IndustryEntity | None:
+        """Get industry by code within tenant."""
+        stmt = select(IndustryModel).where(
+            IndustryModel.code == code,
+            IndustryModel.tenant_id == tenant_id.value,
+            IndustryModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
     async def get_children(self, parent_id: IndustryId, tenant_id: TenantId) -> Sequence[IndustryEntity]:
         """Get all child industries of a parent."""
         stmt = select(IndustryModel).where(

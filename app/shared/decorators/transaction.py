@@ -12,8 +12,7 @@ from typing import Any, Callable, TypeVar
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.exceptions import DomainError, AlleviaException
-from app.shared.utils.http_errors import get_error_status_code
+from app.domain.exceptions import EvexiaException
 
 logger = logging.getLogger(__name__)
 
@@ -69,28 +68,21 @@ def transactional(
                 
                 return result
                 
+            except EvexiaException:
+                # Includes DomainError, NotFoundError, ConflictError, etc.
+                # The exception carries its own http_status; the global
+                # exception handler renders it. No string parsing.
+                await session.rollback()
+                raise
+
             except ValueError as e:
-                await session.rollback()
-                # Use smart status code detection based on error message
-                status_code = get_error_status_code(str(e))
-                raise HTTPException(
-                    status_code=status_code,
-                    detail=str(e),
-                ) from e
-                
-            except DomainError as e:
-                await session.rollback()
-                status_code = get_error_status_code(str(e))
-                raise HTTPException(
-                    status_code=status_code,
-                    detail=str(e),
-                ) from e
-                
-            except AlleviaException as e:
+                # Raw ValueError from value-object construction or similar.
+                # Default to 400; the global handler will render structured
+                # JSON for HTTPException too.
                 await session.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
+                    detail=str(e),
                 ) from e
                 
             except HTTPException:

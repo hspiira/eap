@@ -3,20 +3,22 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+
 
 class ClientTagCreate(BaseModel):
     """Request schema for creating a client tag."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Tag name")
-    description: str | None = Field(None, description="Tag description")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Tag name")
+    description: OptionalSanitizedStr = Field(None, description="Tag description")
     color: str | None = Field(None, max_length=7, pattern=r'^#([0-9A-Fa-f]{6})$', description="Hex color code (e.g., `#FF5733`)")
 
 
 class ClientTagUpdate(BaseModel):
     """Request schema for updating a client tag."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Tag name")
-    description: str | None = Field(None, description="Tag description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Tag name")
+    description: OptionalSanitizedStr = Field(None, description="Tag description")
     color: str | None = Field(None, max_length=7, pattern=r'^#([0-9A-Fa-f]{6})$', description="Hex color code (e.g., `#FF5733`)")
 
 

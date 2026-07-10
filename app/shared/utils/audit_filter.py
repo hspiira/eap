@@ -45,6 +45,10 @@ class AuditFilterService:
         AuditActionType.IMPORT,
     }
 
+    # Security-sensitive resource types: never skip/sample (login, password change,
+    # user/tenant suspend/terminate, confidential document access).
+    SECURITY_SENSITIVE_RESOURCES = {"User", "Tenant", "Document"}
+
     @classmethod
     def should_log_action(
         cls,
@@ -68,8 +72,13 @@ class AuditFilterService:
         Returns:
             True if action should be logged, False otherwise
         """
-        # Always log critical actions
+        # Always log critical actions (CREATE, UPDATE, DELETE, LOGIN, etc.)
         if action_type in cls.CRITICAL_ACTIONS:
+            return True
+
+        resource_type_normalized = (resource_type or "").strip()
+        # Always log any action on security-sensitive resources (User, Tenant, Document)
+        if resource_type_normalized in cls.SECURITY_SENSITIVE_RESOURCES:
             return True
 
         # Only apply filtering to high-volume actions
@@ -78,7 +87,7 @@ class AuditFilterService:
             return True
 
         # High-volume action - apply filtering rules
-        resource_type_normalized = (resource_type or "").strip()
+        # (resource_type_normalized already set above)
 
         # Check skip list first
         skip_list = settings.audit_skip_resources_list

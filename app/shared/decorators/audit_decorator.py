@@ -63,7 +63,7 @@ def audit_use_case(
                     user_id = kwargs.get("user_id")
 
             # Process events if result is an entity with events
-            if hasattr(result, "_events") and result._events:
+            if hasattr(result, "_events") and result.events:
                 # Get audit repository (would need db session - this is simplified)
                 # In practice, you'd pass db session through context
                 # For now, this is a placeholder showing the pattern

@@ -47,6 +47,18 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
 
     # Domain-specific queries (not in base class)
 
+    async def get_by_azure_tenant_id(self, azure_tenant_id: str) -> TenantEntity | None:
+        """Get tenant by Azure AD directory ID, excluding soft-deleted tenants."""
+        stmt = select(TenantModel).where(
+            TenantModel.azure_tenant_id == azure_tenant_id,
+            TenantModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        return self._to_entity(model)
+
     async def get_by_code(self, code: str) -> TenantEntity | None:
         """Get tenant by code, excluding soft-deleted tenants."""
         stmt = select(TenantModel).where(

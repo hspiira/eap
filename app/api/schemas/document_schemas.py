@@ -7,9 +7,25 @@ Separate from domain entities.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import DocumentStatus, DocumentType
+from app.shared.utils.document_validation import (
+    validate_document_file_path,
+    validate_document_file_url,
+)
+
+
+def _get_document_storage_path() -> str:
+    from app.core.config import settings
+    return getattr(settings, "DOCUMENT_STORAGE_PATH", "./uploads")
+
+
+def _get_allowed_url_schemes() -> list[str]:
+    from app.core.config import settings
+    raw = getattr(settings, "DOCUMENT_ALLOWED_URL_SCHEMES", "https")
+    return [s.strip().lower() for s in raw.split(",") if s.strip()]
 
 
 # === Request Schemas ===
@@ -17,8 +33,8 @@ from app.domain.enums import DocumentStatus, DocumentType
 class DocumentCreate(BaseModel):
     """Request schema for creating a document."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
     document_type: DocumentType = Field(..., description="Document type")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
@@ -32,20 +48,34 @@ class DocumentCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    def model_validate(cls, values):
-        """Validate that either file_path or file_url is provided."""
-        if not values.get("file_path") and not values.get("file_url"):
+    @field_validator("file_path")
+    @classmethod
+    def validate_file_path(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        return validate_document_file_path(v, _get_document_storage_path())
+
+    @field_validator("file_url")
+    @classmethod
+    def validate_file_url(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        return validate_document_file_url(v, _get_allowed_url_schemes())
+
+    @model_validator(mode="after")
+    def require_path_or_url(self):
+        if not self.file_path and not self.file_url:
             raise ValueError("Either file_path or file_url must be provided")
-        if values.get("file_path") and values.get("file_url"):
+        if self.file_path and self.file_url:
             raise ValueError("Cannot provide both file_path and file_url")
-        return values
+        return self
 
 
 class DocumentCreateVersion(BaseModel):
     """Request schema for creating a new document version."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
     file_size: int | None = Field(None, ge=0, description="File size in bytes")
@@ -53,20 +83,34 @@ class DocumentCreateVersion(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    def model_validate(cls, values):
-        """Validate that either file_path or file_url is provided."""
-        if not values.get("file_path") and not values.get("file_url"):
+    @field_validator("file_path")
+    @classmethod
+    def validate_file_path(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        return validate_document_file_path(v, _get_document_storage_path())
+
+    @field_validator("file_url")
+    @classmethod
+    def validate_file_url(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        return validate_document_file_url(v, _get_allowed_url_schemes())
+
+    @model_validator(mode="after")
+    def require_path_or_url(self):
+        if not self.file_path and not self.file_url:
             raise ValueError("Either file_path or file_url must be provided")
-        if values.get("file_path") and values.get("file_url"):
+        if self.file_path and self.file_url:
             raise ValueError("Cannot provide both file_path and file_url")
-        return values
+        return self
 
 
 class DocumentUpdate(BaseModel):
     """Request schema for updating document metadata."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Document name")
-    description: str | None = Field(None, description="Document description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    description: OptionalSanitizedStr = Field(None, description="Document description")
 
 
 class DocumentSetConfidentiality(BaseModel):

@@ -85,13 +85,9 @@ class TestGetAuditLogChanges:
     """Tests for GET /audit/logs/{audit_log_id}/changes endpoint."""
 
     async def test_get_changes_for_nonexistent_log(self, client: AsyncClient):
-        """Test getting changes for non-existent audit log."""
+        """Test getting changes for non-existent audit log returns 404."""
         response = await client.get("/audit/logs/nonexistent-id/changes")
-
-        # Should return empty list (not 404) as changes are queried by audit_log_id
-        assert response.status_code == 200
-        data = response.json()
-        assert data == []
+        assert response.status_code == 404
 
 
 # =============================================================================

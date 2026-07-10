@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums import BaseStatus
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ServiceAssignmentId, TenantId, ServiceId, ContractId
 from app.shared.utils.datetime import utc_now
@@ -16,111 +17,68 @@ from app.shared.utils.datetime import utc_now
 @dataclass
 class ServiceAssignmentEntity:
     # Required fields
-    _id: ServiceAssignmentId
-    _tenant_id: TenantId
-    _service_id: ServiceId
-    _contract_id: ContractId
-    _status: BaseStatus
-    _created_at: datetime
-    _updated_at: datetime
+    id: ServiceAssignmentId
+    tenant_id: TenantId
+    service_id: ServiceId
+    contract_id: ContractId
+    status: BaseStatus
+    created_at: datetime
+    updated_at: datetime
     
     # Optional fields
-    _assigned_at: datetime | None = None
-    _assigned_by: str | None = None  # User ID
-    _notes: str | None = None
-    _deleted_at: datetime | None = None
-    _events: list = field(default_factory=list)
+    assigned_at: datetime | None = None
+    assigned_by: str | None = None  # User ID
+    notes: str | None = None
+    deleted_at: datetime | None = None
+    _events: list[DomainEvent] = field(default_factory=list[DomainEvent])
     
     # === Behaviors ===
     
     def activate(self) -> None:
         """Activate service assignment."""
-        if self._status == BaseStatus.ACTIVE:
+        if self.status == BaseStatus.ACTIVE:
             raise DomainError("Assignment is already active")
-        if self._deleted_at:
+        if self.deleted_at:
             raise DomainError("Cannot activate deleted assignment")
-        self._status = BaseStatus.ACTIVE
+        self.status = BaseStatus.ACTIVE
         now = utc_now()
-        self._assigned_at = now
-        self._updated_at = now
+        self.assigned_at = now
+        self.updated_at = now
     
     def deactivate(self) -> None:
         """Deactivate service assignment."""
-        if self._status == BaseStatus.INACTIVE:
+        if self.status == BaseStatus.INACTIVE:
             raise DomainError("Assignment is already inactive")
-        if self._deleted_at:
+        if self.deleted_at:
             raise DomainError("Cannot deactivate deleted assignment")
-        self._status = BaseStatus.INACTIVE
-        self._updated_at = utc_now()
+        self.status = BaseStatus.INACTIVE
+        self.updated_at = utc_now()
     
     def update_notes(self, notes: str | None) -> None:
         """Update assignment notes."""
-        if self._deleted_at:
+        if self.deleted_at:
             raise DomainError("Cannot update deleted assignment")
-        self._notes = notes
-        self._updated_at = utc_now()
+        self.notes = notes
+        self.updated_at = utc_now()
     
     def archive(self) -> None:
         """Archive service assignment."""
-        if self._deleted_at:
+        if self.deleted_at:
             raise DomainError("Assignment is already archived")
-        self._status = BaseStatus.ARCHIVED
-        self._updated_at = utc_now()
+        self.status = BaseStatus.ARCHIVED
+        self.updated_at = utc_now()
     
     def restore(self) -> None:
         """Restore archived assignment."""
-        if not self._deleted_at:
+        if not self.deleted_at:
             raise DomainError("Assignment is not archived")
-        self._deleted_at = None
-        self._status = BaseStatus.ACTIVE
-        self._updated_at = utc_now()
+        self.deleted_at = None
+        self.status = BaseStatus.ACTIVE
+        self.updated_at = utc_now()
     
     def is_active(self) -> bool:
         """Check if assignment is active."""
-        return self._status == BaseStatus.ACTIVE and self._deleted_at is None
+        return self.status == BaseStatus.ACTIVE and self.deleted_at is None
     
     # === Public Properties ===
 
-    @property
-    def id(self) -> ServiceAssignmentId:
-        return self._id
-
-    @property
-    def tenant_id(self) -> TenantId:
-        return self._tenant_id
-
-    @property
-    def service_id(self) -> ServiceId:
-        return self._service_id
-
-    @property
-    def contract_id(self) -> ContractId:
-        return self._contract_id
-
-    @property
-    def status(self) -> BaseStatus:
-        return self._status
-
-    @property
-    def assigned_at(self) -> datetime | None:
-        return self._assigned_at
-
-    @property
-    def assigned_by(self) -> str | None:
-        return self._assigned_by
-
-    @property
-    def notes(self) -> str | None:
-        return self._notes
-
-    @property
-    def created_at(self) -> datetime:
-        return self._created_at
-
-    @property
-    def updated_at(self) -> datetime:
-        return self._updated_at
-
-    @property
-    def deleted_at(self) -> datetime | None:
-        return self._deleted_at

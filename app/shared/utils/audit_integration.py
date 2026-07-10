@@ -37,7 +37,7 @@ async def process_entity_events_for_audit(
         old_entity: Previous entity state (for tracking changes)
         request: FastAPI request (for extracting IP/user agent)
     """
-    if not hasattr(entity, "_events") or not entity._events:
+    if not hasattr(entity, "_events") or not entity.events:
         return
 
     ip_address = None
@@ -57,7 +57,7 @@ async def process_entity_events_for_audit(
 
     await audit_handler.handle_events(
         entity=entity,
-        events=entity._events.copy(),
+        events=entity.events.copy(),
         tenant_id=tenant_id,
         user_id=user_id,
         old_entity=old_entity,
@@ -65,7 +65,7 @@ async def process_entity_events_for_audit(
         user_agent=user_agent,
     )
 
-    entity._events.clear()
+    entity.events.clear()
 
 
 async def log_audit_action_directly(

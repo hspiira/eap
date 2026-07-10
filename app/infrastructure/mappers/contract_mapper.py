@@ -8,7 +8,12 @@ import decimal
 from datetime import datetime
 
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import (
+    ContractStatus,
+    PaymentFrequency,
+    PaymentStatus,
+    PricingModel,
+)
 from app.domain.value_objects.core import (
     ClientId,
     ContractId,
@@ -16,8 +21,88 @@ from app.domain.value_objects.core import (
     Money,
     TenantId,
 )
+from app.domain.value_objects.pricing import (
+    ContractPricing,
+    RateCard,
+    UtilisationTier,
+)
 from app.infrastructure.models.contract_model import ContractModel
 from app.shared.utils.datetime import ensure_utc
+
+
+def _money_from_dict(value: dict | None) -> Money | None:
+    if value is None:
+        return None
+    return Money(
+        amount=decimal.Decimal(str(value["amount"])),
+        currency=value["currency"],
+    )
+
+
+def _money_to_dict(value: Money | None) -> dict | None:
+    if value is None:
+        return None
+    return {"amount": str(value.amount), "currency": value.currency}
+
+
+def _pricing_from_dict(data: dict | None) -> ContractPricing | None:
+    if not data:
+        return None
+    rate_card_data = data.get("rate_card")
+    rate_card = None
+    if rate_card_data:
+        rate_card = RateCard(
+            rates=tuple(
+                (entry["service_code"], _money_from_dict(entry["rate"]))
+                for entry in rate_card_data
+            ),
+        )
+    tiers_data = data.get("tiers") or []
+    tiers = tuple(
+        UtilisationTier(
+            up_to_units=int(t["up_to_units"]),
+            unit_rate=_money_from_dict(t["unit_rate"]),
+        )
+        for t in tiers_data
+    )
+    parent_contract_id = data.get("parent_contract_id")
+    return ContractPricing(
+        model=PricingModel(data["model"]),
+        retainer_amount=_money_from_dict(data.get("retainer_amount")),
+        deposit_amount=_money_from_dict(data.get("deposit_amount")),
+        admin_fee_floor=_money_from_dict(data.get("admin_fee_floor")),
+        rate_card=rate_card,
+        parent_contract_id=ContractId(parent_contract_id)
+        if parent_contract_id
+        else None,
+        tiers=tiers,
+    )
+
+
+def _pricing_to_dict(pricing: ContractPricing | None) -> dict | None:
+    if pricing is None:
+        return None
+    rate_card_payload = None
+    if pricing.rate_card is not None:
+        rate_card_payload = [
+            {"service_code": code, "rate": _money_to_dict(rate)}
+            for code, rate in pricing.rate_card.rates
+        ]
+    tiers_payload = [
+        {"up_to_units": tier.up_to_units, "unit_rate": _money_to_dict(tier.unit_rate)}
+        for tier in pricing.tiers
+    ]
+    return {
+        "model": pricing.model.value,
+        "retainer_amount": _money_to_dict(pricing.retainer_amount),
+        "deposit_amount": _money_to_dict(pricing.deposit_amount),
+        "admin_fee_floor": _money_to_dict(pricing.admin_fee_floor),
+        "rate_card": rate_card_payload,
+        "parent_contract_id": pricing.parent_contract_id.value
+        if pricing.parent_contract_id
+        else None,
+        "tiers": tiers_payload,
+    }
 
 
 class ContractMapper:
@@ -83,25 +168,27 @@ class ContractMapper:
         payment_status = PaymentStatus(model.payment_status)
         status = ContractStatus(model.status)
 
-        # Create entity
+        pricing = _pricing_from_dict(getattr(model, "pricing_config", None))
+
         return ContractEntity(
-            _id=contract_id,
-            _tenant_id=tenant_id,
-            _client_id=client_id,
-            _period=period,
-            _billing_rate=billing_rate,
-            _payment_frequency=payment_frequency,
-            _payment_status=payment_status,
-            _status=status,
-            _is_auto_renew=model.is_auto_renew,
-            _last_billing_date=model.last_billing_date,
-            _next_billing_date=model.next_billing_date,
-            _signed_by=model.signed_by,
-            _signed_at=ensure_utc(model.signed_at) if model.signed_at else None,
-            _termination_reason=model.termination_reason,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            id=contract_id,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            period=period,
+            billing_rate=billing_rate,
+            payment_frequency=payment_frequency,
+            payment_status=payment_status,
+            status=status,
+            is_auto_renew=model.is_auto_renew,
+            last_billing_date=model.last_billing_date,
+            next_billing_date=model.next_billing_date,
+            signed_by=model.signed_by,
+            signed_at=ensure_utc(model.signed_at) if model.signed_at else None,
+            termination_reason=model.termination_reason,
+            pricing=pricing,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
     @staticmethod
@@ -117,33 +204,35 @@ class ContractMapper:
         """
         # Serialize DateRange to JSON
         period_dict = {
-            "start_date": entity._period.start_date.isoformat(),
-            "end_date": entity._period.end_date.isoformat(),
+            "start_date": entity.period.start_date.isoformat(),
+            "end_date": entity.period.end_date.isoformat(),
         }
 
         # Serialize Money to JSON
         billing_dict = {
-            "amount": str(entity._billing_rate.amount),
-            "currency": entity._billing_rate.currency,
+            "amount": str(entity.billing_rate.amount),
+            "currency": entity.billing_rate.currency,
         }
 
-        # Create model
+        pricing_dict = _pricing_to_dict(entity.pricing)
         return ContractModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            client_id=entity._client_id.value,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            client_id=entity.client_id.value,
             period=period_dict,
             billing_rate=billing_dict,
-            payment_frequency=entity._payment_frequency,
-            payment_status=entity._payment_status,
-            status=entity._status,
-            is_auto_renew=entity._is_auto_renew,
-            last_billing_date=entity._last_billing_date,
-            next_billing_date=entity._next_billing_date,
-            signed_by=entity._signed_by,
-            signed_at=ensure_utc(entity._signed_at) if entity._signed_at else None,
-            termination_reason=entity._termination_reason,
-            created_at=ensure_utc(entity._created_at),
-            updated_at=ensure_utc(entity._updated_at),
-            deleted_at=ensure_utc(entity._deleted_at) if entity._deleted_at else None,
+            payment_frequency=entity.payment_frequency,
+            payment_status=entity.payment_status,
+            status=entity.status,
+            is_auto_renew=entity.is_auto_renew,
+            last_billing_date=entity.last_billing_date,
+            next_billing_date=entity.next_billing_date,
+            signed_by=entity.signed_by,
+            signed_at=ensure_utc(entity.signed_at) if entity.signed_at else None,
+            termination_reason=entity.termination_reason,
+            pricing_model=entity.pricing.model.value if entity.pricing else None,
+            pricing_config=pricing_dict,
+            created_at=ensure_utc(entity.created_at),
+            updated_at=ensure_utc(entity.updated_at),
+            deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
         )

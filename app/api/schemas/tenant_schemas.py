@@ -5,8 +5,11 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import SubscriptionTier, TenantStatus
 
 
@@ -26,7 +29,7 @@ class TenantSettingsCreate(BaseModel):
 class TenantCreate(BaseModel):
     """Request schema for creating a tenant."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="Tenant name")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Tenant name")
     code: str = Field(
         ...,
         min_length=3,
@@ -72,6 +75,27 @@ class TenantResponse(BaseModel):
     subscription_tier: SubscriptionTier = Field(..., description="Subscription tier")
     settings: TenantSettingsResponse = Field(..., description="Tenant settings")
     is_active: bool = Field(..., description="Whether tenant is active")
+    azure_tenant_id: str | None = Field(
+        None, description="Azure AD directory ID for SSO (tid claim)"
+    )
+    azure_sso_enabled: bool = Field(
+        default=False, description="Whether Azure SSO is enabled"
+    )
+    admin_email: str | None = Field(
+        None, description="Admin user email (only returned on creation)"
+    )
+    admin_password: str | None = Field(
+        None,
+        description="Admin password (only when SET_PASSWORD_BASE_URL is not set; otherwise use set_password_url)",
+    )
+    set_password_url: str | None = Field(
+        None,
+        description="URL for user to set initial password (when SET_PASSWORD_BASE_URL is set)",
+    )
+    set_password_expires_at: datetime | None = Field(
+        None,
+        description="When the set-password link expires",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -92,19 +116,34 @@ class TenantUpdateSettings(BaseModel):
 class TenantSuspendRequest(BaseModel):
     """Request schema for suspending a tenant."""
 
-    reason: str = Field(..., min_length=1, description="Suspension reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Suspension reason")
 
 
 class TenantTerminateRequest(BaseModel):
     """Request schema for terminating a tenant."""
 
-    reason: str = Field(..., min_length=1, description="Termination reason")
+    reason: SanitizedStr = Field(..., min_length=1, description="Termination reason")
 
 
 class TenantUpdate(BaseModel):
     """Request schema for updating tenant basic information."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="Tenant name")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Tenant name")
+
+
+class TenantAzureSsoRequest(BaseModel):
+    """Request schema for configuring or disabling Azure AD SSO on a tenant."""
+
+    azure_tenant_id: str | None = Field(
+        None,
+        min_length=1,
+        max_length=64,
+        description="Azure AD directory ID (tid). Required when enabling SSO.",
+    )
+    enabled: bool = Field(
+        default=True,
+        description="Whether SSO is active. Set false to keep the ID but pause sign-in.",
+    )
 
 
 class SubscriptionUpdateRequest(BaseModel):

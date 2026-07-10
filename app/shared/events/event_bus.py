@@ -2,7 +2,20 @@
 Event Bus
 
 Simple in-process event bus for publishing and subscribing to domain events.
-For distributed systems, this can be replaced with message queue integration.
+
+In-process limits:
+- Events are delivered only within this process; multiple app instances do not
+  share events unless an external backend (e.g. Redis Pub/Sub) is used.
+- Event history is in-memory and bounded by max_history (default 1000); no
+  durability across restarts.
+- Handlers run asynchronously in the same process; slow handlers can delay
+  publish() and affect request latency if publish is called from request path.
+
+Optional backend (future): To support multi-instance or durable events, add an
+optional backend (e.g. Redis Pub/Sub or a queue) that implements the same
+publish/subscribe contract. Keep the existing in-process bus for local
+handlers and optionally fan-out to the backend on publish so existing
+handlers remain compatible.
 """
 
 import logging

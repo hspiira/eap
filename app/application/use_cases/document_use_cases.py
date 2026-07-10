@@ -7,10 +7,7 @@ Refactored to use base use case classes.
 
 from datetime import datetime
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_archive_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.document import DocumentEntity
 from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.repositories.document_repository import DocumentRepository
@@ -18,24 +15,7 @@ from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ArchiveDocumentUseCase:
-    """Use case for archiving a document."""
-
-    def __init__(self, document_repository: DocumentRepository):
-        self._use_case = create_archive_use_case(document_repository, "Document")
-
-    async def execute(self, document_id: DocumentId) -> DocumentEntity:
-        return await self._use_case.execute(document_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle (archive/publish) dispatched via TransitionUseCase + DocumentTransition.
 
 
 class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
@@ -75,26 +55,26 @@ class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
 
         # Create document entity
         document = DocumentEntity(
-            _id=document_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _document_type=document_type,
-            _status=DocumentStatus.DRAFT,
-            _version=1,
-            _is_latest=True,
-            _description=description,
-            _file_path=file_path,
-            _file_url=file_url,
-            _file_size=file_size,
-            _mime_type=mime_type,
-            _uploaded_by=uploaded_by,
-            _client_id=client_id,
-            _contract_id=contract_id,
-            _person_id=person_id,
-            _expires_at=expires_at,
-            _is_confidential=is_confidential,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            id=document_id,
+            tenant_id=tenant_id,
+            name=name,
+            document_type=document_type,
+            status=DocumentStatus.DRAFT,
+            version=1,
+            is_latest=True,
+            description=description,
+            file_path=file_path,
+            file_url=file_url,
+            file_size=file_size,
+            mime_type=mime_type,
+            uploaded_by=uploaded_by,
+            client_id=client_id,
+            contract_id=contract_id,
+            person_id=person_id,
+            expires_at=expires_at,
+            is_confidential=is_confidential,
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(document)
@@ -103,19 +83,6 @@ class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
 # =============================================================================
 # SPECIALIZED COMMAND USE CASES
 # =============================================================================
-
-
-class PublishDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
-    """Use case for publishing a document."""
-
-    def __init__(self, document_repository: DocumentRepository):
-        super().__init__(document_repository)
-
-    async def execute(self, document_id: DocumentId) -> DocumentEntity:
-        """Publish a document."""
-        document = await self._get_entity_or_raise(document_id, "Document")
-        document.publish()
-        return await self._save_and_publish_events(document)
 
 
 class CreateDocumentVersionUseCase(BaseUseCase[DocumentEntity, DocumentId]):

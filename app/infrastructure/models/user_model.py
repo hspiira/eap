@@ -7,10 +7,10 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import Language, UserStatus
+from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -39,6 +39,14 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
             "preferred_language IN (" + ", ".join(f"'{e.value}'" for e in Language) + ")",
             name="user_language_check",
         ),
+        CheckConstraint(
+            "role IN (" + ", ".join(f"'{e.value}'" for e in TenantRole) + ")",
+            name="user_role_check",
+        ),
+        CheckConstraint(
+            "auth_provider IN (" + ", ".join(f"'{e.value}'" for e in AuthProvider) + ")",
+            name="user_auth_provider_check",
+        ),
     )
 
     # Authentication
@@ -50,19 +58,37 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    # Status
+    # Status - native PG enum (userstatus); use value not name
     status: Mapped[UserStatus] = mapped_column(
-        EnumValueType(UserStatus), nullable=False, default=UserStatus.PENDING_VERIFICATION
+        Enum(
+            UserStatus,
+            name="userstatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=UserStatus.PENDING_VERIFICATION,
     )
     status_changed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
-    # Preferences
+    # Preferences - native PG enum (language)
     preferred_language: Mapped[Language | None] = mapped_column(
-        EnumValueType(Language), nullable=True
+        Enum(
+            Language,
+            name="language",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=True,
     )
     timezone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # RBAC: role within tenant
+    role: Mapped[TenantRole] = mapped_column(
+        EnumValueType(TenantRole), nullable=False, default=TenantRole.USER
+    )
 
     # Security
     is_two_factor_enabled: Mapped[bool] = mapped_column(
@@ -70,6 +96,23 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    failed_login_count: Mapped[int] = mapped_column(
+        default=0, nullable=False, server_default="0"
+    )
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
+    azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    auth_provider: Mapped[AuthProvider] = mapped_column(
+        EnumValueType(AuthProvider),
+        nullable=False,
+        default=AuthProvider.PASSWORD,
+        server_default=AuthProvider.PASSWORD.value,
     )
 
     def __repr__(self) -> str:

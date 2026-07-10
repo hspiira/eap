@@ -9,6 +9,72 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.audit_repository import AuditRepository
+from app.domain.repositories.benchmark_consent_repository import (
+    BenchmarkConsentRepository,
+)
+from app.domain.repositories.care_callback_repository import (
+    CareCallbackCampaignRepository,
+    OutreachRecordRepository,
+)
+from app.domain.repositories.critical_incident_repository import (
+    CriticalIncidentRepository,
+)
+from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.clinical_note_repository import (
+    ClinicalNoteRepository,
+)
+from app.domain.repositories.consent_repository import (
+    ConsentRepository,
+    DataSharingRegisterRepository,
+    DPOContactRepository,
+)
+from app.domain.repositories.crisis_contact_repository import (
+    CrisisContactRepository,
+)
+from app.domain.repositories.dsar_repository import DSARRequestRepository
+from app.domain.repositories.manager_workspace_repository import (
+    ManagerConsultRepository,
+    TrainingEnrolmentRepository,
+    WorkLifeProviderRepository,
+    WorkLifeReferralRepository,
+)
+from app.domain.repositories.outcomes_repository import (
+    FitnessForDutyRepository,
+    OutcomeMeasureRepository,
+    ReturnToWorkPlanRepository,
+)
+from app.domain.repositories.risk_safety_repository import (
+    CaringContactRepository,
+    MandatoryReportRepository,
+    RiskAssessmentRepository,
+    SafetyPlanRepository,
+)
+from app.domain.repositories.eap_programme_repository import (
+    AuthorizationRepository,
+    EAPProgrammeRepository,
+)
+from app.domain.repositories.eligible_member_repository import (
+    ClinicalSubjectRepository,
+    EligibleMemberClinicalLinkRepository,
+    EligibleMemberRepository,
+)
+from app.domain.repositories.engagement_repository import EngagementRepository
+from app.domain.repositories.non_compete_clause_repository import (
+    NonCompeteClauseRepository,
+)
+from app.domain.repositories.outbox_repository import OutboxRepository
+from app.domain.repositories.report_repository import (
+    ReportRunRepository,
+    ReportTemplateRepository,
+)
+from app.domain.repositories.survey_repository import (
+    SurveyCampaignRepository,
+    SurveyResponseRepository,
+)
+from app.domain.repositories.utilisation_event_repository import (
+    UtilisationEventRepository,
+)
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.activity_repository import ActivityRepository
@@ -34,6 +100,12 @@ from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
+from app.infrastructure.repositories.refresh_token_repository import (
+    RefreshTokenRepository,
+)
 from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
 from app.infrastructure.repositories.contact_repository import ContactRepositoryImpl
 from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
@@ -83,6 +155,13 @@ async def get_user_repository(
         UserRepository implementation
     """
     return UserRepositoryImpl(db)
+
+
+async def get_password_set_token_repository(
+    db: AsyncSession = Depends(get_db),
+) -> PasswordSetTokenRepository:
+    """Dependency for password set token store (tenant creation set-password flow)."""
+    return PasswordSetTokenRepository(db)
 
 
 async def get_client_repository(
@@ -297,19 +376,402 @@ async def get_service_assignment_repository(
     return ServiceAssignmentRepositoryImpl(db)
 
 
+async def get_outbox_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "OutboxRepository":
+    from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+
+    return OutboxRepositoryImpl(db)
+
+
 async def get_audit_event_handler(
-    audit_repo: AuditRepository = Depends(get_audit_repository),
+    outbox_repo: "OutboxRepository" = Depends(get_outbox_repository),
 ) -> AuditEventHandler:
-    """
-    Dependency for getting audit event handler.
+    """Audit handler enqueues domain events on the transactional outbox."""
+    return AuditEventHandler(outbox_repo)
 
-    Args:
-        audit_repo: Audit repository (injected dependency)
 
-    Returns:
-        AuditEventHandler instance
-    """
-    return AuditEventHandler(audit_repo)
+async def get_refresh_token_repository(
+    db: AsyncSession = Depends(get_db),
+) -> RefreshTokenRepository:
+    """Dependency for refresh token repository (revocation/rotation)."""
+    return RefreshTokenRepository(db)
+
+
+async def get_diagnosis_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DiagnosisRepository":
+    from app.infrastructure.repositories.diagnosis_repository import (
+        DiagnosisRepositoryImpl,
+    )
+
+    return DiagnosisRepositoryImpl(db)
+
+
+async def get_critical_incident_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CriticalIncidentRepository":
+    from app.infrastructure.repositories.critical_incident_repository import (
+        CriticalIncidentRepositoryImpl,
+    )
+
+    return CriticalIncidentRepositoryImpl(db)
+
+
+async def get_non_compete_clause_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "NonCompeteClauseRepository":
+    from app.infrastructure.repositories.non_compete_clause_repository import (
+        NonCompeteClauseRepositoryImpl,
+    )
+
+    return NonCompeteClauseRepositoryImpl(db)
+
+
+async def get_report_template_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReportTemplateRepository":
+    from app.infrastructure.repositories.report_repository import (
+        ReportTemplateRepositoryImpl,
+    )
+
+    return ReportTemplateRepositoryImpl(db)
+
+
+async def get_report_run_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReportRunRepository":
+    from app.infrastructure.repositories.report_repository import (
+        ReportRunRepositoryImpl,
+    )
+
+    return ReportRunRepositoryImpl(db)
+
+
+async def get_report_query_runner(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.report_query_runner import ReportQueryRunner
+
+    return ReportQueryRunner(db)
+
+
+async def get_utilisation_event_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "UtilisationEventRepository":
+    from app.infrastructure.repositories.utilisation_event_repository import (
+        UtilisationEventRepositoryImpl,
+    )
+
+    return UtilisationEventRepositoryImpl(db)
+
+
+async def get_care_callback_campaign_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CareCallbackCampaignRepository":
+    from app.infrastructure.repositories.care_callback_repository import (
+        CareCallbackCampaignRepositoryImpl,
+    )
+
+    return CareCallbackCampaignRepositoryImpl(db)
+
+
+async def get_outreach_record_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "OutreachRecordRepository":
+    from app.infrastructure.repositories.care_callback_repository import (
+        OutreachRecordRepositoryImpl,
+    )
+
+    return OutreachRecordRepositoryImpl(db)
+
+
+async def get_engagement_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EngagementRepository":
+    from app.infrastructure.repositories.engagement_repository import (
+        EngagementRepositoryImpl,
+    )
+
+    return EngagementRepositoryImpl(db)
+
+
+async def get_dsar_request_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DSARRequestRepository":
+    from app.infrastructure.repositories.dsar_repository import (
+        DSARRequestRepositoryImpl,
+    )
+
+    return DSARRequestRepositoryImpl(db)
+
+
+async def get_dsar_collector(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.dsar_service import SqlDSARDataCollector
+
+    return SqlDSARDataCollector(db)
+
+
+async def get_case_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CaseRepository":
+    from app.infrastructure.repositories.case_repository import (
+        CaseRepositoryImpl,
+    )
+
+    return CaseRepositoryImpl(db)
+
+
+async def get_clinical_note_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ClinicalNoteRepository":
+    from app.infrastructure.repositories.clinical_note_repository import (
+        ClinicalNoteRepositoryImpl,
+    )
+
+    return ClinicalNoteRepositoryImpl(db)
+
+
+async def get_crisis_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CrisisContactRepository":
+    from app.infrastructure.repositories.crisis_contact_repository import (
+        CrisisContactRepositoryImpl,
+    )
+
+    return CrisisContactRepositoryImpl(db)
+
+
+async def get_risk_assessment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "RiskAssessmentRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        RiskAssessmentRepositoryImpl,
+    )
+
+    return RiskAssessmentRepositoryImpl(db)
+
+
+async def get_safety_plan_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SafetyPlanRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        SafetyPlanRepositoryImpl,
+    )
+
+    return SafetyPlanRepositoryImpl(db)
+
+
+async def get_mandatory_report_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "MandatoryReportRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        MandatoryReportRepositoryImpl,
+    )
+
+    return MandatoryReportRepositoryImpl(db)
+
+
+async def get_caring_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CaringContactRepository":
+    from app.infrastructure.repositories.risk_safety_repository import (
+        CaringContactRepositoryImpl,
+    )
+
+    return CaringContactRepositoryImpl(db)
+
+
+async def get_manager_consult_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ManagerConsultRepository":
+    from app.infrastructure.repositories.manager_workspace_repository import (
+        ManagerConsultRepositoryImpl,
+    )
+
+    return ManagerConsultRepositoryImpl(db)
+
+
+async def get_work_life_provider_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "WorkLifeProviderRepository":
+    from app.infrastructure.repositories.manager_workspace_repository import (
+        WorkLifeProviderRepositoryImpl,
+    )
+
+    return WorkLifeProviderRepositoryImpl(db)
+
+
+async def get_work_life_referral_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "WorkLifeReferralRepository":
+    from app.infrastructure.repositories.manager_workspace_repository import (
+        WorkLifeReferralRepositoryImpl,
+    )
+
+    return WorkLifeReferralRepositoryImpl(db)
+
+
+async def get_training_enrolment_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "TrainingEnrolmentRepository":
+    from app.infrastructure.repositories.manager_workspace_repository import (
+        TrainingEnrolmentRepositoryImpl,
+    )
+
+    return TrainingEnrolmentRepositoryImpl(db)
+
+
+async def get_outcome_measure_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "OutcomeMeasureRepository":
+    from app.infrastructure.repositories.outcomes_repository import (
+        OutcomeMeasureRepositoryImpl,
+    )
+
+    return OutcomeMeasureRepositoryImpl(db)
+
+
+async def get_fitness_for_duty_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "FitnessForDutyRepository":
+    from app.infrastructure.repositories.outcomes_repository import (
+        FitnessForDutyRepositoryImpl,
+    )
+
+    return FitnessForDutyRepositoryImpl(db)
+
+
+async def get_return_to_work_plan_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReturnToWorkPlanRepository":
+    from app.infrastructure.repositories.outcomes_repository import (
+        ReturnToWorkPlanRepositoryImpl,
+    )
+
+    return ReturnToWorkPlanRepositoryImpl(db)
+
+
+async def get_consent_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ConsentRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        ConsentRepositoryImpl,
+    )
+
+    return ConsentRepositoryImpl(db)
+
+
+async def get_data_sharing_register_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DataSharingRegisterRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        DataSharingRegisterRepositoryImpl,
+    )
+
+    return DataSharingRegisterRepositoryImpl(db)
+
+
+async def get_dpo_contact_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "DPOContactRepository":
+    from app.infrastructure.repositories.consent_repository import (
+        DPOContactRepositoryImpl,
+    )
+
+    return DPOContactRepositoryImpl(db)
+
+
+async def get_eap_programme_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EAPProgrammeRepository":
+    from app.infrastructure.repositories.eap_programme_repository import (
+        EAPProgrammeRepositoryImpl,
+    )
+
+    return EAPProgrammeRepositoryImpl(db)
+
+
+async def get_authorization_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "AuthorizationRepository":
+    from app.infrastructure.repositories.eap_programme_repository import (
+        AuthorizationRepositoryImpl,
+    )
+
+    return AuthorizationRepositoryImpl(db)
+
+
+async def get_eligible_member_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EligibleMemberRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        EligibleMemberRepositoryImpl,
+    )
+
+    return EligibleMemberRepositoryImpl(db)
+
+
+async def get_clinical_subject_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ClinicalSubjectRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        ClinicalSubjectRepositoryImpl,
+    )
+
+    return ClinicalSubjectRepositoryImpl(db)
+
+
+async def get_eligible_member_clinical_link_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "EligibleMemberClinicalLinkRepository":
+    from app.infrastructure.repositories.eligible_member_repository import (
+        EligibleMemberClinicalLinkRepositoryImpl,
+    )
+
+    return EligibleMemberClinicalLinkRepositoryImpl(db)
+
+
+async def get_benchmark_consent_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "BenchmarkConsentRepository":
+    from app.infrastructure.repositories.benchmark_consent_repository import (
+        BenchmarkConsentRepositoryImpl,
+    )
+
+    return BenchmarkConsentRepositoryImpl(db)
+
+
+async def get_benchmark_collector(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.benchmark_collector import (
+        SqlBenchmarkCollector,
+    )
+
+    return SqlBenchmarkCollector(db)
+
+
+async def get_dsar_tombstoner(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.dsar_service import SqlDSARTombstoner
+
+    return SqlDSARTombstoner(db)
+
+
+async def get_survey_campaign_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SurveyCampaignRepository":
+    from app.infrastructure.repositories.survey_repository import (
+        SurveyCampaignRepositoryImpl,
+    )
+
+    return SurveyCampaignRepositoryImpl(db)
+
+
+async def get_survey_response_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SurveyResponseRepository":
+    from app.infrastructure.repositories.survey_repository import (
+        SurveyResponseRepositoryImpl,
+    )
+
+    return SurveyResponseRepositoryImpl(db)
 
 
 # =============================================================================
@@ -317,7 +779,7 @@ async def get_audit_event_handler(
 # =============================================================================
 
 
-from app.application.services.validation_service import ValidationService
+from app.application.services.validation_service import ValidationService  # noqa: E402
 
 
 async def get_validation_service(
@@ -360,7 +822,7 @@ async def get_validation_service(
 # =============================================================================
 
 
-from app.shared.events.event_bus import EventBus, event_bus
+from app.shared.events.event_bus import EventBus, event_bus  # noqa: E402
 
 
 def get_event_bus() -> EventBus:

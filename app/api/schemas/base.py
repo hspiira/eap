@@ -2,12 +2,29 @@
 Base API Schemas
 
 Generic base classes for API request/response schemas.
+Free-text fields use SanitizedStr so stored values are sanitized at the API boundary.
 """
 
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Annotated, Generic, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, BeforeValidator
+
+from app.shared.utils.sanitization import InputSanitizer
+
+
+def _sanitize_html(v: str | None) -> str | None:
+    """Sanitize string for storage; leave None unchanged."""
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return InputSanitizer.sanitize_html(v)
+    return v
+
+
+# Use for free-text request fields (name, description, reason, notes, address, etc.)
+SanitizedStr = Annotated[str, BeforeValidator(_sanitize_html)]
+OptionalSanitizedStr = Annotated[str | None, BeforeValidator(_sanitize_html)]
 
 T = TypeVar("T")
 
@@ -88,8 +105,8 @@ class StatusResponse(BaseModel):
 
 class ActionRequest(BaseModel):
     """Base request for actions requiring a reason."""
-    
-    reason: str = Field(
+
+    reason: SanitizedStr = Field(
         ...,
         min_length=1,
         max_length=500,
@@ -99,8 +116,8 @@ class ActionRequest(BaseModel):
 
 class OptionalReasonRequest(BaseModel):
     """Request where reason is optional."""
-    
-    reason: str | None = Field(
+
+    reason: OptionalSanitizedStr = Field(
         None,
         max_length=500,
         description="Optional reason for the action",

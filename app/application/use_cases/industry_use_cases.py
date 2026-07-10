@@ -5,45 +5,14 @@ Application services for Industry aggregate operations.
 Refactored to use base use case classes.
 """
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.industry import IndustryEntity
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateIndustryUseCase:
-    """Use case for activating an industry."""
-
-    def __init__(self, industry_repository: IndustryRepository):
-        self._use_case = create_activate_use_case(industry_repository, "Industry")
-
-    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
-        return await self._use_case.execute(industry_id)
-
-
-class DeactivateIndustryUseCase:
-    """Use case for deactivating an industry."""
-
-    def __init__(self, industry_repository: IndustryRepository):
-        self._use_case = create_deactivate_use_case(industry_repository, "Industry")
-
-    async def execute(self, industry_id: IndustryId) -> IndustryEntity:
-        return await self._use_case.execute(industry_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + IndustryTransition.
 
 
 class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
@@ -78,15 +47,15 @@ class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
 
         # Create industry entity
         industry = IndustryEntity(
-            _id=industry_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _description=description,
-            _code=code,
-            _parent_industry_id=parent_industry_id,
+            id=industry_id,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            code=code,
+            parent_industry_id=parent_industry_id,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(industry)
