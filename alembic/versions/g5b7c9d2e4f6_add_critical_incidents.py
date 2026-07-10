@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "g5b7c9d2e4f6"
@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=False, index=True),
         sa.Column("logged_by", sa.String(length=25), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="Open", index=True),
-        sa.Column("phases", postgresql.JSONB(), nullable=False, server_default="[]"),
+        sa.Column("phases", sa.JSON(), nullable=False, server_default="[]"),
         sa.Column("after_action_summary", sa.Text(), nullable=True),
         sa.Column("closed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
@@ -51,19 +51,23 @@ def upgrade() -> None:
         "service_sessions",
         sa.Column("incident_id", sa.String(length=25), nullable=True, index=True),
     )
-    op.create_foreign_key(
-        "fk_service_sessions_incident",
-        "service_sessions",
-        "critical_incidents",
-        ["incident_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.create_foreign_key(
+            "fk_service_sessions_incident",
+            "service_sessions",
+            "critical_incidents",
+            ["incident_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_service_sessions_incident", "service_sessions", type_="foreignkey"
-    )
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.drop_constraint(
+            "fk_service_sessions_incident", "service_sessions", type_="foreignkey"
+        )
     op.drop_column("service_sessions", "incident_id")
     op.drop_table("critical_incidents")

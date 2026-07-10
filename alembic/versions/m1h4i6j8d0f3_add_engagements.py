@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "m1h4i6j8d0f3"
@@ -36,10 +36,10 @@ def upgrade() -> None:
         sa.Column("period_start", sa.Date(), nullable=True),
         sa.Column("period_end", sa.Date(), nullable=True),
         sa.Column(
-            "deliverables", postgresql.JSONB(), nullable=False, server_default="[]"
+            "deliverables", sa.JSON(), nullable=False, server_default="[]"
         ),
         sa.Column(
-            "hours_log", postgresql.JSONB(), nullable=False, server_default="[]"
+            "hours_log", sa.JSON(), nullable=False, server_default="[]"
         ),
         sa.Column("created_by", sa.String(length=25), nullable=False),
         sa.Column("activated_at", sa.DateTime(timezone=True), nullable=True),

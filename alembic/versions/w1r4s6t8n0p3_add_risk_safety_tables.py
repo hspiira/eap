@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "w1r4s6t8n0p3"
@@ -86,7 +86,7 @@ def upgrade() -> None:
         sa.Column("rationale", sa.Text(), nullable=False),
         sa.Column(
             "questionnaire_response_ids",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
@@ -117,37 +117,37 @@ def upgrade() -> None:
         ),
         sa.Column(
             "warning_signs",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "internal_coping_strategies",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "social_distractions",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "social_contacts_for_help",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "professional_help_resources",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),
         sa.Column(
             "means_restriction_plan",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),

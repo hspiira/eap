@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "l0g3h5i7c9e2"
@@ -66,8 +66,8 @@ def upgrade() -> None:
             "submitted_at", sa.DateTime(timezone=True), nullable=False, index=True
         ),
         sa.Column("received_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("payload", postgresql.JSONB(), nullable=False),
-        sa.Column("metrics", postgresql.JSONB(), nullable=True),
+        sa.Column("payload", sa.JSON(), nullable=False),
+        sa.Column("metrics", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint(
