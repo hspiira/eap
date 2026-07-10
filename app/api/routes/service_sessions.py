@@ -36,11 +36,7 @@ from app.application.use_cases.transitions import (
 )
 from app.core.database import get_db
 from app.domain.enums import (
-    ClientType,
-    SessionCategory,
-    SessionClinicalStatus,
     SessionStatus,
-    SessionType,
 )
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.repositories.service_session_repository import (

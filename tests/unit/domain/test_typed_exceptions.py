@@ -38,7 +38,7 @@ class TestExceptionHttpStatuses:
             (lambda: PermissionDeniedError(), 403),
             (lambda: TenantNotFoundException("t-123"), 404),
             (lambda: ResourceNotFoundException("client", "c-1"), 404),
-            (lambda: SubscriptionLimitError(), 403),
+            (lambda: SubscriptionLimitError(), 402),
         ],
     )
     def test_exception_carries_correct_http_status(self, exc_factory, expected_status):

@@ -12,7 +12,7 @@ Responsibilities:
 from dataclasses import dataclass, field
 from datetime import datetime
 from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
-from app.domain.enums import SubscriptionTier, TenantStatus, AuthProvider
+from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.events import DomainEvent, TenantActivated, TenantSuspended, TenantTerminated
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now

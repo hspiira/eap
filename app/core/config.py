@@ -6,21 +6,24 @@ All configuration values must be set via environment variables.
 No defaults are provided - missing values will raise validation errors.
 """
 
+import os
 import warnings
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_env_file = ".env.test" if os.environ.get("ENVIRONMENT") == "test" else ".env"
 
 
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
-    
+
     All values are required and must be set via environment variables.
     Missing values will cause validation errors.
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_file,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
