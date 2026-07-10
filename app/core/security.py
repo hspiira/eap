@@ -8,16 +8,20 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.domain.exceptions import AuthenticationException
 
-# OAuth2 scheme for bearer token authentication
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+# HTTP Bearer scheme for API docs and dependency injection (matches new_timeline style)
+http_bearer = HTTPBearer(auto_error=False)
+
+# Cookie names when AUTH_USE_HTTPONLY_COOKIES is enabled
+COOKIE_ACCESS_TOKEN = "evexia_access_token"
+COOKIE_REFRESH_TOKEN = "evexia_refresh_token"
 
 
 # =============================================================================
@@ -26,18 +30,33 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 class TokenData(BaseModel):
-    """Data extracted from JWT token."""
+    """Data extracted from JWT token.
+
+    ``access_scopes`` carries the bounded-context split that gates the privacy
+    wall (see :class:`~app.domain.enums.AccessScope`). Tokens minted before the
+    scope rollout have an empty list; route guards treat that as legacy
+    PLATFORM_ADMIN — clinical-only routes will refuse them once the auth backend
+    emits explicit scopes everywhere.
+
+    ``role`` is the tenant-level role (ADMIN / USER / VIEWER) embedded in the
+    token at mint time.  This lets viewer-guard middleware check the role without
+    a DB round-trip on every mutation request.
+    """
 
     user_id: str
     tenant_id: str
     email: str | None = None
     exp: datetime | None = None
+    jti: str | None = None
+    access_scopes: list[str] = []
+    role: str | None = None
 
 
 class Token(BaseModel):
     """Token response model."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     expires_in: int
 
@@ -92,6 +111,8 @@ def create_access_token(
     email: str | None = None,
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
+    access_scopes: list[str] | None = None,
+    role: str | None = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -123,6 +144,12 @@ def create_access_token(
     if email:
         to_encode["email"] = email
 
+    if access_scopes:
+        to_encode["access_scopes"] = list(access_scopes)
+
+    if role:
+        to_encode["role"] = role
+
     if additional_claims:
         to_encode.update(additional_claims)
 
@@ -130,6 +157,47 @@ def create_access_token(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+
+def create_refresh_token(
+    user_id: str,
+    tenant_id: str,
+    jti: str | None = None,
+) -> str:
+    """Create a refresh token with longer expiry. Optional jti for revocation."""
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode = {
+        "sub": user_id,
+        "tenant_id": tenant_id,
+        "exp": expire,
+        "iat": datetime.now(UTC),
+        "type": "refresh",
+    }
+    if jti:
+        to_encode["jti"] = jti
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_refresh_token(token: str) -> TokenData:
+    """Decode refresh token and validate it's a refresh token."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        if payload.get("type") != "refresh":
+            raise AuthenticationException("Invalid token type")
+        user_id = payload.get("sub")
+        tenant_id = payload.get("tenant_id")
+        if not user_id or not tenant_id:
+            raise AuthenticationException("Invalid token: missing claims")
+        jti = payload.get("jti")
+        return TokenData(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            jti=jti,
+        )
+    except JWTError as e:
+        raise AuthenticationException(f"Invalid refresh token: {str(e)}")
 
 
 def decode_token(token: str) -> TokenData:
@@ -157,11 +225,16 @@ def decode_token(token: str) -> TokenData:
         if user_id is None or tenant_id is None:
             raise AuthenticationException("Invalid token: missing required claims")
 
+        scopes_claim = payload.get("access_scopes") or []
+        if not isinstance(scopes_claim, list):
+            scopes_claim = []
         return TokenData(
             user_id=user_id,
             tenant_id=tenant_id,
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
+            access_scopes=[str(s) for s in scopes_claim],
+            role=payload.get("role"),
         )
     except JWTError as e:
         raise AuthenticationException(f"Invalid token: {str(e)}")
@@ -172,32 +245,45 @@ def decode_token(token: str) -> TokenData:
 # =============================================================================
 
 
+async def get_access_token_str(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
+) -> str | None:
+    """
+    Get access token from cookie (if AUTH_USE_HTTPONLY_COOKIES) or Bearer header.
+    """
+    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
+        token = request.cookies.get(COOKIE_ACCESS_TOKEN)
+        if token:
+            return token
+    if credentials:
+        return credentials.credentials
+    return None
+
+
 async def get_current_user_optional(
-    token: str | None = Depends(oauth2_scheme),
+    token_str: str | None = Depends(get_access_token_str),
 ) -> TokenData | None:
     """
-    Get current user from token if provided.
+    Get current user from Bearer token or cookie if provided.
 
     This dependency does not require authentication - returns None
     if no token is provided.
 
-    Args:
-        token: Optional JWT token from Authorization header
-
     Returns:
         TokenData if authenticated, None otherwise
     """
-    if token is None:
+    if not token_str:
         return None
 
     try:
-        return decode_token(token)
+        return decode_token(token_str)
     except AuthenticationException:
         return None
 
 
 async def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
+    current_user: TokenData | None = Depends(get_current_user_optional),
 ) -> TokenData:
     """
     Get current authenticated user.
@@ -206,7 +292,7 @@ async def get_current_user(
     if not authenticated.
 
     Args:
-        token: JWT token from Authorization header
+        current_user: Result of get_current_user_optional (None if not authenticated)
 
     Returns:
         TokenData for authenticated user
@@ -214,64 +300,29 @@ async def get_current_user(
     Raises:
         HTTPException: If not authenticated
     """
-    if token is None:
+    if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    try:
-        return decode_token(token)
-    except AuthenticationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-async def get_current_active_user(
-    current_user: TokenData = Depends(get_current_user),
-) -> TokenData:
-    """
-    Get current active user.
-
-    Additional checks can be added here (e.g., check if user is banned).
-
-    Args:
-        current_user: Current authenticated user
-
-    Returns:
-        TokenData for active user
-    """
-    # Additional active user checks can be added here
-    # For example, checking against database if user is still active
     return current_user
 
 
-def require_tenant(tenant_id: str):
+async def get_current_active_user(
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
     """
-    Create a dependency that requires a specific tenant.
+    Get current active user (same as get_current_user unless STRICT_ACTIVE_USER_CHECK is True).
 
-    Args:
-        tenant_id: Required tenant ID
-
-    Returns:
-        Dependency function that validates tenant
+    When STRICT_ACTIVE_USER_CHECK is True, re-validates user and tenant in DB and rejects if
+    user is not active or tenant is not active. Otherwise returns token data without DB check.
     """
-
-    async def tenant_validator(
-        current_user: TokenData = Depends(get_current_user),
-    ) -> TokenData:
-        if current_user.tenant_id != tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this tenant",
-            )
-        return current_user
-
-    return tenant_validator
+    validate = getattr(request.app.state, "validate_active_user", None)
+    if validate is not None:
+        await validate(request, current_user)
+    return current_user
 
 
 # =============================================================================
@@ -283,26 +334,24 @@ def create_token_response(
     user_id: str,
     tenant_id: str,
     email: str | None = None,
+    refresh_jti: str | None = None,
+    role: str | None = None,
 ) -> Token:
-    """
-    Create a token response for API endpoints.
-
-    Args:
-        user_id: User identifier
-        tenant_id: Tenant identifier
-        email: User email
-
-    Returns:
-        Token response with access token and metadata
-    """
+    """Create access and refresh tokens. Optional refresh_jti for revocation support."""
     access_token = create_access_token(
         user_id=user_id,
         tenant_id=tenant_id,
         email=email,
+        role=role,
     )
-
+    refresh_token = create_refresh_token(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        jti=refresh_jti,
+    )
     return Token(
         access_token=access_token,
+        refresh_token=refresh_token,
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )

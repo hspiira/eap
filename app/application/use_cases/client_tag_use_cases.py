@@ -1,44 +1,13 @@
 """ClientTag Use Cases - Application services for ClientTag operations."""
 
-from app.application.use_cases.base import (
-    BaseUseCase,
-    create_activate_use_case,
-    create_deactivate_use_case,
-)
+from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client_tag import ClientTagEntity
 from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
-# =============================================================================
-# LIFECYCLE USE CASES (Using Base Factories)
-# =============================================================================
-
-
-class ActivateClientTagUseCase:
-    """Use case for activating a client tag."""
-
-    def __init__(self, tag_repository: ClientTagRepository):
-        self._use_case = create_activate_use_case(tag_repository, "Tag")
-
-    async def execute(self, tag_id: ClientTagId) -> ClientTagEntity:
-        return await self._use_case.execute(tag_id)
-
-
-class DeactivateClientTagUseCase:
-    """Use case for deactivating a client tag."""
-
-    def __init__(self, tag_repository: ClientTagRepository):
-        self._use_case = create_deactivate_use_case(tag_repository, "Tag")
-
-    async def execute(self, tag_id: ClientTagId) -> ClientTagEntity:
-        return await self._use_case.execute(tag_id)
-
-
-# =============================================================================
-# CREATE USE CASE
-# =============================================================================
+# Lifecycle dispatched via TransitionUseCase + ClientTagTransition.
 
 
 class CreateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
@@ -62,14 +31,14 @@ class CreateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
             raise ValueError(f"Tag with name '{name}' already exists")
 
         tag = ClientTagEntity(
-            _id=tag_id,
-            _tenant_id=tenant_id,
-            _name=name,
-            _description=description,
-            _color=color,
+            id=tag_id,
+            tenant_id=tenant_id,
+            name=name,
+            description=description,
+            color=color,
             _is_active=True,
-            _created_at=utc_now(),
-            _updated_at=utc_now(),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
 
         return await self._save_and_publish_events(tag)

@@ -1,19 +1,24 @@
 [project]
 name = "eap"
 version = "0.1.0"
-description = "Allevia - Employee Assistance Program Management API"
+description = "Evexía - Employee Assistance Program Management API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
     "alembic>=1.18.1",
+    "asyncpg>=0.30.0",
     "bcrypt>=4.2.0",
     "beanie>=2.0.1",
+    "cryptography>=46.0.0",
     "cuid2>=2.0.1",
     "fastapi[standard]>=0.128.0",
     "greenlet>=3.3.0",
+    "msal>=1.36.0",
     "nh3>=0.3.2",
+    "pytest-asyncio>=1.3.0",
     "python-jose[cryptography]>=3.3.0",
+    "scalar-fastapi>=1.0.0",
     "sqlalchemy>=2.0.46",
 ]
 
@@ -22,6 +27,9 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.27.0",
+]
+redis = [
+    "redis>=5.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -34,5 +42,117 @@ python_functions = ["test_*"]
 
 [dependency-groups]
 dev = [
+    "import-linter>=2.0",
+    "pyright>=1.1.409",
+    "pytest-cov>=5.0",
     "ruff>=0.14.13",
+]
+
+# ----------------------------------------------------------------------------
+# Clean-architecture layering enforcement (Phase 0 #C2 / SAD §13.2).
+#
+# Layers (innermost first):
+#   1. domain         — pure entities, value objects, repository interfaces
+#   2. application    — use cases; depends on domain only
+#   3. infrastructure — SQLAlchemy models, mappers, concrete repos
+#   4. api            — FastAPI routes/schemas; orchestrates application layer
+#
+# Allowed: outer → inner. Forbidden: inner → outer.
+# `core` and `shared` are leaf utilities — no inbound restrictions in v1.
+#
+# Run: `uv run lint-imports`
+# ----------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "app"
+include_external_packages = false
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = [
+    "app.application",
+    "app.infrastructure",
+    "app.api",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application depends only on domain (and core/shared utilities)"
+type = "forbidden"
+source_modules = ["app.application"]
+forbidden_modules = [
+    "app.infrastructure",
+    "app.api",
+]
+# Tech debt — to remove in Phase 1 (lifecycle collapse) when the
+# password-set-token use case is restructured to depend on a domain repository
+# interface, with the concrete implementation injected from infrastructure.
+ignore_imports = [
+    "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
+]
+
+[[tool.importlinter.contracts]]
+name = "API routes do not import infrastructure directly"
+type = "forbidden"
+source_modules = ["app.api.routes"]
+forbidden_modules = [
+    "app.infrastructure",
+]
+# `app.api.dependencies` is the FastAPI composition root: by design it wires
+# infrastructure repositories into routes via Depends(...). The transitive
+# edge routes -> dependencies -> infrastructure is the intended pattern.
+# The grandfathered direct edges below are existing tech debt; remove them in
+# Phase 1 (entity boilerplate + lifecycle collapse) and Phase 2 alongside the
+# new entity work. Adding *new* direct edges must fail CI.
+ignore_imports = [
+    # Composition-root wiring (intentional pattern):
+    "app.api.dependencies -> app.infrastructure.repositories.activity_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.audit_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.benchmark_consent_repository",
+    "app.api.dependencies -> app.infrastructure.services.benchmark_collector",
+    "app.api.dependencies -> app.infrastructure.repositories.care_callback_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.case_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.clinical_note_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.consent_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.crisis_contact_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.eap_programme_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.manager_workspace_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.outcomes_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.risk_safety_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.client_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.client_tag_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.contact_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.contract_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.critical_incident_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.diagnosis_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.document_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.dsar_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.eligible_member_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.engagement_repository",
+    "app.api.dependencies -> app.infrastructure.services.dsar_service",
+    "app.api.dependencies -> app.infrastructure.repositories.industry_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.kpi_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.non_compete_clause_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.outbox_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.password_set_token_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.report_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.utilisation_event_repository",
+    "app.api.dependencies -> app.infrastructure.services.report_query_runner",
+    "app.api.dependencies -> app.infrastructure.repositories.person_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.refresh_token_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_assignment_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.service_session_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.survey_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.tenant_repository",
+    "app.api.dependencies -> app.infrastructure.repositories.user_repository",
+    "app.core.authorization -> app.api.dependencies",
+    "app.core.database -> app.infrastructure.models.base",
+    # Tech debt (must be eliminated; track in IMPLEMENTATION_PLAN.md Phase 1):
+    "app.api.routes.auth -> app.infrastructure.repositories.password_set_token_repository",
+    "app.api.routes.auth -> app.infrastructure.repositories.refresh_token_repository",
+    "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
+    "app.api.routes.clients -> app.infrastructure.models.client_model",
+    "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",
+    "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
 ]

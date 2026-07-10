@@ -41,17 +41,18 @@ class AuditMapper:
 
         # Create entity
         return AuditLog(
-            _id=audit_log_id,
-            _tenant_id=tenant_id,
-            _user_id=user_id,
-            _action_type=action_type,
-            _resource_type=model.resource_type,
-            _resource_id=model.resource_id,
-            _description=model.description,
-            _ip_address=model.ip_address,
-            _user_agent=model.user_agent,
-            _occurred_at=ensure_utc(model.occurred_at),
-            _metadata=model.extra_metadata,
+            id=audit_log_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action_type=action_type,
+            resource_type=model.resource_type,
+            resource_id=model.resource_id,
+            description=model.description,
+            ip_address=model.ip_address,
+            user_agent=model.user_agent,
+            occurred_at=ensure_utc(model.occurred_at),
+            metadata=model.extra_metadata,
+            is_special_category=getattr(model, "is_special_category", False),
         )
 
     @staticmethod
@@ -65,21 +66,26 @@ class AuditMapper:
         Returns:
             AuditLogModel for persistence
         """
+        # Create model - convert metadata to plain dict for JSON serialization
+        # (entity stores it as MappingProxyType for immutability, which is not JSON-serializable)
+        metadata_dict = dict(entity._metadata) if entity._metadata else None
+
         # Create model
         return AuditLogModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            user_id=entity._user_id.value if entity._user_id else None,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            user_id=entity.user_id.value if entity.user_id else None,
             action_type=entity._action_type,
             resource_type=entity._resource_type,
-            resource_id=entity._resource_id,
-            description=entity._description,
+            resourceid=entity._resource_id,
+            description=entity.description,
             ip_address=entity._ip_address,
             user_agent=entity._user_agent,
-            occurred_at=ensure_utc(entity._occurred_at),
-            extra_metadata=entity._metadata,
-            created_at=ensure_utc(entity._occurred_at),  # Use occurred_at for created_at
-            updated_at=ensure_utc(entity._occurred_at),  # Immutable, so same as created_at
+            occurred_at=ensure_utc(entity.occurred_at),
+            extrametadata=metadata_dict,
+            is_special_category=getattr(entity, "is_special_category", False),
+            created_at=ensure_utc(entity.occurred_at),
+            updated_at=ensure_utc(entity.occurred_at),
         )
 
     @staticmethod
@@ -109,11 +115,11 @@ class AuditMapper:
 
         # Create entity
         return EntityChange(
-            _id=entity_change_id,
-            _audit_log_id=audit_log_id,
-            _entity_type=model.entity_type,
-            _entity_id=model.entity_id,
-            _field_changes=field_changes,
+            id=entity_change_id,
+            audit_log_id=audit_log_id,
+            entity_type=model.entity_type,
+            entity_id=model.entity_id,
+            field_changes=field_changes,
         )
 
     @staticmethod
@@ -139,10 +145,10 @@ class AuditMapper:
 
         # Create model
         return EntityChangeModel(
-            id=entity._id.value,
-            audit_log_id=entity._audit_log_id.value,
+            id=entity.id.value,
+            audit_logid=entity._audit_log_id.value,
             entity_type=entity._entity_type,
-            entity_id=entity._entity_id,
+            entityid=entity._entity_id,
             field_changes=field_changes,
             created_at=utc_now(),
             updated_at=utc_now(),

@@ -44,14 +44,16 @@ class TenantMapper:
         
         # Create entity
         return TenantEntity(
-            _id=tenant_id,
-            _name=model.name,
-            _code=tenant_code,
-            _status=status,
-            _settings=tenant_settings,
-            _subscription_tier=subscription_tier,
-            _deleted_at=ensure_utc(model.deleted_at),
-            _updated_at=ensure_utc(model.updated_at)
+            id=tenant_id,
+            name=model.name,
+            code=tenant_code,
+            status=status,
+            settings=tenant_settings,
+            subscription_tier=subscription_tier,
+            deleted_at=ensure_utc(model.deleted_at),
+            updated_at=ensure_utc(model.updated_at),
+            azure_tenant_id=model.azure_tenant_id,
+            azure_sso_enabled=model.azure_sso_enabled,
         )
     
     @staticmethod
@@ -67,10 +69,10 @@ class TenantMapper:
         """
         # Convert value objects to primitives
         settings_dict = {
-            "max_users": entity._settings.max_users,
-            "max_clients": entity._settings.max_clients,
-            "features_enabled": list(entity._settings.features_enabled),
-            "custom_branding": entity._settings.custom_branding
+            "max_users": entity.settings.max_users,
+            "max_clients": entity.settings.max_clients,
+            "features_enabled": list(entity.settings.features_enabled),
+            "custom_branding": entity.settings.custom_branding
         }
         
         # Create model
@@ -78,17 +80,19 @@ class TenantMapper:
         # but we can set updated_at explicitly if needed
         # For SQLEnum with native_enum=False, we need to ensure enum values are used
         model = TenantModel(
-            id=entity._id.value,
-            name=entity._name,
-            code=entity._code.value,
-            status=entity._status,  # SQLEnum should handle conversion, but ensure it's the enum object
+            id=entity.id.value,
+            name=entity.name,
+            code=entity.code.value,
+            status=entity.status,
             settings=settings_dict,
-            subscription_tier=entity._subscription_tier,  # SQLEnum should handle conversion
-            deleted_at=entity._deleted_at
+            subscription_tier=entity.subscription_tier,
+            deleted_at=entity.deleted_at,
+            azure_tenant_id=entity.azure_tenant_id,
+            azure_sso_enabled=entity.azure_sso_enabled,
         )
         
         # Set updated_at if provided (otherwise TimestampMixin will handle it)
-        if entity._updated_at:
-            model.updated_at = entity._updated_at
+        if entity.updated_at:
+            model.updated_at = entity.updated_at
         
         return model

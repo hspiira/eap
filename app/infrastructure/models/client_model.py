@@ -5,10 +5,10 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, ForeignKey, JSON, String
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -41,6 +41,7 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(5), nullable=False, index=True)  # 3-5 character unique code
     contact_info: Mapped[dict] = mapped_column(JSON, nullable=False)
     billing_address: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
@@ -50,16 +51,29 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         ForeignKey("clients.id"), nullable=True, index=True
     )
 
-    # Status
+    # Status - use native PG enum (create_type=False) so PostgreSQL accepts the type
     status: Mapped[BaseStatus] = mapped_column(
-        EnumValueType(BaseStatus),
+        Enum(
+            BaseStatus,
+            name="basestatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
         default=BaseStatus.PENDING,
     )
     is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
     preferred_contact_method: Mapped[ContactMethod | None] = mapped_column(
-        EnumValueType(ContactMethod),
+        Enum(
+            ContactMethod,
+            name="contactmethod",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=True,
+    )
+    tier: Mapped[ClientTier | None] = mapped_column(
+        EnumValueType(ClientTier), nullable=True, index=True
     )
 
     def __repr__(self) -> str:

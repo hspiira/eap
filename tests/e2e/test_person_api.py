@@ -8,7 +8,6 @@ Comprehensive tests for all person endpoints covering:
 - Secondary roles (Add, Remove)
 """
 
-from datetime import date
 
 import pytest
 from httpx import AsyncClient

@@ -5,10 +5,16 @@ FastAPI routes for Service Session operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_service_session_repository
+from app.core.authorization import (
+    get_service_session_for_current_tenant,
+    require_same_tenant,
+)
+from app.core.security import TokenData, get_current_user
+
+from app.api.dependencies import get_audit_event_handler, get_service_session_repository
 from app.api.schemas.service_session_schemas import (
     ServiceSessionCancelRequest,
     ServiceSessionCompleteRequest,
@@ -20,19 +26,22 @@ from app.api.schemas.service_session_schemas import (
     ServiceSessionUpdateFeedback,
 )
 from app.application.use_cases.service_session_use_cases import (
-    ArchiveServiceSessionUseCase,
-    CancelServiceSessionUseCase,
-    CompleteServiceSessionUseCase,
     CreateServiceSessionUseCase,
     GetServiceSessionUseCase,
-    MarkNoShowServiceSessionUseCase,
-    RescheduleServiceSessionUseCase,
-    RestoreServiceSessionUseCase,
-    UpdateServiceSessionFeedbackUseCase,
     UpdateServiceSessionUseCase,
 )
+from app.application.use_cases.transitions import (
+    ServiceSessionTransition,
+    TransitionUseCase,
+)
 from app.core.database import get_db
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
@@ -45,6 +54,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
@@ -69,6 +79,19 @@ def _to_service_session_response(
         feedback=session.feedback,
         cancellation_reason=session.cancellation_reason,
         is_active=session.is_active(),
+        session_type=session.session_type,
+        category=session.category,
+        rate_ugx=session.rate_ugx,
+        issue_topic=session.issue_topic,
+        diagnosis_type_id=session.diagnosis_type_id,
+        diagnosis_id=session.diagnosis_id,
+        approved_by=session.approved_by,
+        session_number=session.session_number,
+        partner_name=session.partner_name,
+        partner_relationship=session.partner_relationship,
+        headcount=session.headcount,
+        client_type=session.client_type,
+        clinical_outcome=session.clinical_outcome,
     )
 
 
@@ -84,8 +107,11 @@ def _to_service_session_response(
 @transactional()
 async def create_service_session(
     data: ServiceSessionCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service session."""
@@ -97,6 +123,26 @@ async def create_service_session(
         person_id=PersonId(data.person_id),
         scheduled_at=data.scheduled_at,
         location=data.location,
+        session_type=data.session_type,
+        category=data.category,
+        rate_ugx=data.rate_ugx,
+        issue_topic=data.issue_topic,
+        diagnosis_type_id=data.diagnosis_type_id,
+        diagnosis_id=data.diagnosis_id,
+        approved_by=data.approved_by,
+        session_number=data.session_number,
+        partner_name=data.partner_name,
+        partner_relationship=data.partner_relationship,
+        headcount=data.headcount,
+        client_type=data.client_type,
+        clinical_outcome=data.clinical_outcome,
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -108,14 +154,29 @@ async def create_service_session(
 )
 @transactional()
 async def complete_service_session(
-    session_id: str,
-    request: ServiceSessionCompleteRequest,
+    request: Request,
+    body: ServiceSessionCompleteRequest,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Complete a service session."""
-    session = await CompleteServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), request.duration, request.notes
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.COMPLETE,
+        duration=body.duration,
+        notes=body.notes,
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -127,14 +188,26 @@ async def complete_service_session(
 )
 @transactional()
 async def cancel_service_session(
-    session_id: str,
-    request: ServiceSessionCancelRequest,
+    request: Request,
+    body: ServiceSessionCancelRequest,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Cancel a service session."""
-    session = await CancelServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), request.reason
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.CANCEL, reason=body.reason
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -146,14 +219,28 @@ async def cancel_service_session(
 )
 @transactional()
 async def reschedule_service_session(
-    session_id: str,
-    request: ServiceSessionRescheduleRequest,
+    request: Request,
+    body: ServiceSessionRescheduleRequest,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Reschedule a service session."""
-    session = await RescheduleServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), request.new_scheduled_at
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.RESCHEDULE,
+        new_scheduled_at=body.new_scheduled_at,
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -165,13 +252,23 @@ async def reschedule_service_session(
 )
 @transactional()
 async def mark_no_show_service_session(
-    session_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a service session as no-show."""
-    session = await MarkNoShowServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.MARK_NO_SHOW)
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -183,14 +280,38 @@ async def mark_no_show_service_session(
 )
 @transactional()
 async def update_service_session(
-    session_id: str,
     data: ServiceSessionUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session information."""
     session = await UpdateServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id), location=data.location, notes=data.notes
+        session.id,
+        location=data.location,
+        notes=data.notes,
+        session_type=data.session_type,
+        category=data.category,
+        headcount=data.headcount,
+        rate_ugx=data.rate_ugx,
+        issue_topic=data.issue_topic,
+        diagnosis_type_id=data.diagnosis_type_id,
+        diagnosis_id=data.diagnosis_id,
+        approved_by=data.approved_by,
+        partner_name=data.partner_name,
+        partner_relationship=data.partner_relationship,
+        client_type=data.client_type,
+        clinical_outcome=data.clinical_outcome,
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -202,14 +323,28 @@ async def update_service_session(
 )
 @transactional()
 async def update_service_session_feedback(
-    session_id: str,
-    request: ServiceSessionUpdateFeedback,
+    request: Request,
+    body: ServiceSessionUpdateFeedback,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session feedback."""
-    session = await UpdateServiceSessionFeedbackUseCase(session_repo).execute(
-        SessionId(session_id), request.feedback
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(
+        session.id,
+        ServiceSessionTransition.UPDATE_FEEDBACK,
+        feedback=body.feedback,
+    )
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -221,13 +356,23 @@ async def update_service_session_feedback(
 )
 @transactional()
 async def archive_service_session(
-    session_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service session."""
-    session = await ArchiveServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.ARCHIVE)
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -239,13 +384,23 @@ async def archive_service_session(
 )
 @transactional()
 async def restore_service_session(
-    session_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived service session."""
-    session = await RestoreServiceSessionUseCase(session_repo).execute(
-        SessionId(session_id)
+    use_case: TransitionUseCase = TransitionUseCase(session_repo)
+    use_case.entity_name = "Session"
+    session = await use_case.execute(session.id, ServiceSessionTransition.RESTORE)
+    await audit_entity_operation(
+        entity=session,
+        audit_handler=audit_handler,
+        tenant_id=session.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_session_response(session)
 
@@ -261,6 +416,7 @@ async def restore_service_session(
 @readonly()
 async def list_service_sessions(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     person_id: str | None = Query(None, description="Filter by person identifier"),
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
@@ -311,14 +467,10 @@ async def list_service_sessions(
 )
 @readonly()
 async def get_service_session(
-    session_id: str,
-    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    session = await session_repo.get_by_id(SessionId(session_id))
-    if not session:
-        raise ValueError("Service session not found")
     return _to_service_session_response(session)
 
 
@@ -331,6 +483,7 @@ async def get_service_session(
 async def get_sessions_by_person(
     person_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -350,6 +503,7 @@ async def get_sessions_by_person(
 async def get_sessions_by_provider(
     provider_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -369,6 +523,7 @@ async def get_sessions_by_provider(
 async def get_sessions_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):

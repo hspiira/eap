@@ -96,9 +96,9 @@ class TestCreateTenant:
         # Try to create another with same code
         response = await client.post("/tenants/", json=sample_tenant_data)
 
-        # 409 Conflict for duplicate resource creation
+        # 409 Conflict for duplicate resource creation (standard error format uses "message")
         assert response.status_code == 409
-        assert "already exists" in response.json()["detail"].lower()
+        assert "already exists" in response.json().get("message", "").lower()
 
     async def test_create_tenant_invalid_code_format(self, client: AsyncClient):
         """Test that invalid code formats are rejected."""
@@ -958,11 +958,14 @@ class TestGetTenantStats:
         assert response.status_code == 200
         data = response.json()
         assert data["tenant_id"] == tenant_id
-        assert data["current_user_count"] == 0
+        # Admin user is automatically created, so count should be 1
+        assert data["current_user_count"] == 1
         assert data["current_client_count"] == 0
         assert data["max_users"] == sample_tenant_data["settings"]["max_users"]
         assert data["max_clients"] == sample_tenant_data["settings"]["max_clients"]
-        assert data["user_quota_usage"] == 0.0
+        # User quota usage should reflect the admin user
+        expected_user_usage = (1 / sample_tenant_data["settings"]["max_users"] * 100) if sample_tenant_data["settings"]["max_users"] > 0 else 0.0
+        assert abs(data["user_quota_usage"] - expected_user_usage) < 0.01
         assert data["client_quota_usage"] == 0.0
         assert data["subscription_tier"] == sample_tenant_data["subscription_tier"]
 

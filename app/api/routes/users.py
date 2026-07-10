@@ -6,10 +6,19 @@ Follows hybrid approach: Commands use use cases, Queries use repositories direct
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_user_repository
+from app.core.authorization import (
+    get_user_in_tenant,
+    require_same_tenant,
+    require_self_or_role,
+    require_tenant_role,
+)
+from app.core.security import TokenData, get_current_user, verify_password
+from app.domain.enums import TenantRole
+
+from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
 from app.api.schemas.user_schemas import (
     UserBanRequest,
     UserCreate,
@@ -20,29 +29,26 @@ from app.api.schemas.user_schemas import (
     UserTerminateRequest,
     UserUpdatePasswordRequest,
     UserUpdatePreferencesRequest,
+    UserUpdateRoleRequest,
+)
+from app.application.use_cases.transitions import (
+    TransitionUseCase,
+    UserTransition,
 )
 from app.application.use_cases.user_use_cases import (
-    ActivateUserUseCase,
-    BanUserUseCase,
     CreateUserUseCase,
-    DeactivateUserUseCase,
-    DisableTwoFactorUseCase,
-    EnableTwoFactorUseCase,
     GetUserUseCase,
-    RecordUserLoginUseCase,
-    SuspendUserUseCase,
-    TerminateUserUseCase,
-    UpdateUserPasswordUseCase,
-    UpdateUserPreferencesUseCase,
-    VerifyUserEmailUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import UserStatus
 from app.domain.entities.user import UserEntity
+from app.domain.exceptions import EvexiaException
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -68,6 +74,10 @@ def _to_user_response(user: UserEntity) -> UserResponse:
         last_login_at=user.last_login_at,
         status_changed_at=user.status_changed_at,
         is_active=user.is_active(),
+        role=user.role,
+        azure_oid=user.azure_oid,
+        display_name=user.display_name,
+        auth_provider=user.auth_provider,
     )
 
 
@@ -83,27 +93,46 @@ def _to_user_response(user: UserEntity) -> UserResponse:
 @transactional()
 async def create_user(
     data: UserCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new user."""
     password_hash = _hash_password(data.password) if data.password else None
 
-    user = await CreateUserUseCase(user_repo).execute(
-        user_id=UserId(generate_cuid()),
-        tenant_id=TenantId(tenant_id),
-        email=Email(data.email),
-        password_hash=password_hash,
-    )
+    try:
+        user = await CreateUserUseCase(user_repo, tenant_repo).execute(
+            user_id=UserId(generate_cuid()),
+            tenant_id=TenantId(tenant_id),
+            email=Email(data.email),
+            password_hash=password_hash,
+            role=data.role,
+        )
+    except EvexiaException as e:
+        raise HTTPException(status_code=e.http_status, detail=e.message)
 
     if data.preferred_language or data.timezone:
-        user = await UpdateUserPreferencesUseCase(user_repo).execute(
+        user_transition: TransitionUseCase = TransitionUseCase(user_repo)
+        user_transition.entity_name = "User"
+        user = await user_transition.execute(
             user.id,
+            UserTransition.UPDATE_PREFERENCES,
             preferred_language=data.preferred_language,
             timezone=data.timezone,
         )
 
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -114,12 +143,71 @@ async def create_user(
 )
 @transactional()
 async def verify_user_email(
-    user_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify user email address."""
-    user = await VerifyUserEmailUseCase(user_repo).execute(UserId(user_id))
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.VERIFY_EMAIL)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
+
+
+@router.patch(
+    "/{user_id}/role",
+    response_model=UserResponse,
+    summary="Change a user's tenant role (Admin/User/Viewer)",
+)
+@transactional()
+async def update_user_role(
+    request: Request,
+    body: UserUpdateRoleRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Change a user's tenant role. ADMIN-only.
+
+    Guards against demoting the last admin in a tenant — that would leave the
+    tenant unmanageable.
+    """
+    if user.role == TenantRole.ADMIN and body.role != TenantRole.ADMIN:
+        # count remaining admins in the tenant
+        admins = await user_repo.list_all(
+            tenant_id=user.tenant_id,
+        )
+        admin_count = sum(1 for u in admins if u.role == TenantRole.ADMIN)
+        if admin_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot demote the last admin in this tenant",
+            )
+
+    user.role = body.role
+    await user_repo.save(user)
+    await audit_entity_operation(
+        entity=user,
+        audit_handler=audit_handler,
+        tenant_id=user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_user_response(user)
 
 
@@ -130,13 +218,26 @@ async def verify_user_email(
 )
 @transactional()
 async def activate_user(
-    user_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a user."""
-    user = await ActivateUserUseCase(user_repo).execute(UserId(user_id))
-    return _to_user_response(user)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.ACTIVATE)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -146,14 +247,27 @@ async def activate_user(
 )
 @transactional()
 async def suspend_user(
-    user_id: str,
-    request: UserSuspendRequest,
+    request: Request,
+    body: UserSuspendRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a user."""
-    user = await SuspendUserUseCase(user_repo).execute(UserId(user_id), request.reason)
-    return _to_user_response(user)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.SUSPEND, reason=body.reason)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -163,14 +277,27 @@ async def suspend_user(
 )
 @transactional()
 async def ban_user(
-    user_id: str,
-    request: UserBanRequest,
+    request: Request,
+    body: UserBanRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Ban a user."""
-    user = await BanUserUseCase(user_repo).execute(UserId(user_id), request.reason)
-    return _to_user_response(user)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.BAN, reason=body.reason)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -180,14 +307,27 @@ async def ban_user(
 )
 @transactional()
 async def deactivate_user(
-    user_id: str,
-    request: UserDeactivateRequest,
+    request: Request,
+    body: UserDeactivateRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a user."""
-    user = await DeactivateUserUseCase(user_repo).execute(UserId(user_id), request.reason)
-    return _to_user_response(user)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.DEACTIVATE, reason=body.reason)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -197,14 +337,27 @@ async def deactivate_user(
 )
 @transactional()
 async def terminate_user(
-    user_id: str,
-    request: UserTerminateRequest,
+    request: Request,
+    body: UserTerminateRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a user."""
-    user = await TerminateUserUseCase(user_repo).execute(UserId(user_id), request.reason)
-    return _to_user_response(user)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.TERMINATE, reason=body.reason)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.patch(
@@ -214,15 +367,49 @@ async def terminate_user(
 )
 @transactional()
 async def update_user_password(
-    user_id: str,
-    request: UserUpdatePasswordRequest,
+    request: Request,
+    body: UserUpdatePasswordRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update user password."""
-    password_hash = _hash_password(request.password)
-    user = await UpdateUserPasswordUseCase(user_repo).execute(UserId(user_id), password_hash)
-    return _to_user_response(user)
+    """
+    Update user password.
+
+    - Self-service (caller == target): `current_password` MUST be provided and verified.
+    - Admin override (caller has ADMIN role, different user): `current_password` is not required.
+    """
+    is_self = caller.id.value == user.id.value
+    if is_self:
+        if not body.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="current_password is required when changing your own password",
+            )
+        stored = getattr(user, "_password_hash", None)
+        if not stored or not verify_password(body.current_password, stored):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect",
+            )
+
+    password_hash = _hash_password(body.password)
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(
+        user.id, UserTransition.UPDATE_PASSWORD, password_hash=password_hash
+    )
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.patch(
@@ -232,18 +419,32 @@ async def update_user_password(
 )
 @transactional()
 async def update_user_preferences(
-    user_id: str,
-    request: UserUpdatePreferencesRequest,
+    request: Request,
+    body: UserUpdatePreferencesRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update user preferences."""
-    user = await UpdateUserPreferencesUseCase(user_repo).execute(
-        UserId(user_id),
-        preferred_language=request.preferred_language,
-        timezone=request.timezone,
+    """Update user preferences. Self-service or ADMIN-only override."""
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(
+        user.id,
+        UserTransition.UPDATE_PREFERENCES,
+        preferred_language=body.preferred_language,
+        timezone=body.timezone,
     )
-    return _to_user_response(user)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -253,13 +454,26 @@ async def update_user_preferences(
 )
 @transactional()
 async def enable_two_factor(
-    user_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Enable two-factor authentication for a user."""
-    user = await EnableTwoFactorUseCase(user_repo).execute(UserId(user_id))
-    return _to_user_response(user)
+    """Enable two-factor authentication. Self-service or ADMIN-only override."""
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.ENABLE_TWO_FACTOR)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
 @router.post(
@@ -269,29 +483,32 @@ async def enable_two_factor(
 )
 @transactional()
 async def disable_two_factor(
-    user_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _caller: UserEntity = Depends(require_self_or_role(TenantRole.ADMIN)),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Disable two-factor authentication for a user."""
-    user = await DisableTwoFactorUseCase(user_repo).execute(UserId(user_id))
-    return _to_user_response(user)
+    """Disable two-factor authentication. Self-service or ADMIN-only override."""
+    use_case: TransitionUseCase = TransitionUseCase(user_repo)
+    use_case.entity_name = "User"
+    updated_user = await use_case.execute(user.id, UserTransition.DISABLE_TWO_FACTOR)
+    await audit_entity_operation(
+        entity=updated_user,
+        audit_handler=audit_handler,
+        tenant_id=updated_user.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_user_response(updated_user)
 
 
-@router.post(
-    "/{user_id}/record-login",
-    response_model=UserResponse,
-    summary="Record user login",
-)
-@transactional()
-async def record_user_login(
-    user_id: str,
-    user_repo: UserRepository = Depends(get_user_repository),
-    db: AsyncSession = Depends(get_db),
-):
-    """Record user login (updates last_login_at)."""
-    user = await RecordUserLoginUseCase(user_repo).execute(UserId(user_id))
-    return _to_user_response(user)
+# record-login is intentionally NOT exposed as an HTTP route. last_login_at is
+# updated internally by the auth login handler via UserEntity.record_successful_login().
+# Exposing this as a public endpoint allows tenant users to falsify each other's
+# last-login timestamps and pollute the audit trail.
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -312,6 +529,7 @@ async def list_users(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -352,14 +570,10 @@ async def list_users(
 )
 @readonly()
 async def get_user(
-    user_id: str,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user: UserEntity = Depends(get_user_in_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get user by ID."""
-    user = await user_repo.get_by_id(UserId(user_id))
-    if not user:
-        raise ValueError("User not found")
     return _to_user_response(user)
 
 
@@ -372,6 +586,7 @@ async def get_user(
 async def get_user_by_email(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -390,6 +605,7 @@ async def get_user_by_email(
 async def check_email_availability(
     email: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     user_repo: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):

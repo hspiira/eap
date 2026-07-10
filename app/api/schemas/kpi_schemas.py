@@ -9,6 +9,7 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 
 
@@ -17,25 +18,25 @@ from app.domain.enums import KPICategory, KPIMeasurementUnit
 class KPICreate(BaseModel):
     """Request schema for creating a KPI."""
 
-    name: str = Field(..., min_length=1, max_length=255, description="KPI name")
-    description: str | None = Field(None, description="KPI description")
+    name: SanitizedStr = Field(..., min_length=1, max_length=255, description="KPI name")
+    description: OptionalSanitizedStr = Field(None, description="KPI description")
     category: KPICategory = Field(..., description="KPI category")
     measurement_unit: KPIMeasurementUnit = Field(..., description="Measurement unit")
     target_value: Decimal | None = Field(None, description="Target value")
     threshold_min: Decimal | None = Field(None, description="Minimum threshold")
     threshold_max: Decimal | None = Field(None, description="Maximum threshold")
-    formula: str | None = Field(None, description="Calculation formula")
+    formula: OptionalSanitizedStr = Field(None, description="Calculation formula")
 
 
 class KPIUpdate(BaseModel):
     """Request schema for updating a KPI."""
 
-    name: str | None = Field(None, min_length=1, max_length=255, description="KPI name")
-    description: str | None = Field(None, description="KPI description")
+    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="KPI name")
+    description: OptionalSanitizedStr = Field(None, description="KPI description")
     target_value: Decimal | None = Field(None, description="Target value")
     threshold_min: Decimal | None = Field(None, description="Minimum threshold")
     threshold_max: Decimal | None = Field(None, description="Maximum threshold")
-    formula: str | None = Field(None, description="Calculation formula")
+    formula: OptionalSanitizedStr = Field(None, description="Calculation formula")
 
 
 class KPIAssignmentCreate(BaseModel):

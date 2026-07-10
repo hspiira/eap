@@ -158,7 +158,7 @@ class ValidationService:
         # Check tenant status (assuming tenant has is_active method or status)
         if hasattr(tenant, '_status'):
             from app.domain.enums import TenantStatus
-            if tenant._status != TenantStatus.ACTIVE:
+            if tenant.status != TenantStatus.ACTIVE:
                 return ValidationResult.failure(
                     f"Tenant {tenant_id.value} is not active"
                 )
@@ -256,7 +256,7 @@ class ValidationService:
                 f"Person {person_id.value} does not exist"
             )
 
-        if hasattr(person, '_status') and person._status != BaseStatus.ACTIVE:
+        if hasattr(person, '_status') and person.status != BaseStatus.ACTIVE:
             return ValidationResult.failure(
                 f"Person {person_id.value} is not active"
             )
@@ -290,7 +290,7 @@ class ValidationService:
                 f"Service {service_id.value} does not exist"
             )
 
-        if hasattr(service, '_status') and service._status != BaseStatus.ACTIVE:
+        if hasattr(service, '_status') and service.status != BaseStatus.ACTIVE:
             return ValidationResult.failure(
                 f"Service {service_id.value} is not active"
             )

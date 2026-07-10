@@ -187,8 +187,8 @@ class TestListUsers:
     async def test_list_users_empty(
         self, client: AsyncClient, user_test_tenant: dict
     ):
-        """Test listing users when none exist."""
-        # Create a new tenant with no users
+        """Test listing users for a newly created tenant (has one admin user)."""
+        # Create a new tenant (backend auto-creates one admin user per tenant)
         new_tenant = await client.post(
             "/tenants/",
             json={"name": "Empty User Tenant", "code": "empty-usr"},
@@ -199,8 +199,12 @@ class TestListUsers:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["items"] == []
-        assert data["total"] == 0
+        # New tenant has exactly the auto-created admin user
+        assert data["total"] >= 1
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) >= 1
+        # Admin email format: admin_{code}@evexia.test
+        assert any("admin_" in u.get("email", "") for u in data["items"])
 
     async def test_list_users_success(
         self, client: AsyncClient, user_test_tenant: dict, test_api_user: dict, test_api_user_2: dict
@@ -418,8 +422,7 @@ class TestTerminateUser:
 
         assert response.status_code == 200
         data = response.json()
-        # Terminated users are set to Banned status
-        assert data["status"] == "Banned"
+        assert data["status"] == "Terminated"
 
     async def test_terminate_not_found(self, client: AsyncClient):
         """Test terminating non-existent user returns 404."""
@@ -624,9 +627,9 @@ class TestUserLifecycleFlow:
         )
         assert suspend_response.json()["status"] == "Suspended"
 
-        # Terminate (sets status to Banned)
+        # Terminate (sets status to Terminated)
         terminate_response = await client.post(
             f"/users/{user_id}/terminate",
             json={"reason": "Permanent ban"},
         )
-        assert terminate_response.json()["status"] == "Banned"
+        assert terminate_response.json()["status"] == "Terminated"

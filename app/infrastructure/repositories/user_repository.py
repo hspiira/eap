@@ -8,7 +8,7 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus
@@ -43,6 +43,19 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
         return entity_id.value
 
     # Domain-specific queries (not in base class)
+
+    async def get_by_azure_oid(self, azure_oid: str, tenant_id: TenantId) -> UserEntity | None:
+        """Get user by Azure Object ID within tenant, excluding soft-deleted users."""
+        stmt = select(UserModel).where(
+            UserModel.azure_oid == azure_oid,
+            UserModel.tenant_id == tenant_id.value,
+            UserModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if not model:
+            return None
+        return self._to_entity(model)
 
     async def get_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """Get user by email within tenant, excluding soft-deleted users."""
@@ -121,3 +134,14 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
 
         result = await self.session.execute(stmt)
         return int(result.scalar() or 0)
+
+    async def update_password(self, user_id: UserId, password_hash: str) -> bool:
+        """Update a user's password hash."""
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id.value)
+            .where(UserModel.deleted_at.is_(None))
+            .values(password_hash=password_hash)
+        )
+        result = await self.session.execute(stmt)
+        return result.rowcount > 0

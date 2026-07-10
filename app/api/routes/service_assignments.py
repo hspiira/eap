@@ -1,9 +1,12 @@
 """ServiceAssignment API Routes - FastAPI routes for ServiceAssignment operations."""
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_service_assignment_repository
+from app.core.authorization import require_same_tenant
+from app.core.security import TokenData, get_current_user
+
+from app.api.dependencies import get_audit_event_handler, get_service_assignment_repository
 from app.api.schemas.service_assignment_schemas import (
     ServiceAssignmentCreate,
     ServiceAssignmentListResponse,
@@ -11,11 +14,13 @@ from app.api.schemas.service_assignment_schemas import (
     ServiceAssignmentUpdate,
 )
 from app.application.use_cases.service_assignment_use_cases import (
-    ActivateServiceAssignmentUseCase,
     CreateServiceAssignmentUseCase,
-    DeactivateServiceAssignmentUseCase,
     GetServiceAssignmentUseCase,
     UpdateServiceAssignmentUseCase,
+)
+from app.application.use_cases.transitions import (
+    ServiceAssignmentTransition,
+    TransitionUseCase,
 )
 from app.core.database import get_db
 from app.domain.enums import BaseStatus
@@ -24,6 +29,7 @@ from app.domain.repositories.service_assignment_repository import ServiceAssignm
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/service-assignments", tags=["service-assignments"])
 
@@ -54,9 +60,12 @@ def _to_service_assignment_response(assignment: ServiceAssignmentEntity) -> Serv
 @transactional()
 async def create_service_assignment(
     data: ServiceAssignmentCreate,
+    request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     assigned_by: str | None = Query(None, description="User ID who assigned"),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service assignment."""
@@ -67,6 +76,13 @@ async def create_service_assignment(
         contract_id=ContractId(data.contract_id),
         assigned_by=assigned_by,
         notes=data.notes,
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_assignment_response(assignment)
 
@@ -80,12 +96,22 @@ async def create_service_assignment(
 async def update_service_assignment(
     assignment_id: str,
     data: ServiceAssignmentUpdate,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update a service assignment."""
     assignment = await UpdateServiceAssignmentUseCase(assignment_repo).execute(
         ServiceAssignmentId(assignment_id), data.notes
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_assignment_response(assignment)
 
@@ -98,12 +124,24 @@ async def update_service_assignment(
 @transactional()
 async def activate_service_assignment(
     assignment_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service assignment."""
-    assignment = await ActivateServiceAssignmentUseCase(assignment_repo).execute(
-        ServiceAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_assignment_response(assignment)
 
@@ -116,12 +154,24 @@ async def activate_service_assignment(
 @transactional()
 async def deactivate_service_assignment(
     assignment_id: str,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service assignment."""
-    assignment = await DeactivateServiceAssignmentUseCase(assignment_repo).execute(
-        ServiceAssignmentId(assignment_id)
+    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
+    use_case.entity_name = "Assignment"
+    assignment = await use_case.execute(
+        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
+    )
+    await audit_entity_operation(
+        entity=assignment,
+        audit_handler=audit_handler,
+        tenant_id=assignment.tenant_id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_service_assignment_response(assignment)
 
@@ -134,6 +184,7 @@ async def deactivate_service_assignment(
 @readonly()
 async def list_service_assignments(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     service_id: str | None = Query(None, description="Filter by service"),
     contract_id: str | None = Query(None, description="Filter by contract"),
     status: BaseStatus | None = Query(None, description="Filter by status"),
@@ -199,6 +250,7 @@ async def get_service_assignment(
 async def get_service_assignments_by_service(
     service_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -224,6 +276,7 @@ async def get_service_assignments_by_service(
 async def get_service_assignments_by_contract(
     contract_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):

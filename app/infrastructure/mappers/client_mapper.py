@@ -5,7 +5,7 @@ Converts between ClientEntity (domain) and ClientModel (persistence).
 """
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ContactMethod
+from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -69,22 +69,25 @@ class ClientMapper:
             if model.preferred_contact_method
             else None
         )
+        tier = ClientTier(model.tier) if getattr(model, "tier", None) else None
 
         # Create entity
         return ClientEntity(
-            _id=client_id,
-            _tenant_id=tenant_id,
-            _name=model.name,
-            _contact_info=contact_info,
-            _billing_address=billing_address,
-            _industry_id=industry_id,
-            _parent_client_id=parent_client_id,
-            _status=status,
-            _is_verified=model.is_verified,
-            _preferred_contact_method=preferred_contact_method,
-            _created_at=ensure_utc(model.created_at),
-            _updated_at=ensure_utc(model.updated_at),
-            _deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
+            id=client_id,
+            tenant_id=tenant_id,
+            name=model.name,
+            code=model.code,
+            contact_info=contact_info,
+            billing_address=billing_address,
+            industry_id=industry_id,
+            parent_client_id=parent_client_id,
+            status=status,
+            is_verified=model.is_verified,
+            preferred_contact_method=preferred_contact_method,
+            tier=tier,
+            created_at=ensure_utc(model.created_at),
+            updated_at=ensure_utc(model.updated_at),
+            deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
         )
 
     @staticmethod
@@ -100,36 +103,38 @@ class ClientMapper:
         """
         # Serialize ContactInfo to JSON
         contact_dict = {
-            "phone": entity._contact_info.phone,
-            "email": entity._contact_info.email.value if entity._contact_info.email else None,
-            "address": entity._contact_info.address,
+            "phone": entity.contact_info.phone,
+            "email": entity.contact_info.email.value if entity.contact_info.email else None,
+            "address": entity.contact_info.address,
         }
 
         # Serialize Address to JSON (if present)
         billing_address_dict = None
-        if entity._billing_address:
+        if entity.billing_address:
             billing_address_dict = {
-                "street": entity._billing_address.street,
-                "city": entity._billing_address.city,
-                "country": entity._billing_address.country,
-                "postal_code": entity._billing_address.postal_code,
+                "street": entity.billing_address.street,
+                "city": entity.billing_address.city,
+                "country": entity.billing_address.country,
+                "postal_code": entity.billing_address.postal_code,
             }
 
         # Create model
         return ClientModel(
-            id=entity._id.value,
-            tenant_id=entity._tenant_id.value,
-            name=entity._name,
+            id=entity.id.value,
+            tenant_id=entity.tenant_id.value,
+            name=entity.name,
+            code=entity.code,
             contact_info=contact_dict,
             billing_address=billing_address_dict,
-            industry_id=entity._industry_id.value if entity._industry_id else None,
-            parent_client_id=entity._parent_client_id.value
-            if entity._parent_client_id
+            industry_id=entity.industry_id.value if entity.industry_id else None,
+            parent_client_id=entity.parent_client_id.value
+            if entity.parent_client_id
             else None,
-            status=entity._status,
-            is_verified=entity._is_verified,
-            preferred_contact_method=entity._preferred_contact_method,
-            created_at=ensure_utc(entity._created_at),
-            updated_at=ensure_utc(entity._updated_at),
-            deleted_at=ensure_utc(entity._deleted_at) if entity._deleted_at else None,
+            status=entity.status,
+            is_verified=entity.is_verified,
+            preferred_contact_method=entity.preferred_contact_method,
+            tier=entity.tier,
+            created_at=ensure_utc(entity.created_at),
+            updated_at=ensure_utc(entity.updated_at),
+            deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,
         )

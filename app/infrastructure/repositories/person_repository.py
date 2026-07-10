@@ -16,8 +16,10 @@ from app.domain.entities.person import PersonEntity
 from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.value_objects.core import PersonId, TenantId, UserId
+from app.domain.entities.user import UserEntity
+from app.domain.value_objects.core import ClientId, PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
+from app.infrastructure.mappers.user_mapper import UserMapper
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.user_model import UserModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
@@ -59,12 +61,24 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         return entity_id.value
 
     async def _to_entity_with_profile(self, model: PersonModel) -> PersonEntity | None:
-        """Convert model to entity, loading the user profile."""
+        """Convert model to entity, loading the user profile (single fetch; use _to_entities_with_profiles for batches)."""
         user_id = UserId(model.user_id)
         profile = await self.user_repository.get_by_id(user_id)
         if not profile:
             return None
         return PersonMapper.to_entity(model, profile)
+
+    async def _load_profiles_map(self, user_ids: list[str]) -> dict[str, UserEntity]:
+        """Load UserEntity map for given user IDs in one query. Used to avoid N+1 in list_all/get_by_type."""
+        if not user_ids:
+            return {}
+        stmt = select(UserModel).where(
+            UserModel.id.in_(user_ids),
+            UserModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        models = result.scalars().all()
+        return {m.id: UserMapper.to_entity(m) for m in models}
 
 
     async def get_by_id(self, person_id: PersonId) -> PersonEntity | None:
@@ -108,12 +122,13 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
+        user_ids = list({m.user_id for m in models})
+        profiles_map = await self._load_profiles_map(user_ids)
         entities = []
         for model in models:
-            entity = await self._to_entity_with_profile(model)
-            if entity:
-                entities.append(entity)
-
+            profile = profiles_map.get(model.user_id)
+            if profile:
+                entities.append(PersonMapper.to_entity(model, profile))
         return entities
 
     async def list_all(
@@ -121,6 +136,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -140,6 +156,12 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             stmt = stmt.where(PersonModel.status == status)
         if person_type:
             stmt = stmt.where(PersonModel.person_type == person_type)
+        if client_id:
+            # Filter by employment_info.client_id (JSON column; SQLite json_extract)
+            stmt = stmt.where(
+                PersonModel.employment_info.isnot(None),
+                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+            )
         if search:
             search_pattern = f"%{search.lower()}%"
             stmt = stmt.where(
@@ -161,12 +183,13 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 
+        user_ids = list({m.user_id for m in models})
+        profiles_map = await self._load_profiles_map(user_ids)
         entities = []
         for model in models:
-            entity = await self._to_entity_with_profile(model)
-            if entity:
-                entities.append(entity)
-
+            profile = profiles_map.get(model.user_id)
+            if profile:
+                entities.append(PersonMapper.to_entity(model, profile))
         return entities
 
     async def count(
@@ -174,6 +197,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         person_type: PersonType | None = None,
+        client_id: ClientId | None = None,
         search: str | None = None,
     ) -> int:
         """Count persons matching filters."""
@@ -189,6 +213,11 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             stmt = stmt.where(PersonModel.status == status)
         if person_type:
             stmt = stmt.where(PersonModel.person_type == person_type)
+        if client_id:
+            stmt = stmt.where(
+                PersonModel.employment_info.isnot(None),
+                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+            )
         if search:
             search_pattern = f"%{search.lower()}%"
             stmt = stmt.where(

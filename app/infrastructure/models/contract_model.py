@@ -11,6 +11,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Enum,
     ForeignKey,
     JSON,
     String,
@@ -21,7 +22,6 @@ from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
-    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -63,17 +63,37 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     # Billing (stored as JSON)
     billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)
 
-    # Payment configuration
+    # Payment configuration - use native PG enums (create_type=False)
     payment_frequency: Mapped[PaymentFrequency] = mapped_column(
-        EnumValueType(PaymentFrequency), nullable=False
+        Enum(
+            PaymentFrequency,
+            name="paymentfrequency",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
     )
     payment_status: Mapped[PaymentStatus] = mapped_column(
-        EnumValueType(PaymentStatus), nullable=False, default=PaymentStatus.PENDING
+        Enum(
+            PaymentStatus,
+            name="paymentstatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=PaymentStatus.PENDING,
     )
 
     # Status
     status: Mapped[ContractStatus] = mapped_column(
-        EnumValueType(ContractStatus), nullable=False, default=ContractStatus.DRAFT
+        Enum(
+            ContractStatus,
+            name="contractstatus",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        nullable=False,
+        default=ContractStatus.DRAFT,
     )
     is_auto_renew: Mapped[bool] = mapped_column(default=False, nullable=False)
 
@@ -91,6 +111,10 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     termination_reason: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )
+
+    # Pricing model + serialised pricing config (Phase 2 #D-Pricing)
+    pricing_model: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    pricing_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     def __repr__(self) -> str:
         return f"<ContractModel(id={self.id}, client_id={self.client_id}, status={self.status})>"

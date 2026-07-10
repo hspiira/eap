@@ -5,19 +5,31 @@ FastAPI routes for Tenant operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authorization import (
+    require_platform_admin_if_configured,
+    require_same_tenant,
+    require_tenant_role,
+)
+from app.core.security import TokenData, get_current_user
+from app.domain.enums import TenantRole
+
 from app.api.dependencies import (
+    get_audit_event_handler,
     get_client_repository,
+    get_industry_repository,
+    get_password_set_token_repository,
     get_tenant_repository,
     get_user_repository,
 )
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.api.schemas.tenant_schemas import (
     SubscriptionUpdateRequest,
+    TenantAzureSsoRequest,
     TenantCreate,
     TenantListResponse,
     TenantResponse,
@@ -28,32 +40,44 @@ from app.api.schemas.tenant_schemas import (
     TenantUpdate,
     TenantUpdateSettings,
 )
-from app.application.use_cases.tenant_use_cases import (
-    ActivateTenantUseCase,
-    ArchiveTenantUseCase,
-    CreateTenantUseCase,
-    RestoreTenantUseCase,
-    SuspendTenantUseCase,
-    TerminateTenantUseCase,
-    UpdateSubscriptionUseCase,
-    UpdateTenantSettingsUseCase,
-    UpdateTenantUseCase,
+from app.application.use_cases.tenant_use_cases import CreateTenantUseCase
+from app.application.use_cases.transitions import (
+    TenantTransition,
+    TransitionUseCase,
 )
+from app.core.config import settings
 from app.core.database import get_db
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.entities.tenant import TenantEntity
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import TenantId
-from app.infrastructure.models.client_model import ClientModel
-from app.infrastructure.models.user_model import UserModel
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
 from app.shared.decorators import transactional, readonly
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_entity_operation
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 
-def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
-    """Map TenantEntity to API response using public properties."""
+def _to_tenant_response(
+    tenant: TenantEntity,
+    admin_email: str | None = None,
+    admin_password: str | None = None,
+    set_password_url: str | None = None,
+    set_password_expires_at=None,
+) -> TenantResponse:
+    """
+    Map TenantEntity to API response using public properties.
+
+    Args:
+        tenant: Tenant entity
+        admin_email: Admin email (on creation)
+        admin_password: Admin password (only when set-password flow not used)
+        set_password_url: URL for set-password page (when SET_PASSWORD_BASE_URL is set)
+        set_password_expires_at: When set-password link expires
+    """
     return TenantResponse(
         id=tenant.id.value,
         name=tenant.name,
@@ -67,6 +91,12 @@ def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
             custom_branding=tenant.settings.custom_branding,
         ),
         is_active=tenant.is_active(),
+        azure_tenant_id=tenant.azure_tenant_id,
+        azure_sso_enabled=tenant.azure_sso_enabled,
+        admin_email=admin_email,
+        admin_password=admin_password,
+        set_password_url=set_password_url,
+        set_password_expires_at=set_password_expires_at,
     )
 
 
@@ -82,21 +112,64 @@ def _to_tenant_response(tenant: TenantEntity) -> TenantResponse:
 @transactional()
 async def create_tenant(
     data: TenantCreate,
+    request: Request,
+    _tenant_creation_auth: None = Depends(require_platform_admin_if_configured),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    industry_repo: IndustryRepository = Depends(get_industry_repository),
+    password_set_token_repo: PasswordSetTokenRepository
+    | None = Depends(get_password_set_token_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new tenant."""
-    tenant = await CreateTenantUseCase(tenant_repo).execute(
-        tenant_id=TenantId(generate_cuid()),
-        name=data.name,
-        code=data.code,
-        subscription_tier=data.subscription_tier,
-        max_users=data.settings.max_users,
-        max_clients=data.settings.max_clients,
-        features_enabled=tuple(data.settings.features_enabled),
-        custom_branding=data.settings.custom_branding,
+    """
+    Create a new tenant, seed default industries, and create an admin user.
+
+    When SET_PASSWORD_BASE_URL is set, the response includes set_password_url
+    (and set_password_expires_at). The admin must open that link to set a
+    password, then log in with tenant code, that email, and the new password.
+    Otherwise the response includes a one-time admin_password.
+    """
+    token_repo = (
+        password_set_token_repo
+        if getattr(settings, "SET_PASSWORD_BASE_URL", "")
+        else None
     )
-    return _to_tenant_response(tenant)
+    tenant, admin_email, admin_password, set_password_token, set_password_expires_at = (
+        await CreateTenantUseCase(
+            tenant_repo,
+            user_repo,
+            industry_repo,
+            password_set_token_repository=token_repo,
+        ).execute(
+            tenant_id=TenantId(generate_cuid()),
+            name=data.name,
+            code=data.code,
+            subscription_tier=data.subscription_tier,
+            max_users=data.settings.max_users,
+            max_clients=data.settings.max_clients,
+            features_enabled=tuple(data.settings.features_enabled),
+            custom_branding=data.settings.custom_branding,
+        )
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=None,
+        request=request,
+    )
+    set_password_url = None
+    if set_password_token and getattr(settings, "SET_PASSWORD_BASE_URL", ""):
+        base = settings.SET_PASSWORD_BASE_URL.rstrip("/")
+        set_password_url = f"{base}/set-password?token={set_password_token}"
+    return _to_tenant_response(
+        tenant,
+        admin_email=admin_email,
+        admin_password=admin_password,
+        set_password_url=set_password_url,
+        set_password_expires_at=set_password_expires_at,
+    )
 
 
 @router.post(
@@ -107,11 +180,24 @@ async def create_tenant(
 @transactional()
 async def activate_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a tenant."""
-    tenant = await ActivateTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ACTIVATE)
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 
@@ -123,13 +209,26 @@ async def activate_tenant(
 @transactional()
 async def suspend_tenant(
     tenant_id: str,
-    request: TenantSuspendRequest,
+    request: Request,
+    body: TenantSuspendRequest,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a tenant."""
-    tenant = await SuspendTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), request.reason
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.SUSPEND, reason=body.reason
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -142,13 +241,26 @@ async def suspend_tenant(
 @transactional()
 async def terminate_tenant(
     tenant_id: str,
-    request: TenantTerminateRequest,
+    request: Request,
+    body: TenantTerminateRequest,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a tenant."""
-    tenant = await TerminateTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id), request.reason
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.TERMINATE, reason=body.reason
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -162,18 +274,32 @@ async def terminate_tenant(
 async def update_tenant_settings(
     tenant_id: str,
     settings: TenantUpdateSettings,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant settings."""
-    tenant = await UpdateTenantSettingsUseCase(tenant_repo).execute(
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
         TenantId(tenant_id),
+        TenantTransition.UPDATE_SETTINGS,
         max_users=settings.max_users,
         max_clients=settings.max_clients,
         features_enabled=tuple(settings.features_enabled)
         if settings.features_enabled is not None
         else None,
         custom_branding=settings.custom_branding,
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -187,13 +313,31 @@ async def update_tenant_settings(
 async def update_tenant(
     tenant_id: str,
     data: TenantUpdate,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant basic information."""
-    tenant = await UpdateTenantUseCase(tenant_repo).execute(
-        TenantId(tenant_id),
-        name=data.name,
+    if data.name is None:
+        from app.domain.exceptions import NotFoundError
+        tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
+        if tenant is None:
+            raise NotFoundError(f"Tenant not found: {tenant_id}")
+        return _to_tenant_response(tenant)
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
+        TenantId(tenant_id), TenantTransition.UPDATE_NAME, name=data.name
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -207,13 +351,76 @@ async def update_tenant(
 async def update_subscription(
     tenant_id: str,
     data: SubscriptionUpdateRequest,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant subscription tier."""
-    tenant = await UpdateSubscriptionUseCase(tenant_repo).execute(
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(
         TenantId(tenant_id),
-        data.subscription_tier,
+        TenantTransition.UPDATE_SUBSCRIPTION_TIER,
+        tier=data.subscription_tier,
+    )
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
+    return _to_tenant_response(tenant)
+
+
+@router.patch(
+    "/{tenant_id}/azure-sso",
+    response_model=TenantResponse,
+    summary="Configure or disable Azure AD SSO for a tenant",
+)
+@transactional()
+async def update_azure_sso(
+    tenant_id: str,
+    data: TenantAzureSsoRequest,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Set or update Azure AD SSO config for a tenant.
+
+    - Pass `azure_tenant_id` + `enabled=true` to wire SSO.
+    - Pass `enabled=false` (with or without `azure_tenant_id`) to pause SSO without losing the stored ID.
+    - Pass `azure_tenant_id=null` + `enabled=false` to fully clear.
+    """
+    tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
+    if data.azure_tenant_id:
+        tenant.configure_azure_sso(data.azure_tenant_id, enabled=data.enabled)
+    else:
+        # No new ID provided — just toggle the existing one (or no-op if never set).
+        if data.enabled and not tenant.azure_tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot enable Azure SSO without an azure_tenant_id",
+            )
+        tenant.azure_sso_enabled = data.enabled
+
+    await tenant_repo.save(tenant)
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
     )
     return _to_tenant_response(tenant)
 
@@ -226,11 +433,24 @@ async def update_subscription(
 @transactional()
 async def archive_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a tenant."""
-    tenant = await ArchiveTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ARCHIVE)
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 
@@ -242,11 +462,24 @@ async def archive_tenant(
 @transactional()
 async def restore_tenant(
     tenant_id: str,
+    request: Request,
+    current_user: TokenData = Depends(require_same_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted tenant."""
-    tenant = await RestoreTenantUseCase(tenant_repo).execute(TenantId(tenant_id))
+    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
+    use_case.entity_name = "Tenant"
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.RESTORE)
+    await audit_entity_operation(
+        entity=tenant,
+        audit_handler=audit_handler,
+        tenant_id=tenant.id,
+        user_id=current_user.user_id,
+        request=request,
+    )
     return _to_tenant_response(tenant)
 
 
@@ -269,10 +502,28 @@ async def list_tenants(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """List tenants with filtering, searching, and pagination."""
+    """
+    List tenants. Platform-admin users (members of PLATFORM_TENANT_ID) see all
+    tenants; everyone else sees only their own tenant.
+    """
+    platform_tenant_id = (getattr(settings, "PLATFORM_TENANT_ID", "") or "").strip()
+    is_platform_admin = bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
+
+    if not is_platform_admin:
+        own = await tenant_repo.get_by_id(TenantId(current_user.tenant_id))
+        items = [own] if own else []
+        return TenantListResponse(
+            items=[_to_tenant_response(t) for t in items],
+            total=len(items),
+            page=1,
+            limit=limit,
+            has_more=False,
+        )
+
     offset = (page - 1) * limit
 
     tenants = await tenant_repo.list_all(
@@ -323,6 +574,7 @@ async def check_code_availability(
 @readonly()
 async def get_tenant_stats(
     tenant_id: str,
+    current_user: TokenData = Depends(require_same_tenant),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
@@ -367,6 +619,7 @@ async def get_tenant_stats(
 @readonly()
 async def get_tenant(
     tenant_id: str,
+    current_user: TokenData = Depends(require_same_tenant),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -385,11 +638,26 @@ async def get_tenant(
 @readonly()
 async def get_tenant_by_code(
     code: str,
+    current_user: TokenData = Depends(get_current_user),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get tenant by code."""
+    """
+    Get tenant by code.
+
+    Non-platform users can only resolve their own tenant by code (prevents
+    cross-tenant enumeration via known codes).
+    """
     tenant = await tenant_repo.get_by_code(code)
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found"
+        )
+    platform_tenant_id = (getattr(settings, "PLATFORM_TENANT_ID", "") or "").strip()
+    is_platform_admin = bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
+    if not is_platform_admin and tenant.id.value != current_user.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only resolve your own tenant by code",
+        )
     return _to_tenant_response(tenant)

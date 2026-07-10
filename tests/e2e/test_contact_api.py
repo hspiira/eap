@@ -35,6 +35,7 @@ class TestCreateContact:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Test Client Co",
+                "code": "TSTC",
                 "contact_info": {"phone": "+1-555-0000", "email": "info@testclient.com"},
             },
         )
@@ -205,6 +206,7 @@ class TestContactIntegration:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Contact Test Client",
+                "code": "CTTC",
                 "contact_info": {"email": "info@ctc.com"},
             },
         )
@@ -277,6 +279,7 @@ class TestContactIntegration:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Multi Contact Client",
+                "code": "MCC",
                 "contact_info": {"email": "info@mcc.com"},
             },
         )
