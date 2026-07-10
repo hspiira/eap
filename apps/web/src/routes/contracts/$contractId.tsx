@@ -32,6 +32,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { useToast } from "@/contexts/ToastContext"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -50,6 +52,7 @@ function ContractDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
@@ -116,23 +119,22 @@ function ContractDetailPage() {
       try {
         if (action === "activate") await contractsApi.activate(id)
         else if (action === "terminate") {
-          // BE `ContractTerminateRequest` requires `{reason}`.
-          // TODO(P1): surface a dialog to capture the reason.
           await contractsApi.terminate(id, { reason: "Terminated from UI" })
         } else if (action === "renew") {
-          // BE `ContractRenewRequest` requires `{new_end_date}` (ISO datetime).
-          // Stub: extend by 12 months. TODO(P1): surface a date picker.
           if (!contract?.end_date) return
           const next = new Date(contract.end_date)
           next.setFullYear(next.getFullYear() + 1)
           await contractsApi.renew(id, { new_end_date: next.toISOString() })
         }
         await fetchContract()
+        toast.showSuccess("Status updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchContract],
+    [contract?.end_date, fetchContract, toast],
   )
 
   const lifecycleSummary = useMemo(() => buildLifecycleSummary(contract), [contract])

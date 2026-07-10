@@ -50,6 +50,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { useToast } from "@/contexts/ToastContext"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -70,6 +72,7 @@ function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const toast = useToast()
   const [stats, setStats] = useState<ClientStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(false)
   const [children, setChildren] = useState<Client[]>([])
@@ -148,11 +151,14 @@ function ClientDetailPage() {
         else if (action === "restore") await clientsApi.restore(id)
         else if (action === "terminate") await clientsApi.terminate(id, "Terminated from UI")
         await fetchClient()
+        toast.showSuccess("Status updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchClient],
+    [fetchClient, toast],
   )
 
   const hasBilling = client

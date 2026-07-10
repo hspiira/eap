@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { displayName, personInitials } from "@/lib/display"
 import { cn } from "@/lib/utils"
 import type {
   Person,
@@ -341,11 +342,11 @@ function ServiceSessionDetailPage() {
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                         >
-                          {personInitial(person)}
+                          {personInitials(person)}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">
-                            {person.first_name} {person.last_name}
+                            {displayName(person)}
                           </p>
                           <p className="truncate text-[11px] text-fg/55">
                             {person.person_type}
@@ -493,7 +494,7 @@ function Hero({
           params={{ personId: person.id }}
           className="text-xs text-fg/65 hover:text-primary"
         >
-          · {person.first_name} {person.last_name}
+          · {displayName(person)}
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -569,7 +570,7 @@ function DetailRail({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">
-                  {person.first_name} {person.last_name}
+                  {displayName(person)}
                 </p>
                 <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
               </div>
@@ -818,12 +819,6 @@ function DetailRow({
       </dd>
     </div>
   )
-}
-
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
 }
 
 function toLocalDatetime(iso: string): string {

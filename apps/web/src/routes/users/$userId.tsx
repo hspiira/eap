@@ -41,6 +41,7 @@ import {
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
@@ -61,6 +62,7 @@ function UserDetailPage() {
   const [person, setPerson] = useState<Person | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
@@ -115,11 +117,14 @@ function UserDetailPage() {
       try {
         if (action === "activate") await usersApi.activate(id)
         await fetchUser()
+        toast.showSuccess("Status updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchUser],
+    [fetchUser, toast],
   )
 
   const confirmReasonAction = useCallback(async () => {
@@ -137,10 +142,13 @@ function UserDetailPage() {
       await fetchUser()
       setReasonPrompt(null)
       setReasonValue("")
+      toast.showSuccess("Status updated")
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
     } finally {
       setActionLoading(false)
     }
-  }, [reasonPrompt, reasonValue, fetchUser])
+  }, [fetchUser, reasonPrompt, reasonValue, toast])
 
   if (loading) {
     return (
@@ -276,11 +284,11 @@ function UserDetailPage() {
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                         >
-                          {personInitial(person)}
+                          {personInitials(person, user)}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">
-                            {person.first_name} {person.last_name}
+                            {displayName(person, user)}
                           </p>
                           <p className="truncate text-[11px] text-fg/55">
                             {person.person_type}
@@ -578,7 +586,7 @@ function DetailRail({ user, person, onAction, actionLoading }: DetailRailProps) 
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">
-                {person.first_name} {person.last_name}
+                {displayName(person, user)}
               </p>
               <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
             </div>
@@ -756,8 +764,3 @@ function DetailRow({
   )
 }
 
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
-}

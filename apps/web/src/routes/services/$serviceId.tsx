@@ -31,6 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { useToast } from "@/contexts/ToastContext"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Service, ServiceAssignment, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -52,6 +54,7 @@ function ServiceDetailPage() {
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
@@ -109,11 +112,14 @@ function ServiceDetailPage() {
         else if (action === "archive") await servicesApi.archive(id)
         else if (action === "restore") await servicesApi.restore(id)
         await fetchService()
+        toast.showSuccess("Status updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchService],
+    [fetchService, toast],
   )
 
   if (loading) {

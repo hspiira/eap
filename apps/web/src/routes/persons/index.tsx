@@ -43,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Person } from "@/types/entities"
@@ -174,7 +175,6 @@ function PersonsListPage() {
       breadcrumb="People · Persons"
       actions={
         <>
-          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
@@ -289,7 +289,7 @@ function PersonsListPage() {
                         Status
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Contact</TableHead>
+                    <TableHead className="text-fg/65">Account</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -315,12 +315,7 @@ function PersonsListPage() {
 }
 
 function PersonRow({ row }: { row: Person }) {
-  const fullName = `${row.first_name} ${row.last_name}`.trim()
-  const contactPrimary = row.contact_info?.email ?? row.contact_info?.mobile ?? row.contact_info?.phone ?? null
-  const contactSecondary =
-    row.contact_info?.email && (row.contact_info?.mobile ?? row.contact_info?.phone)
-      ? row.contact_info.mobile ?? row.contact_info.phone
-      : null
+  const fullName = displayName(row)
 
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
@@ -337,7 +332,7 @@ function PersonRow({ row }: { row: Person }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitial(row)}
+            {personInitials(row)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
@@ -358,13 +353,13 @@ function PersonRow({ row }: { row: Person }) {
         </span>
       </TableCell>
       <TableCell>
-        {row.client_id ? (
+        {row.employment_info?.client_id ? (
           <Link
             to="/clients/$clientId"
-            params={{ clientId: row.client_id }}
+            params={{ clientId: row.employment_info.client_id }}
             className="font-mono text-xs text-fg/70 hover:text-primary"
           >
-            {row.client_id.slice(0, 8)}
+            {row.employment_info.client_id.slice(0, 8)}
           </Link>
         ) : (
           <span className="text-fg/40">—</span>
@@ -374,13 +369,8 @@ function PersonRow({ row }: { row: Person }) {
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell>
-        {contactPrimary ? (
-          <span className="block min-w-0">
-            <span className="block truncate text-sm text-fg">{contactPrimary}</span>
-            {contactSecondary ? (
-              <span className="block truncate text-xs text-fg/55">{contactSecondary}</span>
-            ) : null}
-          </span>
+        {row.user_id ? (
+          <span className="font-mono text-xs text-fg/70">{row.user_id.slice(0, 8)}</span>
         ) : (
           <span className="text-fg/40">—</span>
         )}
@@ -405,9 +395,9 @@ function PersonRow({ row }: { row: Person }) {
                   View details
                 </Link>
               </DropdownMenuItem>
-              {row.client_id ? (
+              {row.employment_info?.client_id ? (
                 <DropdownMenuItem asChild>
-                  <Link to="/clients/$clientId" params={{ clientId: row.client_id }}>
+                  <Link to="/clients/$clientId" params={{ clientId: row.employment_info.client_id }}>
                     View client
                   </Link>
                 </DropdownMenuItem>
@@ -462,8 +452,3 @@ function IconButton({
   )
 }
 
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
-}

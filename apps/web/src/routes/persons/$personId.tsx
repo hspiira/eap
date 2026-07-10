@@ -33,7 +33,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { displayName } from "@/lib/display"
+import { useToast } from "@/contexts/ToastContext"
+import { displayName, personInitials } from "@/lib/display"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Client, Person, ServiceSession, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -70,6 +72,7 @@ function PersonDetailPage() {
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
@@ -89,13 +92,13 @@ function PersonDetailPage() {
   }, [fetchPerson])
 
   useEffect(() => {
-    if (!person?.client_id) {
+    if (!person?.employment_info?.client_id) {
       setClient(null)
       return
     }
     let cancelled = false
     clientsApi
-      .getById(person.client_id)
+      .getById(person.employment_info!.client_id)
       .then((c) => {
         if (!cancelled) setClient(c)
       })
@@ -105,7 +108,7 @@ function PersonDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [person?.client_id])
+  }, [person?.employment_info?.client_id])
 
   useEffect(() => {
     if (!person?.user_id) {
@@ -170,11 +173,14 @@ function PersonDetailPage() {
         else if (action === "restore") await personsApi.restore(id)
         else if (action === "terminate") await personsApi.terminate(id, "Terminated from UI")
         await fetchPerson()
+        toast.showSuccess("Status updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchPerson],
+    [fetchPerson, toast],
   )
 
   if (loading) {
@@ -288,42 +294,20 @@ function PersonDetailPage() {
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DetailCard title="Identity">
                     <DetailGrid>
-                      <DetailRow label="First name" value={person.first_name} />
-                      <DetailRow label="Last name" value={person.last_name} />
-                      <DetailRow label="Middle name" value={person.middle_name} />
-                      <DetailRow label="Date of birth" value={person.date_of_birth} />
-                      <DetailRow label="Gender" value={person.gender} />
+                      <DetailRow label="Role" value={PERSON_TYPE_LABELS[person.person_type]} />
                       <DetailRow
-                        label="Role"
-                        value={PERSON_TYPE_LABELS[person.person_type]}
+                        label="Account email"
+                        value={user?.email ?? (person.user_id ? "Loading…" : null)}
+                        fullWidth
                       />
+                      {person.family_id ? (
+                        <DetailRow
+                          label="Family ID"
+                          value={<span className="font-mono text-xs">{person.family_id}</span>}
+                          fullWidth
+                        />
+                      ) : null}
                     </DetailGrid>
-                  </DetailCard>
-
-                  <DetailCard title="Contact">
-                    <DetailGrid>
-                      <DetailRow label="Email" value={person.contact_info?.email} fullWidth />
-                      <DetailRow label="Phone" value={person.contact_info?.phone} />
-                      <DetailRow label="Mobile" value={person.contact_info?.mobile} />
-                      <DetailRow
-                        label="Preferred"
-                        value={person.contact_info?.preferred_method}
-                      />
-                    </DetailGrid>
-                  </DetailCard>
-
-                  <DetailCard title="Address">
-                    {person.address?.street || person.address?.city || person.address?.country ? (
-                      <DetailGrid>
-                        {person.address?.street ? (
-                          <DetailRow label="Street" value={person.address.street} fullWidth />
-                        ) : null}
-                        <DetailRow label="City" value={person.address?.city} />
-                        <DetailRow label="Country" value={person.address?.country} />
-                      </DetailGrid>
-                    ) : (
-                      <p className="text-xs text-fg/55">No address on file.</p>
-                    )}
                   </DetailCard>
 
                   <DetailCard title="Eligibility">
@@ -409,11 +393,11 @@ function PersonDetailPage() {
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                         >
-                          {personInitial(primaryEmployee)}
+                          {personInitials(primaryEmployee)}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">
-                            {primaryEmployee.first_name} {primaryEmployee.last_name}
+                            {displayName(primaryEmployee)}
                           </p>
                           <p className="truncate font-mono text-[11px] text-fg/55">
                             {primaryEmployee.employment_info?.employee_code ??
@@ -509,7 +493,7 @@ function Hero({ person, client }: { person: Person; client: Client | null }) {
         aria-hidden
         className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
       >
-        {personInitial(person)}
+        {personInitials(person)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {fullName}
@@ -676,12 +660,6 @@ function DetailRow({
       </dd>
     </div>
   )
-}
-
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
 }
 
 function clientInitial(name: string): string {
