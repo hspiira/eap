@@ -2,6 +2,8 @@
 
 from datetime import UTC, date, datetime, timedelta
 
+from app.shared.utils.datetime import utc_now
+
 import pytest
 
 from app.domain.entities.non_compete_clause import NonCompeteClauseEntity
@@ -43,7 +45,7 @@ def _profile(
 
 class TestProviderProfile:
     def test_panel_eligible_with_active_accredited_unexpired(self):
-        profile = _profile(expiry=date.today() + timedelta(days=30))
+        profile = _profile(expiry=utc_now().date() + timedelta(days=30))
         assert profile.is_panel_eligible() is True
 
     def test_panel_ineligible_when_panel_suspended(self):
@@ -55,7 +57,7 @@ class TestProviderProfile:
         assert profile.is_panel_eligible() is False
 
     def test_panel_ineligible_when_accreditation_expired(self):
-        profile = _profile(expiry=date.today() - timedelta(days=1))
+        profile = _profile(expiry=utc_now().date() - timedelta(days=1))
         assert profile.is_panel_eligible() is False
 
     def test_panel_eligible_when_no_expiry(self):
@@ -76,7 +78,7 @@ def _clause(
         provider_id=PersonId("p-1"),
         status=status,
         terms_summary="No direct work with Minet clients for 12 months.",
-        effective_from=effective_from or date.today(),
+        effective_from=effective_from or utc_now().date(),
         effective_until=effective_until,
         created_at=now,
         updated_at=now,
@@ -115,8 +117,8 @@ class TestNonCompete:
     def test_mark_expired_when_due(self):
         clause = _clause(
             status=NonCompeteStatus.ACTIVE,
-            effective_from=date.today() - timedelta(days=365),
-            effective_until=date.today() - timedelta(days=1),
+            effective_from=utc_now().date() - timedelta(days=365),
+            effective_until=utc_now().date() - timedelta(days=1),
         )
         clause.mark_expired_if_due()
         assert clause.status == NonCompeteStatus.EXPIRED
@@ -129,7 +131,7 @@ class TestNonCompete:
     def test_is_currently_binding_true_when_active_in_window(self):
         clause = _clause(
             status=NonCompeteStatus.ACTIVE,
-            effective_until=date.today() + timedelta(days=30),
+            effective_until=utc_now().date() + timedelta(days=30),
         )
         assert clause.is_currently_binding() is True
 

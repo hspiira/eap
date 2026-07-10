@@ -1,6 +1,8 @@
 """Manager-workspace aggregate tests."""
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
+from app.shared.utils.datetime import utc_now
 
 import pytest
 
@@ -188,7 +190,7 @@ class TestTrainingEnrolment:
     def test_mark_completed(self):
         t = _enrolment()
         t.events.clear()
-        t.mark_completed(expires_on=date.today() + timedelta(days=365))
+        t.mark_completed(expires_on=utc_now().date() + timedelta(days=365))
         assert t.status == TrainingEnrolmentStatus.COMPLETED
         assert t.completed_at is not None
         assert any(
@@ -197,7 +199,7 @@ class TestTrainingEnrolment:
 
     def test_mark_expired_idempotent(self):
         t = _enrolment()
-        t.mark_completed(expires_on=date.today() - timedelta(days=1))
+        t.mark_completed(expires_on=utc_now().date() - timedelta(days=1))
         flipped = t.mark_expired_if_due()
         assert flipped is True
         assert t.status == TrainingEnrolmentStatus.EXPIRED

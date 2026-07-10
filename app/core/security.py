@@ -13,10 +13,10 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-JWTError = jwt.PyJWTError
-
 from app.core.config import settings
 from app.domain.exceptions import AuthenticationException
+
+JWTError = jwt.PyJWTError
 
 # HTTP Bearer scheme for API docs and dependency injection (matches new_timeline style)
 http_bearer = HTTPBearer(auto_error=False)
