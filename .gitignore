@@ -9,4 +9,5 @@ wheels/
 # Virtual environments
 .venv
 docs/
-.env
+.envallevia.db
+*.db

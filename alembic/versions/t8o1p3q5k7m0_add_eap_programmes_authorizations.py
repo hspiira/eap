@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "t8o1p3q5k7m0"
@@ -29,10 +29,10 @@ def upgrade() -> None:
         sa.Column("effective_until", sa.Date(), nullable=True),
         sa.Column("geographic_scope", sa.String(length=255), nullable=True),
         sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("caps", postgresql.JSONB(), nullable=False, server_default="[]"),
+        sa.Column("caps", sa.JSON(), nullable=False, server_default="[]"),
         sa.Column(
             "eligible_dependent_relations",
-            postgresql.JSONB(),
+            sa.JSON(),
             nullable=False,
             server_default="[]",
         ),

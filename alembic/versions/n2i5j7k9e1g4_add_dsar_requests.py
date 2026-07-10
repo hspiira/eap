@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
+
 
 
 revision: str = "n2i5j7k9e1g4"
@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("failed_reason", sa.Text(), nullable=True),
-        sa.Column("output", postgresql.JSONB(), nullable=True),
+        sa.Column("output", sa.JSON(), nullable=True),
         sa.Column(
             "erasure_executes_at",
             sa.DateTime(timezone=True),
