@@ -61,8 +61,6 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         features_enabled: tuple[str, ...] = (),
         custom_branding: bool = False,
         admin_email: str | None = None,
-        azure_tenant_id: str | None = None,
-        azure_sso_enabled: bool = False,
     ) -> tuple[
         TenantEntity,
         str,
@@ -108,9 +106,6 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
             deleted_at=None,
             updated_at=utc_now(),
         )
-
-        if azure_tenant_id:
-            tenant.configure_azure_sso(azure_tenant_id, enabled=azure_sso_enabled)
 
         tenant = await self._save_and_publish_events(tenant)
 
