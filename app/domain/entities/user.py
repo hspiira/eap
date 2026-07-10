@@ -211,6 +211,9 @@ class UserEntity:
     def record_successful_login(self, now: datetime | None = None) -> None:
         """Reset the failed-login counter and clear any lockout.
 
+        A successful login is proof of email ownership, so the email is
+        automatically verified here if it has not been already.
+
         Emits ``UserLockoutCleared`` if the account had been locked.
         """
         now = now or utc_now()
@@ -219,6 +222,8 @@ class UserEntity:
         self.locked_until = None
         self.last_login_at = now
         self.updated_at = now
+        if not self.email_verified_at:
+            self.verify_email()
         if was_locked:
             self.events.append(
                 UserLockoutCleared(occurred_at=now, user_id=self.id)

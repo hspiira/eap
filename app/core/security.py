@@ -37,6 +37,10 @@ class TokenData(BaseModel):
     scope rollout have an empty list; route guards treat that as legacy
     PLATFORM_ADMIN — clinical-only routes will refuse them once the auth backend
     emits explicit scopes everywhere.
+
+    ``role`` is the tenant-level role (ADMIN / USER / VIEWER) embedded in the
+    token at mint time.  This lets viewer-guard middleware check the role without
+    a DB round-trip on every mutation request.
     """
 
     user_id: str
@@ -45,6 +49,7 @@ class TokenData(BaseModel):
     exp: datetime | None = None
     jti: str | None = None
     access_scopes: list[str] = []
+    role: str | None = None
 
 
 class Token(BaseModel):
@@ -107,6 +112,7 @@ def create_access_token(
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
     access_scopes: list[str] | None = None,
+    role: str | None = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -140,6 +146,9 @@ def create_access_token(
 
     if access_scopes:
         to_encode["access_scopes"] = list(access_scopes)
+
+    if role:
+        to_encode["role"] = role
 
     if additional_claims:
         to_encode.update(additional_claims)
@@ -225,6 +234,7 @@ def decode_token(token: str) -> TokenData:
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
             access_scopes=[str(s) for s in scopes_claim],
+            role=payload.get("role"),
         )
     except JWTError as e:
         raise AuthenticationException(f"Invalid token: {str(e)}")
@@ -325,12 +335,14 @@ def create_token_response(
     tenant_id: str,
     email: str | None = None,
     refresh_jti: str | None = None,
+    role: str | None = None,
 ) -> Token:
     """Create access and refresh tokens. Optional refresh_jti for revocation support."""
     access_token = create_access_token(
         user_id=user_id,
         tenant_id=tenant_id,
         email=email,
+        role=role,
     )
     refresh_token = create_refresh_token(
         user_id=user_id,

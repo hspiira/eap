@@ -244,6 +244,7 @@ async def login(
         tenant_id=tenant.id.value,
         email=user.email.value,
         refresh_jti=refresh_jti,
+        role=user.role.value if user.role else None,
     )
     if refresh_jti:
         await refresh_token_repo.save(
@@ -365,6 +366,7 @@ async def refresh_token(
         tenant_id=token_data.tenant_id,
         email=token_data.email,
         refresh_jti=refresh_jti,
+        role=user.role.value if user.role else None,
     )
     if rotation:
         await refresh_token_repo.save(
@@ -581,6 +583,7 @@ async def azure_callback(
         tenant_id=tenant.id.value,
         email=user.email.value,
         refresh_jti=refresh_jti,
+        role=user.role.value if user.role else None,
     )
     if refresh_jti:
         await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)

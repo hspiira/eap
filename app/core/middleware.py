@@ -13,6 +13,7 @@ from app.shared.middleware.rate_limit import RateLimitConfig, RateLimitMiddlewar
 from app.shared.middleware.request_id import RequestIdMiddleware
 from app.shared.middleware.request_size import RequestSizeLimitMiddleware
 from app.shared.middleware.security_headers import SecurityHeadersMiddleware
+from app.shared.middleware.viewer_guard import ViewerGuardMiddleware
 
 
 # Max request body size (10MB). Document in README or docs.
@@ -22,6 +23,7 @@ MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024
 def setup_middleware(app: FastAPI) -> None:
     """Register all middleware on the FastAPI app. Order: first added = outermost (last to run)."""
     app.add_middleware(RequestIdMiddleware)
+    app.add_middleware(ViewerGuardMiddleware)
     hsts_max_age = 0
     if getattr(settings, "ENVIRONMENT", "") == "production":
         hsts_max_age = getattr(

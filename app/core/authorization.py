@@ -104,6 +104,25 @@ def require_tenant_role(*allowed_roles: TenantRole):
     return _require
 
 
+async def require_not_viewer(
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
+    """
+    Use as ``Depends(require_not_viewer)`` on every write/mutation route to
+    block Viewer-role users without an extra DB round-trip.  The role is read
+    directly from the JWT claim embedded at token-mint time.
+
+    Viewers may read but must not create, update, or delete.
+    Returns the caller's TokenData so the handler can use it if needed.
+    """
+    if current_user.role == TenantRole.VIEWER.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient role: Viewers cannot perform write operations",
+        )
+    return current_user
+
+
 def require_self_or_role(*allowed_roles: TenantRole):
     """
     Dependency factory: allow self-actions (caller acts on their own user_id)
