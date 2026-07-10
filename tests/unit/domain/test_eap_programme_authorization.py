@@ -2,6 +2,8 @@
 
 from datetime import UTC, date, datetime, timedelta
 
+from app.shared.utils.datetime import utc_now
+
 import pytest
 
 from app.domain.entities.authorization import Authorization
@@ -202,7 +204,7 @@ class TestAuthorizationConsume:
             a.consume_session()
 
     def test_expired_authorization_rejects_consume(self):
-        a = _authorization(expires_on=date.today() - timedelta(days=1))
+        a = _authorization(expires_on=utc_now().date() - timedelta(days=1))
         with pytest.raises(InvalidStateError, match="expired"):
             a.consume_session()
         assert a.status == AuthorizationStatus.EXPIRED

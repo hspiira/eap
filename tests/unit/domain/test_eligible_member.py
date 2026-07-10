@@ -2,6 +2,8 @@
 
 from datetime import UTC, date, datetime, timedelta
 
+from app.shared.utils.datetime import utc_now
+
 import pytest
 
 from app.domain.entities.clinical_subject import ClinicalSubject
@@ -100,12 +102,12 @@ class TestEligibleMemberFSM:
 
     def test_is_currently_eligible_respects_window(self):
         m = _member()
-        m.coverage_start = date.today() + timedelta(days=10)
+        m.coverage_start = utc_now().date() + timedelta(days=10)
         assert m.is_currently_eligible() is False
-        m.coverage_start = date.today() - timedelta(days=10)
-        m.coverage_end = date.today() - timedelta(days=1)
+        m.coverage_start = utc_now().date() - timedelta(days=10)
+        m.coverage_end = utc_now().date() - timedelta(days=1)
         assert m.is_currently_eligible() is False
-        m.coverage_end = date.today() + timedelta(days=1)
+        m.coverage_end = utc_now().date() + timedelta(days=1)
         assert m.is_currently_eligible() is True
 
 
