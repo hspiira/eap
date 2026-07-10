@@ -389,11 +389,12 @@ function ServiceSessionDetailPage() {
                           PR
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {provider.name}
+                          <p className="truncate font-mono text-sm font-medium text-fg">
+                            {provider.id}
                           </p>
                           <p className="truncate text-[11px] text-fg/55">
-                            {provider.tier} · {provider.region}
+                            {provider.provider_profile.tier} ·{" "}
+                            {provider.provider_profile.region}
                           </p>
                         </div>
                       </div>

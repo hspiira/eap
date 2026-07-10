@@ -613,9 +613,9 @@ function ProviderPicker({
           PR
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
+          <p className="truncate font-mono text-sm font-medium text-fg">{selected.id}</p>
           <p className="truncate text-[11px] text-fg/55">
-            {selected.tier} · {selected.region}
+            {selected.provider_profile.tier} · {selected.provider_profile.region}
           </p>
         </div>
         <ChangeButton onClick={() => onChange("")} />
@@ -644,9 +644,9 @@ function ProviderPicker({
             PR
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-fg">{p.name}</span>
+            <span className="block truncate font-mono text-sm font-medium text-fg">{p.id}</span>
             <span className="block truncate text-[11px] text-fg/55">
-              {p.tier} · {p.region}
+              {p.provider_profile.tier} · {p.provider_profile.region}
             </span>
           </span>
         </Button>

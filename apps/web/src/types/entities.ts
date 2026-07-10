@@ -26,6 +26,8 @@ import type {
   KPICategory,
   Language,
   MeasurementUnit,
+  NonCompeteStatus,
+  PanelStatus,
   PaymentFrequency,
   PaymentStatus,
   PersonType,
@@ -212,6 +214,8 @@ export interface Person extends BaseEntity {
   license_info?: LicenseInfo | null
   staff_info?: StaffInfo | null
   emergency_contact?: EmergencyContact | null
+  /** Set when person_type === ServiceProvider. Carries panel/tier/accreditation. */
+  provider_profile?: ProviderProfile | null
   /** @deprecated Not on BE response. Display via `displayName(person, user)`. */
   first_name?: string
   /** @deprecated Not on BE response. Display via `displayName(person, user)`. */
@@ -424,45 +428,64 @@ export interface InvoiceLinePreview {
 /**
  * Service provider (counsellor / agency / clinic) — D-Provider v1.
  */
-export interface Provider extends BaseEntity {
-  name: string
+/**
+ * Provider panel profile — mirrors BE `ProviderProfileSchema`.
+ *
+ * On the BE, a "provider" is a Person whose `person_type=SERVICE_PROVIDER`
+ * AND whose `provider_profile` is set. The profile is the panel-specific
+ * data: tier, region, accreditation, panel status, specialties.
+ */
+export interface ProviderProfile {
   tier: ProviderTier
   region: ProviderRegion
-  email?: string | null
-  phone?: string | null
-  accreditation: ProviderAccreditation
-  non_compete_clauses: ProviderNonCompete[]
-  /** Tier transitions, most-recent first. */
-  tier_audit?: ProviderTierTransition[]
+  accreditation_status: AccreditationStatus
+  panel_status: PanelStatus
+  accreditation_authority?: string | null
+  accreditation_expiry?: string | null
+  specialties: string[]
+  bio?: string | null
 }
 
-export interface ProviderAccreditation {
-  body: string
-  registration_number: string
-  status: AccreditationStatus
-  issued_at: string
-  expires_at: string
-}
-
-export interface ProviderNonCompete {
+/**
+ * A non-compete clause restricting a provider from working with certain
+ * clients. Mirrors BE `NonCompeteResponse`.
+ */
+export interface NonCompeteClause {
   id: string
-  client_id: string
-  client_name: string
-  /** Effective range — both ISO dates. */
-  start_date: string
-  end_date: string
-  /** Region scope of the non-compete. Empty array = global. */
-  regions: ProviderRegion[]
-  notes?: string | null
+  tenant_id: string
+  provider_id: string
+  status: NonCompeteStatus
+  terms_summary: string
+  effective_from: string
+  effective_until: string | null
+  signed_at: string | null
+  signed_by: string | null
+  revoked_at: string | null
+  revoked_reason: string | null
+  document_id: string | null
+  created_at: string
+  updated_at: string
 }
 
-export interface ProviderTierTransition {
-  id: string
-  from_tier: ProviderTier | null
-  to_tier: ProviderTier
-  at: string
-  actor: string
-  reason: string
+/**
+ * Provider view = Person with required provider_profile. Use this when the
+ * caller has already filtered persons to SERVICE_PROVIDER + non-null profile.
+ */
+export type Provider = Person & {
+  provider_profile: ProviderProfile
+}
+
+/**
+ * Result of a pre-assignment eligibility check. Mirrors BE `ProviderEligibilityResponse`.
+ */
+export interface ProviderEligibility {
+  provider_id: string
+  client_id: string | null
+  panel_eligible: boolean
+  binding_non_compete_count: number
+  binding_non_compete_ids: string[]
+  eligible: boolean
+  reasons: string[]
 }
 
 /**

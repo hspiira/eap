@@ -267,11 +267,34 @@ export enum ProviderRegion {
   REMOTE = 'Remote / Telehealth',
 }
 
+/**
+ * Provider accreditation lifecycle — mirrors BE `AccreditationStatus`.
+ */
 export enum AccreditationStatus {
-  ACTIVE = 'Active',
-  PENDING_RENEWAL = 'Pending Renewal',
-  EXPIRED = 'Expired',
+  PENDING = 'Pending',
+  ACCREDITED = 'Accredited',
+  LAPSED = 'Lapsed',
   SUSPENDED = 'Suspended',
+  REJECTED = 'Rejected',
+}
+
+/**
+ * Whether a provider is currently on the active panel — mirrors BE `PanelStatus`.
+ */
+export enum PanelStatus {
+  ACTIVE = 'Active',
+  SUSPENDED = 'Suspended',
+  REMOVED = 'Removed',
+}
+
+/**
+ * Lifecycle of a non-compete clause — mirrors BE `NonCompeteStatus`.
+ */
+export enum NonCompeteStatus {
+  DRAFT = 'Draft',
+  ACTIVE = 'Active',
+  REVOKED = 'Revoked',
+  EXPIRED = 'Expired',
 }
 
 export enum IncidentTimelineEventKind {

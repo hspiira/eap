@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -12,7 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ProviderRegion, ProviderTier } from "@/types/enums"
+import {
+  AccreditationStatus,
+  PanelStatus,
+  ProviderRegion,
+  ProviderTier,
+} from "@/types/enums"
 
 const REGIONS = Object.values(ProviderRegion)
 const TIERS = Object.values(ProviderTier)
@@ -39,13 +44,22 @@ function ProvidersListPage() {
   const navigate = useNavigate({ from: "/providers/" })
   const [page] = useState(1)
 
+  // BE persons-list doesn't filter by tier/region yet — we fetch the full page
+  // and filter client-side. Acceptable until BE adds those filters.
   const query = useQuery({
-    queryKey: ["providers", "list", { page, tier: params.tier, region: params.region }],
-    queryFn: () => providersApi.list({ tier: params.tier, region: params.region, page, limit: 50 }),
+    queryKey: ["providers", "list", page],
+    queryFn: () => providersApi.list({ page, limit: 100 }),
     staleTime: 60_000,
   })
 
-  const items = query.data?.items ?? []
+  const items = useMemo(() => {
+    const all = query.data?.items ?? []
+    return all.filter((p) => {
+      if (params.tier && p.provider_profile.tier !== params.tier) return false
+      if (params.region && p.provider_profile.region !== params.region) return false
+      return true
+    })
+  }, [query.data?.items, params.tier, params.region])
 
   const setTier = (v: string) => {
     const tier = isTier(v) ? v : undefined
@@ -106,24 +120,52 @@ function ProvidersListPage() {
           <p className="text-sm text-fg/60">No providers match the current filters.</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {items.map((p) => (
-              <li key={p.id}>
-                <Link
-                  to="/providers/$providerId"
-                  params={{ providerId: p.id }}
-                  className="flex h-full flex-col gap-2 border border-fg/20 bg-white p-4 hover:border-primary hover:bg-surface/30"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-sm font-semibold text-fg">{p.name}</h2>
-                    <ProviderTierBadge tier={p.tier} />
-                  </div>
-                  <p className="text-xs text-fg/60">{p.region}</p>
-                  <p className="text-xs text-fg/70">
-                    {p.accreditation.body} · {p.accreditation.registration_number}
-                  </p>
-                </Link>
-              </li>
-            ))}
+            {items.map((p) => {
+              const profile = p.provider_profile
+              const off = profile.panel_status !== PanelStatus.ACTIVE
+              const accreditationOK = profile.accreditation_status === AccreditationStatus.ACCREDITED
+              return (
+                <li key={p.id}>
+                  <Link
+                    to="/providers/$providerId"
+                    params={{ providerId: p.id }}
+                    className="flex h-full flex-col gap-2 border border-fg/20 bg-white p-4 hover:border-primary hover:bg-surface/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-sm font-semibold text-fg">
+                          {p.id}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-fg/60">
+                          {profile.region}
+                        </p>
+                      </div>
+                      <ProviderTierBadge tier={profile.tier} />
+                    </div>
+                    <div className="flex flex-wrap gap-1 text-xs">
+                      <span
+                        className={
+                          off
+                            ? "border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-danger-fg"
+                            : "border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-primary"
+                        }
+                      >
+                        Panel: {profile.panel_status}
+                      </span>
+                      <span
+                        className={
+                          accreditationOK
+                            ? "border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-primary"
+                            : "border border-fg/20 bg-bg px-1.5 py-0.5 text-fg/70"
+                        }
+                      >
+                        Accred: {profile.accreditation_status}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
