@@ -198,7 +198,6 @@ function IndustriesPage() {
         breadcrumb="Organization & Clients · Industries"
         actions={
           <>
-            <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
             <IconButton label="Export" icon={Download} />
             <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
             <Button

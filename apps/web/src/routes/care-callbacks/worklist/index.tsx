@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Headphones,
   Phone,
-  RotateCw,
 } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
@@ -117,7 +116,6 @@ function WorklistPage() {
       breadcrumb="Care · My worklist"
       actions={
         <>
-          <IconButton label="Refresh" onClick={refetch} icon={RotateCw} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"

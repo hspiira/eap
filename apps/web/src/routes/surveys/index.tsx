@@ -8,7 +8,6 @@ import {
   ExternalLink,
   MoreHorizontal,
   Plus,
-  RotateCw,
 } from "lucide-react"
 
 import { surveysApi } from "@/api/endpoints/surveys"
@@ -112,7 +111,6 @@ function SurveysListPage() {
       breadcrumb="Insights · Surveys"
       actions={
         <>
-          <IconButton label="Refresh" onClick={() => void query.refetch()} icon={RotateCw} />
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>

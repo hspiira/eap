@@ -582,7 +582,7 @@ function DetailRail({ user, person, onAction, actionLoading }: DetailRailProps) 
               aria-hidden
               className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
             >
-              {personInitial(person)}
+              {personInitials(person)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">
