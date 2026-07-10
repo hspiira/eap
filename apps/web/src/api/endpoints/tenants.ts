@@ -18,6 +18,7 @@ export interface TenantSettingsInput {
 export interface TenantCreate {
   name: string
   code: string
+  admin_email?: string | null
   subscription_tier?: string
   settings?: TenantSettingsInput
 }
