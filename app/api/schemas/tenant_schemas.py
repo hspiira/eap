@@ -60,6 +60,17 @@ class TenantCreate(BaseModel):
             )
         return v.lower()
 
+    azure_tenant_id: str | None = Field(
+        None,
+        min_length=1,
+        max_length=64,
+        description="Azure AD directory ID (tid claim). When provided, Azure SSO is configured at creation.",
+    )
+    azure_sso_enabled: bool = Field(
+        default=False,
+        description="Enable Azure SSO immediately. Only effective when azure_tenant_id is provided.",
+    )
+
     @field_validator("admin_email")
     @classmethod
     def validate_admin_email(cls, v: str | None) -> str | None:
@@ -69,6 +80,16 @@ class TenantCreate(BaseModel):
         if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", v):
             raise ValueError("Invalid email address")
         return v.lower().strip()
+
+    @field_validator("azure_tenant_id")
+    @classmethod
+    def validate_azure_tenant_id(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        return v
 
 
 class TenantSettingsResponse(BaseModel):
