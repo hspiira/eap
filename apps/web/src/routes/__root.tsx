@@ -1,41 +1,31 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
 import { useEffect } from 'react'
-import { AuthProvider } from '../contexts/AuthContext'
-import { ThemeProvider } from '../contexts/ThemeContext'
-import { TenantProvider } from '../contexts/TenantContext'
+
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
+import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+
+import { AppBootstrap } from '../components/AppBootstrap'
+import { ErrorBoundary } from '../components/ui/ErrorBoundary'
+import { NotFound } from '../components/ui/NotFound'
 import { ToastProvider } from '../contexts/ToastContext'
-import { ErrorBoundary } from '../components/common/ErrorBoundary'
-import { ToastContainer } from '../components/common/ToastContainer'
-import { SessionTimeoutManager } from '../components/common/SessionTimeoutManager'
-import { useToast } from '../contexts/ToastContext'
-import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
+import { useThemeEffect } from '../hooks/useThemeEffect'
+import { queryClient } from '../lib/query-client'
 import appCss from '../styles.css?url'
+import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 
 export const Route = createRootRoute({
+  notFoundComponent: () => <NotFound fullPage />,
   head: () => ({
     meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Evexía',
-      },
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { title: 'Evexía' },
     ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
+    links: [{ rel: 'stylesheet', href: appCss }],
   }),
-
+  component: RootLayout,
   shellComponent: RootDocument,
 })
 
@@ -43,51 +33,37 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setupGlobalErrorHandlers()
   }, [])
+  useThemeEffect()
 
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <TenantProvider>
-                  <SessionTimeoutManager>
-                  <ToastWrapper>
-                    {children}
-                  </ToastWrapper>
-                  </SessionTimeoutManager>
-                </TenantProvider>
-              </AuthProvider>
-            </ToastProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+      <body style={{ minHeight: '100dvh' }}>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AppBootstrap />
+            <ErrorBoundary>
+              <div className="min-h-svh w-full" style={{ minHeight: '100dvh' }}>
+                {children}
+              </div>
+            </ErrorBoundary>
+          </ToastProvider>
+          <TanStackDevtools
+            config={{ position: 'bottom-right' }}
+            plugins={[
+              { name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> },
+              { name: 'React Query', render: <ReactQueryDevtoolsPanel /> },
+            ]}
+          />
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
   )
 }
 
-function ToastWrapper({ children }: { children: React.ReactNode }) {
-  const { toasts, removeToast } = useToast()
-  return (
-    <>
-      {children}
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-    </>
-  )
+function RootLayout() {
+  return <Outlet />
 }

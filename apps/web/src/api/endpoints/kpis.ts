@@ -2,9 +2,10 @@
  * KPIs API Endpoints
  */
 
-import apiClient from '../client'
-import type { KPI, KPIAssignment, PaginatedResponse, ListParams } from '../types'
 import type { KPICategory, MeasurementUnit } from '@/types/enums'
+
+import apiClient from '../client'
+import type { KPI, KPIAssignment, ListParams, PaginatedResponse } from '../types'
 
 export interface KPICreate {
   name: string

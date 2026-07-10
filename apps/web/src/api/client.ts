@@ -4,11 +4,12 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
+import { useAuthStore } from '@/store/slices/authSlice'
+import { useTenantStore } from '@/store/slices/tenantSlice'
 import type {
   ApiClientConfig,
-  RequestOptions,
-  ErrorResponse,
   FieldErrors,
+  RequestOptions,
 } from '@/types/api'
 import { ApiError } from '@/types/api'
 
@@ -16,13 +17,14 @@ const DEFAULT_TIMEOUT = 30000 // 30 seconds
 const DEFAULT_RETRY_ATTEMPTS = 3
 const DEFAULT_RETRY_DELAY = 1000 // 1 second
 
+function useCookies(): boolean {
+  return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
+}
+
 type AuthErrorCallback = () => void
 
 class ApiClient {
   private baseUrl: string
-  private token: string | null = null
-  private refreshToken: string | null = null
-  private tenantId: string | null = null
   private timeout: number
   private retryAttempts: number
   private retryDelay: number
@@ -45,46 +47,74 @@ class ApiClient {
   }
 
   /**
-   * Set authentication token
+   * Set authentication token. Optionally pass `expiresInSeconds` to record when the token
+   * expires; AppBootstrap uses that to schedule a silent refresh.
    */
-  setToken(token: string | null): void {
-    this.token = token
-    if (token) {
-      localStorage.setItem('auth_token', token)
-    } else {
-      localStorage.removeItem('auth_token')
-    }
+  setToken(token: string | null, expiresInSeconds?: number): void {
+    useAuthStore.getState().setToken(token, expiresInSeconds)
+  }
+
+  /** Epoch ms when the current access token expires, or null if unknown. */
+  getTokenExpiresAt(): number | null {
+    if (useCookies()) return null
+    return useAuthStore.getState().tokenExpiresAt
+  }
+
+  setCsrfToken(token: string | null): void {
+    useAuthStore.getState().setCsrfToken(token)
+  }
+  getCsrfToken(): string | null {
+    return useAuthStore.getState().csrfToken
   }
 
   getToken(): string | null {
-    if (!this.token && typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token')
-    }
-    return this.token
+    return useAuthStore.getState().token
   }
 
   setRefreshToken(token: string | null): void {
-    this.refreshToken = token
-    if (typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('refresh_token', token)
-      } else {
-        localStorage.removeItem('refresh_token')
-      }
-    }
+    useAuthStore.getState().setRefreshToken(token)
   }
 
   getRefreshToken(): string | null {
-    if (!this.refreshToken && typeof window !== 'undefined') {
-      this.refreshToken = localStorage.getItem('refresh_token')
-    }
-    return this.refreshToken
+    return useAuthStore.getState().refreshToken
+  }
+
+  /**
+   * Public proactive refresh. Same wire as the reactive 401 path but exposed so a scheduler
+   * can rotate the access token before it expires.
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    return this.tryRefreshToken()
   }
 
   private async tryRefreshToken(): Promise<boolean> {
     if (this.refreshPromise) return this.refreshPromise
 
     this.refreshPromise = (async () => {
+      if (useCookies()) {
+        try {
+          const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+            credentials: 'include',
+          })
+          if (!response.ok) return false
+          // BE may rotate the CSRF token on refresh; honor it if returned.
+          try {
+            const data = await response.clone().json()
+            if (data && typeof data.csrf_token === 'string') this.setCsrfToken(data.csrf_token)
+          } catch (_err) {
+            // body may be empty — fine
+          }
+          return true
+        } catch (_err) {
+          return false
+        } finally {
+          this.refreshPromise = null
+        }
+      }
+
       const refreshToken = this.getRefreshToken()
       if (!refreshToken) return false
 
@@ -98,10 +128,12 @@ class ApiClient {
         if (!response.ok) return false
 
         const data = await response.json()
-        this.setToken(data.access_token)
+        const expiresIn =
+          typeof data.expires_in === 'number' ? data.expires_in : undefined
+        this.setToken(data.access_token, expiresIn)
         this.setRefreshToken(data.refresh_token)
         return true
-      } catch {
+      } catch (_err) {
         return false
       } finally {
         this.refreshPromise = null
@@ -112,41 +144,37 @@ class ApiClient {
   }
 
   setTenantId(tenantId: string | null): void {
-    this.tenantId = tenantId
-    if (tenantId) {
-      localStorage.setItem('tenant_id', tenantId)
-    } else {
-      localStorage.removeItem('tenant_id')
-    }
+    useTenantStore.getState().setCurrentTenantId(tenantId)
   }
 
-  /**
-   * Get tenant ID.
-   * Uses in-memory value, then localStorage 'tenant_id', then 'current_tenant_id' (TenantContext).
-   * Ensures tenant is available even before TenantContext sync (e.g. after SSR hydrate).
-   */
   getTenantId(): string | null {
-    if (this.tenantId) return this.tenantId
-    if (typeof window === 'undefined') return null
-    const fromTenant = localStorage.getItem('tenant_id')
-    const fromCurrent = localStorage.getItem('current_tenant_id')
-    const id = fromTenant || fromCurrent || null
-    if (id) this.tenantId = id
-    return id
+    return useTenantStore.getState().currentTenantId
   }
 
   /**
    * Clear authentication and tenant context
    */
   clearAuth(): void {
-    this.token = null
-    this.refreshToken = null
-    this.tenantId = null
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('tenant_id')
-      localStorage.removeItem('current_tenant_id')
+    useAuthStore.getState().clearAuth()
+    useTenantStore.getState().clear()
+  }
+
+  /**
+   * When using cookie auth, check if the session is still valid (refresh succeeds).
+   * Used by initAuth to restore auth state on reload.
+   */
+  async validateSession(): Promise<boolean> {
+    if (!useCookies()) return !!this.getToken()
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        credentials: 'include',
+      })
+      return response.ok
+    } catch (_err) {
+      return false
     }
   }
 
@@ -207,11 +235,15 @@ class ApiClient {
     }
 
     if (!excludeSensitiveHeaders) {
-      const token = this.getToken()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+      if (!useCookies()) {
+        const token = this.getToken()
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      } else {
+        const csrf = this.getCsrfToken()
+        if (csrf) headers['X-CSRF-Token'] = csrf
       }
-
       const tenantId = this.getTenantId()
       const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
       if (tenantId && !skipTenant) {
@@ -227,9 +259,14 @@ class ApiClient {
    */
   private buildAuthHeaders(endpoint?: string): Record<string, string> {
     const headers: Record<string, string> = {}
-    const token = this.getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+    if (!useCookies()) {
+      const token = this.getToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } else {
+      const csrf = this.getCsrfToken()
+      if (csrf) headers['X-CSRF-Token'] = csrf
     }
     const tenantId = this.getTenantId()
     const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
@@ -250,6 +287,7 @@ class ApiClient {
       method: 'POST',
       body: formData,
       headers,
+      ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
     })
 
     if (response.status === 401 && !path.includes('/auth/')) {
@@ -260,6 +298,7 @@ class ApiClient {
           method: 'POST',
           body: formData,
           headers: retryHeaders,
+          credentials: useCookies() ? 'include' : undefined,
         })
         if (retryResponse.ok) {
           const ct = retryResponse.headers.get('content-type')
@@ -296,6 +335,7 @@ class ApiClient {
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      credentials: useCookies() ? 'include' : undefined,
     })
 
     if (response.status === 401) {
@@ -305,6 +345,7 @@ class ApiClient {
         const retryResponse = await fetch(url, {
           method: 'GET',
           headers: retryHeaders,
+          credentials: useCookies() ? 'include' : undefined,
         })
         if (retryResponse.ok) {
           return retryResponse.blob()
@@ -329,38 +370,90 @@ class ApiClient {
   }
 
   /**
-   * Parse error response
+   * Parse error response.
+   * Supports both EAP shape ({ error, message, details? }) and FastAPI HTTPException ({ detail: string | array }).
    */
   private async parseError(response: Response): Promise<ApiError> {
-    let errorData: ErrorResponse
-
+    let body: unknown
     try {
-      errorData = await response.json()
-    } catch {
-      // If response is not JSON, create a generic error
-      errorData = {
-        error: 'UNKNOWN_ERROR',
-        message: response.statusText || 'An unknown error occurred',
-        timestamp: new Date().toISOString(),
-      }
+      body = await response.json()
+    } catch (_err) {
+      body = null
     }
 
-    // Extract field-specific errors
-    const fieldErrors: FieldErrors | undefined = errorData.details
-      ? errorData.details.reduce((acc, detail) => {
-          if (detail.field) {
-            acc[detail.field] = detail.message
-          }
-          return acc
-        }, {} as FieldErrors)
-      : undefined
+    const message = this.normalizeErrorMessageBody(body, response)
+    const errorCode = this.normalizeErrorCodeBody(body, response.status)
+    const fieldErrors = this.normalizeFieldErrorsBody(body)
+    const data = this.normalizeErrorDataBody(body)
 
-    return new ApiError(
-      errorData.message,
-      errorData.error,
-      response.status,
-      fieldErrors
-    )
+    return new ApiError(message, errorCode, response.status, fieldErrors, data)
+  }
+
+  /**
+   * Pass through server-provided extra fields (e.g. `retry_after_seconds` for lockout)
+   * minus the ones we already extract into typed fields.
+   */
+  private normalizeErrorDataBody(body: unknown): Record<string, unknown> | undefined {
+    if (!body || typeof body !== 'object') return undefined
+    const b = body as Record<string, unknown>
+    const reserved = new Set(['error', 'message', 'detail', 'details', 'timestamp', 'path', 'request_id'])
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(b)) {
+      if (!reserved.has(k)) out[k] = v
+    }
+    return Object.keys(out).length > 0 ? out : undefined
+  }
+
+  private normalizeErrorMessageBody(body: unknown, response: Response): string {
+    if (body && typeof body === 'object') {
+      const b = body as Record<string, unknown>
+      if (typeof b.message === 'string' && b.message) return b.message
+      const detail = b.detail
+      if (typeof detail === 'string' && detail) return detail
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0]
+        if (first && typeof first === 'object' && first !== null && 'msg' in first && typeof (first as { msg: unknown }).msg === 'string') {
+          return (first as { msg: string }).msg
+        }
+        return String(first)
+      }
+    }
+    return response.statusText || 'An unknown error occurred'
+  }
+
+  private normalizeErrorCodeBody(body: unknown, status: number): string {
+    if (body && typeof body === 'object') {
+      const b = body as Record<string, unknown>
+      if (typeof b.error === 'string' && b.error) return b.error
+    }
+    switch (status) {
+      case 401:
+        return 'AUTHENTICATION_ERROR'
+      case 403:
+        return 'AUTHORIZATION_ERROR'
+      case 404:
+        return 'NOT_FOUND'
+      default:
+        return 'HTTP_ERROR'
+    }
+  }
+
+  private normalizeFieldErrorsBody(body: unknown): FieldErrors | undefined {
+    if (!body || typeof body !== 'object') return undefined
+    const b = body as Record<string, unknown>
+    const details = b.details
+    if (!Array.isArray(details)) return undefined
+    const acc: FieldErrors = {}
+    for (const d of details) {
+      if (d && typeof d === 'object' && d !== null && 'field' in d && (d as { field: unknown }).field) {
+        const field = String((d as { field: unknown }).field)
+        const msg = typeof (d as { message?: unknown }).message === 'string'
+          ? (d as { message: string }).message
+          : String(d)
+        acc[field] = msg
+      }
+    }
+    return Object.keys(acc).length > 0 ? acc : undefined
   }
 
   /**
@@ -377,7 +470,7 @@ class ApiClient {
   /**
    * Retry logic with exponential backoff
    */
-  private async retryRequest<T>(
+  private async retryRequest(
     requestFn: () => Promise<Response>,
     attempt = 1
   ): Promise<Response> {
@@ -436,7 +529,7 @@ class ApiClient {
     const sanitizedHeaders = isSameOrigin
       ? (headers as Record<string, string>)
       : (() => {
-          const { Authorization, 'x-tenant-id': xTenantId, ...rest } =
+          const { Authorization: _auth, 'x-tenant-id': _tenant, ...rest } =
             (headers as Record<string, string>) || {}
           return rest
         })()
@@ -452,6 +545,7 @@ class ApiClient {
         ...fetchOptions,
         headers: requestHeaders,
         signal: requestSignal,
+        ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
       })
 
     try {
@@ -480,6 +574,7 @@ class ApiClient {
               ...fetchOptions,
               headers: retryHeaders,
               signal: retrySignal,
+              ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
             })
             clearTimeout(retryTimeoutId)
             if (retryResponse.ok) {
@@ -549,12 +644,8 @@ class ApiClient {
     params?: Record<string, unknown>,
     options?: RequestOptions
   ): Promise<T> {
-    // Build full URL with params and pass as endpoint
     const fullUrl = this.buildUrl(endpoint, params)
-    // Extract relative path from full URL for request method
-    const urlObj = new URL(fullUrl)
-    const relativePath = urlObj.pathname + urlObj.search
-    return this.request<T>(relativePath, {
+    return this.request<T>(fullUrl, {
       method: 'GET',
       ...options,
     })
@@ -604,26 +695,11 @@ class ApiClient {
   }
 }
 
-// Create singleton instance
 const apiClient = new ApiClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   timeout: DEFAULT_TIMEOUT,
   retryAttempts: DEFAULT_RETRY_ATTEMPTS,
   retryDelay: DEFAULT_RETRY_DELAY,
 })
-
-// Initialize token and tenant from localStorage if available (client-only).
-// Use both tenant_id and current_tenant_id (TenantContext) so we have tenant before sync.
-if (typeof window !== 'undefined') {
-  const storedToken = localStorage.getItem('auth_token')
-  const storedTenantId =
-    localStorage.getItem('tenant_id') || localStorage.getItem('current_tenant_id')
-  if (storedToken) {
-    apiClient.setToken(storedToken)
-  }
-  if (storedTenantId) {
-    apiClient.setTenantId(storedTenantId)
-  }
-}
 
 export default apiClient

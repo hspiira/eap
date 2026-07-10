@@ -3,7 +3,7 @@
  */
 
 import apiClient from '../client'
-import type { Industry, PaginatedResponse, ListParams } from '../types'
+import type { Industry, ListParams, PaginatedResponse } from '../types'
 
 export interface IndustryCreate {
   name: string
@@ -35,5 +35,19 @@ export const industriesApi = {
       `/industries/${industryId}/children`
     )
     return Array.isArray(res) ? res : (res.items ?? [])
+  },
+
+  async activate(industryId: string): Promise<Industry> {
+    return apiClient.post<Industry>(`/industries/${industryId}/activate`, {})
+  },
+
+  async deactivate(industryId: string): Promise<Industry> {
+    return apiClient.post<Industry>(`/industries/${industryId}/deactivate`, {})
+  },
+
+  async checkName(name: string): Promise<{ available: boolean; name: string }> {
+    return apiClient.get<{ available: boolean; name: string }>(
+      `/industries/check-name/${encodeURIComponent(name)}`,
+    )
   },
 }

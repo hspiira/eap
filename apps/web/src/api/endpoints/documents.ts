@@ -2,9 +2,10 @@
  * Documents API Endpoints
  */
 
+import type {DocumentType } from '@/types/enums'
+
 import apiClient from '../client'
-import type { Document, PaginatedResponse, ListParams } from '../types'
-import type { DocumentType, DocumentStatus } from '@/types/enums'
+import type { Document, ListParams, PaginatedResponse } from '../types'
 
 export interface DocumentCreate {
   name: string

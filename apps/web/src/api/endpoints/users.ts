@@ -3,18 +3,24 @@
  */
 
 import apiClient from '../client'
-import type { User, PaginatedResponse, ListParams, CreateRequest } from '../types'
+import type { CreateRequest, ListParams, PaginatedResponse, User } from '../types'
 
 export interface UserCreate extends CreateRequest {
   email: string
   password?: string
   preferred_language?: string
   timezone?: string
+  role?: 'Admin' | 'User' | 'Viewer'
 }
 
 export interface UserUpdatePasswordRequest {
-  current_password: string
   password: string
+  /** REQUIRED when the caller is changing their OWN password. Admins resetting another user can omit. */
+  current_password?: string
+}
+
+export interface UserUpdateRoleRequest {
+  role: 'Admin' | 'User' | 'Viewer'
 }
 
 export interface UserUpdatePreferencesRequest {
@@ -62,7 +68,7 @@ export const usersApi = {
    * List users
    */
   async list(params?: ListParams): Promise<PaginatedResponse<User>> {
-    return apiClient.get<PaginatedResponse<User>>('/users', params)
+    return apiClient.get<PaginatedResponse<User>>('/users', params as Record<string, unknown> | undefined)
   },
 
   /**
@@ -77,6 +83,13 @@ export const usersApi = {
    */
   async updatePreferences(userId: string, data: UserUpdatePreferencesRequest): Promise<User> {
     return apiClient.patch<User>(`/users/${userId}/preferences`, data)
+  },
+
+  /**
+   * Change a user's tenant role. ADMIN-only on the BE.
+   */
+  async updateRole(userId: string, data: UserUpdateRoleRequest): Promise<User> {
+    return apiClient.patch<User>(`/users/${userId}/role`, data)
   },
 
   /**
@@ -105,5 +118,29 @@ export const usersApi = {
    */
   async disable2FA(userId: string): Promise<void> {
     return apiClient.post<void>(`/users/${userId}/disable-2fa`, {})
+  },
+
+  async activate(userId: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/activate`, {})
+  },
+
+  async suspend(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/suspend`, reason != null ? { reason } : undefined)
+  },
+
+  async ban(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/ban`, reason != null ? { reason } : undefined)
+  },
+
+  async terminate(userId: string, reason: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/terminate`, { reason })
+  },
+
+  async deactivate(userId: string, reason?: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/deactivate`, reason != null ? { reason } : undefined)
+  },
+
+  async verifyEmail(userId: string): Promise<User> {
+    return apiClient.post<User>(`/users/${userId}/verify-email`, {})
   },
 }

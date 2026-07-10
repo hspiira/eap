@@ -1,50 +1,55 @@
 /**
  * Contracts API Endpoints
+ *
+ * Shapes mirror BE OpenAPI. Notable BE design choices:
+ * - `billing_rate` is a structured `MoneySchema` ({amount: str, currency: 3-letter}),
+ *   NOT primitive `billing_amount` + `currency`.
+ * - `payment_frequency` is required on create.
+ * - `start_date` / `end_date` are full datetimes (ISO with time), not just dates.
+ * - `is_auto_renew` defaults to false; renewal_date is computed from period.
+ * - Pricing model selection (RETAINER / FRAMEWORK / FFS / etc.) is set via a
+ *   separate `PATCH /contracts/{id}/pricing` route — see `pricing.ts`.
  */
 
-import apiClient from '../client'
-import type { Contract, PaginatedResponse, ListParams } from '../types'
-import type { ContractStatus, PaymentFrequency, PaymentStatus } from '@/types/enums'
+import type {
+  ContractCreate,
+  ContractRenewRequest,
+  ContractTerminateRequest,
+  ContractUpdate,
+} from '@/api/generated'
 
-export interface ContractCreate {
-  client_id: string
-  contract_number?: string | null
-  start_date: string
-  end_date?: string | null
-  renewal_date?: string | null
-  billing_frequency?: PaymentFrequency | null
-  billing_amount?: number | null
-  currency?: string | null
-  payment_status?: PaymentStatus | null
-  metadata?: Record<string, unknown> | null
-}
+import apiClient from '../client'
+import type { Contract, ListParams, PaginatedResponse } from '../types'
+
+export type { ContractCreate, ContractRenewRequest, ContractTerminateRequest, ContractUpdate }
 
 export const contractsApi = {
-  /**
-   * Create a new contract
-   */
   async create(contractData: ContractCreate): Promise<Contract> {
     return apiClient.post<Contract>('/contracts', contractData)
   },
 
-  /**
-   * Get contract by ID
-   */
   async getById(contractId: string): Promise<Contract> {
     return apiClient.get<Contract>(`/contracts/${contractId}`)
   },
 
-  /**
-   * List contracts
-   */
   async list(params?: ListParams): Promise<PaginatedResponse<Contract>> {
     return apiClient.get<PaginatedResponse<Contract>>('/contracts', params as Record<string, unknown>)
   },
 
-  /**
-   * Update contract
-   */
-  async update(contractId: string, data: Partial<ContractCreate>): Promise<Contract> {
+  /** BE `ContractUpdate` accepts only `{billing_rate?, payment_frequency?, is_auto_renew?}`. */
+  async update(contractId: string, data: ContractUpdate): Promise<Contract> {
     return apiClient.patch<Contract>(`/contracts/${contractId}`, data)
+  },
+
+  async activate(contractId: string): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/activate`, {})
+  },
+
+  async renew(contractId: string, data: ContractRenewRequest): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/renew`, data)
+  },
+
+  async terminate(contractId: string, data: ContractTerminateRequest): Promise<Contract> {
+    return apiClient.post<Contract>(`/contracts/${contractId}/terminate`, data)
   },
 }

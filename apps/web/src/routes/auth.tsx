@@ -4,8 +4,9 @@
  * Keeps video background mounted during navigation
  */
 
-import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
+
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/auth')({
   component: AuthLayout,
@@ -13,9 +14,9 @@ export const Route = createFileRoute('/auth')({
 
 function AuthLayout() {
   useEffect(() => {
-    document.documentElement.style.background = '#000'
+    document.documentElement.style.background = 'black'
     document.documentElement.style.overflow = 'hidden'
-    document.body.style.background = '#000'
+    document.body.style.background = 'black'
     document.body.style.overflow = 'hidden'
     return () => {
       document.documentElement.style.background = ''

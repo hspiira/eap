@@ -1,13 +1,23 @@
 @import "tailwindcss";
-
-@plugin "tailwindcss-animate";
-@import "react-day-picker/style.css";
 @import "./theme/index.css";
-@import "tw-animate-css";
+@import "./styles/theme/tokens-base.css";
+@import "./styles/theme/tokens-light.css";
+@import "./styles/theme/tokens-dark.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Theme blocks are ordered so the new semantic tokens win on collision.
+ * The legacy palette @theme is declared first; the new @theme inline follows
+ * and overrides --color-surface / --color-border / --color-danger via cascade.
+ */
+
 @theme {
+  /*
+   * Legacy palette tokens — retained for backwards compatibility while
+   * existing components migrate. New code uses the semantic tokens declared
+   * in the @theme inline block below; on collision, the later block wins.
+   */
   --color-safe: var(--palette-safe);
   --color-safe-light: var(--palette-safe-light);
   --color-safe-dark: var(--palette-safe-dark);
@@ -18,101 +28,117 @@
   --color-nurturing-light: var(--palette-nurturing-light);
   --color-nurturing-dark: var(--palette-nurturing-dark);
   --color-danger: var(--palette-danger);
-  --color-danger-light: var(--palette-danger-light);
-  --color-danger-dark: var(--palette-danger-dark);
+  --color-danger-soft: var(--palette-danger-soft);
+  --color-danger-soft-dark: var(--palette-danger-soft-dark);
   --color-calm: var(--palette-calm);
-  --color-calm-light: var(--palette-calm-light);
-  --color-calm-dark: var(--palette-calm-dark);
-
+  --color-ink: var(--palette-ink);
+  --color-warm: var(--palette-warm);
+  --color-warm-dark: var(--palette-warm-dark);
+  --color-stone: var(--palette-stone);
+  --color-neutral-50: var(--palette-neutral-50);
+  --color-neutral-100: var(--palette-neutral-100);
+  --color-neutral-200: var(--palette-neutral-200);
+  --color-neutral-300: var(--palette-neutral-300);
+  --color-neutral-400: var(--palette-neutral-400);
+  --color-neutral-500: var(--palette-neutral-500);
+  --color-neutral-600: var(--palette-neutral-600);
+  --color-neutral-700: var(--palette-neutral-700);
+  --color-neutral-800: var(--palette-neutral-800);
+  --color-accent-purple: var(--palette-accent-purple);
+  --color-accent-purple-dark: var(--palette-accent-purple-dark);
+  --color-accent-purple-deep: var(--palette-accent-purple-deep);
+  --color-accent-pink: var(--palette-accent-pink);
+  --color-accent-green: var(--palette-accent-green);
+  --color-accent-success: var(--palette-accent-success);
+  --color-accent-success-soft: var(--palette-accent-success-soft);
+  --color-accent-success-ink: var(--palette-accent-success-ink);
+  --color-accent-error: var(--palette-accent-error);
+  --color-accent-error-soft: var(--palette-accent-error-soft);
+  --color-accent-error-ink: var(--palette-accent-error-ink);
+  --color-accent-error-deep: var(--palette-accent-error-deep);
+  --color-accent-blue: var(--palette-accent-blue);
+  --color-accent-blue-soft: var(--palette-accent-blue-soft);
+  --color-accent-blue-ink: var(--palette-accent-blue-ink);
+  --color-accent-red-deep: var(--palette-accent-red-deep);
+  --color-surface-soft: var(--palette-surface-soft);
+  --color-surface-tile: var(--palette-surface-tile);
+  --color-surface-chip: var(--palette-surface-chip);
+  --color-surface-shadow: var(--palette-surface-shadow);
+  --color-surface-slate: var(--palette-surface-slate);
+  --color-surface-slate-light: var(--palette-surface-slate-light);
+  --color-surface-slate-dim: var(--palette-surface-slate-dim);
+  --color-surface-slate-pressed: var(--palette-surface-slate-pressed);
+  --color-surface-soft-cool: var(--palette-surface-soft-cool);
+  --color-surface-chip-cool: var(--palette-surface-chip-cool);
+  --color-surface-lilac-faint: var(--palette-surface-lilac-faint);
+  --color-surface-lilac: var(--palette-surface-lilac);
+  --color-surface-lilac-mid: var(--palette-surface-lilac-mid);
+  --color-surface-lilac-mid-hover: var(--palette-surface-lilac-mid-hover);
+  --color-accent-amber-ink: var(--palette-accent-amber-ink);
+  --color-accent-coral: var(--palette-accent-coral);
+  --color-accent-coral-dark: var(--palette-accent-coral-dark);
+  --color-accent-olive: var(--palette-accent-olive);
+  --color-text-faint: var(--palette-text-faint);
   --color-page: var(--token-page);
   --color-surface: var(--token-surface);
-  --color-surface-hover: var(--token-surface-hover);
-  --color-surface-muted: var(--token-surface-muted);
-  --color-border: var(--token-border);
-  --color-border-focus: var(--token-border-focus);
   --color-text: var(--token-text);
   --color-text-muted: var(--token-text-muted);
   --color-primary: var(--token-primary);
-  --color-primary-hover: var(--token-primary-hover);
-  --color-secondary: var(--token-secondary);
-  --color-secondary-hover: var(--token-secondary-hover);
-  --color-neutral: var(--token-neutral);
-  --color-neutral-light: var(--token-neutral-light);
-  --color-neutral-dark: var(--token-neutral-dark);
-
-  --color-gray-50: var(--palette-neutral-50);
-  --color-gray-100: var(--palette-neutral-100);
-
+  --color-border: var(--token-border);
+  --color-selection: var(--token-selection);
   --radius-none: 0;
 }
 
-html {
-  overflow-x: hidden;
-}
-
-body {
-  @apply m-0 min-h-0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--token-page);
-  color: var(--token-text);
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
-}
-
-input,
-textarea,
-select,
-button {
-  font-family: inherit;
-}
-
-* {
-  border-radius: 0;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.nav-dropdown {
-  animation: fadeInDown 0.2s ease-in-out;
-}
-
-.nav-shadow {
-  box-shadow: 0 2px 8px rgba(90, 98, 106, 0.08), 0 1px 2px rgba(90, 98, 106, 0.04);
-}
-
-@keyframes status-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
-
-.status-blink-dot {
-  animation: status-blink 1.8s ease-in-out infinite;
-}
-
 @theme inline {
-  --radius-sm: var(--radius);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --radius-2xl: var(--radius);
-  --radius-3xl: var(--radius);
-  --radius-4xl: var(--radius);
+  /*
+   * New semantic tokens — preferred for all new code.
+   * Declared after the legacy block so they win on collision via cascade.
+   * Source values live in styles/theme/tokens-{light,dark}.css.
+   *
+   * App utilities: bg-bg, text-fg, bg-brand, border-border, bg-success, …
+   * shadcn-conventional utilities: bg-primary, bg-secondary, bg-muted,
+   *   bg-accent (= muted highlight, NOT brand), bg-destructive, bg-card,
+   *   bg-popover, border-input, ring-ring.
+   */
+
+  /* App surfaces & text */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-on-brand: var(--fg-on-brand);
+
+  /* App borders */
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  /* App brand */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-fg: var(--brand-fg);
+
+  /* App semantic */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-fg: var(--info-fg);
+  --color-ring: var(--ring);
+
+  /* shadcn-conventional aliases. Override the legacy mappings for any
+   * collisions (--color-primary, --color-border, --color-destructive). */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -128,14 +154,70 @@ button {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
-  --color-border: var(--border);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+
+  --radius-md: 6px;
+  --radius-sm: 4px;
+}
+
+/*
+ * Legacy global radius reset removed in Phase 1 of the UI rebuild.
+ * The 92 components that explicitly set `rounded-none` continue to render
+ * sharp; new shadcn primitives use --radius-sm / --radius-md from tokens-base.
+ */
+
+/*
+ * Default border colour for any element using Tailwind's `border` utility
+ * without a colour. Tegon-style hairlines: the subtle token, not the default
+ * one, so cards/dividers don't compete with content for attention.
+ * Components can still opt up via border-border, border-border-strong.
+ */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border-subtle, currentColor);
+  }
+}
+
+html {
+  overflow-x: hidden;
+  min-height: 100%;
+  /* Defensive: clear any inline style="background: black" left over from
+   * the old LandingPage useEffect that mutated documentElement directly. */
+  background-color: var(--bg) !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Use the new semantic tokens so body follows light/dark correctly.
+   * Falls back to legacy --token-page / --token-text for safety. */
+  background-color: var(--bg, var(--token-page));
+  color: var(--fg, var(--token-text));
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+/*
+ * Sidebar tokens are now defined in styles/theme/tokens-{light,dark}.css —
+ * bound to the new neutral ramp + brand. The legacy :root/.dark blocks here
+ * have been removed.
+ */
+
+@theme inline {
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -146,73 +228,19 @@ button {
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
-  --radius: 0;
-  --background: var(--token-page);
-  --foreground: var(--token-text);
-  --card: var(--token-surface);
-  --card-foreground: var(--token-text);
-  --popover: var(--token-surface);
-  --popover-foreground: var(--token-text);
-  --primary: var(--token-primary);
-  --primary-foreground: #ffffff;
-  --secondary: var(--token-secondary);
-  --secondary-foreground: #ffffff;
-  --muted: var(--token-surface-muted);
-  --muted-foreground: var(--token-text-muted);
-  --accent: var(--token-surface-hover);
-  --accent-foreground: var(--token-text);
-  --destructive: var(--palette-danger);
-  --border: var(--token-border);
-  --input: var(--token-border);
-  --ring: var(--token-border-focus);
-  --chart-1: var(--palette-natural);
-  --chart-2: var(--palette-nurturing);
-  --chart-3: var(--palette-safe);
-  --chart-4: var(--palette-calm);
-  --chart-5: var(--palette-neutral-50);
-  --sidebar: var(--token-surface);
-  --sidebar-foreground: var(--token-text);
-  --sidebar-primary: var(--token-primary);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--token-surface-hover);
-  --sidebar-accent-foreground: var(--token-text);
-  --sidebar-border: var(--token-border);
-  --sidebar-ring: var(--token-border-focus);
+.content-area-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--palette-safe) transparent;
 }
-
-.dark,
-[data-theme="dark"] {
-  --background: var(--token-page);
-  --foreground: var(--token-text);
-  --card: var(--token-surface);
-  --card-foreground: var(--token-text);
-  --popover: var(--token-surface);
-  --popover-foreground: var(--token-text);
-  --primary: var(--token-primary);
-  --primary-foreground: #ffffff;
-  --secondary: var(--palette-calm);
-  --secondary-foreground: var(--token-text);
-  --muted: var(--palette-calm-dark);
-  --muted-foreground: var(--token-text-muted);
-  --accent: var(--palette-calm);
-  --accent-foreground: var(--token-text);
-  --destructive: var(--palette-danger);
-  --border: var(--token-border);
-  --input: var(--token-border);
-  --ring: var(--token-border-focus);
-  --sidebar: var(--token-surface);
-  --sidebar-foreground: var(--token-text);
-  --sidebar-primary: var(--token-primary);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--palette-calm);
-  --sidebar-accent-foreground: var(--token-text);
-  --sidebar-border: var(--token-border);
-  --sidebar-ring: var(--token-border-focus);
+.content-area-scroll::-webkit-scrollbar {
+  width: 2px;
 }
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+.content-area-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content-area-scroll::-webkit-scrollbar-thumb {
+  background: var(--palette-safe);
+}
+.content-area-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--palette-safe-dark);
 }

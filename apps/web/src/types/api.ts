@@ -59,11 +59,10 @@ export interface CreateRequest {
 }
 
 /**
- * Update request (generic, entities will extend this)
+ * Update request (generic, entities will extend this).
+ * Partial update — concrete entity types declare optional fields.
  */
-export interface UpdateRequest {
-  // Partial update - fields are optional
-}
+export type UpdateRequest = Record<string, unknown>
 
 /**
  * List request parameters
@@ -130,7 +129,8 @@ export class ApiError extends Error {
     message: string,
     public code: string,
     public status: number,
-    public fieldErrors?: FieldErrors
+    public fieldErrors?: FieldErrors,
+    public data?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'ApiError'

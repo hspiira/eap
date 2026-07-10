@@ -1,12 +1,15 @@
-/**
- * Create Client - redirects to Clients list (create via modal)
- */
+import { useEffect } from "react"
 
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/clients/new')({
-  beforeLoad: () => {
-    throw redirect({ to: '/clients', replace: true })
-  },
-  component: () => null,
+export const Route = createFileRoute("/clients/new")({
+  component: ClientNewRedirect,
 })
+
+function ClientNewRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate({ to: "/clients", search: { new: true }, replace: true })
+  }, [navigate])
+  return null
+}

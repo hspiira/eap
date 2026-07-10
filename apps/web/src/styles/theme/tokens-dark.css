@@ -1,0 +1,96 @@
+/*
+ * Dark theme — re-binds the same semantic tokens.
+ *
+ * The neutral ramp inverts so neutral-0 is the darkest page surface and
+ * neutral-1000 is near-white text. Component code never sees this; it reads
+ * --bg / --fg / --border-default / --brand etc. unchanged.
+ */
+
+.dark {
+  /* Neutral ramp — inverted. */
+  --neutral-0: #0a0a0a;
+  --neutral-50: #111111;
+  --neutral-100: #171717;
+  --neutral-200: #1f1f1f;
+  --neutral-300: #2a2a2a;
+  --neutral-400: #3a3a3a;
+  --neutral-500: #6b6b6b;
+  --neutral-600: #9a9a9a;
+  --neutral-700: #b8b8b8;
+  --neutral-800: #d4d4d4;
+  --neutral-900: #ededed;
+  --neutral-1000: #fafafa;
+
+  /* Surfaces. */
+  --bg: var(--neutral-0);
+  --surface: var(--neutral-100);
+  --surface-hover: var(--neutral-200);
+  --surface-elevated: var(--neutral-200);
+
+  /* Foreground. */
+  --fg: var(--neutral-900);
+  --fg-muted: var(--neutral-600);
+  --fg-subtle: var(--neutral-500);
+  --fg-on-brand: #052e16;
+
+  /* Borders — Tegon-style hairlines. Dark mode borders are inherently
+   * harder to balance; keep them well under 10% white. */
+  --border-subtle: rgb(255 255 255 / 0.04);
+  --border-default: rgb(255 255 255 / 0.06);
+  --border-strong: var(--neutral-300);
+
+  /* Brand — brighter green works against dark surfaces. */
+  --brand: #34d399;
+  --brand-hover: #6ee7b7;
+  --brand-soft: rgb(52 211 153 / 0.12);
+  --brand-fg: #052e16;
+
+  /* Semantic roles — softer fills, brighter emphasis. */
+  --success: #4ade80;
+  --success-soft: rgb(74 222 128 / 0.12);
+  --success-fg: #bbf7d0;
+
+  --warning: #fbbf24;
+  --warning-soft: rgb(251 191 36 / 0.12);
+  --warning-fg: #fde68a;
+
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --danger-fg: #fecaca;
+
+  --info: #60a5fa;
+  --info-soft: rgb(96 165 250 / 0.12);
+  --info-fg: #bfdbfe;
+
+  --ring: var(--brand);
+  --selection-bg: rgb(52 211 153 / 0.18);
+
+  /* shadcn aliases. */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--fg);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-fg);
+  --secondary: var(--neutral-200);
+  --secondary-foreground: var(--fg);
+  --muted: var(--neutral-200);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--neutral-200);
+  --accent-foreground: var(--fg);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--neutral-1000);
+  --input: var(--border-default);
+
+  /* Sidebar — bound to the new ramp. */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-fg);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--brand);
+}

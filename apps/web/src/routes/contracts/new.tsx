@@ -1,12 +1,15 @@
-/**
- * Create Contract - redirects to Contracts list (create via modal)
- */
+import { useEffect } from "react"
 
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/contracts/new')({
-  beforeLoad: () => {
-    throw redirect({ to: '/contracts', replace: true })
-  },
-  component: () => null,
+export const Route = createFileRoute("/contracts/new")({
+  component: ContractNewRedirect,
 })
+
+function ContractNewRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate({ to: "/contracts", search: { new: true }, replace: true })
+  }, [navigate])
+  return null
+}

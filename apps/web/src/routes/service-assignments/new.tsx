@@ -1,12 +1,15 @@
-/**
- * Create Service Assignment - redirects to Service Assignments list (create via modal)
- */
+import { useEffect } from "react"
 
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/service-assignments/new')({
-  beforeLoad: () => {
-    throw redirect({ to: '/service-assignments', replace: true })
-  },
-  component: () => null,
+export const Route = createFileRoute("/service-assignments/new")({
+  component: ServiceAssignmentNewRedirect,
 })
+
+function ServiceAssignmentNewRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate({ to: "/service-assignments", search: { new: true }, replace: true })
+  }, [navigate])
+  return null
+}

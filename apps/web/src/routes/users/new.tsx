@@ -1,12 +1,15 @@
-/**
- * Create User - redirects to Settings > Users (create via modal)
- */
+import { useEffect } from "react"
 
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/users/new')({
-  beforeLoad: () => {
-    throw redirect({ to: '/settings', search: { tab: 'users' }, replace: true })
-  },
-  component: () => null,
+export const Route = createFileRoute("/users/new")({
+  component: UserNewRedirect,
 })
+
+function UserNewRedirect() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate({ to: "/users", search: { new: true }, replace: true })
+  }, [navigate])
+  return null
+}

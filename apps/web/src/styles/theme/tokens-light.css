@@ -1,0 +1,104 @@
+/*
+ * Light theme — semantic colour tokens on :root.
+ *
+ * Two naming conventions live here side-by-side:
+ *   1. App tokens (--bg, --fg, --brand, --border-default, ...) — what app code
+ *      consumes via Tailwind utilities (bg-bg, text-fg, bg-brand, ...).
+ *   2. shadcn aliases (--primary, --secondary, --accent, --muted, ...) —
+ *      what upstream shadcn primitives reference. shadcn's `bg-primary` is
+ *      the brand; shadcn's `bg-accent` is a muted hover/highlight surface.
+ */
+
+:root {
+  /* Neutral ramp — 12 steps, white → near-black. */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  --neutral-1000: #0a0a0a;
+
+  /* Surfaces — three levels. Page → card → elevated (popover/dialog). */
+  --bg: var(--neutral-0);
+  --surface: var(--neutral-0);
+  --surface-hover: var(--neutral-50);
+  --surface-elevated: var(--neutral-0);
+
+  /* Foreground — three levels. Default → muted → subtle. */
+  --fg: var(--neutral-900);
+  --fg-muted: var(--neutral-600);
+  --fg-subtle: var(--neutral-400);
+  --fg-on-brand: var(--neutral-0);
+
+  /* Borders — Tegon-style hairlines. Should never compete with content.
+   * subtle (cards, sections): nearly invisible, just enough to delimit surface
+   * default (rows, dividers): barely visible
+   * strong (focus/emphasis containers): visible neutral */
+  --border-subtle: rgb(0 0 0 / 0.025);
+  --border-default: rgb(0 0 0 / 0.05);
+  --border-strong: var(--neutral-200);
+
+  /* Brand — single colour, used for primary buttons, key accents. */
+  --brand: #0f5132;
+  --brand-hover: #0a3d24;
+  --brand-soft: #e8f0eb;
+  --brand-fg: var(--neutral-0);
+
+  /* Semantic roles — four colours, each with surface + fg + emphasis. */
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --success-fg: #14532d;
+
+  --warning: #b45309;
+  --warning-soft: #fef3c7;
+  --warning-fg: #78350f;
+
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --danger-fg: #7f1d1d;
+
+  --info: #1d4ed8;
+  --info-soft: #dbeafe;
+  --info-fg: #1e3a8a;
+
+  /* Focus ring + selection. */
+  --ring: var(--brand);
+  --selection-bg: rgb(15 81 50 / 0.15);
+
+  /* shadcn-compatible aliases. Upstream shadcn primitives reference these
+   * names directly (--background, --foreground, --primary, --accent, ...).
+   * --primary is the brand; --accent is a muted highlight per shadcn convention. */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--fg);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-fg);
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--fg);
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--fg-muted);
+  --accent: var(--neutral-100);
+  --accent-foreground: var(--fg);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--neutral-0);
+  --input: var(--border-default);
+
+  /* Sidebar — bound to the new ramp. shadcn primitives read --sidebar*. */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-fg);
+  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--brand);
+}

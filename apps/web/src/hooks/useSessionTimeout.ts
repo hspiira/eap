@@ -3,14 +3,26 @@
  * Manages session timeout based on user inactivity
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-const PREFERENCE_KEY = 'evexia_pref_session_timeout'
+import { useNavigate } from '@tanstack/react-router'
+
+import { authActions } from '@/lib/auth-store'
+import { uiStorage } from '@/lib/storage'
+import { useAuthStore } from '@/store/slices/authSlice'
+
 const WARNING_TIME = 60000 // Show warning 1 minute before timeout
 
 export function useSessionTimeout() {
-  const { isAuthenticated, logout } = useAuth()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const navigate = useNavigate()
+  const logout = useCallback(async () => {
+    await authActions.logout()
+    navigate({
+      to: '/auth/login',
+      search: { tenant_code: undefined, email: undefined, redirect: undefined },
+    })
+  }, [navigate])
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [showWarning, setShowWarning] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -18,12 +30,10 @@ export function useSessionTimeout() {
   const lastActivityRef = useRef<number>(Date.now())
   const warningShownAtRef = useRef<number | null>(null)
 
-  const getTimeoutMinutes = useCallback(() => {
-    if (typeof window === 'undefined') return 30
-    const stored = localStorage.getItem(PREFERENCE_KEY)
-    const parsed = stored ? Number.parseInt(stored, 10) : NaN
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 30
-  }, [])
+  const getTimeoutMinutes = useCallback(
+    () => uiStorage.read().session_timeout_minutes,
+    [],
+  )
 
   const resetTimer = useCallback(() => {
     // Clear existing timers

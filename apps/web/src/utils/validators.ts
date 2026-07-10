@@ -10,7 +10,7 @@ import { z } from 'zod'
  */
 export const validators = {
   // Email validation
-  email: z.string().email('Invalid email address').min(1, 'Email is required'),
+  email: z.email('Invalid email address'),
 
   // Password validation
   password: z
@@ -44,7 +44,7 @@ export const validators = {
   // Phone number (basic validation)
   phone: z
     .string()
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number format')
+    .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format')
     .optional()
     .or(z.literal('')),
 
@@ -76,7 +76,7 @@ export const validators = {
   boolean: z.boolean(),
 
   // Enum validation
-  enum: <T extends z.ZodEnum<any>>(enumSchema: T) => enumSchema,
+  enum: <T extends z.ZodEnum>(enumSchema: T) => enumSchema,
 
   // Tenant code validation (3-15 lowercase alphanumeric with hyphens)
   tenantCode: z
@@ -120,22 +120,25 @@ export const validationMessages = {
  * Helper to get error message from Zod error
  */
 export function getZodErrorMessage(error: z.ZodError | null | undefined): string | undefined {
-  if (!error || error.errors.length === 0) {
+  if (!error || error.issues.length === 0) {
     return undefined
   }
-  return error.errors[0].message
+  return error.issues[0].message
 }
 
 /**
  * Helper to get field error from form errors
  */
 export function getFieldError(
-  errors: Record<string, any>,
+  errors: Record<string, unknown>,
   fieldName: string
 ): string | undefined {
   const error = errors[fieldName]
-  if (!error) {
-    return undefined
+  if (!error) return undefined
+  if (typeof error === 'string') return error
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const m = (error as { message: unknown }).message
+    if (typeof m === 'string') return m
   }
-  return error.message || error
+  return undefined
 }

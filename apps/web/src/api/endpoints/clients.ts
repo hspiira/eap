@@ -1,26 +1,30 @@
 /**
  * Clients API Endpoints
+ *
+ * `ClientCreate` does NOT include `tier` — BE intentionally separates tier
+ * assignment as a dedicated `PATCH /clients/{id}/tier` call (with audit).
+ * Use `setTier()` after `create()` to set initial tier.
  */
+
+import type { ClientCreate, ClientUpdate, Schemas } from '@/api/generated'
+import type { ClientTier } from '@/types/enums'
 
 import apiClient from '../client'
 import type {
   Client,
-  ClientTag,
-  ClientContactInfo,
   ClientBillingAddress,
+  ClientContactInfo,
   ClientStats,
-  PaginatedResponse,
+  ClientTag,
   ListParams,
+  PaginatedResponse,
 } from '../types'
 
-export interface ClientCreate {
-  name: string
-  code: string // Required, 3-5 chars
-  contact_info: ClientContactInfo
-  billing_address?: ClientBillingAddress | null
-  industry_id?: string | null
-  parent_client_id?: string | null
-  preferred_contact_method?: string | null
+export type { ClientCreate, ClientUpdate }
+export type ClientUpdateTier = Schemas['ClientUpdateTier']
+
+export interface ClientListParams extends ListParams {
+  tier?: ClientTier
 }
 
 export const clientsApi = {
@@ -41,15 +45,23 @@ export const clientsApi = {
   /**
    * List clients
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<Client>> {
+  async list(params?: ClientListParams): Promise<PaginatedResponse<Client>> {
     return apiClient.get<PaginatedResponse<Client>>('/clients', params as Record<string, unknown>)
   },
 
   /**
    * Update client
    */
-  async update(clientId: string, data: Partial<ClientCreate>): Promise<Client> {
+  async update(clientId: string, data: ClientUpdate): Promise<Client> {
     return apiClient.patch<Client>(`/clients/${clientId}`, data)
+  },
+
+  /**
+   * Set engagement tier. BE auditing keys off this dedicated endpoint.
+   * Pass `tier: null` to clear.
+   */
+  async setTier(clientId: string, tier: ClientTier | null): Promise<Client> {
+    return apiClient.patch<Client>(`/clients/${clientId}/tier`, { tier })
   },
 
   /**

@@ -1,17 +1,18 @@
 /**
  * Service Assignments API Endpoints
+ *
+ * Create/Update payload shapes are sourced from the BE OpenAPI schema via
+ * `@/api/generated`. Do not extend ServiceAssignmentCreate locally — if the
+ * shape needs to change, update the BE Pydantic schema and re-run
+ * `pnpm openapi:sync`.
  */
 
-import apiClient from '../client'
-import type { ServiceAssignment, PaginatedResponse, ListParams } from '../types'
+import type { ServiceAssignmentCreate, ServiceAssignmentUpdate } from '@/api/generated'
 
-export interface ServiceAssignmentCreate {
-  contract_id: string
-  service_id: string
-  start_date?: string | null
-  end_date?: string | null
-  metadata?: Record<string, unknown> | null
-}
+import apiClient from '../client'
+import type { ListParams, PaginatedResponse, ServiceAssignment } from '../types'
+
+export type { ServiceAssignmentCreate, ServiceAssignmentUpdate }
 
 export const serviceAssignmentsApi = {
   /**
@@ -38,7 +39,7 @@ export const serviceAssignmentsApi = {
   /**
    * Update service assignment
    */
-  async update(assignmentId: string, data: Partial<ServiceAssignmentCreate>): Promise<ServiceAssignment> {
+  async update(assignmentId: string, data: ServiceAssignmentUpdate): Promise<ServiceAssignment> {
     return apiClient.patch<ServiceAssignment>(`/service-assignments/${assignmentId}`, data)
   },
 

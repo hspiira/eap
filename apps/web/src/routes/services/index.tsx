@@ -1,256 +1,404 @@
-/**
- * Services List Page
- * Displays all services within the current tenant with filtering, search, and pagination
- */
+import { useEffect, useState } from "react"
 
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { AppLayout } from '@/components/layout/AppLayout'
-import { DataTable, type Column } from '@/components/common/DataTable'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { CreateModal } from '@/components/common/CreateModal'
-import { CreateServiceForm } from '@/components/forms/CreateServiceForm'
-import { servicesApi } from '@/api/endpoints/services'
-import type { Service } from '@/types/entities'
-import type { BaseStatus } from '@/types/enums'
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import {
+  Download,
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  RotateCw,
+  Wrench,
+} from "lucide-react"
 
-export const Route = createFileRoute('/services/')({
-  component: ServicesPage,
+import { servicesApi } from "@/api/endpoints/services"
+import { EmptyState } from "@/components/common/EmptyState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterChip,
+  FilterSearch,
+  FilterTrigger,
+} from "@/components/common/FilterBar"
+import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Pagination } from "@/components/ui/pagination"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { useEntityList } from "@/lib/queries"
+import type { Service } from "@/types/entities"
+import { BaseStatus } from "@/types/enums"
+
+function isStatus(value: unknown): value is BaseStatus {
+  return (
+    value === BaseStatus.ACTIVE ||
+    value === BaseStatus.INACTIVE ||
+    value === BaseStatus.PENDING ||
+    value === BaseStatus.ARCHIVED
+  )
+}
+
+export const Route = createFileRoute("/services/")({
+  component: ServicesListPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    const out: { new?: boolean; search?: string; status?: BaseStatus } = {}
+    if (search.new === "1" || search.new === true) out.new = true
+    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
+    if (isStatus(search.status)) out.status = search.status
+    return out
+  },
 })
 
-function ServicesPage() {
-  const navigate = useNavigate()
-  const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
-  const [totalItems, setTotalItems] = useState(0)
-  const [searchValue, setSearchValue] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const [sortBy, setSortBy] = useState<string | null>(null)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
-  const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [createLoading, setCreateLoading] = useState(false)
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: BaseStatus.ACTIVE, label: "Active" },
+  { value: BaseStatus.INACTIVE, label: "Inactive" },
+  { value: BaseStatus.ARCHIVED, label: "Archived" },
+] as const
 
-  // Fetch services (tenant-scoped automatically via API client)
-  const fetchServices = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const params: any = {
-        page: currentPage,
-        limit: pageSize,
-      }
+const GROUP_OPTIONS = [
+  { value: "all", label: "Any size" },
+  { value: "individual", label: "Individual only" },
+  { value: "group", label: "Group enabled" },
+] as const
 
-      if (searchValue) {
-        params.search = searchValue
-      }
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+type GroupFilter = (typeof GROUP_OPTIONS)[number]["value"]
 
-      if (statusFilter) {
-        params.status = statusFilter
-      }
+const ROW_BORDER = "border-fg/8"
 
-      if (sortBy) {
-        params.sort_by = sortBy
-        params.sort_desc = sortDirection === 'desc'
-      }
-
-      const response = await servicesApi.list(params)
-      setServices(response.items)
-      setTotalItems(response.total)
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to load services'
-      setError(errorMessage)
-      console.error('Error fetching services:', err)
-    } finally {
-      setLoading(false)
-    }
+function ServicesListPage() {
+  const searchParams = useSearch({ from: "/services/" })
+  const navigate = useNavigate({ from: "/services/" })
+  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
+  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all")
+  const [addOpen, setAddOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const limit = 20
+  const toggleSort = (field: string) => {
+    setSort((prev) => nextSort(prev, field))
+    setPage(1)
   }
+
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
+  const activeSearch = debouncedSearch || undefined
+  const activeStatus = searchParams.status
 
   useEffect(() => {
-    fetchServices()
-  }, [currentPage, pageSize, searchValue, statusFilter, sortBy, sortDirection])
-
-  const handleSort = (columnId: string) => {
-    if (sortBy === columnId) {
-      if (sortDirection === 'asc') {
-        setSortDirection('desc')
-      } else if (sortDirection === 'desc') {
-        setSortBy(null)
-        setSortDirection(null)
-      } else {
-        setSortDirection('asc')
-      }
-    } else {
-      setSortBy(columnId)
-      setSortDirection('asc')
+    if (searchParams.new) {
+      setAddOpen(true)
+      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
     }
+  }, [searchParams.new, navigate])
+
+  useEffect(() => {
+    if (activeSearch !== searchParams.search) {
+      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
+      setPage(1)
+    }
+  }, [activeSearch, navigate, searchParams.search])
+
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
+    setPage(1)
   }
 
-  const handleRowClick = (service: Service) => {
-    navigate({ to: `/services/${service.id}` })
-  }
-
-  const statusOptions = [
-    { value: '', label: 'All Statuses' },
-    { value: 'Active', label: 'Active' },
-    { value: 'Inactive', label: 'Inactive' },
-    { value: 'Pending', label: 'Pending' },
-    { value: 'Archived', label: 'Archived' },
-    { value: 'Deleted', label: 'Deleted' },
-  ]
-
-  const columns: Column<Service>[] = [
-    {
-      id: 'name',
-      header: 'Service Name',
-      accessor: 'name',
-      sortable: true,
-      render: (value, row) => (
-        <button
-          onClick={() => handleRowClick(row)}
-          className="text-left text-natural hover:text-natural-dark font-medium"
-        >
-          {value as string}
-        </button>
-      ),
+  const query = useEntityList({
+    resource: "services",
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      status: activeStatus,
+      sort_by: sort.field,
+      sort_desc: sort.field ? sort.desc : undefined,
     },
-    {
-      id: 'description',
-      header: 'Description',
-      accessor: 'description',
-      sortable: false,
-      render: (value) => (
-        <span className="text-safe-light text-sm line-clamp-2">
-          {value || '-'}
-        </span>
-      ),
-    },
-    {
-      id: 'service_type',
-      header: 'Type',
-      accessor: 'service_type',
-      sortable: true,
-      render: (value) => <span>{value as string || '-'}</span>,
-    },
-    {
-      id: 'category',
-      header: 'Category',
-      accessor: 'category',
-      sortable: true,
-      render: (value) => <span>{value || '-'}</span>,
-    },
-    {
-      id: 'duration_minutes',
-      header: 'Duration',
-      accessor: 'duration_minutes',
-      sortable: true,
-      render: (value) => {
-        if (!value) return '-'
-        const hours = Math.floor(value as number / 60)
-        const minutes = (value as number) % 60
-        if (hours > 0) {
-          return `${hours}h ${minutes > 0 ? `${minutes}m` : ''}`
-        }
-        return `${minutes}m`
-      },
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      accessor: 'status',
-      sortable: true,
-      render: (value) => <StatusBadge status={value as BaseStatus} size="sm" />,
-    },
-    {
-      id: 'created_at',
-      header: 'Created',
-      accessor: 'created_at',
-      sortable: true,
-      render: (value) => {
-        if (!value) return '-'
-        const date = new Date(value as string)
-        return date.toLocaleDateString()
-      },
-    },
-  ]
+    listFn: servicesApi.list,
+  })
+  const allItems = query.data?.items ?? []
+  const items = filterByGroup(allItems, groupFilter)
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || groupFilter !== "all"
 
   return (
-    <AppLayout>
-      <div className="max-w-7xl mx-auto">
-        {loading && services.length === 0 ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : (
-          <DataTable
-            data={services}
-            columns={columns}
-            loading={loading}
-            error={error}
-            onRetry={fetchServices}
-            pagination={{
-              currentPage,
-              pageSize,
-              totalItems,
-              onPageChange: setCurrentPage,
-              onPageSizeChange: (size) => {
-                setPageSize(size)
-                setCurrentPage(1)
-              },
-            }}
-            sorting={{
-              sortBy,
-              sortDirection,
-              onSort: handleSort,
-            }}
-            filters={{
-              searchValue,
-              onSearchChange: (value) => {
-                setSearchValue(value)
-                setCurrentPage(1)
-              },
-              searchPlaceholder: 'Search services by name...',
-              statusFilter: {
-                value: statusFilter,
-                options: statusOptions,
-                onChange: (value) => {
-                  setStatusFilter(value)
-                  setCurrentPage(1)
-                },
-              },
-              onClearFilters: () => {
-                setSearchValue('')
-                setStatusFilter('')
-                setCurrentPage(1)
-              },
-              createAction: {
-                onClick: () => setCreateModalOpen(true),
-                label: 'Create Service',
-              },
-            }}
-            emptyMessage="No services found"
+    <PageShell
+      icon={Wrench}
+      breadcrumb="Catalog · Services"
+      actions={
+        <>
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Plus className="size-3.5" />
+            Add service
+          </Button>
+        </>
+      }
+    >
+      <FilterBar>
+        <FilterButton
+          options={[
+            { id: "status", label: "Status" },
+            { id: "type", label: "Type" },
+            { id: "group", label: "Group size" },
+          ]}
+        />
+        {activeStatus ? (
+          <FilterChip
+            label={`Status is ${activeStatus}`}
+            onRemove={() => handleStatusChange("all")}
           />
-        )}
+        ) : null}
+        <FilterTrigger
+          label="All statuses"
+          value={(activeStatus ?? "all") as StatusFilter}
+          options={STATUS_OPTIONS}
+          onChange={handleStatusChange}
+        />
+        <FilterTrigger
+          label="Any size"
+          value={groupFilter}
+          options={GROUP_OPTIONS}
+          onChange={setGroupFilter}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search services…"
+        />
+      </FilterBar>
 
-        <CreateModal
-          isOpen={createModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          title="Create Service"
-          loading={createLoading}
-        >
-          <CreateServiceForm
-            onSuccess={() => {
-              setCreateModalOpen(false)
-              fetchServices()
-            }}
-            onCancel={() => setCreateModalOpen(false)}
-            onLoadingChange={setCreateLoading}
+      <ServiceFormSheet open={addOpen} onOpenChange={setAddOpen} />
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
+        {loading ? (
+          <div className="flex-1 overflow-auto p-5">
+            <TableSkeleton cols={5} />
+          </div>
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={Wrench}
+            title={hasFilters ? "No services match your filters" : "No services yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear filters."
+                : "Add an intervention to the catalog so contracts can cover it."
+            }
+            action={
+              hasFilters ? null : (
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  Add service
+                </Button>
+              )
+            }
           />
-        </CreateModal>
+        ) : (
+          <>
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" />
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Service
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="service_type" sort={sort} onToggle={toggleSort}>
+                        Type
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="duration_minutes" sort={sort} onToggle={toggleSort}>
+                        Duration
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Group</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => (
+                    <ServiceRow key={row.id} row={row} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {total > 0 && (
+              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
+                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </AppLayout>
+    </PageShell>
   )
+}
+
+function ServiceRow({ row }: { row: Service }) {
+  const allowGroup = Boolean(row.group_settings?.allow_group_sessions)
+  return (
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
+        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+      </TableCell>
+      <TableCell>
+        <Link
+          to="/services/$serviceId"
+          params={{ serviceId: row.id }}
+          className="flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <Wrench className="size-3" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
+              {row.name}
+            </span>
+            {row.description ? (
+              <span className="block truncate text-xs text-fg/55">{row.description}</span>
+            ) : null}
+          </span>
+        </Link>
+      </TableCell>
+      <TableCell>
+        {row.service_type ? (
+          <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
+            {humanizeServiceType(row.service_type)}
+          </span>
+        ) : (
+          <span className="text-fg/40">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={row.status} />
+      </TableCell>
+      <TableCell className="font-mono text-sm text-fg/75">
+        {row.duration_minutes != null ? `${row.duration_minutes}m` : "—"}
+      </TableCell>
+      <TableCell>
+        {allowGroup ? (
+          <span className="text-xs text-fg">
+            {row.group_settings?.min_group_size ?? "?"}–
+            {row.group_settings?.max_group_size ?? "?"}
+          </span>
+        ) : (
+          <span className="text-xs text-fg/55">Individual</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/services/$serviceId"
+            params={{ serviceId: row.id }}
+            aria-label={`Open ${row.name}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/services/$serviceId" params={{ serviceId: row.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                Archive
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-1 items-center justify-center px-6 py-10">
+      <div className="flex max-w-sm flex-col items-center text-center">
+        <p className="text-sm text-danger-fg">{message}</p>
+        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
+          <RotateCw className="size-4" />
+          Try again
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function IconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick?: () => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="size-7 p-0 text-fg/70"
+    >
+      <Icon className="size-3.5" />
+    </Button>
+  )
+}
+
+function filterByGroup(items: Service[], filter: GroupFilter): Service[] {
+  if (filter === "all") return items
+  if (filter === "group") return items.filter((s) => s.group_settings?.allow_group_sessions)
+  return items.filter((s) => !s.group_settings?.allow_group_sessions)
 }

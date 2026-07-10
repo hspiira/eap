@@ -1,163 +1,59 @@
-/**
- * Form Field Component
- * Wrapper around shadcn Input + Label with our API.
- * Supports both controlled and React Hook Form integration.
- */
+import * as React from "react"
 
-"use client"
+import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 
-import * as React from 'react'
-import { useFormContext, Controller } from 'react-hook-form'
-
-import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { getFieldError } from '@/utils/validators'
-
-interface FormFieldProps {
+export interface FormFieldProps {
   label: string
-  name: string
-  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'textarea'
-  value?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  description?: React.ReactNode
   error?: string
   required?: boolean
-  placeholder?: string
-  autoComplete?: string
-  disabled?: boolean
-  min?: number
-  max?: number
-  rows?: number
+  optional?: boolean
+  htmlFor?: string
+  hint?: React.ReactNode
+  children: React.ReactNode
   className?: string
-  compact?: boolean
-  useFormContext?: boolean
 }
 
 export function FormField({
   label,
-  name,
-  type = 'text',
-  value: controlledValue,
-  onChange: controlledOnChange,
-  error: externalError,
-  required = false,
-  placeholder,
-  autoComplete,
-  disabled = false,
-  min,
-  max,
-  rows = 4,
-  className = '',
-  compact = false,
-  useFormContext: useForm = false,
+  description,
+  error,
+  required,
+  optional,
+  htmlFor,
+  hint,
+  children,
+  className,
 }: FormFieldProps) {
-  const rhfContext = useFormContext()
-  const formContext = useForm ? rhfContext : null
-  const formError = formContext ? getFieldError(formContext.formState.errors, name) : null
-  const error = externalError || formError
-  const space = compact ? 'mb-2' : 'mb-4'
-  const labelSpace = compact ? 'mb-1' : 'mb-2'
-
-  const inputClassName = cn(
-    'rounded-none bg-surface border-border focus-visible:ring-border-focus',
-    error && 'border-danger'
-  )
-
-  if (useForm && formContext) {
-    return (
-      <div className={cn(space, className)}>
-        <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
-          {label}
-          {required && <span className="text-danger ml-1">*</span>}
-        </Label>
-        <Controller
-          name={name}
-          control={formContext.control}
-          render={({ field }) => {
-            if (type === 'textarea') {
-              return (
-                <textarea
-                  {...field}
-                  id={name}
-                  rows={rows}
-                  placeholder={placeholder}
-                  disabled={disabled}
-                  required={required}
-                  className={cn(
-                    'flex w-full rounded-none border bg-surface px-3 py-2 text-base font-inherit transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                    error ? 'border-danger' : 'border-border'
-                  )}
-                />
-              )
-            }
-            return (
-              <Input
-                {...field}
-                type={type}
-                id={name}
-                placeholder={placeholder}
-                autoComplete={autoComplete}
-                disabled={disabled}
-                required={required}
-                min={min}
-                max={max}
-                className={inputClassName}
-              />
-            )
-          }}
-        />
-        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
-      </div>
-    )
-  }
-
-  if (type === 'textarea') {
-    return (
-      <div className={cn(space, className)}>
-        <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
-          {label}
-          {required && <span className="text-danger ml-1">*</span>}
-        </Label>
-        <textarea
-          id={name}
-          name={name}
-          value={controlledValue || ''}
-          onChange={controlledOnChange as React.ChangeEventHandler<HTMLTextAreaElement>}
-          placeholder={placeholder}
-          required={required}
-          disabled={disabled}
-          rows={rows}
-          className={cn(
-            'flex w-full rounded-none border bg-surface px-3 py-2 text-base font-inherit transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-            error ? 'border-danger' : 'border-border'
-          )}
-        />
-        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
-      </div>
-    )
-  }
-
   return (
-    <div className={cn(space, className)}>
-      <Label htmlFor={name} className={cn('block text-text text-sm font-medium', labelSpace)}>
-        {label}
-        {required && <span className="text-danger ml-1">*</span>}
-      </Label>
-      <Input
-        type={type}
-        id={name}
-        name={name}
-        value={controlledValue || ''}
-        onChange={controlledOnChange}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        required={required}
-        disabled={disabled}
-        min={min}
-        max={max}
-        className={inputClassName}
-      />
-      {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+    <div className={cn("space-y-1.5", className)}>
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={htmlFor} className="text-xs font-medium text-fg/85">
+          {label}
+          {required ? (
+            <span className="ml-0.5 text-danger" aria-hidden>
+              *
+            </span>
+          ) : null}
+        </Label>
+        {optional ? (
+          <span className="text-[10px] font-medium tracking-wide text-fg/45">
+            Optional
+          </span>
+        ) : null}
+      </div>
+      {description ? (
+        <p className="text-xs leading-relaxed text-fg/55">{description}</p>
+      ) : null}
+      {children}
+      {error ? (
+        <p className="text-xs font-medium text-danger" role="alert">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className="text-xs text-fg/55">{hint}</p>
+      ) : null}
     </div>
   )
 }

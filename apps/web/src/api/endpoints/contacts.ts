@@ -2,9 +2,10 @@
  * Contacts API Endpoints
  */
 
-import apiClient from '../client'
-import type { Contact, PaginatedResponse, ListParams } from '../types'
 import type { ContactInfo } from '@/types/entities'
+
+import apiClient from '../client'
+import type { Contact, ListParams, PaginatedResponse } from '../types'
 
 export interface ContactCreate {
   client_id: string

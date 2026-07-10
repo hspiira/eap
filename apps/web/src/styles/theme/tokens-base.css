@@ -1,0 +1,87 @@
+/*
+ * Structural tokens — invariant across light/dark.
+ * Spacing, radius, shadow, typography, motion, z-index.
+ *
+ * Color tokens live in tokens-light.css and tokens-dark.css.
+ */
+
+:root {
+  /* Spacing scale — 4px base. Use the named sizes only. */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius — three values. Tables use none. Inputs/buttons/badges use sm. Cards/dialogs use md. */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  /* shadcn compatibility — its primitives read `--radius`. */
+  --radius: 6px;
+
+  /* Shadow scale — three values. Cards rely on borders, not shadows. */
+  --shadow-none: 0 0 #0000;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+
+  /* Type scale — six steps. */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.45;
+  --line-height-relaxed: 1.6;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Font stacks. Mono is reserved for tabular numerics, IDs, codes, timestamps. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Menlo", "Consolas", monospace;
+
+  /* Motion — fast and direct. Reduced motion overrides below. */
+  --motion-duration-fast: 80ms;
+  --motion-duration-base: 120ms;
+  --motion-duration-slow: 200ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Z-index — layered. */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-dialog: 50;
+  --z-popover: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+
+  /* Density — set by user pref; tables read this. */
+  --density-row-height: 32px;
+  --density-row-padding-x: 12px;
+}
+
+[data-density="comfortable"] {
+  --density-row-height: 40px;
+  --density-row-padding-x: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+}
