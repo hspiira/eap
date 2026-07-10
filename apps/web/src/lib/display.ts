@@ -24,6 +24,7 @@ export function displayName(person: Person, user?: User | null): string {
       ? `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim()
       : ''
   if (legacy) return legacy
+  if (user?.display_name) return user.display_name
   if (user?.email) {
     const localPart = user.email.split('@')[0]
     return localPart

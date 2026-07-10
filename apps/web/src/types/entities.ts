@@ -182,6 +182,7 @@ export interface User extends BaseEntity {
   is_active: boolean
   role?: TenantRole | null
   azure_oid?: string | null
+  display_name?: string | null
   auth_provider?: AuthProvider
 }
 
