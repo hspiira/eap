@@ -35,7 +35,11 @@ function AzureCallbackPage() {
 
     async function hydrate() {
       try {
-        await authActions.bootstrapFromCookies()
+        if (window.location.hash.startsWith('#access_token=')) {
+          await authActions.bootstrapFromHash()
+        } else {
+          await authActions.bootstrapFromCookies()
+        }
         if (!cancelled) {
           navigate({ to: search.redirect, replace: true })
         }
@@ -72,7 +76,7 @@ function AzureCallbackPage() {
             className="flex gap-3 p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm"
             role="alert"
           >
-            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="font-semibold">We couldn't sign you in</p>
               <p className="mt-1">{state.message}</p>
