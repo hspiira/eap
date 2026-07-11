@@ -157,10 +157,9 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         if person_type:
             stmt = stmt.where(PersonModel.person_type == person_type)
         if client_id:
-            # Filter by employment_info.client_id (JSON column; SQLite json_extract)
             stmt = stmt.where(
                 PersonModel.employment_info.isnot(None),
-                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+                PersonModel.employment_info["client_id"].as_string() == client_id.value,
             )
         if search:
             search_pattern = f"%{search.lower()}%"
@@ -216,7 +215,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         if client_id:
             stmt = stmt.where(
                 PersonModel.employment_info.isnot(None),
-                func.json_extract(PersonModel.employment_info, "$.client_id") == client_id.value,
+                PersonModel.employment_info["client_id"].as_string() == client_id.value,
             )
         if search:
             search_pattern = f"%{search.lower()}%"

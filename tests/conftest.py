@@ -45,13 +45,14 @@ from app.domain.enums import TenantRole, UserStatus
 from app.shared.utils.datetime import utc_now
 
 
-# Use in-memory SQLite for tests
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test",
+)
 
 # Create test engine
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
     echo=False,
 )
 

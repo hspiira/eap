@@ -5,7 +5,6 @@ description = "Evexía - Employee Assistance Program Management API"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aiosqlite>=0.22.1",
     "alembic>=1.18.1",
     "asyncpg>=0.30.0",
     "bcrypt>=4.2.0",
