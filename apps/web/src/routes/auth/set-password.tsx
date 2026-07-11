@@ -80,7 +80,7 @@ function SetPasswordPage() {
 
   if (success) {
     return (
-      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+      <div className="rounded-sm p-8 bg-white/3">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
           <p className="text-fg-muted">Password set</p>
@@ -109,7 +109,7 @@ function SetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+      <div className="rounded-sm p-8 bg-white/3">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
           <p className="text-fg-muted">Invalid link</p>
@@ -127,7 +127,7 @@ function SetPasswordPage() {
   }
 
   return (
-    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+    <div className="rounded-sm p-8 bg-white/3">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
         <p className="text-fg-muted">Set your password</p>

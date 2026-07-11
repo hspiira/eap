@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, FileQuestion, Home } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+
 export interface NotFoundProps {
   title?: string
   message?: string
@@ -21,50 +23,30 @@ export function NotFound({
   className = '',
 }: NotFoundProps) {
   const actions = showBackButton && (
-    <div className={fullPage ? 'flex flex-col gap-3' : 'flex flex-wrap gap-4 justify-center'}>
-      <Link
-        to={backUrl}
-        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white hover:opacity-90 font-semibold rounded-none transition-opacity"
-      >
-        <Home size={18} aria-hidden />
-        <span>{backLabel}</span>
-      </Link>
-      <button
-        type="button"
-        onClick={() => window.history.back()}
-        className={`inline-flex items-center justify-center gap-2 px-6 py-3 font-semibold rounded-none transition-colors ${
-          fullPage ? 'bg-warning text-white hover:opacity-90' : 'bg-muted/10 text-fg-muted hover:bg-muted/20'
-        }`}
-      >
-        <ArrowLeft size={18} aria-hidden />
-        <span>Go back</span>
-      </button>
+    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <Button asChild>
+        <Link to={backUrl}>
+          <Home size={16} aria-hidden />
+          {backLabel}
+        </Link>
+      </Button>
+      <Button variant="outline" onClick={() => window.history.back()}>
+        <ArrowLeft size={16} aria-hidden />
+        Go back
+      </Button>
     </div>
   )
 
-  if (fullPage) {
-    return (
-      <div className={`min-h-screen bg-white flex items-center justify-center px-4 ${className}`}>
-        <div className="max-w-md w-full bg-white border border-safe p-8 rounded-none">
-          <div className="text-center">
-            <FileQuestion size={48} className="text-fg-muted mx-auto mb-4" aria-hidden />
-            <h1 className="text-2xl font-bold text-fg-muted mb-2">{title}</h1>
-            <p className="text-fg-muted/80 mb-6">{message}</p>
-            {actions}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className={`flex flex-col items-center justify-center min-h-[60vh] p-8 text-center ${className}`}>
-      <div className="mb-8">
-        <p className="text-6xl font-bold text-fg-muted mb-4">404</p>
-        <h1 className="text-2xl font-semibold text-fg-muted mb-4">{title}</h1>
-        <p className="text-fg-muted/80 max-w-md mx-auto">{message}</p>
+    <div
+      className={`min-h-screen bg-bg flex items-center justify-center px-4 ${className}`}
+    >
+      <div className="max-w-sm w-full text-center">
+        <FileQuestion size={48} className="text-fg-subtle mx-auto mb-6" aria-hidden />
+        <h1 className="text-2xl font-semibold text-fg mb-2">{title}</h1>
+        <p className="text-fg-muted mb-8 text-sm leading-relaxed">{message}</p>
+        {actions}
       </div>
-      {actions}
     </div>
   )
 }
