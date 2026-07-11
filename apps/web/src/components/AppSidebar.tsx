@@ -17,7 +17,6 @@ import {
   MessageSquare,
   PhoneCall,
   Search,
-  Settings,
   ShieldCheck,
   Tag,
   UserCog,
@@ -111,15 +110,9 @@ function toProperCase(s: string): string {
     .join(" ")
 }
 
-function isRouteActive(pathname: string, to: string): boolean {
-  if (to === "/") return pathname === "/"
-  return pathname === to || pathname.startsWith(to + "/")
-}
-
 /**
- * Like isRouteActive but won't prefix-match when another nav item is an exact
- * match for the current path. Prevents e.g. /care-callbacks being active while
- * on /care-callbacks/worklist (which is its own nav entry).
+ * Won't prefix-match when another nav item is an exact match for the current
+ * path. Prevents /care-callbacks being active while on /care-callbacks/worklist.
  */
 function resolveActive(pathname: string, to: string, allTos: readonly string[]): boolean {
   if (to === "/") return pathname === "/"
@@ -151,7 +144,7 @@ function ExpandedHeader() {
         <Input
           placeholder="Search"
           aria-label="Search"
-          className="h-8 border-0 bg-surface pl-8 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="h-8 border border-border bg-surface pl-8 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
     </SidebarHeader>
@@ -237,7 +230,7 @@ function ExpandedSidebar() {
 // ─── Collapsed sidebar ────────────────────────────────────────────────────────
 
 const ICON_BTN =
-  "relative grid h-8 w-8 mx-auto place-items-center rounded-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+  "relative grid h-7 w-7 mx-auto place-items-center rounded-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
 
 interface CollapsedNavLinkProps {
   to: string
@@ -260,7 +253,7 @@ function CollapsedNavLink({ to, label, icon: Icon, iconClassName, isActive }: Co
           {isActive && (
             <span
               aria-hidden
-              className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary"
+              className="absolute left-0 top-1 bottom-1 w-0.5 rounded-r bg-primary"
             />
           )}
           <Icon className={cn("size-4", iconClassName)} />
@@ -314,54 +307,40 @@ function CollapsedHeader() {
   )
 }
 
-/** Key items to surface in the collapsed icon rail. */
-const COLLAPSED_MAIN: ReadonlyArray<NavItem> = [
-  { to: "/clients", label: "Clients", icon: Building2 },
-  { to: "/persons", label: "Persons", icon: Users },
-  { to: "/service-sessions", label: "Sessions", icon: Calendar },
-  { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
-]
-
-const COLLAPSED_SETTINGS_ENTRY: NavItem = {
-  to: "/industries",
-  label: "Settings",
-  icon: Settings,
-}
-
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const currentTenantId = useTenantStore((s) => s.currentTenantId)
 
-  const settingsActive = SETTINGS_ITEMS.some((i) => isRouteActive(pathname, i.to))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
+  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
+  const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
+  const active = (to: string) => resolveActive(pathname, to, allTos)
 
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       <CollapsedHeader />
-      <SidebarContent className="items-stretch gap-1 px-1.5 py-1">
-        <div className="flex flex-col gap-0.5">
+      <SidebarContent className="items-stretch gap-0.5 px-1.5 py-1">
+        <div className="flex flex-col">
           {TOP_ITEMS.map((item) => (
-            <CollapsedNavLink
-              key={item.label}
-              {...item}
-              isActive={isRouteActive(pathname, item.to)}
-            />
+            <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
           ))}
         </div>
-        <div className="mx-2 h-px bg-sidebar-border" role="separator" />
-        <div className="flex flex-col gap-0.5">
-          {COLLAPSED_MAIN.filter((i) => isItemEnabled(i, currentTenantId)).map((item) => (
-            <CollapsedNavLink
-              key={item.label}
-              {...item}
-              isActive={isRouteActive(pathname, item.to)}
-            />
+        <div className="mx-2 h-px bg-border" role="separator" />
+        <div className="flex flex-col">
+          {mainItems.map((item) => (
+            <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
           ))}
         </div>
-        <div className="mx-2 h-px bg-sidebar-border" role="separator" />
-        <CollapsedNavLink
-          {...COLLAPSED_SETTINGS_ENTRY}
-          isActive={settingsActive}
-        />
+        {settingsItems.length > 0 && (
+          <>
+            <div className="mx-2 h-px bg-border" role="separator" />
+            <div className="flex flex-col">
+              {settingsItems.map((item) => (
+                <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
+              ))}
+            </div>
+          </>
+        )}
       </SidebarContent>
     </TooltipProvider>
   )
