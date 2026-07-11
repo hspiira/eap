@@ -11,10 +11,19 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import settings
 from app.infrastructure.models.base import Base
 
-# Create async engine
+_is_sqlite = "sqlite" in settings.DATABASE_URL
+
+# Create async engine.
+# pool_pre_ping detects stale connections (e.g. Neon auto-suspend) and reconnects
+# before handing the connection to the application, preventing "connection is closed"
+# errors on the first request after a period of inactivity.
 engine = create_async_engine(
     settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    pool_pre_ping=True,
+    # Recycle connections after 4 min so they are replaced before Neon's ~5 min
+    # auto-suspend window makes them stale. Not applicable to SQLite.
+    **({} if _is_sqlite else {"pool_recycle": 240}),
     echo=settings.DATABASE_ECHO,
 )
 
