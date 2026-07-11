@@ -275,15 +275,6 @@ class Settings(BaseSettings):
                 "Set these via environment variables."  
             ) 
         
-        # Production-specific validations
-        if self.is_production:
-            if "sqlite" in self.DATABASE_URL.lower():
-                warnings.warn(
-                    "SQLite database is not recommended for production. "
-                    "Consider using PostgreSQL or another production database.",
-                    UserWarning,
-                    stacklevel=2,
-                )
         if self.LOGIN_RATE_LIMIT_BACKEND == "redis" and not (self.REDIS_URL or "").strip():
             warnings.warn(
                 "LOGIN_RATE_LIMIT_BACKEND is 'redis' but REDIS_URL is empty. "
