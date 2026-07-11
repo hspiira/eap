@@ -5,6 +5,7 @@ FastAPI routes for authentication operations.
 """
 
 from datetime import timedelta
+from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -475,13 +476,11 @@ async def azure_login() -> RedirectResponse:
     The browser is redirected to Microsoft's login page; after authentication
     Azure redirects back to /auth/azure/callback.
 
-    Returns 503 when Azure SSO env vars are not configured.
+    Redirects to the frontend error page when SSO is not configured.
     """
     if not settings.azure_sso_configured:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Azure SSO is not enabled on this server.",
-        )
+        error_url = f"{settings.AZURE_FRONTEND_REDIRECT_URI}?error={quote('Microsoft SSO is not configured on this server. Contact your administrator.')}"
+        return RedirectResponse(error_url, status_code=status.HTTP_302_FOUND)
     sso = AzureSSOService()
     auth_url, _ = sso.build_auth_url()
     return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
@@ -514,40 +513,34 @@ async def azure_callback(
     6. Issue internal JWT (same claims as password login)
     7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    def _error_redirect(message: str) -> RedirectResponse:
+        url = f"{settings.AZURE_FRONTEND_REDIRECT_URI}?error={quote(message)}"
+        return RedirectResponse(url, status_code=status.HTTP_302_FOUND)
+
     sso = AzureSSOService()
 
     try:
         claims = sso.exchange_code(code, state)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Authentication failed: {exc}",
-        )
+        return _error_redirect(f"Authentication failed: {exc}")
 
-    # Resolve Evexia tenant from Azure directory ID
-    import logging
-    logging.getLogger(__name__).info(
+    logger.info(
         "[azure-callback] received claims tid=%s email=%s oid=%s",
         claims.tid, claims.email, claims.oid,
     )
     tenant = await tenant_repo.get_by_azure_tenant_id(claims.tid)
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Your organisation is not registered in Evexia "
-                f"(Azure directory {claims.tid}). Contact your administrator."
-            ),
+        return _error_redirect(
+            "Your organisation is not registered in Evexia. Contact your administrator."
         )
     if not tenant.azure_sso_enabled:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Azure sign-in is not enabled for your organisation.",
-        )
+        return _error_redirect("Microsoft sign-in is not enabled for your organisation.")
     if tenant.status != TenantStatus.ACTIVE:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Organisation account is {tenant.status.value.lower()}. Access denied.",
+        return _error_redirect(
+            f"Organisation account is {tenant.status.value.lower()}. Access denied."
         )
 
     # Resolve user — by OID first (returning user), then by email (first SSO login)
@@ -555,18 +548,16 @@ async def azure_callback(
     if not user:
         user = await user_repo.get_by_email(Email(claims.email), tenant.id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account has not been provisioned in Evexia. Contact your administrator.",
+            return _error_redirect(
+                "Your account has not been provisioned in Evexia. Contact your administrator."
             )
         # First-time Azure login: link OID to the existing user record
         user.link_azure_identity(claims.oid)
         await user_repo.save(user)
 
     if user.status in (UserStatus.BANNED, UserStatus.TERMINATED, UserStatus.SUSPENDED):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User account is {user.status.value.lower()}. Access denied.",
+        return _error_redirect(
+            f"User account is {user.status.value.lower()}. Access denied."
         )
 
     # Refresh display name from Azure on every SSO login (picks up profile renames)
