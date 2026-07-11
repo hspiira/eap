@@ -9,7 +9,6 @@ export interface NotFoundProps {
   showBackButton?: boolean
   backUrl?: string
   backLabel?: string
-  fullPage?: boolean
   className?: string
 }
 
@@ -19,7 +18,6 @@ export function NotFound({
   showBackButton = true,
   backUrl = '/',
   backLabel = 'Go to dashboard',
-  fullPage = false,
   className = '',
 }: NotFoundProps) {
   const actions = showBackButton && (

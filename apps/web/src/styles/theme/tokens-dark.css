@@ -84,13 +84,13 @@
   --destructive-foreground: var(--neutral-1000);
   --input: var(--border-default);
 
-  /* Sidebar — bound to the new ramp. */
-  --sidebar: var(--surface);
+  /* Sidebar — matches page bg; hover uses the old sidebar bg for contrast. */
+  --sidebar: var(--bg);
   --sidebar-foreground: var(--fg);
   --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: var(--brand-fg);
-  --sidebar-accent: var(--surface-hover);
+  --sidebar-accent: var(--surface);
   --sidebar-accent-foreground: var(--fg);
-  --sidebar-border: var(--border-subtle);
+  --sidebar-border: transparent;
   --sidebar-ring: var(--brand);
 }

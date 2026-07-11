@@ -16,7 +16,7 @@ import appCss from '../styles.css?url'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 
 export const Route = createRootRoute({
-  notFoundComponent: () => <NotFound fullPage />,
+  notFoundComponent: () => <NotFound />,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

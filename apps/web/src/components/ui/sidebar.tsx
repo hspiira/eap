@@ -111,7 +111,7 @@ const Sidebar = React.forwardRef<
       data-state={open ? "expanded" : "collapsed"}
       data-sidebar="sidebar"
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out",
+        "flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out",
         open ? "w-(--sidebar-width)" : "w-(--sidebar-width-icon)",
         className,
       )}
@@ -237,7 +237,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex flex-col gap-0.5", className)}
+    className={cn("flex flex-col", className)}
     {...props}
   />
 ))
@@ -257,13 +257,13 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+  "flex w-full items-center gap-2 rounded-sm px-2 py-1 text-sm text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-medium [&>svg]:size-[15px] [&>svg]:shrink-0",
   {
     variants: {
       size: {
-        default: "h-8",
-        sm: "h-7 text-xs",
-        lg: "h-10 text-sm",
+        default: "h-7",
+        sm: "h-6 text-xs",
+        lg: "h-9 text-sm",
       },
     },
     defaultVariants: {

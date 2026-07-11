@@ -1,5 +1,9 @@
+import { useState } from "react"
+
 import { useQuery } from "@tanstack/react-query"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { Controller } from "react-hook-form"
+import * as SelectPrimitive from "@radix-ui/react-select"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -8,19 +12,35 @@ import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
+import { cn } from "@/lib/utils"
 
-const TIER_VALUES = [ClientTier.A, ClientTier.B, ClientTier.C] as const
+const TIER_OPTIONS = [
+  { value: ClientTier.A, label: "Tier A", desc: "Strategic — full service mix" },
+  { value: ClientTier.B, label: "Tier B", desc: "Mid-tier — consultancy extension" },
+  { value: ClientTier.C, label: "Tier C", desc: "Long-tail — lower-touch model" },
+] as const
+
+const TIER_VALUES = TIER_OPTIONS.map((o) => o.value) as [ClientTier, ...ClientTier[]]
 
 const clientSchema = z
   .object({
@@ -38,8 +58,6 @@ const clientSchema = z
       .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
     phone: z.string().optional(),
     address: z.string().optional(),
-    // BE `AddressCreate` requires street/city/country; postal_code is optional.
-    // If ANY billing field is set, the user must fill the required trio.
     billing_street: z.string().optional(),
     billing_city: z.string().optional(),
     billing_postal: z.string().optional(),
@@ -80,7 +98,6 @@ const EMPTY: ClientFormValues = {
 interface ClientFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Pass a client to edit; omit/null to create a new one. */
   client?: Client | null
   onSaved?: (client: Client) => void
 }
@@ -91,6 +108,8 @@ export function ClientFormSheet({
   client,
   onSaved,
 }: ClientFormSheetProps) {
+  const [industryOpen, setIndustryOpen] = useState(false)
+
   const { data: industriesPage } = useQuery({
     queryKey: ["industries", "picker"],
     queryFn: () => industriesApi.list({ limit: 200 }),
@@ -142,15 +161,12 @@ export function ClientFormSheet({
             }
           : null,
       industry_id: values.industry_id || null,
-      // Carried out-of-band so create payload matches BE strict shape.
       __tier: values.tier ? (values.tier as ClientTier) : null,
     }),
     save: async ({ payload, entity, isEdit }) => {
       const { __tier, ...createPayload } = payload
       let saved: Client
       if (isEdit && entity) {
-        // BE `ClientUpdate` only accepts `{name?, preferred_contact_method?, tier?}`.
-        // Send name in the basic update; tier goes through the dedicated route.
         const update: ClientUpdate = { name: createPayload.name }
         saved = await clientsApi.update(entity.id, update)
         if (__tier !== (entity.tier ?? null)) {
@@ -224,16 +240,29 @@ export function ClientFormSheet({
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIER_VALUES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      Tier {t}
-                    </SelectItem>
+                  {TIER_OPTIONS.map(({ value, label, desc }) => (
+                    <SelectPrimitive.Item
+                      key={value}
+                      value={value}
+                      className="relative flex w-full cursor-default select-none rounded-sm py-2 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
+                    >
+                      <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center mt-0.5">
+                        <SelectPrimitive.ItemIndicator>
+                          <Check className="h-4 w-4" />
+                        </SelectPrimitive.ItemIndicator>
+                      </span>
+                      <div className="flex flex-col">
+                        <SelectPrimitive.ItemText>{label}</SelectPrimitive.ItemText>
+                        <span className="text-xs text-muted-foreground leading-tight mt-0.5">{desc}</span>
+                      </div>
+                    </SelectPrimitive.Item>
                   ))}
                 </SelectContent>
               </Select>
             )}
           />
         </FormField>
+
         <FormField
           label="Industry"
           optional
@@ -249,23 +278,76 @@ export function ClientFormSheet({
             control={control}
             name="industry_id"
             render={({ field }) => (
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v === "__none" ? "" : v)}
-                disabled={isEdit}
-              >
-                <SelectTrigger id="cs-industry">
-                  <SelectValue placeholder="No industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">No industry</SelectItem>
-                  {industryOptions.map((ind) => (
-                    <SelectItem key={ind.id} value={ind.id}>
-                      {ind.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={industryOpen} onOpenChange={setIndustryOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="cs-industry"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={industryOpen}
+                    disabled={isEdit}
+                    className={cn(
+                      "w-full h-9 justify-between px-3 font-normal text-sm shadow-sm",
+                      !field.value && "text-muted-foreground",
+                    )}
+                  >
+                    <span className="truncate">
+                      {field.value
+                        ? (industryOptions.find((i) => i.id === field.value)?.name ?? "No industry")
+                        : "No industry"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="p-0"
+                  align="start"
+                  style={{ width: "var(--radix-popover-trigger-width)" }}
+                >
+                  <Command>
+                    <CommandInput placeholder="Search industries…" />
+                    <CommandList>
+                      <CommandEmpty>No industries found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="__none"
+                          onSelect={() => {
+                            field.onChange("")
+                            setIndustryOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !field.value ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          No industry
+                        </CommandItem>
+                        {industryOptions.map((ind) => (
+                          <CommandItem
+                            key={ind.id}
+                            value={ind.name}
+                            onSelect={() => {
+                              field.onChange(ind.id)
+                              setIndustryOpen(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === ind.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            {ind.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           />
         </FormField>
@@ -343,4 +425,3 @@ export function ClientFormSheet({
     </SheetForm>
   )
 }
-
