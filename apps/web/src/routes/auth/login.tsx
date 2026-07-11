@@ -102,7 +102,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+    <div className="rounded-sm p-8 bg-white/3">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
         <p className="text-fg-muted">Sign in to your account</p>
@@ -132,7 +132,7 @@ function LoginPage() {
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase tracking-wider">
-              <span className="bg-surface text-fg-subtle px-2">or continue with email</span>
+              <span className="bg-bg text-fg-subtle px-2">or continue with email</span>
             </div>
           </div>
         </div>

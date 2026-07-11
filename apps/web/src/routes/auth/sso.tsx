@@ -51,7 +51,7 @@ function SsoPage() {
 
   if (!azureEnabled) {
     return (
-      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+      <div className="rounded-sm p-8 bg-white/3">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
           <p className="text-fg-muted">SSO not configured</p>
@@ -72,7 +72,7 @@ function SsoPage() {
 
   if (search.tenant_code) {
     return (
-      <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+      <div className="rounded-sm p-8 bg-white/3">
         <div className="text-center">
           <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
           <p className="text-fg-muted">Redirecting to Microsoft…</p>
@@ -82,7 +82,7 @@ function SsoPage() {
   }
 
   return (
-    <div className="bg-surface text-fg p-8 rounded-sm border border-border-strong shadow-lg">
+    <div className="rounded-sm p-8 bg-white/3">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-semibold text-primary mb-2">Evexía</h1>
         <p className="text-fg-muted">Sign in with Microsoft</p>

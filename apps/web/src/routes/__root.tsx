@@ -38,6 +38,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* Blocking script — must run before CSS renders to prevent theme flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=JSON.parse(localStorage.getItem('evexia.ui')||'{}');var p=s.theme||'system';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');if(d)document.documentElement.classList.add('dark');}catch(e){}}())` }} />
         <HeadContent />
       </head>
       <body style={{ minHeight: '100dvh' }}>
