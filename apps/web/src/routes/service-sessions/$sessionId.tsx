@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CalendarClock,
   CalendarRange,
+  Lock,
   Pencil,
   Star,
   Users,
@@ -314,7 +315,7 @@ function ServiceSessionDetailPage() {
                     </DetailGrid>
                   </DetailCard>
 
-                  <DetailCard title="Notes">
+                  <DetailCard title="Notes" phiLabel="PHI · access logged">
                     {session.notes ? (
                       <p className="text-sm text-fg whitespace-pre-wrap">{session.notes}</p>
                     ) : (
@@ -490,6 +491,13 @@ function Hero({
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={session.status} />
+      <span
+        title="Notes and feedback are encrypted at rest"
+        className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm border border-fg/15 bg-surface px-1.5 py-0.5 text-[10px] text-fg/55"
+      >
+        <Lock className="size-2.5" aria-hidden />
+        Encrypted record
+      </span>
     </div>
   )
 }
@@ -609,7 +617,7 @@ function FeedbackPanel({
   }
 
   return (
-    <DetailCard title="Subject feedback">
+    <DetailCard title="Subject feedback" phiLabel="PHI · access logged">
       <div className="space-y-4">
         <FormField label="Rating" optional>
           <div className="flex items-center gap-1">
@@ -750,14 +758,24 @@ function RescheduleDialog({
 
 function DetailCard({
   title,
+  phiLabel,
   children,
 }: {
   title: string
+  phiLabel?: string
   children: React.ReactNode
 }) {
   return (
     <section className="rounded-sm border border-fg/10 bg-surface p-4">
-      <h3 className="mb-3 text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
+      <div className="mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
+        {phiLabel ? (
+          <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-fg/40">
+            <Lock className="size-2.5" aria-hidden />
+            {phiLabel}
+          </span>
+        ) : null}
+      </div>
       {children}
     </section>
   )
