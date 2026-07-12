@@ -1,7 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
   Activity,
-  AlertCircle,
   BarChart3,
   Briefcase,
   Building2,
@@ -13,7 +12,6 @@ import {
   Handshake,
   Headphones,
   Home,
-  Inbox,
   MessageSquare,
   PhoneCall,
   Search,
@@ -63,8 +61,6 @@ function platformTenantId(): string {
 /** Quick-access items — always visible at the top, no label. */
 const TOP_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/inbox", label: "Inbox", icon: Inbox },
-  { to: "/at-risk", label: "At Risk", icon: AlertCircle, iconClassName: "text-danger" },
 ]
 
 /** Day-to-day operational navigation — flat, no section label. */

@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react"
 
-import { createFileRoute } from "@tanstack/react-router"
-import { Link } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { ArrowLeftRight, ArrowUpDown, BellPlus, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Heart, Infinity as InfinityIcon, Info, Monitor, Plus, Search, Share2, User, Users } from "lucide-react"
 
-import { AppLayout } from "@/components/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -26,10 +24,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/store/slices/authSlice"
 
 export const Route = createFileRoute("/inbox")({
-  component: InboxRoute,
+  beforeLoad: () => {
+    throw redirect({ to: "/me", search: { view: "inbox" as const } })
+  },
+  component: () => null,
 })
 
 type RuleStatus = "closed" | "running" | "online" | "abnormal"
@@ -372,39 +372,8 @@ function InboxPagination({
   )
 }
 
-function InboxRoute() {
-  const { isAuthenticated, isLoading } = useAuthStore()
 
-  if (isLoading) {
-    return (
-      <div
-        className="min-h-svh w-full flex items-center justify-center bg-surface text-fg"
-        style={{ minHeight: "100dvh" }}
-      >
-        <p>Loading...</p>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-svh w-full flex flex-col items-center justify-center gap-4 bg-surface">
-        <p className="text-fg">Sign in to view Inbox.</p>
-        <Link to="/auth/login" search={{ tenant_code: undefined, email: undefined, redirect: undefined }} className="text-primary hover:underline">
-          Sign in
-        </Link>
-      </div>
-    )
-  }
-
-  return (
-    <AppLayout>
-      <InboxPage />
-    </AppLayout>
-  )
-}
-
-function InboxPage() {
+export function InboxPage() {
   const [view, setView] = useState<"inbox" | "training" | "details">("inbox")
   const [mainTab, setMainTab] = useState<MainTab>("training")
   const [deptFilter, setDeptFilter] = useState("all")

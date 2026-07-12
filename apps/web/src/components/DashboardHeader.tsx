@@ -41,7 +41,7 @@ import { useUIStore } from "@/store/slices/uiSlice"
 
 const ROUTE_TITLES: Record<string, string> = {
   "/": "Home",
-  "/at-risk": "At Risk",
+  "/me": "Profile",
   "/design": "Design gallery",
 }
 
