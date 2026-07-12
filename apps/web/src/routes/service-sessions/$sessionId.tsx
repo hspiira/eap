@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react"
 
+import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
@@ -69,6 +70,13 @@ function ServiceSessionDetailPage() {
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
+
+  const diagnosisTreeQuery = useQuery({
+    queryKey: ['diagnoses', 'tree'],
+    queryFn: () => diagnosesApi.getTree(),
+    staleTime: 5 * 60_000,
+    enabled: !!session?.diagnosis_id,
+  })
 
   const fetchSession = useCallback(async () => {
     try {
@@ -401,23 +409,22 @@ function ServiceSessionDetailPage() {
                   <DetailCard title="Clinical">
                     <DetailGrid>
                       <DetailRow
-                        label="Diagnosis ID"
+                        label="Diagnosis"
                         value={
-                          session.diagnosis_id ? (
-                            <span className="font-mono text-xs">
-                              {session.diagnosis_id}
-                            </span>
-                          ) : null
+                          session.diagnosis_id
+                            ? (() => {
+                                const all = (diagnosisTreeQuery.data?.types ?? []).flatMap((t) => t.diagnoses)
+                                const dx = all.find((d) => d.id === session.diagnosis_id)
+                                return dx
+                                  ? `${dx.code} — ${dx.name}`
+                                  : diagnosisTreeQuery.isPending
+                                    ? 'Loading…'
+                                    : session.diagnosis_id
+                              })()
+                            : null
                         }
                         fullWidth
                       />
-                      {session.diagnosis_text ? (
-                        <DetailRow
-                          label="Diagnosis (free text)"
-                          value={session.diagnosis_text}
-                          fullWidth
-                        />
-                      ) : null}
                     </DetailGrid>
                   </DetailCard>
                 </div>

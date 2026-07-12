@@ -516,19 +516,28 @@ export interface IncidentTimelineEvent {
   session_id?: string | null
 }
 
-/**
- * Diagnosis taxonomy node (ICD-10 subset for v1).
- * Children are expanded lazily via diagnosesApi.list({ parent_id }).
- */
+/** A diagnosis category (e.g. "Mood (affective) disorders"). */
+export interface DiagnosisType {
+  id: string
+  code: string
+  name: string
+  description?: string | null
+  sort_order: number
+}
+
+/** A single codable diagnosis within a DiagnosisType. */
 export interface Diagnosis {
   id: string
   code: string
-  label: string
-  parent_id: string | null
-  level: number
-  has_children: boolean
-  /** Slash-joined full path of labels, useful for combobox display. */
-  path: string
+  name: string
+  description?: string | null
+  type_id: string
+  sort_order: number
+}
+
+/** Full two-level tree returned by GET /diagnoses/tree. */
+export interface DiagnosisTree {
+  types: (DiagnosisType & { diagnoses: Diagnosis[] })[]
 }
 
 /**

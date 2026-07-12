@@ -19,10 +19,6 @@ import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
 
-const FREETEXT_FALLBACK_ENABLED =
-  typeof import.meta !== "undefined" &&
-  import.meta.env?.VITE_DIAGNOSIS_FREETEXT_FALLBACK === "true"
-
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
@@ -36,7 +32,6 @@ const schema = z
     location: z.string().optional(),
     notes: z.string().optional(),
     diagnosis_id: z.string().nullable().optional(),
-    diagnosis_text: z.string().optional(),
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
@@ -63,7 +58,6 @@ const EMPTY: Values = {
   location: "",
   notes: "",
   diagnosis_id: null,
-  diagnosis_text: "",
   is_backfill: false,
   backfill_reason: "",
 }
@@ -321,17 +315,6 @@ export function ServiceSessionFormSheet({
             )}
           />
         </FormField>
-        {FREETEXT_FALLBACK_ENABLED ? (
-          <FormField
-            label="Diagnosis (free text — legacy)"
-            optional
-            description="Only use if no taxonomy match exists."
-            error={errors.diagnosis_text?.message}
-            htmlFor="ss-diag-text"
-          >
-            <Input id="ss-diag-text" {...register("diagnosis_text")} />
-          </FormField>
-        ) : null}
         <FormField
           label="Notes"
           optional
@@ -356,7 +339,6 @@ function toFormValues(s: ServiceSession): Values {
     location: s.location ?? "",
     notes: s.notes ?? "",
     diagnosis_id: s.diagnosis_id ?? null,
-    diagnosis_text: s.diagnosis_text ?? "",
   }
 }
 
