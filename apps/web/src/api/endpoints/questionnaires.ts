@@ -1,8 +1,8 @@
 /**
- * Questionnaire API. Backs the dynamic triage form (Phase 3 #1).
+ * Triage instrument API (Phase 3 #2).
  *
- * Fixture-driven until BE Phase 3 #2 lands — flip `VITE_QUESTIONNAIRES_USE_FIXTURE=false`
- * to switch to the live `/v1/questionnaires` endpoint.
+ * BE base path is `/triage/instruments` (confirmed via openapi.json).
+ * Fixture is DEV-only — flip to live by running production build.
  */
 
 import apiClient from '../client'
@@ -14,13 +14,13 @@ import {
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_QUESTIONNAIRES_USE_FIXTURE !== 'false'
+  return import.meta.env.DEV
 }
 
 export const questionnairesApi = {
   async list(): Promise<Questionnaire[]> {
     if (useFixture()) return Promise.resolve(fixtureGetAllQuestionnaires())
-    return apiClient.get<Questionnaire[]>('/v1/questionnaires')
+    return apiClient.get<Questionnaire[]>('/triage/instruments')
   },
 
   async getByCode(code: string): Promise<Questionnaire> {
@@ -29,6 +29,6 @@ export const questionnairesApi = {
       if (!found) throw new Error(`Questionnaire ${code} not found`)
       return Promise.resolve(found)
     }
-    return apiClient.get<Questionnaire>(`/v1/questionnaires/${code}`)
+    return apiClient.get<Questionnaire>(`/triage/instruments/${code}`)
   },
 }

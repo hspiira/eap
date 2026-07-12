@@ -66,17 +66,6 @@ function SurveyDetailPage() {
     enabled: !!clientId,
   })
 
-  const rotateMutation = useEntityMutation({
-    resource: "surveys",
-    mutationFn: () => surveysApi.rotateWebhookToken(surveyId),
-    detailId: surveyId,
-    skipListInvalidation: true,
-    onSuccess: () => {
-      showSuccess("Webhook token rotated — update the survey provider")
-    },
-    onError: (err) => showError(defaultErrorMessage(err)),
-  })
-
   const closeMutation = useEntityMutation({
     resource: "surveys",
     mutationFn: () => surveysApi.close(surveyId),
@@ -223,11 +212,6 @@ function SurveyDetailPage() {
                 <WebhookSetupHelper
                   webhookUrl={survey.webhook_url}
                   webhookToken={survey.webhook_token}
-                  onRotateToken={async () => {
-                    await rotateMutation.mutateAsync()
-                  }}
-                  rotating={rotateMutation.isPending}
-                  readOnly={isClosed}
                 />
               </TabPanel>
 

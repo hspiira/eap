@@ -458,7 +458,7 @@ function DeliverablesPanel({
   const updateMutation = useEntityMutation({
     resource: "engagements",
     mutationFn: ({ id, status }: { id: string; status: DeliverableStatus }) =>
-      engagementsApi.updateDeliverableStatus(id, status),
+      engagementsApi.updateDeliverableStatus(engagementId, id, status),
     skipListInvalidation: true,
     invalidateKeys: deliverableInvalidateKeys,
     onError: (err) => showError(defaultErrorMessage(err)),

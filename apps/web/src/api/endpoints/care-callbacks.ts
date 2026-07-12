@@ -1,8 +1,14 @@
 /**
- * Care Callback API — the Phase 3 flagship surface.
+ * Care callback API — Phase 3 #1.
  *
- * Fixture-driven until BE Phase 3 #1 lands. Toggle with
- * `VITE_CARE_CALLBACKS_USE_FIXTURE=false` to switch the FE to the live endpoints.
+ * BE base paths (confirmed via openapi.json):
+ *   Campaigns → `/care-callback-campaigns`
+ *   Cases     → `/outreach-records`          (was `care-callback-cases`)
+ *
+ * Fixture is DEV-only.
+ *
+ * Note: `startCase` maps to `POST /outreach-records/{id}/assign` for now;
+ * the full FSM split (P3 #1) will refine this into per-state transitions.
  */
 
 import type { CallbackCaseStatus } from '@/types/enums'
@@ -31,7 +37,7 @@ import {
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_CARE_CALLBACKS_USE_FIXTURE !== 'false'
+  return import.meta.env.DEV
 }
 
 function paginate<T>(items: T[]): PaginatedResponse<T> {
@@ -48,7 +54,7 @@ export const careCallbacksApi = {
   // ── Campaigns ────────────────────────────────────────────────────────────
   async listCampaigns(): Promise<PaginatedResponse<CallbackCampaign>> {
     if (useFixture()) return Promise.resolve(paginate(fixtureListCampaigns()))
-    return apiClient.get<PaginatedResponse<CallbackCampaign>>('/v1/care-callback-campaigns')
+    return apiClient.get<PaginatedResponse<CallbackCampaign>>('/care-callback-campaigns')
   },
 
   async getCampaign(id: string): Promise<CallbackCampaign> {
@@ -57,18 +63,18 @@ export const careCallbacksApi = {
       if (!found) throw new Error(`Campaign ${id} not found`)
       return Promise.resolve(found)
     }
-    return apiClient.get<CallbackCampaign>(`/v1/care-callback-campaigns/${id}`)
+    return apiClient.get<CallbackCampaign>(`/care-callback-campaigns/${id}`)
   },
 
   async createCampaign(input: CampaignCreateInput): Promise<CallbackCampaign> {
     if (useFixture()) return Promise.resolve(fixtureCreateCampaign(input))
-    return apiClient.post<CallbackCampaign>('/v1/care-callback-campaigns', input)
+    return apiClient.post<CallbackCampaign>('/care-callback-campaigns', input)
   },
 
   async getAggregate(campaignId: string): Promise<CallbackCampaignAggregate> {
     if (useFixture()) return Promise.resolve(fixtureAggregateCampaign(campaignId))
     return apiClient.get<CallbackCampaignAggregate>(
-      `/v1/care-callback-campaigns/${campaignId}/aggregate`,
+      `/care-callback-campaigns/${campaignId}/summary`,
     )
   },
 
@@ -76,7 +82,7 @@ export const careCallbacksApi = {
   async listCases(params: CaseListParams = {}): Promise<PaginatedResponse<CallbackCase>> {
     if (useFixture()) return Promise.resolve(paginate(fixtureListCases(params)))
     return apiClient.get<PaginatedResponse<CallbackCase>>(
-      '/v1/care-callback-cases',
+      '/outreach-records',
       params as Record<string, unknown>,
     )
   },
@@ -87,28 +93,23 @@ export const careCallbacksApi = {
       if (!found) throw new Error(`Case ${id} not found`)
       return Promise.resolve(found)
     }
-    return apiClient.get<CallbackCase>(`/v1/care-callback-cases/${id}`)
+    return apiClient.get<CallbackCase>(`/outreach-records/${id}`)
   },
 
   async startCase(id: string): Promise<CallbackCase> {
     if (useFixture()) return Promise.resolve(fixtureStartCase(id))
-    return apiClient.post<CallbackCase>(`/v1/care-callback-cases/${id}/start`, {})
+    return apiClient.post<CallbackCase>(`/outreach-records/${id}/assign`, {})
   },
 
-  // ── Outcomes ────────────────────────────────────────────────────────────
+  // ── Outcomes ─────────────────────────────────────────────────────────────
   async submitOutcome(input: OutcomeSubmitInput): Promise<CallbackOutcome> {
     if (useFixture()) return Promise.resolve(fixtureSubmitOutcome(input))
-    return apiClient.post<CallbackOutcome>(
-      `/v1/care-callback-cases/${input.case_id}/outcome`,
-      input,
-    )
+    return apiClient.post<CallbackOutcome>(`/outreach-records/${input.case_id}/outcome`, input)
   },
 
   async getOutcomeForCase(caseId: string): Promise<CallbackOutcome | null> {
     if (useFixture()) return Promise.resolve(fixtureGetOutcomeForCase(caseId) ?? null)
-    return apiClient.get<CallbackOutcome | null>(
-      `/v1/care-callback-cases/${caseId}/outcome`,
-    )
+    return apiClient.get<CallbackOutcome | null>(`/outreach-records/${caseId}/outcome`)
   },
 }
 

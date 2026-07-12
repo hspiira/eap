@@ -1,6 +1,10 @@
 /**
- * Incidents (CISM v1) API. Fixture-backed until BE Phase 2 #5 lands.
- * Toggle with `VITE_INCIDENTS_USE_FIXTURE=false` once the BE endpoint is live.
+ * Critical incidents (CISM v1) API.
+ *
+ * BE base path is `/critical-incidents` (confirmed via openapi.json).
+ * Fixture is DEV-only. The full CISM UI (P2 #5) will add:
+ *   POST /{id}/phases  — phase-add form (Demobilisation, Defusing, ...)
+ *   GET  /{id}/after-action — printable after-action report
  */
 
 import type { IncidentSeverity } from '@/types/enums'
@@ -26,22 +30,16 @@ export interface IncidentCreate {
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_INCIDENTS_USE_FIXTURE !== 'false'
+  return import.meta.env.DEV
 }
 
 export const incidentsApi = {
   async list(): Promise<PaginatedResponse<Incident>> {
     if (useFixture()) {
       const items = fixtureGetAll()
-      return Promise.resolve({
-        items,
-        total: items.length,
-        page: 1,
-        limit: items.length,
-        has_more: false,
-      })
+      return Promise.resolve({ items, total: items.length, page: 1, limit: items.length, has_more: false })
     }
-    return apiClient.get<PaginatedResponse<Incident>>('/v1/incidents')
+    return apiClient.get<PaginatedResponse<Incident>>('/critical-incidents')
   },
 
   async getById(id: string): Promise<Incident> {
@@ -50,21 +48,23 @@ export const incidentsApi = {
       if (!found) throw new Error(`Incident ${id} not found`)
       return Promise.resolve(found)
     }
-    return apiClient.get<Incident>(`/v1/incidents/${id}`)
-  },
-
-  async getTimeline(incidentId: string): Promise<IncidentTimelineEvent[]> {
-    if (useFixture()) return Promise.resolve(fixtureGetTimeline(incidentId))
-    return apiClient.get<IncidentTimelineEvent[]>(`/v1/incidents/${incidentId}/timeline`)
+    return apiClient.get<Incident>(`/critical-incidents/${id}`)
   },
 
   async create(data: IncidentCreate): Promise<Incident> {
     if (useFixture()) return Promise.resolve(fixtureCreate(data))
-    return apiClient.post<Incident>('/v1/incidents', data)
+    return apiClient.post<Incident>('/critical-incidents', data)
   },
 
+  /** Returns fixture timeline; live path will use GET /{id}/after-action in P2 #5. */
+  async getTimeline(incidentId: string): Promise<IncidentTimelineEvent[]> {
+    if (useFixture()) return Promise.resolve(fixtureGetTimeline(incidentId))
+    return apiClient.get<IncidentTimelineEvent[]>(`/critical-incidents/${incidentId}/after-action`)
+  },
+
+  /** Adds a note/phase entry. Live path uses POST /{id}/phases in P2 #5. */
   async appendNote(incidentId: string, message: string): Promise<IncidentTimelineEvent> {
     if (useFixture()) return Promise.resolve(fixtureAppendNote(incidentId, message))
-    return apiClient.post<IncidentTimelineEvent>(`/v1/incidents/${incidentId}/notes`, { message })
+    return apiClient.post<IncidentTimelineEvent>(`/critical-incidents/${incidentId}/phases`, { message })
   },
 }

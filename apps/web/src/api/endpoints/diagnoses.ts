@@ -1,9 +1,11 @@
 /**
  * Diagnoses (D-Tax) API.
  *
- * BE endpoint `/v1/diagnoses` ships in BE Phase 2 #1. Until then, this module returns
- * the bundled fixture under [src/api/endpoints/diagnoses-fixture.ts]. Flip
- * `VITE_DIAGNOSES_USE_FIXTURE=false` once the BE is live.
+ * BE endpoint is `/diagnoses` (confirmed via openapi.json). Flip the
+ * fixture gate by running with `NODE_ENV=production` — fixture is DEV-only.
+ *
+ * The full D-Tax selector rewrite (P2 #1) will replace `getById` with
+ * `getTypes()` and `getTree()` to match BE's two-level shape.
  */
 
 import apiClient from '../client'
@@ -13,7 +15,6 @@ import { diagnosesFixture } from './diagnoses-fixture'
 export interface DiagnosisListParams {
   search?: string
   parent_id?: string | null
-  /** Limit to a max depth from the root. Optional. */
   max_level?: number
   page?: number
   limit?: number
@@ -21,7 +22,7 @@ export interface DiagnosisListParams {
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_DIAGNOSES_USE_FIXTURE !== 'false'
+  return import.meta.env.DEV
 }
 
 function fixtureList(params: DiagnosisListParams): PaginatedResponse<Diagnosis> {
@@ -60,13 +61,8 @@ function fixtureList(params: DiagnosisListParams): PaginatedResponse<Diagnosis> 
 
 export const diagnosesApi = {
   async list(params: DiagnosisListParams = {}): Promise<PaginatedResponse<Diagnosis>> {
-    if (useFixture()) {
-      return Promise.resolve(fixtureList(params))
-    }
-    return apiClient.get<PaginatedResponse<Diagnosis>>(
-      '/v1/diagnoses',
-      params as Record<string, unknown>,
-    )
+    if (useFixture()) return Promise.resolve(fixtureList(params))
+    return apiClient.get<PaginatedResponse<Diagnosis>>('/diagnoses', params as Record<string, unknown>)
   },
 
   async getById(id: string): Promise<Diagnosis> {
@@ -75,6 +71,6 @@ export const diagnosesApi = {
       if (!found) throw new Error(`Diagnosis ${id} not found in fixture`)
       return Promise.resolve(found)
     }
-    return apiClient.get<Diagnosis>(`/v1/diagnoses/${id}`)
+    return apiClient.get<Diagnosis>(`/diagnoses/${id}`)
   },
 }

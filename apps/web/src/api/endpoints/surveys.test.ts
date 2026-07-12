@@ -44,12 +44,18 @@ describe('surveysApi (fixture mode)', () => {
     expect(created.webhook_token.startsWith('sk-')).toBe(true)
   })
 
-  it('rotateWebhookToken changes the token in place', async () => {
-    const before = await surveysApi.getById('srv-001')
-    const beforeToken = before.webhook_token
-    const after = await surveysApi.rotateWebhookToken('srv-001')
-    expect(after.webhook_token).not.toBe(beforeToken)
-    expect(after.webhook_token.startsWith('sk-')).toBe(true)
+  it('activate transitions a DRAFT survey to COLLECTING', async () => {
+    const created = await surveysApi.create({
+      client_id: 'client-x',
+      name: 'Activation test',
+      description: null,
+      source: SurveySource.GOOGLE_FORMS,
+      period_start: '2026-06-01',
+      period_end: '2026-06-30',
+    })
+    expect(created.status).toBe(SurveyStatus.DRAFT)
+    const activated = await surveysApi.activate(created.id)
+    expect(activated.status).toBe(SurveyStatus.COLLECTING)
   })
 
   it('close transitions the survey to CLOSED', async () => {

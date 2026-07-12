@@ -1,7 +1,11 @@
 /**
- * Pricing preview API. Computes invoice lines from a `ContractPricing` config — the BE
- * will replace this with a real engine when Phase 2 #4 ships. Same shape, same
- * return values; flip `VITE_PRICING_USE_FIXTURE=false` to swap.
+ * Pricing preview API.
+ *
+ * The local `previewLocally` function is DEV-only. In production, the BE
+ * endpoint is `GET /contracts/{contract_id}/invoice-preview` (P2 #4).
+ *
+ * The full pricing remodel (P2 #4) will wire the live endpoint and replace
+ * this module with a proper contract-scoped pricing surface.
  */
 
 import { PricingModel } from '@/types/enums'
@@ -16,7 +20,7 @@ export interface PricingPreviewParams {
 
 function useFixture(): boolean {
   if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_PRICING_USE_FIXTURE !== 'false'
+  return import.meta.env.DEV
 }
 
 function previewLocally(
@@ -118,11 +122,18 @@ function previewLocally(
 }
 
 export const pricingApi = {
+  /** Preview invoice lines for a contract pricing config.
+   *  Live BE path (P2 #4): GET /contracts/{contractId}/invoice-preview
+   */
   async preview(
     pricing: ContractPricing,
     params: PricingPreviewParams = {},
   ): Promise<InvoiceLinePreview[]> {
     if (useFixture()) return Promise.resolve(previewLocally(pricing, params))
-    return apiClient.post<InvoiceLinePreview[]>('/v1/pricing/preview', { pricing, ...params })
+    // TODO(P2 #4): replace contractId placeholder once contract context is wired
+    return apiClient.get<InvoiceLinePreview[]>(
+      `/contracts/${(pricing as unknown as { contract_id?: string }).contract_id ?? 'unknown'}/invoice-preview`,
+      params as Record<string, unknown>,
+    )
   },
 }
