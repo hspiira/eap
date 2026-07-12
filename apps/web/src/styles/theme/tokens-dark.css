@@ -78,7 +78,7 @@
   --secondary-foreground: var(--fg);
   --muted: var(--neutral-200);
   --muted-foreground: var(--fg-muted);
-  --accent: var(--neutral-200);
+  --accent: var(--neutral-300);
   --accent-foreground: var(--fg);
   --destructive: var(--danger);
   --destructive-foreground: var(--neutral-1000);

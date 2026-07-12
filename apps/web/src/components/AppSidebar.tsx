@@ -23,8 +23,8 @@ import {
   Users,
 } from "lucide-react"
 
+import { openCommandPalette } from "@/components/CommandPalette"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Sidebar,
   SidebarContent,
@@ -136,16 +136,23 @@ function ExpandedHeader() {
         <img src={PROJECT_LOGO} alt="" className="h-5 w-5 shrink-0 object-contain" />
         <span className="truncate text-sm font-semibold text-fg">{displayName}</span>
       </div>
-      <div className="relative px-1">
-        <Search
-          className="pointer-events-none absolute left-4 top-1/2 size-3.5 -translate-y-1/2 text-fg-subtle"
-          aria-hidden
-        />
-        <Input
-          placeholder="Search"
-          aria-label="Search"
-          className="h-8 border border-border bg-surface pl-8 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
+      <div className="px-1">
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label="Search (⌘K)"
+          aria-keyshortcuts="Meta+K Control+K"
+          className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-sm border border-border bg-surface px-3 text-sm text-fg-subtle transition-colors hover:bg-surface-hover"
+        >
+          <Search className="size-3.5 shrink-0" aria-hidden />
+          <span className="flex-1 text-left">Search</span>
+          <kbd
+            aria-hidden
+            className="inline-flex h-5 select-none items-center rounded-sm border border-border bg-bg px-1.5 font-mono text-[10px] font-medium"
+          >
+            ⌘K
+          </kbd>
+        </button>
       </div>
     </SidebarHeader>
   )
@@ -292,15 +299,16 @@ function CollapsedHeader() {
           <Button
             type="button"
             variant="ghost"
-            aria-label="Search"
-            onClick={() => setOpen(true)}
+            aria-label="Search (⌘K)"
+            aria-keyshortcuts="Meta+K Control+K"
+            onClick={openCommandPalette}
             className={ICON_BTN}
           >
             <Search className="size-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right" className="font-medium">
-          Search
+          Search ⌘K
         </TooltipContent>
       </Tooltip>
     </SidebarHeader>

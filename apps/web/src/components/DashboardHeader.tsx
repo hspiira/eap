@@ -1,5 +1,3 @@
-import { useEffect, useRef } from "react"
-
 import { useQuery } from "@tanstack/react-query"
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
@@ -17,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { usersApi } from "@/api/endpoints/users"
+import { openCommandPalette } from "@/components/CommandPalette"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -26,7 +25,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import {
   Tooltip,
@@ -65,38 +63,23 @@ function humaniseRoute(pathname: string): string {
 }
 
 function HeaderSearch() {
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault()
-        inputRef.current?.focus()
-      }
-    }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [])
   return (
-    <div className="relative hidden h-8 w-full max-w-80 items-center md:flex">
-      <Search
-        className="pointer-events-none absolute left-2.5 size-3.5 text-fg-subtle"
-        aria-hidden
-      />
-      <Input
-        ref={inputRef}
-        type="search"
-        placeholder="Search"
-        aria-label="Search"
-        className="h-8 rounded-sm border-border-subtle bg-surface pl-8 pr-12 text-sm text-fg placeholder:text-fg-subtle"
-        onKeyDown={(e) => e.stopPropagation()}
-      />
+    <button
+      type="button"
+      onClick={openCommandPalette}
+      aria-label="Search (⌘K)"
+      aria-keyshortcuts="Meta+K Control+K"
+      className="relative hidden h-8 w-full max-w-80 cursor-pointer items-center gap-2 rounded-sm border border-border-subtle bg-surface px-3 text-sm text-fg-subtle transition-colors hover:border-border hover:bg-surface-hover md:flex"
+    >
+      <Search className="size-3.5 shrink-0" aria-hidden />
+      <span className="flex-1 text-left">Search</span>
       <kbd
         aria-hidden
-        className="pointer-events-none absolute right-2 inline-flex h-5 select-none items-center rounded-sm border border-border-subtle bg-bg px-1.5 font-mono text-[10px] font-medium text-fg-subtle"
+        className="inline-flex h-5 select-none items-center rounded-sm border border-border-subtle bg-bg px-1.5 font-mono text-[10px] font-medium"
       >
         ⌘K
       </kbd>
-    </div>
+    </button>
   )
 }
 
