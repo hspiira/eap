@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Download,
@@ -10,7 +11,9 @@ import {
   Users,
 } from "lucide-react"
 
+import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
+import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -46,7 +49,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import type { Person } from "@/types/entities"
+import type { Client, Person } from "@/types/entities"
 import { PersonType } from "@/types/enums"
 
 function isType(value: unknown): value is PersonType {
@@ -142,6 +145,17 @@ function PersonsListPage() {
     setPage(1)
   }
 
+  const { data: clientsData } = useQuery({
+    queryKey: ["clients", "lookup"],
+    queryFn: () => clientsApi.list({ limit: 500 }),
+    staleTime: 5 * 60_000,
+  })
+  const clientsById = useMemo(() => {
+    const m = new Map<string, Client>()
+    for (const c of clientsData?.items ?? []) m.set(c.id, c)
+    return m
+  }, [clientsData])
+
   const query = useEntityList({
     resource: "persons",
     params: {
@@ -200,7 +214,7 @@ function PersonsListPage() {
         ) : null}
         {activeClientId ? (
           <FilterChip
-            label={`Client ${activeClientId.slice(0, 8)}`}
+            label={`Client: ${clientsById.get(activeClientId)?.name ?? activeClientId.slice(0, 8)}`}
             onRemove={clearClient}
           />
         ) : null}
@@ -297,7 +311,11 @@ function PersonsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <PersonRow key={row.id} row={row} />
+                    <PersonRow
+                      key={row.id}
+                      row={row}
+                      clientsById={clientsById}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -314,8 +332,23 @@ function PersonsListPage() {
   )
 }
 
-function PersonRow({ row }: { row: Person }) {
-  const fullName = displayName(row)
+function PersonRow({
+  row,
+  clientsById,
+}: {
+  row: Person
+  clientsById: Map<string, Client>
+}) {
+  const { data: linkedUser = null } = useQuery({
+    queryKey: ["user", row.user_id],
+    queryFn: () => usersApi.getById(row.user_id!),
+    enabled: !!row.user_id,
+    staleTime: 10 * 60_000,
+  })
+  const linkedClient = row.employment_info?.client_id
+    ? (clientsById.get(row.employment_info.client_id) ?? null)
+    : null
+  const fullName = displayName(row, linkedUser)
 
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
@@ -332,7 +365,7 @@ function PersonRow({ row }: { row: Person }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitials(row)}
+            {personInitials(row, linkedUser)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
@@ -353,11 +386,19 @@ function PersonRow({ row }: { row: Person }) {
         </span>
       </TableCell>
       <TableCell>
-        {row.employment_info?.client_id ? (
+        {linkedClient ? (
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: linkedClient.id }}
+            className="text-xs text-fg/70 hover:text-primary"
+          >
+            {linkedClient.name}
+          </Link>
+        ) : row.employment_info?.client_id ? (
           <Link
             to="/clients/$clientId"
             params={{ clientId: row.employment_info.client_id }}
-            className="font-mono text-xs text-fg/70 hover:text-primary"
+            className="font-mono text-xs text-fg/40 hover:text-primary"
           >
             {row.employment_info.client_id.slice(0, 8)}
           </Link>
@@ -369,8 +410,16 @@ function PersonRow({ row }: { row: Person }) {
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell>
-        {row.user_id ? (
-          <span className="font-mono text-xs text-fg/70">{row.user_id.slice(0, 8)}</span>
+        {linkedUser ? (
+          <Link
+            to="/users/$userId"
+            params={{ userId: linkedUser.id }}
+            className="max-w-35 truncate text-xs text-fg/70 hover:text-primary"
+          >
+            {linkedUser.email}
+          </Link>
+        ) : row.user_id ? (
+          <span className="font-mono text-xs text-fg/40">{row.user_id.slice(0, 8)}</span>
         ) : (
           <span className="text-fg/40">—</span>
         )}

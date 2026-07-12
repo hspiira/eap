@@ -248,7 +248,7 @@ function PersonDetailPage() {
         </>
       }
     >
-      <Hero person={person} client={client} />
+      <Hero person={person} client={client} user={user} />
 
       <PersonFormSheet
         open={editOpen}
@@ -472,15 +472,15 @@ function PersonDetailPage() {
   )
 }
 
-function Hero({ person, client }: { person: Person; client: Client | null }) {
-  const fullName = displayName(person)
+function Hero({ person, client, user }: { person: Person; client: Client | null; user: User | null }) {
+  const fullName = displayName(person, user)
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
         className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
       >
-        {personInitials(person)}
+        {personInitials(person, user)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {fullName}

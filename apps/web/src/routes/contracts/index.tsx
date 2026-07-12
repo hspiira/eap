@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Calendar,
@@ -11,6 +12,7 @@ import {
   RotateCw,
 } from "lucide-react"
 
+import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
@@ -49,7 +51,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import type { Contract } from "@/types/entities"
+import type { Client, Contract } from "@/types/entities"
 import { ContractStatus } from "@/types/enums"
 
 function isStatus(value: unknown): value is ContractStatus {
@@ -134,6 +136,17 @@ function ContractsListPage() {
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
     setPage(1)
   }
+
+  const { data: clientsData } = useQuery({
+    queryKey: ["clients", "lookup"],
+    queryFn: () => clientsApi.list({ limit: 500 }),
+    staleTime: 5 * 60_000,
+  })
+  const clientsById = useMemo(() => {
+    const m = new Map<string, Client>()
+    for (const c of clientsData?.items ?? []) m.set(c.id, c)
+    return m
+  }, [clientsData])
 
   const query = useEntityList({
     resource: "contracts",
@@ -284,6 +297,7 @@ function ContractsListPage() {
                     <ContractRow
                       key={row.id}
                       row={row}
+                      clientsById={clientsById}
                       isSelected={selection.selectedIds.has(row.id)}
                       onToggle={() => selection.toggleSelect(row.id)}
                     />
@@ -303,10 +317,21 @@ function ContractsListPage() {
   )
 }
 
-function ContractRow({ row, isSelected, onToggle }: { row: Contract; isSelected: boolean; onToggle: () => void }) {
+function ContractRow({
+  row,
+  clientsById,
+  isSelected,
+  onToggle,
+}: {
+  row: Contract
+  clientsById: Map<string, Client>
+  isSelected: boolean
+  onToggle: () => void
+}) {
   const number = row.contract_number ?? row.id.slice(0, 8)
   const billing = formatBilling(row)
   const ending = row.renewal_date ?? row.end_date ?? null
+  const linkedClient = clientsById.get(row.client_id) ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
@@ -335,7 +360,7 @@ function ContractRow({ row, isSelected, onToggle }: { row: Contract; isSelected:
           params={{ clientId: row.client_id }}
           className="text-sm text-fg hover:text-primary"
         >
-          {row.client_id.slice(0, 8)}
+          {linkedClient?.name ?? row.client_id.slice(0, 8)}
         </Link>
       </TableCell>
       <TableCell>

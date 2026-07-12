@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   CalendarClock,
@@ -10,7 +11,10 @@ import {
   RotateCw,
 } from "lucide-react"
 
+import { personsApi } from "@/api/endpoints/persons"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
+import { servicesApi } from "@/api/endpoints/services"
+import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -46,9 +50,10 @@ import {
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { displayName } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import type { ServiceSession } from "@/types/entities"
+import type { Service, ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
 function isStatus(value: unknown): value is SessionStatus {
@@ -150,6 +155,24 @@ function ServiceSessionsListPage() {
   const clearPerson = () =>
     navigate({ search: (prev) => ({ ...prev, person_id: undefined }), replace: true })
 
+  const { data: servicesData } = useQuery({
+    queryKey: ["services", "lookup"],
+    queryFn: () => servicesApi.list({ limit: 200 }),
+    staleTime: 5 * 60_000,
+  })
+  const servicesById = useMemo(() => {
+    const m = new Map<string, Service>()
+    for (const s of servicesData?.items ?? []) m.set(s.id, s)
+    return m
+  }, [servicesData])
+
+  const { data: activePersonForChip = null } = useQuery({
+    queryKey: ["person", activePersonId],
+    queryFn: () => personsApi.getById(activePersonId!),
+    enabled: !!activePersonId,
+    staleTime: 10 * 60_000,
+  })
+
   const query = useEntityList({
     resource: "service-sessions",
     params: {
@@ -176,6 +199,13 @@ function ServiceSessionsListPage() {
     Boolean(activeServiceId) ||
     Boolean(activePersonId) ||
     range !== "all"
+
+  const activeServiceLabel = activeServiceId
+    ? (servicesById.get(activeServiceId)?.name ?? activeServiceId.slice(0, 8))
+    : null
+  const activePersonLabel = activePersonId
+    ? (activePersonForChip ? displayName(activePersonForChip, null) : activePersonId.slice(0, 8))
+    : null
 
   return (
     <PageShell
@@ -209,15 +239,15 @@ function ServiceSessionsListPage() {
             onRemove={() => handleStatusChange("all")}
           />
         ) : null}
-        {activeServiceId ? (
+        {activeServiceLabel ? (
           <FilterChip
-            label={`Service ${activeServiceId.slice(0, 8)}`}
+            label={`Service: ${activeServiceLabel}`}
             onRemove={clearService}
           />
         ) : null}
-        {activePersonId ? (
+        {activePersonLabel ? (
           <FilterChip
-            label={`Person ${activePersonId.slice(0, 8)}`}
+            label={`Person: ${activePersonLabel}`}
             onRemove={clearPerson}
           />
         ) : null}
@@ -312,7 +342,13 @@ function ServiceSessionsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <SessionRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
+                    <SessionRow
+                      key={row.id}
+                      row={row}
+                      servicesById={servicesById}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -329,7 +365,32 @@ function ServiceSessionsListPage() {
   )
 }
 
-function SessionRow({ row, isSelected, onToggle }: { row: ServiceSession; isSelected: boolean; onToggle: () => void }) {
+function SessionRow({
+  row,
+  servicesById,
+  isSelected,
+  onToggle,
+}: {
+  row: ServiceSession
+  servicesById: Map<string, Service>
+  isSelected: boolean
+  onToggle: () => void
+}) {
+  const linkedService = servicesById.get(row.service_id) ?? null
+  const { data: linkedPerson = null } = useQuery({
+    queryKey: ["person", row.person_id],
+    queryFn: () => personsApi.getById(row.person_id),
+    staleTime: 10 * 60_000,
+  })
+  const { data: linkedPersonUser = null } = useQuery({
+    queryKey: ["user", linkedPerson?.user_id],
+    queryFn: () => usersApi.getById(linkedPerson!.user_id!),
+    enabled: !!linkedPerson?.user_id,
+    staleTime: 10 * 60_000,
+  })
+  const personLabel = linkedPerson
+    ? displayName(linkedPerson, linkedPersonUser)
+    : row.person_id.slice(0, 8)
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = scheduled.toLocaleDateString()
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -362,18 +423,18 @@ function SessionRow({ row, isSelected, onToggle }: { row: ServiceSession; isSele
         <Link
           to="/services/$serviceId"
           params={{ serviceId: row.service_id }}
-          className="font-mono text-xs text-fg/75 hover:text-primary"
+          className="text-xs text-fg/75 hover:text-primary"
         >
-          {row.service_id.slice(0, 8)}
+          {linkedService?.name ?? row.service_id.slice(0, 8)}
         </Link>
       </TableCell>
       <TableCell>
         <Link
           to="/persons/$personId"
           params={{ personId: row.person_id }}
-          className="font-mono text-xs text-fg/75 hover:text-primary"
+          className="text-xs text-fg/75 hover:text-primary"
         >
-          {row.person_id.slice(0, 8)}
+          {personLabel}
         </Link>
       </TableCell>
       <TableCell>
