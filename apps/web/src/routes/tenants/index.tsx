@@ -5,7 +5,6 @@ import {
   ExternalLink,
   KeyRound,
   Plus,
-  RotateCw,
   ShieldCheck,
 } from 'lucide-react'
 
@@ -112,7 +111,7 @@ function TenantsListBody() {
     status: activeStatus,
   }
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useEntityList({
+  const { data, isLoading, isError, error, refetch } = useEntityList({
     resource: 'tenants',
     params,
     listFn: (p) => tenantsApi.list(p),
@@ -182,17 +181,6 @@ function TenantsListBody() {
               <span className="text-xs text-fg/65">
                 {total} {total === 1 ? 'tenant' : 'tenants'}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isFetching}
-                aria-label="Refresh"
-                className="size-7 p-0"
-              >
-                <RotateCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-              </Button>
             </div>
           </FilterBar>
 

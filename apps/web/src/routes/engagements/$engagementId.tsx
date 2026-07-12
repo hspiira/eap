@@ -9,7 +9,6 @@ import {
   Briefcase,
   Clock,
   Plus,
-  RotateCw,
   Users,
 } from "lucide-react"
 
@@ -188,17 +187,6 @@ function EngagementDetailPage() {
             className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => engagementQuery.refetch()}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-          >
-            <RotateCw className="size-3.5" />
           </Button>
         </>
       }

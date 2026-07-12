@@ -6,7 +6,6 @@ import {
   ChevronRight,
   FileBarChart,
   Phone,
-  RotateCw,
   ShieldCheck,
 } from "lucide-react"
 
@@ -112,11 +111,6 @@ function CampaignDetailPage() {
       client={client}
       casesLoading={casesQuery.isPending}
       aggregateLoading={aggregateQuery.isPending}
-      onRefresh={() => {
-        campaignQuery.refetch()
-        casesQuery.refetch()
-        aggregateQuery.refetch()
-      }}
     />
   )
 }
@@ -128,7 +122,6 @@ function CampaignDetail({
   client,
   casesLoading,
   aggregateLoading,
-  onRefresh,
 }: {
   campaign: CallbackCampaign
   cases: CallbackCase[]
@@ -136,7 +129,6 @@ function CampaignDetail({
   client: Client | null
   casesLoading: boolean
   aggregateLoading: boolean
-  onRefresh: () => void
 }) {
   const navigate = useNavigate()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
@@ -164,18 +156,6 @@ function CampaignDetail({
           >
             <ArrowLeft className="size-3.5" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onRefresh}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-          >
-            <RotateCw className="size-3.5" />
-          </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Link
             to="/reports/$templateSlug"
             params={{ templateSlug: "care-callback-summary" }}

@@ -8,7 +8,6 @@ import {
   Headphones,
   Phone,
   PlayCircle,
-  RotateCw,
 } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
@@ -198,17 +197,6 @@ function CaseTriagePage() {
             className="size-7 p-0 text-fg/70"
           >
             <ArrowLeft className="size-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => caseQuery.refetch()}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-          >
-            <RotateCw className="size-3.5" />
           </Button>
           {canStart ? (
             <>

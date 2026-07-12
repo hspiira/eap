@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   KeyRound,
   Pencil,
-  RotateCw,
   ShieldCheck,
   ShieldOff,
   UserCog,
@@ -216,18 +215,6 @@ function UserDetailPage() {
           >
             <ArrowLeft className="size-3.5" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={fetchUser}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-            >
-            <RotateCw className="size-3.5" />
-            </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
             <Button
               size="sm"

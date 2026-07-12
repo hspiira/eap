@@ -3,7 +3,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   ClipboardList,
-  RotateCw,
   ShieldCheck,
   XCircle,
 } from "lucide-react"
@@ -142,21 +141,6 @@ function SurveyDetailPage() {
           >
             <ArrowLeft className="size-3.5" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              surveyQuery.refetch()
-              aggregateQuery.refetch()
-            }}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-          >
-            <RotateCw className="size-3.5" />
-          </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {!isClosed ? (
             <Button
               type="button"

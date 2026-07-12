@@ -7,7 +7,6 @@ import {
   CalendarClock,
   CalendarRange,
   Pencil,
-  RotateCw,
   Star,
   Users,
   Wrench,
@@ -38,6 +37,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type {
   Person,
@@ -148,11 +148,14 @@ function ServiceSessionDetailPage() {
         else if (action === "reschedule") setRescheduleOpen(true)
         await fetchSession()
         await queryClient.invalidateQueries({ queryKey: ["service-sessions", "list"] })
+        if (action !== "reschedule") showSuccess("Status updated")
+      } catch (err) {
+        showError(normalizeErrorMessage(err, "Action failed — please try again"))
       } finally {
         setActionLoading(false)
       }
     },
-    [fetchSession, queryClient],
+    [fetchSession, queryClient, showSuccess, showError],
   )
 
   const submitFeedback = useCallback(
@@ -233,18 +236,6 @@ function ServiceSessionDetailPage() {
           >
             <ArrowLeft className="size-3.5" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={fetchSession}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-            >
-            <RotateCw className="size-3.5" />
-            </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           <Button
             size="sm"
             variant="outline"
