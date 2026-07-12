@@ -24,6 +24,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -42,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
 import { CallbackCampaignStatus } from "@/types/enums"
@@ -105,6 +107,7 @@ function CampaignsListPage() {
     status: searchParams.status,
     sort,
   })
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? "Failed to load campaigns." : null
   const handleStatusChange = (next: StatusFilter) => {
@@ -203,13 +206,15 @@ function CampaignsListPage() {
             }
           />
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto">
-            <Table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-                <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                  <TableHead className="w-10 px-3">
-                    <Checkbox aria-label="Select all" />
-                  </TableHead>
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                    </TableHead>
                   <TableHead>
                     <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                       Campaign
@@ -234,24 +239,25 @@ function CampaignsListPage() {
               </TableHeader>
               <TableBody>
                 {items.map((c) => (
-                  <CampaignRow key={c.id} row={c} />
+                  <CampaignRow key={c.id} row={c} isSelected={selection.selectedIds.has(c.id)} onToggle={() => selection.toggleSelect(c.id)} />
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </PageShell>
   )
 }
 
-function CampaignRow({ row }: { row: CallbackCampaign }) {
+function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isSelected: boolean; onToggle: () => void }) {
   const total = row.case_count
   const completionPct = total ? Math.round((row.cases_completed / total) * 100) : 0
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link

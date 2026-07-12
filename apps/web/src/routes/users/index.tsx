@@ -25,6 +25,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ import {
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
@@ -152,6 +154,7 @@ function UsersListPage() {
   const allItems = query.data?.items ?? []
   const items = filterBySecurity(allItems, security)
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || security !== "all"
@@ -236,12 +239,13 @@ function UsersListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="email" sort={sort} onToggle={toggleSort}>
@@ -268,7 +272,7 @@ function UsersListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <UserRow key={row.id} row={row} />
+                    <UserRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
                   ))}
                 </TableBody>
               </Table>
@@ -285,11 +289,11 @@ function UsersListPage() {
   )
 }
 
-function UserRow({ row }: { row: User }) {
+function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean; onToggle: () => void }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.email}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.email}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link

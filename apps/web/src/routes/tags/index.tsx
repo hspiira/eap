@@ -19,6 +19,7 @@ import {
   FilterSearch,
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import {
   nextSort,
   SortHeader,
@@ -44,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
@@ -85,6 +87,7 @@ function TagsListPage() {
     listFn: clientTagsApi.list,
   })
   const items = query.data?.items ?? []
+  const selection = useTableSelection(items)
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -161,12 +164,13 @@ function TagsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
@@ -186,7 +190,7 @@ function TagsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} />
+                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
                   ))}
                 </TableBody>
               </Table>
@@ -227,12 +231,12 @@ function IconButton({
   )
 }
 
-function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
+function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit: () => void; isSelected: boolean; onToggle: () => void }) {
   const swatch = row.color ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Button

@@ -21,6 +21,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { SurveyFormSheet } from "@/components/SurveyFormSheet"
 import { Button } from "@/components/ui/button"
@@ -39,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { cn } from "@/lib/utils"
 import type { Survey } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
@@ -97,6 +99,7 @@ function SurveysListPage() {
     status: searchParams.status,
     sort,
   })
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as SurveyStatus)
@@ -174,13 +177,15 @@ function SurveysListPage() {
             }
           />
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto">
-            <Table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-                <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                  <TableHead className="w-10 px-3">
-                    <Checkbox aria-label="Select all" />
-                  </TableHead>
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                    </TableHead>
                   <TableHead>
                     <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                       Survey
@@ -205,22 +210,23 @@ function SurveysListPage() {
               </TableHeader>
               <TableBody>
                 {items.map((s) => (
-                  <SurveyRow key={s.id} row={s} />
+                  <SurveyRow key={s.id} row={s} isSelected={selection.selectedIds.has(s.id)} onToggle={() => selection.toggleSelect(s.id)} />
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </PageShell>
   )
 }
 
-function SurveyRow({ row }: { row: Survey }) {
+function SurveyRow({ row, isSelected, onToggle }: { row: Survey; isSelected: boolean; onToggle: () => void }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link

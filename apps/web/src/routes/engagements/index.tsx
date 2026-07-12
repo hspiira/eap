@@ -22,6 +22,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { EngagementFormSheet } from "@/components/EngagementFormSheet"
 import { Button } from "@/components/ui/button"
@@ -41,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { cn } from "@/lib/utils"
 import type { Engagement } from "@/types/entities"
 import { EngagementStatus, EngagementType } from "@/types/enums"
@@ -136,6 +138,7 @@ function EngagementsListPage() {
     overdueOnly: searchParams.overdue ?? false,
     sort,
   })
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as EngagementStatus)
@@ -276,13 +279,15 @@ function EngagementsListPage() {
             }
           />
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto">
-            <Table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-                <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                  <TableHead className="w-10 px-3">
-                    <Checkbox aria-label="Select all" />
-                  </TableHead>
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                    </TableHead>
                   <TableHead>
                     <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                       Engagement
@@ -311,18 +316,19 @@ function EngagementsListPage() {
               </TableHeader>
               <TableBody>
                 {items.map((e) => (
-                  <EngagementRow key={e.id} row={e} />
+                  <EngagementRow key={e.id} row={e} isSelected={selection.selectedIds.has(e.id)} onToggle={() => selection.toggleSelect(e.id)} />
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </PageShell>
   )
 }
 
-function EngagementRow({ row }: { row: Engagement }) {
+function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelected: boolean; onToggle: () => void }) {
   const overdue = isOverdue(row.due_date, row.status)
   const budgetPct = row.budget_hours
     ? Math.round((row.hours_logged / row.budget_hours) * 100)
@@ -330,7 +336,7 @@ function EngagementRow({ row }: { row: Engagement }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link

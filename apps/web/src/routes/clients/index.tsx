@@ -23,6 +23,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
@@ -45,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Client } from "@/types/entities"
@@ -133,6 +135,7 @@ function ClientsListPage() {
   })
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters = Boolean(activeSearch) || Boolean(activeTier)
@@ -224,12 +227,17 @@ function ClientsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
@@ -259,7 +267,12 @@ function ClientsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <ClientRow key={row.id} row={row} />
+                    <ClientRow
+                      key={row.id}
+                      row={row}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -276,7 +289,7 @@ function ClientsListPage() {
   )
 }
 
-function ClientRow({ row }: { row: Client }) {
+function ClientRow({ row, isSelected, onToggle }: { row: Client; isSelected: boolean; onToggle: () => void }) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
     row.contact_info?.email && row.contact_info?.phone ? row.contact_info?.phone : null
@@ -286,7 +299,8 @@ function ClientRow({ row }: { row: Client }) {
       <TableCell className="px-3">
         <Checkbox
           aria-label={`Select ${row.name}`}
-          onClick={(e) => e.stopPropagation()}
+          checked={isSelected}
+          onCheckedChange={onToggle}
         />
       </TableCell>
       <TableCell>

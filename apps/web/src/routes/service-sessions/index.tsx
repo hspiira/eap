@@ -21,6 +21,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
@@ -44,6 +45,7 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ServiceSession } from "@/types/entities"
@@ -165,6 +167,7 @@ function ServiceSessionsListPage() {
   const allItems = query.data?.items ?? []
   const items = useMemo(() => filterByRange(allItems, range), [allItems, range])
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters =
@@ -273,12 +276,13 @@ function ServiceSessionsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="scheduled_at" sort={sort} onToggle={toggleSort}>
@@ -308,7 +312,7 @@ function ServiceSessionsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <SessionRow key={row.id} row={row} />
+                    <SessionRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
                   ))}
                 </TableBody>
               </Table>
@@ -325,14 +329,14 @@ function ServiceSessionsListPage() {
   )
 }
 
-function SessionRow({ row }: { row: ServiceSession }) {
+function SessionRow({ row, isSelected, onToggle }: { row: ServiceSession; isSelected: boolean; onToggle: () => void }) {
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = scheduled.toLocaleDateString()
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select session ${row.id}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select session ${row.id}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link

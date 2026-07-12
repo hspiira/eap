@@ -22,6 +22,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Contract } from "@/types/entities"
@@ -148,6 +150,7 @@ function ContractsListPage() {
   const allItems = query.data?.items ?? []
   const items = filterByRenewal(allItems, renewal)
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || renewal !== "all"
@@ -233,12 +236,17 @@ function ContractsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="contract_number" sort={sort} onToggle={toggleSort}>
@@ -273,7 +281,12 @@ function ContractsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <ContractRow key={row.id} row={row} />
+                    <ContractRow
+                      key={row.id}
+                      row={row}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -290,14 +303,14 @@ function ContractsListPage() {
   )
 }
 
-function ContractRow({ row }: { row: Contract }) {
+function ContractRow({ row, isSelected, onToggle }: { row: Contract; isSelected: boolean; onToggle: () => void }) {
   const number = row.contract_number ?? row.id.slice(0, 8)
   const billing = formatBilling(row)
   const ending = row.renewal_date ?? row.end_date ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${number}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${number}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link
