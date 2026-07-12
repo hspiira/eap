@@ -41,6 +41,13 @@ import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -53,7 +60,7 @@ import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
-import { PersonType } from "@/types/enums"
+import { ClientTier, PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -81,6 +88,7 @@ function ClientDetailPage() {
   const [tags, setTags] = useState<ClientTag[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
+  const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addPersonOpen, setAddPersonOpen] = useState(false)
@@ -158,6 +166,22 @@ function ClientDetailPage() {
       }
     },
     [fetchClient, toast],
+  )
+
+  const handleTierChange = useCallback(
+    async (tier: ClientTier | null) => {
+      setTierLoading(true)
+      try {
+        const updated = await clientsApi.setTier(clientId, tier)
+        setClient(updated)
+        toast.showSuccess("Tier updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Tier update failed"))
+      } finally {
+        setTierLoading(false)
+      }
+    },
+    [clientId, toast],
   )
 
   const hasBilling = client
@@ -427,6 +451,8 @@ function ClientDetailPage() {
               childrenLoading={childrenLoading}
               onAction={handleAction}
               actionLoading={actionLoading}
+              onTierChange={handleTierChange}
+              tierLoading={tierLoading}
             />
           </aside>
         </div>
@@ -580,6 +606,8 @@ interface DetailRailProps {
   childrenLoading: boolean
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
+  onTierChange: (tier: ClientTier | null) => Promise<void>
+  tierLoading: boolean
 }
 
 function DetailRail({
@@ -592,6 +620,8 @@ function DetailRail({
   childrenLoading,
   onAction,
   actionLoading,
+  onTierChange,
+  tierLoading,
 }: DetailRailProps) {
   const ba = client.billing_address
   const hasBilling = !!(ba?.street || ba?.city || ba?.postal_code || ba?.country)
@@ -687,6 +717,26 @@ function DetailRail({
             ))}
           </div>
         )}
+      </RailSection>
+
+      <RailSection title="Tier">
+        <Select
+          value={client.tier ?? "none"}
+          onValueChange={(v) => {
+            void onTierChange(v === "none" ? null : (v as ClientTier))
+          }}
+          disabled={tierLoading}
+        >
+          <SelectTrigger className="h-7 w-full text-xs">
+            <SelectValue placeholder="Unassigned" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Unassigned</SelectItem>
+            <SelectItem value={ClientTier.A}>Tier A</SelectItem>
+            <SelectItem value={ClientTier.B}>Tier B</SelectItem>
+            <SelectItem value={ClientTier.C}>Tier C</SelectItem>
+          </SelectContent>
+        </Select>
       </RailSection>
 
       <RailSection title="Lifecycle">
