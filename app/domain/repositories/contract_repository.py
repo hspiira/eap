@@ -6,6 +6,7 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
+from datetime import datetime
 from typing import Sequence
 
 from app.domain.entities.contract import ContractEntity
@@ -61,6 +62,9 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
         client_id: ClientId | None = None,
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
+        is_auto_renew: bool | None = None,
+        ends_from: datetime | None = None,
+        ends_to: datetime | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -92,6 +96,9 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
         client_id: ClientId | None = None,
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
+        is_auto_renew: bool | None = None,
+        ends_from: datetime | None = None,
+        ends_to: datetime | None = None,
         search: str | None = None,
     ) -> int:
         """

@@ -7,6 +7,8 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 
 import decimal
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -411,6 +413,17 @@ async def list_contracts(
     payment_status: PaymentStatus | None = Query(
         None, description="Filter by payment status"
     ),
+    is_auto_renew: bool | None = Query(
+        None, description="Filter by whether the contract auto-renews"
+    ),
+    ends_from: datetime | None = Query(
+        None,
+        description="Only contracts whose term ends at or after this instant (ISO 8601)",
+    ),
+    ends_to: datetime | None = Query(
+        None,
+        description="Only contracts whose term ends at or before this instant (ISO 8601)",
+    ),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("created_at", description="Field to sort by"),
@@ -418,7 +431,14 @@ async def list_contracts(
     contract_repo: ContractRepository = Depends(get_contract_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """List contracts with filtering, searching, and pagination."""
+    """
+    List contracts with filtering, searching, and pagination.
+
+    `ends_from`/`ends_to` window the end of the contract term; combined with
+    `is_auto_renew` they express a renewal window ("auto-renewing contracts whose
+    term ends in the next 30 days") without the server needing to know what
+    "30 days" means to the caller.
+    """
     offset = (page - 1) * limit
 
     contracts = await contract_repo.list_all(
@@ -426,6 +446,9 @@ async def list_contracts(
         client_id=ClientId(client_id) if client_id else None,
         status=status,
         payment_status=payment_status,
+        is_auto_renew=is_auto_renew,
+        ends_from=ends_from,
+        ends_to=ends_to,
         limit=limit,
         offset=offset,
         sort_by=sort_by,
@@ -437,6 +460,9 @@ async def list_contracts(
         client_id=ClientId(client_id) if client_id else None,
         status=status,
         payment_status=payment_status,
+        is_auto_renew=is_auto_renew,
+        ends_from=ends_from,
+        ends_to=ends_to,
     )
 
     return ContractListResponse(

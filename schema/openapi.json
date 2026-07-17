@@ -16418,7 +16418,7 @@
     },
     "/contracts/": {
       "get": {
-        "description": "List contracts with filtering, searching, and pagination.",
+        "description": "List contracts with filtering, searching, and pagination.\n\n`ends_from`/`ends_to` window the end of the contract term; combined with\n`is_auto_renew` they express a renewal window (\"auto-renewing contracts whose\nterm ends in the next 30 days\") without the server needing to know what\n\"30 days\" means to the caller.",
         "operationId": "list_contracts_contracts__get",
         "parameters": [
           {
@@ -16482,6 +16482,62 @@
               ],
               "description": "Filter by payment status",
               "title": "Payment Status"
+            }
+          },
+          {
+            "description": "Filter by whether the contract auto-renews",
+            "in": "query",
+            "name": "is_auto_renew",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by whether the contract auto-renews",
+              "title": "Is Auto Renew"
+            }
+          },
+          {
+            "description": "Only contracts whose term ends at or after this instant (ISO 8601)",
+            "in": "query",
+            "name": "ends_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only contracts whose term ends at or after this instant (ISO 8601)",
+              "title": "Ends From"
+            }
+          },
+          {
+            "description": "Only contracts whose term ends at or before this instant (ISO 8601)",
+            "in": "query",
+            "name": "ends_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only contracts whose term ends at or before this instant (ISO 8601)",
+              "title": "Ends To"
             }
           },
           {

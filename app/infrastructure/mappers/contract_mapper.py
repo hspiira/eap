@@ -5,7 +5,6 @@ Converts between ContractEntity (domain) and ContractModel (persistence).
 """
 
 import decimal
-from datetime import datetime
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import (
@@ -124,28 +123,13 @@ class ContractMapper:
         tenant_id = TenantId(model.tenant_id)
         client_id = ClientId(model.client_id)
 
-        # Reconstruct DateRange from JSON
-        period_dict = model.period if isinstance(model.period, dict) else {}
-        start_date_str = period_dict.get("start_date")
-        end_date_str = period_dict.get("end_date")
-        
-        if start_date_str and end_date_str:
-            # Parse ISO format datetime strings
-            if isinstance(start_date_str, str):
-                start_dt = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
-            else:
-                start_dt = start_date_str
-            if isinstance(end_date_str, str):
-                end_dt = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
-            else:
-                end_dt = end_date_str
-            
-            period = DateRange(
-                start_date=ensure_utc(start_dt),
-                end_date=ensure_utc(end_dt),
-            )
-        else:
+        # The term is two columns on the row; the domain models it as one DateRange.
+        if model.start_date is None or model.end_date is None:
             raise ValueError("Contract period must have start_date and end_date")
+        period = DateRange(
+            start_date=ensure_utc(model.start_date),
+            end_date=ensure_utc(model.end_date),
+        )
 
         # Reconstruct Money from JSON
         billing_dict = (
@@ -202,12 +186,6 @@ class ContractMapper:
         Returns:
             ContractModel for persistence
         """
-        # Serialize DateRange to JSON
-        period_dict = {
-            "start_date": entity.period.start_date.isoformat(),
-            "end_date": entity.period.end_date.isoformat(),
-        }
-
         # Serialize Money to JSON
         billing_dict = {
             "amount": str(entity.billing_rate.amount),
@@ -219,7 +197,8 @@ class ContractMapper:
             id=entity.id.value,
             tenant_id=entity.tenant_id.value,
             client_id=entity.client_id.value,
-            period=period_dict,
+            start_date=entity.period.start_date,
+            end_date=entity.period.end_date,
             billing_rate=billing_dict,
             payment_frequency=entity.payment_frequency,
             payment_status=entity.payment_status,

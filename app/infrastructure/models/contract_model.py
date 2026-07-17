@@ -57,8 +57,16 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
         ForeignKey("clients.id"), nullable=False, index=True
     )
 
-    # Contract period (stored as JSON)
-    period: Mapped[dict] = mapped_column(JSON, nullable=False)
+    # Contract period. Real columns rather than a JSON blob so the term can be
+    # filtered and sorted in SQL — the renewal window needs an indexed range scan,
+    # and `period->>'end_date'` would neither use an index nor typecheck as a date.
+    # The domain still models this as a single DateRange; the mapper joins them.
+    start_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    end_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
 
     # Billing (stored as JSON)
     billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)
