@@ -1,4 +1,3 @@
-import { useState } from "react"
 
 import { Controller } from "react-hook-form"
 import { z } from "zod"
@@ -8,14 +7,14 @@ import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
+import { EntityPicker, PickerRow } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
-import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { displayName, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
 
@@ -411,13 +410,11 @@ function LockedPersonSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? personInitial(resolved) : "··"}
+        {resolved ? personInitials(resolved) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
-          {resolved
-            ? `${resolved.first_name} ${resolved.last_name}`
-            : "Selected person"}
+          {resolved ? displayName(resolved) : "Selected person"}
         </p>
         <p className="truncate text-[11px] text-fg/55">
           {resolved?.person_type ?? personId.slice(0, 8)}
@@ -430,270 +427,73 @@ function LockedPersonSummary({
   )
 }
 
-function ServicePicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Service>({
-    resource: "services",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: servicesApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((s) => s.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          SV
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate text-[11px] text-fg/55">
-            {selected.service_type ?? "—"}
-          </p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
+function ServicePicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
+    <EntityPicker<Service>
+      resource="services"
+      listFn={servicesApi.list}
+      value={value}
+      onChange={onChange}
       placeholder="Search services…"
-      empty={debounced ? "No services match." : "Start typing to search services."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(s) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(s.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            SV
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-fg">{s.name}</span>
-            <span className="block truncate text-[11px] text-fg/55">
-              {s.service_type ?? "—"}
-            </span>
-          </span>
-        </Button>
+      emptyPrompt="Start typing to search services."
+      emptyNoMatch="No services match."
+      renderSelected={(s) => (
+        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? "—"} size="md" />
+      )}
+      renderRow={(s) => (
+        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? "—"} />
       )}
     />
   )
 }
 
-function PersonPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Person>({
-    resource: "persons",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: personsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((p) => p.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          {personInitial(selected)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">
-            {selected.first_name} {selected.last_name}
-          </p>
-          <p className="truncate text-[11px] text-fg/55">{selected.person_type}</p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
+function PersonPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
+    <EntityPicker<Person>
+      resource="persons"
+      listFn={personsApi.list}
+      value={value}
+      onChange={onChange}
       placeholder="Search persons…"
-      empty={debounced ? "No persons match." : "Start typing to search persons."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(p) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(p.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            {personInitial(p)}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-fg">
-              {p.first_name} {p.last_name}
-            </span>
-            <span className="block truncate text-[11px] text-fg/55">{p.person_type}</span>
-          </span>
-        </Button>
+      emptyPrompt="Start typing to search persons."
+      emptyNoMatch="No persons match."
+      renderSelected={(p) => (
+        <PickerRow
+          initials={personInitials(p)}
+          primary={displayName(p)}
+          secondary={p.person_type}
+          size="md"
+        />
+      )}
+      renderRow={(p) => (
+        <PickerRow initials={personInitials(p)} primary={displayName(p)} secondary={p.person_type} />
       )}
     />
   )
 }
 
-function ProviderPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Provider>({
-    resource: "providers",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: providersApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((p) => p.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          PR
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-sm font-medium text-fg">{selected.id}</p>
-          <p className="truncate text-[11px] text-fg/55">
-            {selected.provider_profile.tier} · {selected.provider_profile.region}
-          </p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
+function ProviderPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const row = (p: Provider) => (
+    <PickerRow
+      initials="PR"
+      primary={p.id}
+      secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
+    />
+  )
   return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
+    <EntityPicker<Provider>
+      resource="providers"
+      listFn={providersApi.list}
+      value={value}
+      onChange={onChange}
       placeholder="Search providers…"
-      empty={debounced ? "No providers match." : "Start typing to search providers."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(p) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(p.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            PR
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-mono text-sm font-medium text-fg">{p.id}</span>
-            <span className="block truncate text-[11px] text-fg/55">
-              {p.provider_profile.tier} · {p.provider_profile.region}
-            </span>
-          </span>
-        </Button>
-      )}
+      emptyPrompt="Start typing to search providers."
+      emptyNoMatch="No providers match."
+      renderSelected={row}
+      renderRow={row}
     />
   )
 }
 
-function PickerShell<T extends { id: string }>({
-  query,
-  onQueryChange,
-  placeholder,
-  empty,
-  loading,
-  items,
-  renderItem,
-}: {
-  query: string
-  onQueryChange: (v: string) => void
-  placeholder: string
-  empty: string
-  loading: boolean
-  items: T[]
-  renderItem: (item: T) => React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {loading ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">{empty}</p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((it) => (
-              <li key={it.id}>{renderItem(it)}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  )
-}
 
-function ChangeButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      className="shrink-0 text-xs text-fg/65"
-    >
-      Change
-    </Button>
-  )
-}
 
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
-}

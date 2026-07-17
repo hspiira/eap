@@ -1,4 +1,3 @@
-import { useState } from "react"
 
 import { z } from "zod"
 
@@ -6,13 +5,12 @@ import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import type { ServiceAssignmentCreate } from "@/api/generated"
+import { EntityPicker, PickerRow } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
@@ -209,190 +207,44 @@ function LockedContractSummary({
   )
 }
 
-function ContractPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Contract>({
-    resource: "contracts",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: contractsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((c) => c.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          SA
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-sm font-medium text-fg">
-            {selected.id.slice(0, 8)}
-          </p>
-          <p className="truncate text-[11px] text-fg/55">
-            Client {selected.client_id.slice(0, 8)}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange("")}
-          className="shrink-0 text-xs text-fg/65"
-        >
-          Change
-        </Button>
-      </div>
-    )
-  }
-
+function ContractPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const row = (c: Contract) => (
+    <PickerRow initials="SA" primary={c.id.slice(0, 8)} secondary={`Client ${c.client_id.slice(0, 8)}`} />
+  )
   return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder="Search contracts by number…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? "No contracts match." : "Start typing to search contracts."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((c) => (
-              <li key={c.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(c.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-                  >
-                    SA
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-mono text-sm font-medium text-fg">
-                      {c.id.slice(0, 8)}
-                    </span>
-                    <span className="block truncate text-[11px] text-fg/55">
-                      Client {c.client_id.slice(0, 8)} · {c.status}
-                    </span>
-                  </span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+    <EntityPicker<Contract>
+      resource="contracts"
+      listFn={contractsApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search contracts by number…"
+      emptyPrompt="Start typing to search contracts."
+      emptyNoMatch="No contracts match."
+      renderSelected={row}
+      renderRow={row}
+    />
   )
 }
 
-function ServicePicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Service>({
-    resource: "services",
-    params: { page: 1, limit: 10, search: debounced || undefined },
-    listFn: servicesApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((s) => s.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          SV
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate text-[11px] text-fg/55">
-            {selected.service_type ?? selected.category ?? selected.id.slice(0, 8)}
-          </p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange("")}
-          className="shrink-0 text-xs text-fg/65"
-        >
-          Change
-        </Button>
-      </div>
-    )
-  }
-
+function ServicePicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+  const row = (s: Service) => (
+    <PickerRow
+      initials="SV"
+      primary={s.name}
+      secondary={s.service_type ?? s.category ?? s.id.slice(0, 8)}
+    />
+  )
   return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder="Search services by name…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? "No services match." : "Start typing to search services."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((s) => (
-              <li key={s.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(s.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-                  >
-                    SV
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-fg">
-                      {s.name}
-                    </span>
-                    <span className="block truncate text-[11px] text-fg/55">
-                      {s.service_type ?? s.category ?? "—"}
-                    </span>
-                  </span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+    <EntityPicker<Service>
+      resource="services"
+      listFn={servicesApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search services by name…"
+      emptyPrompt="Start typing to search services."
+      emptyNoMatch="No services match."
+      renderSelected={row}
+      renderRow={row}
+    />
   )
 }
