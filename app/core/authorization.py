@@ -170,14 +170,19 @@ def _token_has_scope(token: TokenData, scope: AccessScope) -> bool:
     return scope.value in (token.access_scopes or [])
 
 
-def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = False):
+def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool | None = None):
     """Dependency factory enforcing the bounded-context access-scope split.
 
     A token is admitted when *any* of ``allowed_scopes`` appears in its
-    ``access_scopes`` claim. Legacy tokens (no scopes claim) are admitted by
-    default to keep the rollout incremental; pass ``fail_closed_on_legacy=True``
-    on clinical-only routes to refuse legacy tokens — flip the default once the
-    auth backend emits explicit scopes everywhere.
+    ``access_scopes`` claim.
+
+    Tokens minted before the scope rollout carry no claim, and are admitted so
+    the rollout could be incremental — which means they bypass the scope wall
+    entirely. That is governed by ``SCOPE_FAIL_CLOSED_ON_LEGACY``, so the cutover
+    is a per-environment config change rather than a deploy. Pass
+    ``fail_closed_on_legacy=True`` to refuse them on a given route regardless.
+
+    See §4 of 11_RELEASE_RUNBOOK_AND_OPEN_ACTIONS.md — this needs a date.
     """
 
     allowed = {s.value for s in allowed_scopes}
@@ -185,8 +190,13 @@ def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = Fa
     async def _require(
         current_user: TokenData = Depends(get_current_user),
     ) -> TokenData:
+        fail_closed = (
+            settings.SCOPE_FAIL_CLOSED_ON_LEGACY
+            if fail_closed_on_legacy is None
+            else fail_closed_on_legacy
+        )
         scopes = current_user.access_scopes or []
-        if not scopes and not fail_closed_on_legacy:
+        if not scopes and not fail_closed:
             return current_user
         if any(s in allowed for s in scopes):
             return current_user
