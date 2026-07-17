@@ -48,12 +48,8 @@ class SurveyCampaignModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     anonymous: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     response_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_by: Mapped[str] = mapped_column(String(25), nullable=False)
-    activated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    closed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class SurveyResponseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
@@ -75,8 +71,6 @@ class SurveyResponseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )
-    received_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

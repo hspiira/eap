@@ -60,6 +60,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 def _hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     from app.core.security import hash_password
+
     return hash_password(password)
 
 
@@ -445,9 +446,7 @@ async def list_users(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: UserStatus | None = Query(None, description="Filter by user status"),
     is_email_verified: bool | None = Query(None, description="Filter by email verification status"),
-    is_two_factor_enabled: bool | None = Query(
-        None, description="Filter by two-factor enrolment"
-    ),
+    is_two_factor_enabled: bool | None = Query(None, description="Filter by two-factor enrolment"),
     search: str | None = Query(None, description="Search in user email"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),

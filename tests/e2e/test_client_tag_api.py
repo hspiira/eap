@@ -132,9 +132,7 @@ class TestCheckClientTagNameAvailability:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/client-tags/check-name/Available Tag?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/client-tags/check-name/Available Tag?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()

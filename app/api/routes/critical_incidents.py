@@ -56,9 +56,7 @@ def _to_response(incident: CriticalIncidentEntity) -> CriticalIncidentResponse:
         logged_by=incident.logged_by.value,
         status=incident.status,
         phases=[
-            IncidentPhaseEntryResponse(
-                phase=p.phase, occurred_at=p.occurred_at, notes=p.notes
-            )
+            IncidentPhaseEntryResponse(phase=p.phase, occurred_at=p.occurred_at, notes=p.notes)
             for p in incident.phases
         ],
         after_action_summary=incident.after_action_summary,
@@ -201,9 +199,7 @@ async def list_incidents(
     repo: CriticalIncidentRepository = Depends(get_critical_incident_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    incidents = await repo.list_for_tenant(
-        TenantId(tenant_id), limit=pg.limit, offset=pg.offset
-    )
+    incidents = await repo.list_for_tenant(TenantId(tenant_id), limit=pg.limit, offset=pg.offset)
     return CriticalIncidentListResponse(
         items=[_to_response(i) for i in incidents],
         total=len(incidents),

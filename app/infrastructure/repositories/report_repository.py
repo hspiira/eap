@@ -65,17 +65,13 @@ class ReportTemplateRepositoryImpl(ReportTemplateRepository):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, active_only: bool = True
     ) -> list[ReportTemplate]:
-        stmt = select(ReportTemplateModel).where(
-            ReportTemplateModel.tenant_id == tenant_id.value
-        )
+        stmt = select(ReportTemplateModel).where(ReportTemplateModel.tenant_id == tenant_id.value)
         if active_only:
             stmt = stmt.where(ReportTemplateModel.is_active.is_(True))
         rows = (await self._session.execute(stmt)).scalars().all()
         return [ReportTemplateMapper.to_entity(r) for r in rows]
 
-    async def get_by_code(
-        self, tenant_id: TenantId, code: str
-    ) -> ReportTemplate | None:
+    async def get_by_code(self, tenant_id: TenantId, code: str) -> ReportTemplate | None:
         stmt = select(ReportTemplateModel).where(
             ReportTemplateModel.tenant_id == tenant_id.value,
             ReportTemplateModel.code == code,

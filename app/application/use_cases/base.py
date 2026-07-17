@@ -26,9 +26,7 @@ class BaseUseCase(ABC, Generic[TEntity, TId]):
     def __init__(self, repository: RepositoryProtocol[TEntity, TId]):
         self.repository = repository
 
-    async def _get_entity_or_raise(
-        self, entity_id: TId, entity_name: str = "Entity"
-    ) -> TEntity:
+    async def _get_entity_or_raise(self, entity_id: TId, entity_name: str = "Entity") -> TEntity:
         entity = await self.repository.get_by_id(entity_id)
         if not entity:
             id_value = getattr(entity_id, "value", str(entity_id))

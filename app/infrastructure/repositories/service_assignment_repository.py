@@ -14,7 +14,12 @@ from app.infrastructure.models.service_assignment_model import ServiceAssignment
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ServiceAssignmentRepositoryImpl(TenantScopedRepositoryImpl[ServiceAssignmentEntity, ServiceAssignmentModel, ServiceAssignmentId], ServiceAssignmentRepository):
+class ServiceAssignmentRepositoryImpl(
+    TenantScopedRepositoryImpl[
+        ServiceAssignmentEntity, ServiceAssignmentModel, ServiceAssignmentId
+    ],
+    ServiceAssignmentRepository,
+):
     """
     SQLAlchemy implementation of ServiceAssignmentRepository.
 
@@ -39,7 +44,9 @@ class ServiceAssignmentRepositoryImpl(TenantScopedRepositoryImpl[ServiceAssignme
 
     # Domain-specific queries (not in base class)
 
-    async def get_by_service_id(self, service_id: ServiceId, tenant_id: TenantId) -> Sequence[ServiceAssignmentEntity]:
+    async def get_by_service_id(
+        self, service_id: ServiceId, tenant_id: TenantId
+    ) -> Sequence[ServiceAssignmentEntity]:
         """Get all assignments for a service."""
         stmt = select(ServiceAssignmentModel).where(
             ServiceAssignmentModel.service_id == service_id.value,
@@ -50,7 +57,9 @@ class ServiceAssignmentRepositoryImpl(TenantScopedRepositoryImpl[ServiceAssignme
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_by_contract_id(self, contract_id: ContractId, tenant_id: TenantId) -> Sequence[ServiceAssignmentEntity]:
+    async def get_by_contract_id(
+        self, contract_id: ContractId, tenant_id: TenantId
+    ) -> Sequence[ServiceAssignmentEntity]:
         """Get all assignments for a contract."""
         stmt = select(ServiceAssignmentModel).where(
             ServiceAssignmentModel.contract_id == contract_id.value,

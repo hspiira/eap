@@ -53,9 +53,7 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     )
 
     # Relationships
-    client_id: Mapped[str] = mapped_column(
-        ForeignKey("clients.id"), nullable=False, index=True
-    )
+    client_id: Mapped[str] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
 
     # Contract period. Real columns rather than a JSON blob so the term can be
     # filtered and sorted in SQL — the renewal window needs an indexed range scan,
@@ -64,9 +62,7 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     start_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )
-    end_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True
-    )
+    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
 
     # Billing (stored as JSON)
     billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)
@@ -111,14 +107,10 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
 
     # Signing
     signed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    signed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Termination
-    termination_reason: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )
+    termination_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Pricing model + serialised pricing config (Phase 2 #D-Pricing)
     pricing_model: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)

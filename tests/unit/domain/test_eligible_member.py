@@ -168,12 +168,8 @@ class TestPseudonymisation:
         assert len(p) == 19
 
     def test_seed_makes_pseudonym_deterministic(self):
-        p1 = generate_pseudonym(
-            tenant_secret="this-is-a-strong-secret-with-length", seed="abc"
-        )
-        p2 = generate_pseudonym(
-            tenant_secret="this-is-a-strong-secret-with-length", seed="abc"
-        )
+        p1 = generate_pseudonym(tenant_secret="this-is-a-strong-secret-with-length", seed="abc")
+        p2 = generate_pseudonym(tenant_secret="this-is-a-strong-secret-with-length", seed="abc")
         assert p1 == p2
 
     def test_different_secrets_yield_different_pseudonyms(self):

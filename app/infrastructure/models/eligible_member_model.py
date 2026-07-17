@@ -56,12 +56,8 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     last_imported_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    suspended_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    terminated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    terminated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
 
 
@@ -76,20 +72,12 @@ class ClinicalSubjectModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
 
     pseudonym: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    preferred_language: Mapped[str | None] = mapped_column(
-        String(20), nullable=True
-    )
-    preferred_pronouns: Mapped[str | None] = mapped_column(
-        String(50), nullable=True
-    )
-    preferred_contact_method: Mapped[str | None] = mapped_column(
-        String(20), nullable=True
-    )
+    preferred_language: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    preferred_pronouns: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    preferred_contact_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
     notes_for_continuity: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    deactivated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class EligibleMemberClinicalLinkModel(Base, TimestampMixin):

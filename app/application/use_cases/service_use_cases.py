@@ -128,8 +128,6 @@ class GetServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         """Get service by ID."""
         return await self.repository.get_by_id(service_id)
 
-    async def execute_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ServiceEntity | None:
+    async def execute_by_name(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
         """Get service by name within a tenant."""
         return await self.service_repository.get_by_name(tenant_id, name)

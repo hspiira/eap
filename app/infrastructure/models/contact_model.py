@@ -21,9 +21,7 @@ class ContactModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin
 
     __tablename__ = "contacts"
 
-    client_id: Mapped[str] = mapped_column(
-        ForeignKey("clients.id"), nullable=False, index=True
-    )
+    client_id: Mapped[str] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)

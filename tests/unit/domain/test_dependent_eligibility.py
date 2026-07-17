@@ -80,9 +80,7 @@ def _make_primary_employee(active: bool) -> PersonEntity:
     user = _make_user("usr-primary", "tenant-1")
     employment = EmploymentInfo(
         client_id=ClientId("client-1"),
-        employee_code=ClientEmployeeCode(
-            client_code="ACM", family_code="01", member_code="01"
-        ),
+        employee_code=ClientEmployeeCode(client_code="ACM", family_code="01", member_code="01"),
         role="Engineer",
         start_date=date(2024, 1, 1),
         status=WorkStatus.ACTIVE if active else WorkStatus.TERMINATED,

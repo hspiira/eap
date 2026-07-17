@@ -20,7 +20,9 @@ from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, ContractModel, ContractId], ContractRepository):
+class ContractRepositoryImpl(
+    TenantScopedRepositoryImpl[ContractEntity, ContractModel, ContractId], ContractRepository
+):
     """
     SQLAlchemy implementation of ContractRepository.
 
@@ -94,9 +96,7 @@ class ContractRepositoryImpl(TenantScopedRepositoryImpl[ContractEntity, Contract
         return filters
 
     @staticmethod
-    def _ends_conditions(
-        ends_from: datetime | None, ends_to: datetime | None
-    ) -> list[Any]:
+    def _ends_conditions(ends_from: datetime | None, ends_to: datetime | None) -> list[Any]:
         """
         Inclusive window on the end of the contract term.
 

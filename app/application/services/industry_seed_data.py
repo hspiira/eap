@@ -9,6 +9,7 @@ from typing import TypedDict
 
 class IndustrySeedData(TypedDict, total=False):
     """Type definition for industry seed data."""
+
     name: str
     code: str
     description: str

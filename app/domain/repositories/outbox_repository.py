@@ -30,12 +30,10 @@ class OutboxRepository(ABC):
         """Insert a new outbox row and return its id."""
 
     @abstractmethod
-    async def fetch_undelivered(self, *, limit: int = 100) -> list[OutboxEventDTO]:
-        ...
+    async def fetch_undelivered(self, *, limit: int = 100) -> list[OutboxEventDTO]: ...
 
     @abstractmethod
-    async def mark_delivered(self, event_id: str) -> None:
-        ...
+    async def mark_delivered(self, event_id: str) -> None: ...
 
     @abstractmethod
     async def mark_failed(
@@ -43,8 +41,7 @@ class OutboxRepository(ABC):
         event_id: str,
         error: str,
         next_attempt_at: datetime | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class OutboxEventDTO:

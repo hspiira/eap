@@ -103,27 +103,19 @@ class Case:
     def is_terminal(self) -> bool:
         return self.status in _TERMINAL_STATUSES
 
-    def assign_counsellor(
-        self, counsellor_id: PersonId, *, now: datetime | None = None
-    ) -> None:
+    def assign_counsellor(self, counsellor_id: PersonId, *, now: datetime | None = None) -> None:
         if self.is_terminal():
-            raise InvalidStateError(
-                f"Cannot assign a counsellor on a {self.status.value} case"
-            )
+            raise InvalidStateError(f"Cannot assign a counsellor on a {self.status.value} case")
         now = now or utc_now()
         self.assigned_counsellor_id = counsellor_id
         self.updated_at = now
         self.events.append(
-            CaseAssigned(
-                occurred_at=now, case_id=self.id, counsellor_id=counsellor_id
-            )
+            CaseAssigned(occurred_at=now, case_id=self.id, counsellor_id=counsellor_id)
         )
 
     def attach_authorization(self, authorization_id: AuthorizationId) -> None:
         if self.is_terminal():
-            raise InvalidStateError(
-                f"Cannot attach an authorization on a {self.status.value} case"
-            )
+            raise InvalidStateError(f"Cannot attach an authorization on a {self.status.value} case")
         self.authorization_id = authorization_id
         self.updated_at = utc_now()
 
@@ -158,13 +150,9 @@ class Case:
 
     def advance(self, target: CaseStatus, *, now: datetime | None = None) -> None:
         if target not in _STATUS_TRANSITIONS.get(self.status, frozenset()):
-            raise InvalidStateError(
-                f"Invalid transition: {self.status.value} → {target.value}"
-            )
+            raise InvalidStateError(f"Invalid transition: {self.status.value} → {target.value}")
         if target == CaseStatus.ACTIVE and not self.assigned_counsellor_id:
-            raise DomainError(
-                "Cannot move to Active without an assigned counsellor"
-            )
+            raise DomainError("Cannot move to Active without an assigned counsellor")
         now = now or utc_now()
         old = self.status
         self.status = target
@@ -190,9 +178,7 @@ class Case:
             CaseStatus.ACTIVE,
             CaseStatus.INTAKE,
         }:
-            raise InvalidStateError(
-                f"Cannot close a {self.status.value} case"
-            )
+            raise InvalidStateError(f"Cannot close a {self.status.value} case")
         if (
             self.status == CaseStatus.ACTIVE
             and reason == CaseClosureReason.GOALS_MET
@@ -235,9 +221,7 @@ class Case:
         if not notes:
             raise DomainError("refer_out requires explanatory notes")
         if self.is_terminal():
-            raise InvalidStateError(
-                f"Cannot refer out a {self.status.value} case"
-            )
+            raise InvalidStateError(f"Cannot refer out a {self.status.value} case")
         now = now or utc_now()
         old = self.status
         self.status = CaseStatus.REFERRED_OUT

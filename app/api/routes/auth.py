@@ -145,27 +145,25 @@ async def login(
     request: Request,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Authenticate a user with tenant code, email, and password.
-    
+
     Returns a JWT access token that can be used for subsequent API requests.
     The token includes user_id, tenant_id, and email in its claims.
-    
+
     Args:
         request_body: Login credentials (tenant_code, email, password)
         request: HTTP request (for rate limit and IP)
         tenant_repo: Tenant repository
         user_repo: User repository
         db: Database session
-        
+
     Returns:
         LoginResponse with access token and user information
-        
+
     Raises:
         HTTPException: If authentication fails (401) or rate limit exceeded (429)
     """
@@ -243,10 +241,7 @@ async def login(
     await user_repo.save(user)
 
     # Optionally revoke all previous refresh tokens for this user before issuing a new one
-    if (
-        getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False)
-        and refresh_token_repo
-    ):
+    if getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False) and refresh_token_repo:
         await refresh_token_repo.revoke_all_for_user(user.id.value)
 
     # Create and return token (store refresh jti when revocation is enabled)
@@ -261,9 +256,7 @@ async def login(
         role=user.role.value if user.role else None,
     )
     if refresh_jti:
-        await refresh_token_repo.save(
-            refresh_jti, user.id.value, tenant.id.value
-        )
+        await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)
 
     login_response = LoginResponse(
         access_token=token.access_token,
@@ -310,9 +303,7 @@ async def refresh_token(
     body: RefreshRequest | None = Body(None),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Exchange refresh token for new access and refresh tokens. Optionally rotates refresh token."""
@@ -383,9 +374,7 @@ async def refresh_token(
         role=user.role.value if user.role else None,
     )
     if rotation:
-        await refresh_token_repo.save(
-            refresh_jti, token_data.user_id, token_data.tenant_id
-        )
+        await refresh_token_repo.save(refresh_jti, token_data.user_id, token_data.tenant_id)
 
     refresh_response = RefreshResponse(
         access_token=token.access_token,
@@ -431,9 +420,7 @@ async def refresh_token(
 async def logout(
     request: Request,
     body: LogoutRequest | None = Body(None),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Revoke a refresh token so it can no longer be used. No-op if token has no jti or revocation is disabled."""
@@ -535,6 +522,7 @@ async def azure_callback(
     7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
     """
     import logging
+
     logger = logging.getLogger(__name__)
 
     def _error_redirect(message: str) -> RedirectResponse:
@@ -550,7 +538,9 @@ async def azure_callback(
 
     logger.info(
         "[azure-callback] received claims tid=%s email=%s oid=%s",
-        claims.tid, claims.email, claims.oid,
+        claims.tid,
+        claims.email,
+        claims.oid,
     )
     tenant = await tenant_repo.get_by_azure_tenant_id(claims.tid)
     if not tenant:
@@ -577,9 +567,7 @@ async def azure_callback(
         await user_repo.save(user)
 
     if user.status in (UserStatus.BANNED, UserStatus.TERMINATED, UserStatus.SUSPENDED):
-        return _error_redirect(
-            f"User account is {user.status.value.lower()}. Access denied."
-        )
+        return _error_redirect(f"User account is {user.status.value.lower()}. Access denied.")
 
     # Refresh display name from Azure on every SSO login (picks up profile renames)
     user.update_display_name(claims.name)

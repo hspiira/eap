@@ -20,13 +20,13 @@ class ContactRepository(BaseRepository[ContactEntity, ContactId]):
         self, client_id: str, tenant_id: TenantId
     ) -> Sequence[ContactEntity]:
         """Get all contacts for a client."""
-    
+
     @abstractmethod
     async def get_primary_contact(
         self, client_id: str, tenant_id: TenantId
     ) -> ContactEntity | None:
         """Get primary contact for a client."""
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -39,7 +39,7 @@ class ContactRepository(BaseRepository[ContactEntity, ContactId]):
         offset: int = 0,
     ) -> Sequence[ContactEntity]:
         """List contacts with filtering."""
-    
+
     @abstractmethod
     async def count(
         self,

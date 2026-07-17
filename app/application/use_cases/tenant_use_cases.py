@@ -112,6 +112,7 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         # Seed default industries for the tenant
         if self.industry_repository:
             from app.application.services.industry_seeder import seed_industries_for_tenant
+
             await seed_industries_for_tenant(tenant.id, self.industry_repository)
 
         # Create admin user if user_repository is provided
@@ -185,9 +186,10 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         set_password_expires_at_val: datetime | None = None
 
         if use_set_password_flow and self.password_set_token_repository:
-            set_password_token_val, set_password_expires_at_val = (
-                await self.password_set_token_repository.create(admin_user.id.value)
-            )
+            (
+                set_password_token_val,
+                set_password_expires_at_val,
+            ) = await self.password_set_token_repository.create(admin_user.id.value)
 
         return (
             admin_password,

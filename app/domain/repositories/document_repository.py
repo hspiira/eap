@@ -28,30 +28,30 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
     ) -> Sequence[DocumentEntity]:
         """
         Get all versions of a document (by original document ID).
-        
+
         Args:
             document_id: Original document identifier
             tenant_id: Tenant identifier
-            
+
         Returns:
             Sequence of DocumentEntity versions
         """
-    
+
     @abstractmethod
     async def get_latest_version(
         self, document_id: DocumentId, tenant_id: TenantId
     ) -> DocumentEntity | None:
         """
         Get the latest version of a document.
-        
+
         Args:
             document_id: Original document identifier
             tenant_id: Tenant identifier
-            
+
         Returns:
             Latest DocumentEntity if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -70,7 +70,7 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
     ) -> Sequence[DocumentEntity]:
         """
         List documents with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             document_type: Filter by document type
@@ -84,11 +84,11 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of DocumentEntity (only latest versions)
         """
-    
+
     @abstractmethod
     async def count(
         self,
@@ -103,7 +103,7 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
     ) -> int:
         """
         Count documents matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             document_type: Filter by document type
@@ -113,7 +113,7 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
             person_id: Filter by associated person
             is_confidential: Filter by confidentiality
             search: Search in document name or description
-            
+
         Returns:
             Total count (only latest versions)
         """

@@ -9,6 +9,7 @@ class TenantStatus(str, Enum):
     TERMINATED = "Terminated"
     ARCHIVED = "Archived"
 
+
 class UserStatus(str, Enum):
     ACTIVE = "Active"
     SUSPENDED = "Suspended"
@@ -20,9 +21,11 @@ class UserStatus(str, Enum):
 
 class TenantRole(str, Enum):
     """Role within a tenant for RBAC. ADMIN can manage tenant and users."""
+
     ADMIN = "Admin"
     USER = "User"
     VIEWER = "Viewer"
+
 
 class BaseStatus(str, Enum):
     ACTIVE = "Active"
@@ -31,11 +34,13 @@ class BaseStatus(str, Enum):
     ARCHIVED = "Archived"
     DELETED = "Deleted"
 
+
 class PersonType(str, Enum):
     PLATFORM_STAFF = "PlatformStaff"
     CLIENT_EMPLOYEE = "ClientEmployee"
     DEPENDENT = "Dependent"
     SERVICE_PROVIDER = "ServiceProvider"
+
 
 class WorkStatus(str, Enum):
     ACTIVE = "Active"
@@ -45,11 +50,13 @@ class WorkStatus(str, Enum):
     SUSPENDED = "Suspended"
     RESIGNED = "Resigned"
 
+
 class StaffRole(str, Enum):
     ADMIN = "Admin"
     MANAGER = "Manager"
     STAFF = "Staff"
     VOLUNTEER = "Volunteer"
+
 
 class RelationType(str, Enum):
     CHILD = "Child"
@@ -60,6 +67,7 @@ class RelationType(str, Enum):
     GUARDIAN = "Guardian"
     OTHER = "Other"
 
+
 class ContractStatus(str, Enum):
     ACTIVE = "Active"
     EXPIRED = "Expired"
@@ -68,6 +76,7 @@ class ContractStatus(str, Enum):
     PENDING = "Pending"
     DRAFT = "Draft"
 
+
 class PaymentStatus(str, Enum):
     PENDING = "Pending"
     PAID = "Paid"
@@ -75,11 +84,13 @@ class PaymentStatus(str, Enum):
     CANCELLED = "Cancelled"
     REFUNDED = "Refunded"
 
+
 class PaymentFrequency(str, Enum):
     WEEKLY = "Weekly"
     MONTHLY = "Monthly"
     QUARTERLY = "Quarterly"
     ANNUALLY = "Annually"
+
 
 class SessionStatus(str, Enum):
     SCHEDULED = "Scheduled"
@@ -114,6 +125,7 @@ class SessionClinicalStatus(str, Enum):
     REFERRED        — client referred elsewhere (xlsx: R).
     COMPLETED       — case episode closed this session (xlsx: C).
     """
+
     TO_BE_CONTINUED = "ToBeContinued"
     REFERRED = "Referred"
     COMPLETED = "Completed"
@@ -658,6 +670,7 @@ class SubscriptionTier(str, Enum):
     PROFESSIONAL = "Professional"
     ENTERPRISE = "Enterprise"
 
+
 class Language(str, Enum):
     ENGLISH = "en"
     SPANISH = "es"
@@ -669,6 +682,7 @@ class Language(str, Enum):
     JAPANESE = "ja"
     KOREAN = "ko"
 
+
 class ContactMethod(str, Enum):
     EMAIL = "email"
     PHONE = "phone"
@@ -676,14 +690,16 @@ class ContactMethod(str, Enum):
     WHATSAPP = "whatsapp"
     WECHAT = "wechat"
 
+
 class AuditActionType(str, Enum):
     """Types of actions that can be audited.
-    
+
     Note: LIST and VIEW actions are subject to configurable filtering/sampling
     to prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)
     are always logged. See AUDIT_SAMPLE_RATE, AUDIT_ALWAYS_LOG_RESOURCES, and
     AUDIT_SKIP_RESOURCES environment variables for configuration.
     """
+
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
@@ -696,8 +712,10 @@ class AuditActionType(str, Enum):
     EXPORT = "EXPORT"
     IMPORT = "IMPORT"
 
+
 class DocumentType(str, Enum):
     """Types of documents in the system."""
+
     CONTRACT = "Contract"
     CERTIFICATION = "Certification"
     KPI_REPORT = "KPI Report"
@@ -706,22 +724,28 @@ class DocumentType(str, Enum):
     UTILIZATION_REPORT = "Utilization Report"
     OTHER = "Other"
 
+
 class DocumentStatus(str, Enum):
     """Status of a document."""
+
     DRAFT = "Draft"
     PUBLISHED = "Published"
     ARCHIVED = "Archived"
     EXPIRED = "Expired"
 
+
 class KPICategory(str, Enum):
     """Categories for KPIs."""
+
     UTILIZATION = "Utilization"
     SATISFACTION = "Satisfaction"
     OUTCOME = "Outcome"
     OPERATIONAL = "Operational"
 
+
 class KPIMeasurementUnit(str, Enum):
     """Units for KPI measurements."""
+
     PERCENTAGE = "Percentage"
     COUNT = "Count"
     RATE = "Rate"

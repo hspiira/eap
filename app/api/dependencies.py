@@ -146,9 +146,7 @@ class PageParams:
         return (self.page - 1) * self.limit
 
 
-def pagination(
-    *, default_limit: int = 20, max_limit: int = 100
-) -> Callable[..., PageParams]:
+def pagination(*, default_limit: int = 20, max_limit: int = 100) -> Callable[..., PageParams]:
     """
     Page/limit query params, declared once.
 
@@ -165,7 +163,6 @@ def pagination(
         return PageParams(page=page, limit=limit)
 
     return dependency
-
 
 
 async def get_tenant_repository(

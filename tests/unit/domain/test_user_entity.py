@@ -114,9 +114,7 @@ class TestUserCreation:
         assert user.status == UserStatus.PENDING_VERIFICATION
         assert user.is_two_factor_enabled is False
 
-    def test_create_user_without_email_raises_invariant_violation(
-        self, user_id, tenant_id, now
-    ):
+    def test_create_user_without_email_raises_invariant_violation(self, user_id, tenant_id, now):
         """Test that creating user without email raises InvariantViolation."""
         with pytest.raises(InvariantViolation, match="User must have an email"):
             UserEntity(

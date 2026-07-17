@@ -10,12 +10,10 @@ from app.domain.entities.diagnosis import Diagnosis, DiagnosisType
 
 class DiagnosisRepository(ABC):
     @abstractmethod
-    async def list_types(self, *, active_only: bool = True) -> list[DiagnosisType]:
-        ...
+    async def list_types(self, *, active_only: bool = True) -> list[DiagnosisType]: ...
 
     @abstractmethod
-    async def get_type_by_code(self, code: str) -> DiagnosisType | None:
-        ...
+    async def get_type_by_code(self, code: str) -> DiagnosisType | None: ...
 
     @abstractmethod
     async def list_diagnoses(
@@ -23,9 +21,7 @@ class DiagnosisRepository(ABC):
         *,
         type_code: str | None = None,
         active_only: bool = True,
-    ) -> list[Diagnosis]:
-        ...
+    ) -> list[Diagnosis]: ...
 
     @abstractmethod
-    async def get_diagnosis_by_code(self, code: str) -> Diagnosis | None:
-        ...
+    async def get_diagnosis_by_code(self, code: str) -> Diagnosis | None: ...

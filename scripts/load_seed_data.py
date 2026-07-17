@@ -78,11 +78,25 @@ SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "seed_data.json"
 # PostgreSQL native enum types (only for columns created as PG enums in initial migration)
 # Tables added in later migrations (services, documents, kpis, etc.) use String for status/type.
 _PG_ENUM_COLUMNS = {
-    "tenants": {"status": (TenantStatus, "tenantstatus"), "subscription_tier": (SubscriptionTier, "subscriptiontier")},
+    "tenants": {
+        "status": (TenantStatus, "tenantstatus"),
+        "subscription_tier": (SubscriptionTier, "subscriptiontier"),
+    },
     "users": {"status": (UserStatus, "userstatus"), "preferred_language": (Language, "language")},
-    "clients": {"status": (BaseStatus, "basestatus"), "preferred_contact_method": (ContactMethod, "contactmethod")},
-    "persons": {"person_type": (PersonType, "persontype"), "secondary_person_type": (PersonType, "persontype"), "status": (BaseStatus, "basestatus")},
-    "contracts": {"payment_frequency": (PaymentFrequency, "paymentfrequency"), "payment_status": (PaymentStatus, "paymentstatus"), "status": (ContractStatus, "contractstatus")},
+    "clients": {
+        "status": (BaseStatus, "basestatus"),
+        "preferred_contact_method": (ContactMethod, "contactmethod"),
+    },
+    "persons": {
+        "person_type": (PersonType, "persontype"),
+        "secondary_person_type": (PersonType, "persontype"),
+        "status": (BaseStatus, "basestatus"),
+    },
+    "contracts": {
+        "payment_frequency": (PaymentFrequency, "paymentfrequency"),
+        "payment_status": (PaymentStatus, "paymentstatus"),
+        "status": (ContractStatus, "contractstatus"),
+    },
 }
 
 # Tables to truncate in reverse dependency order (--clear)
@@ -169,7 +183,9 @@ def build_users(rows: list[dict]) -> list[UserModel]:
             email=r["email"],
             password_hash=r.get("password_hash"),
             status=UserStatus(r["status"]),
-            preferred_language=Language(r["preferred_language"]) if r.get("preferred_language") else None,
+            preferred_language=Language(r["preferred_language"])
+            if r.get("preferred_language")
+            else None,
             timezone=r.get("timezone"),
             role=TenantRole(r["role"]),
             is_two_factor_enabled=r.get("is_two_factor_enabled", False),
@@ -220,7 +236,9 @@ def build_clients(rows: list[dict]) -> list[ClientModel]:
             parent_client_id=r.get("parent_client_id"),
             status=BaseStatus(r["status"]),
             is_verified=r.get("is_verified", False),
-            preferred_contact_method=ContactMethod(r["preferred_contact_method"]) if r.get("preferred_contact_method") else None,
+            preferred_contact_method=ContactMethod(r["preferred_contact_method"])
+            if r.get("preferred_contact_method")
+            else None,
         )
         for r in rows
     ]
@@ -253,7 +271,9 @@ def build_persons(rows: list[dict]) -> list[PersonModel]:
             user_id=r["user_id"],
             person_type=PersonType(r["person_type"]),
             is_dual_role=r.get("is_dual_role", False),
-            secondary_person_type=PersonType(r["secondary_person_type"]) if r.get("secondary_person_type") else None,
+            secondary_person_type=PersonType(r["secondary_person_type"])
+            if r.get("secondary_person_type")
+            else None,
             family_id=r.get("family_id"),
             employment_info=r.get("employment_info"),
             license_info=r.get("license_info"),
@@ -572,6 +592,7 @@ def main() -> None:
         raise SystemExit(f"Seed file not found: {SEED_PATH}")
 
     import asyncio
+
     asyncio.run(run_load(clear=args.clear))
 
 

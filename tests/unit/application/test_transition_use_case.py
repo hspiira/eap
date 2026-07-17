@@ -40,8 +40,12 @@ def _user(status: UserStatus = UserStatus.PENDING_VERIFICATION) -> UserEntity:
     )
 
 
-def _make_use_case(user: UserEntity | None) -> TransitionUseCase[UserEntity, UserId, UserTransition]:
-    use_case: TransitionUseCase[UserEntity, UserId, UserTransition] = TransitionUseCase(_FakeUserRepo(user))
+def _make_use_case(
+    user: UserEntity | None,
+) -> TransitionUseCase[UserEntity, UserId, UserTransition]:
+    use_case: TransitionUseCase[UserEntity, UserId, UserTransition] = TransitionUseCase(
+        _FakeUserRepo(user)
+    )
     use_case.entity_name = "User"
     return use_case
 

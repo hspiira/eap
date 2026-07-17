@@ -15,13 +15,9 @@ class ReportTemplateRepository(BaseRepository[ReportTemplate, ReportTemplateId])
         tenant_id: TenantId,
         *,
         active_only: bool = True,
-    ) -> list[ReportTemplate]:
-        ...
+    ) -> list[ReportTemplate]: ...
 
-    async def get_by_code(
-        self, tenant_id: TenantId, code: str
-    ) -> ReportTemplate | None:
-        ...
+    async def get_by_code(self, tenant_id: TenantId, code: str) -> ReportTemplate | None: ...
 
 
 class ReportRunRepository(BaseRepository[ReportRun, ReportRunId]):
@@ -32,5 +28,4 @@ class ReportRunRepository(BaseRepository[ReportRun, ReportRunId]):
         *,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[ReportRun]:
-        ...
+    ) -> list[ReportRun]: ...

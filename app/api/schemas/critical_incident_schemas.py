@@ -26,7 +26,9 @@ class IncidentPhaseRecord(BaseModel):
 
 
 class IncidentClose(BaseModel):
-    after_action_summary: SanitizedStr = Field(..., min_length=1, description="After-action summary")
+    after_action_summary: SanitizedStr = Field(
+        ..., min_length=1, description="After-action summary"
+    )
 
 
 class IncidentPhaseEntryResponse(BaseModel):

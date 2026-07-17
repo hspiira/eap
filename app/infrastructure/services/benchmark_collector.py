@@ -71,9 +71,7 @@ class SqlBenchmarkCollector:
         rows = (await self._session.execute(stmt)).all()
         return {r.tenant_id: float(r.count or 0) for r in rows}
 
-    async def _callback_completion(
-        self, tenant_ids: list[str]
-    ) -> dict[str, float]:
+    async def _callback_completion(self, tenant_ids: list[str]) -> dict[str, float]:
         # Per-tenant completion rate: completed / (total - pending).
         # Tenants with no callback activity are omitted (excluded from k-anon count).
         stmt = (
@@ -83,9 +81,7 @@ class SqlBenchmarkCollector:
                 func.count().label("count"),
             )
             .where(OutreachRecordModel.tenant_id.in_(tenant_ids))
-            .group_by(
-                OutreachRecordModel.tenant_id, OutreachRecordModel.status
-            )
+            .group_by(OutreachRecordModel.tenant_id, OutreachRecordModel.status)
         )
         rows = (await self._session.execute(stmt)).all()
         per_tenant: dict[str, dict[str, int]] = {}
@@ -93,9 +89,7 @@ class SqlBenchmarkCollector:
             per_tenant.setdefault(r.tenant_id, {})[r.status] = int(r.count)
         out: dict[str, float] = {}
         for tid, status_counts in per_tenant.items():
-            terminal = sum(
-                v for k, v in status_counts.items() if k != "Pending"
-            )
+            terminal = sum(v for k, v in status_counts.items() if k != "Pending")
             if terminal == 0:
                 continue
             completed = status_counts.get("Completed", 0)

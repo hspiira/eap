@@ -24,12 +24,8 @@ class BenchmarkConsentMapper:
             version=model.version,
             granted_by=UserId(model.granted_by),
             granted_at=ensure_utc(model.granted_at),
-            withdrawn_at=ensure_utc(model.withdrawn_at)
-            if model.withdrawn_at
-            else None,
-            withdrawn_by=UserId(model.withdrawn_by)
-            if model.withdrawn_by
-            else None,
+            withdrawn_at=ensure_utc(model.withdrawn_at) if model.withdrawn_at else None,
+            withdrawn_by=UserId(model.withdrawn_by) if model.withdrawn_by else None,
             withdrawn_reason=model.withdrawn_reason,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -47,12 +43,8 @@ class BenchmarkConsentMapper:
             version=entity.version,
             granted_by=entity.granted_by.value,
             granted_at=ensure_utc(entity.granted_at),
-            withdrawn_at=ensure_utc(entity.withdrawn_at)
-            if entity.withdrawn_at
-            else None,
-            withdrawn_by=entity.withdrawn_by.value
-            if entity.withdrawn_by
-            else None,
+            withdrawn_at=ensure_utc(entity.withdrawn_at) if entity.withdrawn_at else None,
+            withdrawn_by=entity.withdrawn_by.value if entity.withdrawn_by else None,
             withdrawn_reason=entity.withdrawn_reason,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),

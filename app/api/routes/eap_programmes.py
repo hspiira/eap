@@ -177,9 +177,7 @@ async def authorize_case(
     data: AuthorizeCaseRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    programme_repo: EAPProgrammeRepository = Depends(
-        get_eap_programme_repository
-    ),
+    programme_repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
     auth_repo: AuthorizationRepository = Depends(get_authorization_repository),
     case_repo: CaseRepository = Depends(get_case_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -210,9 +208,7 @@ async def consume_session(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    auth = await ConsumeAuthorizationSessionUseCase(repo).execute(
-        AuthorizationId(authorization_id)
-    )
+    auth = await ConsumeAuthorizationSessionUseCase(repo).execute(AuthorizationId(authorization_id))
     await audit_change(auth, audit_handler, current_user, request)
     return _to_authorization(auth)
 

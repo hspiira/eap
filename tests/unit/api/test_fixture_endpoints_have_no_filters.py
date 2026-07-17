@@ -30,9 +30,7 @@ def _query_params(path: str) -> set[str]:
     mounted, so app.routes does not carry them."""
     spec = app.openapi()["paths"].get(path)
     assert spec is not None, f"route not found in the OpenAPI schema: GET {path}"
-    return {
-        q["name"] for q in spec["get"].get("parameters", []) if q.get("in") == "query"
-    }
+    return {q["name"] for q in spec["get"].get("parameters", []) if q.get("in") == "query"}
 
 
 class TestFixtureBackedEndpointsStillHaveNoFilters:

@@ -38,7 +38,9 @@ from app.shared.utils.route_audit_helper import audit_change
 router = APIRouter(prefix="/service-assignments", tags=["service-assignments"])
 
 
-def _to_service_assignment_response(assignment: ServiceAssignmentEntity) -> ServiceAssignmentResponse:
+def _to_service_assignment_response(
+    assignment: ServiceAssignmentEntity,
+) -> ServiceAssignmentResponse:
     """Map ServiceAssignmentEntity to API response using public properties."""
     return ServiceAssignmentResponse(
         id=assignment.id.value,
@@ -81,9 +83,7 @@ async def create_service_assignment(
         assigned_by=assigned_by,
         notes=data.notes,
     )
-    await audit_change(
-        assignment, audit_handler, current_user, request, tenant_id=tenant_id
-    )
+    await audit_change(assignment, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_service_assignment_response(assignment)
 
 

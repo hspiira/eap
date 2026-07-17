@@ -251,6 +251,7 @@ async def get_primary_contact(
         raise ValueError("Primary contact not found")
     return _to_contact_response(contact)
 
+
 @router.get(
     "/{contact_id}",
     response_model=ContactResponse,

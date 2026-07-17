@@ -77,14 +77,11 @@ class Questionnaire:
         missing = expected - provided
         if missing:
             raise ValueError(
-                f"{self.code.value} v{self.version}: missing answers for "
-                + f"{sorted(missing)}"
+                f"{self.code.value} v{self.version}: missing answers for " + f"{sorted(missing)}"
             )
         unknown = provided - expected
         if unknown:
-            raise ValueError(
-                f"{self.code.value} v{self.version}: unknown items {sorted(unknown)}"
-            )
+            raise ValueError(f"{self.code.value} v{self.version}: unknown items {sorted(unknown)}")
         for code, value in responses.items():
             item = self.item(code)
             if not isinstance(value, int):
@@ -118,4 +115,3 @@ class QuestionnaireResponse:
     def __post_init__(self) -> None:
         if self.crisis_flag and not self.crisis_reason:
             raise ValueError("crisis_flag=True requires crisis_reason")
-

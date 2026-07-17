@@ -21,19 +21,19 @@ class ServiceAssignmentRepository(BaseRepository[ServiceAssignmentEntity, Servic
         self, service_id: ServiceId, tenant_id: TenantId
     ) -> Sequence[ServiceAssignmentEntity]:
         """Get all assignments for a service."""
-    
+
     @abstractmethod
     async def get_by_contract_id(
         self, contract_id: ContractId, tenant_id: TenantId
     ) -> Sequence[ServiceAssignmentEntity]:
         """Get all assignments for a contract."""
-    
+
     @abstractmethod
     async def get_by_service_and_contract(
         self, service_id: ServiceId, contract_id: ContractId, tenant_id: TenantId
     ) -> ServiceAssignmentEntity | None:
         """Get assignment by service and contract."""
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -45,7 +45,7 @@ class ServiceAssignmentRepository(BaseRepository[ServiceAssignmentEntity, Servic
         offset: int = 0,
     ) -> Sequence[ServiceAssignmentEntity]:
         """List assignments with filtering."""
-    
+
     @abstractmethod
     async def count(
         self,

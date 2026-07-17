@@ -418,9 +418,7 @@ async def update_client_tier(
 ):
     """Set the client's engagement tier."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(
-        client.id, ClientTransition.UPDATE_TIER, tier=data.tier
-    )
+    client = await use_case.execute(client.id, ClientTransition.UPDATE_TIER, tier=data.tier)
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -555,15 +553,11 @@ async def get_client_stats(
     child_clients_count = int(child_result.scalar() or 0)
 
     # Count total contracts
-    contracts = await contract_repo.get_by_client_id(
-        client.tenant_id, client.id
-    )
+    contracts = await contract_repo.get_by_client_id(client.tenant_id, client.id)
     total_contracts_count = len(contracts)
 
     # Count active contracts
-    active_contract = await contract_repo.get_active_by_client_id(
-        client.tenant_id, client.id
-    )
+    active_contract = await contract_repo.get_active_by_client_id(client.tenant_id, client.id)
     active_contracts_count = 1 if active_contract else 0
 
     return ClientStatsResponse(

@@ -128,9 +128,7 @@ async def execute_export(
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
     require_same_tenant(current_user, req.tenant_id.value)
-    out = await ExecuteExportUseCase(repo, collector).execute(
-        DSARRequestId(request_id)
-    )
+    out = await ExecuteExportUseCase(repo, collector).execute(DSARRequestId(request_id))
     return _to_response(out)
 
 
@@ -203,9 +201,7 @@ async def execute_erasure(
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
     require_same_tenant(current_user, req.tenant_id.value)
-    out = await ExecuteErasureUseCase(repo, tombstoner).execute(
-        DSARRequestId(request_id)
-    )
+    out = await ExecuteErasureUseCase(repo, tombstoner).execute(DSARRequestId(request_id))
     return _to_response(out)
 
 

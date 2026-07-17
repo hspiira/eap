@@ -77,27 +77,19 @@ class SafetyPlan:
 
     def activate(self, *, now: datetime | None = None) -> None:
         if self.status != SafetyPlanStatus.DRAFT:
-            raise InvalidStateError(
-                f"Cannot activate a {self.status.value} safety plan"
-            )
+            raise InvalidStateError(f"Cannot activate a {self.status.value} safety plan")
         now = now or utc_now()
         self.status = SafetyPlanStatus.ACTIVE
         self.activated_at = now
         self.updated_at = now
-        self.events.append(
-            SafetyPlanActivated(occurred_at=now, safety_plan_id=self.id)
-        )
+        self.events.append(SafetyPlanActivated(occurred_at=now, safety_plan_id=self.id))
 
-    def mark_reviewed(
-        self, *, reviewer_id: UserId, now: datetime | None = None
-    ) -> None:
+    def mark_reviewed(self, *, reviewer_id: UserId, now: datetime | None = None) -> None:
         if self.status not in {
             SafetyPlanStatus.ACTIVE,
             SafetyPlanStatus.REVIEWED,
         }:
-            raise InvalidStateError(
-                f"Cannot review a {self.status.value} safety plan"
-            )
+            raise InvalidStateError(f"Cannot review a {self.status.value} safety plan")
         now = now or utc_now()
         self.status = SafetyPlanStatus.REVIEWED
         self.reviewed_at = now

@@ -32,7 +32,7 @@ class DocumentEntity:
     is_latest: bool
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields
     description: str | None = None
     file_path: str | None = None  # Path to uploaded file
@@ -50,13 +50,13 @@ class DocumentEntity:
     archived_at: datetime | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
         self._ensure_invariants()
-    
+
     # === Behaviors ===
-    
+
     def publish(self) -> None:
         """Publish document (make it available)."""
         if self.status == DocumentStatus.ARCHIVED:
@@ -65,26 +65,26 @@ class DocumentEntity:
             raise DomainError("Document is already published")
         if self.deleted_at:
             raise DomainError("Cannot publish deleted document")
-        
+
         self.status = DocumentStatus.PUBLISHED
         now = utc_now()
         self.published_at = now
         self.updated_at = now
         self.events.append(DocumentPublished(occurred_at=now, document_id=self.id))
-    
+
     def archive(self) -> None:
         """Archive document."""
         if self.status == DocumentStatus.ARCHIVED:
             raise DomainError("Document is already archived")
         if self.deleted_at:
             raise DomainError("Cannot archive deleted document")
-        
+
         self.status = DocumentStatus.ARCHIVED
         now = utc_now()
         self.archived_at = now
         self.updated_at = now
         self.events.append(DocumentArchived(occurred_at=now, document_id=self.id))
-    
+
     def create_new_version(
         self,
         new_version_id: DocumentId,
@@ -97,23 +97,23 @@ class DocumentEntity:
     ) -> "DocumentEntity":
         """
         Create a new version of this document.
-        
+
         Returns a new DocumentEntity with incremented version.
         The current document will be marked as not latest.
         """
         if self.deleted_at:
             raise DomainError("Cannot create version of deleted document")
-        
+
         # Validate file or URL
         if not file_path and not file_url:
             raise DomainError("Either file_path or file_url must be provided")
         if file_path and file_url:
             raise DomainError("Cannot provide both file_path and file_url")
-        
+
         # Mark current version as not latest
         self.is_latest = False
         self.updated_at = utc_now()
-        
+
         # Create new version
         now = utc_now()
         new_version = DocumentEntity(
@@ -139,7 +139,7 @@ class DocumentEntity:
             created_at=now,
             updated_at=now,
         )
-        
+
         self.events.append(
             DocumentVersionCreated(
                 occurred_at=now,
@@ -147,9 +147,9 @@ class DocumentEntity:
                 new_version_id=new_version_id,
             )
         )
-        
+
         return new_version
-    
+
     def update_metadata(
         self,
         name: str | None = None,
@@ -163,14 +163,14 @@ class DocumentEntity:
         if description is not None:
             self.description = description
         self.updated_at = utc_now()
-    
+
     def set_confidentiality(self, is_confidential: bool) -> None:
         """Set document confidentiality."""
         if self.deleted_at:
             raise DomainError("Cannot update deleted document")
         self.is_confidential = is_confidential
         self.updated_at = utc_now()
-    
+
     def set_expiry(self, expires_at: datetime | None) -> None:
         """Set document expiry date."""
         if self.deleted_at:
@@ -179,7 +179,7 @@ class DocumentEntity:
             raise DomainError("Expiry date must be in the future")
         self.expires_at = expires_at
         self.updated_at = utc_now()
-    
+
     def check_expiry(self) -> bool:
         """Check if document has expired and update status if needed."""
         if self.expires_at and self.expires_at <= utc_now():
@@ -188,7 +188,7 @@ class DocumentEntity:
                 self.updated_at = utc_now()
             return True
         return False
-    
+
     def is_active(self) -> bool:
         """Check if document is active (published and not expired/deleted)."""
         if self.deleted_at:
@@ -198,9 +198,9 @@ class DocumentEntity:
         if self.expires_at is None:
             return True
         return self.expires_at > utc_now()
-    
+
     # === Invariants ===
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure document invariants are met."""
         if not self.name:

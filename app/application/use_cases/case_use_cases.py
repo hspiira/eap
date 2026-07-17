@@ -126,9 +126,7 @@ class AssignCounsellorUseCase:
     def __init__(self, repository: CaseRepository):
         self._repo = repository
 
-    async def execute(
-        self, *, case_id: CaseId, counsellor_id: PersonId
-    ) -> Case:
+    async def execute(self, *, case_id: CaseId, counsellor_id: PersonId) -> Case:
         case = await self._repo.get_by_id(case_id)
         if case is None:
             raise NotFoundError(
@@ -176,9 +174,7 @@ class CloseCaseUseCase:
                 resource_type="Case",
                 resource_id=case_id.value,
             )
-        case.close(
-            reason=reason, closure_summary_note_id=closure_summary_note_id
-        )
+        case.close(reason=reason, closure_summary_note_id=closure_summary_note_id)
         await self._repo.save(case)
         return case
 

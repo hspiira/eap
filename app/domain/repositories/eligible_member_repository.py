@@ -19,23 +19,20 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         *,
         limit: int = 200,
         offset: int = 0,
-    ) -> list[EligibleMember]:
-        ...
+    ) -> list[EligibleMember]: ...
 
     async def find_by_employer_member_id(
         self,
         tenant_id: TenantId,
         client_id: ClientId,
         employer_member_id: str,
-    ) -> EligibleMember | None:
-        ...
+    ) -> EligibleMember | None: ...
 
 
 class ClinicalSubjectRepository(BaseRepository[ClinicalSubject, ClinicalSubjectId]):
     async def find_by_pseudonym(
         self, tenant_id: TenantId, pseudonym: str
-    ) -> ClinicalSubject | None:
-        ...
+    ) -> ClinicalSubject | None: ...
 
 
 class EligibleMemberClinicalLinkRepository:
@@ -52,8 +49,7 @@ class EligibleMemberClinicalLinkRepository:
         tenant_id: TenantId,
         member_id: EligibleMemberId,
         subject_id: ClinicalSubjectId,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     async def subject_for_member(
         self,
@@ -62,8 +58,7 @@ class EligibleMemberClinicalLinkRepository:
         *,
         requester_id: str,
         purpose: str,
-    ) -> ClinicalSubjectId | None:
-        ...
+    ) -> ClinicalSubjectId | None: ...
 
     async def member_for_subject(
         self,
@@ -72,5 +67,4 @@ class EligibleMemberClinicalLinkRepository:
         *,
         requester_id: str,
         purpose: str,
-    ) -> EligibleMemberId | None:
-        ...
+    ) -> EligibleMemberId | None: ...

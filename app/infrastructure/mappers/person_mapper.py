@@ -60,9 +60,7 @@ class PersonMapper:
         # Reconstruct enums
         person_type = PersonType(model.person_type)
         secondary_person_type = (
-            PersonType(model.secondary_person_type)
-            if model.secondary_person_type
-            else None
+            PersonType(model.secondary_person_type) if model.secondary_person_type else None
         )
         status = BaseStatus(model.status)
 
@@ -78,7 +76,7 @@ class PersonMapper:
                 # Legacy support: if no employee_code, create a default one
                 # This should not happen in production but helps with migration
                 raise ValueError("Employment info missing employee_code")
-            
+
             employment_info = EmploymentInfo(
                 client_id=ClientId(emp_dict["client_id"]),
                 employee_code=employee_code,
@@ -101,8 +99,7 @@ class PersonMapper:
                 number=lic_dict["number"],
                 issuing_authority=lic_dict["issuing_authority"],
                 expiry_date=date.fromisoformat(lic_dict["expiry_date"])
-                if lic_dict.get("expiry_date")
-                and isinstance(lic_dict["expiry_date"], str)
+                if lic_dict.get("expiry_date") and isinstance(lic_dict["expiry_date"], str)
                 else lic_dict.get("expiry_date"),
             )
 
@@ -153,7 +150,7 @@ class PersonMapper:
             # Normalize empty strings to None for validation
             phone = ec_dict.get("phone")
             phone = phone if phone and phone.strip() else None
-            
+
             email_str = ec_dict.get("email")
             email = Email(email_str) if email_str and email_str.strip() else None
 
@@ -239,7 +236,9 @@ class PersonMapper:
                 "accreditation_status": pp.accreditation_status.value,
                 "panel_status": pp.panel_status.value,
                 "accreditation_authority": pp.accreditation_authority,
-                "accreditation_expiry": pp.accreditation_expiry.isoformat() if pp.accreditation_expiry else None,
+                "accreditation_expiry": pp.accreditation_expiry.isoformat()
+                if pp.accreditation_expiry
+                else None,
                 "specialties": list(pp.specialties),
                 "bio": pp.bio,
             }

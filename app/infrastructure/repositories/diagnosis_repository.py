@@ -43,7 +43,9 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         self._session = session
 
     async def list_types(self, *, active_only: bool = True) -> list[DiagnosisType]:
-        stmt = select(DiagnosisTypeModel).order_by(DiagnosisTypeModel.sort_order, DiagnosisTypeModel.name)
+        stmt = select(DiagnosisTypeModel).order_by(
+            DiagnosisTypeModel.sort_order, DiagnosisTypeModel.name
+        )
         if active_only:
             stmt = stmt.where(
                 DiagnosisTypeModel.is_active.is_(True),

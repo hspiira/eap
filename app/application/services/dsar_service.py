@@ -26,8 +26,7 @@ class DSARDataCollector(Protocol):
         *,
         tenant_id: TenantId,
         subject_person_id: PersonId,
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
 
 class DSARTombstoner(Protocol):
@@ -42,5 +41,4 @@ class DSARTombstoner(Protocol):
         *,
         tenant_id: TenantId,
         subject_person_id: PersonId,
-    ) -> str:
-        ...
+    ) -> str: ...

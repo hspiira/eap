@@ -10,7 +10,7 @@ from typing import Any
 class EntityTracker:
     """
     Tracks entity state before and after operations.
-    
+
     Usage:
         tracker = EntityTracker()
         old_entity = await repo.get_by_id(id)
@@ -23,10 +23,10 @@ class EntityTracker:
     def get_entity_snapshot(entity: Any) -> dict[str, Any]:
         """
         Create a snapshot of entity state.
-        
+
         Args:
             entity: Domain entity
-            
+
         Returns:
             Dictionary snapshot of entity state
         """
@@ -52,11 +52,11 @@ class EntityTracker:
     ) -> dict[str, tuple[Any, Any]]:
         """
         Compare two entity snapshots and return changes.
-        
+
         Args:
             old_snapshot: Previous entity snapshot
             new_snapshot: Current entity snapshot
-            
+
         Returns:
             Dictionary mapping field names to (old_value, new_value) tuples
         """

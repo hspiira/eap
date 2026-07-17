@@ -243,9 +243,7 @@ async def create_person(
             detail="Invalid person_type or missing type-specific payload",
         )
 
-    await audit_change(
-        person, audit_handler, current_user, request, tenant_id=data.tenant_id
-    )
+    await audit_change(person, audit_handler, current_user, request, tenant_id=data.tenant_id)
     return _to_person_response(person)
 
 
@@ -287,9 +285,7 @@ async def deactivate_person(
 ):
     """Deactivate a person."""
     use_case = TransitionUseCase(person_repo, "Person")
-    person = await use_case.execute(
-        person.id, PersonTransition.DEACTIVATE, reason=body.reason
-    )
+    person = await use_case.execute(person.id, PersonTransition.DEACTIVATE, reason=body.reason)
     await audit_change(person, audit_handler, current_user, request)
     return _to_person_response(person)
 
@@ -311,9 +307,7 @@ async def terminate_person(
 ):
     """Terminate a person."""
     use_case = TransitionUseCase(person_repo, "Person")
-    person = await use_case.execute(
-        person.id, PersonTransition.TERMINATE, reason=body.reason
-    )
+    person = await use_case.execute(person.id, PersonTransition.TERMINATE, reason=body.reason)
     await audit_change(person, audit_handler, current_user, request)
     return _to_person_response(person)
 
@@ -336,7 +330,7 @@ async def add_secondary_role(
     db: AsyncSession = Depends(get_db),
 ):
     """Add a secondary role to a person."""
-    
+
     if data.role == PersonType.CLIENT_EMPLOYEE:
         if not data.employment_info:
             raise HTTPException(
@@ -344,10 +338,11 @@ async def add_secondary_role(
                 detail="Employment info required for CLIENT_EMPLOYEE role",
             )
         from app.domain.value_objects.core import ClientEmployeeCode, EmploymentInfo
+
         employee_code = None
         if data.employment_info.employee_code:
             employee_code = ClientEmployeeCode.from_string(data.employment_info.employee_code)
-        
+
         info = EmploymentInfo(
             client_id=ClientId(data.employment_info.client_id),
             employee_code=employee_code,
@@ -438,9 +433,7 @@ async def update_emergency_contact(
     contact = EmergencyContact(
         name=data.emergency_contact.name,
         phone=data.emergency_contact.phone,
-        email=Email(data.emergency_contact.email)
-        if data.emergency_contact.email
-        else None,
+        email=Email(data.emergency_contact.email) if data.emergency_contact.email else None,
     )
     use_case = TransitionUseCase(person_repo, "Person")
     person = await use_case.execute(
@@ -467,10 +460,11 @@ async def update_employment_info(
 ):
     """Update employment information for a person."""
     from app.domain.value_objects.core import ClientEmployeeCode
+
     employee_code = None
     if data.employment_info.employee_code:
         employee_code = ClientEmployeeCode.from_string(data.employment_info.employee_code)
-    
+
     info = EmploymentInfo(
         client_id=ClientId(data.employment_info.client_id),
         employee_code=employee_code,
@@ -482,9 +476,7 @@ async def update_employment_info(
         end_date=data.employment_info.end_date,
     )
     use_case = TransitionUseCase(person_repo, "Person")
-    person = await use_case.execute(
-        person.id, PersonTransition.UPDATE_EMPLOYMENT_INFO, info=info
-    )
+    person = await use_case.execute(person.id, PersonTransition.UPDATE_EMPLOYMENT_INFO, info=info)
     await audit_change(person, audit_handler, current_user, request)
     return _to_person_response(person)
 
@@ -511,9 +503,7 @@ async def update_license_info(
         expiry_date=data.license_info.expiry_date,
     )
     use_case = TransitionUseCase(person_repo, "Person")
-    person = await use_case.execute(
-        person.id, PersonTransition.UPDATE_LICENSE_INFO, info=info
-    )
+    person = await use_case.execute(person.id, PersonTransition.UPDATE_LICENSE_INFO, info=info)
     await audit_change(person, audit_handler, current_user, request)
     return _to_person_response(person)
 
@@ -581,9 +571,7 @@ async def update_staff_info(
         can_view_reports=data.staff_info.can_view_reports,
     )
     use_case = TransitionUseCase(person_repo, "Person")
-    person = await use_case.execute(
-        person.id, PersonTransition.UPDATE_STAFF_INFO, info=info
-    )
+    person = await use_case.execute(person.id, PersonTransition.UPDATE_STAFF_INFO, info=info)
     await audit_change(person, audit_handler, current_user, request)
     return _to_person_response(person)
 
@@ -676,7 +664,9 @@ async def list_persons(
     current_user: TokenData = Depends(require_same_tenant),
     status: BaseStatus | None = Query(None, description="Filter by person status"),
     person_type: PersonType | None = Query(None, description="Filter by person type"),
-    client_id: str | None = Query(None, description="Filter by client ID (employment_info.client_id)"),
+    client_id: str | None = Query(
+        None, description="Filter by client ID (employment_info.client_id)"
+    ),
     search: str | None = Query(None, description="Search in user email"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),

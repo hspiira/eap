@@ -54,7 +54,9 @@ def _to_industry_response(industry: IndustryEntity) -> IndustryResponse:
         name=industry.name,
         description=industry.description,
         code=industry.code,
-        parent_industry_id=industry.parent_industry_id.value if industry.parent_industry_id else None,
+        parent_industry_id=industry.parent_industry_id.value
+        if industry.parent_industry_id
+        else None,
         is_active=industry.is_active(),
         created_at=industry.created_at.isoformat(),
         updated_at=industry.updated_at.isoformat(),
@@ -240,9 +242,7 @@ async def get_industry_children(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child industries for a parent industry."""
-    children = await industry_repo.get_children(
-        IndustryId(industry_id), TenantId(tenant_id)
-    )
+    children = await industry_repo.get_children(IndustryId(industry_id), TenantId(tenant_id))
     return IndustryListResponse(
         items=[_to_industry_response(c) for c in children],
         total=len(children),

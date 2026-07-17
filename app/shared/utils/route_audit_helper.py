@@ -25,12 +25,12 @@ async def audit_entity_operation(
 ) -> None:
     """
     Convenience function to audit an entity operation.
-    
+
     This handles:
     - Converting string IDs to value objects
     - Processing domain events
     - Extracting context from request
-    
+
     Usage in routes:
         await audit_entity_operation(
             entity=tenant,
@@ -41,7 +41,7 @@ async def audit_entity_operation(
             request=request,
             db=db,
         )
-    
+
     Args:
         entity: Entity that was modified
         audit_handler: Audit event handler
@@ -53,7 +53,7 @@ async def audit_entity_operation(
     """
     if isinstance(tenant_id, str):
         tenant_id = TenantId(tenant_id)
-    
+
     if user_id is not None and isinstance(user_id, str):
         user_id = UserId(user_id)
 
@@ -65,7 +65,6 @@ async def audit_entity_operation(
         old_entity=old_entity,
         request=request,
     )
-
 
 
 async def audit_change(

@@ -62,9 +62,7 @@ class TestConsentLifecycle:
 
     def test_other_purpose_requires_detail(self):
         with pytest.raises(DomainError):
-            _consent(
-                purpose=ConsentPurpose.OTHER, purpose_other_detail=None
-            )
+            _consent(purpose=ConsentPurpose.OTHER, purpose_other_detail=None)
 
     def test_grant_then_active(self):
         c = _consent()

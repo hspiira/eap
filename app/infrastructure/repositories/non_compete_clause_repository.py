@@ -24,9 +24,7 @@ class NonCompeteClauseRepositoryImpl(NonCompeteClauseRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: NonCompeteClauseId
-    ) -> NonCompeteClauseEntity | None:
+    async def get_by_id(self, entity_id: NonCompeteClauseId) -> NonCompeteClauseEntity | None:
         row = await self._session.get(NonCompeteClauseModel, entity_id.value)
         return NonCompeteClauseMapper.to_entity(row) if row else None
 

@@ -34,6 +34,7 @@ class TenantCode:
     - abbreviation-based (not full legal names)
     - immutable once activated
     """
+
     value: str
 
     def __post_init__(self):
@@ -51,6 +52,7 @@ class TenantCode:
                 + "(e.g., 'acme', 'acme-corp', 'abc123')"
             )
 
+
 # === Identity Value Objects ===
 #
 # Each entity has its own ID subclass so the type checker can flag
@@ -67,6 +69,7 @@ class Id:
     - 1..25 characters
     - immutable
     """
+
     value: str
 
     def __post_init__(self):
@@ -343,6 +346,7 @@ class DataSharingRegisterEntryId(Id):
 class DPOContactId(Id):
     pass
 
+
 # === Domain Value Objects ===
 @dataclass(frozen=True)
 class Email:
@@ -354,57 +358,75 @@ class Email:
     - email address format
     - immutable once activated
     """
+
     value: str
+
     def __post_init__(self):
         if not self.value or len(self.value) > 255:
             raise ValueError("Email must be less than 255 characters")
         if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", self.value):
             raise ValueError("Invalid email address format")
 
+
 @dataclass(frozen=True)
 class Money:
     amount: decimal.Decimal
     currency: str
+
     def __post_init__(self):
         if self.amount < 0:
             raise ValueError("Amount must be a positive number")
         if not self.currency or len(self.currency) != 3:
             raise ValueError("Currency must be a 3-letter ISO code")
-    def add(self, other: 'Money') -> 'Money':
+
+    def add(self, other: "Money") -> "Money":
         if self.currency != other.currency:
             raise ValueError("Currencies must be the same")
         return Money(self.amount + other.amount, self.currency)
-    def subtract(self, other: 'Money') -> 'Money':
+
+    def subtract(self, other: "Money") -> "Money":
         if self.currency != other.currency:
             raise ValueError("Currencies must be the same")
         return Money(self.amount - other.amount, self.currency)
-    def multiply(self, factor: decimal.Decimal) -> 'Money':
+
+    def multiply(self, factor: decimal.Decimal) -> "Money":
         return Money(self.amount * factor, self.currency)
-    def divide(self, divisor: decimal.Decimal) -> 'Money':
+
+    def divide(self, divisor: decimal.Decimal) -> "Money":
         if divisor == 0:
             raise ValueError("Division by zero")
         return Money(self.amount / divisor, self.currency)
+
 
 @dataclass(frozen=True)
 class DateRange:
     start_date: datetime
     end_date: datetime
+
     def __post_init__(self):
         if self.start_date > self.end_date:
             raise ValueError("Start date must be before end date")
+
     @property
     def days(self) -> int:
         return (self.end_date - self.start_date).days
+
     @property
     def months(self) -> int:
-        return (self.end_date.year - self.start_date.year) * 12 + (self.end_date.month - self.start_date.month)
+        return (self.end_date.year - self.start_date.year) * 12 + (
+            self.end_date.month - self.start_date.month
+        )
+
     @property
     def years(self) -> int:
         return self.end_date.year - self.start_date.year
+
     def contains(self, date: datetime) -> bool:
         return self.start_date <= date <= self.end_date
-    def extend_to(self, new_end: datetime) -> 'DateRange':
+
+    def extend_to(self, new_end: datetime) -> "DateRange":
         return DateRange(self.start_date, new_end)
+
 
 @dataclass(frozen=True)
 class TenantSettings:
@@ -417,28 +439,34 @@ class TenantSettings:
     - features_enabled: Enabled features
     - custom_branding: Whether custom branding is enabled
     """
+
     max_users: int
     max_clients: int
     features_enabled: tuple[str, ...]
-    custom_branding: bool=False
+    custom_branding: bool = False
+
     def __post_init__(self) -> None:
         if self.max_users < 0:
             raise ValueError("Max users must be greater than zero")
         if self.max_clients < 0:
             raise ValueError("Max clients must be greater than zero")
+
     def allows_more_users(self, current_count: int) -> bool:
         return current_count < self.max_users
 
     def allows_more_clients(self, current_count: int) -> bool:
         return current_count < self.max_clients
 
+
 @dataclass(frozen=True)
 class ContactInfo:
     phone: str | None = None
     email: Email | None = None
     address: str | None = None
+
     def has_any_contact(self) -> bool:
         return bool(self.phone or self.email or self.address)
+
 
 @dataclass(frozen=True)
 class Address:
@@ -446,15 +474,18 @@ class Address:
     city: str
     country: str
     postal_code: str | None = None
+
     def __post_init__(self):
         if not self.street or not self.city or not self.country:
             raise ValueError("Address requires street, city, country")
+
 
 @dataclass(frozen=True)
 class EmergencyContact:
     name: str
     phone: str | None = None
     email: Email | None = None
+
     def __post_init__(self):
         if not self.name:
             raise ValueError("Emergency contact name required")
@@ -465,14 +496,17 @@ class EmergencyContact:
         if not phone_provided and not email_provided:
             raise ValueError("Emergency contact needs phone or email")
 
+
 @dataclass(frozen=True)
 class LicenseInfo:
     number: str
     issuing_authority: str
     expiry_date: date | None = None
+
     def __post_init__(self):
         if not self.number or not self.issuing_authority:
             raise ValueError("License number and authority required")
+
     def is_valid(self) -> bool:
         if not self.expiry_date:
             return True
@@ -502,12 +536,13 @@ class ProviderProfile:
             return False
         return True
 
+
 @dataclass(frozen=True)
 class ClientEmployeeCode:
     client_code: str
     family_code: str
     member_code: str
-    
+
     def __post_init__(self):
         if not self.client_code or len(self.client_code) < 3 or len(self.client_code) > 5:
             raise ValueError("Client code must be 3-5 characters")
@@ -519,20 +554,19 @@ class ClientEmployeeCode:
             raise ValueError("Family code must be numeric")
         if not self.member_code.isdigit():
             raise ValueError("Member code must be numeric")
-    
+
     def __str__(self) -> str:
         return f"{self.client_code}-{self.family_code}-{self.member_code}"
-    
+
     @classmethod
-    def from_string(cls, code_str: str) -> 'ClientEmployeeCode':
-        parts = code_str.split('-')
+    def from_string(cls, code_str: str) -> "ClientEmployeeCode":
+        parts = code_str.split("-")
         if len(parts) != 3:
-            raise ValueError(f"Invalid code format: {code_str}. Expected format: CLIENT-FAMILY-MEMBER")
-        return cls(
-            client_code=parts[0],
-            family_code=parts[1],
-            member_code=parts[2]
-        )
+            raise ValueError(
+                f"Invalid code format: {code_str}. Expected format: CLIENT-FAMILY-MEMBER"
+            )
+        return cls(client_code=parts[0], family_code=parts[1], member_code=parts[2])
+
 
 @dataclass(frozen=True)
 class EmploymentInfo:
@@ -544,11 +578,14 @@ class EmploymentInfo:
     department: str | None = None
     employee_id: str | None = None
     end_date: date | None = None
+
     def __post_init__(self):
         if self.end_date and self.end_date < self.start_date:
             raise ValueError("End date must be after start date")
+
     def is_active(self) -> bool:
         return self.status == WorkStatus.ACTIVE
+
 
 @dataclass(frozen=True)
 class StaffInfo:
@@ -558,6 +595,7 @@ class StaffInfo:
     can_manage_clients: bool = False
     can_manage_services: bool = False
     can_view_reports: bool = False
+
 
 @dataclass(frozen=True)
 class DependentInfo:

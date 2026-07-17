@@ -314,9 +314,7 @@ class TestClientArchive:
         with pytest.raises(DomainError, match="Cannot archive deleted client"):
             deleted_client.archive()
 
-    def test_archive_already_archived_raises_error(
-        self, client_id, tenant_id, contact_info, now
-    ):
+    def test_archive_already_archived_raises_error(self, client_id, tenant_id, contact_info, now):
         """Test that archiving already archived client raises DomainError."""
         archived_client = ClientEntity(
             id=client_id,

@@ -16,6 +16,7 @@ from app.domain.enums import AuditActionType
 
 # === Value Object Schemas ===
 
+
 class FieldChangeSchema(BaseModel):
     """Field change schema."""
 
@@ -27,6 +28,7 @@ class FieldChangeSchema(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class EntityChangeResponse(BaseModel):
     """Response schema for entity change."""

@@ -59,11 +59,7 @@ def main(argv: list[str]) -> int:
     if not isinstance(diagnostics, list):
         print("Unexpected pyright JSON shape", file=sys.stderr)
         return 2
-    errors = [
-        d
-        for d in diagnostics
-        if isinstance(d, dict) and d.get("severity") == "error"
-    ]
+    errors = [d for d in diagnostics if isinstance(d, dict) and d.get("severity") == "error"]
     report_only = argv[1] == "--report-only"
     repo_root = Path.cwd().resolve()
 
@@ -79,9 +75,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     gated_roots = [(Path.cwd() / arg).resolve() for arg in argv[1:]]
-    gated_errors = [
-        d for d in errors if _is_under_root(str(d.get("file", "")), gated_roots)
-    ]
+    gated_errors = [d for d in errors if _is_under_root(str(d.get("file", "")), gated_roots)]
     if gated_errors:
         print(
             f"Pyright gate FAILED: {len(gated_errors)} errors under "
@@ -96,14 +90,9 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
         if len(gated_errors) > 50:
-            print(
-                f"  … {len(gated_errors) - 50} more", file=sys.stderr
-            )
+            print(f"  … {len(gated_errors) - 50} more", file=sys.stderr)
         return 1
-    print(
-        "Pyright gate OK for "
-        + ", ".join(str(r.relative_to(repo_root)) for r in gated_roots)
-    )
+    print("Pyright gate OK for " + ", ".join(str(r.relative_to(repo_root)) for r in gated_roots))
     return 0
 
 

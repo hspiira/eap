@@ -19,7 +19,9 @@ from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel, ClientId], ClientRepository):
+class ClientRepositoryImpl(
+    TenantScopedRepositoryImpl[ClientEntity, ClientModel, ClientId], ClientRepository
+):
     """
     SQLAlchemy implementation of ClientRepository.
 
@@ -44,9 +46,7 @@ class ClientRepositoryImpl(TenantScopedRepositoryImpl[ClientEntity, ClientModel,
 
     # Domain-specific queries (not in base class)
 
-    async def get_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ClientEntity | None:
+    async def get_by_name(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
         """Get client by name within tenant, excluding soft-deleted clients."""
         stmt = select(ClientModel).where(
             ClientModel.tenant_id == tenant_id.value,

@@ -23,9 +23,7 @@ def _deliverable_to_dict(d: Deliverable) -> dict:
         "description": d.description,
         "due_date": d.due_date.isoformat() if d.due_date else None,
         "status": d.status.value,
-        "delivered_at": ensure_utc(d.delivered_at).isoformat()
-        if d.delivered_at
-        else None,
+        "delivered_at": ensure_utc(d.delivered_at).isoformat() if d.delivered_at else None,
     }
 
 
@@ -37,9 +35,7 @@ def _deliverable_from_dict(raw: dict) -> Deliverable:
         description=raw.get("description"),
         due_date=date.fromisoformat(raw["due_date"]) if raw.get("due_date") else None,
         status=DeliverableStatus(raw["status"]),
-        delivered_at=ensure_utc(datetime.fromisoformat(delivered_at))
-        if delivered_at
-        else None,
+        delivered_at=ensure_utc(datetime.fromisoformat(delivered_at)) if delivered_at else None,
     )
 
 
@@ -78,15 +74,9 @@ class EngagementMapper:
             deliverables=[_deliverable_from_dict(d) for d in (model.deliverables or [])],
             hours_log=[_hours_from_dict(h) for h in (model.hours_log or [])],
             created_by=UserId(model.created_by),
-            activated_at=ensure_utc(model.activated_at)
-            if model.activated_at
-            else None,
-            delivered_at=ensure_utc(model.delivered_at)
-            if model.delivered_at
-            else None,
-            invoiced_at=ensure_utc(model.invoiced_at)
-            if model.invoiced_at
-            else None,
+            activated_at=ensure_utc(model.activated_at) if model.activated_at else None,
+            delivered_at=ensure_utc(model.delivered_at) if model.delivered_at else None,
+            invoiced_at=ensure_utc(model.invoiced_at) if model.invoiced_at else None,
             closed_at=ensure_utc(model.closed_at) if model.closed_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -108,15 +98,9 @@ class EngagementMapper:
             deliverables=[_deliverable_to_dict(d) for d in entity.deliverables],
             hours_log=[_hours_to_dict(h) for h in entity.hours_log],
             created_by=entity.created_by.value,
-            activated_at=ensure_utc(entity.activated_at)
-            if entity.activated_at
-            else None,
-            delivered_at=ensure_utc(entity.delivered_at)
-            if entity.delivered_at
-            else None,
-            invoiced_at=ensure_utc(entity.invoiced_at)
-            if entity.invoiced_at
-            else None,
+            activated_at=ensure_utc(entity.activated_at) if entity.activated_at else None,
+            delivered_at=ensure_utc(entity.delivered_at) if entity.delivered_at else None,
+            invoiced_at=ensure_utc(entity.invoiced_at) if entity.invoiced_at else None,
             closed_at=ensure_utc(entity.closed_at) if entity.closed_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),

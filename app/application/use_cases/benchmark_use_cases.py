@@ -140,9 +140,7 @@ class GetCrossTenantBenchmarkUseCase:
             from_date=from_date,
             to_date=to_date,
         )
-        contributors = {
-            tid: v for tid, v in per_tenant.items() if v is not None
-        }
+        contributors = {tid: v for tid, v in per_tenant.items() if v is not None}
         contributor_count = len(contributors)
         if contributor_count == 0:
             mean: Any = None

@@ -53,8 +53,7 @@ def enforce_k_anonymity(
             floor=floor,
             suppressed=True,
             suppression_reason=(
-                f"k-anonymity floor not met: {contributor_count} contributor(s) "
-                f"< {floor} required"
+                f"k-anonymity floor not met: {contributor_count} contributor(s) < {floor} required"
             ),
             value=None,
         )

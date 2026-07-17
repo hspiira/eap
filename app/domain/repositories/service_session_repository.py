@@ -70,7 +70,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
             List of ServiceSessionEntity for the service
         """
         pass
-    
+
     @abstractmethod
     async def list_all(
         self,

@@ -30,10 +30,10 @@ OptionalSanitizedStr = Annotated[str | None, BeforeValidator(_sanitize_html)]
 class BaseEntityResponse(BaseModel):
     """
     Base response schema for entity responses.
-    
+
     Provides common fields that all entities have.
     """
-    
+
     id: str = Field(..., description="Unique identifier")
     created_at: datetime | None = Field(None, description="Creation timestamp")
     updated_at: datetime | None = Field(None, description="Last update timestamp")
@@ -43,13 +43,13 @@ class TenantScopedResponse(BaseEntityResponse):
     """
     Base response for tenant-scoped entities.
     """
-    
+
     tenant_id: str = Field(..., description="Tenant identifier")
 
 
 class StatusResponse(BaseModel):
     """Generic status response for lifecycle operations."""
-    
+
     id: str = Field(..., description="Entity identifier")
     status: str = Field(..., description="Current status")
     updated_at: datetime = Field(..., description="When status was updated")

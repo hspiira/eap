@@ -46,7 +46,7 @@ class ContractEntity:
     is_auto_renew: bool
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields (with defaults)
     last_billing_date: date | None = None
     next_billing_date: date | None = None
@@ -69,20 +69,24 @@ class ContractEntity:
     @property
     def pricing_model(self) -> PricingModel | None:
         return self.pricing.model if self.pricing else None
-    
+
     def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
         if new_end_date <= self.period.end_date.date():
             raise DomainError("New end date must be after current")
         # Convert date to datetime at end of day for the new period
-        new_end_datetime = datetime.combine(new_end_date, time.max).replace(tzinfo=self.period.end_date.tzinfo)
+        new_end_datetime = datetime.combine(new_end_date, time.max).replace(
+            tzinfo=self.period.end_date.tzinfo
+        )
         self.period = DateRange(self.period.start_date, new_end_datetime)
         if new_rate:
             self.billing_rate = new_rate
         self.status = ContractStatus.RENEWED
         now = utc_now()
         self.updated_at = now
-        self.events.append(ContractRenewed(occurred_at=now, contract_id=self.id, new_end_date=new_end_datetime))
-    
+        self.events.append(
+            ContractRenewed(occurred_at=now, contract_id=self.id, new_end_date=new_end_datetime)
+        )
+
     def activate(self) -> None:
         """Activate a draft or pending contract"""
         if self.deleted_at:
@@ -95,7 +99,7 @@ class ContractEntity:
             raise DomainError("Cannot activate expired contract")
         self.status = ContractStatus.ACTIVE
         self.updated_at = utc_now()
-    
+
     def sign(self, signed_by: str) -> None:
         """Sign a contract"""
         if not signed_by:
@@ -112,7 +116,7 @@ class ContractEntity:
         # Auto-activate when signed
         if self.status in (ContractStatus.DRAFT, ContractStatus.PENDING):
             self.status = ContractStatus.ACTIVE
-    
+
     def terminate(self, reason: str) -> None:
         """Terminate a contract"""
         if not reason:
@@ -127,7 +131,7 @@ class ContractEntity:
         self.updated_at = now
         self.deleted_at = now
         self.events.append(ContractTerminated(occurred_at=now, contract_id=self.id, reason=reason))
-    
+
     def archive(self) -> None:
         """Archive a contract (mark as expired if past end date)"""
         if self.deleted_at:
@@ -136,7 +140,7 @@ class ContractEntity:
         if self.period.end_date < utc_now() and self.status == ContractStatus.ACTIVE:
             self.status = ContractStatus.EXPIRED
         self.updated_at = utc_now()
-    
+
     def restore(self) -> None:
         """Restore a terminated or expired contract"""
         # Check if contract is already active and not deleted
@@ -151,7 +155,7 @@ class ContractEntity:
                 self.status = ContractStatus.ACTIVE
                 self.termination_reason = None
         self.updated_at = utc_now()
-    
+
     def update_billing_rate(self, new_rate: Money) -> None:
         """Update billing rate"""
         if self.deleted_at:
@@ -160,7 +164,7 @@ class ContractEntity:
             raise DomainError("Cannot update billing rate for terminated contract")
         self.billing_rate = new_rate
         self.updated_at = utc_now()
-    
+
     def update_payment_frequency(self, frequency: PaymentFrequency) -> None:
         """Update payment frequency"""
         if self.deleted_at:
@@ -169,14 +173,14 @@ class ContractEntity:
             raise DomainError("Cannot update payment frequency for terminated contract")
         self.payment_frequency = frequency
         self.updated_at = utc_now()
-    
+
     def update_payment_status(self, payment_status: PaymentStatus) -> None:
         """Update payment status"""
         if self.deleted_at:
             raise DomainError("Cannot update payment status for deleted contract")
         self.payment_status = payment_status
         self.updated_at = utc_now()
-    
+
     def update_auto_renew(self, is_auto_renew: bool) -> None:
         """Update auto-renew setting"""
         if self.deleted_at:
@@ -185,13 +189,13 @@ class ContractEntity:
             raise DomainError("Cannot update auto-renew for terminated contract")
         self.is_auto_renew = is_auto_renew
         self.updated_at = utc_now()
-    
+
     def is_active(self) -> bool:
         """Check if contract is active. Returns True for ACTIVE or RENEWED status."""
         if self.status not in (ContractStatus.ACTIVE, ContractStatus.RENEWED):
             return False
         return self.period.contains(utc_now())
-    
+
     def days_remaining(self) -> int:
         """Returns days remaining in contract. Negative if expired."""
         return (self.period.end_date - utc_now()).days

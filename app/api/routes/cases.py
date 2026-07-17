@@ -59,12 +59,8 @@ def _to_response(c: Case) -> CaseResponse:
         assigned_counsellor_id=(
             c.assigned_counsellor_id.value if c.assigned_counsellor_id else None
         ),
-        authorization_id=(
-            c.authorization_id.value if c.authorization_id else None
-        ),
-        referred_by_user_id=(
-            c.referred_by_user_id.value if c.referred_by_user_id else None
-        ),
+        authorization_id=(c.authorization_id.value if c.authorization_id else None),
+        referred_by_user_id=(c.referred_by_user_id.value if c.referred_by_user_id else None),
         referral_notes=c.referral_notes,
         closed_at=c.closed_at,
         closure_reason=c.closure_reason,
@@ -227,8 +223,6 @@ async def refer_out_case(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    case = await ReferOutCaseUseCase(case_repo).execute(
-        case_id=CaseId(case_id), notes=data.notes
-    )
+    case = await ReferOutCaseUseCase(case_repo).execute(case_id=CaseId(case_id), notes=data.notes)
     await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)

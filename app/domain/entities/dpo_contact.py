@@ -37,23 +37,14 @@ class DPOContact:
     def __post_init__(self) -> None:
         if not self.full_name:
             raise DomainError("DPOContact requires a full_name")
-        if (
-            self.effective_until is not None
-            and self.effective_until < self.effective_from
-        ):
-            raise DomainError(
-                "effective_until must be on or after effective_from"
-            )
+        if self.effective_until is not None and self.effective_until < self.effective_from:
+            raise DomainError("effective_until must be on or after effective_from")
 
-    def archive(
-        self, *, ending_on: date, now: datetime | None = None
-    ) -> None:
+    def archive(self, *, ending_on: date, now: datetime | None = None) -> None:
         if self.effective_until is not None:
             raise DomainError("DPOContact already archived")
         if ending_on < self.effective_from:
-            raise DomainError(
-                "ending_on must be on or after effective_from"
-            )
+            raise DomainError("ending_on must be on or after effective_from")
         self.effective_until = ending_on
         from app.shared.utils.datetime import utc_now as _now
 

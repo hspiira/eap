@@ -34,9 +34,7 @@ async def create_tenant(client: AsyncClient, data: dict) -> dict:
 class TestCreateTenant:
     """Tests for POST /tenants/ endpoint."""
 
-    async def test_create_tenant_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_create_tenant_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test successful tenant creation with all fields."""
         response = await client.post("/tenants/", json=sample_tenant_data)
 
@@ -51,8 +49,13 @@ class TestCreateTenant:
         assert "id" in data
         assert data["settings"]["max_users"] == sample_tenant_data["settings"]["max_users"]
         assert data["settings"]["max_clients"] == sample_tenant_data["settings"]["max_clients"]
-        assert data["settings"]["features_enabled"] == sample_tenant_data["settings"]["features_enabled"]
-        assert data["settings"]["custom_branding"] == sample_tenant_data["settings"]["custom_branding"]
+        assert (
+            data["settings"]["features_enabled"]
+            == sample_tenant_data["settings"]["features_enabled"]
+        )
+        assert (
+            data["settings"]["custom_branding"] == sample_tenant_data["settings"]["custom_branding"]
+        )
 
     async def test_create_tenant_minimal(
         self, client: AsyncClient, sample_tenant_data_minimal: dict
@@ -162,9 +165,7 @@ class TestCreateTenant:
 class TestGetTenant:
     """Tests for GET /tenants/{tenant_id} endpoint."""
 
-    async def test_get_tenant_by_id_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_get_tenant_by_id_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test getting a tenant by ID."""
         # Create tenant
         created = await create_tenant(client, sample_tenant_data)
@@ -190,9 +191,7 @@ class TestGetTenant:
 class TestGetTenantByCode:
     """Tests for GET /tenants/code/{code} endpoint."""
 
-    async def test_get_tenant_by_code_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_get_tenant_by_code_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test getting a tenant by code."""
         # Create tenant
         created = await create_tenant(client, sample_tenant_data)
@@ -328,10 +327,14 @@ class TestListTenants:
             json={"name": "Free Tenant", "code": "free-tier", "subscription_tier": "Free"},
         )
         assert free_resp.status_code == 201
-        
+
         enterprise_resp = await client.post(
             "/tenants/",
-            json={"name": "Enterprise Tenant", "code": "ent-tier", "subscription_tier": "Enterprise"},
+            json={
+                "name": "Enterprise Tenant",
+                "code": "ent-tier",
+                "subscription_tier": "Enterprise",
+            },
         )
         assert enterprise_resp.status_code == 201
 
@@ -386,9 +389,7 @@ class TestListTenants:
 class TestUpdateTenant:
     """Tests for PATCH /tenants/{tenant_id} endpoint."""
 
-    async def test_update_tenant_name(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_update_tenant_name(self, client: AsyncClient, sample_tenant_data: dict):
         """Test updating tenant name."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -431,9 +432,7 @@ class TestUpdateTenant:
 class TestUpdateTenantSettings:
     """Tests for PATCH /tenants/{tenant_id}/settings endpoint."""
 
-    async def test_update_settings_all_fields(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_update_settings_all_fields(self, client: AsyncClient, sample_tenant_data: dict):
         """Test updating all tenant settings."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -457,9 +456,7 @@ class TestUpdateTenantSettings:
         assert data["settings"]["features_enabled"] == ["new_feature1", "new_feature2"]
         assert data["settings"]["custom_branding"] is True
 
-    async def test_update_settings_partial(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_update_settings_partial(self, client: AsyncClient, sample_tenant_data: dict):
         """Test partial settings update."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -494,9 +491,7 @@ class TestUpdateTenantSettings:
 class TestActivateTenant:
     """Tests for POST /tenants/{tenant_id}/activate endpoint."""
 
-    async def test_activate_suspended_tenant(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_activate_suspended_tenant(self, client: AsyncClient, sample_tenant_data: dict):
         """Test activating a suspended tenant."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -556,9 +551,7 @@ class TestActivateTenant:
 class TestSuspendTenant:
     """Tests for POST /tenants/{tenant_id}/suspend endpoint."""
 
-    async def test_suspend_tenant_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_suspend_tenant_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test suspending an active tenant."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -617,9 +610,7 @@ class TestSuspendTenant:
 
         assert response.status_code == 404
 
-    async def test_suspend_requires_reason(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_suspend_requires_reason(self, client: AsyncClient, sample_tenant_data: dict):
         """Test that suspension requires a reason."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -644,9 +635,7 @@ class TestSuspendTenant:
 class TestTerminateTenant:
     """Tests for POST /tenants/{tenant_id}/terminate endpoint."""
 
-    async def test_terminate_tenant_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_terminate_tenant_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test terminating an active tenant."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -682,9 +671,7 @@ class TestTerminateTenant:
 
         assert response.status_code == 404
 
-    async def test_terminate_requires_reason(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_terminate_requires_reason(self, client: AsyncClient, sample_tenant_data: dict):
         """Test that termination requires a reason."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -709,9 +696,7 @@ class TestTerminateTenant:
 class TestArchiveTenant:
     """Tests for POST /tenants/{tenant_id}/archive endpoint."""
 
-    async def test_archive_tenant_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_archive_tenant_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test archiving an active tenant."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -768,9 +753,7 @@ class TestArchiveTenant:
 class TestRestoreTenant:
     """Tests for POST /tenants/{tenant_id}/restore endpoint."""
 
-    async def test_restore_archived_tenant(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_restore_archived_tenant(self, client: AsyncClient, sample_tenant_data: dict):
         """Test restoring an archived tenant."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -786,9 +769,7 @@ class TestRestoreTenant:
         assert data["status"] == "Active"
         assert data["is_active"] is True
 
-    async def test_restore_active_tenant_fails(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_restore_active_tenant_fails(self, client: AsyncClient, sample_tenant_data: dict):
         """Test that restoring an already active tenant fails."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -797,7 +778,10 @@ class TestRestoreTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "does not need restoration" in response.json()["detail"].lower() or "already active" in response.json()["detail"].lower()
+        assert (
+            "does not need restoration" in response.json()["detail"].lower()
+            or "already active" in response.json()["detail"].lower()
+        )
 
     async def test_restore_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -832,9 +816,7 @@ class TestRestoreTenant:
 class TestUpdateSubscription:
     """Tests for POST /tenants/{tenant_id}/subscription endpoint."""
 
-    async def test_update_subscription_tier(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_update_subscription_tier(self, client: AsyncClient, sample_tenant_data: dict):
         """Test updating subscription tier."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -929,9 +911,7 @@ class TestCheckCodeAvailability:
         assert data["available"] is True
         assert data["code"] == "new-code"
 
-    async def test_check_taken_code(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_check_taken_code(self, client: AsyncClient, sample_tenant_data: dict):
         """Test checking availability of used code."""
         await create_tenant(client, sample_tenant_data)
 
@@ -946,9 +926,7 @@ class TestCheckCodeAvailability:
 class TestGetTenantStats:
     """Tests for GET /tenants/{tenant_id}/stats endpoint."""
 
-    async def test_get_tenant_stats_success(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_get_tenant_stats_success(self, client: AsyncClient, sample_tenant_data: dict):
         """Test getting tenant statistics."""
         created = await create_tenant(client, sample_tenant_data)
         tenant_id = created["id"]
@@ -964,7 +942,11 @@ class TestGetTenantStats:
         assert data["max_users"] == sample_tenant_data["settings"]["max_users"]
         assert data["max_clients"] == sample_tenant_data["settings"]["max_clients"]
         # User quota usage should reflect the admin user
-        expected_user_usage = (1 / sample_tenant_data["settings"]["max_users"] * 100) if sample_tenant_data["settings"]["max_users"] > 0 else 0.0
+        expected_user_usage = (
+            (1 / sample_tenant_data["settings"]["max_users"] * 100)
+            if sample_tenant_data["settings"]["max_users"] > 0
+            else 0.0
+        )
         assert abs(data["user_quota_usage"] - expected_user_usage) < 0.01
         assert data["client_quota_usage"] == 0.0
         assert data["subscription_tier"] == sample_tenant_data["subscription_tier"]
@@ -1021,9 +1003,7 @@ class TestTenantLifecycleFlow:
         restored = await client.post(f"/tenants/{tenant_id}/restore")
         assert restored.json()["status"] == "Active"
 
-    async def test_termination_is_final(
-        self, client: AsyncClient, sample_tenant_data: dict
-    ):
+    async def test_termination_is_final(self, client: AsyncClient, sample_tenant_data: dict):
         """Test that termination is a final state - tenant becomes inaccessible (soft-deleted)."""
         # Create and terminate
         created = await create_tenant(client, sample_tenant_data)
@@ -1072,9 +1052,7 @@ class TestTenantLifecycleFlow:
         get_response = await client.get(f"/tenants/{tenant_id}")
         assert get_response.status_code == 404
 
-    async def test_crud_operations_integration(
-        self, client: AsyncClient
-    ):
+    async def test_crud_operations_integration(self, client: AsyncClient):
         """Test complete CRUD flow."""
         # Create
         create_response = await client.post(

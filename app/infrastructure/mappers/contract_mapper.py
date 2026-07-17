@@ -52,8 +52,7 @@ def _pricing_from_dict(data: dict | None) -> ContractPricing | None:
     if rate_card_data:
         rate_card = RateCard(
             rates=tuple(
-                (entry["service_code"], _money_from_dict(entry["rate"]))
-                for entry in rate_card_data
+                (entry["service_code"], _money_from_dict(entry["rate"])) for entry in rate_card_data
             ),
         )
     tiers_data = data.get("tiers") or []
@@ -71,9 +70,7 @@ def _pricing_from_dict(data: dict | None) -> ContractPricing | None:
         deposit_amount=_money_from_dict(data.get("deposit_amount")),
         admin_fee_floor=_money_from_dict(data.get("admin_fee_floor")),
         rate_card=rate_card,
-        parent_contract_id=ContractId(parent_contract_id)
-        if parent_contract_id
-        else None,
+        parent_contract_id=ContractId(parent_contract_id) if parent_contract_id else None,
         tiers=tiers,
     )
 
@@ -132,16 +129,14 @@ class ContractMapper:
         )
 
         # Reconstruct Money from JSON
-        billing_dict = (
-            model.billing_rate if isinstance(model.billing_rate, dict) else {}
-        )
+        billing_dict = model.billing_rate if isinstance(model.billing_rate, dict) else {}
         amount_value = billing_dict.get("amount")
         # Convert string to Decimal if needed
         if isinstance(amount_value, str):
             amount = decimal.Decimal(amount_value)
         else:
             amount = decimal.Decimal(str(amount_value)) if amount_value else decimal.Decimal("0")
-        
+
         billing_rate = Money(
             amount=amount,
             currency=billing_dict["currency"],

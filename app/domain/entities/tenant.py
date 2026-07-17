@@ -49,7 +49,7 @@ class TenantEntity:
             self.deleted_at = None
         self.updated_at = utc_now()
         self.events.append(TenantActivated(occurred_at=utc_now(), tenant_id=self.id))
-    
+
     def suspend(self, reason: str) -> None:
         """Suspend tenant (e.g., payment issues)"""
         if not reason:
@@ -61,7 +61,7 @@ class TenantEntity:
         self.status = TenantStatus.SUSPENDED
         self.updated_at = utc_now()
         self.events.append(TenantSuspended(occurred_at=utc_now(), tenant_id=self.id, reason=reason))
-    
+
     def terminate(self, reason: str) -> None:
         """Permanently terminate tenant"""
         if not reason:
@@ -71,8 +71,10 @@ class TenantEntity:
         self.status = TenantStatus.TERMINATED
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
-        self.events.append(TenantTerminated(occurred_at=utc_now(), tenant_id=self.id, reason=reason))
-    
+        self.events.append(
+            TenantTerminated(occurred_at=utc_now(), tenant_id=self.id, reason=reason)
+        )
+
     def update_settings(
         self,
         *,
@@ -88,11 +90,15 @@ class TenantEntity:
         self.settings = TenantSettings(
             max_users=max_users if max_users is not None else current.max_users,
             max_clients=max_clients if max_clients is not None else current.max_clients,
-            features_enabled=features_enabled if features_enabled is not None else current.features_enabled,
-            custom_branding=custom_branding if custom_branding is not None else current.custom_branding,
+            features_enabled=features_enabled
+            if features_enabled is not None
+            else current.features_enabled,
+            custom_branding=custom_branding
+            if custom_branding is not None
+            else current.custom_branding,
         )
         self.updated_at = utc_now()
-    
+
     def update_name(self, name: str) -> None:
         """Update tenant name"""
         if not name:
@@ -101,14 +107,14 @@ class TenantEntity:
             raise DomainError("Cannot update name for terminated tenant")
         self.name = name
         self.updated_at = utc_now()
-    
+
     def update_subscription_tier(self, tier: SubscriptionTier) -> None:
         """Update subscription tier"""
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot update subscription tier for terminated tenant")
         self.subscription_tier = tier
         self.updated_at = utc_now()
-    
+
     def archive(self) -> None:
         """Archive tenant (softer than terminate)"""
         if self.status == TenantStatus.TERMINATED:
@@ -117,16 +123,19 @@ class TenantEntity:
             raise DomainError("Tenant is already archived")
         self.status = TenantStatus.ARCHIVED
         self.updated_at = utc_now()
-    
+
     def restore(self) -> None:
         """Restore archived or soft-deleted tenant.
-        
+
         Only restores from ARCHIVED to ACTIVE. Terminated tenants (TERMINATED status)
         cannot be restored as termination is permanent.
         """
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot restore terminated tenant")
-        if self.status not in (TenantStatus.ARCHIVED, TenantStatus.ACTIVE) and self.deleted_at is None:
+        if (
+            self.status not in (TenantStatus.ARCHIVED, TenantStatus.ACTIVE)
+            and self.deleted_at is None
+        ):
             raise DomainError("Tenant is not archived or deleted")
         if self.status == TenantStatus.ACTIVE and not self.deleted_at:
             raise DomainError("Tenant is already active and does not need restoration")
@@ -135,11 +144,11 @@ class TenantEntity:
         if self.status == TenantStatus.ARCHIVED:
             self.status = TenantStatus.ACTIVE
         self.updated_at = utc_now()
-    
+
     def is_active(self) -> bool:
         """Check if tenant is operational"""
         return self.status == TenantStatus.ACTIVE and self.deleted_at is None
-    
+
     def can_create_users(self, current_user_count: int) -> bool:
         """Check if tenant can create new users based on subscription and settings"""
         return self.is_active() and self.settings.allows_more_users(current_user_count)
@@ -162,20 +171,20 @@ class TenantEntity:
         """Disable Azure SSO without removing the stored tenant ID."""
         self.azure_sso_enabled = False
         self.updated_at = utc_now()
-    
+
     # === Invariants ===
-    
+
     def collect_events(self) -> list[DomainEvent]:
         """
         Collect and clear pending domain events.
-        
+
         Returns:
             List of domain events that occurred
         """
         events = self.events.copy()
         self.events.clear()
         return events
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure tenant invariants are met"""
         if not self.code:

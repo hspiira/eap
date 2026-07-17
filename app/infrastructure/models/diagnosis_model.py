@@ -26,9 +26,7 @@ class DiagnosisTypeModel(CuidMixin, Base, TimestampMixin):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
-    effective_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     diagnoses: Mapped[list["DiagnosisModel"]] = relationship(
         "DiagnosisModel",
@@ -51,9 +49,7 @@ class DiagnosisModel(CuidMixin, Base, TimestampMixin):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
-    effective_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     diagnosis_type: Mapped["DiagnosisTypeModel"] = relationship(
         "DiagnosisTypeModel", back_populates="diagnoses"

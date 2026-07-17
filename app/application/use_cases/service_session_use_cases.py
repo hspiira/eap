@@ -122,7 +122,10 @@ class UpdateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
             session.set_category(category, headcount=headcount)
         elif headcount is not None:
             session.headcount = headcount
-        if any(v is not None for v in (issue_topic, diagnosis_type_id, diagnosis_id, approved_by, rate_ugx)):
+        if any(
+            v is not None
+            for v in (issue_topic, diagnosis_type_id, diagnosis_id, approved_by, rate_ugx)
+        ):
             session.set_clinical_details(
                 issue_topic=issue_topic,
                 diagnosis_type_id=diagnosis_type_id,

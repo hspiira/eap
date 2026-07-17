@@ -40,7 +40,7 @@ class ClientEntity:
     is_verified: bool
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields (with defaults)
     billing_address: Address | None = None
     industry_id: IndustryId | None = None
@@ -49,12 +49,14 @@ class ClientEntity:
     tier: ClientTier | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     def verify(self, verified_by: UserId) -> None:
         self.is_verified = True
         self.updated_at = utc_now()
-        self.events.append(ClientVerified(occurred_at=utc_now(), client_id=self.id, verified_by=verified_by))
-    
+        self.events.append(
+            ClientVerified(occurred_at=utc_now(), client_id=self.id, verified_by=verified_by)
+        )
+
     def activate(self) -> None:
         """Activate client for operation"""
         if not self.contact_info.has_any_contact():
@@ -66,7 +68,7 @@ class ClientEntity:
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
         self.events.append(ClientActivated(occurred_at=utc_now(), client_id=self.id))
-    
+
     def deactivate(self, reason: str | None = None) -> None:
         """Deactivate client"""
         if self.status == BaseStatus.DELETED:
@@ -75,8 +77,12 @@ class ClientEntity:
             raise DomainError("Client is already inactive")
         self.status = BaseStatus.INACTIVE
         self.updated_at = utc_now()
-        self.events.append(ClientDeactivated(occurred_at=utc_now(), client_id=self.id, reason=reason or "Deactivated"))
-    
+        self.events.append(
+            ClientDeactivated(
+                occurred_at=utc_now(), client_id=self.id, reason=reason or "Deactivated"
+            )
+        )
+
     def suspend(self, reason: str) -> None:
         """Suspend client (e.g., payment issues)"""
         if not reason:
@@ -88,7 +94,7 @@ class ClientEntity:
         self.status = BaseStatus.INACTIVE
         self.updated_at = utc_now()
         self.events.append(ClientSuspended(occurred_at=utc_now(), client_id=self.id, reason=reason))
-    
+
     def terminate(self, reason: str) -> None:
         """Permanently terminate client"""
         if not reason:
@@ -98,8 +104,10 @@ class ClientEntity:
         self.status = BaseStatus.DELETED
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
-        self.events.append(ClientTerminated(occurred_at=utc_now(), client_id=self.id, reason=reason))
-    
+        self.events.append(
+            ClientTerminated(occurred_at=utc_now(), client_id=self.id, reason=reason)
+        )
+
     def archive(self) -> None:
         """Archive client (softer than terminate)"""
         if self.status == BaseStatus.DELETED:
@@ -108,7 +116,7 @@ class ClientEntity:
             raise DomainError("Client is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
-    
+
     def restore(self) -> None:
         """Restore archived or soft-deleted client"""
         if self.status == BaseStatus.DELETED:
@@ -124,7 +132,7 @@ class ClientEntity:
         if self.status == BaseStatus.ARCHIVED:
             self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
-    
+
     def update_name(self, name: str) -> None:
         """Update client name"""
         if not name:
@@ -133,21 +141,21 @@ class ClientEntity:
             raise DomainError("Cannot update name for deleted client")
         self.name = name
         self.updated_at = utc_now()
-    
+
     def update_contact_info(self, contact_info: ContactInfo) -> None:
         """Update contact information"""
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot update contact info for deleted client")
         self.contact_info = contact_info
         self.updated_at = utc_now()
-    
+
     def update_billing_address(self, address: Address | None) -> None:
         """Update billing address"""
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot update billing address for deleted client")
         self.billing_address = address
         self.updated_at = utc_now()
-    
+
     def update_preferred_contact_method(self, method: ContactMethod | None) -> None:
         """Update preferred contact method"""
         if self.status == BaseStatus.DELETED:

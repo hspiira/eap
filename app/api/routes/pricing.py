@@ -71,14 +71,11 @@ def _pricing_from_schema(s: ContractPricingSchema) -> ContractPricing:
     if s.rate_card:
         rate_card = RateCard(
             rates=tuple(
-                (entry.service_code, _money_from_schema(entry.rate))
-                for entry in s.rate_card
+                (entry.service_code, _money_from_schema(entry.rate)) for entry in s.rate_card
             ),
         )
     tiers = tuple(
-        UtilisationTier(
-            up_to_units=t.up_to_units, unit_rate=_money_from_schema(t.unit_rate)
-        )
+        UtilisationTier(up_to_units=t.up_to_units, unit_rate=_money_from_schema(t.unit_rate))
         for t in s.tiers
     )
     return ContractPricing(
@@ -87,9 +84,7 @@ def _pricing_from_schema(s: ContractPricingSchema) -> ContractPricing:
         deposit_amount=_money_from_schema(s.deposit_amount),
         admin_fee_floor=_money_from_schema(s.admin_fee_floor),
         rate_card=rate_card,
-        parent_contract_id=ContractId(s.parent_contract_id)
-        if s.parent_contract_id
-        else None,
+        parent_contract_id=ContractId(s.parent_contract_id) if s.parent_contract_id else None,
         tiers=tiers,
     )
 
@@ -129,18 +124,14 @@ async def invoice_preview(
     period_to: date = Query(..., description="Period end date (inclusive)"),
     _user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
-    utilisation_repo: UtilisationEventRepository = Depends(
-        get_utilisation_event_repository
-    ),
+    utilisation_repo: UtilisationEventRepository = Depends(get_utilisation_event_repository),
     db: AsyncSession = Depends(get_db),
 ):
     contract = await contract_repo.get_by_id(ContractId(contract_id))
     if contract is None:
         raise HTTPException(status_code=404, detail="Contract not found")
     if contract.pricing is None:
-        raise HTTPException(
-            status_code=400, detail="Contract has no pricing configuration"
-        )
+        raise HTTPException(status_code=400, detail="Contract has no pricing configuration")
     events = await utilisation_repo.list_for_contract(
         contract.tenant_id,
         contract.id,

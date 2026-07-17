@@ -107,9 +107,7 @@ class CreateDocumentVersionUseCase(BaseUseCase[DocumentEntity, DocumentId]):
         document = await self._get_entity_or_raise(document_id, "Document")
 
         # Get the actual latest version
-        latest = await self.document_repository.get_latest_version(
-            document_id, document.tenant_id
-        )
+        latest = await self.document_repository.get_latest_version(document_id, document.tenant_id)
         if latest:
             document = latest
 
@@ -160,9 +158,7 @@ class SetDocumentConfidentialityUseCase(BaseUseCase[DocumentEntity, DocumentId])
     def __init__(self, document_repository: DocumentRepository):
         super().__init__(document_repository)
 
-    async def execute(
-        self, document_id: DocumentId, is_confidential: bool
-    ) -> DocumentEntity:
+    async def execute(self, document_id: DocumentId, is_confidential: bool) -> DocumentEntity:
         """Set document confidentiality."""
         document = await self._get_entity_or_raise(document_id, "Document")
         document.set_confidentiality(is_confidential)
@@ -175,9 +171,7 @@ class SetDocumentExpiryUseCase(BaseUseCase[DocumentEntity, DocumentId]):
     def __init__(self, document_repository: DocumentRepository):
         super().__init__(document_repository)
 
-    async def execute(
-        self, document_id: DocumentId, expires_at: datetime | None
-    ) -> DocumentEntity:
+    async def execute(self, document_id: DocumentId, expires_at: datetime | None) -> DocumentEntity:
         """Set document expiry date."""
         document = await self._get_entity_or_raise(document_id, "Document")
         document.set_expiry(expires_at)

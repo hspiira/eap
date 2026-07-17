@@ -58,9 +58,7 @@ class SurveyCampaignMapper:
             anonymous=entity.anonymous,
             response_count=entity.response_count,
             created_by=entity.created_by.value,
-            activated_at=ensure_utc(entity.activated_at)
-            if entity.activated_at
-            else None,
+            activated_at=ensure_utc(entity.activated_at) if entity.activated_at else None,
             closed_at=ensure_utc(entity.closed_at) if entity.closed_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),

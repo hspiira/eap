@@ -264,7 +264,7 @@ async def check_kpi_name_availability(
     kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
     return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
 
-    
+
 @router.get(
     "/{kpi_id}",
     response_model=KPIResponse,
@@ -312,9 +312,7 @@ async def create_kpi_assignment(
         contract_id=data.contract_id,
         target_value=data.target_value,
     )
-    await audit_change(
-        assignment, audit_handler, current_user, request, tenant_id=tenant_id
-    )
+    await audit_change(assignment, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_kpi_assignment_response(assignment)
 
 
@@ -474,9 +472,7 @@ async def get_kpi_assignments_by_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific KPI."""
-    assignments = await assignment_repo.get_by_kpi_id(
-        KPIId(kpi_id), TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_kpi_id(KPIId(kpi_id), TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),
@@ -500,9 +496,7 @@ async def get_kpi_assignments_by_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific client."""
-    assignments = await assignment_repo.get_by_client_id(
-        client_id, TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_client_id(client_id, TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),
@@ -526,9 +520,7 @@ async def get_kpi_assignments_by_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific contract."""
-    assignments = await assignment_repo.get_by_contract_id(
-        contract_id, TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_contract_id(contract_id, TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),

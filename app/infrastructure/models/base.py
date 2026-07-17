@@ -21,17 +21,18 @@ class Base(DeclarativeBase):
 class EnumValueType(TypeDecorator):
     """
     Custom type decorator that ensures enum values (not names) are stored.
-    
+
     For string enums, SQLAlchemy's Enum type may use enum names instead of values.
     This decorator ensures we always store the enum value.
     """
+
     impl = String
     cache_ok = True
-    
+
     def __init__(self, enum_class, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.enum_class = enum_class
-    
+
     def process_bind_param(self, value, dialect):
         """Convert enum to its value when storing in database."""
         if value is None:
@@ -49,11 +50,9 @@ class EnumValueType(TypeDecorator):
                     enum_obj = getattr(self.enum_class, value)
                     return enum_obj.value
                 except AttributeError as e:
-                    raise ValueError(
-                        f"Invalid {self.enum_class.__name__} value: {value!r}"
-                    ) from e
+                    raise ValueError(f"Invalid {self.enum_class.__name__} value: {value!r}") from e
         return value
-    
+
     def process_result_value(self, value, dialect):
         """Convert database value back to enum object."""
         if value is None:
@@ -89,9 +88,7 @@ class TimestampMixin:
 
     @declared_attr
     def created_at(cls) -> Mapped[datetime]:
-        return mapped_column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        )
+        return mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     @declared_attr
     def updated_at(cls) -> Mapped[datetime]:

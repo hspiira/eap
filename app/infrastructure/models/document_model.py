@@ -87,12 +87,8 @@ class DocumentModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
         DateTime(timezone=True), nullable=True, index=True
     )
     is_confidential: Mapped[bool] = mapped_column(default=False, nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    archived_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self) -> str:
         return f"<DocumentModel(id={self.id}, name={self.name}, version={self.version})>"

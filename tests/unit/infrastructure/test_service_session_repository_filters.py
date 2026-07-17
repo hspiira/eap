@@ -37,9 +37,7 @@ def _sql(conditions: Any) -> list[str]:
 
 
 class TestScheduledConditions:
-    def test_no_bounds_produce_no_conditions(
-        self, repo: ServiceSessionRepositoryImpl
-    ) -> None:
+    def test_no_bounds_produce_no_conditions(self, repo: ServiceSessionRepositoryImpl) -> None:
         assert repo._scheduled_conditions(None, None) == []
 
     def test_lower_bound_only(self, repo: ServiceSessionRepositoryImpl) -> None:
@@ -52,9 +50,7 @@ class TestScheduledConditions:
         assert len(sql) == 1
         assert "scheduled_at <=" in sql[0]
 
-    def test_both_bounds_are_inclusive(
-        self, repo: ServiceSessionRepositoryImpl
-    ) -> None:
+    def test_both_bounds_are_inclusive(self, repo: ServiceSessionRepositoryImpl) -> None:
         sql = _sql(repo._scheduled_conditions(FROM, TO))
         assert len(sql) == 2
         assert any("scheduled_at >=" in s for s in sql)
@@ -92,12 +88,8 @@ class TestWindowReachesSql:
         self, repo: ServiceSessionRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A count filtered differently from its page is the bug this prevents."""
-        seen = await self._capture(
-            repo, monkeypatch, "count", scheduled_from=FROM, scheduled_to=TO
-        )
-        assert _sql(seen["extra_conditions"]) == _sql(
-            repo._scheduled_conditions(FROM, TO)
-        )
+        seen = await self._capture(repo, monkeypatch, "count", scheduled_from=FROM, scheduled_to=TO)
+        assert _sql(seen["extra_conditions"]) == _sql(repo._scheduled_conditions(FROM, TO))
 
     async def test_list_and_count_agree_on_base_filters(
         self, repo: ServiceSessionRepositoryImpl, monkeypatch: pytest.MonkeyPatch

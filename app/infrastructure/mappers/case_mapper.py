@@ -48,9 +48,7 @@ class CaseMapper:
             else None,
             closure_summary_note_id=model.closure_summary_note_id,
             intake_screener_admin_ids=tuple(model.intake_screener_admin_ids or []),
-            closure_screener_admin_ids=tuple(
-                model.closure_screener_admin_ids or []
-            ),
+            closure_screener_admin_ids=tuple(model.closure_screener_admin_ids or []),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -71,9 +69,7 @@ class CaseMapper:
             assigned_counsellor_id=entity.assigned_counsellor_id.value
             if entity.assigned_counsellor_id
             else None,
-            authorization_id=entity.authorization_id.value
-            if entity.authorization_id
-            else None,
+            authorization_id=entity.authorization_id.value if entity.authorization_id else None,
             referred_by_user_id=entity.referred_by_user_id.value
             if entity.referred_by_user_id
             else None,

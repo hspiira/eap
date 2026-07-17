@@ -60,13 +60,8 @@ class Consent:
     def __post_init__(self) -> None:
         if not self.disclosure_to:
             raise DomainError("Consent requires a disclosure_to recipient")
-        if (
-            self.purpose == ConsentPurpose.OTHER
-            and not self.purpose_other_detail
-        ):
-            raise DomainError(
-                "Purpose OTHER requires a non-empty purpose_other_detail"
-            )
+        if self.purpose == ConsentPurpose.OTHER and not self.purpose_other_detail:
+            raise DomainError("Purpose OTHER requires a non-empty purpose_other_detail")
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
                 ConsentRequested(
@@ -93,13 +88,9 @@ class Consent:
         now: datetime | None = None,
     ) -> None:
         if not granted_by_subject_reference:
-            raise DomainError(
-                "grant requires the subject's signature reference"
-            )
+            raise DomainError("grant requires the subject's signature reference")
         if self.status != ConsentStatus.PENDING:
-            raise InvalidStateError(
-                f"Cannot grant a consent in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot grant a consent in status {self.status.value}")
         now = now or utc_now()
         self.status = ConsentStatus.ACTIVE
         self.granted_at = now
@@ -143,7 +134,5 @@ class Consent:
         now = utc_now()
         self.status = ConsentStatus.EXPIRED
         self.updated_at = now
-        self.events.append(
-            ConsentExpired(occurred_at=now, consent_id=self.id)
-        )
+        self.events.append(ConsentExpired(occurred_at=now, consent_id=self.id))
         return True

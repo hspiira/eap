@@ -120,9 +120,7 @@ async def list_audit_logs(
         end_date=end_date,
     )
 
-    audit_log_responses = [
-        _to_audit_log_response(audit_log) for audit_log in audit_logs
-    ]
+    audit_log_responses = [_to_audit_log_response(audit_log) for audit_log in audit_logs]
 
     return AuditLogListResponse(
         items=audit_log_responses,
@@ -193,13 +191,9 @@ async def get_entity_changes(
         TenantId(tenant_id), entity_type, entity_id, pg.limit, pg.offset
     )
 
-    total = await audit_repo.count_entity_changes(
-        TenantId(tenant_id), entity_type, entity_id
-    )
+    total = await audit_repo.count_entity_changes(TenantId(tenant_id), entity_type, entity_id)
 
-    entity_change_responses = [
-        _to_entity_change_response(ec) for ec in entity_changes
-    ]
+    entity_change_responses = [_to_entity_change_response(ec) for ec in entity_changes]
 
     return EntityChangeListResponse(
         items=entity_change_responses,

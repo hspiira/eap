@@ -40,14 +40,10 @@ class _FakeMemberRepo:
 
     async def list_for_client(self, tenant_id, client_id, *, limit=200, offset=0):
         return [
-            m
-            for m in self.store.values()
-            if m.tenant_id == tenant_id and m.client_id == client_id
+            m for m in self.store.values() if m.tenant_id == tenant_id and m.client_id == client_id
         ]
 
-    async def find_by_employer_member_id(
-        self, tenant_id, client_id, employer_member_id
-    ):
+    async def find_by_employer_member_id(self, tenant_id, client_id, employer_member_id):
         for m in self.store.values():
             if (
                 m.tenant_id == tenant_id
@@ -89,9 +85,7 @@ class _FakeLinkRepo:
     async def link(self, *, tenant_id, member_id, subject_id):
         self.member_to_subject[member_id.value] = subject_id.value
 
-    async def subject_for_member(
-        self, tenant_id, member_id, *, requester_id, purpose
-    ):
+    async def subject_for_member(self, tenant_id, member_id, *, requester_id, purpose):
         sid = self.member_to_subject.get(member_id.value)
         self.disclosure_log.append(
             {
@@ -103,9 +97,7 @@ class _FakeLinkRepo:
         )
         return ClinicalSubjectId(sid) if sid else None
 
-    async def member_for_subject(
-        self, tenant_id, subject_id, *, requester_id, purpose
-    ):
+    async def member_for_subject(self, tenant_id, subject_id, *, requester_id, purpose):
         for mid, sid in self.member_to_subject.items():
             if sid == subject_id.value:
                 self.disclosure_log.append(
@@ -181,9 +173,7 @@ class TestResolveClinicalSubject:
             _FakeSubjectRepo(),
             _FakeLinkRepo(),
         )
-        member, subject = await EnrolEligibleMemberUseCase(
-            members, subjects, links
-        ).execute(
+        member, subject = await EnrolEligibleMemberUseCase(members, subjects, links).execute(
             tenant_id=TenantId("t-1"),
             client_id=ClientId("c-1"),
             employer_member_id="HR-1",

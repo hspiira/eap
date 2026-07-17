@@ -25,7 +25,9 @@ from app.infrastructure.models.user_model import UserModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel, PersonId], PersonRepository):
+class PersonRepositoryImpl(
+    TenantScopedRepositoryImpl[PersonEntity, PersonModel, PersonId], PersonRepository
+):
     """
     SQLAlchemy implementation of PersonRepository.
 
@@ -80,7 +82,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         models = result.scalars().all()
         return {m.id: UserMapper.to_entity(m) for m in models}
 
-
     async def get_by_id(self, person_id: PersonId) -> PersonEntity | None:
         """Get person by ID, excluding soft-deleted persons."""
         stmt = select(PersonModel).where(
@@ -94,7 +95,6 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
             return None
 
         return await self._to_entity_with_profile(model)
-
 
     async def get_by_user_id(self, user_id: UserId) -> PersonEntity | None:
         """Get person by user ID, excluding soft-deleted persons."""
@@ -110,9 +110,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
 
         return await self._to_entity_with_profile(model)
 
-    async def get_by_type(
-        self, tenant_id: TenantId, person_type: PersonType
-    ) -> list[PersonEntity]:
+    async def get_by_type(self, tenant_id: TenantId, person_type: PersonType) -> list[PersonEntity]:
         """Get all persons of a specific type within a tenant."""
         stmt = select(PersonModel).where(
             PersonModel.tenant_id == tenant_id.value,
@@ -144,12 +142,14 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         sort_desc: bool = True,
     ) -> Sequence[PersonEntity]:
         """List persons with filtering, searching, and pagination."""
-        stmt = select(PersonModel).join(
-            UserModel, PersonModel.user_id == UserModel.id
-        ).where(
-            PersonModel.tenant_id == tenant_id.value,
-            PersonModel.deleted_at.is_(None),
-            UserModel.deleted_at.is_(None),
+        stmt = (
+            select(PersonModel)
+            .join(UserModel, PersonModel.user_id == UserModel.id)
+            .where(
+                PersonModel.tenant_id == tenant_id.value,
+                PersonModel.deleted_at.is_(None),
+                UserModel.deleted_at.is_(None),
+            )
         )
 
         if status:
@@ -171,7 +171,7 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
 
         ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "status", "person_type"}
         if sort_by not in ALLOWED_SORT_COLUMNS:
-            raise ValueError(f"Invalid sort column: {sort_by}") 
+            raise ValueError(f"Invalid sort column: {sort_by}")
         if sort_desc:
             stmt = stmt.order_by(getattr(PersonModel, sort_by).desc())
         else:
@@ -200,12 +200,14 @@ class PersonRepositoryImpl(TenantScopedRepositoryImpl[PersonEntity, PersonModel,
         search: str | None = None,
     ) -> int:
         """Count persons matching filters."""
-        stmt = select(func.count(PersonModel.id)).join(
-            UserModel, PersonModel.user_id == UserModel.id
-        ).where(
-            PersonModel.tenant_id == tenant_id.value,
-            PersonModel.deleted_at.is_(None),
-            UserModel.deleted_at.is_(None),
+        stmt = (
+            select(func.count(PersonModel.id))
+            .join(UserModel, PersonModel.user_id == UserModel.id)
+            .where(
+                PersonModel.tenant_id == tenant_id.value,
+                PersonModel.deleted_at.is_(None),
+                UserModel.deleted_at.is_(None),
+            )
         )
 
         if status:

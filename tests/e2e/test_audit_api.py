@@ -31,9 +31,7 @@ class TestListAuditLogs:
 
         assert response.status_code == 422
 
-    async def test_list_audit_logs_empty(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_list_audit_logs_empty(self, client: AsyncClient, audit_test_tenant: dict):
         """Test listing audit logs when none exist."""
         tenant_id = audit_test_tenant["id"]
 
@@ -44,15 +42,11 @@ class TestListAuditLogs:
         assert data["items"] == []
         assert data["total"] == 0
 
-    async def test_list_audit_logs_pagination(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_list_audit_logs_pagination(self, client: AsyncClient, audit_test_tenant: dict):
         """Test audit log list pagination."""
         tenant_id = audit_test_tenant["id"]
 
-        response = await client.get(
-            f"/audit/logs?tenant_id={tenant_id}&page=1&limit=10"
-        )
+        response = await client.get(f"/audit/logs?tenant_id={tenant_id}&page=1&limit=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -104,9 +98,7 @@ class TestGetEntityChanges:
 
         assert response.status_code == 422
 
-    async def test_get_entity_changes_empty(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_get_entity_changes_empty(self, client: AsyncClient, audit_test_tenant: dict):
         """Test getting changes for entity with no change history."""
         tenant_id = audit_test_tenant["id"]
 
@@ -142,57 +134,39 @@ class TestGetEntityChanges:
 class TestAuditLogFilters:
     """Tests for audit log filtering capabilities."""
 
-    async def test_filter_by_action_type(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_filter_by_action_type(self, client: AsyncClient, audit_test_tenant: dict):
         """Test filtering audit logs by action type."""
         tenant_id = audit_test_tenant["id"]
 
-        response = await client.get(
-            f"/audit/logs?tenant_id={tenant_id}&action_type=CREATE"
-        )
+        response = await client.get(f"/audit/logs?tenant_id={tenant_id}&action_type=CREATE")
 
         assert response.status_code == 200
 
-    async def test_filter_by_resource_type(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_filter_by_resource_type(self, client: AsyncClient, audit_test_tenant: dict):
         """Test filtering audit logs by resource type."""
         tenant_id = audit_test_tenant["id"]
 
-        response = await client.get(
-            f"/audit/logs?tenant_id={tenant_id}&resource_type=Tenant"
-        )
+        response = await client.get(f"/audit/logs?tenant_id={tenant_id}&resource_type=Tenant")
 
         assert response.status_code == 200
 
-    async def test_filter_by_resource_id(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_filter_by_resource_id(self, client: AsyncClient, audit_test_tenant: dict):
         """Test filtering audit logs by resource ID."""
         tenant_id = audit_test_tenant["id"]
 
-        response = await client.get(
-            f"/audit/logs?tenant_id={tenant_id}&resource_id={tenant_id}"
-        )
+        response = await client.get(f"/audit/logs?tenant_id={tenant_id}&resource_id={tenant_id}")
 
         assert response.status_code == 200
 
-    async def test_filter_by_user_id(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_filter_by_user_id(self, client: AsyncClient, audit_test_tenant: dict):
         """Test filtering audit logs by user ID."""
         tenant_id = audit_test_tenant["id"]
 
-        response = await client.get(
-            f"/audit/logs?tenant_id={tenant_id}&user_id=some-user-id"
-        )
+        response = await client.get(f"/audit/logs?tenant_id={tenant_id}&user_id=some-user-id")
 
         assert response.status_code == 200
 
-    async def test_filter_by_date_range(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_filter_by_date_range(self, client: AsyncClient, audit_test_tenant: dict):
         """Test filtering audit logs by date range."""
         tenant_id = audit_test_tenant["id"]
 
@@ -213,9 +187,7 @@ class TestAuditLogFilters:
 class TestAuditLogSorting:
     """Tests for audit log sorting capabilities."""
 
-    async def test_sort_by_occurred_at_desc(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_sort_by_occurred_at_desc(self, client: AsyncClient, audit_test_tenant: dict):
         """Test sorting audit logs by occurred_at descending."""
         tenant_id = audit_test_tenant["id"]
 
@@ -225,9 +197,7 @@ class TestAuditLogSorting:
 
         assert response.status_code == 200
 
-    async def test_sort_by_occurred_at_asc(
-        self, client: AsyncClient, audit_test_tenant: dict
-    ):
+    async def test_sort_by_occurred_at_asc(self, client: AsyncClient, audit_test_tenant: dict):
         """Test sorting audit logs by occurred_at ascending."""
         tenant_id = audit_test_tenant["id"]
 
@@ -241,7 +211,7 @@ class TestAuditLogSorting:
 # =============================================================================
 # INTEGRATION NOTES
 # =============================================================================
-# 
+#
 # Note: More comprehensive audit log testing would require:
 # 1. Enabling audit integration on routes
 # 2. Performing actions that create audit logs
@@ -249,7 +219,7 @@ class TestAuditLogSorting:
 #
 # Since audit integration is optional and not yet enabled on all routes,
 # these tests focus on the query API structure and error handling.
-# 
+#
 # When audit integration is enabled, additional tests could verify:
 # - Audit logs are created when creating/updating entities
 # - Field changes are properly tracked

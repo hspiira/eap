@@ -17,23 +17,16 @@ from app.domain.value_objects.core import (
 
 
 class OutcomeMeasureRepository(BaseRepository[OutcomeMeasure, OutcomeMeasureId]):
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[OutcomeMeasure]:
-        ...
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[OutcomeMeasure]: ...
 
 
 class FitnessForDutyRepository(BaseRepository[FitnessForDuty, FitnessForDutyId]):
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[FitnessForDuty]:
-        ...
+    ) -> list[FitnessForDuty]: ...
 
 
-class ReturnToWorkPlanRepository(
-    BaseRepository[ReturnToWorkPlan, ReturnToWorkPlanId]
-):
+class ReturnToWorkPlanRepository(BaseRepository[ReturnToWorkPlan, ReturnToWorkPlanId]):
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[ReturnToWorkPlan]:
-        ...
+    ) -> list[ReturnToWorkPlan]: ...

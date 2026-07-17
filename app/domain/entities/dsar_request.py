@@ -60,21 +60,15 @@ class DSARRequest:
 
     def start(self, now: datetime | None = None) -> None:
         if self.status != DSARRequestStatus.REQUESTED:
-            raise InvalidStateError(
-                f"Cannot start DSAR in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot start DSAR in status {self.status.value}")
         now = now or utc_now()
         self.status = DSARRequestStatus.PROCESSING
         self.started_at = now
         self.updated_at = now
 
-    def complete(
-        self, output: dict[str, Any], now: datetime | None = None
-    ) -> None:
+    def complete(self, output: dict[str, Any], now: datetime | None = None) -> None:
         if self.status != DSARRequestStatus.PROCESSING:
-            raise InvalidStateError(
-                f"Cannot complete DSAR in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot complete DSAR in status {self.status.value}")
         now = now or utc_now()
         self.status = DSARRequestStatus.COMPLETED
         self.output = output
@@ -95,9 +89,7 @@ class DSARRequest:
             DSARRequestStatus.REQUESTED,
             DSARRequestStatus.PROCESSING,
         }:
-            raise InvalidStateError(
-                f"Cannot fail DSAR in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot fail DSAR in status {self.status.value}")
         now = now or utc_now()
         self.status = DSARRequestStatus.FAILED
         self.failed_reason = reason
@@ -111,17 +103,10 @@ class DSARRequest:
             DSARRequestStatus.REQUESTED,
             DSARRequestStatus.PROCESSING,
         }:
-            raise InvalidStateError(
-                f"Cannot cancel DSAR in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot cancel DSAR in status {self.status.value}")
         now = now or utc_now()
-        if (
-            self.erasure_executes_at is not None
-            and now >= self.erasure_executes_at
-        ):
-            raise DomainError(
-                "Reversible window has elapsed; erasure can no longer be cancelled"
-            )
+        if self.erasure_executes_at is not None and now >= self.erasure_executes_at:
+            raise DomainError("Reversible window has elapsed; erasure can no longer be cancelled")
         self.status = DSARRequestStatus.CANCELLED
         self.updated_at = now
 

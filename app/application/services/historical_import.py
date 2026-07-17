@@ -51,9 +51,7 @@ class CanonicalMappings:
     service_codes: dict[str, str] = field(default_factory=dict[str, str])
     provider_codes: dict[str, str] = field(default_factory=dict[str, str])
     person_codes: dict[str, str] = field(default_factory=dict[str, str])
-    status_text: dict[str, SessionStatus] = field(
-        default_factory=dict[str, SessionStatus]
-    )
+    status_text: dict[str, SessionStatus] = field(default_factory=dict[str, SessionStatus])
 
 
 @dataclass(frozen=True)

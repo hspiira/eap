@@ -11,13 +11,14 @@ from dataclasses import dataclass
 class FieldChange:
     """
     Represents a single field change in an entity.
-    
+
     Immutable value object capturing before/after values.
     """
+
     field_name: str
     old_value: str | None
     new_value: str | None
-    
+
     def __post_init__(self) -> None:
         """Validate field change."""
         if not self.field_name:

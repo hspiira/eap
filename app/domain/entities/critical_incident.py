@@ -90,9 +90,7 @@ class CriticalIncidentEntity:
             self.status = CriticalIncidentStatus.IN_RESPONSE
         self.updated_at = now
         self.events.append(
-            CriticalIncidentPhaseRecorded(
-                occurred_at=now, incident_id=self.id, phase=phase
-            )
+            CriticalIncidentPhaseRecorded(occurred_at=now, incident_id=self.id, phase=phase)
         )
 
     def close(self, after_action_summary: str, now: datetime | None = None) -> None:
@@ -106,9 +104,7 @@ class CriticalIncidentEntity:
         self.after_action_summary = after_action_summary
         self.closed_at = now
         self.updated_at = now
-        self.events.append(
-            CriticalIncidentClosed(occurred_at=now, incident_id=self.id)
-        )
+        self.events.append(CriticalIncidentClosed(occurred_at=now, incident_id=self.id))
 
     def after_action_report(self) -> dict[str, object]:
         """Return a JSON-serialisable after-action summary."""

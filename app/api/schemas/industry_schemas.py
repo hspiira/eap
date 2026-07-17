@@ -23,7 +23,9 @@ class IndustryCreate(BaseModel):
 class IndustryUpdate(BaseModel):
     """Request schema for updating an industry."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Industry name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Industry name"
+    )
     description: OptionalSanitizedStr = Field(None, description="Industry description")
     code: str | None = Field(None, max_length=50, description="Industry code")
     parent_industry_id: str | None = Field(None, description="Parent industry ID")

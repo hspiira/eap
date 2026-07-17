@@ -135,9 +135,7 @@ async def deactivate_service(
 ):
     """Deactivate a service."""
     use_case = TransitionUseCase(service_repo, "Service")
-    service = await use_case.execute(
-        service.id, ServiceTransition.DEACTIVATE, reason=reason
-    )
+    service = await use_case.execute(service.id, ServiceTransition.DEACTIVATE, reason=reason)
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 

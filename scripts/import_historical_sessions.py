@@ -55,9 +55,7 @@ def _load_mappings(path: Path) -> CanonicalMappings:
         service_codes=dict(raw.get("service_codes", {})),
         provider_codes=dict(raw.get("provider_codes", {})),
         person_codes=dict(raw.get("person_codes", {})),
-        status_text={
-            k: SessionStatus(v) for k, v in raw.get("status_text", {}).items()
-        },
+        status_text={k: SessionStatus(v) for k, v in raw.get("status_text", {}).items()},
     )
 
 

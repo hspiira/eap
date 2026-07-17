@@ -21,9 +21,7 @@ pytestmark = pytest.mark.asyncio
 class TestCreateService:
     """Tests for POST /services/ endpoint."""
 
-    async def test_create_service_success(
-        self, client: AsyncClient, service_test_tenant: dict
-    ):
+    async def test_create_service_success(self, client: AsyncClient, service_test_tenant: dict):
         """Test creating a service with full data."""
         tenant_id = service_test_tenant["id"]
 
@@ -48,9 +46,7 @@ class TestCreateService:
         assert data["status"] == "Pending"
         assert data["is_active"] is False
 
-    async def test_create_group_service(
-        self, client: AsyncClient, service_test_tenant: dict
-    ):
+    async def test_create_group_service(self, client: AsyncClient, service_test_tenant: dict):
         """Test creating a group service."""
         tenant_id = service_test_tenant["id"]
 
@@ -93,9 +89,7 @@ class TestCreateService:
 class TestGetService:
     """Tests for GET /services/{service_id} endpoint."""
 
-    async def test_get_service_by_id_success(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_get_service_by_id_success(self, client: AsyncClient, test_service: dict):
         """Test getting a service by ID."""
         service_id = test_service["id"]
 
@@ -124,9 +118,7 @@ class TestGetServiceByName:
         tenant_id = service_test_tenant["id"]
         name = test_service["name"]
 
-        response = await client.get(
-            f"/services/name/{name}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/services/name/{name}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -138,9 +130,7 @@ class TestGetServiceByName:
         """Test getting service by non-existent name returns 404."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/name/Nonexistent Service?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/services/name/Nonexistent Service?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -148,15 +138,11 @@ class TestGetServiceByName:
 class TestCheckNameAvailability:
     """Tests for GET /services/check-name/{name} endpoint."""
 
-    async def test_check_available_name(
-        self, client: AsyncClient, service_test_tenant: dict
-    ):
+    async def test_check_available_name(self, client: AsyncClient, service_test_tenant: dict):
         """Test checking an available name."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/check-name/Available Service?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/services/check-name/Available Service?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -169,9 +155,7 @@ class TestCheckNameAvailability:
         tenant_id = service_test_tenant["id"]
         name = test_service["name"]
 
-        response = await client.get(
-            f"/services/check-name/{name}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/services/check-name/{name}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -192,9 +176,7 @@ class TestListServices:
 
         assert response.status_code == 422
 
-    async def test_list_services_empty(
-        self, client: AsyncClient, service_test_tenant: dict
-    ):
+    async def test_list_services_empty(self, client: AsyncClient, service_test_tenant: dict):
         """Test listing services when none exist."""
         # Create a new tenant with no services
         new_tenant = await client.post(
@@ -211,7 +193,11 @@ class TestListServices:
         assert data["total"] == 0
 
     async def test_list_services_success(
-        self, client: AsyncClient, service_test_tenant: dict, test_service: dict, test_service_2: dict
+        self,
+        client: AsyncClient,
+        service_test_tenant: dict,
+        test_service: dict,
+        test_service_2: dict,
     ):
         """Test listing services with results."""
         tenant_id = service_test_tenant["id"]
@@ -229,9 +215,7 @@ class TestListServices:
         """Test service list pagination."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/?tenant_id={tenant_id}&page=1&limit=1"
-        )
+        response = await client.get(f"/services/?tenant_id={tenant_id}&page=1&limit=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -245,9 +229,7 @@ class TestListServices:
         """Test filtering services by status."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/?tenant_id={tenant_id}&status=Active"
-        )
+        response = await client.get(f"/services/?tenant_id={tenant_id}&status=Active")
         data = response.json()
 
         assert response.status_code == 200
@@ -259,9 +241,7 @@ class TestListServices:
         """Test filtering services by category."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/?tenant_id={tenant_id}&category=Counseling"
-        )
+        response = await client.get(f"/services/?tenant_id={tenant_id}&category=Counseling")
         data = response.json()
 
         assert response.status_code == 200
@@ -273,9 +253,7 @@ class TestListServices:
         """Test filtering services by group flag."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/?tenant_id={tenant_id}&is_group_service=true"
-        )
+        response = await client.get(f"/services/?tenant_id={tenant_id}&is_group_service=true")
         data = response.json()
 
         assert response.status_code == 200
@@ -287,9 +265,7 @@ class TestListServices:
         """Test searching services by name."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(
-            f"/services/?tenant_id={tenant_id}&search=Counseling"
-        )
+        response = await client.get(f"/services/?tenant_id={tenant_id}&search=Counseling")
         data = response.json()
 
         assert response.status_code == 200
@@ -304,9 +280,7 @@ class TestListServices:
 class TestActivateService:
     """Tests for POST /services/{service_id}/activate endpoint."""
 
-    async def test_activate_pending_service(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_activate_pending_service(self, client: AsyncClient, test_service: dict):
         """Test activating a pending service."""
         service_id = test_service["id"]
 
@@ -327,15 +301,11 @@ class TestActivateService:
 class TestDeactivateService:
     """Tests for POST /services/{service_id}/deactivate endpoint."""
 
-    async def test_deactivate_service_success(
-        self, client: AsyncClient, test_service_active: dict
-    ):
+    async def test_deactivate_service_success(self, client: AsyncClient, test_service_active: dict):
         """Test deactivating an active service."""
         service_id = test_service_active["id"]
 
-        response = await client.post(
-            f"/services/{service_id}/deactivate?reason=Maintenance"
-        )
+        response = await client.post(f"/services/{service_id}/deactivate?reason=Maintenance")
 
         assert response.status_code == 200
         data = response.json()
@@ -343,9 +313,7 @@ class TestDeactivateService:
 
     async def test_deactivate_not_found(self, client: AsyncClient):
         """Test deactivating non-existent service returns 404."""
-        response = await client.post(
-            "/services/nonexistent-id/deactivate?reason=Test"
-        )
+        response = await client.post("/services/nonexistent-id/deactivate?reason=Test")
 
         assert response.status_code == 404
 
@@ -353,9 +321,7 @@ class TestDeactivateService:
 class TestArchiveService:
     """Tests for POST /services/{service_id}/archive endpoint."""
 
-    async def test_archive_service_success(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_archive_service_success(self, client: AsyncClient, test_service: dict):
         """Test archiving a service."""
         service_id = test_service["id"]
 
@@ -375,9 +341,7 @@ class TestArchiveService:
 class TestRestoreService:
     """Tests for POST /services/{service_id}/restore endpoint."""
 
-    async def test_restore_archived_service(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_restore_archived_service(self, client: AsyncClient, test_service: dict):
         """Test restoring an archived service."""
         service_id = test_service["id"]
 
@@ -406,9 +370,7 @@ class TestRestoreService:
 class TestUpdateService:
     """Tests for PATCH /services/{service_id} endpoint."""
 
-    async def test_update_service_name(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_update_service_name(self, client: AsyncClient, test_service: dict):
         """Test updating service name."""
         service_id = test_service["id"]
 
@@ -421,9 +383,7 @@ class TestUpdateService:
         data = response.json()
         assert data["name"] == "Updated Counseling Service"
 
-    async def test_update_service_description(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_update_service_description(self, client: AsyncClient, test_service: dict):
         """Test updating service description."""
         service_id = test_service["id"]
 
@@ -436,9 +396,7 @@ class TestUpdateService:
         data = response.json()
         assert data["description"] == "Updated description"
 
-    async def test_update_service_duration(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_update_service_duration(self, client: AsyncClient, test_service: dict):
         """Test updating service duration."""
         service_id = test_service["id"]
 
@@ -464,9 +422,7 @@ class TestUpdateService:
 class TestUpdateGroupSettings:
     """Tests for PATCH /services/{service_id}/group-settings endpoint."""
 
-    async def test_enable_group_service(
-        self, client: AsyncClient, test_service: dict
-    ):
+    async def test_enable_group_service(self, client: AsyncClient, test_service: dict):
         """Test enabling group service mode."""
         service_id = test_service["id"]
 
@@ -480,9 +436,7 @@ class TestUpdateGroupSettings:
         assert data["is_group_service"] is True
         assert data["max_participants"] == 15
 
-    async def test_update_max_participants(
-        self, client: AsyncClient, test_group_service: dict
-    ):
+    async def test_update_max_participants(self, client: AsyncClient, test_group_service: dict):
         """Test updating max participants."""
         service_id = test_group_service["id"]
 

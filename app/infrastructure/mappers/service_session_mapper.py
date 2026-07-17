@@ -79,7 +79,9 @@ class ServiceSessionMapper:
             partner_relationship=model.partner_relationship,
             headcount=model.headcount,
             client_type=ClientType(model.client_type) if model.client_type else None,
-            clinical_outcome=SessionClinicalStatus(model.clinical_outcome) if model.clinical_outcome else None,
+            clinical_outcome=SessionClinicalStatus(model.clinical_outcome)
+            if model.clinical_outcome
+            else None,
         )
 
     @staticmethod

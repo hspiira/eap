@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class AuditFilterService:
     """
     Service for determining whether an audit action should be logged.
-    
+
     Implements configurable filtering to prevent audit log bloat from
     high-volume read operations while ensuring critical actions are always logged.
     """
@@ -57,18 +57,18 @@ class AuditFilterService:
     ) -> bool:
         """
         Determine if an audit action should be logged.
-        
+
         Rules:
         1. Critical actions (CREATE/UPDATE/DELETE/etc.) are always logged
         2. High-volume actions (LIST/VIEW) are subject to filtering:
            - Check if resource is in skip list -> don't log
            - Check if resource is in always-log list -> log
            - Otherwise, apply sampling based on AUDIT_SAMPLE_RATE
-        
+
         Args:
             action_type: The audit action type
             resource_type: Optional resource type (e.g., "Person", "Client")
-            
+
         Returns:
             True if action should be logged, False otherwise
         """

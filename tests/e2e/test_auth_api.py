@@ -80,9 +80,7 @@ class TestLogin:
         assert body["token_type"] == "bearer"
         assert body["expires_in"] > 0
 
-    async def test_wrong_password_is_401(
-        self, auth_client: AsyncClient, seeded: Any
-    ) -> None:
+    async def test_wrong_password_is_401(self, auth_client: AsyncClient, seeded: Any) -> None:
         r = await auth_client.post("/auth/login", json=_login(password="wrong"))
         assert r.status_code == 401
 
@@ -95,9 +93,7 @@ class TestLogin:
         assert bad_pw.status_code == no_user.status_code == 401
         assert bad_pw.json()["message"] == no_user.json()["message"]
 
-    async def test_unknown_tenant_is_401(
-        self, auth_client: AsyncClient, seeded: Any
-    ) -> None:
+    async def test_unknown_tenant_is_401(self, auth_client: AsyncClient, seeded: Any) -> None:
         r = await auth_client.post("/auth/login", json=_login(code="no-such"))
         assert r.status_code == 401
 
@@ -178,9 +174,7 @@ class TestMe:
     async def test_requires_a_token(self, auth_client: AsyncClient, seeded: Any) -> None:
         assert (await auth_client.get("/auth/me")).status_code == 401
 
-    async def test_rejects_a_garbage_token(
-        self, auth_client: AsyncClient, seeded: Any
-    ) -> None:
+    async def test_rejects_a_garbage_token(self, auth_client: AsyncClient, seeded: Any) -> None:
         r = await auth_client.get("/auth/me", headers={"Authorization": "Bearer nope"})
         assert r.status_code == 401
 
@@ -210,8 +204,6 @@ class TestRefresh:
         r = await auth_client.post("/auth/refresh", json={"refresh_token": at})
         assert r.status_code == 401
 
-    async def test_garbage_is_rejected(
-        self, auth_client: AsyncClient, seeded: Any
-    ) -> None:
+    async def test_garbage_is_rejected(self, auth_client: AsyncClient, seeded: Any) -> None:
         r = await auth_client.post("/auth/refresh", json={"refresh_token": "not-a-jwt"})
         assert r.status_code == 401

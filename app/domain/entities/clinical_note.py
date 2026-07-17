@@ -92,9 +92,7 @@ class ClinicalNote:
         **kwargs: Any,
     ) -> "ClinicalNote":
         if note_type in {ClinicalNoteType.DAP, ClinicalNoteType.SOAP}:
-            raise DomainError(
-                "Narrative bodies can only be used with non-structured note types"
-            )
+            raise DomainError("Narrative bodies can only be used with non-structured note types")
         return cls(note_type=note_type, body=body.as_dict(), **kwargs)
 
     def is_signed(self) -> bool:
@@ -105,9 +103,7 @@ class ClinicalNote:
 
     def update_body(self, *, new_body: dict[str, Any], editor_id: UserId) -> None:
         if self.is_signed():
-            raise InvalidStateError(
-                "Signed notes cannot be re-edited; use amend() instead"
-            )
+            raise InvalidStateError("Signed notes cannot be re-edited; use amend() instead")
         if not new_body:
             raise DomainError("new_body cannot be empty")
         if editor_id != self.author_id:
@@ -145,9 +141,7 @@ class ClinicalNote:
             return False
         self.locked_at = now
         self.updated_at = now
-        self.events.append(
-            ClinicalNoteLocked(occurred_at=now, note_id=self.id)
-        )
+        self.events.append(ClinicalNoteLocked(occurred_at=now, note_id=self.id))
         return True
 
     def amend(

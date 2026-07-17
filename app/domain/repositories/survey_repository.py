@@ -13,8 +13,7 @@ from app.domain.value_objects.core import (
 class SurveyCampaignRepository(BaseRepository[SurveyCampaign, SurveyCampaignId]):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 50, offset: int = 0
-    ) -> list[SurveyCampaign]:
-        ...
+    ) -> list[SurveyCampaign]: ...
 
 
 class SurveyResponseRepository(BaseRepository[SurveyResponse, SurveyResponseId]):
@@ -33,5 +32,4 @@ class SurveyResponseRepository(BaseRepository[SurveyResponse, SurveyResponseId])
         *,
         limit: int = 1_000,
         offset: int = 0,
-    ) -> list[SurveyResponse]:
-        ...
+    ) -> list[SurveyResponse]: ...

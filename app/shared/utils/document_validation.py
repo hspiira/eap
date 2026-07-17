@@ -41,7 +41,9 @@ def validate_document_file_path(value: str | None, upload_root: str) -> str | No
         resolved = (root / value).resolve()
         return str(resolved.relative_to(root))
     except (ValueError, OSError) as err:
-        raise ValueError("Invalid file path: path must be relative and cannot escape upload directory") from err
+        raise ValueError(
+            "Invalid file path: path must be relative and cannot escape upload directory"
+        ) from err
 
 
 def validate_document_file_url(value: str | None, allowed_schemes: list[str]) -> str | None:

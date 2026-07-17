@@ -41,13 +41,8 @@ class BenchmarkConsent:
     def __post_init__(self) -> None:
         if not self.version:
             raise DomainError("BenchmarkConsent requires a version")
-        if (
-            self.status == TenantConsentStatus.WITHDRAWN
-            and self.withdrawn_at is None
-        ):
-            raise DomainError(
-                "Withdrawn consent must carry withdrawn_at"
-            )
+        if self.status == TenantConsentStatus.WITHDRAWN and self.withdrawn_at is None:
+            raise DomainError("Withdrawn consent must carry withdrawn_at")
 
     def withdraw(
         self,
@@ -57,9 +52,7 @@ class BenchmarkConsent:
         now: datetime | None = None,
     ) -> None:
         if self.status != TenantConsentStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot withdraw consent in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot withdraw consent in status {self.status.value}")
         if not reason:
             raise DomainError("Withdrawal requires a reason")
         now = now or utc_now()

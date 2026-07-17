@@ -54,7 +54,7 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
             Active ContractEntity if found, None otherwise
         """
         pass
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -73,7 +73,7 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
     ) -> Sequence[ContractEntity]:
         """
         List contracts with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             client_id: Filter by client identifier
@@ -84,11 +84,11 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of ContractEntity
         """
-    
+
     @abstractmethod
     async def count(
         self,
@@ -103,14 +103,14 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
     ) -> int:
         """
         Count contracts matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             client_id: Filter by client identifier
             status: Filter by contract status
             payment_status: Filter by payment status
             search: Search in contract details
-            
+
         Returns:
             Total count
         """

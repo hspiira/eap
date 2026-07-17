@@ -19,16 +19,19 @@ from app.shared.utils.document_validation import (
 
 def _get_document_storage_path() -> str:
     from app.core.config import settings
+
     return getattr(settings, "DOCUMENT_STORAGE_PATH", "./uploads")
 
 
 def _get_allowed_url_schemes() -> list[str]:
     from app.core.config import settings
+
     raw = getattr(settings, "DOCUMENT_ALLOWED_URL_SCHEMES", "https")
     return [s.strip().lower() for s in raw.split(",") if s.strip()]
 
 
 # === Request Schemas ===
+
 
 class DocumentCreate(BaseModel):
     """Request schema for creating a document."""
@@ -74,7 +77,9 @@ class DocumentCreate(BaseModel):
 class DocumentCreateVersion(BaseModel):
     """Request schema for creating a new document version."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Document name"
+    )
     description: OptionalSanitizedStr = Field(None, description="Document description")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
@@ -109,7 +114,9 @@ class DocumentCreateVersion(BaseModel):
 class DocumentUpdate(BaseModel):
     """Request schema for updating document metadata."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Document name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Document name"
+    )
     description: OptionalSanitizedStr = Field(None, description="Document description")
 
 
@@ -126,6 +133,7 @@ class DocumentSetExpiry(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class DocumentResponse(BaseModel):
     """Response schema for document."""

@@ -173,9 +173,7 @@ async def require_platform_admin(
     Require that the current user is a platform admin.
     When PLATFORM_TENANT_ID is set, users in that tenant are platform admins.
     """
-    platform_tenant_id = getattr(
-        settings, "PLATFORM_TENANT_ID", ""
-    ).strip()
+    platform_tenant_id = getattr(settings, "PLATFORM_TENANT_ID", "").strip()
     if not platform_tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

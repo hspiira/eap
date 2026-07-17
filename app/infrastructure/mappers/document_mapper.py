@@ -84,9 +84,7 @@ class DocumentMapper:
             file_size=entity.file_size,
             mime_type=entity.mime_type,
             previous_version_id=(
-                entity.previous_version_id.value
-                if entity.previous_version_id
-                else None
+                entity.previous_version_id.value if entity.previous_version_id else None
             ),
             uploaded_by=entity.uploaded_by.value if entity.uploaded_by else None,
             client_id=entity.client_id,
@@ -94,12 +92,8 @@ class DocumentMapper:
             person_id=entity.person_id,
             expires_at=ensure_utc(entity.expires_at) if entity.expires_at else None,
             is_confidential=entity.is_confidential,
-            published_at=(
-                ensure_utc(entity.published_at) if entity.published_at else None
-            ),
-            archived_at=(
-                ensure_utc(entity.archived_at) if entity.archived_at else None
-            ),
+            published_at=(ensure_utc(entity.published_at) if entity.published_at else None),
+            archived_at=(ensure_utc(entity.archived_at) if entity.archived_at else None),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
             deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,

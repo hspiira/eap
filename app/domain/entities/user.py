@@ -36,7 +36,7 @@ class UserEntity:
     is_two_factor_enabled: bool
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields (with defaults)
     _password_hash: str | None = None
     email_verified_at: datetime | None = None
@@ -52,20 +52,20 @@ class UserEntity:
     auth_provider: AuthProvider = AuthProvider.PASSWORD
     display_name: str | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
         self._ensure_invariants()
-    
+
     # === Behaviors ===
-    
+
     def verify_email(self) -> None:
         now = utc_now()
         self.email_verified_at = now
         if self.status == UserStatus.PENDING_VERIFICATION:
             self.activate()
         self.events.append(UserEmailVerified(occurred_at=now, user_id=self.id))
-    
+
     def activate(self) -> None:
         if self.status in (UserStatus.BANNED, UserStatus.TERMINATED):
             raise DomainError("Cannot activate banned or terminated user")
@@ -74,7 +74,7 @@ class UserEntity:
         self.status_changed_at = now
         self.updated_at = now
         self.events.append(UserActivated(occurred_at=now, user_id=self.id))
-    
+
     def suspend(self, reason: str) -> None:
         if not reason:
             raise DomainError("Suspension requires reason")
@@ -83,7 +83,7 @@ class UserEntity:
         self.status_changed_at = now
         self.updated_at = now
         self.events.append(UserSuspended(occurred_at=now, user_id=self.id, reason=reason))
-    
+
     def ban(self, reason: str) -> None:
         if not reason:
             raise DomainError("Ban requires reason")
@@ -94,7 +94,7 @@ class UserEntity:
         self.status_changed_at = now
         self.updated_at = now
         self.events.append(UserBanned(occurred_at=now, user_id=self.id, reason=reason))
-    
+
     def deactivate(self, reason: str | None = None) -> None:
         """Deactivate user"""
         if self.status in (UserStatus.BANNED, UserStatus.TERMINATED):
@@ -106,7 +106,7 @@ class UserEntity:
         self.status_changed_at = now
         self.updated_at = now
         self.events.append(UserDeactivated(occurred_at=now, user_id=self.id, reason=reason))
-    
+
     def terminate(self, reason: str) -> None:
         """Permanently terminate user"""
         if not reason:
@@ -119,7 +119,7 @@ class UserEntity:
         self.updated_at = now
         self.deleted_at = now
         self.events.append(UserTerminated(occurred_at=now, user_id=self.id, reason=reason))
-    
+
     def update_password(self, password_hash: str) -> None:
         """Update user password"""
         if not password_hash:
@@ -128,7 +128,7 @@ class UserEntity:
             raise DomainError("Cannot update password for deleted user")
         self._password_hash = password_hash
         self.updated_at = utc_now()
-    
+
     def update_preferences(
         self,
         preferred_language: Language | None = None,
@@ -142,7 +142,7 @@ class UserEntity:
         if timezone is not None:
             self.timezone = timezone
         self.updated_at = utc_now()
-    
+
     def enable_two_factor(self) -> None:
         """Enable two-factor authentication"""
         if self.deleted_at:
@@ -151,7 +151,7 @@ class UserEntity:
             raise DomainError("Two-factor authentication is already enabled")
         self.is_two_factor_enabled = True
         self.updated_at = utc_now()
-    
+
     def disable_two_factor(self) -> None:
         """Disable two-factor authentication"""
         if self.deleted_at:
@@ -160,7 +160,7 @@ class UserEntity:
             raise DomainError("Two-factor authentication is not enabled")
         self.is_two_factor_enabled = False
         self.updated_at = utc_now()
-    
+
     def record_login(self) -> None:
         """Record user login"""
         self.last_login_at = utc_now()
@@ -227,9 +227,7 @@ class UserEntity:
         if not self.email_verified_at:
             self.verify_email()
         if was_locked:
-            self.events.append(
-                UserLockoutCleared(occurred_at=now, user_id=self.id)
-            )
+            self.events.append(UserLockoutCleared(occurred_at=now, user_id=self.id))
 
     def link_azure_identity(self, azure_oid: str) -> None:
         """Link this user to an Azure AD identity (called on first SSO login)."""
@@ -254,7 +252,7 @@ class UserEntity:
     def is_active(self) -> bool:
         """Check if user is active"""
         return self.status == UserStatus.ACTIVE and self.deleted_at is None
-    
+
     # === Public Properties ===
 
     @property
@@ -265,9 +263,9 @@ class UserEntity:
     def clear_events(self) -> None:
         """Clear collected domain events after publishing."""
         self.events.clear()
-    
+
     # === Invariants ===
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure user invariants are met"""
         if not self.email:

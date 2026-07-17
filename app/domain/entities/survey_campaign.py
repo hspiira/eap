@@ -56,11 +56,7 @@ class SurveyCampaign:
             raise DomainError("SurveyCampaign requires external_form_id")
         if len(self.webhook_secret) < 32:
             raise DomainError("webhook_secret must be at least 32 chars")
-        if (
-            self.period_start
-            and self.period_end
-            and self.period_end < self.period_start
-        ):
+        if self.period_start and self.period_end and self.period_end < self.period_start:
             raise DomainError("period_end must be on or after period_start")
         if self.response_count < 0:
             raise DomainError("response_count cannot be negative")
@@ -83,22 +79,16 @@ class SurveyCampaign:
         self.status = SurveyCampaignStatus.ACTIVE
         self.activated_at = now
         self.updated_at = now
-        self.events.append(
-            SurveyCampaignActivated(occurred_at=now, campaign_id=self.id)
-        )
+        self.events.append(SurveyCampaignActivated(occurred_at=now, campaign_id=self.id))
 
     def close(self, now: datetime | None = None) -> None:
         if self.status != SurveyCampaignStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot close survey campaign in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot close survey campaign in status {self.status.value}")
         now = now or utc_now()
         self.status = SurveyCampaignStatus.CLOSED
         self.closed_at = now
         self.updated_at = now
-        self.events.append(
-            SurveyCampaignClosed(occurred_at=now, campaign_id=self.id)
-        )
+        self.events.append(SurveyCampaignClosed(occurred_at=now, campaign_id=self.id))
 
     def is_accepting_responses(self) -> bool:
         return self.status == SurveyCampaignStatus.ACTIVE

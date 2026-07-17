@@ -14,6 +14,7 @@ from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 
 # === Value Object Schemas ===
 
+
 class MoneySchema(BaseModel):
     """Money value object schema for request/response."""
 
@@ -29,6 +30,7 @@ class DateRangeSchema(BaseModel):
 
 
 # === Request Schemas ===
+
 
 class MoneyCreate(BaseModel):
     """Money for creation."""
@@ -82,6 +84,7 @@ class ContractUpdatePaymentStatus(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class ContractResponse(BaseModel):
     """Response schema for contract."""

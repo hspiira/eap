@@ -14,7 +14,9 @@ class IndustryMapper:
             tenant_id=TenantId(model.tenant_id),
             name=model.name,
             description=model.description,
-            parent_industry_id=IndustryId(model.parent_industry_id) if model.parent_industry_id else None,
+            parent_industry_id=IndustryId(model.parent_industry_id)
+            if model.parent_industry_id
+            else None,
             code=model.code,
             _is_active=model.is_active,
             created_at=ensure_utc(model.created_at),
@@ -29,7 +31,9 @@ class IndustryMapper:
             tenant_id=entity.tenant_id.value,
             name=entity.name,
             description=entity.description,
-            parent_industry_id=entity.parent_industry_id.value if entity.parent_industry_id else None,
+            parent_industry_id=entity.parent_industry_id.value
+            if entity.parent_industry_id
+            else None,
             code=entity.code,
             is_active=entity._is_active,
             created_at=ensure_utc(entity.created_at),

@@ -20,6 +20,7 @@ from app.domain.enums import (
 
 # === Request Schemas ===
 
+
 class ServiceSessionCreate(BaseModel):
     """Request schema for creating a service session."""
 
@@ -31,18 +32,28 @@ class ServiceSessionCreate(BaseModel):
 
     # Care Activity Log fields
     session_type: SessionType | None = Field(None, description="Physical or online")
-    category: SessionCategory | None = Field(None, description="Individual / Group / Family / Couples")
+    category: SessionCategory | None = Field(
+        None, description="Individual / Group / Family / Couples"
+    )
     rate_ugx: int | None = Field(None, ge=0, description="Per-session rate in UGX")
     issue_topic: OptionalSanitizedStr = Field(None, description="Presenting issue for this session")
     diagnosis_type_id: str | None = Field(None, description="DiagnosisType reference ID")
     diagnosis_id: str | None = Field(None, description="Diagnosis reference ID")
     approved_by: str | None = Field(None, description="User ID of approver")
-    session_number: int | None = Field(None, ge=1, description="Ordinal session number for this client")
-    partner_name: OptionalSanitizedStr = Field(None, description="Partner name (couples/family sessions)")
-    partner_relationship: OptionalSanitizedStr = Field(None, description="Partner's relationship to client")
+    session_number: int | None = Field(
+        None, ge=1, description="Ordinal session number for this client"
+    )
+    partner_name: OptionalSanitizedStr = Field(
+        None, description="Partner name (couples/family sessions)"
+    )
+    partner_relationship: OptionalSanitizedStr = Field(
+        None, description="Partner's relationship to client"
+    )
     headcount: int | None = Field(None, ge=2, description="Participant count (group sessions)")
     client_type: ClientType | None = Field(None, description="New or repeat client")
-    clinical_outcome: SessionClinicalStatus | None = Field(None, description="Clinical continuation outcome")
+    clinical_outcome: SessionClinicalStatus | None = Field(
+        None, description="Clinical continuation outcome"
+    )
 
 
 class ServiceSessionCompleteRequest(BaseModel):
@@ -72,17 +83,25 @@ class ServiceSessionUpdate(BaseModel):
 
     # Care Activity Log fields
     session_type: SessionType | None = Field(None, description="Physical or online")
-    category: SessionCategory | None = Field(None, description="Individual / Group / Family / Couples")
+    category: SessionCategory | None = Field(
+        None, description="Individual / Group / Family / Couples"
+    )
     rate_ugx: int | None = Field(None, ge=0, description="Per-session rate in UGX")
     issue_topic: OptionalSanitizedStr = Field(None, description="Presenting issue for this session")
     diagnosis_type_id: str | None = Field(None, description="DiagnosisType reference ID")
     diagnosis_id: str | None = Field(None, description="Diagnosis reference ID")
     approved_by: str | None = Field(None, description="User ID of approver")
-    partner_name: OptionalSanitizedStr = Field(None, description="Partner name (couples/family sessions)")
-    partner_relationship: OptionalSanitizedStr = Field(None, description="Partner's relationship to client")
+    partner_name: OptionalSanitizedStr = Field(
+        None, description="Partner name (couples/family sessions)"
+    )
+    partner_relationship: OptionalSanitizedStr = Field(
+        None, description="Partner's relationship to client"
+    )
     headcount: int | None = Field(None, ge=2, description="Participant count (group sessions)")
     client_type: ClientType | None = Field(None, description="New or repeat client")
-    clinical_outcome: SessionClinicalStatus | None = Field(None, description="Clinical continuation outcome")
+    clinical_outcome: SessionClinicalStatus | None = Field(
+        None, description="Clinical continuation outcome"
+    )
 
     @model_validator(mode="after")
     def _validate_at_least_one_field(self) -> "ServiceSessionUpdate":
@@ -98,6 +117,7 @@ class ServiceSessionUpdateFeedback(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class ServiceSessionResponse(BaseModel):
     """Response schema for service session."""
@@ -120,7 +140,9 @@ class ServiceSessionResponse(BaseModel):
 
     # Care Activity Log fields
     session_type: SessionType | None = Field(None, description="Physical or online")
-    category: SessionCategory | None = Field(None, description="Individual / Group / Family / Couples")
+    category: SessionCategory | None = Field(
+        None, description="Individual / Group / Family / Couples"
+    )
     rate_ugx: int | None = Field(None, description="Per-session rate in UGX")
     issue_topic: str | None = Field(None, description="Presenting issue for this session")
     diagnosis_type_id: str | None = Field(None, description="DiagnosisType reference ID")
@@ -131,7 +153,9 @@ class ServiceSessionResponse(BaseModel):
     partner_relationship: str | None = Field(None, description="Partner's relationship to client")
     headcount: int | None = Field(None, description="Participant count (group sessions)")
     client_type: ClientType | None = Field(None, description="New or repeat client")
-    clinical_outcome: SessionClinicalStatus | None = Field(None, description="Clinical continuation outcome")
+    clinical_outcome: SessionClinicalStatus | None = Field(
+        None, description="Clinical continuation outcome"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

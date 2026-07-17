@@ -53,9 +53,7 @@ class TestEndsConditions:
         assert len(sql) == 1
         assert "end_date >=" in sql[0]
 
-    def test_upper_bound_only_expresses_already_expired(
-        self, repo: ContractRepositoryImpl
-    ) -> None:
+    def test_upper_bound_only_expresses_already_expired(self, repo: ContractRepositoryImpl) -> None:
         sql = _sql(repo._ends_conditions(None, NOW))
         assert len(sql) == 1
         assert "end_date <=" in sql[0]
@@ -78,9 +76,7 @@ class TestAutoRenewFilter:
     async def test_true_is_filtered(
         self, repo: ContractRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        assert (await self._filters(repo, monkeypatch, is_auto_renew=True))[
-            "is_auto_renew"
-        ] is True
+        assert (await self._filters(repo, monkeypatch, is_auto_renew=True))["is_auto_renew"] is True
 
     async def test_false_is_filtered_not_dropped(
         self, repo: ContractRepositoryImpl, monkeypatch: pytest.MonkeyPatch
@@ -129,8 +125,6 @@ class TestListAndCountAgree:
     async def test_pagination_reaches_sql(
         self, repo: ContractRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        seen = await self._capture(
-            repo, monkeypatch, "list_all", ends_to=NOW, limit=20, offset=40
-        )
+        seen = await self._capture(repo, monkeypatch, "list_all", ends_to=NOW, limit=20, offset=40)
         assert seen["limit"] == 20
         assert seen["offset"] == 40

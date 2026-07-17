@@ -52,9 +52,7 @@ class TriageScoreRequest(BaseModel):
     """Server-side scoring path: raw Likert answers → scored + recorded triage."""
 
     instrument_code: TriageInstrumentCode
-    responses: dict[str, int] = Field(
-        ..., description="Item code → integer Likert answer"
-    )
+    responses: dict[str, int] = Field(..., description="Item code → integer Likert answer")
 
 
 class TriageItemSchema(BaseModel):

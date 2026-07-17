@@ -35,9 +35,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: EligibleMemberId
-    ) -> EligibleMember | None:
+    async def get_by_id(self, entity_id: EligibleMemberId) -> EligibleMember | None:
         row = await self._session.get(EligibleMemberModel, entity_id.value)
         return EligibleMemberMapper.to_entity(row) if row else None
 
@@ -113,9 +111,7 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: ClinicalSubjectId
-    ) -> ClinicalSubject | None:
+    async def get_by_id(self, entity_id: ClinicalSubjectId) -> ClinicalSubject | None:
         row = await self._session.get(ClinicalSubjectModel, entity_id.value)
         return ClinicalSubjectMapper.to_entity(row) if row else None
 
@@ -155,9 +151,7 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
         return ClinicalSubjectMapper.to_entity(row) if row else None
 
 
-class EligibleMemberClinicalLinkRepositoryImpl(
-    EligibleMemberClinicalLinkRepository
-):
+class EligibleMemberClinicalLinkRepositoryImpl(EligibleMemberClinicalLinkRepository):
     """Every read here emits a structured ``subject-identity-disclosure`` log line.
 
     The DPO uses this stream to demonstrate that re-identification accesses are

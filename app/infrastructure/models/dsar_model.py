@@ -20,9 +20,7 @@ from app.infrastructure.models.base import (
 class DSARRequestModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     __tablename__ = "dsar_requests"
 
-    subject_person_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    subject_person_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     request_type: Mapped[DSARRequestType] = mapped_column(
         EnumValueType(DSARRequestType), nullable=False, index=True
     )
@@ -33,12 +31,8 @@ class DSARRequestModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         index=True,
     )
     requested_by: Mapped[str] = mapped_column(String(25), nullable=False)
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failed_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     output: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     erasure_executes_at: Mapped[datetime | None] = mapped_column(

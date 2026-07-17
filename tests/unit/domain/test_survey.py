@@ -23,9 +23,7 @@ from app.domain.value_objects.core import (
 )
 
 
-def _campaign(
-    *, status: SurveyCampaignStatus = SurveyCampaignStatus.DRAFT
-) -> SurveyCampaign:
+def _campaign(*, status: SurveyCampaignStatus = SurveyCampaignStatus.DRAFT) -> SurveyCampaign:
     now = datetime.now(UTC)
     return SurveyCampaign(
         id=SurveyCampaignId("sc-1"),

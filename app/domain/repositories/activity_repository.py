@@ -21,7 +21,7 @@ class ActivityRepository(BaseRepository[ActivityEntity, ActivityId]):
         self, client_id: str, tenant_id: TenantId
     ) -> Sequence[ActivityEntity]:
         """Get all activities for a client."""
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -37,7 +37,7 @@ class ActivityRepository(BaseRepository[ActivityEntity, ActivityId]):
         offset: int = 0,
     ) -> Sequence[ActivityEntity]:
         """List activities with filtering."""
-    
+
     @abstractmethod
     async def count(
         self,

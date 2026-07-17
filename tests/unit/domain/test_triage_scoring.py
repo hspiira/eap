@@ -105,9 +105,7 @@ class TestJoseph7:
         assert r.crisis_flag is False
 
     def test_moderate_band(self):
-        r = score_triage(
-            TriageInstrumentCode.JOSEPH7, _joseph(q1=2, q2=2, q3=2, q4=1)
-        )
+        r = score_triage(TriageInstrumentCode.JOSEPH7, _joseph(q1=2, q2=2, q3=2, q4=1))
         assert r.risk_level == TriageRiskLevel.MODERATE
         assert r.scores["total"] == 7
 

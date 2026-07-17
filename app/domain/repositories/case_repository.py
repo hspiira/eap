@@ -13,13 +13,11 @@ from app.domain.value_objects.core import (
 class CaseRepository(BaseRepository[Case, CaseId]):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 100, offset: int = 0
-    ) -> list[Case]:
-        ...
+    ) -> list[Case]: ...
 
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[Case]:
-        ...
+    ) -> list[Case]: ...
 
     async def list_for_counsellor(
         self,
@@ -27,5 +25,4 @@ class CaseRepository(BaseRepository[Case, CaseId]):
         counsellor_id: PersonId,
         *,
         limit: int = 100,
-    ) -> list[Case]:
-        ...
+    ) -> list[Case]: ...

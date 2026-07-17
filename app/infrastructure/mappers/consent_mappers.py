@@ -33,9 +33,7 @@ class ConsentMapper:
         entity = Consent(
             id=ConsentId(model.id),
             tenant_id=TenantId(model.tenant_id),
-            subject_clinical_subject_id=ClinicalSubjectId(
-                model.subject_clinical_subject_id
-            ),
+            subject_clinical_subject_id=ClinicalSubjectId(model.subject_clinical_subject_id),
             case_id=CaseId(model.case_id) if model.case_id else None,
             scope=ConsentScope(model.scope),
             purpose=ConsentPurpose(model.purpose),
@@ -45,18 +43,12 @@ class ConsentMapper:
             requested_at=ensure_utc(model.requested_at),
             requested_by=UserId(model.requested_by),
             expires_on=model.expires_on,
-            granted_at=ensure_utc(model.granted_at)
-            if model.granted_at
-            else None,
+            granted_at=ensure_utc(model.granted_at) if model.granted_at else None,
             granted_by_subject_reference=model.granted_by_subject_reference,
-            signed_artifact_document_id=DocumentId(
-                model.signed_artifact_document_id
-            )
+            signed_artifact_document_id=DocumentId(model.signed_artifact_document_id)
             if model.signed_artifact_document_id
             else None,
-            revoked_at=ensure_utc(model.revoked_at)
-            if model.revoked_at
-            else None,
+            revoked_at=ensure_utc(model.revoked_at) if model.revoked_at else None,
             revoked_reason=model.revoked_reason,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -79,16 +71,12 @@ class ConsentMapper:
             requested_at=ensure_utc(entity.requested_at),
             requested_by=entity.requested_by.value,
             expires_on=entity.expires_on,
-            granted_at=ensure_utc(entity.granted_at)
-            if entity.granted_at
-            else None,
+            granted_at=ensure_utc(entity.granted_at) if entity.granted_at else None,
             granted_by_subject_reference=entity.granted_by_subject_reference,
             signed_artifact_document_id=entity.signed_artifact_document_id.value
             if entity.signed_artifact_document_id
             else None,
-            revoked_at=ensure_utc(entity.revoked_at)
-            if entity.revoked_at
-            else None,
+            revoked_at=ensure_utc(entity.revoked_at) if entity.revoked_at else None,
             revoked_reason=entity.revoked_reason,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
@@ -103,9 +91,7 @@ class DataSharingRegisterMapper:
         return DataSharingRegisterEntry(
             id=DataSharingRegisterEntryId(model.id),
             tenant_id=TenantId(model.tenant_id),
-            subject_clinical_subject_id=ClinicalSubjectId(
-                model.subject_clinical_subject_id
-            ),
+            subject_clinical_subject_id=ClinicalSubjectId(model.subject_clinical_subject_id),
             consent_id=ConsentId(model.consent_id) if model.consent_id else None,
             case_id=CaseId(model.case_id) if model.case_id else None,
             shared_with=model.shared_with,
@@ -152,9 +138,7 @@ class DPOContactMapper:
             role_title=model.role_title,
             effective_from=model.effective_from,
             effective_until=model.effective_until,
-            appointed_by=UserId(model.appointed_by)
-            if model.appointed_by
-            else None,
+            appointed_by=UserId(model.appointed_by) if model.appointed_by else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -170,9 +154,7 @@ class DPOContactMapper:
             role_title=entity.role_title,
             effective_from=entity.effective_from,
             effective_until=entity.effective_until,
-            appointed_by=entity.appointed_by.value
-            if entity.appointed_by
-            else None,
+            appointed_by=entity.appointed_by.value if entity.appointed_by else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )

@@ -120,9 +120,7 @@ async def create_campaign(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -152,9 +150,7 @@ async def activate_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -177,9 +173,7 @@ async def complete_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -202,9 +196,7 @@ async def archive_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -228,9 +220,7 @@ async def update_counsellor_pool(
     data: CounsellorPoolUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -252,9 +242,7 @@ async def update_counsellor_pool(
 @readonly()
 async def get_campaign(
     campaign_id: str,
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
     campaign = await repo.get_by_id(CareCallbackCampaignId(campaign_id))
@@ -271,9 +259,7 @@ async def get_campaign(
 @readonly()
 async def campaign_summary(
     campaign_id: str,
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -293,14 +279,10 @@ async def list_campaigns(
     tenant_id: str = Query(..., description="Tenant identifier"),
     pg: PageParams = Depends(pagination()),
     current_user: TokenData = Depends(require_same_tenant),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    campaigns = await repo.list_for_tenant(
-        TenantId(tenant_id), limit=pg.limit, offset=pg.offset
-    )
+    campaigns = await repo.list_for_tenant(TenantId(tenant_id), limit=pg.limit, offset=pg.offset)
     return [_to_campaign_response(c) for c in campaigns]
 
 
@@ -319,15 +301,11 @@ async def enrol_persons(
     data: EnrolPersonsRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    campaign_repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    records = await EnrolPersonsInCampaignUseCase(
-        campaign_repo, outreach_repo
-    ).execute(
+    records = await EnrolPersonsInCampaignUseCase(campaign_repo, outreach_repo).execute(
         campaign_id=CareCallbackCampaignId(campaign_id),
         person_ids=[PersonId(p) for p in data.person_ids],
     )
@@ -632,9 +610,7 @@ async def get_outreach(
 async def list_campaign_outreach(
     campaign_id: str,
     pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
-    campaign_repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):

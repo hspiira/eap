@@ -36,9 +36,7 @@ class OutcomeMeasureModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     instrument_code: Mapped[TriageInstrumentCode] = mapped_column(
         EnumValueType(TriageInstrumentCode), nullable=False, index=True
     )
@@ -51,17 +49,13 @@ class OutcomeMeasureModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     meets_clinically_significant_change: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    recorded_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class FitnessForDutyModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     __tablename__ = "fitness_for_duty"
 
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     requested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
@@ -76,9 +70,7 @@ class FitnessForDutyModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         index=True,
     )
     case_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
-    assessed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    assessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     assessor_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
     accommodation_recommendations: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, server_default="[]"
@@ -91,9 +83,7 @@ class FitnessForDutyModel(CuidMixin, TenantMixin, Base, TimestampMixin):
 class ReturnToWorkPlanModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     __tablename__ = "return_to_work_plans"
 
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     starts_on: Mapped[date] = mapped_column(Date, nullable=False)
     ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -103,27 +93,13 @@ class ReturnToWorkPlanModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         default=ReturnToWorkPlanStatus.DRAFT,
         index=True,
     )
-    accommodations: Mapped[list[dict]] = mapped_column(
-        JSONB, nullable=False, server_default="[]"
-    )
+    accommodations: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default="[]")
     case_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
-    fitness_for_duty_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
-    employer_signoff_user_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
-    clinician_signoff_user_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
-    activated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    cancelled_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    fitness_for_duty_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    employer_signoff_user_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    clinician_signoff_user_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_at: Mapped[date | None] = mapped_column(Date, nullable=True)

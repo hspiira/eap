@@ -59,23 +59,17 @@ class EmployeeCodeGenerator:
         client_code = client.code
 
         if family_id:
-            family_code = await self._get_family_code(
-                client_id, tenant_id, family_id
-            )
+            family_code = await self._get_family_code(client_id, tenant_id, family_id)
         elif person_id:
             person = await self.person_repository.get_by_id(person_id)
             if person and person.family_id:
-                family_code = await self._get_family_code(
-                    client_id, tenant_id, person.family_id
-                )
+                family_code = await self._get_family_code(client_id, tenant_id, person.family_id)
             else:
                 family_code = await self._get_next_family_code(client_id, tenant_id)
         else:
             family_code = await self._get_next_family_code(client_id, tenant_id)
 
-        member_code = await self._get_next_member_code(
-            client_id, tenant_id, family_code
-        )
+        member_code = await self._get_next_member_code(client_id, tenant_id, family_code)
 
         return ClientEmployeeCode(
             client_code=client_code,
@@ -105,9 +99,7 @@ class EmployeeCodeGenerator:
             raise ValueError(f"Family head {family_id.value} not found")
 
         if not family_head.employment_info:
-            raise ValueError(
-                f"Family head {family_id.value} is not a client employee"
-            )
+            raise ValueError(f"Family head {family_id.value} is not a client employee")
 
         if family_head.employment_info.client_id != client_id:
             raise ValueError(
@@ -118,9 +110,7 @@ class EmployeeCodeGenerator:
         employee_code = family_head.employment_info.employee_code
         return employee_code.family_code
 
-    async def _get_next_family_code(
-        self, client_id: ClientId, tenant_id: TenantId
-    ) -> str:
+    async def _get_next_family_code(self, client_id: ClientId, tenant_id: TenantId) -> str:
         """
         Get the next available family code for a client.
 
@@ -131,16 +121,11 @@ class EmployeeCodeGenerator:
         Returns:
             Next available family code (2-digit string, zero-padded)
         """
-        employees = await self.person_repository.get_by_type(
-            tenant_id, PersonType.CLIENT_EMPLOYEE
-        )
+        employees = await self.person_repository.get_by_type(tenant_id, PersonType.CLIENT_EMPLOYEE)
 
         family_codes: set[str] = set()
         for employee in employees:
-            if (
-                employee.employment_info
-                and employee.employment_info.client_id == client_id
-            ):
+            if employee.employment_info and employee.employment_info.client_id == client_id:
                 family_codes.add(employee.employment_info.employee_code.family_code)
 
         next_code = 0
@@ -150,9 +135,7 @@ class EmployeeCodeGenerator:
                 return family_code_str
             next_code += 1
             if next_code > 99:
-                raise ValueError(
-                    f"Maximum family codes (99) reached for client {client_id.value}"
-                )
+                raise ValueError(f"Maximum family codes (99) reached for client {client_id.value}")
 
     async def _get_next_member_code(
         self, client_id: ClientId, tenant_id: TenantId, family_code: str
@@ -168,9 +151,7 @@ class EmployeeCodeGenerator:
         Returns:
             Next available member code (2-digit string, zero-padded)
         """
-        employees = await self.person_repository.get_by_type(
-            tenant_id, PersonType.CLIENT_EMPLOYEE
-        )
+        employees = await self.person_repository.get_by_type(tenant_id, PersonType.CLIENT_EMPLOYEE)
 
         member_codes: set[str] = set()
         for employee in employees:
@@ -179,24 +160,17 @@ class EmployeeCodeGenerator:
                 and employee.employment_info.client_id == client_id
                 and employee.employment_info.employee_code.family_code == family_code
             ):
-                member_codes.add(
-                    employee.employment_info.employee_code.member_code
-                )
+                member_codes.add(employee.employment_info.employee_code.member_code)
 
-        dependents = await self.person_repository.get_by_type(
-            tenant_id, PersonType.DEPENDENT
-        )
+        dependents = await self.person_repository.get_by_type(tenant_id, PersonType.DEPENDENT)
         for dependent in dependents:
             if dependent.family_id:
-                family_head = await self.person_repository.get_by_id(
-                    dependent.family_id
-                )
+                family_head = await self.person_repository.get_by_id(dependent.family_id)
                 if (
                     family_head
                     and family_head.employment_info
                     and family_head.employment_info.client_id == client_id
-                    and family_head.employment_info.employee_code.family_code
-                    == family_code
+                    and family_head.employment_info.employee_code.family_code == family_code
                 ):
                     pass
 

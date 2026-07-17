@@ -12,23 +12,23 @@ from pydantic import BaseModel, Field, field_validator
 def validate_email_with_test(email: str) -> str:
     """
     Validate email address, allowing .test domains for admin users.
-    
+
     This validator accepts standard email formats plus .test domains
     which are used for automatically created admin users.
     """
     # Standard email regex pattern
     email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    
+
     # Check if it's a .test domain (used for admin users)
     test_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.test$"
-    
+
     if re.match(test_pattern, email):
         return email
-    
+
     # Otherwise validate as standard email
     if re.match(email_pattern, email):
         return email
-    
+
     raise ValueError("Invalid email address format")
 
 

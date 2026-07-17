@@ -171,9 +171,7 @@ class ExecuteErasureUseCase:
         if req.request_type != DSARRequestType.ERASURE:
             raise DomainError("ExecuteErasureUseCase only handles ERASURE requests")
         if req.is_within_reversible_window():
-            raise DomainError(
-                "Cannot execute erasure during the reversible window"
-            )
+            raise DomainError("Cannot execute erasure during the reversible window")
         req.start()
         await self._repo.save(req)
         try:

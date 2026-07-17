@@ -47,9 +47,7 @@ class EAPProgrammeRepositoryImpl(EAPProgrammeRepository):
             existing.geographic_scope = new_model.geographic_scope
             existing.description = new_model.description
             existing.caps = new_model.caps
-            existing.eligible_dependent_relations = (
-                new_model.eligible_dependent_relations
-            )
+            existing.eligible_dependent_relations = new_model.eligible_dependent_relations
             existing.is_active = new_model.is_active
             existing.updated_at = new_model.updated_at
         await self._session.flush()
@@ -64,9 +62,7 @@ class EAPProgrammeRepositoryImpl(EAPProgrammeRepository):
         existing = await self._session.get(EAPProgrammeModel, entity_id.value)
         return existing is not None
 
-    async def list_for_tenant(
-        self, tenant_id: TenantId, *, limit: int = 50
-    ) -> list[EAPProgramme]:
+    async def list_for_tenant(self, tenant_id: TenantId, *, limit: int = 50) -> list[EAPProgramme]:
         stmt = (
             select(EAPProgrammeModel)
             .where(EAPProgrammeModel.tenant_id == tenant_id.value)
@@ -114,14 +110,10 @@ class AuthorizationRepositoryImpl(AuthorizationRepository):
             existing.status = new_model.status
             existing.granted_at = new_model.granted_at
             existing.expires_on = new_model.expires_on
-            existing.extension_requested_sessions = (
-                new_model.extension_requested_sessions
-            )
+            existing.extension_requested_sessions = new_model.extension_requested_sessions
             existing.extension_requested_by = new_model.extension_requested_by
             existing.extension_requested_at = new_model.extension_requested_at
-            existing.extension_clinician_signoff = (
-                new_model.extension_clinician_signoff
-            )
+            existing.extension_clinician_signoff = new_model.extension_clinician_signoff
             existing.extension_admin_signoff = new_model.extension_admin_signoff
             existing.extended_at = new_model.extended_at
             existing.closed_at = new_model.closed_at
@@ -138,9 +130,7 @@ class AuthorizationRepositoryImpl(AuthorizationRepository):
         existing = await self._session.get(AuthorizationModel, entity_id.value)
         return existing is not None
 
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[Authorization]:
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[Authorization]:
         stmt = (
             select(AuthorizationModel)
             .where(

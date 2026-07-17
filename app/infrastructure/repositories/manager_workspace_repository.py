@@ -57,9 +57,7 @@ class ManagerConsultRepositoryImpl(ManagerConsultRepository):
             existing.topic = new_model.topic
             existing.notes = new_model.notes
             existing.client_id = new_model.client_id
-            existing.triggered_referral_case_id = (
-                new_model.triggered_referral_case_id
-            )
+            existing.triggered_referral_case_id = new_model.triggered_referral_case_id
             existing.closed_at = new_model.closed_at
             existing.updated_at = new_model.updated_at
         await self._session.flush()
@@ -93,16 +91,12 @@ class WorkLifeProviderRepositoryImpl(WorkLifeProviderRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: WorkLifeProviderId
-    ) -> WorkLifeProvider | None:
+    async def get_by_id(self, entity_id: WorkLifeProviderId) -> WorkLifeProvider | None:
         row = await self._session.get(WorkLifeProviderModel, entity_id.value)
         return WorkLifeProviderMapper.to_entity(row) if row else None
 
     async def save(self, entity: WorkLifeProvider) -> None:
-        existing = await self._session.get(
-            WorkLifeProviderModel, entity.id.value
-        )
+        existing = await self._session.get(WorkLifeProviderModel, entity.id.value)
         new_model = WorkLifeProviderMapper.to_model(entity)
         if existing is None:
             self._session.add(new_model)
@@ -121,17 +115,13 @@ class WorkLifeProviderRepositoryImpl(WorkLifeProviderRepository):
         await self._session.flush()
 
     async def delete(self, entity_id: WorkLifeProviderId) -> None:
-        existing = await self._session.get(
-            WorkLifeProviderModel, entity_id.value
-        )
+        existing = await self._session.get(WorkLifeProviderModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: WorkLifeProviderId) -> bool:
-        existing = await self._session.get(
-            WorkLifeProviderModel, entity_id.value
-        )
+        existing = await self._session.get(WorkLifeProviderModel, entity_id.value)
         return existing is not None
 
     async def list_for_service(
@@ -157,16 +147,12 @@ class WorkLifeReferralRepositoryImpl(WorkLifeReferralRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: WorkLifeReferralId
-    ) -> WorkLifeReferral | None:
+    async def get_by_id(self, entity_id: WorkLifeReferralId) -> WorkLifeReferral | None:
         row = await self._session.get(WorkLifeReferralModel, entity_id.value)
         return WorkLifeReferralMapper.to_entity(row) if row else None
 
     async def save(self, entity: WorkLifeReferral) -> None:
-        existing = await self._session.get(
-            WorkLifeReferralModel, entity.id.value
-        )
+        existing = await self._session.get(WorkLifeReferralModel, entity.id.value)
         new_model = WorkLifeReferralMapper.to_model(entity)
         if existing is None:
             self._session.add(new_model)
@@ -180,17 +166,13 @@ class WorkLifeReferralRepositoryImpl(WorkLifeReferralRepository):
         await self._session.flush()
 
     async def delete(self, entity_id: WorkLifeReferralId) -> None:
-        existing = await self._session.get(
-            WorkLifeReferralModel, entity_id.value
-        )
+        existing = await self._session.get(WorkLifeReferralModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: WorkLifeReferralId) -> bool:
-        existing = await self._session.get(
-            WorkLifeReferralModel, entity_id.value
-        )
+        existing = await self._session.get(WorkLifeReferralModel, entity_id.value)
         return existing is not None
 
     async def list_for_subject(
@@ -212,16 +194,12 @@ class TrainingEnrolmentRepositoryImpl(TrainingEnrolmentRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: TrainingEnrolmentId
-    ) -> TrainingEnrolment | None:
+    async def get_by_id(self, entity_id: TrainingEnrolmentId) -> TrainingEnrolment | None:
         row = await self._session.get(TrainingEnrolmentModel, entity_id.value)
         return TrainingEnrolmentMapper.to_entity(row) if row else None
 
     async def save(self, entity: TrainingEnrolment) -> None:
-        existing = await self._session.get(
-            TrainingEnrolmentModel, entity.id.value
-        )
+        existing = await self._session.get(TrainingEnrolmentModel, entity.id.value)
         new_model = TrainingEnrolmentMapper.to_model(entity)
         if existing is None:
             self._session.add(new_model)
@@ -235,17 +213,13 @@ class TrainingEnrolmentRepositoryImpl(TrainingEnrolmentRepository):
         await self._session.flush()
 
     async def delete(self, entity_id: TrainingEnrolmentId) -> None:
-        existing = await self._session.get(
-            TrainingEnrolmentModel, entity_id.value
-        )
+        existing = await self._session.get(TrainingEnrolmentModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: TrainingEnrolmentId) -> bool:
-        existing = await self._session.get(
-            TrainingEnrolmentModel, entity_id.value
-        )
+        existing = await self._session.get(TrainingEnrolmentModel, entity_id.value)
         return existing is not None
 
     async def list_for_trainee(

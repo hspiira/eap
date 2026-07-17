@@ -9,10 +9,7 @@ from app.domain.value_objects.core import (
 )
 
 
-class NonCompeteClauseRepository(
-    BaseRepository[NonCompeteClauseEntity, NonCompeteClauseId]
-):
+class NonCompeteClauseRepository(BaseRepository[NonCompeteClauseEntity, NonCompeteClauseId]):
     async def list_for_provider(
         self, tenant_id: TenantId, provider_id: PersonId
-    ) -> list[NonCompeteClauseEntity]:
-        ...
+    ) -> list[NonCompeteClauseEntity]: ...

@@ -23,9 +23,7 @@ class ServiceRepository(BaseRepository[ServiceEntity, ServiceId]):
     """
 
     @abstractmethod
-    async def get_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ServiceEntity | None:
+    async def get_by_name(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
         """
         Get service by name within a tenant.
 
@@ -53,7 +51,7 @@ class ServiceRepository(BaseRepository[ServiceEntity, ServiceId]):
     ) -> Sequence[ServiceEntity]:
         """
         List services with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by service status
@@ -64,11 +62,11 @@ class ServiceRepository(BaseRepository[ServiceEntity, ServiceId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of ServiceEntity
         """
-    
+
     @abstractmethod
     async def count(
         self,
@@ -80,14 +78,14 @@ class ServiceRepository(BaseRepository[ServiceEntity, ServiceId]):
     ) -> int:
         """
         Count services matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by service status
             category: Filter by service category
             is_group_service: Filter by group service flag
             search: Search in service name or description
-            
+
         Returns:
             Total count
         """

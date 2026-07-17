@@ -13,7 +13,9 @@ from app.infrastructure.models.industry_model import IndustryModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class IndustryRepositoryImpl(TenantScopedRepositoryImpl[IndustryEntity, IndustryModel, IndustryId], IndustryRepository):
+class IndustryRepositoryImpl(
+    TenantScopedRepositoryImpl[IndustryEntity, IndustryModel, IndustryId], IndustryRepository
+):
     """
     SQLAlchemy implementation of IndustryRepository.
 
@@ -60,7 +62,9 @@ class IndustryRepositoryImpl(TenantScopedRepositoryImpl[IndustryEntity, Industry
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_children(self, parent_id: IndustryId, tenant_id: TenantId) -> Sequence[IndustryEntity]:
+    async def get_children(
+        self, parent_id: IndustryId, tenant_id: TenantId
+    ) -> Sequence[IndustryEntity]:
         """Get all child industries of a parent."""
         stmt = select(IndustryModel).where(
             IndustryModel.parent_industry_id == parent_id.value,

@@ -21,17 +21,18 @@ def audit_use_case(
 ):
     """
     Decorator to automatically audit use case executions.
-    
+
     Usage:
         @audit_use_case(get_audit_repository)
         async def execute(self, ...):
             ...
-    
+
     Args:
         audit_repository_factory: Factory function to create audit repository
         tenant_id_extractor: Function to extract tenant_id from use case args
         user_id_extractor: Function to extract user_id from use case args
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         async def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:

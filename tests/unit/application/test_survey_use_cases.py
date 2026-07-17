@@ -64,10 +64,7 @@ class _FakeResponseRepo:
 
     async def find_by_external_id(self, campaign_id, external_response_id):
         for r in self.responses.values():
-            if (
-                r.campaign_id == campaign_id
-                and r.external_response_id == external_response_id
-            ):
+            if r.campaign_id == campaign_id and r.external_response_id == external_response_id:
                 return r
         return None
 

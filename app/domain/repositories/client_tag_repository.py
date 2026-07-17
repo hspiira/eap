@@ -16,11 +16,9 @@ class ClientTagRepository(BaseRepository[ClientTagEntity, ClientTagId]):
     """Repository interface for ClientTag aggregate."""
 
     @abstractmethod
-    async def get_by_name(
-        self, name: str, tenant_id: TenantId
-    ) -> ClientTagEntity | None:
+    async def get_by_name(self, name: str, tenant_id: TenantId) -> ClientTagEntity | None:
         """Get tag by name within a tenant."""
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -31,7 +29,7 @@ class ClientTagRepository(BaseRepository[ClientTagEntity, ClientTagId]):
         offset: int = 0,
     ) -> Sequence[ClientTagEntity]:
         """List tags with filtering."""
-    
+
     @abstractmethod
     async def count(
         self,

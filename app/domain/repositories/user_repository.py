@@ -34,7 +34,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         Returns:
             UserEntity if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -65,7 +65,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         Returns:
             Sequence of UserEntity
         """
-    
+
     @abstractmethod
     async def count(
         self,

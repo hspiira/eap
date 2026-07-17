@@ -35,8 +35,14 @@ class UserMapper:
         preferred_language = (
             Language(model.preferred_language) if model.preferred_language else None
         )
-        role = TenantRole(model.role) if getattr(model, "role", None) is not None else TenantRole.USER
-        auth_provider = AuthProvider(model.auth_provider) if getattr(model, "auth_provider", None) else AuthProvider.PASSWORD
+        role = (
+            TenantRole(model.role) if getattr(model, "role", None) is not None else TenantRole.USER
+        )
+        auth_provider = (
+            AuthProvider(model.auth_provider)
+            if getattr(model, "auth_provider", None)
+            else AuthProvider.PASSWORD
+        )
 
         # Create entity
         return UserEntity(
@@ -83,9 +89,7 @@ class UserMapper:
             email_verified_at=entity.email_verified_at,
             status=entity.status,
             status_changed_at=entity.status_changed_at,
-            preferred_language=entity.preferred_language
-            if entity.preferred_language
-            else None,
+            preferred_language=entity.preferred_language if entity.preferred_language else None,
             timezone=entity.timezone,
             is_two_factor_enabled=entity.is_two_factor_enabled,
             last_login_at=entity.last_login_at,

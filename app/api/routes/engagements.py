@@ -265,9 +265,7 @@ async def activate_engagement(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "Engagement")
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.ACTIVATE
-    )
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.ACTIVATE)
     await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
@@ -287,9 +285,7 @@ async def deliver_engagement(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "Engagement")
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.DELIVER
-    )
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.DELIVER)
     await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
@@ -309,9 +305,7 @@ async def invoice_engagement(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "Engagement")
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.INVOICE
-    )
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.INVOICE)
     await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
@@ -331,8 +325,6 @@ async def close_engagement(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "Engagement")
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.CLOSE
-    )
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.CLOSE)
     await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)

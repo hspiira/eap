@@ -23,18 +23,12 @@ class PasswordSetTokenModel(CuidMixin, Base):
 
     __tablename__ = "password_set_tokens"
 
-    token_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, nullable=False, index=True
-    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(
         String(25),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    used_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

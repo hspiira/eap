@@ -54,8 +54,6 @@ def is_clinical_event(event_type: str | None) -> bool:
     return any(p in event_type for p in CLINICAL_EVENT_PATTERNS)
 
 
-def is_special_category(
-    *, resource_type: str | None = None, event_type: str | None = None
-) -> bool:
+def is_special_category(*, resource_type: str | None = None, event_type: str | None = None) -> bool:
     """True when either the resource type or event name flags clinical data."""
     return is_clinical_resource(resource_type) or is_clinical_event(event_type)

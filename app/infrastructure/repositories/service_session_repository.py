@@ -27,7 +27,10 @@ from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ServiceSessionRepositoryImpl(TenantScopedRepositoryImpl[ServiceSessionEntity, ServiceSessionModel, SessionId], ServiceSessionRepository):
+class ServiceSessionRepositoryImpl(
+    TenantScopedRepositoryImpl[ServiceSessionEntity, ServiceSessionModel, SessionId],
+    ServiceSessionRepository,
+):
     """
     SQLAlchemy implementation of ServiceSessionRepository.
 

@@ -25,15 +25,11 @@ class EAPProgrammeModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     effective_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     geographic_scope: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    caps: Mapped[list[dict]] = mapped_column(
-        JSONB, nullable=False, server_default="[]"
-    )
+    caps: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, server_default="[]")
     eligible_dependent_relations: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, server_default="[]"
     )
-    is_active: Mapped[bool] = mapped_column(
-        nullable=False, default=True, server_default="true"
-    )
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True, server_default="true")
     created_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
 
 
@@ -45,9 +41,7 @@ class AuthorizationModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     programme_id: Mapped[str] = mapped_column(
         ForeignKey("eap_programmes.id", ondelete="RESTRICT"),
         nullable=False,
@@ -57,37 +51,21 @@ class AuthorizationModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         EnumValueType(ServiceCategory), nullable=False, index=True
     )
     sessions_granted: Mapped[int] = mapped_column(Integer, nullable=False)
-    sessions_used: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
+    sessions_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[AuthorizationStatus] = mapped_column(
         EnumValueType(AuthorizationStatus),
         nullable=False,
         default=AuthorizationStatus.ACTIVE,
         index=True,
     )
-    granted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
-    extension_requested_sessions: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
-    extension_requested_by: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
+    extension_requested_sessions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    extension_requested_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
     extension_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    extension_clinician_signoff: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
-    extension_admin_signoff: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
-    extended_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    closed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    extension_clinician_signoff: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    extension_admin_signoff: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    extended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

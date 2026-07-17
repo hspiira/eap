@@ -18,12 +18,8 @@ class TenantSettingsCreate(BaseModel):
 
     max_users: int = Field(default=10, ge=1, description="Maximum users allowed")
     max_clients: int = Field(default=5, ge=1, description="Maximum clients allowed")
-    features_enabled: list[str] = Field(
-        default_factory=list, description="Enabled feature names"
-    )
-    custom_branding: bool = Field(
-        default=False, description="Whether custom branding is enabled"
-    )
+    features_enabled: list[str] = Field(default_factory=list, description="Enabled feature names")
+    custom_branding: bool = Field(default=False, description="Whether custom branding is enabled")
 
 
 class TenantCreate(BaseModel):
@@ -55,9 +51,7 @@ class TenantCreate(BaseModel):
         import re
 
         if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", v):
-            raise ValueError(
-                "Code must be lowercase alphanumeric with optional hyphens"
-            )
+            raise ValueError("Code must be lowercase alphanumeric with optional hyphens")
         return v.lower()
 
     @field_validator("admin_email")
@@ -66,6 +60,7 @@ class TenantCreate(BaseModel):
         if v is None:
             return v
         import re
+
         if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", v):
             raise ValueError("Invalid email address")
         return v.lower().strip()
@@ -93,9 +88,7 @@ class TenantResponse(BaseModel):
     azure_tenant_id: str | None = Field(
         None, description="Azure AD directory ID for SSO (tid claim)"
     )
-    azure_sso_enabled: bool = Field(
-        default=False, description="Whether Azure SSO is enabled"
-    )
+    azure_sso_enabled: bool = Field(default=False, description="Whether Azure SSO is enabled")
     admin_email: str | None = Field(
         None, description="Admin user email (only returned on creation)"
     )
@@ -120,12 +113,8 @@ class TenantUpdateSettings(BaseModel):
 
     max_users: int | None = Field(None, ge=1, description="Maximum users allowed")
     max_clients: int | None = Field(None, ge=1, description="Maximum clients allowed")
-    features_enabled: list[str] | None = Field(
-        None, description="Enabled feature names"
-    )
-    custom_branding: bool | None = Field(
-        None, description="Whether custom branding is enabled"
-    )
+    features_enabled: list[str] | None = Field(None, description="Enabled feature names")
+    custom_branding: bool | None = Field(None, description="Whether custom branding is enabled")
 
 
 class TenantSuspendRequest(BaseModel):
@@ -143,7 +132,9 @@ class TenantTerminateRequest(BaseModel):
 class TenantUpdate(BaseModel):
     """Request schema for updating tenant basic information."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Tenant name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Tenant name"
+    )
 
 
 class TenantAzureSsoRequest(BaseModel):

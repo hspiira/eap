@@ -52,15 +52,9 @@ class KPIModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
 
     # Targets and thresholds
-    target_value: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
-    threshold_min: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
-    threshold_max: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
+    target_value: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    threshold_min: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    threshold_max: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     formula: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Status
@@ -70,9 +64,7 @@ class KPIModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
         return f"<KPIModel(id={self.id}, name={self.name}, category={self.category})>"
 
 
-class KPIAssignmentModel(
-    CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin
-):
+class KPIAssignmentModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     """
     SQLAlchemy Model for KPI Assignment aggregate.
 
@@ -93,9 +85,7 @@ class KPIAssignmentModel(
     )
 
     # KPI reference
-    kpi_id: Mapped[str] = mapped_column(
-        ForeignKey("kpis.id"), nullable=False, index=True
-    )
+    kpi_id: Mapped[str] = mapped_column(ForeignKey("kpis.id"), nullable=False, index=True)
 
     # Associations - one of these must be set
     client_id: Mapped[str | None] = mapped_column(
@@ -106,9 +96,7 @@ class KPIAssignmentModel(
     )
 
     # Assignment-specific target (overrides KPI target if set)
-    target_value: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
+    target_value: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     # Status
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)

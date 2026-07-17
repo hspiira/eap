@@ -23,9 +23,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
     """
 
     @abstractmethod
-    async def get_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ClientEntity | None:
+    async def get_by_name(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
         """
         Get client by name within a tenant.
 
@@ -36,7 +34,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         Returns:
             ClientEntity if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_all(
         self,

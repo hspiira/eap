@@ -60,9 +60,7 @@ class TestBuildRenewalPackSections:
             "client_id": "client-1"
         }
         # Sessions stays tenant-wide in v1:
-        assert (
-            by_query[ReportQueryType.SESSIONS_BY_MONTH].parameters == {}
-        )
+        assert by_query[ReportQueryType.SESSIONS_BY_MONTH].parameters == {}
 
     def test_every_section_has_a_narrative(self):
         for s in build_renewal_pack_sections():
@@ -74,9 +72,7 @@ class TestRenewalPackSeeder:
     @pytest.mark.asyncio
     async def test_creates_tenant_wide_template(self):
         repo = _FakeTemplateRepo()
-        out = await CreateRenewalPackTemplateUseCase(repo).execute(
-            tenant_id=TenantId("t-1")
-        )
+        out = await CreateRenewalPackTemplateUseCase(repo).execute(tenant_id=TenantId("t-1"))
         assert out.code == RENEWAL_PACK_CODE
         assert out.is_active is True
         assert len(out.sections) == 5
@@ -84,21 +80,15 @@ class TestRenewalPackSeeder:
     @pytest.mark.asyncio
     async def test_idempotent_when_called_twice(self):
         repo = _FakeTemplateRepo()
-        first = await CreateRenewalPackTemplateUseCase(repo).execute(
-            tenant_id=TenantId("t-1")
-        )
-        second = await CreateRenewalPackTemplateUseCase(repo).execute(
-            tenant_id=TenantId("t-1")
-        )
+        first = await CreateRenewalPackTemplateUseCase(repo).execute(tenant_id=TenantId("t-1"))
+        second = await CreateRenewalPackTemplateUseCase(repo).execute(tenant_id=TenantId("t-1"))
         assert first.id.value == second.id.value
         assert len(repo.templates) == 1
 
     @pytest.mark.asyncio
     async def test_per_client_variant_distinct_from_default(self):
         repo = _FakeTemplateRepo()
-        default = await CreateRenewalPackTemplateUseCase(repo).execute(
-            tenant_id=TenantId("t-1")
-        )
+        default = await CreateRenewalPackTemplateUseCase(repo).execute(tenant_id=TenantId("t-1"))
         scoped = await CreateRenewalPackTemplateUseCase(repo).execute(
             tenant_id=TenantId("t-1"), client_id="client-1"
         )

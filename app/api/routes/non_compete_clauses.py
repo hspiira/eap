@@ -181,7 +181,5 @@ async def list_for_provider(
     repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    clauses = await repo.list_for_provider(
-        TenantId(tenant_id), PersonId(provider_id)
-    )
+    clauses = await repo.list_for_provider(TenantId(tenant_id), PersonId(provider_id))
     return [_to_response(c) for c in clauses]

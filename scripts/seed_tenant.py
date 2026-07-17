@@ -94,7 +94,9 @@ def parse_args() -> argparse.Namespace:
         if not args.azure_tenant_id:
             p.error("--existing requires --azure-tenant-id (nothing else to do otherwise)")
     else:
-        missing = [f for f, v in {"--name": args.name, "--admin-email": args.admin_email}.items() if not v]
+        missing = [
+            f for f, v in {"--name": args.name, "--admin-email": args.admin_email}.items() if not v
+        ]
         if missing:
             p.error(f"create mode requires: {', '.join(missing)}")
 

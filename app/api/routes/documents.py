@@ -68,9 +68,7 @@ def _to_document_response(document: DocumentEntity) -> DocumentResponse:
         file_size=document.file_size,
         mime_type=document.mime_type,
         previous_version_id=(
-            document.previous_version_id.value
-            if document.previous_version_id
-            else None
+            document.previous_version_id.value if document.previous_version_id else None
         ),
         uploaded_by=document.uploaded_by.value if document.uploaded_by else None,
         client_id=document.client_id,
@@ -265,9 +263,7 @@ async def set_document_expiry(
     db: AsyncSession = Depends(get_db),
 ):
     """Set document expiry date."""
-    updated = await SetDocumentExpiryUseCase(document_repo).execute(
-        document.id, data.expires_at
-    )
+    updated = await SetDocumentExpiryUseCase(document_repo).execute(document.id, data.expires_at)
     await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
@@ -362,9 +358,7 @@ async def get_document_versions(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all versions of a document."""
-    versions = await document_repo.get_versions(
-        DocumentId(document_id), TenantId(tenant_id)
-    )
+    versions = await document_repo.get_versions(DocumentId(document_id), TenantId(tenant_id))
     return DocumentVersionResponse(
         versions=[_to_document_response(version) for version in versions],
         total=len(versions),
@@ -385,9 +379,7 @@ async def get_latest_document_version(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the latest version of a document."""
-    latest = await document_repo.get_latest_version(
-        DocumentId(document_id), TenantId(tenant_id)
-    )
+    latest = await document_repo.get_latest_version(DocumentId(document_id), TenantId(tenant_id))
     if not latest:
         raise ValueError("Document not found")
     return _to_document_response(latest)

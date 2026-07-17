@@ -35,9 +35,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         """
 
     @abstractmethod
-    async def get_by_type(
-        self, tenant_id: TenantId, person_type: PersonType
-    ) -> list[PersonEntity]:
+    async def get_by_type(self, tenant_id: TenantId, person_type: PersonType) -> list[PersonEntity]:
         """
         Get all persons of a specific type within a tenant.
 
@@ -48,7 +46,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
         Returns:
             List of PersonEntity matching the type
         """
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -64,7 +62,7 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
     ) -> Sequence[PersonEntity]:
         """
         List persons with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by person status
@@ -75,11 +73,11 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of PersonEntity
         """
-    
+
     @abstractmethod
     async def count(
         self,
@@ -91,14 +89,14 @@ class PersonRepository(BaseRepository[PersonEntity, PersonId]):
     ) -> int:
         """
         Count persons matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by person status
             person_type: Filter by person type
             client_id: Filter by client ID (persons whose employment_info.client_id matches)
             search: Search in user profile
-            
+
         Returns:
             Total count
         """

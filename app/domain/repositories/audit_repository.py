@@ -43,9 +43,7 @@ class AuditRepository:
         pass
 
     @abstractmethod
-    async def get_audit_log_by_id(
-        self, audit_log_id: AuditLogId
-    ) -> AuditLog | None:
+    async def get_audit_log_by_id(self, audit_log_id: AuditLogId) -> AuditLog | None:
         """
         Get audit log by ID.
 
@@ -74,7 +72,7 @@ class AuditRepository:
     ) -> Sequence[AuditLog]:
         """
         List audit logs with filtering and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             user_id: Filter by user identifier
@@ -87,11 +85,11 @@ class AuditRepository:
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of AuditLog
         """
-    
+
     @abstractmethod
     async def count_audit_logs(
         self,
@@ -105,7 +103,7 @@ class AuditRepository:
     ) -> int:
         """
         Count audit logs matching filters.
-        
+
         Args:
             tenant_id: Tenant identifier
             user_id: Filter by user identifier
@@ -114,25 +112,25 @@ class AuditRepository:
             resource_id: Filter by resource identifier
             start_date: Filter by start date (ISO format)
             end_date: Filter by end date (ISO format)
-            
+
         Returns:
             Total count
         """
-    
+
     @abstractmethod
     async def get_entity_changes_by_audit_log_id(
         self, audit_log_id: AuditLogId
     ) -> Sequence[EntityChange]:
         """
         Get all entity changes for an audit log.
-        
+
         Args:
             audit_log_id: Audit log identifier
-            
+
         Returns:
             Sequence of EntityChange
         """
-    
+
     @abstractmethod
     async def get_entity_changes_by_entity(
         self,
@@ -144,14 +142,14 @@ class AuditRepository:
     ) -> Sequence[EntityChange]:
         """
         Get all entity changes for a specific entity.
-        
+
         Args:
             tenant_id: Tenant identifier
             entity_type: Entity type (e.g., "Tenant", "Person")
             entity_id: Entity identifier
             limit: Maximum number of results
             offset: Number of results to skip
-            
+
         Returns:
             Sequence of EntityChange
         """

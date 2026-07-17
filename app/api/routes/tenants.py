@@ -117,8 +117,9 @@ async def create_tenant(
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
-    password_set_token_repo: PasswordSetTokenRepository
-    | None = Depends(get_password_set_token_repository),
+    password_set_token_repo: PasswordSetTokenRepository | None = Depends(
+        get_password_set_token_repository
+    ),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -130,28 +131,28 @@ async def create_tenant(
     password, then log in with tenant code, that email, and the new password.
     Otherwise the response includes a one-time admin_password.
     """
-    token_repo = (
-        password_set_token_repo
-        if getattr(settings, "SET_PASSWORD_BASE_URL", "")
-        else None
-    )
-    tenant, admin_email, admin_password, set_password_token, set_password_expires_at = (
-        await CreateTenantUseCase(
-            tenant_repo,
-            user_repo,
-            industry_repo,
-            password_set_token_repository=token_repo,
-        ).execute(
-            tenant_id=TenantId(generate_cuid()),
-            name=data.name,
-            code=data.code,
-            subscription_tier=data.subscription_tier,
-            max_users=data.settings.max_users,
-            max_clients=data.settings.max_clients,
-            features_enabled=tuple(data.settings.features_enabled),
-            custom_branding=data.settings.custom_branding,
-            admin_email=data.admin_email,
-        )
+    token_repo = password_set_token_repo if getattr(settings, "SET_PASSWORD_BASE_URL", "") else None
+    (
+        tenant,
+        admin_email,
+        admin_password,
+        set_password_token,
+        set_password_expires_at,
+    ) = await CreateTenantUseCase(
+        tenant_repo,
+        user_repo,
+        industry_repo,
+        password_set_token_repository=token_repo,
+    ).execute(
+        tenant_id=TenantId(generate_cuid()),
+        name=data.name,
+        code=data.code,
+        subscription_tier=data.subscription_tier,
+        max_users=data.settings.max_users,
+        max_clients=data.settings.max_clients,
+        features_enabled=tuple(data.settings.features_enabled),
+        custom_branding=data.settings.custom_branding,
+        admin_email=data.admin_email,
     )
     await audit_change(tenant, audit_handler, None, request, tenant_id=tenant.id)
     set_password_url = None
@@ -290,6 +291,7 @@ async def update_tenant(
     """Update tenant basic information."""
     if data.name is None:
         from app.domain.exceptions import NotFoundError
+
         tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
         if tenant is None:
             raise NotFoundError(f"Tenant not found: {tenant_id}")
@@ -456,7 +458,6 @@ async def list_tenants(
             has_more=False,
         )
 
-
     tenants = await tenant_repo.list_all(
         status=status,
         subscription_tier=subscription_tier,
@@ -516,13 +517,11 @@ async def get_tenant_stats(
     if not tenant:
         raise ValueError("Tenant not found")
     user_count = await user_repo.count(tenant_id=TenantId(tenant_id))
-    client_count = await client_repo.count(tenant_id=TenantId(tenant_id)) 
+    client_count = await client_repo.count(tenant_id=TenantId(tenant_id))
 
     # Calculate quota usage
     user_quota_usage = (
-        (user_count / tenant.settings.max_users * 100)
-        if tenant.settings.max_users > 0
-        else 0.0
+        (user_count / tenant.settings.max_users * 100) if tenant.settings.max_users > 0 else 0.0
     )
     client_quota_usage = (
         (client_count / tenant.settings.max_clients * 100)
@@ -581,9 +580,7 @@ async def get_tenant_by_code(
     """
     tenant = await tenant_repo.get_by_code(code)
     if not tenant:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
     platform_tenant_id = (getattr(settings, "PLATFORM_TENANT_ID", "") or "").strip()
     is_platform_admin = bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
     if not is_platform_admin and tenant.id.value != current_user.tenant_id:

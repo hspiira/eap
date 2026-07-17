@@ -263,8 +263,6 @@ class TestIndustryIntegration:
         )
 
         # Get children
-        children_resp = await client.get(
-            f"/industries/{parent_id}/children?tenant_id={tenant_id}"
-        )
+        children_resp = await client.get(f"/industries/{parent_id}/children?tenant_id={tenant_id}")
         assert children_resp.status_code == 200
         assert children_resp.json()["total"] == 2

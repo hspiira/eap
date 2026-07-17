@@ -24,12 +24,8 @@ from app.infrastructure.models.base import (
 class CaseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     __tablename__ = "cases"
 
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
-    client_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     presenting_problem: Mapped[PresentingProblem] = mapped_column(
         EnumValueType(PresentingProblem), nullable=False, index=True
     )
@@ -42,28 +38,18 @@ class CaseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         default=CaseStatus.INTAKE,
         index=True,
     )
-    opened_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True
-    )
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     assigned_counsellor_id: Mapped[str | None] = mapped_column(
         String(25), nullable=True, index=True
     )
-    authorization_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
-    referred_by_user_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
+    authorization_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    referred_by_user_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
     referral_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    closed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closure_reason: Mapped[CaseClosureReason | None] = mapped_column(
         EnumValueType(CaseClosureReason), nullable=True
     )
-    closure_summary_note_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
+    closure_summary_note_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
     intake_screener_admin_ids: Mapped[list[str]] = mapped_column(
         JSONB, nullable=False, server_default="[]"
     )

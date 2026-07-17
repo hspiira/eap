@@ -78,9 +78,7 @@ class BulkUpdatePanelStatusUseCase:
             if person.provider_profile.panel_status == new_status:
                 result.skipped_no_change.append(pid.value)
                 continue
-            person.change_panel_status(
-                new_status=new_status, actor=actor, reason=reason
-            )
+            person.change_panel_status(new_status=new_status, actor=actor, reason=reason)
             await self._repo.save(person)
             result.updated.append(pid.value)
         return result

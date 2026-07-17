@@ -62,8 +62,7 @@ class OutcomeMeasureMapper:
             post_score=model.post_score,
             delta=model.delta,
             reliable_change_index=model.reliable_change_index,
-            meets_clinically_significant_change=
-            model.meets_clinically_significant_change,
+            meets_clinically_significant_change=model.meets_clinically_significant_change,
             recorded_at=ensure_utc(model.recorded_at),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -85,8 +84,7 @@ class OutcomeMeasureMapper:
             post_score=entity.post_score,
             delta=entity.delta,
             reliable_change_index=entity.reliable_change_index,
-            meets_clinically_significant_change=
-            entity.meets_clinically_significant_change,
+            meets_clinically_significant_change=entity.meets_clinically_significant_change,
             recorded_at=ensure_utc(entity.recorded_at),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
@@ -107,13 +105,9 @@ class FitnessForDutyMapper:
             business_necessity_rationale=model.business_necessity_rationale,
             job_role_summary=model.job_role_summary,
             outcome=FitnessForDutyOutcome(model.outcome),
-            assessed_at=ensure_utc(model.assessed_at)
-            if model.assessed_at
-            else None,
+            assessed_at=ensure_utc(model.assessed_at) if model.assessed_at else None,
             assessor_id=UserId(model.assessor_id) if model.assessor_id else None,
-            accommodation_recommendations=tuple(
-                model.accommodation_recommendations or []
-            ),
+            accommodation_recommendations=tuple(model.accommodation_recommendations or []),
             employer_report_at=ensure_utc(model.employer_report_at)
             if model.employer_report_at
             else None,
@@ -136,13 +130,9 @@ class FitnessForDutyMapper:
             business_necessity_rationale=entity.business_necessity_rationale,
             job_role_summary=entity.job_role_summary,
             outcome=entity.outcome,
-            assessed_at=ensure_utc(entity.assessed_at)
-            if entity.assessed_at
-            else None,
+            assessed_at=ensure_utc(entity.assessed_at) if entity.assessed_at else None,
             assessor_id=entity.assessor_id.value if entity.assessor_id else None,
-            accommodation_recommendations=list(
-                entity.accommodation_recommendations
-            ),
+            accommodation_recommendations=list(entity.accommodation_recommendations),
             employer_report_at=ensure_utc(entity.employer_report_at)
             if entity.employer_report_at
             else None,
@@ -166,24 +156,16 @@ class ReturnToWorkPlanMapper:
             starts_on=model.starts_on,
             ends_on=model.ends_on,
             status=ReturnToWorkPlanStatus(model.status),
-            accommodations=tuple(
-                _accommodation_from_dict(a) for a in (model.accommodations or [])
-            ),
+            accommodations=tuple(_accommodation_from_dict(a) for a in (model.accommodations or [])),
             employer_signoff_user_id=UserId(model.employer_signoff_user_id)
             if model.employer_signoff_user_id
             else None,
             clinician_signoff_user_id=UserId(model.clinician_signoff_user_id)
             if model.clinician_signoff_user_id
             else None,
-            activated_at=ensure_utc(model.activated_at)
-            if model.activated_at
-            else None,
-            completed_at=ensure_utc(model.completed_at)
-            if model.completed_at
-            else None,
-            cancelled_at=ensure_utc(model.cancelled_at)
-            if model.cancelled_at
-            else None,
+            activated_at=ensure_utc(model.activated_at) if model.activated_at else None,
+            completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
+            cancelled_at=ensure_utc(model.cancelled_at) if model.cancelled_at else None,
             cancellation_reason=model.cancellation_reason,
             review_at=model.review_at,
             created_at=ensure_utc(model.created_at),
@@ -213,15 +195,9 @@ class ReturnToWorkPlanMapper:
             clinician_signoff_user_id=entity.clinician_signoff_user_id.value
             if entity.clinician_signoff_user_id
             else None,
-            activated_at=ensure_utc(entity.activated_at)
-            if entity.activated_at
-            else None,
-            completed_at=ensure_utc(entity.completed_at)
-            if entity.completed_at
-            else None,
-            cancelled_at=ensure_utc(entity.cancelled_at)
-            if entity.cancelled_at
-            else None,
+            activated_at=ensure_utc(entity.activated_at) if entity.activated_at else None,
+            completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,
+            cancelled_at=ensure_utc(entity.cancelled_at) if entity.cancelled_at else None,
             cancellation_reason=entity.cancellation_reason,
             review_at=entity.review_at,
             created_at=ensure_utc(entity.created_at),

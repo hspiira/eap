@@ -31,21 +31,15 @@ USER = SimpleNamespace(user_id="u1")
 
 
 class TestDefaults:
-    async def test_tenant_id_defaults_to_the_entitys_own(
-        self, captured: dict[str, Any]
-    ) -> None:
+    async def test_tenant_id_defaults_to_the_entitys_own(self, captured: dict[str, Any]) -> None:
         await audit_change(ENTITY, "handler", USER, "request")
         assert captured["tenant_id"] == "t-own"
 
-    async def test_user_id_is_read_off_current_user(
-        self, captured: dict[str, Any]
-    ) -> None:
+    async def test_user_id_is_read_off_current_user(self, captured: dict[str, Any]) -> None:
         await audit_change(ENTITY, "handler", USER, "request")
         assert captured["user_id"] == "u1"
 
-    async def test_entity_handler_and_request_pass_through(
-        self, captured: dict[str, Any]
-    ) -> None:
+    async def test_entity_handler_and_request_pass_through(self, captured: dict[str, Any]) -> None:
         await audit_change(ENTITY, "handler", USER, "request")
         assert captured["entity"] is ENTITY
         assert captured["audit_handler"] == "handler"
@@ -58,9 +52,7 @@ class TestOverrides:
         await audit_change(ENTITY, "handler", USER, "request", tenant_id="t-explicit")
         assert captured["tenant_id"] == "t-explicit"
 
-    async def test_no_current_user_yields_no_user_id(
-        self, captured: dict[str, Any]
-    ) -> None:
+    async def test_no_current_user_yields_no_user_id(self, captured: dict[str, Any]) -> None:
         """Tenant self-registration audits with no authenticated user."""
         await audit_change(ENTITY, "handler", None, "request")
         assert captured["user_id"] is None

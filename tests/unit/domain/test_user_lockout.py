@@ -49,9 +49,7 @@ class TestLockoutCounter:
         user = _make_user()
         now = datetime.now(UTC)
         for _ in range(THRESHOLD):
-            user.record_failed_login(
-                threshold=THRESHOLD, lock_duration=WINDOW, now=now
-            )
+            user.record_failed_login(threshold=THRESHOLD, lock_duration=WINDOW, now=now)
 
         assert user.failed_login_count == THRESHOLD
         assert user.locked_until == now + WINDOW
@@ -67,9 +65,7 @@ class TestLockoutCounter:
         user = _make_user()
         now = datetime.now(UTC)
         for _ in range(THRESHOLD):
-            user.record_failed_login(
-                threshold=THRESHOLD, lock_duration=WINDOW, now=now
-            )
+            user.record_failed_login(threshold=THRESHOLD, lock_duration=WINDOW, now=now)
         future = now + WINDOW + timedelta(seconds=1)
         assert user.is_locked(now=future) is False
 

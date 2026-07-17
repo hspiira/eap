@@ -43,7 +43,9 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             name="person_type_check",
         ),
         CheckConstraint(
-            "secondary_person_type IS NULL OR secondary_person_type IN (" + ", ".join(f"'{e.value}'" for e in PersonType) + ")",
+            "secondary_person_type IS NULL OR secondary_person_type IN ("
+            + ", ".join(f"'{e.value}'" for e in PersonType)
+            + ")",
             name="person_secondary_type_check",
         ),
         CheckConstraint(
@@ -88,9 +90,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     )
 
     # Type-specific info (stored as JSON value objects)
-    employment_info: Mapped[EmploymentInfoDict | None] = mapped_column(
-        JSON, nullable=True
-    )
+    employment_info: Mapped[EmploymentInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Employment information for CLIENT_EMPLOYEE person types.
     
@@ -105,7 +105,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         "end_date": str | None (ISO date: YYYY-MM-DD)
     }
     """
-    
+
     license_info: Mapped[LicenseInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Professional license information for SERVICE_PROVIDER person types.
@@ -133,7 +133,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         "can_view_reports": bool
     }
     """
-    
+
     dependent_info: Mapped[DependentInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Dependent information for DEPENDENT person types.
@@ -156,10 +156,8 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         nullable=False,
         default=BaseStatus.PENDING,
     )
-    
-    emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(
-        JSON, nullable=True
-    )
+
+    emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(JSON, nullable=True)
     """
     Emergency contact information (shared across person types).
     
@@ -180,17 +178,17 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         """Validate employment_info JSON structure."""
         if value is None:
             return None
-        
+
         # Check required fields
         required_fields = ["role", "start_date", "status"]
         for field in required_fields:
             if field not in value:
                 raise ValueError(f"employment_info missing required field: {field}")
-        
+
         # Validate status is a valid WorkStatus value
         if value["status"] not in [e.value for e in WorkStatus]:
             raise ValueError(f"Invalid WorkStatus value: {value['status']}")
-        
+
         # Validate date formats (basic check)
         for date_field in ["start_date", "end_date"]:
             if date_field in value and value[date_field] is not None:
@@ -200,9 +198,9 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
                     raise ValueError(
                         f"employment_info.{date_field} must be in ISO format (YYYY-MM-DD)"
                     ) from e
-        
+
         return value
-    
+
     @validates("license_info")
     def validate_license_info(
         self, key: str, value: LicenseInfoDict | None
@@ -210,13 +208,13 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         """Validate license_info JSON structure."""
         if value is None:
             return None
-        
+
         # Check required fields
         required_fields = ["number", "issuing_authority"]
         for field in required_fields:
             if field not in value:
                 raise ValueError(f"license_info missing required field: {field}")
-        
+
         # Validate expiry_date format if present
         if "expiry_date" in value and value["expiry_date"] is not None:
             try:
@@ -225,34 +223,32 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
                 raise ValueError(
                     "license_info.expiry_date must be in ISO format (YYYY-MM-DD)"
                 ) from err
-        
+
         return value
-    
+
     @validates("staff_info")
-    def validate_staff_info(
-        self, key: str, value: StaffInfoDict | None
-    ) -> StaffInfoDict | None:
+    def validate_staff_info(self, key: str, value: StaffInfoDict | None) -> StaffInfoDict | None:
         """Validate staff_info JSON structure."""
         if value is None:
             return None
-        
+
         # Check required fields
         required_fields = ["role", "client_id"]
         for field in required_fields:
             if field not in value:
                 raise ValueError(f"staff_info missing required field: {field}")
-        
+
         # Validate role is a valid StaffRole value
         if value["role"] not in [e.value for e in StaffRole]:
             raise ValueError(f"Invalid StaffRole value: {value['role']}")
-        
+
         # Ensure boolean fields are booleans
         for bool_field in ["can_manage_clients", "can_manage_services", "can_view_reports"]:
             if bool_field in value and not isinstance(value[bool_field], bool):
                 raise ValueError(f"staff_info.{bool_field} must be a boolean")
-        
+
         return value
-    
+
     @validates("dependent_info")
     def validate_dependent_info(
         self, key: str, value: DependentInfoDict | None
@@ -260,26 +256,26 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         """Validate dependent_info JSON structure."""
         if value is None:
             return None
-        
+
         # Check required fields
         required_fields = ["primary_employee_id", "relationship"]
         for field in required_fields:
             if field not in value:
                 raise ValueError(f"dependent_info missing required field: {field}")
-        
+
         # Validate relationship is a valid RelationType value
         if value["relationship"] not in [e.value for e in RelationType]:
             raise ValueError(f"Invalid RelationType value: {value['relationship']}")
-        
+
         return value
-    
+
     @validates("emergency_contact")
     def validate_emergency_contact(
         self, key: str, value: EmergencyContactDict | None
     ) -> EmergencyContactDict | None:
         """
         Validate emergency_contact JSON structure.
-        
+
         Note: The "phone or email required" rule is enforced by the
         EmergencyContact value object constructor when converting from
         EmergencyContactDict to domain value object in the mapper.
@@ -287,18 +283,20 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         """
         if value is None:
             return None
-        
+
         # Check required fields
         if "name" not in value:
             raise ValueError("emergency_contact missing required field: name")
-        
+
         # Note: "phone or email required" validation is handled by
         # EmergencyContact.__post_init__() when the mapper converts
         # EmergencyContactDict to EmergencyContact value object in
         # PersonMapper.to_entity(). This ensures domain-level validation
         # is centralized in the value object.
-        
+
         return value
 
     def __repr__(self) -> str:
-        return f"<PersonModel(id={self.id}, person_type={self.person_type}, user_id={self.user_id})>"
+        return (
+            f"<PersonModel(id={self.id}, person_type={self.person_type}, user_id={self.user_id})>"
+        )

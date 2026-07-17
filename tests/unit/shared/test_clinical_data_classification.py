@@ -44,14 +44,10 @@ class TestIsSpecialCategory:
     def test_either_signal_triggers_flag(self):
         assert is_special_category(resource_type="Case")
         assert is_special_category(event_type="CrisisFlagRaised")
-        assert is_special_category(
-            resource_type="Tenant", event_type="TriageRecorded"
-        )
+        assert is_special_category(resource_type="Tenant", event_type="TriageRecorded")
 
     def test_neither_signal_means_ordinary(self):
-        assert not is_special_category(
-            resource_type="Tenant", event_type="UserActivated"
-        )
+        assert not is_special_category(resource_type="Tenant", event_type="UserActivated")
 
     def test_registry_complete_for_listed_aggregates(self):
         for required in {"Case", "ClinicalSubject", "OutreachRecord"}:

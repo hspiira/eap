@@ -21,15 +21,13 @@ class ErrorDetail(BaseModel):
 class ErrorResponse(BaseModel):
     """
     Standardized API error response.
-    
+
     All API errors should use this format for consistency.
     """
 
     error: str = Field(..., description="Error type/code")
     message: str = Field(..., description="Human-readable error message")
-    details: list[ErrorDetail] = Field(
-        default_factory=list, description="Additional error details"
-    )
+    details: list[ErrorDetail] = Field(default_factory=list, description="Additional error details")
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         description="When the error occurred",
@@ -66,14 +64,14 @@ def create_error_response(
 ) -> dict[str, Any]:
     """
     Create a standardized error response dictionary.
-    
+
     Args:
         error: Error type/code (e.g., "VALIDATION_ERROR", "NOT_FOUND")
         message: Human-readable error message
         details: Optional list of error details
         request_id: Optional request tracking ID
         path: Optional request path
-        
+
     Returns:
         Dictionary suitable for JSONResponse
     """

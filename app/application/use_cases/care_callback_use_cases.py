@@ -35,9 +35,7 @@ from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 
 
-class CreateCareCallbackCampaignUseCase(
-    BaseUseCase[CareCallbackCampaign, CareCallbackCampaignId]
-):
+class CreateCareCallbackCampaignUseCase(BaseUseCase[CareCallbackCampaign, CareCallbackCampaignId]):
     def __init__(self, repository: CareCallbackCampaignRepository):
         super().__init__(repository)
 
@@ -102,9 +100,7 @@ class EnrolPersonsInCampaignUseCase:
             CareCallbackCampaignStatus.DRAFT,
             CareCallbackCampaignStatus.ACTIVE,
         }:
-            raise DomainError(
-                f"Cannot enrol into a {campaign.status.value} campaign"
-            )
+            raise DomainError(f"Cannot enrol into a {campaign.status.value} campaign")
         now = utc_now()
         records: list[OutreachRecord] = []
         for person_id in person_ids:

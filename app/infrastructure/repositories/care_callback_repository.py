@@ -29,16 +29,12 @@ class CareCallbackCampaignRepositoryImpl(CareCallbackCampaignRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: CareCallbackCampaignId
-    ) -> CareCallbackCampaign | None:
+    async def get_by_id(self, entity_id: CareCallbackCampaignId) -> CareCallbackCampaign | None:
         row = await self._session.get(CareCallbackCampaignModel, entity_id.value)
         return CareCallbackCampaignMapper.to_entity(row) if row else None
 
     async def save(self, entity: CareCallbackCampaign) -> None:
-        existing = await self._session.get(
-            CareCallbackCampaignModel, entity.id.value
-        )
+        existing = await self._session.get(CareCallbackCampaignModel, entity.id.value)
         if existing is None:
             self._session.add(CareCallbackCampaignMapper.to_model(entity))
         else:
@@ -92,9 +88,7 @@ class OutreachRecordRepositoryImpl(OutreachRecordRepository):
         if existing is None:
             self._session.add(OutreachRecordMapper.to_model(entity))
         else:
-            existing.counsellor_id = (
-                entity.counsellor_id.value if entity.counsellor_id else None
-            )
+            existing.counsellor_id = entity.counsellor_id.value if entity.counsellor_id else None
             existing.status = entity.status
             existing.contact_attempts = entity.contact_attempts
             existing.assigned_at = entity.assigned_at

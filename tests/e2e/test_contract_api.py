@@ -122,9 +122,7 @@ class TestCreateContract:
 class TestGetContract:
     """Tests for GET /contracts/{contract_id} endpoint."""
 
-    async def test_get_contract_by_id_success(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_get_contract_by_id_success(self, client: AsyncClient, test_contract: dict):
         """Test getting a contract by ID."""
         contract_id = test_contract["id"]
 
@@ -135,9 +133,7 @@ class TestGetContract:
         assert data["id"] == contract_id
         assert data["billing_rate"]["amount"] == "5000.00"
 
-    async def test_get_contract_not_found(
-        self, client: AsyncClient, contract_test_tenant: dict
-    ):
+    async def test_get_contract_not_found(self, client: AsyncClient, contract_test_tenant: dict):
         """Test getting a non-existent contract returns 404."""
         response = await client.get("/contracts/nonexistent-id-12345")
 
@@ -159,9 +155,7 @@ class TestGetContractsByClient:
         tenant_id = contract_test_tenant["id"]
         client_id = contract_test_client["id"]
 
-        response = await client.get(
-            f"/contracts/client/{client_id}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/contracts/client/{client_id}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -185,9 +179,7 @@ class TestGetContractsByClient:
         )
         client_id = client_response.json()["id"]
 
-        response = await client.get(
-            f"/contracts/client/{client_id}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/contracts/client/{client_id}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         assert response.json() == []
@@ -207,9 +199,7 @@ class TestGetActiveContractByClient:
         tenant_id = contract_test_tenant["id"]
         client_id = contract_test_client["id"]
 
-        response = await client.get(
-            f"/contracts/client/{client_id}/active?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/contracts/client/{client_id}/active?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -223,9 +213,7 @@ class TestGetActiveContractByClient:
         tenant_id = contract_test_tenant["id"]
         client_id = contract_test_client_2["id"]
 
-        response = await client.get(
-            f"/contracts/client/{client_id}/active?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/contracts/client/{client_id}/active?tenant_id={tenant_id}")
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
@@ -245,9 +233,7 @@ class TestListContracts:
 
         assert response.status_code == 422
 
-    async def test_list_contracts_empty(
-        self, client: AsyncClient, contract_test_tenant: dict
-    ):
+    async def test_list_contracts_empty(self, client: AsyncClient, contract_test_tenant: dict):
         """Test listing contracts when none exist."""
         # Create a new tenant with no contracts
         new_tenant = await client.post(
@@ -286,9 +272,7 @@ class TestListContracts:
         """Test contract list pagination."""
         tenant_id = contract_test_tenant["id"]
 
-        response = await client.get(
-            f"/contracts/?tenant_id={tenant_id}&page=1&limit=1"
-        )
+        response = await client.get(f"/contracts/?tenant_id={tenant_id}&page=1&limit=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -307,9 +291,7 @@ class TestListContracts:
         tenant_id = contract_test_tenant["id"]
 
         # Filter by Active status
-        response = await client.get(
-            f"/contracts/?tenant_id={tenant_id}&status=Active"
-        )
+        response = await client.get(f"/contracts/?tenant_id={tenant_id}&status=Active")
         data = response.json()
 
         assert response.status_code == 200
@@ -326,9 +308,7 @@ class TestListContracts:
         tenant_id = contract_test_tenant["id"]
         client_id = contract_test_client["id"]
 
-        response = await client.get(
-            f"/contracts/?tenant_id={tenant_id}&client_id={client_id}"
-        )
+        response = await client.get(f"/contracts/?tenant_id={tenant_id}&client_id={client_id}")
         data = response.json()
 
         assert response.status_code == 200
@@ -343,9 +323,7 @@ class TestListContracts:
 class TestActivateContract:
     """Tests for POST /contracts/{contract_id}/activate endpoint."""
 
-    async def test_activate_draft_contract(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_activate_draft_contract(self, client: AsyncClient, test_contract: dict):
         """Test activating a draft contract."""
         contract_id = test_contract["id"]
 
@@ -377,9 +355,7 @@ class TestActivateContract:
 class TestSignContract:
     """Tests for POST /contracts/{contract_id}/sign endpoint."""
 
-    async def test_sign_contract_success(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_sign_contract_success(self, client: AsyncClient, test_contract: dict):
         """Test signing a contract."""
         contract_id = test_contract["id"]
 
@@ -395,9 +371,7 @@ class TestSignContract:
         # Contract should auto-activate when signed
         assert data["status"] == "Active"
 
-    async def test_sign_contract_requires_signer(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_sign_contract_requires_signer(self, client: AsyncClient, test_contract: dict):
         """Test that signing requires signer name."""
         contract_id = test_contract["id"]
 
@@ -408,9 +382,7 @@ class TestSignContract:
 
         assert response.status_code == 422
 
-    async def test_sign_already_signed_fails(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_sign_already_signed_fails(self, client: AsyncClient, test_contract: dict):
         """Test that signing an already signed contract fails."""
         contract_id = test_contract["id"]
 
@@ -443,9 +415,7 @@ class TestSignContract:
 class TestRenewContract:
     """Tests for POST /contracts/{contract_id}/renew endpoint."""
 
-    async def test_renew_contract_success(
-        self, client: AsyncClient, test_contract_active: dict
-    ):
+    async def test_renew_contract_success(self, client: AsyncClient, test_contract_active: dict):
         """Test renewing a contract."""
         contract_id = test_contract_active["id"]
         new_end_date = (datetime.now(UTC) + timedelta(days=730)).isoformat()
@@ -496,9 +466,7 @@ class TestRenewContract:
 class TestTerminateContract:
     """Tests for POST /contracts/{contract_id}/terminate endpoint."""
 
-    async def test_terminate_contract_success(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_terminate_contract_success(self, client: AsyncClient, test_contract: dict):
         """Test terminating a contract."""
         contract_id = test_contract["id"]
 
@@ -512,9 +480,7 @@ class TestTerminateContract:
         assert data["status"] == "Terminated"
         assert data["termination_reason"] == "Client requested termination"
 
-    async def test_terminate_requires_reason(
-        self, client: AsyncClient, test_contract_2: dict
-    ):
+    async def test_terminate_requires_reason(self, client: AsyncClient, test_contract_2: dict):
         """Test that terminating requires a reason."""
         contract_id = test_contract_2["id"]
 
@@ -538,9 +504,7 @@ class TestTerminateContract:
 class TestArchiveContract:
     """Tests for POST /contracts/{contract_id}/archive endpoint."""
 
-    async def test_archive_contract_success(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_archive_contract_success(self, client: AsyncClient, test_contract: dict):
         """Test archiving a contract."""
         contract_id = test_contract["id"]
 
@@ -573,9 +537,7 @@ class TestRestoreContract:
 class TestUpdateContract:
     """Tests for PATCH /contracts/{contract_id} endpoint."""
 
-    async def test_update_contract_billing_rate(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_update_contract_billing_rate(self, client: AsyncClient, test_contract: dict):
         """Test updating contract billing rate."""
         contract_id = test_contract["id"]
 
@@ -608,9 +570,7 @@ class TestUpdateContract:
         data = response.json()
         assert data["payment_frequency"] == "Quarterly"
 
-    async def test_update_contract_auto_renew(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_update_contract_auto_renew(self, client: AsyncClient, test_contract: dict):
         """Test updating contract auto-renew setting."""
         contract_id = test_contract["id"]
 
@@ -651,9 +611,7 @@ class TestUpdatePaymentStatus:
         data = response.json()
         assert data["payment_status"] == "Paid"
 
-    async def test_update_payment_status_overdue(
-        self, client: AsyncClient, test_contract: dict
-    ):
+    async def test_update_payment_status_overdue(self, client: AsyncClient, test_contract: dict):
         """Test updating payment status to overdue."""
         contract_id = test_contract["id"]
 

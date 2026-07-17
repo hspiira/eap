@@ -18,9 +18,7 @@ from app.domain.value_objects.core import (
 )
 
 
-def _consent(
-    *, status: TenantConsentStatus = TenantConsentStatus.ACTIVE
-) -> BenchmarkConsent:
+def _consent(*, status: TenantConsentStatus = TenantConsentStatus.ACTIVE) -> BenchmarkConsent:
     now = datetime.now(UTC)
     return BenchmarkConsent(
         id=BenchmarkConsentId("c-1"),
@@ -100,32 +98,24 @@ class TestKAnonymity:
         assert K_ANON_FLOOR == 10
 
     def test_suppresses_below_floor(self):
-        out = enforce_k_anonymity(
-            metric_code="x", contributor_count=5, value={"mean": 7}
-        )
+        out = enforce_k_anonymity(metric_code="x", contributor_count=5, value={"mean": 7})
         assert out.suppressed is True
         assert out.is_disclosed() is False
         assert out.value is None
         assert "5" in (out.suppression_reason or "")
 
     def test_discloses_at_floor(self):
-        out = enforce_k_anonymity(
-            metric_code="x", contributor_count=10, value={"mean": 7}
-        )
+        out = enforce_k_anonymity(metric_code="x", contributor_count=10, value={"mean": 7})
         assert out.suppressed is False
         assert out.value == {"mean": 7}
 
     def test_above_floor(self):
-        out = enforce_k_anonymity(
-            metric_code="x", contributor_count=42, value={"mean": 9}
-        )
+        out = enforce_k_anonymity(metric_code="x", contributor_count=42, value={"mean": 9})
         assert out.is_disclosed() is True
         assert out.contributor_count == 42
 
     def test_zero_contributors_suppressed(self):
-        out = enforce_k_anonymity(
-            metric_code="x", contributor_count=0, value=None
-        )
+        out = enforce_k_anonymity(metric_code="x", contributor_count=0, value=None)
         assert out.suppressed is True
 
     def test_floor_override_for_testing(self):

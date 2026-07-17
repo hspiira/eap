@@ -113,9 +113,7 @@ class GetUserUseCase(BaseUseCase[UserEntity, UserId]):
         """
         return await self.repository.get_by_id(user_id)
 
-    async def execute_by_email(
-        self, email: Email, tenant_id: TenantId
-    ) -> UserEntity | None:
+    async def execute_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """
         Get user by email within a tenant.
 

@@ -25,20 +25,12 @@ def setup_middleware(app: FastAPI) -> None:
     app.add_middleware(ViewerGuardMiddleware)
     hsts_max_age = 0
     if getattr(settings, "ENVIRONMENT", "") == "production":
-        hsts_max_age = getattr(
-            settings, "SECURITY_HEADERS_HSTS_MAX_AGE", 31536000
-        )
+        hsts_max_age = getattr(settings, "SECURITY_HEADERS_HSTS_MAX_AGE", 31536000)
     app.add_middleware(
         SecurityHeadersMiddleware,
-        x_frame_options=getattr(
-            settings, "SECURITY_HEADERS_X_FRAME_OPTIONS", "DENY"
-        ),
-        csp_report_only=getattr(
-            settings, "SECURITY_HEADERS_CSP_REPORT_ONLY", False
-        ),
-        csp_report_uri=getattr(
-            settings, "SECURITY_HEADERS_CSP_REPORT_URI", ""
-        ),
+        x_frame_options=getattr(settings, "SECURITY_HEADERS_X_FRAME_OPTIONS", "DENY"),
+        csp_report_only=getattr(settings, "SECURITY_HEADERS_CSP_REPORT_ONLY", False),
+        csp_report_uri=getattr(settings, "SECURITY_HEADERS_CSP_REPORT_URI", ""),
         hsts_max_age=hsts_max_age,
     )
     # Metrics (request count, 5xx count, latency) for GET /metrics
@@ -47,12 +39,8 @@ def setup_middleware(app: FastAPI) -> None:
     app.add_middleware(RequestSizeLimitMiddleware, max_bytes=MAX_REQUEST_BODY_BYTES)
 
     # Rate limiting (always on; 5x higher in development; very high in test so E2E won't 429)
-    rate_per_min = getattr(
-        settings, "RATE_LIMIT_REQUESTS_PER_MINUTE", 60
-    )
-    rate_per_hour = getattr(
-        settings, "RATE_LIMIT_REQUESTS_PER_HOUR", 1000
-    )
+    rate_per_min = getattr(settings, "RATE_LIMIT_REQUESTS_PER_MINUTE", 60)
+    rate_per_hour = getattr(settings, "RATE_LIMIT_REQUESTS_PER_HOUR", 1000)
     if getattr(settings, "ENVIRONMENT", "") == "test":
         rate_per_min = 10_000
         rate_per_hour = 100_000

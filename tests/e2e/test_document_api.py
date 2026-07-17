@@ -103,9 +103,7 @@ class TestListDocuments:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/documents/?tenant_id={tenant_id}&page=1&limit=10"
-        )
+        response = await client.get(f"/documents/?tenant_id={tenant_id}&page=1&limit=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -194,9 +192,7 @@ class TestGetLatestDocumentVersion:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/documents/nonexistent-id/latest?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/documents/nonexistent-id/latest?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 

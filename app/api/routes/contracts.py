@@ -230,9 +230,7 @@ async def terminate_contract(
 ):
     """Terminate a contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(
-        contract.id, ContractTransition.TERMINATE, reason=body.reason
-    )
+    contract = await use_case.execute(contract.id, ContractTransition.TERMINATE, reason=body.reason)
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
@@ -352,9 +350,7 @@ async def list_contracts(
     current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client identifier"),
     status: ContractStatus | None = Query(None, description="Filter by contract status"),
-    payment_status: PaymentStatus | None = Query(
-        None, description="Filter by payment status"
-    ),
+    payment_status: PaymentStatus | None = Query(None, description="Filter by payment status"),
     is_auto_renew: bool | None = Query(
         None, description="Filter by whether the contract auto-renews"
     ),

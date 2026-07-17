@@ -14,6 +14,7 @@ from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 
 # === Request Schemas ===
 
+
 class UserCreate(BaseModel):
     """Request schema for creating a user."""
 
@@ -75,13 +76,16 @@ class UserUpdatePreferencesRequest(BaseModel):
     timezone: str | None = Field(None, description="User timezone")
 
     @model_validator(mode="after")
-    def _validate_preferences(self) -> 'UserUpdatePreferencesRequest':
+    def _validate_preferences(self) -> "UserUpdatePreferencesRequest":
         if self.preferred_language is None and self.timezone is None:
-            raise ValueError("At least one preference (preferred_language or timezone) must be provided")
+            raise ValueError(
+                "At least one preference (preferred_language or timezone) must be provided"
+            )
         return self
 
 
 # === Response Schemas ===
+
 
 class UserResponse(BaseModel):
     """Response schema for user."""
@@ -103,7 +107,8 @@ class UserResponse(BaseModel):
         None, description="Azure AD Object ID. Populated after the user's first SSO sign-in."
     )
     display_name: str | None = Field(
-        None, description="Display name sourced from the identity provider (e.g. Azure AD). Null for password-only users unless set by an admin."
+        None,
+        description="Display name sourced from the identity provider (e.g. Azure AD). Null for password-only users unless set by an admin.",
     )
     auth_provider: AuthProvider = Field(
         default=AuthProvider.PASSWORD,

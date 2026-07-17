@@ -99,9 +99,7 @@ class TestListAllPushesFilterToSql:
     async def test_pagination_args_reach_sql(
         self, repo: UserRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        seen = await self._capture(
-            repo, monkeypatch, is_email_verified=True, limit=20, offset=40
-        )
+        seen = await self._capture(repo, monkeypatch, is_email_verified=True, limit=20, offset=40)
         assert seen["limit"] == 20
         assert seen["offset"] == 40
 
@@ -125,18 +123,14 @@ class TestTwoFactorFilter:
     async def test_enabled_true_is_filtered_in_sql(
         self, repo: UserRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        filters = await self._capture_filters(
-            repo, monkeypatch, is_two_factor_enabled=True
-        )
+        filters = await self._capture_filters(repo, monkeypatch, is_two_factor_enabled=True)
         assert filters["is_two_factor_enabled"] is True
 
     async def test_enabled_false_is_filtered_in_sql(
         self, repo: UserRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """False must still filter — a falsy check here would drop the filter."""
-        filters = await self._capture_filters(
-            repo, monkeypatch, is_two_factor_enabled=False
-        )
+        filters = await self._capture_filters(repo, monkeypatch, is_two_factor_enabled=False)
         assert filters["is_two_factor_enabled"] is False
 
     async def test_unset_flag_is_absent_from_filters(

@@ -83,21 +83,15 @@ class WorkLifeProviderMapper:
             id=WorkLifeProviderId(model.id),
             tenant_id=TenantId(model.tenant_id),
             name=model.name,
-            service_types=tuple(
-                WorkLifeServiceType(s) for s in (model.service_types or [])
-            ),
+            service_types=tuple(WorkLifeServiceType(s) for s in (model.service_types or [])),
             is_active=model.is_active,
             contact_name=model.contact_name,
             contact_email=model.contact_email,
             contact_phone=model.contact_phone,
             coverage_notes=model.coverage_notes,
             rate_card_notes=model.rate_card_notes,
-            last_verified_at=ensure_utc(model.last_verified_at)
-            if model.last_verified_at
-            else None,
-            deactivated_at=ensure_utc(model.deactivated_at)
-            if model.deactivated_at
-            else None,
+            last_verified_at=ensure_utc(model.last_verified_at) if model.last_verified_at else None,
+            deactivated_at=ensure_utc(model.deactivated_at) if model.deactivated_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -118,9 +112,7 @@ class WorkLifeProviderMapper:
             last_verified_at=ensure_utc(entity.last_verified_at)
             if entity.last_verified_at
             else None,
-            deactivated_at=ensure_utc(entity.deactivated_at)
-            if entity.deactivated_at
-            else None,
+            deactivated_at=ensure_utc(entity.deactivated_at) if entity.deactivated_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )
@@ -140,13 +132,9 @@ class WorkLifeReferralMapper:
             if model.referred_provider_id
             else None,
             case_id=CaseId(model.case_id) if model.case_id else None,
-            requested_by=UserId(model.requested_by)
-            if model.requested_by
-            else None,
+            requested_by=UserId(model.requested_by) if model.requested_by else None,
             resolution_notes=model.resolution_notes,
-            resolved_at=ensure_utc(model.resolved_at)
-            if model.resolved_at
-            else None,
+            resolved_at=ensure_utc(model.resolved_at) if model.resolved_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -166,13 +154,9 @@ class WorkLifeReferralMapper:
             if entity.referred_provider_id
             else None,
             case_id=entity.case_id.value if entity.case_id else None,
-            requested_by=entity.requested_by.value
-            if entity.requested_by
-            else None,
+            requested_by=entity.requested_by.value if entity.requested_by else None,
             resolution_notes=entity.resolution_notes,
-            resolved_at=ensure_utc(entity.resolved_at)
-            if entity.resolved_at
-            else None,
+            resolved_at=ensure_utc(entity.resolved_at) if entity.resolved_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )
@@ -188,13 +172,9 @@ class TrainingEnrolmentMapper:
             document_id=DocumentId(model.document_id),
             status=TrainingEnrolmentStatus(model.status),
             enrolled_at=ensure_utc(model.enrolled_at),
-            completed_at=ensure_utc(model.completed_at)
-            if model.completed_at
-            else None,
+            completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
             expires_on=model.expires_on,
-            revoked_at=ensure_utc(model.revoked_at)
-            if model.revoked_at
-            else None,
+            revoked_at=ensure_utc(model.revoked_at) if model.revoked_at else None,
             revoked_reason=model.revoked_reason,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -211,13 +191,9 @@ class TrainingEnrolmentMapper:
             document_id=entity.document_id.value,
             status=entity.status,
             enrolled_at=ensure_utc(entity.enrolled_at),
-            completed_at=ensure_utc(entity.completed_at)
-            if entity.completed_at
-            else None,
+            completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,
             expires_on=entity.expires_on,
-            revoked_at=ensure_utc(entity.revoked_at)
-            if entity.revoked_at
-            else None,
+            revoked_at=ensure_utc(entity.revoked_at) if entity.revoked_at else None,
             revoked_reason=entity.revoked_reason,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),

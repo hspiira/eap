@@ -107,14 +107,10 @@ async def change_provider_tier(
 @readonly()
 async def check_provider_eligibility(
     provider_id: str,
-    client_id: str | None = Query(
-        default=None, description="Optional client scope for the check"
-    ),
+    client_id: str | None = Query(default=None, description="Optional client scope for the check"),
     current_user: TokenData = Depends(get_current_user),
     person_repo: PersonRepository = Depends(get_person_repository),
-    clause_repo: NonCompeteClauseRepository = Depends(
-        get_non_compete_clause_repository
-    ),
+    clause_repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
     use_case = CheckProviderEligibilityUseCase(person_repo, clause_repo)

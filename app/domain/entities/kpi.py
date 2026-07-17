@@ -26,7 +26,7 @@ class KPIEntity:
     measurement_unit: KPIMeasurementUnit
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields
     description: str | None = None
     target_value: Decimal | None = None  # Target value for the KPI
@@ -36,13 +36,13 @@ class KPIEntity:
     _is_active: bool = True
     deleted_at: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list[DomainEvent])  # Domain events
-    
+
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
         self._ensure_invariants()
-    
+
     # === Behaviors ===
-    
+
     def update_definition(
         self,
         name: str | None = None,
@@ -55,7 +55,7 @@ class KPIEntity:
         """Update KPI definition."""
         if self.deleted_at:
             raise DomainError("Cannot update deleted KPI")
-        
+
         if name:
             self.name = name
         if description is not None:
@@ -68,12 +68,12 @@ class KPIEntity:
             self.threshold_max = threshold_max
         if formula is not None:
             self.formula = formula
-        
+
         self.updated_at = utc_now()
-        
+
         # Validate thresholds after update
         self._ensure_invariants()
-    
+
     def activate(self) -> None:
         """Activate KPI."""
         if self.deleted_at:
@@ -82,7 +82,7 @@ class KPIEntity:
             raise DomainError("KPI is already active")
         self._is_active = True
         self.updated_at = utc_now()
-    
+
     def deactivate(self) -> None:
         """Deactivate KPI."""
         if self.deleted_at:
@@ -91,13 +91,13 @@ class KPIEntity:
             raise DomainError("KPI is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
-    
+
     def is_active(self) -> bool:
         """Check if KPI is active."""
         return self._is_active and self.deleted_at is None
-    
+
     # === Invariants ===
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure KPI invariants are met."""
         if not self.name:
@@ -109,31 +109,29 @@ class KPIEntity:
                 )
         if self.target_value is not None:
             if self.threshold_min is not None and self.target_value < self.threshold_min:
-                raise InvariantViolation(
-                    "Target value cannot be less than minimum threshold"
-                )
+                raise InvariantViolation("Target value cannot be less than minimum threshold")
             if self.threshold_max is not None and self.target_value > self.threshold_max:
-                raise InvariantViolation(
-                    "Target value cannot be greater than maximum threshold"
-                )
+                raise InvariantViolation("Target value cannot be greater than maximum threshold")
 
     # === Public Properties ===
+
 
 @dataclass
 class KPIAssignmentEntity:
     """
     KPI Assignment Entity
-    
+
     Links a KPI to a client or contract for tracking.
     This is a separate entity to allow multiple assignments of the same KPI.
     """
+
     # Required fields
     id: KPIAssignmentId
     kpi_id: KPIId
     tenant_id: TenantId
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional fields - one of client_id or contract_id must be provided
     client_id: ClientId | None = None
     contract_id: ContractId | None = None
@@ -141,20 +139,20 @@ class KPIAssignmentEntity:
     _is_active: bool = True
     deleted_at: datetime | None = None
     _events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
         self._ensure_invariants()
-    
+
     # === Behaviors ===
-    
+
     def update_target(self, target_value: Decimal | None) -> None:
         """Update assignment-specific target value."""
         if self.deleted_at:
             raise DomainError("Cannot update deleted assignment")
         self.target_value = target_value
         self.updated_at = utc_now()
-    
+
     def activate(self) -> None:
         """Activate assignment."""
         if self.deleted_at:
@@ -163,7 +161,7 @@ class KPIAssignmentEntity:
             raise DomainError("Assignment is already active")
         self._is_active = True
         self.updated_at = utc_now()
-    
+
     def deactivate(self) -> None:
         """Deactivate assignment."""
         if self.deleted_at:
@@ -172,13 +170,13 @@ class KPIAssignmentEntity:
             raise DomainError("Assignment is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
-    
+
     def is_active(self) -> bool:
         """Check if assignment is active."""
         return self._is_active and self.deleted_at is None
-    
+
     # === Invariants ===
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure assignment invariants are met."""
         if not self.client_id and not self.contract_id:
@@ -191,4 +189,3 @@ class KPIAssignmentEntity:
             )
 
     # === Public Properties ===
-

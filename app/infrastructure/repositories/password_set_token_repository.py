@@ -33,9 +33,7 @@ class PasswordSetTokenRepository:
         """Create a one-time token for user; return (raw_token, expires_at)."""
         raw = secrets.token_urlsafe(32)
         token_hash = self._hash_token(raw)
-        expires_at = datetime.now(UTC) + timedelta(
-            seconds=self._ttl_seconds
-        )
+        expires_at = datetime.now(UTC) + timedelta(seconds=self._ttl_seconds)
         row = PasswordSetTokenModel(
             token_hash=token_hash,
             user_id=user_id,
