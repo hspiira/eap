@@ -4,6 +4,7 @@ Authentication API Routes
 FastAPI routes for authentication operations.
 """
 
+import logging
 from datetime import timedelta
 from urllib.parse import quote
 
@@ -52,6 +53,8 @@ from app.infrastructure.repositories.refresh_token_repository import (
 )
 from app.shared.decorators import transactional
 from app.shared.utils.generators import generate_cuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -115,7 +118,13 @@ async def auth_me(
             email = user.email.value
             role = user.role.value
     except Exception:
-        pass
+        # Degrade to token-only identity rather than failing /me, but do not let a
+        # DB outage look like a healthy response with a missing role.
+        logger.warning(
+            "auth.me: user lookup failed; falling back to token claims",
+            extra={"user_id": current_user.user_id},
+            exc_info=True,
+        )
     return MeResponse(
         user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
@@ -430,12 +439,20 @@ async def logout(
     if not refresh_token_value and body is not None:
         refresh_token_value = body.refresh_token
     if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_value:
+        jti: str | None = None
         try:
             token_data = decode_refresh_token(refresh_token_value)
-            if token_data.jti:
-                await refresh_token_repo.revoke(token_data.jti)
+            jti = token_data.jti
+            if jti:
+                await refresh_token_repo.revoke(jti)
         except Exception:
-            pass
+            # Logout still succeeds (cookies are cleared below), but an unrevoked
+            # refresh token remains usable until it expires — that needs a trail.
+            logger.warning(
+                "auth.logout: refresh token revocation failed; token may remain valid until expiry",
+                extra={"jti": jti},
+                exc_info=True,
+            )
     if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
         from fastapi.responses import Response
 

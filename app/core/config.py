@@ -79,12 +79,15 @@ class Settings(BaseSettings):
 
     # Authorization
     STRICT_ACTIVE_USER_CHECK: bool = Field(
-        default=False,
+        default=True,
         description="If True, get_current_active_user and refresh validate user/tenant in DB",
     )
     REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION: bool = Field(
-        default=False,
-        description="If True, POST /tenants requires platform admin",
+        default=True,
+        description=(
+            "If True, POST /tenants requires platform admin. Requires PLATFORM_TENANT_ID "
+            "to be set, otherwise all tenant creation is rejected with 403 (fail-closed)."
+        ),
     )
     ENFORCE_SUBSCRIPTION_LIMITS: bool = Field(
         default=False,

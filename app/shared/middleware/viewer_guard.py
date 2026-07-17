@@ -8,10 +8,14 @@ round-trip is required.
 Auth routes (/auth/*) are exempt — they are public by design.
 """
 
+import logging
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+
+logger = logging.getLogger(__name__)
 
 _MUTATION_METHODS = frozenset({"POST", "PATCH", "PUT", "DELETE"})
 _EXEMPT_PATH_PREFIXES = ("/auth/",)
@@ -44,6 +48,12 @@ class ViewerGuardMiddleware(BaseHTTPMiddleware):
                     content={"detail": "Insufficient role: Viewers cannot perform write operations"},
                 )
         except Exception:
-            pass
+            # Fail open by design: an undecodable token is not this guard's problem —
+            # the auth dependency rejects it downstream. Logged so a decode regression
+            # here (which would silently disable the viewer guard) is visible.
+            logger.debug(
+                "viewer_guard: token decode failed; deferring to auth dependency",
+                exc_info=True,
+            )
 
         return await call_next(request)
