@@ -10,8 +10,9 @@
  * Fixture is DEV-only.
  */
 
-import apiClient from '../client'
 import type { Diagnosis, DiagnosisTree, DiagnosisType } from '@/types/entities'
+
+import apiClient from '../client'
 import {
   fixtureGetTree,
   fixtureGetTypes,

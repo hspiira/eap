@@ -7,6 +7,7 @@ import { z } from 'zod'
 
 import { usersApi } from '@/api/endpoints/users'
 import { AppLayout } from '@/components/AppLayout'
+import { AtRiskPage } from '@/components/AtRiskPage'
 import { FormField } from '@/components/common/FormField'
 import { PageShell } from '@/components/common/PageShell'
 import { DetailSkeleton } from '@/components/common/PageSkeletons'
@@ -22,10 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/contexts/ToastContext'
-import { AtRiskPage } from '@/components/AtRiskPage'
-import { InboxPage } from '@/routes/inbox'
 import { useApiForm } from '@/hooks/useApiForm'
 import { authActions } from '@/lib/auth-store'
+import { InboxPage } from '@/routes/inbox'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { User } from '@/types/entities'
@@ -92,15 +92,17 @@ function MeBody() {
             </span>
           }
           actions={
-            <Link to="/me">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs text-fg/70 hover:bg-fg/8 hover:text-fg transition-colors"
-              >
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs text-fg/70"
+            >
+              <Link to="/me">
                 <ArrowLeft className="size-3" />
                 Back
-              </button>
-            </Link>
+              </Link>
+            </Button>
           }
         >
           <Content />

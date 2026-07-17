@@ -8,9 +8,10 @@
  * The webhook secret is returned once on create; display it immediately.
  */
 
+import { SurveyStatus } from '@/types/enums'
+
 import apiClient from '../client'
 import type { PaginatedResponse, Survey, SurveyAggregate } from '../types'
-import { SurveyStatus } from '@/types/enums'
 import {
   fixtureCloseSurvey,
   fixtureCreateSurvey,

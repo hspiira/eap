@@ -64,12 +64,13 @@ function humaniseRoute(pathname: string): string {
 
 function HeaderSearch() {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={openCommandPalette}
       aria-label="Search (⌘K)"
       aria-keyshortcuts="Meta+K Control+K"
-      className="relative hidden h-8 w-full max-w-80 cursor-pointer items-center gap-2 rounded-sm border border-border-subtle bg-surface px-3 text-sm text-fg-subtle transition-colors hover:border-border hover:bg-surface-hover md:flex"
+      className="relative hidden h-8 w-full max-w-80 cursor-pointer items-center justify-start gap-2 rounded-sm border-border-subtle bg-surface px-3 text-sm font-normal text-fg-subtle transition-colors hover:border-border hover:bg-surface-hover md:flex"
     >
       <Search className="size-3.5 shrink-0" aria-hidden />
       <span className="flex-1 text-left">Search</span>
@@ -79,7 +80,7 @@ function HeaderSearch() {
       >
         ⌘K
       </kbd>
-    </button>
+    </Button>
   )
 }
 

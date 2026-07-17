@@ -10,7 +10,8 @@
  *   CLOSED    → POST /engagements/{id}/close
  */
 
-import { DeliverableStatus, EngagementStatus } from '@/types/enums'
+import type { DeliverableStatus} from '@/types/enums';
+import { EngagementStatus } from '@/types/enums'
 
 import apiClient from '../client'
 import type {

@@ -1,9 +1,9 @@
 import { useState } from "react"
 
+import * as SelectPrimitive from "@radix-ui/react-select"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { Controller } from "react-hook-form"
-import * as SelectPrimitive from "@radix-ui/react-select"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -12,6 +12,7 @@ import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -30,9 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { cn } from "@/lib/utils"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
-import { cn } from "@/lib/utils"
 
 const TIER_OPTIONS = [
   { value: ClientTier.A, label: "Tier A", desc: "Strategic — full service mix" },

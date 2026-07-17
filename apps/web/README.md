@@ -14,20 +14,21 @@ Frontend application for the Evexía platform.
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
+- Node.js 22+ (CI builds on 22 LTS)
+- pnpm (the only supported package manager — the repo pins it via `packageManager`
+  in `package.json` and `pnpm-lock.yaml` is the source of truth; do not use npm or yarn)
 - Backend API running at `http://localhost:8000`
 
 ### Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Development
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The application will be available at `http://localhost:3000`
@@ -35,14 +36,19 @@ The application will be available at `http://localhost:3000`
 ### Building for Production
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ### Testing
 
 ```bash
-npm run test
+pnpm test         # unit tests
+pnpm lint         # eslint
+pnpm typecheck    # tsc --noEmit
 ```
+
+These four commands are exactly what CI runs on every push and pull request
+(`.github/workflows/ci.yml`) — run them before pushing.
 
 ## Project Structure
 

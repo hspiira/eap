@@ -2,11 +2,13 @@
   "name": "evexia",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.9.0",
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "openapi:dump": "PYTHONPATH=../evexia_bk ../evexia_bk/.venv/bin/python ../evexia_bk/scripts/dump_openapi.py",

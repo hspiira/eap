@@ -133,12 +133,13 @@ function ExpandedHeader() {
         <span className="truncate text-sm font-semibold text-fg">{displayName}</span>
       </div>
       <div className="px-1">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={openCommandPalette}
           aria-label="Search (⌘K)"
           aria-keyshortcuts="Meta+K Control+K"
-          className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-sm border border-border bg-surface px-3 text-sm text-fg-subtle transition-colors hover:bg-surface-hover"
+          className="flex h-8 w-full cursor-pointer items-center justify-start gap-2 rounded-sm border-border bg-surface px-3 text-sm font-normal text-fg-subtle transition-colors hover:bg-surface-hover"
         >
           <Search className="size-3.5 shrink-0" aria-hidden />
           <span className="flex-1 text-left">Search</span>
@@ -148,7 +149,7 @@ function ExpandedHeader() {
           >
             ⌘K
           </kbd>
-        </button>
+        </Button>
       </div>
     </SidebarHeader>
   )
