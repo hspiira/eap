@@ -775,48 +775,6 @@ async def get_survey_response_repository(
 
 
 # =============================================================================
-# VALIDATION SERVICE
-# =============================================================================
-
-
-from app.application.services.validation_service import ValidationService  # noqa: E402
-
-
-async def get_validation_service(
-    tenant_repo: TenantRepository = Depends(get_tenant_repository),
-    client_repo: ClientRepository = Depends(get_client_repository),
-    contract_repo: ContractRepository = Depends(get_contract_repository),
-    person_repo: PersonRepository = Depends(get_person_repository),
-    service_repo: ServiceRepository = Depends(get_service_repository),
-    user_repo: UserRepository = Depends(get_user_repository),
-) -> ValidationService:
-    """
-    Dependency for getting validation service.
-
-    The validation service provides cross-entity validation
-    that spans multiple aggregates.
-
-    Args:
-        tenant_repo: Tenant repository
-        client_repo: Client repository
-        contract_repo: Contract repository
-        person_repo: Person repository
-        service_repo: Service repository
-        user_repo: User repository
-
-    Returns:
-        ValidationService instance
-    """
-    return ValidationService(
-        tenant_repo=tenant_repo,
-        client_repo=client_repo,
-        contract_repo=contract_repo,
-        person_repo=person_repo,
-        service_repo=service_repo,
-        user_repo=user_repo,
-    )
-
-
 # =============================================================================
 # EVENT BUS
 # =============================================================================
