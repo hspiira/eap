@@ -35,6 +35,7 @@ import { clientsApi } from "@/api/endpoints/clients"
 import { type PersonListParams,personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import type { EmploymentInfoCreateSchema } from "@/api/generated"
+import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -672,97 +673,6 @@ function LockedClientSummary({
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked
       </span>
-    </div>
-  )
-}
-
-function ClientPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (clientId: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Client>({
-    resource: "clients",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: clientsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((c) => c.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          {nameInitials(selected.name)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange("")}
-          className="shrink-0 text-xs text-fg/65"
-        >
-          Change
-        </Button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder="Search clients by name or code…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? "No clients match." : "Start typing to search clients."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((c) => (
-              <li key={c.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(c.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-                  >
-                    {nameInitials(c.name)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-fg">
-                      {c.name}
-                    </span>
-                    <span className="block truncate font-mono text-[11px] text-fg/55">
-                      {c.code}
-                    </span>
-                  </span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   )
 }
