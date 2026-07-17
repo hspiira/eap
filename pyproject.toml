@@ -50,6 +50,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S110"]
 "alembic/versions/*" = ["E402"]
+# Standalone scripts set env/path before importing the app, by design.
+"scripts/*" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
