@@ -46,6 +46,9 @@ jobs:
       - name: Lint
         run: uv run ruff check app tests scripts
 
+      - name: Format check
+        run: uv run ruff format --check app tests scripts
+
       - name: Layering (import-linter)
         run: uv run lint-imports
 
