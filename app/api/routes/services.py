@@ -37,7 +37,7 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -88,13 +88,7 @@ async def create_service(
         is_group_service=data.is_group_service,
         max_participants=data.max_participants,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_service_response(service)
 
 
@@ -113,16 +107,9 @@ async def activate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -142,18 +129,11 @@ async def deactivate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(
         service.id, ServiceTransition.DEACTIVATE, reason=reason
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -172,16 +152,9 @@ async def archive_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -200,16 +173,9 @@ async def restore_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.RESTORE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -236,13 +202,7 @@ async def update_service(
         category=data.category,
         duration_minutes=data.duration_minutes,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -267,13 +227,7 @@ async def update_service_group_settings(
         is_group_service=settings.is_group_service,
         max_participants=settings.max_participants,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 

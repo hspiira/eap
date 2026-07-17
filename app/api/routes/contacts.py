@@ -27,7 +27,7 @@ from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, TenantId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
@@ -80,13 +80,7 @@ async def create_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_contact_response(contact)
 
 
@@ -116,13 +110,7 @@ async def update_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 
@@ -141,16 +129,9 @@ async def activate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contact."""
-    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
-    use_case.entity_name = "Contact"
+    use_case = TransitionUseCase(contact_repo, "Contact")
     contact = await use_case.execute(ContactId(contact_id), ContactTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 
@@ -169,16 +150,9 @@ async def deactivate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a contact."""
-    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
-    use_case.entity_name = "Contact"
+    use_case = TransitionUseCase(contact_repo, "Contact")
     contact = await use_case.execute(ContactId(contact_id), ContactTransition.DEACTIVATE)
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 

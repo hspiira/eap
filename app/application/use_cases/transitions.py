@@ -33,10 +33,13 @@ TTransition = TypeVar("TTransition", bound=Enum)
 class TransitionUseCase(BaseUseCase[TEntity, TId], Generic[TEntity, TId, TTransition]):
     """Generic dispatcher mapping a transition enum to the entity method."""
 
-    entity_name: str = "Entity"
-
-    def __init__(self, repository: RepositoryProtocol[TEntity, TId]) -> None:
+    def __init__(
+        self,
+        repository: RepositoryProtocol[TEntity, TId],
+        entity_name: str = "Entity",
+    ) -> None:
         super().__init__(repository)
+        self.entity_name = entity_name
 
     async def execute(
         self,

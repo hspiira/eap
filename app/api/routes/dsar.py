@@ -42,7 +42,7 @@ from app.domain.value_objects.retention import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/dsar", tags=["dsar"])
 
@@ -106,13 +106,7 @@ async def request_export(
         subject_person_id=PersonId(data.subject_person_id),
         requested_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=req,
-        audit_handler=audit_handler,
-        tenant_id=req.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(req, audit_handler, current_user, request)
     return _to_response(req)
 
 
@@ -166,13 +160,7 @@ async def request_erasure(
             else ERASURE_REVERSIBLE_WINDOW_DAYS
         ),
     )
-    await audit_entity_operation(
-        entity=req,
-        audit_handler=audit_handler,
-        tenant_id=req.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(req, audit_handler, current_user, request)
     return _to_response(req)
 
 

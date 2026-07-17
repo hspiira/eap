@@ -36,7 +36,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 
@@ -82,13 +82,7 @@ async def grant_consent(
         version=data.version,
         granted_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=consent,
-        audit_handler=audit_handler,
-        tenant_id=consent.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(consent, audit_handler, current_user, request)
     return _to_consent_response(consent)
 
 

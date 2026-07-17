@@ -50,7 +50,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
 
@@ -122,13 +122,7 @@ async def create_contract(
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_contract_response(contract)
 
 
@@ -147,16 +141,9 @@ async def activate_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contract."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(contract.id, ContractTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -176,18 +163,11 @@ async def sign_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Sign a contract."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
         contract.id, ContractTransition.SIGN, signed_by=body.signed_by
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -217,21 +197,14 @@ async def renew_contract(
     # Convert datetime to date for renew method
     new_end_date = body.new_end_date.date()
 
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
         contract.id,
         ContractTransition.RENEW,
         new_end_date=new_end_date,
         new_rate=new_rate,
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -251,18 +224,11 @@ async def terminate_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a contract."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
         contract.id, ContractTransition.TERMINATE, reason=body.reason
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -281,16 +247,9 @@ async def archive_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a contract."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(contract.id, ContractTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -309,16 +268,9 @@ async def restore_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore a terminated or expired contract."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(contract.id, ContractTransition.RESTORE)
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -351,13 +303,7 @@ async def update_contract(
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 
@@ -377,20 +323,13 @@ async def update_contract_payment_status(
     db: AsyncSession = Depends(get_db),
 ):
     """Update contract payment status."""
-    use_case: TransitionUseCase = TransitionUseCase(contract_repo)
-    use_case.entity_name = "Contract"
+    use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
         contract.id,
         ContractTransition.UPDATE_PAYMENT_STATUS,
         payment_status=body.payment_status,
     )
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
 

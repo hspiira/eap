@@ -54,7 +54,7 @@ from app.infrastructure.repositories.password_set_token_repository import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
@@ -151,13 +151,7 @@ async def create_tenant(
             admin_email=data.admin_email,
         )
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=None,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, None, request, tenant_id=tenant.id)
     set_password_url = None
     if set_password_token and getattr(settings, "SET_PASSWORD_BASE_URL", ""):
         base = settings.SET_PASSWORD_BASE_URL.rstrip("/")
@@ -187,16 +181,9 @@ async def activate_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -217,18 +204,11 @@ async def suspend_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
         TenantId(tenant_id), TenantTransition.SUSPEND, reason=body.reason
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -249,18 +229,11 @@ async def terminate_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
         TenantId(tenant_id), TenantTransition.TERMINATE, reason=body.reason
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -281,8 +254,7 @@ async def update_tenant_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant settings."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
         TenantId(tenant_id),
         TenantTransition.UPDATE_SETTINGS,
@@ -293,13 +265,7 @@ async def update_tenant_settings(
         else None,
         custom_branding=settings.custom_branding,
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -326,18 +292,11 @@ async def update_tenant(
         if tenant is None:
             raise NotFoundError(f"Tenant not found: {tenant_id}")
         return _to_tenant_response(tenant)
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
         TenantId(tenant_id), TenantTransition.UPDATE_NAME, name=data.name
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -358,20 +317,13 @@ async def update_subscription(
     db: AsyncSession = Depends(get_db),
 ):
     """Update tenant subscription tier."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
         TenantId(tenant_id),
         TenantTransition.UPDATE_SUBSCRIPTION_TIER,
         tier=data.subscription_tier,
     )
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -414,13 +366,7 @@ async def update_azure_sso(
         tenant.azure_sso_enabled = data.enabled
 
     await tenant_repo.save(tenant)
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -440,16 +386,9 @@ async def archive_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 
@@ -469,16 +408,9 @@ async def restore_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(tenant_repo)
-    use_case.entity_name = "Tenant"
+    use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.RESTORE)
-    await audit_entity_operation(
-        entity=tenant,
-        audit_handler=audit_handler,
-        tenant_id=tenant.id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
 

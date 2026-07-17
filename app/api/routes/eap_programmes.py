@@ -45,7 +45,7 @@ from app.domain.value_objects.core import (
 from app.domain.value_objects.programme import ProgrammeSessionCap
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["eap-programmes"])
 
@@ -127,13 +127,7 @@ async def create_programme(
         description=data.description,
         created_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=programme,
-        audit_handler=audit_handler,
-        tenant_id=programme.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(programme, audit_handler, current_user, request)
     return _to_programme(programme)
 
 
@@ -198,13 +192,7 @@ async def authorize_case(
         service_category=data.service_category,
         expires_on=data.expires_on,
     )
-    await audit_entity_operation(
-        entity=auth,
-        audit_handler=audit_handler,
-        tenant_id=auth.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(auth, audit_handler, current_user, request)
     return _to_authorization(auth)
 
 
@@ -225,13 +213,7 @@ async def consume_session(
     auth = await ConsumeAuthorizationSessionUseCase(repo).execute(
         AuthorizationId(authorization_id)
     )
-    await audit_entity_operation(
-        entity=auth,
-        audit_handler=audit_handler,
-        tenant_id=auth.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(auth, audit_handler, current_user, request)
     return _to_authorization(auth)
 
 
@@ -255,13 +237,7 @@ async def request_extension(
         additional_sessions=data.additional_sessions,
         requested_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=auth,
-        audit_handler=audit_handler,
-        tenant_id=auth.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(auth, audit_handler, current_user, request)
     return _to_authorization(auth)
 
 
@@ -285,11 +261,5 @@ async def grant_extension(
         clinician_signoff=UserId(data.clinician_signoff_user_id),
         admin_signoff=UserId(data.admin_signoff_user_id),
     )
-    await audit_entity_operation(
-        entity=auth,
-        audit_handler=audit_handler,
-        tenant_id=auth.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(auth, audit_handler, current_user, request)
     return _to_authorization(auth)

@@ -38,7 +38,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["eligible-members"])
 
@@ -116,13 +116,7 @@ async def enrol_eligible_member(
         ),
         display_label=data.display_label,
     )
-    await audit_entity_operation(
-        entity=member,
-        audit_handler=audit_handler,
-        tenant_id=member.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(member, audit_handler, current_user, request)
     return _to_response(member)
 
 

@@ -36,7 +36,7 @@ from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/industries", tags=["industries"])
 
@@ -85,13 +85,7 @@ async def create_industry(
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
     )
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_industry_response(industry)
 
 
@@ -119,13 +113,7 @@ async def update_industry(
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
     )
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 
@@ -145,16 +133,9 @@ async def activate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate an industry. ADMIN-only, same-tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
-    use_case.entity_name = "Industry"
+    use_case = TransitionUseCase(industry_repo, "Industry")
     industry = await use_case.execute(industry.id, IndustryTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 
@@ -174,16 +155,9 @@ async def deactivate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate an industry. ADMIN-only, same-tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
-    use_case.entity_name = "Industry"
+    use_case = TransitionUseCase(industry_repo, "Industry")
     industry = await use_case.execute(industry.id, IndustryTransition.DEACTIVATE)
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 

@@ -28,7 +28,7 @@ from app.domain.repositories.service_assignment_repository import ServiceAssignm
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/service-assignments", tags=["service-assignments"])
 
@@ -76,12 +76,8 @@ async def create_service_assignment(
         assigned_by=assigned_by,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
+    await audit_change(
+        assignment, audit_handler, current_user, request, tenant_id=tenant_id
     )
     return _to_service_assignment_response(assignment)
 
@@ -105,13 +101,7 @@ async def update_service_assignment(
     assignment = await UpdateServiceAssignmentUseCase(assignment_repo).execute(
         ServiceAssignmentId(assignment_id), data.notes
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 
@@ -130,18 +120,11 @@ async def activate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 
@@ -160,18 +143,11 @@ async def deactivate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 

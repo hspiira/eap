@@ -42,7 +42,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["surveys"])
 
@@ -97,13 +97,7 @@ async def create_survey_campaign(
         period_end=data.period_end,
         anonymous=data.anonymous,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -155,18 +149,11 @@ async def activate_survey_campaign(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "SurveyCampaign"
+    use_case = TransitionUseCase(repo, "SurveyCampaign")
     campaign = await use_case.execute(
         SurveyCampaignId(campaign_id), SurveyCampaignTransition.ACTIVATE
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -184,18 +171,11 @@ async def close_survey_campaign(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "SurveyCampaign"
+    use_case = TransitionUseCase(repo, "SurveyCampaign")
     campaign = await use_case.execute(
         SurveyCampaignId(campaign_id), SurveyCampaignTransition.CLOSE
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 

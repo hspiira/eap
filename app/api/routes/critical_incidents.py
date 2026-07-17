@@ -37,7 +37,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/critical-incidents", tags=["critical-incidents"])
 
@@ -92,13 +92,7 @@ async def create_critical_incident(
         occurred_at=data.occurred_at,
         logged_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=incident,
-        audit_handler=audit_handler,
-        tenant_id=incident.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(incident, audit_handler, current_user, request)
     return _to_response(incident)
 
 
@@ -117,21 +111,14 @@ async def record_phase(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CriticalIncident"
+    use_case = TransitionUseCase(repo, "CriticalIncident")
     incident = await use_case.execute(
         CriticalIncidentId(incident_id),
         CriticalIncidentTransition.RECORD_PHASE,
         phase=body.phase,
         notes=body.notes,
     )
-    await audit_entity_operation(
-        entity=incident,
-        audit_handler=audit_handler,
-        tenant_id=incident.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(incident, audit_handler, current_user, request)
     return _to_response(incident)
 
 
@@ -150,20 +137,13 @@ async def close_incident(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CriticalIncident"
+    use_case = TransitionUseCase(repo, "CriticalIncident")
     incident = await use_case.execute(
         CriticalIncidentId(incident_id),
         CriticalIncidentTransition.CLOSE,
         after_action_summary=body.after_action_summary,
     )
-    await audit_entity_operation(
-        entity=incident,
-        audit_handler=audit_handler,
-        tenant_id=incident.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(incident, audit_handler, current_user, request)
     return _to_response(incident)
 
 

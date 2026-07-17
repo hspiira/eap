@@ -36,7 +36,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["clinical-notes"])
 
@@ -92,13 +92,7 @@ async def create_note(
         body=data.body,
         session_id=SessionId(data.session_id) if data.session_id else None,
     )
-    await audit_entity_operation(
-        entity=note,
-        audit_handler=audit_handler,
-        tenant_id=note.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(note, audit_handler, current_user, request)
     return _to_response(note)
 
 
@@ -143,13 +137,7 @@ async def sign_note(
         note_id=ClinicalNoteId(note_id),
         signer_id=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=note,
-        audit_handler=audit_handler,
-        tenant_id=note.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(note, audit_handler, current_user, request)
     return _to_response(note)
 
 
@@ -174,13 +162,7 @@ async def amend_note(
         body=data.body,
         reason=data.reason,
     )
-    await audit_entity_operation(
-        entity=note,
-        audit_handler=audit_handler,
-        tenant_id=note.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(note, audit_handler, current_user, request)
     return _to_response(note)
 
 

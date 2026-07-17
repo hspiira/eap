@@ -33,7 +33,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/panel", tags=["panel"])
 
@@ -92,13 +92,7 @@ async def change_provider_tier(
         actor=UserId(current_user.user_id),
         reason=data.reason,
     )
-    await audit_entity_operation(
-        entity=person,
-        audit_handler=audit_handler,
-        tenant_id=person.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(person, audit_handler, current_user, request)
     return TierChangeResponse(
         provider_id=person.id.value,
         new_tier=data.new_tier,

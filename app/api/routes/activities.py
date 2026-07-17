@@ -25,7 +25,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -80,13 +80,7 @@ async def create_activity(
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
     )
-    await audit_entity_operation(
-        entity=activity,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(activity, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_activity_response(activity)
 
 
@@ -113,13 +107,7 @@ async def update_activity(
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
     )
-    await audit_entity_operation(
-        entity=activity,
-        audit_handler=audit_handler,
-        tenant_id=activity.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(activity, audit_handler, current_user, request)
     return _to_activity_response(activity)
 
 

@@ -41,7 +41,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["cases"])
 
@@ -105,13 +105,7 @@ async def open_case(
         opened_by=UserId(current_user.user_id),
         referral_notes=data.referral_notes,
     )
-    await audit_entity_operation(
-        entity=case,
-        audit_handler=audit_handler,
-        tenant_id=case.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)
 
 
@@ -168,13 +162,7 @@ async def assign_counsellor(
         case_id=CaseId(case_id),
         counsellor_id=PersonId(data.counsellor_id),
     )
-    await audit_entity_operation(
-        entity=case,
-        audit_handler=audit_handler,
-        tenant_id=case.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)
 
 
@@ -196,13 +184,7 @@ async def advance_case(
     case = await AdvanceCaseStatusUseCase(case_repo).execute(
         case_id=CaseId(case_id), target=data.target
     )
-    await audit_entity_operation(
-        entity=case,
-        audit_handler=audit_handler,
-        tenant_id=case.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)
 
 
@@ -226,13 +208,7 @@ async def close_case(
         reason=data.reason,
         closure_summary_note_id=data.closure_summary_note_id,
     )
-    await audit_entity_operation(
-        entity=case,
-        audit_handler=audit_handler,
-        tenant_id=case.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)
 
 
@@ -254,11 +230,5 @@ async def refer_out_case(
     case = await ReferOutCaseUseCase(case_repo).execute(
         case_id=CaseId(case_id), notes=data.notes
     )
-    await audit_entity_operation(
-        entity=case,
-        audit_handler=audit_handler,
-        tenant_id=case.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)

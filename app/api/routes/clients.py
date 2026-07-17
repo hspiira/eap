@@ -64,7 +64,7 @@ from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -153,13 +153,7 @@ async def create_client(
     except EvexiaException as e:
         raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_client_response(client)
 
 
@@ -179,18 +173,11 @@ async def verify_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.VERIFY, verified_by=UserId(verified_by)
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -209,16 +196,9 @@ async def activate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -238,16 +218,9 @@ async def deactivate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.DEACTIVATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -267,16 +240,9 @@ async def suspend_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.SUSPEND, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -296,16 +262,9 @@ async def terminate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.TERMINATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -324,16 +283,9 @@ async def archive_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -352,16 +304,9 @@ async def restore_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.RESTORE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -387,13 +332,7 @@ async def update_client(
         preferred_contact_method=data.preferred_contact_method,
         tier=data.tier,
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -419,18 +358,11 @@ async def update_client_contact_info(
         address=data.contact_info.address,
     )
 
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.UPDATE_CONTACT_INFO, contact_info=contact_info
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -459,18 +391,11 @@ async def update_client_billing_address(
             postal_code=data.billing_address.postal_code,
         )
 
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.UPDATE_BILLING_ADDRESS, billing_address=billing_address
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -490,18 +415,11 @@ async def update_client_tier(
     db: AsyncSession = Depends(get_db),
 ):
     """Set the client's engagement tier."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.UPDATE_TIER, tier=data.tier
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 

@@ -51,7 +51,7 @@ from app.domain.value_objects.pricing import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["pricing"])
 
@@ -113,13 +113,7 @@ async def update_contract_pricing(
         raise HTTPException(status_code=404, detail="Contract not found")
     contract.update_pricing(_pricing_from_schema(body.pricing))
     await contract_repo.save(contract)
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return {"contract_id": contract.id.value, "pricing_model": contract.pricing.model.value}
 
 
@@ -205,13 +199,7 @@ async def create_utilisation_event(
         updated_at=now,
     )
     await repo.save(event)
-    await audit_entity_operation(
-        entity=event,
-        audit_handler=audit_handler,
-        tenant_id=event.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(event, audit_handler, current_user, request)
     return UtilisationEventResponse(
         id=event.id.value,
         tenant_id=event.tenant_id.value,

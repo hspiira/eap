@@ -42,7 +42,7 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -119,13 +119,7 @@ async def create_document(
         expires_at=data.expires_at,
         is_confidential=data.is_confidential,
     )
-    await audit_entity_operation(
-        entity=document,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(document, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_document_response(document)
 
 
@@ -144,16 +138,9 @@ async def publish_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a document (make it available)."""
-    use_case: TransitionUseCase = TransitionUseCase(document_repo)
-    use_case.entity_name = "Document"
+    use_case = TransitionUseCase(document_repo, "Document")
     updated = await use_case.execute(document.id, DocumentTransition.PUBLISH)
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -172,16 +159,9 @@ async def archive_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a document."""
-    use_case: TransitionUseCase = TransitionUseCase(document_repo)
-    use_case.entity_name = "Document"
+    use_case = TransitionUseCase(document_repo, "Document")
     updated = await use_case.execute(document.id, DocumentTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -212,13 +192,7 @@ async def create_document_version(
         file_size=data.file_size,
         mime_type=data.mime_type,
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -243,13 +217,7 @@ async def update_document(
         name=data.name,
         description=data.description,
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -272,13 +240,7 @@ async def set_document_confidentiality(
     updated = await SetDocumentConfidentialityUseCase(document_repo).execute(
         document.id, data.is_confidential
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -301,13 +263,7 @@ async def set_document_expiry(
     updated = await SetDocumentExpiryUseCase(document_repo).execute(
         document.id, data.expires_at
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 

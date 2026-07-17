@@ -42,7 +42,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -109,13 +109,7 @@ async def create_renewal_pack_template(
         tenant_id=TenantId(tenant_id),
         client_id=client_id,
     )
-    await audit_entity_operation(
-        entity=template,
-        audit_handler=audit_handler,
-        tenant_id=template.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(template, audit_handler, current_user, request)
     return _to_template_response(template)
 
 
@@ -151,13 +145,7 @@ async def create_template(
             for s in data.sections
         ],
     )
-    await audit_entity_operation(
-        entity=template,
-        audit_handler=audit_handler,
-        tenant_id=template.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(template, audit_handler, current_user, request)
     return _to_template_response(template)
 
 
@@ -221,13 +209,7 @@ async def run_template(
         requested_by=UserId(current_user.user_id),
         parameters=body.parameters,
     )
-    await audit_entity_operation(
-        entity=run,
-        audit_handler=audit_handler,
-        tenant_id=run.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(run, audit_handler, current_user, request)
     return _to_run_response(run)
 
 
