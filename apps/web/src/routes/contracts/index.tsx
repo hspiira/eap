@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -26,7 +26,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { Button } from "@/components/ui/button"
@@ -48,7 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
@@ -112,19 +112,12 @@ const ROW_BORDER = "border-fg/8"
 function ContractsListPage() {
   const searchParams = useSearch({ from: "/contracts/" })
   const navigate = useNavigate({ from: "/contracts/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const canWrite = useCanWrite()
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
 
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
   const activeRenewal: RenewalFilter = searchParams.renewal ?? "all"
 
@@ -135,30 +128,14 @@ function ContractsListPage() {
     [activeRenewal],
   )
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
+    setFilter("status", status)
   }
 
   const handleRenewalChange = (next: RenewalFilter) => {
     const renewal = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, renewal }), replace: true })
-    setPage(1)
+    setFilter("renewal", renewal)
   }
 
   const { data: clientsData } = useQuery({
@@ -180,8 +157,7 @@ function ContractsListPage() {
       search: activeSearch,
       status: activeStatus,
       ...renewalWindow,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: contractsApi.list,
   })

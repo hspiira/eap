@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -25,7 +25,7 @@ import {
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PERSON_TYPE_LABELS,PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
@@ -116,47 +116,23 @@ const ROW_BORDER = "border-fg/8"
 function PersonsListPage() {
   const searchParams = useSearch({ from: "/persons/" })
   const navigate = useNavigate({ from: "/persons/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
 
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeType = searchParams.type
   const activeClientId = searchParams.client_id
   const activeStatus = searchParams.status
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
   const handleTypeChange = (next: TypeFilter) => {
     const type = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, type }), replace: true })
-    setPage(1)
+    setFilter("type", type)
   }
 
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
+    setFilter("status", status)
   }
 
   const clearClient = () => {
@@ -184,8 +160,7 @@ function PersonsListPage() {
       person_type: activeType,
       client_id: activeClientId,
       status: activeStatus,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: personsApi.list,
   })

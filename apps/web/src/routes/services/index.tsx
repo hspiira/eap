@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
@@ -22,7 +21,7 @@ import {
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
@@ -43,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Service } from "@/types/entities"
@@ -96,46 +95,19 @@ const ROW_BORDER = "border-fg/8"
 function ServicesListPage() {
   const searchParams = useSearch({ from: "/services/" })
   const navigate = useNavigate({ from: "/services/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
 
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
   const activeGroup: GroupFilter = searchParams.group ?? "all"
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
+  const handleStatusChange = (next: StatusFilter) =>
+    setFilter("status", next === "all" ? undefined : next)
 
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
-  const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
-  }
-
-  const handleGroupChange = (next: GroupFilter) => {
-    const group = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, group }), replace: true })
-    setPage(1)
-  }
+  const handleGroupChange = (next: GroupFilter) =>
+    setFilter("group", next === "all" ? undefined : next)
 
   const query = useEntityList<Service, ServiceListParams>({
     resource: "services",
@@ -145,8 +117,7 @@ function ServicesListPage() {
       search: activeSearch,
       status: activeStatus,
       is_group_service: activeGroup === "all" ? undefined : activeGroup === "group",
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: servicesApi.list,
   })
