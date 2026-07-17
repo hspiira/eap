@@ -282,43 +282,41 @@ class ApiClient {
   /**
    * POST FormData with auth headers, returns parsed JSON
    */
-  async postFormData<T>(path: string, formData: FormData): Promise<T> {
-    const url = this.buildUrl(path)
-    const headers = this.buildAuthHeaders(path)
-
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-      headers,
-      ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
-    })
-
+  /**
+   * Fetch, and on a 401 refresh once and retry. `/auth/` paths are exempt — a 401
+   * there is the answer, not a stale token.
+   */
+  private async fetchWithAuthRetry(
+    path: string,
+    doFetch: (headers: Record<string, string>) => Promise<Response>,
+  ): Promise<Response> {
+    const response = await doFetch(this.buildAuthHeaders(path))
     if (response.status === 401 && !path.includes('/auth/')) {
-      const refreshed = await this.tryRefreshToken()
-      if (refreshed) {
-        const retryHeaders = this.buildAuthHeaders(path)
-        const retryResponse = await fetch(url, {
-          method: 'POST',
-          body: formData,
-          headers: retryHeaders,
-          credentials: useCookies() ? 'include' : undefined,
-        })
-        if (retryResponse.ok) {
-          const ct = retryResponse.headers.get('content-type')
-          if (!ct || !ct.includes('application/json')) return {} as T
-          return (await retryResponse.json()) as T
-        }
+      if (await this.tryRefreshToken()) {
+        const retry = await doFetch(this.buildAuthHeaders(path))
+        if (retry.ok) return retry
       }
       this.handleAuthError(401)
     }
-
     if (response.status === 403) {
       this.handleAuthError(403)
     }
+    return response
+  }
+
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const url = this.buildUrl(path)
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers,
+        ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
+      }),
+    )
 
     if (!response.ok) {
-      const error = await this.parseError(response)
-      throw error
+      throw await this.parseError(response)
     }
 
     const contentType = response.headers.get('content-type')
@@ -328,49 +326,31 @@ class ApiClient {
     return (await response.json()) as T
   }
 
+
   /**
    * GET with blob response (e.g. file download)
    */
   async getBlob(path: string): Promise<Blob> {
     const url = this.buildUrl(path)
-    const headers = this.buildAuthHeaders(path)
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      credentials: useCookies() ? 'include' : undefined,
-    })
-
-    if (response.status === 401) {
-      const refreshed = await this.tryRefreshToken()
-      if (refreshed) {
-        const retryHeaders = this.buildAuthHeaders(path)
-        const retryResponse = await fetch(url, {
-          method: 'GET',
-          headers: retryHeaders,
-          credentials: useCookies() ? 'include' : undefined,
-        })
-        if (retryResponse.ok) {
-          return retryResponse.blob()
-        }
-      }
-      this.handleAuthError(401)
-    }
-
-    if (response.status === 403) {
-      this.handleAuthError(403)
-    }
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: 'GET',
+        headers,
+        credentials: useCookies() ? 'include' : undefined,
+      }),
+    )
 
     if (!response.ok) {
       throw new ApiError(
         'Failed to download document',
         'DOWNLOAD_ERROR',
-        response.status
+        response.status,
       )
     }
 
     return response.blob()
   }
+
 
   /**
    * Parse error response.
