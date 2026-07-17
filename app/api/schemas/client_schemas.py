@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 
-
 # === Value Object Schemas ===
 
 class ContactInfoSchema(BaseModel):

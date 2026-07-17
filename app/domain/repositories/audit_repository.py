@@ -8,7 +8,7 @@ Note: Audit logs are immutable - no update or delete operations.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.audit import AuditLog, EntityChange
 from app.domain.enums import AuditActionType

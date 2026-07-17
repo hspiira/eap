@@ -1,8 +1,9 @@
 """Input sanitization utilities."""
 
-import nh3
 import re
 from typing import Any, ClassVar
+
+import nh3
 
 
 class InputSanitizer:

@@ -14,7 +14,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import AuditActionType
 
-
 # === Value Object Schemas ===
 
 class FieldChangeSchema(BaseModel):

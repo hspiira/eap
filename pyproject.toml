@@ -8,14 +8,12 @@ dependencies = [
     "alembic>=1.18.1",
     "asyncpg>=0.30.0",
     "bcrypt>=4.2.0",
-    "beanie>=2.0.1",
     "cryptography>=48.0.1",
     "cuid2>=2.0.1",
     "fastapi[standard]>=0.128.0",
     "greenlet>=3.3.0",
     "msal>=1.36.0",
     "nh3>=0.3.2",
-    "pytest-asyncio>=1.3.0",
     "pyjwt>=2.13.0",
     "scalar-fastapi>=1.0.0",
     "sqlalchemy>=2.0.46",
@@ -30,6 +28,28 @@ dev = [
 redis = [
     "redis>=5.0.0",
 ]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# Defaults are only E4/E7/E9/F, so a clean run proved little.
+# S110 catches the try/except/pass class of bug this codebase already had;
+# ASYNC guards the "no blocking IO in async paths" property.
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S110"]
+ignore = [
+    "E501",   # line length is the formatter's job
+    "B008",   # FastAPI's Depends() in a default is the intended idiom
+    # StrEnum changes str(Member) from "Class.MEMBER" to the value. 78 enums here
+    # are used across logging and f-strings; that is a behaviour change, not a
+    # cleanup. Revisit deliberately if wanted.
+    "UP042",
+    "UP046",  # PEP 695 generics: a real rewrite of the repository base classes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S110"]
+"alembic/versions/*" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

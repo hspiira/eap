@@ -14,7 +14,6 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
-
 # =============================================================================
 # CREATE USE CASE (special - not a lifecycle operation)
 # =============================================================================

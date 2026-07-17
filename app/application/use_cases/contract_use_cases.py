@@ -20,7 +20,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle / single-field updates dispatched via TransitionUseCase + ContractTransition.
 
 

@@ -8,15 +8,15 @@ Family codes are shared among family members (employee + dependents).
 Member codes increment sequentially within each family.
 """
 
-from app.domain.repositories.person_repository import PersonRepository
+from app.domain.enums import PersonType
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.value_objects.core import (
-    ClientId,
     ClientEmployeeCode,
+    ClientId,
     PersonId,
     TenantId,
 )
-from app.domain.enums import PersonType
 
 
 class EmployeeCodeGenerator:

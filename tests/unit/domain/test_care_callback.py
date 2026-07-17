@@ -29,7 +29,6 @@ from app.domain.value_objects.core import (
     UserId,
 )
 
-
 # ---------- Campaign helpers ----------
 
 

@@ -8,7 +8,7 @@ Comprehensive tests for all service session endpoints covering:
 - Query by person, provider, service
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -34,7 +34,7 @@ class TestCreateServiceSession:
     ):
         """Test creating a service session with full data."""
         tenant_id = session_test_tenant["id"]
-        scheduled_at = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+        scheduled_at = (datetime.now(UTC) + timedelta(days=3)).isoformat()
 
         response = await client.post(
             f"/service-sessions/?tenant_id={tenant_id}",
@@ -65,7 +65,7 @@ class TestCreateServiceSession:
         session_test_client_person: dict,
     ):
         """Test that creating a session requires tenant_id."""
-        scheduled_at = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        scheduled_at = (datetime.now(UTC) + timedelta(days=1)).isoformat()
 
         response = await client.post(
             "/service-sessions/",
@@ -372,7 +372,7 @@ class TestRescheduleServiceSession:
     ):
         """Test rescheduling a session."""
         session_id = test_service_session["id"]
-        new_time = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+        new_time = (datetime.now(UTC) + timedelta(days=10)).isoformat()
 
         response = await client.post(
             f"/service-sessions/{session_id}/reschedule",
@@ -385,7 +385,7 @@ class TestRescheduleServiceSession:
 
     async def test_reschedule_not_found(self, client: AsyncClient):
         """Test rescheduling non-existent session returns 404."""
-        new_time = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+        new_time = (datetime.now(UTC) + timedelta(days=5)).isoformat()
 
         response = await client.post(
             "/service-sessions/nonexistent-id/reschedule",
@@ -548,7 +548,7 @@ class TestServiceSessionLifecycleFlow:
     ):
         """Test complete flow: create -> update -> complete -> feedback."""
         tenant_id = session_test_tenant["id"]
-        scheduled_at = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        scheduled_at = (datetime.now(UTC) + timedelta(days=1)).isoformat()
 
         # Create session
         create_response = await client.post(
@@ -597,7 +597,7 @@ class TestServiceSessionLifecycleFlow:
     ):
         """Test complete flow: create -> reschedule -> cancel."""
         tenant_id = session_test_tenant["id"]
-        scheduled_at = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+        scheduled_at = (datetime.now(UTC) + timedelta(days=2)).isoformat()
 
         # Create session
         create_response = await client.post(
@@ -612,7 +612,7 @@ class TestServiceSessionLifecycleFlow:
         session_id = create_response.json()["id"]
 
         # Reschedule
-        new_time = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+        new_time = (datetime.now(UTC) + timedelta(days=5)).isoformat()
         reschedule_response = await client.post(
             f"/service-sessions/{session_id}/reschedule",
             json={"new_scheduled_at": new_time},

@@ -2,6 +2,7 @@
 
 from enum import Enum
 
+
 class TenantStatus(str, Enum):
     ACTIVE = "Active"
     SUSPENDED = "Suspended"

@@ -8,15 +8,14 @@ Refactored to use base use case classes.
 from decimal import Decimal
 
 from app.application.use_cases.base import BaseUseCase
-from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
+from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
+from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
 from app.shared.utils.datetime import utc_now
-
 
 # Lifecycle dispatched via TransitionUseCase + KPITransition / KPIAssignmentTransition.
 

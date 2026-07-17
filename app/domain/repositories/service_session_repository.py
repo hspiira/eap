@@ -6,13 +6,13 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import PersonId, SessionId, ServiceId, TenantId
+from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
 
 
 class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):

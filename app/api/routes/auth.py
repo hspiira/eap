@@ -18,8 +18,6 @@ from app.api.dependencies import (
     get_tenant_repository,
     get_user_repository,
 )
-from app.core.config import settings
-from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
 from app.api.schemas.auth_schemas import (
     LoginRequest,
     LoginResponse,
@@ -29,7 +27,9 @@ from app.api.schemas.auth_schemas import (
     RefreshResponse,
     SetInitialPasswordRequest,
 )
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
 from app.core.security import (
     COOKIE_ACCESS_TOKEN,
     COOKIE_REFRESH_TOKEN,
@@ -44,13 +44,13 @@ from app.domain.enums import TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.infrastructure.services.azure_sso_service import AzureSSOService
 from app.infrastructure.repositories.password_set_token_repository import (
     PasswordSetTokenRepository,
 )
 from app.infrastructure.repositories.refresh_token_repository import (
     RefreshTokenRepository,
 )
+from app.infrastructure.services.azure_sso_service import AzureSSOService
 from app.shared.decorators import transactional
 from app.shared.utils.generators import generate_cuid
 
@@ -325,12 +325,12 @@ async def refresh_token(
         )
     try:
         token_data = decode_refresh_token(refresh_token_value)
-    except Exception:
+    except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from err
 
     # When revocation is enabled, require stored token and ensure it is not revoked
     if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and token_data.jti:

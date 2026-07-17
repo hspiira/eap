@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +33,7 @@ class PasswordSetTokenRepository:
         """Create a one-time token for user; return (raw_token, expires_at)."""
         raw = secrets.token_urlsafe(32)
         token_hash = self._hash_token(raw)
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.now(UTC) + timedelta(
             seconds=self._ttl_seconds
         )
         row = PasswordSetTokenModel(
@@ -49,7 +49,7 @@ class PasswordSetTokenRepository:
     async def redeem(self, token: str) -> str | None:
         """If token is valid and not expired/used, mark used and return user_id; else None."""
         token_hash = self._hash_token(token)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await self._session.execute(
             select(PasswordSetTokenModel)
             .where(PasswordSetTokenModel.token_hash == token_hash)

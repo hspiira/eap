@@ -7,8 +7,8 @@ Scoped to a Tenant for multi-tenancy.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from app.domain.value_objects.core import Email, TenantId, UserId
-from app.domain.enums import AuthProvider, UserStatus, Language, TenantRole
+
+from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 from app.domain.events import (
     DomainEvent,
     UserActivated,
@@ -22,7 +22,9 @@ from app.domain.events import (
     UserTerminated,
 )
 from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
+
 
 @dataclass
 class UserEntity:

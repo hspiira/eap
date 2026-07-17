@@ -4,8 +4,9 @@ Audit Decorator
 Decorator for automatically auditing use case executions.
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.value_objects.core import TenantId, UserId

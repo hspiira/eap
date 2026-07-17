@@ -4,9 +4,9 @@ ClientTag Entity (Aggregate Root)
 Represents a categorization tag for clients.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-import re
 
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation

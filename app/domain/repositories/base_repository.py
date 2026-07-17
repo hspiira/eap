@@ -7,6 +7,7 @@ Specific repositories extend this with domain-specific methods.
 
 from abc import ABC, abstractmethod
 
+
 class BaseRepository[EntityType, IdType](ABC):
     """
     Base repository interface with common CRUD operations.

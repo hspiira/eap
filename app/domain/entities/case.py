@@ -38,7 +38,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 _STATUS_TRANSITIONS: dict[CaseStatus, frozenset[CaseStatus]] = {
     CaseStatus.INTAKE: frozenset(
         {CaseStatus.ASSESSMENT, CaseStatus.NO_SHOW_CLOSED, CaseStatus.REFERRED_OUT}

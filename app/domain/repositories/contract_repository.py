@@ -6,8 +6,8 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentStatus

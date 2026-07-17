@@ -16,10 +16,10 @@ Idempotency:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
-from typing import Iterable
 
 from app.domain.enums import SessionStatus
 

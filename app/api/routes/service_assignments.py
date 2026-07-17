@@ -3,9 +3,6 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import get_audit_event_handler, get_service_assignment_repository
 from app.api.schemas.service_assignment_schemas import (
     ServiceAssignmentCreate,
@@ -22,12 +19,14 @@ from app.application.use_cases.transitions import (
     ServiceAssignmentTransition,
     TransitionUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
-from app.domain.enums import BaseStatus
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
+from app.domain.enums import BaseStatus
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

@@ -6,7 +6,7 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier

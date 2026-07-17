@@ -18,7 +18,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-
 HEADER_NAME = "X-Request-Id"
 
 _UUID_RE = re.compile(

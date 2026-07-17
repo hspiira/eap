@@ -5,10 +5,11 @@ Value objects are immutable types that represent domain concepts with self-valid
 They have no identity, only value.
 """
 
-from dataclasses import dataclass
-from datetime import date, datetime
 import decimal
 import re
+from dataclasses import dataclass
+from datetime import date, datetime
+
 from app.domain.enums import (
     AccreditationStatus,
     PanelStatus,

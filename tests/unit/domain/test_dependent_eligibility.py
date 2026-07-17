@@ -7,7 +7,6 @@ must track the primary employee's eligibility, not silently return truthy.
 
 from datetime import UTC, date, datetime
 
-
 from app.domain.entities.person import PersonEntity
 from app.domain.entities.user import UserEntity
 from app.domain.enums import (
@@ -25,7 +24,6 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-
 
 # === DependentInfo VO ===
 

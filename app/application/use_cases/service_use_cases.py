@@ -12,7 +12,6 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle dispatched via TransitionUseCase + ServiceTransition.
 
 

@@ -19,8 +19,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.value_objects.core import PersonId, TenantId
-from app.infrastructure.models.engagement_model import EngagementModel
 from app.infrastructure.models.care_callback_model import OutreachRecordModel
+from app.infrastructure.models.engagement_model import EngagementModel
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.user_model import UserModel

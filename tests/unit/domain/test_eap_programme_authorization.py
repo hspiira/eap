@@ -2,8 +2,6 @@
 
 from datetime import UTC, date, datetime, timedelta
 
-from app.shared.utils.datetime import utc_now
-
 import pytest
 
 from app.domain.entities.authorization import Authorization
@@ -31,6 +29,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.domain.value_objects.programme import ProgrammeSessionCap
+from app.shared.utils.datetime import utc_now
 
 
 def _cap(

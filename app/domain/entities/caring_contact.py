@@ -27,7 +27,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 CARING_CONTACT_CADENCE: tuple[timedelta, ...] = (
     timedelta(hours=24),
     timedelta(days=7),

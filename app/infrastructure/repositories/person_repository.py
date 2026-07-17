@@ -13,10 +13,10 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.person import PersonEntity
+from app.domain.entities.user import UserEntity
 from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.entities.user import UserEntity
 from app.domain.value_objects.core import ClientId, PersonId, TenantId, UserId
 from app.infrastructure.mappers.person_mapper import PersonMapper
 from app.infrastructure.mappers.user_mapper import UserMapper

@@ -8,8 +8,8 @@ administration. Instrument definitions are immutable in-process catalogue entrie
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.domain.enums import TriageInstrumentCode, TriageRiskLevel

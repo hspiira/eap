@@ -7,20 +7,42 @@ They are used to communicate state changes between bounded contexts.
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+
+from app.domain.enums import CriticalIncidentPhase, CriticalIncidentSeverity, PersonType
 from app.domain.value_objects.core import (
-    TenantId, PersonId, UserId, ContractId, ClientId, SessionId, DocumentId,
-    CareCallbackCampaignId, CriticalIncidentId, OutreachRecordId,
-    SurveyCampaignId, SurveyResponseId,
-    EngagementId, DSARRequestId,
-    CaseId, ClinicalNoteId, ClinicalSubjectId, AuthorizationId, EAPProgrammeId,
-    CrisisContactId, RiskAssessmentId, SafetyPlanId, MandatoryReportId,
+    AuthorizationId,
+    CareCallbackCampaignId,
     CaringContactId,
-    ManagerConsultId, WorkLifeReferralId,
+    CaseId,
+    ClientId,
+    ClinicalNoteId,
+    ClinicalSubjectId,
+    ConsentId,
+    ContractId,
+    CrisisContactId,
+    CriticalIncidentId,
+    DataSharingRegisterEntryId,
+    DocumentId,
+    DSARRequestId,
+    EAPProgrammeId,
+    EngagementId,
+    FitnessForDutyId,
+    ManagerConsultId,
+    MandatoryReportId,
+    OutcomeMeasureId,
+    OutreachRecordId,
+    PersonId,
+    ReturnToWorkPlanId,
+    RiskAssessmentId,
+    SafetyPlanId,
+    SessionId,
+    SurveyCampaignId,
+    SurveyResponseId,
+    TenantId,
     TrainingEnrolmentId,
-    OutcomeMeasureId, FitnessForDutyId, ReturnToWorkPlanId,
-    ConsentId, DataSharingRegisterEntryId,
+    UserId,
+    WorkLifeReferralId,
 )
-from app.domain.enums import PersonType, CriticalIncidentPhase, CriticalIncidentSeverity
 
 
 @dataclass(frozen=True)

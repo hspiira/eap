@@ -8,7 +8,7 @@ Free-text fields use SanitizedStr so stored values are sanitized at the API boun
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field
 
 from app.shared.utils.sanitization import InputSanitizer
 

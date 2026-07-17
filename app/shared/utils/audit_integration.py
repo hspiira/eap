@@ -4,11 +4,9 @@ Audit Integration Utilities
 Helper functions for seamless audit integration in API routes.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.domain.entities.audit import AuditLog

@@ -26,8 +26,8 @@ from app.infrastructure.mappers.consent_mappers import (
 )
 from app.infrastructure.models.consent_models import (
     ConsentModel,
-    DPOContactModel,
     DataSharingRegisterEntryModel,
+    DPOContactModel,
 )
 
 

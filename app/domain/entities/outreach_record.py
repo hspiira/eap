@@ -25,7 +25,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 _TERMINAL_STATUSES = {
     OutreachStatus.COMPLETED,
     OutreachStatus.UNREACHABLE,

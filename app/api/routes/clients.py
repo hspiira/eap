@@ -10,13 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_client_for_current_tenant,
-    require_same_tenant,
+from app.api.dependencies import (
+    get_audit_event_handler,
+    get_client_repository,
+    get_contract_repository,
+    get_tenant_repository,
 )
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_client_repository, get_contract_repository, get_tenant_repository
 from app.api.schemas.client_schemas import (
     AddressSchema,
     ClientCreate,
@@ -40,9 +39,14 @@ from app.application.use_cases.transitions import (
     ClientTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_client_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import BaseStatus, ClientTier
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
+from app.domain.enums import BaseStatus, ClientTier
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -58,7 +62,7 @@ from app.domain.value_objects.core import (
 )
 from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 
@@ -147,7 +151,7 @@ async def create_client(
             parent_client_id=ClientId(data.parent_client_id) if data.parent_client_id else None,
         )
     except EvexiaException as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
     await audit_entity_operation(
         entity=client,

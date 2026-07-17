@@ -28,7 +28,6 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberModel,
 )
 
-
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
 
 

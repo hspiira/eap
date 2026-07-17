@@ -5,7 +5,7 @@ Defines the contract for ClientTag data access.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.client_tag import ClientTagEntity
 from app.domain.repositories.base_repository import BaseRepository

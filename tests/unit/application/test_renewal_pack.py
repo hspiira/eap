@@ -3,8 +3,8 @@
 import pytest
 
 from app.application.use_cases.report_use_cases import (
-    CreateRenewalPackTemplateUseCase,
     RENEWAL_PACK_CODE,
+    CreateRenewalPackTemplateUseCase,
     build_renewal_pack_sections,
 )
 from app.domain.entities.report import ReportTemplate

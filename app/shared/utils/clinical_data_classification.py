@@ -12,7 +12,6 @@ To classify a new clinical aggregate, add its `resource_type` string to
 
 from __future__ import annotations
 
-
 CLINICAL_RESOURCE_TYPES: frozenset[str] = frozenset(
     {
         "ClinicalSubject",

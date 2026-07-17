@@ -30,8 +30,6 @@ from app.application.use_cases.care_callback_use_cases import (
     GetCampaignSummaryUseCase,
     ScoreAndRecordTriageUseCase,
 )
-from app.domain.enums import StageOfChange, TriageInstrumentCode
-from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.application.use_cases.transitions import (
     CareCallbackCampaignTransition,
     OutreachTransition,
@@ -42,10 +40,12 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.care_callback_campaign import CareCallbackCampaign
 from app.domain.entities.outreach_record import OutreachRecord
+from app.domain.enums import StageOfChange, TriageInstrumentCode
 from app.domain.repositories.care_callback_repository import (
     CareCallbackCampaignRepository,
     OutreachRecordRepository,
 )
+from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,

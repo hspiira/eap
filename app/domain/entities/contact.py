@@ -9,7 +9,7 @@ from datetime import datetime
 
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
-from app.domain.value_objects.core import ContactId, TenantId, Email
+from app.domain.value_objects.core import ContactId, Email, TenantId
 from app.shared.utils.datetime import utc_now
 
 

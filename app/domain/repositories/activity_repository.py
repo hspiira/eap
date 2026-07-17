@@ -5,8 +5,8 @@ Defines the contract for Activity data access.
 """
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from app.domain.entities.activity import ActivityEntity
 from app.domain.repositories.base_repository import BaseRepository

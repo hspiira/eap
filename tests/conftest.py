@@ -5,18 +5,18 @@ Provides async test client and database fixtures for E2E testing.
 """
 # Force test environment before any app imports so rate limiting uses test limits
 import os
+
 os.environ["ENVIRONMENT"] = "test"
 
 from collections.abc import AsyncGenerator
-from datetime import date
+from datetime import UTC, date
 from typing import Any
 
 import pytest
 import pytest_asyncio
+from fastapi import Depends, Request
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from fastapi import Depends, Request
 
 from app.api.dependencies import (
     get_audit_repository,
@@ -29,21 +29,20 @@ from app.core.authorization import (
     get_document_for_current_tenant,
     get_user_in_tenant,
 )
+from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.document import DocumentEntity
 from app.domain.entities.user import UserEntity
+from app.domain.enums import TenantRole, UserStatus
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.value_objects.core import AuditLogId, DocumentId, Email, TenantId, UserId
 from app.infrastructure.models.base import Base
-from app.core.database import get_db
-from app.core.security import TokenData, get_current_user
 from app.main import app
-from app.shared.utils.generators import generate_cuid
-from app.domain.value_objects.core import AuditLogId, DocumentId, UserId, TenantId, Email
-from app.domain.enums import TenantRole, UserStatus
 from app.shared.utils.datetime import utc_now
-
+from app.shared.utils.generators import generate_cuid
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
@@ -243,8 +242,8 @@ async def test_tenant(client: AsyncClient) -> dict[str, Any]:
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a test user directly in the database."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
+    from app.infrastructure.models.user_model import UserModel
     
     user_id = generate_cuid()
     user = UserModel(
@@ -268,8 +267,8 @@ async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, An
 @pytest_asyncio.fixture
 async def test_user_2(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a second test user directly in the database."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
+    from app.infrastructure.models.user_model import UserModel
     
     user_id = generate_cuid()
     user = UserModel(
@@ -295,8 +294,8 @@ async def test_client_employee(
     db_session: AsyncSession, test_tenant: dict, test_user: dict
 ) -> dict[str, Any]:
     """Create a test client employee person directly in the database."""
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType, WorkStatus
+    from app.infrastructure.models.person_model import PersonModel
     
     person_id = generate_cuid()
     person = PersonModel(
@@ -331,8 +330,8 @@ async def test_service_provider(
     db_session: AsyncSession, test_tenant: dict, test_user_2: dict
 ) -> dict[str, Any]:
     """Create a test service provider person directly in the database."""
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType
+    from app.infrastructure.models.person_model import PersonModel
     
     person_id = generate_cuid()
     person = PersonModel(
@@ -365,9 +364,9 @@ async def test_pending_person(
     db_session: AsyncSession, test_tenant: dict
 ) -> dict[str, Any]:
     """Create a test person in PENDING status."""
-    from app.infrastructure.models.user_model import UserModel
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
+    from app.infrastructure.models.person_model import PersonModel
+    from app.infrastructure.models.user_model import UserModel
     
     # Create user first
     user_id = generate_cuid()
@@ -621,8 +620,8 @@ async def test_child_client(
 @pytest_asyncio.fixture
 async def verifier_user(db_session: AsyncSession, client_test_tenant: dict) -> dict[str, Any]:
     """Create a user who can verify clients."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
+    from app.infrastructure.models.user_model import UserModel
     
     user_id = generate_cuid()
     user = UserModel(
@@ -728,10 +727,10 @@ async def contract_test_client_2(
 @pytest.fixture
 def sample_contract_data(contract_test_client: dict) -> dict[str, Any]:
     """Sample contract creation data."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
     
     return {
         "client_id": contract_test_client["id"],
@@ -751,11 +750,11 @@ async def test_contract(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
 ) -> dict[str, Any]:
     """Create a test contract via API."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
     
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
@@ -780,11 +779,11 @@ async def test_contract_active(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
 ) -> dict[str, Any]:
     """Create and activate a test contract."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
     
     # Create contract
     create_response = await client.post(
@@ -816,11 +815,11 @@ async def test_contract_2(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client_2: dict
 ) -> dict[str, Any]:
     """Create a second test contract for a different client."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=180)).isoformat()
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=180)).isoformat()
     
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
@@ -1076,9 +1075,9 @@ async def session_test_provider(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
     """Create a provider person for session tests."""
+    from app.domain.enums import BaseStatus, PersonType, UserStatus
     from app.infrastructure.models.person_model import PersonModel
     from app.infrastructure.models.user_model import UserModel
-    from app.domain.enums import PersonType, BaseStatus, UserStatus
     
     # Create user first
     user_id = generate_cuid()
@@ -1122,10 +1121,11 @@ async def session_test_client_person(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
     """Create a client employee person for session tests."""
+    from datetime import date
+
+    from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
     from app.infrastructure.models.person_model import PersonModel
     from app.infrastructure.models.user_model import UserModel
-    from app.domain.enums import PersonType, BaseStatus, UserStatus, WorkStatus
-    from datetime import date
     
     # Create user first
     user_id = generate_cuid()
@@ -1174,10 +1174,10 @@ async def test_service_session(
     session_test_client_person: dict,
 ) -> dict[str, Any]:
     """Create a test service session via API."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
     tenant_id = session_test_tenant["id"]
-    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    scheduled_at = (datetime.now(UTC) + timedelta(days=7)).isoformat()
     
     response = await client.post(
         f"/service-sessions/?tenant_id={tenant_id}",
@@ -1202,10 +1202,10 @@ async def test_service_session_2(
     session_test_client_person: dict,
 ) -> dict[str, Any]:
     """Create a second test service session."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     
     tenant_id = session_test_tenant["id"]
-    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
+    scheduled_at = (datetime.now(UTC) + timedelta(days=14)).isoformat()
     
     response = await client.post(
         f"/service-sessions/?tenant_id={tenant_id}",

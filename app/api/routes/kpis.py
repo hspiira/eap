@@ -8,9 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import (
     get_audit_event_handler,
     get_kpi_assignment_repository,
@@ -27,27 +24,29 @@ from app.api.schemas.kpi_schemas import (
     KPIUpdate,
 )
 from app.application.use_cases.kpi_use_cases import (
-    CreateKPIUseCase,
     CreateKPIAssignmentUseCase,
-    GetKPIUseCase,
+    CreateKPIUseCase,
     GetKPIAssignmentUseCase,
-    UpdateKPIUseCase,
+    GetKPIUseCase,
     UpdateKPIAssignmentUseCase,
+    UpdateKPIUseCase,
 )
 from app.application.use_cases.transitions import (
     KPIAssignmentTransition,
     KPITransition,
     TransitionUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
+from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory
-from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

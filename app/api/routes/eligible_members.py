@@ -32,8 +32,8 @@ from app.domain.repositories.eligible_member_repository import (
 )
 from app.domain.value_objects.core import (
     ClientId,
-    Email,
     EligibleMemberId,
+    Email,
     TenantId,
     UserId,
 )

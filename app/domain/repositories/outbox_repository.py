@@ -30,7 +30,7 @@ class OutboxRepository(ABC):
         """Insert a new outbox row and return its id."""
 
     @abstractmethod
-    async def fetch_undelivered(self, *, limit: int = 100) -> list["OutboxEventDTO"]:
+    async def fetch_undelivered(self, *, limit: int = 100) -> list[OutboxEventDTO]:
         ...
 
     @abstractmethod

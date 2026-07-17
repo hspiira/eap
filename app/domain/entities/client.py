@@ -6,11 +6,27 @@ Represents an organizational client receiving EAP services.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from app.domain.value_objects.core import ClientId, TenantId, UserId, ContactInfo, Address, IndustryId
+
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
-from app.domain.events import ClientDeactivated, DomainEvent, ClientVerified, ClientActivated, ClientSuspended, ClientTerminated
+from app.domain.events import (
+    ClientActivated,
+    ClientDeactivated,
+    ClientSuspended,
+    ClientTerminated,
+    ClientVerified,
+    DomainEvent,
+)
 from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import (
+    Address,
+    ClientId,
+    ContactInfo,
+    IndustryId,
+    TenantId,
+    UserId,
+)
 from app.shared.utils.datetime import utc_now
+
 
 @dataclass
 class ClientEntity:

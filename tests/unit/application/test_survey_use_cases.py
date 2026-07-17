@@ -21,7 +21,6 @@ from app.domain.value_objects.core import (
     UserId,
 )
 
-
 SECRET = "x" * 40
 
 

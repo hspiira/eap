@@ -20,9 +20,10 @@ handlers remain compatible.
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 from app.domain.events import DomainEvent
 

@@ -238,7 +238,7 @@ async def ingest_survey_response(
     try:
         parsed = WebhookPayload.model_validate(json.loads(raw))
     except (json.JSONDecodeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}")
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}") from exc
     use_case = IngestSurveyResponseUseCase(campaign_repo, response_repo)
     try:
         record, fresh = await use_case.execute(
@@ -251,7 +251,7 @@ async def ingest_survey_response(
             metrics=parsed.metrics,
         )
     except IngestSurveyResponseUseCase.SignatureInvalid as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     return SurveyResponseAcceptedResponse(
         response_id=record.id.value,
         accepted=True,

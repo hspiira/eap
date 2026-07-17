@@ -8,10 +8,11 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import DateTime, ForeignKey, String, TypeDecorator
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 from sqlalchemy.sql import func
 
 from app.shared.utils.generators import generate_cuid
+
 
 class Base(DeclarativeBase):
     pass

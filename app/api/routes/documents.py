@@ -8,12 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_document_for_current_tenant,
-    require_same_tenant,
-)
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import get_audit_event_handler, get_document_repository
 from app.api.schemas.document_schemas import (
     DocumentCreate,
@@ -36,12 +30,17 @@ from app.application.use_cases.transitions import (
     DocumentTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_document_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import DocumentStatus, DocumentType
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.document import DocumentEntity
+from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

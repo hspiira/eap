@@ -199,7 +199,7 @@ def decode_refresh_token(token: str) -> TokenData:
             jti=jti,
         )
     except JWTError as e:
-        raise AuthenticationException(f"Invalid refresh token: {str(e)}")
+        raise AuthenticationException(f"Invalid refresh token: {str(e)}") from e
 
 
 def decode_token(token: str) -> TokenData:
@@ -239,7 +239,7 @@ def decode_token(token: str) -> TokenData:
             role=payload.get("role"),
         )
     except JWTError as e:
-        raise AuthenticationException(f"Invalid token: {str(e)}")
+        raise AuthenticationException(f"Invalid token: {str(e)}") from e
 
 
 # =============================================================================

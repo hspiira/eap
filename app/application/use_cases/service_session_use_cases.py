@@ -27,7 +27,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle / single-method commands dispatched via TransitionUseCase + ServiceSessionTransition.
 
 

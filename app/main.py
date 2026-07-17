@@ -31,15 +31,16 @@ configure_logging(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 
-async def _validate_active_user(request: Request, token_data: "TokenData") -> None:
+async def _validate_active_user(request: Request, token_data: TokenData) -> None:
     """Validate that user and tenant exist and are active. Raises HTTP 401 if not."""
     from fastapi import HTTPException
     from starlette import status
+
     from app.core.database import AsyncSessionLocal
-    from app.infrastructure.repositories.user_repository import UserRepositoryImpl
-    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
-    from app.domain.value_objects.core import UserId, TenantId
     from app.domain.enums import TenantStatus
+    from app.domain.value_objects.core import TenantId, UserId
+    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+    from app.infrastructure.repositories.user_repository import UserRepositoryImpl
     async with AsyncSessionLocal() as session:
         user_repo = UserRepositoryImpl(session)
         tenant_repo = TenantRepositoryImpl(session)

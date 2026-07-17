@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.person import PersonEntity
 from app.domain.enums import PersonType
-from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.services.employee_code_generator import EmployeeCodeGenerator
 from app.domain.value_objects.core import (
     ClientId,

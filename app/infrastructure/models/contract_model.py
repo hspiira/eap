@@ -8,12 +8,12 @@ This is a data container only - no business logic.
 from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Date,
     DateTime,
     Enum,
     ForeignKey,
-    JSON,
     String,
 )
 from sqlalchemy.orm import Mapped, mapped_column

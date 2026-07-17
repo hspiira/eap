@@ -8,8 +8,8 @@ Note: Tenant is a root aggregate, so it uses BaseRepositoryImpl instead of
 TenantScopedRepositoryImpl (tenants don't have a tenant_id on themselves).
 """
 
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import func, or_, select
 

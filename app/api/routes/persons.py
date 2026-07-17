@@ -8,13 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_person_by_user_id_for_current_tenant,
-    get_person_for_current_tenant,
-    require_same_tenant,
-)
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
@@ -39,24 +32,30 @@ from app.api.schemas.person_schemas import (
     UpdateLicenseInfoRequest,
     UpdateStaffInfoRequest,
 )
+from app.api.schemas.provider_profile_schemas import (
+    ProviderProfileSchema,
+    ProviderProfileUpdate,
+)
 from app.application.use_cases.person_use_cases import (
     AddSecondaryRoleUseCase,
     CreateClientEmployeeUseCase,
     CreateDependentUseCase,
 )
-from app.api.schemas.provider_profile_schemas import (
-    ProviderProfileSchema,
-    ProviderProfileUpdate,
-)
 from app.application.use_cases.transitions import (
     PersonTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_person_by_user_id_for_current_tenant,
+    get_person_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import BaseStatus, PersonType
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.person import PersonEntity
-from app.domain.repositories.person_repository import PersonRepository
+from app.domain.enums import BaseStatus, PersonType
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -70,7 +69,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 
@@ -218,7 +217,7 @@ async def create_person(
                 family_id=family_id_vo,
             )
         except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     elif data.person_type == PersonType.DEPENDENT and data.dependent_info:
         dep = data.dependent_info
         dependent_info_vo = DependentInfo(
@@ -235,7 +234,7 @@ async def create_person(
                 dependent_info=dependent_info_vo,
             )
         except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

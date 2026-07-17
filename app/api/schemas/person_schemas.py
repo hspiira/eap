@@ -20,7 +20,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 
-
 # === Value Object Schemas ===
 
 class EmploymentInfoSchema(BaseModel):

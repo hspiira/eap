@@ -15,7 +15,6 @@ from app.shared.middleware.request_size import RequestSizeLimitMiddleware
 from app.shared.middleware.security_headers import SecurityHeadersMiddleware
 from app.shared.middleware.viewer_guard import ViewerGuardMiddleware
 
-
 # Max request body size (10MB). Document in README or docs.
 MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024
 

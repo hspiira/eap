@@ -8,7 +8,7 @@ Comprehensive tests for all contract endpoints covering:
 - Client-specific queries
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -32,8 +32,8 @@ class TestCreateContract:
     ):
         """Test creating a contract with full data."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         response = await client.post(
             f"/contracts/?tenant_id={tenant_id}",
@@ -70,8 +70,8 @@ class TestCreateContract:
     ):
         """Test creating a contract with auto-renew enabled."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         response = await client.post(
             f"/contracts/?tenant_id={tenant_id}",
@@ -97,8 +97,8 @@ class TestCreateContract:
         self, client: AsyncClient, contract_test_client: dict
     ):
         """Test that creating a contract requires tenant_id."""
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         response = await client.post(
             "/contracts/",
@@ -448,7 +448,7 @@ class TestRenewContract:
     ):
         """Test renewing a contract."""
         contract_id = test_contract_active["id"]
-        new_end_date = (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
+        new_end_date = (datetime.now(UTC) + timedelta(days=730)).isoformat()
 
         response = await client.post(
             f"/contracts/{contract_id}/renew",
@@ -464,7 +464,7 @@ class TestRenewContract:
     ):
         """Test renewing a contract with new rate."""
         contract_id = test_contract_active["id"]
-        new_end_date = (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
+        new_end_date = (datetime.now(UTC) + timedelta(days=730)).isoformat()
 
         response = await client.post(
             f"/contracts/{contract_id}/renew",
@@ -483,7 +483,7 @@ class TestRenewContract:
 
     async def test_renew_not_found(self, client: AsyncClient):
         """Test renewing non-existent contract returns 404."""
-        new_end_date = (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
+        new_end_date = (datetime.now(UTC) + timedelta(days=730)).isoformat()
 
         response = await client.post(
             "/contracts/nonexistent-id/renew",
@@ -689,8 +689,8 @@ class TestContractLifecycleFlow:
     ):
         """Test complete flow: create -> sign -> renew."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         # Create draft contract
         create_response = await client.post(
@@ -716,7 +716,7 @@ class TestContractLifecycleFlow:
         assert sign_response.json()["signed_by"] == "Jane Doe, CFO"
 
         # Renew contract
-        new_end_date = (datetime.now(timezone.utc) + timedelta(days=730)).isoformat()
+        new_end_date = (datetime.now(UTC) + timedelta(days=730)).isoformat()
         renew_response = await client.post(
             f"/contracts/{contract_id}/renew",
             json={
@@ -732,8 +732,8 @@ class TestContractLifecycleFlow:
     ):
         """Test complete flow: create -> activate -> terminate."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         # Create draft contract
         create_response = await client.post(
@@ -765,8 +765,8 @@ class TestContractLifecycleFlow:
     ):
         """Test payment status transitions."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         # Create and activate contract
         create_response = await client.post(
@@ -803,8 +803,8 @@ class TestContractLifecycleFlow:
     ):
         """Test CRUD operations in sequence."""
         tenant_id = contract_test_tenant["id"]
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
 
         # Create
         create_response = await client.post(

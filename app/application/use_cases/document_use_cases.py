@@ -14,7 +14,6 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle (archive/publish) dispatched via TransitionUseCase + DocumentTransition.
 
 

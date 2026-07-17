@@ -16,7 +16,6 @@ from app.shared.middleware.request_id import (
     get_current_request_id,
 )
 
-
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"

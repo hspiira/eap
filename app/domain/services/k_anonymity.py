@@ -11,7 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-
 K_ANON_FLOOR = 10
 """Minimum distinct contributing tenants required to surface an aggregate.
 

@@ -30,8 +30,21 @@ Design Notes:
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, date
-from typing import Union
+from datetime import date, datetime
+
+from app.domain.entities.user import UserEntity
+from app.domain.enums import BaseStatus, PanelStatus, PersonType, ProviderTier
+from app.domain.events import (
+    DomainEvent,
+    PersonActivated,
+    PersonDeactivated,
+    PersonSecondaryRoleAdded,
+    PersonSecondaryRoleRemoved,
+    PersonTerminated,
+    ProviderPanelStatusChanged,
+    ProviderTierChanged,
+)
+from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import (
     ClientId,
     DependentInfo,
@@ -44,19 +57,6 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-from app.domain.entities.user import UserEntity
-from app.domain.enums import PersonType, BaseStatus, PanelStatus, ProviderTier
-from app.domain.events import (
-    DomainEvent,
-    PersonActivated,
-    PersonDeactivated,
-    PersonTerminated,
-    PersonSecondaryRoleAdded,
-    PersonSecondaryRoleRemoved,
-    ProviderPanelStatusChanged,
-    ProviderTierChanged,
-)
-from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
 
 # Error messages
@@ -159,7 +159,7 @@ class PersonEntity:
     def add_secondary_role(
         self, 
         role: PersonType, 
-        info: Union[EmploymentInfo, LicenseInfo, StaffInfo]
+        info: EmploymentInfo | LicenseInfo | StaffInfo
     ) -> None:
         """Add a secondary role to the person with role-specific information.
         

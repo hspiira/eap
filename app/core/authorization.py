@@ -29,7 +29,6 @@ from app.api.dependencies import (
 )
 from app.core.config import settings
 from app.core.security import TokenData, get_current_user, get_current_user_optional
-from app.domain.enums import AccessScope
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.contract import ContractEntity
@@ -39,6 +38,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.entities.service import ServiceEntity
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.entities.user import UserEntity
+from app.domain.enums import AccessScope, TenantRole
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -48,7 +48,6 @@ from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.enums import TenantRole
 from app.domain.value_objects.core import (
     AuditLogId,
     ClientId,
@@ -455,11 +454,11 @@ async def get_person_for_current_tenant(
     """
     try:
         person = await person_repo.get_by_id(PersonId(person_id))
-    except ValueError:
+    except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Person not found",
-        )
+        ) from err
     if not person:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

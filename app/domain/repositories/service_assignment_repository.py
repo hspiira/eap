@@ -5,7 +5,7 @@ Defines the contract for ServiceAssignment data access.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
 from app.domain.enums import BaseStatus

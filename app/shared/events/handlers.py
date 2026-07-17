@@ -9,17 +9,17 @@ import logging
 from typing import TYPE_CHECKING
 
 from app.domain.events import (
-    DomainEvent,
-    UserActivated,
-    UserSuspended,
-    UserBanned,
-    UserTerminated,
     ClientActivated,
     ClientSuspended,
     ClientTerminated,
     ContractTerminated,
-    SessionCompleted,
+    DomainEvent,
     SessionCancelled,
+    SessionCompleted,
+    UserActivated,
+    UserBanned,
+    UserSuspended,
+    UserTerminated,
 )
 from app.shared.events.event_bus import event_bus
 

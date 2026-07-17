@@ -9,15 +9,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_user_in_tenant,
-    require_same_tenant,
-    require_self_or_role,
-    require_tenant_role,
-)
-from app.core.security import TokenData, get_current_user, verify_password
-from app.domain.enums import TenantRole
-
 from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
 from app.api.schemas.user_schemas import (
     UserBanRequest,
@@ -39,14 +30,21 @@ from app.application.use_cases.user_use_cases import (
     CreateUserUseCase,
     GetUserUseCase,
 )
+from app.core.authorization import (
+    get_user_in_tenant,
+    require_same_tenant,
+    require_self_or_role,
+    require_tenant_role,
+)
 from app.core.database import get_db
-from app.domain.enums import UserStatus
+from app.core.security import TokenData, get_current_user, verify_password
 from app.domain.entities.user import UserEntity
+from app.domain.enums import TenantRole, UserStatus
 from app.domain.exceptions import EvexiaException
-from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.tenant_repository import TenantRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 
@@ -114,7 +112,7 @@ async def create_user(
             role=data.role,
         )
     except EvexiaException as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
     if data.preferred_language or data.timezone:
         user_transition: TransitionUseCase = TransitionUseCase(user_repo)

@@ -8,14 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    require_platform_admin_if_configured,
-    require_same_tenant,
-    require_tenant_role,
-)
-from app.core.security import TokenData, get_current_user
-from app.domain.enums import TenantRole
-
 from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
@@ -24,9 +16,6 @@ from app.api.dependencies import (
     get_tenant_repository,
     get_user_repository,
 )
-from app.domain.repositories.client_repository import ClientRepository
-from app.domain.repositories.industry_repository import IndustryRepository
-from app.domain.repositories.user_repository import UserRepository
 from app.api.schemas.tenant_schemas import (
     SubscriptionUpdateRequest,
     TenantAzureSsoRequest,
@@ -45,16 +34,25 @@ from app.application.use_cases.transitions import (
     TenantTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    require_platform_admin_if_configured,
+    require_same_tenant,
+    require_tenant_role,
+)
 from app.core.config import settings
 from app.core.database import get_db
-from app.domain.enums import SubscriptionTier, TenantStatus
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.tenant import TenantEntity
+from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
+from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import TenantId
 from app.infrastructure.repositories.password_set_token_repository import (
     PasswordSetTokenRepository,
 )
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

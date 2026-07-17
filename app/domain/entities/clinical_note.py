@@ -34,7 +34,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 DEFAULT_LOCK_WINDOW = timedelta(days=7)
 
 

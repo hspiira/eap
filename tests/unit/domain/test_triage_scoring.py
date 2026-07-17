@@ -21,7 +21,6 @@ from app.domain.value_objects.triage import (
     QuestionnaireResponse,
 )
 
-
 # ---------- Catalogue ----------
 
 

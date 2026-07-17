@@ -12,7 +12,7 @@ from decimal import Decimal
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvariantViolation
-from app.domain.value_objects.core import ClientId, ContractId, KPIId, KPIAssignmentId, TenantId
+from app.domain.value_objects.core import ClientId, ContractId, KPIAssignmentId, KPIId, TenantId
 from app.shared.utils.datetime import utc_now
 
 

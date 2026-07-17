@@ -9,7 +9,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums import DocumentStatus, DocumentType
-from app.domain.events import DomainEvent, DocumentPublished, DocumentArchived, DocumentVersionCreated
+from app.domain.events import (
+    DocumentArchived,
+    DocumentPublished,
+    DocumentVersionCreated,
+    DomainEvent,
+)
 from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now

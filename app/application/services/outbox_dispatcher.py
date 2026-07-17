@@ -12,8 +12,8 @@ the worker to one replica until SELECT ... FOR UPDATE SKIP LOCKED is wired.
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
-from typing import Awaitable, Callable
 
 from app.domain.repositories.outbox_repository import (
     OutboxEventDTO,

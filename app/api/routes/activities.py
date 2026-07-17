@@ -5,10 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_activity_repository
+from app.api.dependencies import get_activity_repository, get_audit_event_handler
 from app.api.schemas.activity_schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -20,11 +17,13 @@ from app.application.use_cases.activity_use_cases import (
     GetActivityUseCase,
     UpdateActivityUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.activity import ActivityEntity
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

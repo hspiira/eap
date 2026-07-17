@@ -5,8 +5,8 @@ Converts between TenantEntity (domain) and TenantModel (persistence).
 """
 
 from app.domain.entities.tenant import TenantEntity
-from app.domain.value_objects.core import TenantId, TenantCode, TenantSettings
-from app.domain.enums import TenantStatus, SubscriptionTier
+from app.domain.enums import SubscriptionTier, TenantStatus
+from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
 from app.infrastructure.models.tenant_model import TenantModel
 from app.shared.utils.datetime import ensure_utc
 

@@ -8,7 +8,7 @@ Supports pluggable backends: "memory" (per-process) or "redis" (shared across in
 """
 
 import time
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from typing import Protocol
 
 from fastapi import HTTPException, Request

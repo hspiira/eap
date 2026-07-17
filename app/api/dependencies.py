@@ -8,6 +8,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.benchmark_consent_repository import (
     BenchmarkConsentRepository,
@@ -16,11 +17,9 @@ from app.domain.repositories.care_callback_repository import (
     CareCallbackCampaignRepository,
     OutreachRecordRepository,
 )
-from app.domain.repositories.critical_incident_repository import (
-    CriticalIncidentRepository,
-)
-from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.repositories.clinical_note_repository import (
     ClinicalNoteRepository,
 )
@@ -29,27 +28,17 @@ from app.domain.repositories.consent_repository import (
     DataSharingRegisterRepository,
     DPOContactRepository,
 )
+from app.domain.repositories.contact_repository import ContactRepository
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.crisis_contact_repository import (
     CrisisContactRepository,
 )
+from app.domain.repositories.critical_incident_repository import (
+    CriticalIncidentRepository,
+)
+from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.dsar_repository import DSARRequestRepository
-from app.domain.repositories.manager_workspace_repository import (
-    ManagerConsultRepository,
-    TrainingEnrolmentRepository,
-    WorkLifeProviderRepository,
-    WorkLifeReferralRepository,
-)
-from app.domain.repositories.outcomes_repository import (
-    FitnessForDutyRepository,
-    OutcomeMeasureRepository,
-    ReturnToWorkPlanRepository,
-)
-from app.domain.repositories.risk_safety_repository import (
-    CaringContactRepository,
-    MandatoryReportRepository,
-    RiskAssessmentRepository,
-    SafetyPlanRepository,
-)
 from app.domain.repositories.eap_programme_repository import (
     AuthorizationRepository,
     EAPProgrammeRepository,
@@ -60,33 +49,37 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberRepository,
 )
 from app.domain.repositories.engagement_repository import EngagementRepository
-from app.domain.repositories.non_compete_clause_repository import (
-    NonCompeteClauseRepository,
-)
-from app.domain.repositories.outbox_repository import OutboxRepository
-from app.domain.repositories.report_repository import (
-    ReportRunRepository,
-    ReportTemplateRepository,
-)
-from app.domain.repositories.survey_repository import (
-    SurveyCampaignRepository,
-    SurveyResponseRepository,
-)
-from app.domain.repositories.utilisation_event_repository import (
-    UtilisationEventRepository,
-)
-from app.domain.repositories.client_repository import ClientRepository
-from app.domain.repositories.contract_repository import ContractRepository
-from app.domain.repositories.activity_repository import ActivityRepository
-from app.domain.repositories.client_tag_repository import ClientTagRepository
-from app.domain.repositories.contact_repository import ContactRepository
-from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
+from app.domain.repositories.manager_workspace_repository import (
+    ManagerConsultRepository,
+    TrainingEnrolmentRepository,
+    WorkLifeProviderRepository,
+    WorkLifeReferralRepository,
+)
+from app.domain.repositories.non_compete_clause_repository import (
+    NonCompeteClauseRepository,
+)
+from app.domain.repositories.outbox_repository import OutboxRepository
+from app.domain.repositories.outcomes_repository import (
+    FitnessForDutyRepository,
+    OutcomeMeasureRepository,
+    ReturnToWorkPlanRepository,
+)
 from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.report_repository import (
+    ReportRunRepository,
+    ReportTemplateRepository,
+)
+from app.domain.repositories.risk_safety_repository import (
+    CaringContactRepository,
+    MandatoryReportRepository,
+    RiskAssessmentRepository,
+    SafetyPlanRepository,
+)
 from app.domain.repositories.service_assignment_repository import (
     ServiceAssignmentRepository,
 )
@@ -94,27 +87,34 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
+from app.domain.repositories.survey_repository import (
+    SurveyCampaignRepository,
+    SurveyResponseRepository,
+)
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.utilisation_event_repository import (
+    UtilisationEventRepository,
+)
+from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
 from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
-from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
-from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
-from app.infrastructure.repositories.password_set_token_repository import (
-    PasswordSetTokenRepository,
-)
-from app.infrastructure.repositories.refresh_token_repository import (
-    RefreshTokenRepository,
-)
 from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
 from app.infrastructure.repositories.contact_repository import ContactRepositoryImpl
+from app.infrastructure.repositories.contract_repository import ContractRepositoryImpl
 from app.infrastructure.repositories.document_repository import DocumentRepositoryImpl
 from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
 from app.infrastructure.repositories.kpi_repository import (
     KPIAssignmentRepositoryImpl,
     KPIRepositoryImpl,
 )
+from app.infrastructure.repositories.password_set_token_repository import (
+    PasswordSetTokenRepository,
+)
 from app.infrastructure.repositories.person_repository import PersonRepositoryImpl
+from app.infrastructure.repositories.refresh_token_repository import (
+    RefreshTokenRepository,
+)
 from app.infrastructure.repositories.service_assignment_repository import (
     ServiceAssignmentRepositoryImpl,
 )

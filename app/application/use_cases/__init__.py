@@ -15,21 +15,10 @@ from app.application.use_cases.contract_use_cases import (
 from app.application.use_cases.person_use_cases import (
     CreateClientEmployeeUseCase,
     CreateDependentUseCase,
-    GetPersonUseCase,
     GetPersonsByTypeUseCase,
+    GetPersonUseCase,
 )
 from app.application.use_cases.tenant_use_cases import CreateTenantUseCase
-from app.application.use_cases.transitions import (
-    TenantTransition,
-    TransitionUseCase,
-)
-from app.application.use_cases.user_use_cases import (
-    CreateUserUseCase,
-    GetUserUseCase,
-)
-
-from app.application.use_cases.transitions import UserTransition  # noqa: E402
-
 from app.application.use_cases.transitions import (  # noqa: E402
     ClientTagTransition,
     ClientTransition,
@@ -43,6 +32,13 @@ from app.application.use_cases.transitions import (  # noqa: E402
     ServiceAssignmentTransition,
     ServiceSessionTransition,
     ServiceTransition,
+    TenantTransition,
+    TransitionUseCase,
+    UserTransition,  # noqa: E402
+)
+from app.application.use_cases.user_use_cases import (
+    CreateUserUseCase,
+    GetUserUseCase,
 )
 
 __all__ = [

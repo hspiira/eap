@@ -10,6 +10,7 @@ be altered even if application code is compromised.
 """
 
 from collections.abc import Sequence
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 

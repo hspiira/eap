@@ -5,7 +5,7 @@ Defines the contract for Contact data access.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.contact import ContactEntity
 from app.domain.repositories.base_repository import BaseRepository

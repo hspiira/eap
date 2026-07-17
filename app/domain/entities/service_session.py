@@ -6,11 +6,19 @@ Represents an individual service delivery session.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from app.domain.value_objects.core import SessionId, TenantId, ServiceId, PersonId
-from app.domain.enums import SessionStatus, SessionType, SessionCategory, ClientType, SessionClinicalStatus
-from app.domain.events import DomainEvent, SessionCompleted, SessionCancelled, SessionRescheduled
+
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
+from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
 from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
 from app.shared.utils.datetime import utc_now
+
 
 @dataclass
 class ServiceSessionEntity:

@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime, timedelta
 
-from app.shared.utils.datetime import utc_now
-
 import pytest
 
 from app.domain.entities.manager_workspace import (
@@ -39,6 +37,7 @@ from app.domain.value_objects.core import (
     WorkLifeProviderId,
     WorkLifeReferralId,
 )
+from app.shared.utils.datetime import utc_now
 
 
 def _consult(**overrides) -> ManagerConsult:

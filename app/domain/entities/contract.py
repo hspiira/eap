@@ -22,13 +22,15 @@ Design Notes:
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, date, time
-from app.domain.value_objects.core import ContractId, TenantId, ClientId, DateRange, Money
-from app.domain.value_objects.pricing import ContractPricing
+from datetime import date, datetime, time
+
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
-from app.domain.events import DomainEvent, ContractRenewed, ContractTerminated
+from app.domain.events import ContractRenewed, ContractTerminated, DomainEvent
 from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import ClientId, ContractId, DateRange, Money, TenantId
+from app.domain.value_objects.pricing import ContractPricing
 from app.shared.utils.datetime import utc_now
+
 
 @dataclass
 class ContractEntity:

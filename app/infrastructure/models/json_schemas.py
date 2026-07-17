@@ -5,7 +5,7 @@ TypedDict structures for JSON columns to provide type safety and validation.
 These match the serialized format of domain value objects.
 """
 
-from typing import TypedDict, NotRequired
+from typing import NotRequired, TypedDict
 
 
 class EmploymentInfoDict(TypedDict):

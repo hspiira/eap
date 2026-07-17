@@ -6,12 +6,12 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
-from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
+from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
+from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
 
 
 class KPIRepository(BaseRepository[KPIEntity, KPIId]):

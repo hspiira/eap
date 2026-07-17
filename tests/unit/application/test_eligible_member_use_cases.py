@@ -19,7 +19,6 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 
-
 SECRET = "tenant-pseudonym-secret-of-ample-length"
 
 

@@ -18,7 +18,6 @@ from app.domain.enums import (
     SessionType,
 )
 
-
 # === Request Schemas ===
 
 class ServiceSessionCreate(BaseModel):

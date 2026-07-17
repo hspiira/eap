@@ -8,14 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_industry_in_tenant,
-    require_same_tenant,
-    require_tenant_role,
-)
-from app.domain.enums import TenantRole
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import get_audit_event_handler, get_industry_repository
 from app.api.schemas.industry_schemas import (
     IndustryCreate,
@@ -31,11 +23,18 @@ from app.application.use_cases.transitions import (
     IndustryTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_industry_in_tenant,
+    require_same_tenant,
+    require_tenant_role,
+)
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.industry import IndustryEntity
+from app.domain.enums import TenantRole
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_entity_operation
 

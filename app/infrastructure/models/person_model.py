@@ -7,7 +7,7 @@ This is a data container only - no business logic.
 
 from datetime import date
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
+from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
@@ -221,10 +221,10 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         if "expiry_date" in value and value["expiry_date"] is not None:
             try:
                 date.fromisoformat(value["expiry_date"])
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as err:
                 raise ValueError(
                     "license_info.expiry_date must be in ISO format (YYYY-MM-DD)"
-                )
+                ) from err
         
         return value
     

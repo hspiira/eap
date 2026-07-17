@@ -12,7 +12,6 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
 
-
 # === Request Schemas ===
 
 class UserCreate(BaseModel):

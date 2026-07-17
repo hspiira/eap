@@ -5,7 +5,7 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
+from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod

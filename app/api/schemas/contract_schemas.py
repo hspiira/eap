@@ -12,7 +12,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.api.schemas.base import SanitizedStr
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
 
-
 # === Value Object Schemas ===
 
 class MoneySchema(BaseModel):
