@@ -319,11 +319,7 @@ class ApiClient {
       throw await this.parseError(response)
     }
 
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      return {} as T
-    }
-    return (await response.json()) as T
+    return this.parseBody<T>(response)
   }
 
 
@@ -478,6 +474,24 @@ class ApiClient {
     }
   }
 
+  /** An abort signal firing after `timeout` (or the client default), combined with any caller signal. */
+  private makeTimeoutSignal(
+    signal?: AbortSignal,
+    timeout?: number,
+  ): { signal: AbortSignal; timeoutId: ReturnType<typeof setTimeout> } {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout ?? this.timeout)
+    const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal
+    return { signal: combined, timeoutId }
+  }
+
+  /** Parsed JSON body, or an empty object for 204/non-JSON responses. */
+  private async parseBody<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) return {} as T
+    return (await response.json()) as T
+  }
+
   /**
    * Make HTTP request with timeout and retry
    */
@@ -487,16 +501,7 @@ class ApiClient {
   ): Promise<T> {
     const { signal, timeout, headers, ...fetchOptions } = options
 
-    // Create abort controller for timeout
-    const controller = new AbortController()
-    const timeoutId = timeout
-      ? setTimeout(() => controller.abort(), timeout)
-      : setTimeout(() => controller.abort(), this.timeout)
-
-    // Combine signals
-    const requestSignal = signal
-      ? AbortSignal.any([signal, controller.signal])
-      : controller.signal
+    const { signal: requestSignal, timeoutId } = this.makeTimeoutSignal(signal, timeout)
 
     // endpoint may already be a full URL or a relative path
     const isAbsoluteUrl = endpoint.startsWith('http')
@@ -517,18 +522,15 @@ class ApiClient {
           return rest
         })()
 
-    const requestHeaders = this.buildHeaders(
-      sanitizedHeaders,
-      pathForHeaders,
-      !isSameOrigin
-    )
+    const credentials =
+      useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}
 
     const requestFn = () =>
       fetch(url, {
         ...fetchOptions,
-        headers: requestHeaders,
+        headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
         signal: requestSignal,
-        ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
+        ...credentials,
       })
 
     try {
@@ -536,38 +538,21 @@ class ApiClient {
 
       clearTimeout(timeoutId)
 
-      // Handle 401 - try refresh token before giving up
+      // Handle 401 - refresh once (fresh timeout + rebuilt headers for the rotated token) and retry.
       if (response.status === 401 && !endpoint.includes('/auth/')) {
-        const refreshed = await this.tryRefreshToken()
-        if (refreshed) {
-          const retryController = new AbortController()
-          const retryTimeoutId = timeout
-            ? setTimeout(() => retryController.abort(), timeout)
-            : setTimeout(() => retryController.abort(), this.timeout)
-          const retrySignal = signal
-            ? AbortSignal.any([signal, retryController.signal])
-            : retryController.signal
-          const retryHeaders = this.buildHeaders(
-            sanitizedHeaders,
-            pathForHeaders,
-            !isSameOrigin
-          )
+        if (await this.tryRefreshToken()) {
+          const { signal: retrySignal, timeoutId: retryTimeoutId } =
+            this.makeTimeoutSignal(signal, timeout)
           try {
             const retryResponse = await fetch(url, {
               ...fetchOptions,
-              headers: retryHeaders,
+              headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
               signal: retrySignal,
-              ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
+              ...credentials,
             })
+            if (retryResponse.ok) return this.parseBody<T>(retryResponse)
+          } finally {
             clearTimeout(retryTimeoutId)
-            if (retryResponse.ok) {
-              const ct = retryResponse.headers.get('content-type')
-              if (!ct || !ct.includes('application/json')) return {} as T
-              return (await retryResponse.json()) as T
-            }
-          } catch (retryError) {
-            clearTimeout(retryTimeoutId)
-            throw retryError
           }
         }
         this.handleAuthError(401)
@@ -577,19 +562,11 @@ class ApiClient {
         this.handleAuthError(403)
       }
 
-      // Handle errors
       if (!response.ok) {
-        const error = await this.parseError(response)
-        throw error
+        throw await this.parseError(response)
       }
 
-      // Handle empty responses
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        return {} as T
-      }
-
-      return (await response.json()) as T
+      return this.parseBody<T>(response)
     } catch (error) {
       clearTimeout(timeoutId)
 
