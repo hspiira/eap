@@ -290,6 +290,7 @@ async def deliver_engagement(
     engagement = await use_case.execute(
         EngagementId(engagement_id), EngagementTransition.DELIVER
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -311,6 +312,7 @@ async def invoice_engagement(
     engagement = await use_case.execute(
         EngagementId(engagement_id), EngagementTransition.INVOICE
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -332,4 +334,5 @@ async def close_engagement(
     engagement = await use_case.execute(
         EngagementId(engagement_id), EngagementTransition.CLOSE
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
