@@ -113,8 +113,8 @@ function ContractDetailPage() {
         else if (action === "terminate") {
           await contractsApi.terminate(id, { reason: "Terminated from UI" })
         } else if (action === "renew") {
-          if (!contract?.end_date) return
-          const next = new Date(contract.end_date)
+          if (!contract) return
+          const next = new Date(contract.period.end_date)
           next.setFullYear(next.getFullYear() + 1)
           await contractsApi.renew(id, { new_end_date: next.toISOString() })
         }
@@ -126,7 +126,7 @@ function ContractDetailPage() {
         setActionLoading(false)
       }
     },
-    [contract?.end_date, fetchContract, toast],
+    [contract, fetchContract, toast],
   )
 
   const lifecycleSummary = useMemo(() => buildLifecycleSummary(contract), [contract])
@@ -164,7 +164,7 @@ function ContractDetailPage() {
     )
   }
 
-  const number = contract.contract_number ?? contract.id
+  const number = contract.id
 
   return (
     <PageShell
@@ -234,9 +234,12 @@ function ContractDetailPage() {
                   <DetailCard title="Lifecycle">
                     <DetailGrid>
                       <DetailRow label="Status" value={<StatusBadge status={contract.status} />} />
-                      <DetailRow label="Start date" value={contract.start_date} />
-                      <DetailRow label="End date" value={contract.end_date} />
-                      <DetailRow label="Renewal date" value={contract.renewal_date} />
+                      <DetailRow label="Start date" value={formatDate(contract.period.start_date)} />
+                      <DetailRow label="End date" value={formatDate(contract.period.end_date)} />
+                      <DetailRow
+                        label="Auto-renew"
+                        value={contract.is_auto_renew ? "Yes" : "No"}
+                      />
                     </DetailGrid>
                     {lifecycleSummary ? (
                       <p className="mt-3 text-xs text-fg/60">{lifecycleSummary}</p>
@@ -246,14 +249,8 @@ function ContractDetailPage() {
                   <DetailCard title="Identity">
                     <DetailGrid>
                       <DetailRow
-                        label="Number"
-                        value={
-                          contract.contract_number ? (
-                            <span className="font-mono">{contract.contract_number}</span>
-                          ) : (
-                            "—"
-                          )
-                        }
+                        label="Reference"
+                        value={<span className="font-mono">{contract.id}</span>}
                       />
                       <DetailRow
                         label="Contract ID"
@@ -276,23 +273,11 @@ function ContractDetailPage() {
               <TabPanel value="billing">
                 <DetailCard title="Billing terms">
                   <DetailGrid>
-                    <DetailRow label="Frequency" value={contract.billing_frequency} />
+                    <DetailRow label="Frequency" value={contract.payment_frequency} />
                     <DetailRow label="Payment status" value={contract.payment_status} />
-                    <DetailRow
-                      label="Amount"
-                      value={
-                        contract.billing_amount != null
-                          ? `${contract.currency ?? ""} ${contract.billing_amount.toLocaleString()}`.trim()
-                          : null
-                      }
-                    />
-                    <DetailRow label="Currency" value={contract.currency} />
+                    <DetailRow label="Amount" value={formatMoney(contract)} />
+                    <DetailRow label="Currency" value={contract.billing_rate.currency} />
                   </DetailGrid>
-                  {contract.billing_amount == null && !contract.billing_frequency ? (
-                    <p className="mt-3 text-xs text-fg/55">
-                      No billing terms set yet. Edit this contract to add an amount and frequency.
-                    </p>
-                  ) : null}
                 </DetailCard>
               </TabPanel>
 
@@ -329,7 +314,7 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
         <FileSignature className="size-4" />
       </span>
       <h1 className="shrink truncate font-mono text-base font-semibold leading-tight text-fg">
-        {contract.contract_number ?? contract.id.slice(0, 8)}
+        {contract.id.slice(0, 8)}
       </h1>
       {client ? (
         <Link
@@ -392,11 +377,9 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
       <RailSection title="Billing snapshot">
         <DetailGrid>
           <DetailRow label="Amount" value={
-            contract.billing_amount != null
-              ? `${contract.currency ?? ""} ${contract.billing_amount.toLocaleString()}`.trim()
-              : null
+            formatMoney(contract)
           } />
-          <DetailRow label="Frequency" value={contract.billing_frequency} />
+          <DetailRow label="Frequency" value={contract.payment_frequency} />
           <DetailRow label="Payment" value={contract.payment_status} fullWidth />
         </DetailGrid>
       </RailSection>
@@ -478,28 +461,34 @@ function DetailRow({
   )
 }
 
-function termInDays(c: Contract): string {
-  if (!c.start_date) return "—"
-  const start = new Date(c.start_date)
-  const end = c.end_date ? new Date(c.end_date) : new Date()
-  const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000))
-  return `${days.toLocaleString()}d`
+/** Wire dates are ISO datetimes; these rows show the calendar day. */
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString()
 }
 
+/** `billing_rate.amount` is a decimal string on the wire. */
+function formatMoney(c: Contract): string {
+  const parsed = Number(c.billing_rate.amount)
+  return Number.isFinite(parsed)
+    ? `${c.billing_rate.currency} ${parsed.toLocaleString()}`
+    : `${c.billing_rate.currency} ${c.billing_rate.amount}`
+}
+
+function termInDays(c: Contract): string {
+  const start = new Date(c.period.start_date).getTime()
+  const end = new Date(c.period.end_date).getTime()
+  return `${Math.max(0, Math.round((end - start) / 86_400_000)).toLocaleString()}d`
+}
+
+/** The server computes this; it knows the term and does not depend on clock skew. */
 function daysToRenewal(c: Contract): string {
-  const target = c.renewal_date ?? c.end_date
-  if (!target) return "—"
-  const days = Math.round((new Date(target).getTime() - Date.now()) / 86_400_000)
-  if (days < 0) return `${days}d`
-  return `${days}d`
+  return `${c.days_remaining}d`
 }
 
 function buildLifecycleSummary(c: Contract | null): string | null {
   if (!c) return null
-  const target = c.renewal_date ?? c.end_date
-  if (!target) return null
-  const days = Math.round((new Date(target).getTime() - Date.now()) / 86_400_000)
-  const label = c.renewal_date ? "renewal" : "end date"
+  const label = c.is_auto_renew ? "renewal" : "end date"
+  const days = c.days_remaining
   if (days < 0) return `Past ${label} by ${Math.abs(days)} days.`
   if (days === 0) return `${label.charAt(0).toUpperCase() + label.slice(1)} is today.`
   return `${days} days until ${label}.`

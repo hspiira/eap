@@ -144,7 +144,7 @@ function ServiceAssignmentDetailPage() {
     )
   }
 
-  const label = `${contract?.contract_number ?? assignment.contract_id.slice(0, 8)} · ${
+  const label = `${assignment.contract_id.slice(0, 8)} · ${
     service?.name ?? assignment.service_id.slice(0, 8)
   }`
 
@@ -230,7 +230,7 @@ function ServiceAssignmentDetailPage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-mono text-sm font-medium text-fg">
-                            {contract.contract_number ?? contract.id.slice(0, 8)}
+                            {contract.id.slice(0, 8)}
                           </p>
                           <p className="truncate text-[11px] text-fg/55">
                             {contract.status} · client {contract.client_id.slice(0, 8)}
@@ -313,7 +313,7 @@ function Hero({
           params={{ contractId: contract.id }}
           className="font-mono text-sm font-semibold text-fg hover:text-primary"
         >
-          {contract.contract_number ?? contract.id.slice(0, 8)}
+          {contract.id.slice(0, 8)}
         </Link>
       ) : (
         <span className="font-mono text-sm font-semibold text-fg">
@@ -342,8 +342,18 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
     <div className="space-y-5">
       <RailSection title="Active period">
         <DetailGrid>
-          <DetailRow label="Start" value={contract?.start_date ?? "—"} />
-          <DetailRow label="End" value={contract?.end_date ?? "—"} />
+          <DetailRow
+            label="Start"
+            value={
+              contract ? new Date(contract.period.start_date).toLocaleDateString() : "—"
+            }
+          />
+          <DetailRow
+            label="End"
+            value={
+              contract ? new Date(contract.period.end_date).toLocaleDateString() : "—"
+            }
+          />
         </DetailGrid>
         <p className="mt-2 text-[11px] text-fg/50">Inherited from the parent contract.</p>
       </RailSection>
@@ -363,7 +373,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-mono text-sm font-medium text-fg">
-                {contract.contract_number ?? contract.id.slice(0, 8)}
+                {contract.id.slice(0, 8)}
               </p>
               <p className="truncate text-[11px] text-fg/55">
                 {contract.status}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
@@ -9,7 +9,10 @@ import { TagsPageHeader } from "@/components/TagsPageHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
+import { isNotFound, normalizeErrorMessage } from "@/lib/errors"
+import { useEntityDetail } from "@/lib/queries"
 import { TAG_HEX_COLOR_REGEX } from "@/lib/tag-colors"
+import type { ClientTag } from "@/types/entities"
 
 export const Route = createFileRoute("/tags/$tagId")({
   component: TagEditPage,
@@ -28,8 +31,6 @@ const tagEditSchema = z.object({
 function TagEditPage() {
   const { tagId } = Route.useParams()
   const navigate = useNavigate()
-  const [loadingTag, setLoadingTag] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
 
   const { register, watch, reset, formState, submit, serverError } = useApiForm<z.infer<typeof tagEditSchema>>({
     schema: tagEditSchema,
@@ -45,32 +46,33 @@ function TagEditPage() {
     },
   })
 
+  const tagQuery = useEntityDetail<ClientTag>({
+    resource: "client-tags",
+    id: tagId,
+    detailFn: clientTagsApi.getById,
+  })
+  const tag = tagQuery.data
+
+  // Hydrate the form once the tag arrives. Keyed on the fetched value rather
+  // than on tagId so a cache hit populates the form without a round trip.
   useEffect(() => {
-    let cancelled = false
-    clientTagsApi
-      .getById(tagId)
-      .then((tag) => {
-        if (cancelled) return
-        reset({
-          name: tag.name,
-          color: tag.color ?? "",
-          description: tag.description ?? "",
-        })
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError("Failed to load tag")
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTag(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [tagId, reset])
+    if (!tag) return
+    reset({
+      name: tag.name,
+      color: tag.color ?? "",
+      description: tag.description ?? "",
+    })
+  }, [tag, reset])
+
+  const loadError = tagQuery.isError
+    ? isNotFound(tagQuery.error)
+      ? "This tag no longer exists."
+      : normalizeErrorMessage(tagQuery.error, "Failed to load tag")
+    : null
 
   const color = watch("color")
 
-  if (loadingTag) {
+  if (tagQuery.isPending) {
     return (
       <TagsPageHeader breadcrumb="Tags > Edit">
         <div className="content-area-scroll flex-1 min-h-0 overflow-x-auto overflow-y-auto p-4">

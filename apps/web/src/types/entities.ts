@@ -286,32 +286,49 @@ export interface ClientStats {
   is_verified?: boolean
 }
 
+/** Contract term. Mirrors BE `DateRangeSchema`; both bounds are ISO datetimes. */
+export interface ContractPeriod {
+  start_date: string
+  end_date: string
+}
+
+/** Money on the wire. `amount` is a decimal *string* — parse before arithmetic. */
+export interface ContractMoney {
+  amount: string
+  currency: string
+}
+
 /**
- * Contract
+ * Contract — mirrors BE `ContractResponse` field-for-field.
+ *
+ * This type previously declared a shape the BE has never sent: top-level
+ * `start_date`/`end_date` (they are nested under `period`), plus `renewal_date`,
+ * `contract_number`, `billing_frequency`, `billing_amount` and `currency`, none
+ * of which exist on the response. Every one of them read `undefined` at runtime,
+ * which is why the term columns rendered blank and the renewal filter matched
+ * nothing. Keep this aligned with `ContractResponse` in the OpenAPI schema.
  */
 export interface Contract extends BaseEntity {
   client_id: string
   status: ContractStatus
-  /** ISO datetime per BE `ContractResponse.start_date`. */
-  start_date: string
-  /** ISO datetime; required on BE create but response may show legacy nullable rows. */
-  end_date?: string | null
-  /** Per BE `ContractResponse.is_auto_renew`. */
-  is_auto_renew?: boolean
-  /** Per BE `ContractResponse.payment_frequency`. Aliased into the legacy `billing_frequency` slot for back-compat. */
-  billing_frequency?: PaymentFrequency | null
-  /** Per BE `ContractResponse.billing_rate.amount` (string-decimal on the wire). */
-  billing_amount?: number | null
-  /** Per BE `ContractResponse.billing_rate.currency`. */
-  currency?: string | null
-  /** @deprecated Not on BE — payment status moved to invoice/utilisation events. */
-  payment_status?: PaymentStatus | null
-  /** @deprecated Not on BE — renewal handled via dedicated `renew` route. */
-  renewal_date?: string | null
-  /** @deprecated Not on BE response. */
-  contract_number?: string | null
-  /** @deprecated Not on BE response. */
-  metadata?: Record<string, unknown> | null
+  /** The contract term. Use `period.start_date` / `period.end_date`. */
+  period: ContractPeriod
+  billing_rate: ContractMoney
+  payment_frequency: PaymentFrequency
+  payment_status: PaymentStatus
+  is_auto_renew: boolean
+  /** Server-computed: whether the contract is currently within its term. */
+  is_active: boolean
+  /** Server-computed: days left in the term. */
+  days_remaining: number
+  /** ISO date. */
+  last_billing_date?: string | null
+  /** ISO date. */
+  next_billing_date?: string | null
+  signed_by?: string | null
+  /** ISO datetime. */
+  signed_at?: string | null
+  termination_reason?: string | null
 }
 
 /**

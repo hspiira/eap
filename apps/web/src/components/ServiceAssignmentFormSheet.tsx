@@ -187,7 +187,7 @@ function LockedContractSummary({
   })
   const resolved =
     contract ?? (detail.data?.items ?? []).find((c) => c.id === contractId) ?? null
-  const label = resolved?.contract_number ?? resolved?.id ?? contractId
+  const label = resolved?.id ?? contractId
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -237,7 +237,7 @@ function ContractPicker({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-mono text-sm font-medium text-fg">
-            {selected.contract_number ?? selected.id.slice(0, 8)}
+            {selected.id.slice(0, 8)}
           </p>
           <p className="truncate text-[11px] text-fg/55">
             Client {selected.client_id.slice(0, 8)}
@@ -288,7 +288,7 @@ function ContractPicker({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-mono text-sm font-medium text-fg">
-                      {c.contract_number ?? c.id.slice(0, 8)}
+                      {c.id.slice(0, 8)}
                     </span>
                     <span className="block truncate text-[11px] text-fg/55">
                       Client {c.client_id.slice(0, 8)} · {c.status}

@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { contractsApi } from "@/api/endpoints/contracts"
+import { type ContractListParams,contractsApi } from "@/api/endpoints/contracts"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -65,13 +65,23 @@ function isStatus(value: unknown): value is ContractStatus {
   )
 }
 
+function isRenewal(value: unknown): value is Exclude<RenewalFilter, "all"> {
+  return value === "30d" || value === "90d" || value === "expired"
+}
+
 export const Route = createFileRoute("/contracts/")({
   component: ContractsListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: ContractStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: ContractStatus
+      renewal?: Exclude<RenewalFilter, "all">
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (isRenewal(search.renewal)) out.renewal = search.renewal
     return out
   },
 })
@@ -102,7 +112,6 @@ function ContractsListPage() {
   const searchParams = useSearch({ from: "/contracts/" })
   const navigate = useNavigate({ from: "/contracts/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [renewal, setRenewal] = useState<RenewalFilter>("all")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
@@ -116,6 +125,14 @@ function ContractsListPage() {
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
+  const activeRenewal: RenewalFilter = searchParams.renewal ?? "all"
+
+  // Anchored to the selected window, not to render: an inline `new Date()` would
+  // mint a fresh query key every render and refetch in a loop.
+  const renewalWindow = useMemo(
+    () => renewalParams(activeRenewal, new Date()),
+    [activeRenewal],
+  )
 
   useEffect(() => {
     if (searchParams.new) {
@@ -137,6 +154,12 @@ function ContractsListPage() {
     setPage(1)
   }
 
+  const handleRenewalChange = (next: RenewalFilter) => {
+    const renewal = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, renewal }), replace: true })
+    setPage(1)
+  }
+
   const { data: clientsData } = useQuery({
     queryKey: ["clients", "lookup"],
     queryFn: () => clientsApi.list({ limit: 500 }),
@@ -148,25 +171,26 @@ function ContractsListPage() {
     return m
   }, [clientsData])
 
-  const query = useEntityList({
+  const query = useEntityList<Contract, ContractListParams>({
     resource: "contracts",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
+      ...renewalWindow,
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,
     },
     listFn: contractsApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterByRenewal(allItems, renewal)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || renewal !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
 
   return (
     <PageShell
@@ -208,9 +232,9 @@ function ContractsListPage() {
         <FilterTrigger
           icon={Calendar}
           label="Renewal window"
-          value={renewal}
+          value={activeRenewal}
           options={RENEWAL_OPTIONS}
-          onChange={setRenewal}
+          onChange={handleRenewalChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -328,9 +352,8 @@ function ContractRow({
   isSelected: boolean
   onToggle: () => void
 }) {
-  const number = row.contract_number ?? row.id.slice(0, 8)
+  const number = row.id.slice(0, 8)
   const billing = formatBilling(row)
-  const ending = row.renewal_date ?? row.end_date ?? null
   const linkedClient = clientsById.get(row.client_id) ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
@@ -366,28 +389,22 @@ function ContractRow({
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{row.start_date}</TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDate(row.period.start_date)}</TableCell>
       <TableCell>
-        {ending ? (
-          <span className="block min-w-0">
-            <span className="block truncate text-sm text-fg">{ending}</span>
-            <span className="block truncate text-xs text-fg/55">
-              {row.renewal_date ? "Renewal" : "End"}
-            </span>
+        <span className="block min-w-0">
+          <span className="block truncate text-sm text-fg">
+            {formatDate(row.period.end_date)}
           </span>
-        ) : (
-          <span className="text-fg/40">—</span>
-        )}
+          <span className="block truncate text-xs text-fg/55">
+            {row.is_auto_renew ? "Renews" : "Ends"}
+          </span>
+        </span>
       </TableCell>
       <TableCell>
-        {billing ? (
-          <span className="block min-w-0">
-            <span className="block truncate font-mono text-sm text-fg">{billing.amount}</span>
-            <span className="block truncate text-xs text-fg/55">{billing.frequency}</span>
-          </span>
-        ) : (
-          <span className="text-fg/40">—</span>
-        )}
+        <span className="block min-w-0">
+          <span className="block truncate font-mono text-sm text-fg">{billing.amount}</span>
+          <span className="block truncate text-xs text-fg/55">{billing.frequency}</span>
+        </span>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -464,31 +481,45 @@ function IconButton({
   )
 }
 
-function filterByRenewal(items: Contract[], window: RenewalFilter): Contract[] {
-  if (window === "all") return items
-  const now = new Date()
-  if (window === "expired") {
-    return items.filter((c) => {
-      const end = c.end_date ? new Date(c.end_date) : null
-      return end ? end < now : false
-    })
-  }
+/**
+ * Maps the renewal dropdown onto server-side params.
+ *
+ * This replaces a client-side filter that could never match: it keyed on
+ * `renewal_date ?? end_date`, and the BE sends neither at the top level, so
+ * every window returned an empty list. The term now lives in `period`, and the
+ * server filters it via an indexed range on the term end.
+ *
+ * "Renews in N days" means an auto-renewing contract whose term ends inside the
+ * window — a contract ending then without auto-renew is expiring, not renewing.
+ * "Already expired" is any term that has ended, renewing or not.
+ *
+ * Bounds are computed here rather than named to the server because the window is
+ * relative to the viewer's clock.
+ */
+export function renewalParams(
+  window: RenewalFilter,
+  now: Date,
+): Pick<ContractListParams, "ends_from" | "ends_to" | "is_auto_renew"> {
+  if (window === "all") return {}
+  if (window === "expired") return { ends_to: now.toISOString() }
   const days = window === "30d" ? 30 : 90
-  const horizon = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
-  return items.filter((c) => {
-    const target = c.renewal_date ?? c.end_date
-    if (!target) return false
-    const d = new Date(target)
-    return d >= now && d <= horizon
-  })
+  return {
+    is_auto_renew: true,
+    ends_from: now.toISOString(),
+    ends_to: new Date(now.getTime() + days * 86_400_000).toISOString(),
+  }
 }
 
-function formatBilling(c: Contract): { amount: string; frequency: string } | null {
-  if (c.billing_amount == null && !c.billing_frequency) return null
-  const amount =
-    c.billing_amount != null
-      ? `${c.currency ?? ""} ${c.billing_amount.toLocaleString()}`.trim()
-      : "—"
-  const frequency = c.billing_frequency ?? "—"
-  return { amount, frequency }
+/** `billing_rate.amount` is a decimal string on the wire; parse before formatting. */
+function formatBilling(c: Contract): { amount: string; frequency: string } {
+  const parsed = Number(c.billing_rate.amount)
+  const amount = Number.isFinite(parsed)
+    ? `${c.billing_rate.currency} ${parsed.toLocaleString()}`
+    : `${c.billing_rate.currency} ${c.billing_rate.amount}`
+  return { amount, frequency: c.payment_frequency }
+}
+
+/** Wire dates are ISO datetimes; the table only shows the calendar day. */
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString()
 }

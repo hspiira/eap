@@ -27,6 +27,11 @@ export type { ContractCreate, ContractRenewRequest, ContractTerminateRequest, Co
 export interface ContractListParams extends ListParams {
   client_id?: string
   payment_status?: string
+  is_auto_renew?: boolean
+  /** ISO 8601 instant; inclusive lower bound on the end of the term. */
+  ends_from?: string
+  /** ISO 8601 instant; inclusive upper bound on the end of the term. */
+  ends_to?: string
 }
 
 export const contractsApi = {

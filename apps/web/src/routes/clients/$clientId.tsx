@@ -216,12 +216,12 @@ function ClientDetailPage() {
     const now = new Date()
     const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
     contracts.forEach((c) => {
-      const end = c.end_date ? new Date(c.end_date) : null
-      if (end && end <= in30Days && end >= now) {
+      const end = new Date(c.period.end_date)
+      if (end <= in30Days && end >= now) {
         list.push({
           id: `contract-expiring-${c.id}`,
-          title: `Contract ending soon: ${c.contract_number ?? c.id}`,
-          description: `End date: ${c.end_date}`,
+          title: `Contract ending soon: ${c.id.slice(0, 8)}`,
+          description: `End date: ${end.toLocaleDateString()}`,
           severity: "high",
           link: `/contracts/${c.id}`,
           linkLabel: "View contract",
@@ -236,27 +236,17 @@ function ClientDetailPage() {
     const now = new Date()
     const in90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
     contracts.forEach((c) => {
-      if (c.renewal_date) {
-        const d = new Date(c.renewal_date)
+      // One item per contract: the term end is either a renewal or an ending,
+      // decided by is_auto_renew. This used to branch on a renewal_date field the
+      // BE has never sent, so neither branch ever fired.
+      {
+        const d = new Date(c.period.end_date)
         if (d >= now && d <= in90Days) {
           list.push({
-            id: `renewal-${c.id}`,
-            title: `Contract renewal: ${c.contract_number ?? c.id}`,
-            date: c.renewal_date,
-            context: "Renewal",
-            link: `/contracts/${c.id}`,
-            linkLabel: "View",
-          })
-        }
-      }
-      if (c.end_date) {
-        const d = new Date(c.end_date)
-        if (d >= now && d <= in90Days) {
-          list.push({
-            id: `end-${c.id}`,
-            title: `Contract ends: ${c.contract_number ?? c.id}`,
-            date: c.end_date,
-            context: "End date",
+            id: `${c.is_auto_renew ? "renewal" : "end"}-${c.id}`,
+            title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${c.id.slice(0, 8)}`,
+            date: c.period.end_date,
+            context: c.is_auto_renew ? "Renewal" : "End date",
             link: `/contracts/${c.id}`,
             linkLabel: "View",
           })
@@ -496,9 +486,13 @@ function ContractsPanel({
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
-  const sorted = compareSort(contracts, sort, (row, field) =>
-    field === "number" ? (row.contract_number ?? row.id) : fieldValue(row, field),
-  )
+  const sorted = compareSort(contracts, sort, (row, field) => {
+    if (field === "number") return row.id
+    // The term is nested under `period`; a bare field lookup would miss it.
+    if (field === "start_date") return row.period.start_date
+    if (field === "end_date") return row.period.end_date
+    return fieldValue(row, field)
+  })
 
   if (loading) {
     return <p className="text-sm text-fg/65">Loading contracts…</p>
@@ -566,14 +560,18 @@ function ContractsPanel({
                   params={{ contractId: c.id }}
                   className="font-medium text-fg group-hover:text-primary"
                 >
-                  {c.contract_number ?? c.id}
+                  {c.id.slice(0, 8)}
                 </Link>
               </TableCell>
               <TableCell>
                 <StatusBadge status={c.status} />
               </TableCell>
-              <TableCell className="text-sm text-fg/75">{c.start_date}</TableCell>
-              <TableCell className="text-sm text-fg/75">{c.end_date ?? "—"}</TableCell>
+              <TableCell className="text-sm text-fg/75">
+                {new Date(c.period.start_date).toLocaleDateString()}
+              </TableCell>
+              <TableCell className="text-sm text-fg/75">
+                {new Date(c.period.end_date).toLocaleDateString()}
+              </TableCell>
               <TableCell className="text-right">
                 <Link
                   to="/contracts/$contractId"

@@ -111,14 +111,18 @@ export function ContractFormSheet({
       open,
       onOpenChange,
       entity: contract,
+      // Read straight off the wire shape. These previously read top-level
+      // start_date/billing_amount/currency/billing_frequency, none of which the
+      // BE sends, so editing a contract opened a blank form and saving it reset
+      // the currency to the KES default.
       toFormValues: (c) => ({
         client_id: c.client_id,
-        start_date: fromIsoDatetime(c.start_date),
-        end_date: fromIsoDatetime(c.end_date),
-        billing_amount: c.billing_amount != null ? String(c.billing_amount) : "",
-        currency: c.currency ?? "KES",
-        payment_frequency: c.billing_frequency ?? PaymentFrequency.MONTHLY,
-        is_auto_renew: Boolean(c.is_auto_renew),
+        start_date: fromIsoDatetime(c.period.start_date),
+        end_date: fromIsoDatetime(c.period.end_date),
+        billing_amount: c.billing_rate.amount,
+        currency: c.billing_rate.currency,
+        payment_frequency: c.payment_frequency,
+        is_auto_renew: c.is_auto_renew,
       }),
       parsePayload: (values): ContractCreate => ({
         client_id: values.client_id,
