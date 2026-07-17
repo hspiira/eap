@@ -41,6 +41,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         tenant_id: TenantId,
         status: UserStatus | None = None,
         is_email_verified: bool | None = None,
+        is_two_factor_enabled: bool | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -49,17 +50,18 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
     ) -> Sequence[UserEntity]:
         """
         List users with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by user status
             is_email_verified: Filter by email verification status
+            is_two_factor_enabled: Filter by two-factor enrolment
             search: Search in user email
             limit: Maximum number of results
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of UserEntity
         """
@@ -70,15 +72,20 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         tenant_id: TenantId,
         status: UserStatus | None = None,
         is_email_verified: bool | None = None,
+        is_two_factor_enabled: bool | None = None,
         search: str | None = None,
     ) -> int:
         """
         Count users matching filters.
 
+        Must apply exactly the same filters as `list_all` — a count that disagrees
+        with its page produces pagination over a total the caller cannot reach.
+
         Args:
             tenant_id: Tenant identifier
             status: Filter by user status
             is_email_verified: Filter by email verification status
+            is_two_factor_enabled: Filter by two-factor enrolment
             search: Search in user email
 
         Returns:

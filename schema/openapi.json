@@ -424,6 +424,53 @@
         "title": "AddressSchema",
         "type": "object"
       },
+      "AdvanceCaseRequest": {
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/CaseStatus"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "title": "AdvanceCaseRequest",
+        "type": "object"
+      },
+      "AmendClinicalNoteRequest": {
+        "properties": {
+          "body": {
+            "additionalProperties": true,
+            "minProperties": 1,
+            "title": "Body",
+            "type": "object"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "reason"
+        ],
+        "title": "AmendClinicalNoteRequest",
+        "type": "object"
+      },
+      "AssignCounsellorRequest": {
+        "properties": {
+          "counsellor_id": {
+            "title": "Counsellor Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "counsellor_id"
+        ],
+        "title": "AssignCounsellorRequest",
+        "type": "object"
+      },
       "AuditActionType": {
         "description": "Types of actions that can be audited.\n\nNote: LIST and VIEW actions are subject to configurable filtering/sampling\nto prevent audit log bloat. Critical actions (CREATE, UPDATE, DELETE, etc.)\nare always logged. See AUDIT_SAMPLE_RATE, AUDIT_ALWAYS_LOG_RESOURCES, and\nAUDIT_SKIP_RESOURCES environment variables for configuration.",
         "enum": [
@@ -594,6 +641,182 @@
           "occurred_at"
         ],
         "title": "AuditLogResponse",
+        "type": "object"
+      },
+      "AuthProvider": {
+        "description": "How a user authenticates. PASSWORD = tenant code + email + password; AZURE_AD = Microsoft SSO.",
+        "enum": [
+          "password",
+          "azure_ad"
+        ],
+        "title": "AuthProvider",
+        "type": "string"
+      },
+      "AuthorizationResponse": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "clinical_subject_id": {
+            "title": "Clinical Subject Id",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires On"
+          },
+          "extended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extended At"
+          },
+          "extension_requested_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extension Requested Sessions"
+          },
+          "granted_at": {
+            "format": "date-time",
+            "title": "Granted At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "programme_id": {
+            "title": "Programme Id",
+            "type": "string"
+          },
+          "service_category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          },
+          "sessions_granted": {
+            "title": "Sessions Granted",
+            "type": "integer"
+          },
+          "sessions_remaining": {
+            "title": "Sessions Remaining",
+            "type": "integer"
+          },
+          "sessions_used": {
+            "title": "Sessions Used",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AuthorizationStatus"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "case_id",
+          "clinical_subject_id",
+          "programme_id",
+          "service_category",
+          "sessions_granted",
+          "sessions_used",
+          "sessions_remaining",
+          "status",
+          "granted_at",
+          "expires_on",
+          "extension_requested_sessions",
+          "extended_at",
+          "closed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AuthorizationResponse",
+        "type": "object"
+      },
+      "AuthorizationStatus": {
+        "description": "State of a per-case session-cap authorization.",
+        "enum": [
+          "Active",
+          "ExtensionRequested",
+          "Extended",
+          "Exhausted",
+          "Expired",
+          "Closed"
+        ],
+        "title": "AuthorizationStatus",
+        "type": "string"
+      },
+      "AuthorizeCaseRequest": {
+        "properties": {
+          "expires_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires On"
+          },
+          "programme_id": {
+            "title": "Programme Id",
+            "type": "string"
+          },
+          "service_category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          }
+        },
+        "required": [
+          "programme_id",
+          "service_category"
+        ],
+        "title": "AuthorizeCaseRequest",
         "type": "object"
       },
       "BaseStatus": {
@@ -1104,6 +1327,204 @@
           "Archived"
         ],
         "title": "CareCallbackCampaignStatus",
+        "type": "string"
+      },
+      "CaseClosureReason": {
+        "description": "Why a case was closed; recorded at the closure transition.",
+        "enum": [
+          "GoalsMet",
+          "ClientDiscontinued",
+          "ReferredOut",
+          "NoShow",
+          "SessionCapReached",
+          "Ineligible",
+          "Other"
+        ],
+        "title": "CaseClosureReason",
+        "type": "string"
+      },
+      "CaseReferralSource": {
+        "description": "Origin of a case \u2014 drives downstream disclosure and reporting rules.",
+        "enum": [
+          "Self",
+          "InformalManager",
+          "FormalMandatory",
+          "HR",
+          "CISMFollowUp",
+          "EmployerProactive"
+        ],
+        "title": "CaseReferralSource",
+        "type": "string"
+      },
+      "CaseResponse": {
+        "properties": {
+          "assigned_counsellor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Counsellor Id"
+          },
+          "authorization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Id"
+          },
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "clinical_subject_id": {
+            "title": "Clinical Subject Id",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "closure_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseClosureReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closure_screener_admin_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Closure Screener Admin Ids",
+            "type": "array"
+          },
+          "closure_summary_note_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closure Summary Note Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "intake_screener_admin_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Intake Screener Admin Ids",
+            "type": "array"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "presenting_problem": {
+            "$ref": "#/components/schemas/PresentingProblem"
+          },
+          "referral_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referral Notes"
+          },
+          "referral_source": {
+            "$ref": "#/components/schemas/CaseReferralSource"
+          },
+          "referred_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referred By User Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CaseStatus"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "clinical_subject_id",
+          "client_id",
+          "presenting_problem",
+          "referral_source",
+          "status",
+          "opened_at",
+          "assigned_counsellor_id",
+          "authorization_id",
+          "referred_by_user_id",
+          "referral_notes",
+          "closed_at",
+          "closure_reason",
+          "closure_summary_note_id",
+          "intake_screener_admin_ids",
+          "closure_screener_admin_ids",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CaseResponse",
+        "type": "object"
+      },
+      "CaseStatus": {
+        "description": "Lifecycle of a clinical case.",
+        "enum": [
+          "Intake",
+          "Assessment",
+          "Active",
+          "Closed",
+          "ReferredOut",
+          "NoShowClosed"
+        ],
+        "title": "CaseStatus",
         "type": "string"
       },
       "ClientCreate": {
@@ -1646,6 +2067,14 @@
         "title": "ClientTier",
         "type": "string"
       },
+      "ClientType": {
+        "enum": [
+          "New",
+          "Repeat"
+        ],
+        "title": "ClientType",
+        "type": "string"
+      },
       "ClientUpdate": {
         "description": "Request schema for updating client basic information.",
         "properties": {
@@ -1740,6 +2169,155 @@
           "tier"
         ],
         "title": "ClientUpdateTier",
+        "type": "object"
+      },
+      "ClinicalNoteResponse": {
+        "properties": {
+          "amendments": {
+            "items": {
+              "$ref": "#/components/schemas/NoteAmendmentResponse"
+            },
+            "title": "Amendments",
+            "type": "array"
+          },
+          "author_id": {
+            "title": "Author Id",
+            "type": "string"
+          },
+          "body": {
+            "additionalProperties": true,
+            "title": "Body",
+            "type": "object"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "clinical_subject_id": {
+            "title": "Clinical Subject Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "locked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked At"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/ClinicalNoteType"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "signed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed At"
+          },
+          "signed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed By"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "case_id",
+          "clinical_subject_id",
+          "note_type",
+          "body",
+          "author_id",
+          "session_id",
+          "signed_at",
+          "signed_by",
+          "locked_at",
+          "amendments",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ClinicalNoteResponse",
+        "type": "object"
+      },
+      "ClinicalNoteType": {
+        "description": "Shape of a clinical note record.",
+        "enum": [
+          "DAP",
+          "SOAP",
+          "PhoneContact",
+          "CrisisContact",
+          "ClosureSummary",
+          "Supervision"
+        ],
+        "title": "ClinicalNoteType",
+        "type": "string"
+      },
+      "CloseCaseRequest": {
+        "properties": {
+          "closure_summary_note_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closure Summary Note Id"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/CaseClosureReason"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CloseCaseRequest",
         "type": "object"
       },
       "ContactCreate": {
@@ -2280,7 +2858,7 @@
           "admin_fee_floor": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MoneySchema"
+                "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Input"
               },
               {
                 "type": "null"
@@ -2290,7 +2868,7 @@
           "deposit_amount": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MoneySchema"
+                "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Input"
               },
               {
                 "type": "null"
@@ -2328,7 +2906,7 @@
           "retainer_amount": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MoneySchema"
+                "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Input"
               },
               {
                 "type": "null"
@@ -2635,6 +3213,118 @@
           "counsellor_pool"
         ],
         "title": "CounsellorPoolUpdate",
+        "type": "object"
+      },
+      "CreateClinicalNoteRequest": {
+        "properties": {
+          "body": {
+            "additionalProperties": true,
+            "minProperties": 1,
+            "title": "Body",
+            "type": "object"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "note_type": {
+            "$ref": "#/components/schemas/ClinicalNoteType"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "required": [
+          "case_id",
+          "note_type",
+          "body"
+        ],
+        "title": "CreateClinicalNoteRequest",
+        "type": "object"
+      },
+      "CreateEAPProgrammeRequest": {
+        "properties": {
+          "caps": {
+            "items": {
+              "$ref": "#/components/schemas/ProgrammeCapInput"
+            },
+            "minItems": 1,
+            "title": "Caps",
+            "type": "array"
+          },
+          "contract_id": {
+            "title": "Contract Id",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "eligible_dependent_relations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RelationType"
+            },
+            "title": "Eligible Dependent Relations",
+            "type": "array"
+          },
+          "geographic_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geographic Scope"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_id",
+          "name",
+          "effective_from",
+          "caps"
+        ],
+        "title": "CreateEAPProgrammeRequest",
         "type": "object"
       },
       "CriticalIncidentCreate": {
@@ -3950,6 +4640,353 @@
         "title": "DocumentVersionResponse",
         "type": "object"
       },
+      "EAPProgrammeResponse": {
+        "properties": {
+          "caps": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Caps",
+            "type": "array"
+          },
+          "contract_id": {
+            "title": "Contract Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_from": {
+            "format": "date",
+            "title": "Effective From",
+            "type": "string"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "eligible_dependent_relations": {
+            "items": {
+              "$ref": "#/components/schemas/RelationType"
+            },
+            "title": "Eligible Dependent Relations",
+            "type": "array"
+          },
+          "geographic_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geographic Scope"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "contract_id",
+          "name",
+          "effective_from",
+          "effective_until",
+          "geographic_scope",
+          "description",
+          "eligible_dependent_relations",
+          "caps",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EAPProgrammeResponse",
+        "type": "object"
+      },
+      "EligibilityStatus": {
+        "description": "Lifecycle of an EAP-eligible member as supplied by the employer.",
+        "enum": [
+          "Active",
+          "Suspended",
+          "Terminated",
+          "Pending"
+        ],
+        "title": "EligibilityStatus",
+        "type": "string"
+      },
+      "EligibleMemberEnrol": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "coverage_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End"
+          },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start"
+          },
+          "display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Label"
+          },
+          "employer_member_id": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Employer Member Id",
+            "type": "string"
+          },
+          "personal_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Email"
+          },
+          "primary_employee_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Employee Member Id"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/MemberRelation"
+          },
+          "work_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Email"
+          }
+        },
+        "required": [
+          "client_id",
+          "employer_member_id",
+          "relation"
+        ],
+        "title": "EligibleMemberEnrol",
+        "type": "object"
+      },
+      "EligibleMemberResponse": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "coverage_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End"
+          },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Label"
+          },
+          "employer_member_id": {
+            "title": "Employer Member Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_imported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Imported At"
+          },
+          "primary_employee_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Employee Member Id"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/MemberRelation"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EligibilityStatus"
+          },
+          "suspended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspended At"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "terminated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminated At"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "client_id",
+          "employer_member_id",
+          "relation",
+          "status",
+          "primary_employee_member_id",
+          "coverage_start",
+          "coverage_end",
+          "display_label",
+          "last_imported_at",
+          "suspended_at",
+          "terminated_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EligibleMemberResponse",
+        "type": "object"
+      },
       "EmergencyContactSchema": {
         "additionalProperties": false,
         "description": "Emergency contact schema.",
@@ -4601,6 +5638,24 @@
         "title": "GrantConsentRequest",
         "type": "object"
       },
+      "GrantExtensionRequest": {
+        "properties": {
+          "admin_signoff_user_id": {
+            "title": "Admin Signoff User Id",
+            "type": "string"
+          },
+          "clinician_signoff_user_id": {
+            "title": "Clinician Signoff User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clinician_signoff_user_id",
+          "admin_signoff_user_id"
+        ],
+        "title": "GrantExtensionRequest",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5009,10 +6064,10 @@
             "type": "integer"
           },
           "total": {
-            "$ref": "#/components/schemas/MoneySchema"
+            "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Output"
           },
           "unit_amount": {
-            "$ref": "#/components/schemas/MoneySchema"
+            "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Output"
           }
         },
         "required": [
@@ -5062,7 +6117,7 @@
             "$ref": "#/components/schemas/PricingModel"
           },
           "subtotal": {
-            "$ref": "#/components/schemas/MoneySchema"
+            "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Output"
           }
         },
         "required": [
@@ -5819,6 +6874,18 @@
             "title": "Email",
             "type": "string"
           },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tenant role (Admin/User/Viewer)",
+            "title": "Role"
+          },
           "tenant_id": {
             "description": "Tenant identifier",
             "title": "Tenant Id",
@@ -5837,6 +6904,18 @@
         ],
         "title": "MeResponse",
         "type": "object"
+      },
+      "MemberRelation": {
+        "description": "Relationship of an eligible member to the primary employee.",
+        "enum": [
+          "Employee",
+          "Spouse",
+          "Child",
+          "DomesticPartner",
+          "DependentOther"
+        ],
+        "title": "MemberRelation",
+        "type": "string"
       },
       "MoneyCreate": {
         "description": "Money for creation.",
@@ -5859,27 +6938,6 @@
           "currency"
         ],
         "title": "MoneyCreate",
-        "type": "object"
-      },
-      "MoneySchema": {
-        "properties": {
-          "amount": {
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Amount",
-            "type": "string"
-          },
-          "currency": {
-            "maxLength": 3,
-            "minLength": 3,
-            "title": "Currency",
-            "type": "string"
-          }
-        },
-        "required": [
-          "amount",
-          "currency"
-        ],
-        "title": "MoneySchema",
         "type": "object"
       },
       "NonCompeteCreate": {
@@ -6099,6 +7157,78 @@
         ],
         "title": "NonCompeteStatus",
         "type": "string"
+      },
+      "NoteAmendmentResponse": {
+        "properties": {
+          "author_id": {
+            "title": "Author Id",
+            "type": "string"
+          },
+          "body": {
+            "additionalProperties": true,
+            "title": "Body",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "author_id",
+          "body",
+          "reason",
+          "created_at"
+        ],
+        "title": "NoteAmendmentResponse",
+        "type": "object"
+      },
+      "OpenCaseRequest": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "member_id": {
+            "title": "Member Id",
+            "type": "string"
+          },
+          "presenting_problem": {
+            "$ref": "#/components/schemas/PresentingProblem"
+          },
+          "referral_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referral Notes"
+          },
+          "referral_source": {
+            "$ref": "#/components/schemas/CaseReferralSource"
+          }
+        },
+        "required": [
+          "client_id",
+          "member_id",
+          "presenting_problem",
+          "referral_source"
+        ],
+        "title": "OpenCaseRequest",
+        "type": "object"
       },
       "OutreachAssignRequest": {
         "properties": {
@@ -6543,6 +7673,17 @@
             "$ref": "#/components/schemas/PersonType",
             "description": "Primary person type"
           },
+          "provider_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderProfileSchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider panel profile. Populated when person_type is SERVICE_PROVIDER. Carries tier, region, accreditation, panel status, specialties."
+          },
           "secondary_person_type": {
             "anyOf": [
               {
@@ -6618,6 +7759,23 @@
         "title": "PersonType",
         "type": "string"
       },
+      "PresentingProblem": {
+        "description": "Top-level category of the presenting concern at intake.",
+        "enum": [
+          "MentalHealth",
+          "Stress",
+          "Relationship",
+          "Work",
+          "Financial",
+          "Substance",
+          "Bereavement",
+          "Trauma",
+          "FamilyChild",
+          "Other"
+        ],
+        "title": "PresentingProblem",
+        "type": "string"
+      },
       "PricingModel": {
         "description": "Joseph's five contract pricing strategies (SAD \u00a75.2.3 / Meeting \u00a73).\n\nRETAINER \u2014 fixed periodic fee (e.g. monthly).\nFRAMEWORK \u2014 pre-paid deposit drawn down per session.\nFEE_FOR_SERVICE \u2014 pay per session at a rate card.\nADMIN_UTILISATION \u2014 admin-fee floor + per-session usage charges above the floor.\nVALUE_ADD \u2014 bundled into a broader Minet relationship (no per-EAP invoice).",
         "enum": [
@@ -6629,6 +7787,48 @@
         ],
         "title": "PricingModel",
         "type": "string"
+      },
+      "ProgrammeCapInput": {
+        "properties": {
+          "per_household_per_year": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Household Per Year"
+          },
+          "per_issue_per_year": {
+            "minimum": 0.0,
+            "title": "Per Issue Per Year",
+            "type": "integer"
+          },
+          "per_year": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Year"
+          },
+          "service_category": {
+            "$ref": "#/components/schemas/ServiceCategory"
+          }
+        },
+        "required": [
+          "service_category",
+          "per_issue_per_year"
+        ],
+        "title": "ProgrammeCapInput",
+        "type": "object"
       },
       "ProviderEligibilityResponse": {
         "properties": {
@@ -6777,7 +7977,7 @@
       "RateCardEntrySchema": {
         "properties": {
           "rate": {
-            "$ref": "#/components/schemas/MoneySchema"
+            "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Input"
           },
           "service_code": {
             "title": "Service Code",
@@ -6789,6 +7989,20 @@
           "rate"
         ],
         "title": "RateCardEntrySchema",
+        "type": "object"
+      },
+      "ReferOutCaseRequest": {
+        "properties": {
+          "notes": {
+            "minLength": 1,
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "ReferOutCaseRequest",
         "type": "object"
       },
       "RefreshRequest": {
@@ -7093,6 +8307,20 @@
         "title": "ReportTemplateResponse",
         "type": "object"
       },
+      "RequestExtensionRequest": {
+        "properties": {
+          "additional_sessions": {
+            "exclusiveMinimum": 0.0,
+            "title": "Additional Sessions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "additional_sessions"
+        ],
+        "title": "RequestExtensionRequest",
+        "type": "object"
+      },
       "RetentionPolicyResponse": {
         "properties": {
           "data_class": {
@@ -7304,6 +8532,20 @@
         },
         "title": "ServiceAssignmentUpdate",
         "type": "object"
+      },
+      "ServiceCategory": {
+        "description": "Coarse grouping used by EAP programme caps and authorization rules.",
+        "enum": [
+          "ShortTermCounselling",
+          "CrisisIntervention",
+          "SubstanceUse",
+          "ManagerConsult",
+          "WorkLifeReferral",
+          "CISMResponse",
+          "WellnessCoaching"
+        ],
+        "title": "ServiceCategory",
+        "type": "string"
       },
       "ServiceCreate": {
         "description": "Request schema for creating a service.",
@@ -7556,6 +8798,100 @@
       "ServiceSessionCreate": {
         "description": "Request schema for creating a service session.",
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User ID of approver",
+            "title": "Approved By"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Individual / Group / Family / Couples"
+          },
+          "client_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New or repeat client"
+          },
+          "clinical_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionClinicalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Clinical continuation outcome"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Diagnosis reference ID",
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DiagnosisType reference ID",
+            "title": "Diagnosis Type Id"
+          },
+          "headcount": {
+            "anyOf": [
+              {
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Participant count (group sessions)",
+            "title": "Headcount"
+          },
+          "issue_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Presenting issue for this session",
+            "title": "Issue Topic"
+          },
           "location": {
             "anyOf": [
               {
@@ -7568,6 +8904,30 @@
             "description": "Session location",
             "title": "Location"
           },
+          "partner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner name (couples/family sessions)",
+            "title": "Partner Name"
+          },
+          "partner_relationship": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner's relationship to client",
+            "title": "Partner Relationship"
+          },
           "person_id": {
             "description": "Person identifier",
             "title": "Person Id",
@@ -7577,6 +8937,19 @@
             "description": "Provider (person) identifier",
             "title": "Provider Id",
             "type": "string"
+          },
+          "rate_ugx": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-session rate in UGX",
+            "title": "Rate Ugx"
           },
           "scheduled_at": {
             "description": "Scheduled date and time",
@@ -7588,6 +8961,30 @@
             "description": "Service identifier",
             "title": "Service Id",
             "type": "string"
+          },
+          "session_number": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ordinal session number for this client",
+            "title": "Session Number"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Physical or online"
           }
         },
         "required": [
@@ -7660,6 +9057,18 @@
       "ServiceSessionResponse": {
         "description": "Response schema for service session.",
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User ID of approver",
+            "title": "Approved By"
+          },
           "cancellation_reason": {
             "anyOf": [
               {
@@ -7671,6 +9080,39 @@
             ],
             "description": "Cancellation reason",
             "title": "Cancellation Reason"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Individual / Group / Family / Couples"
+          },
+          "client_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New or repeat client"
+          },
+          "clinical_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionClinicalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Clinical continuation outcome"
           },
           "completed_at": {
             "anyOf": [
@@ -7684,6 +9126,30 @@
             ],
             "description": "Completion date and time",
             "title": "Completed At"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Diagnosis reference ID",
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DiagnosisType reference ID",
+            "title": "Diagnosis Type Id"
           },
           "duration": {
             "anyOf": [
@@ -7709,6 +9175,18 @@
             "description": "Session feedback",
             "title": "Feedback"
           },
+          "headcount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Participant count (group sessions)",
+            "title": "Headcount"
+          },
           "id": {
             "description": "Session identifier",
             "title": "Id",
@@ -7718,6 +9196,18 @@
             "description": "Whether session is active",
             "title": "Is Active",
             "type": "boolean"
+          },
+          "issue_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Presenting issue for this session",
+            "title": "Issue Topic"
           },
           "location": {
             "anyOf": [
@@ -7743,6 +9233,30 @@
             "description": "Session notes",
             "title": "Notes"
           },
+          "partner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner name (couples/family sessions)",
+            "title": "Partner Name"
+          },
+          "partner_relationship": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner's relationship to client",
+            "title": "Partner Relationship"
+          },
           "person_id": {
             "description": "Person identifier",
             "title": "Person Id",
@@ -7752,6 +9266,18 @@
             "description": "Provider (person) identifier",
             "title": "Provider Id",
             "type": "string"
+          },
+          "rate_ugx": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-session rate in UGX",
+            "title": "Rate Ugx"
           },
           "reschedule_count": {
             "description": "Number of times rescheduled",
@@ -7768,6 +9294,29 @@
             "description": "Service identifier",
             "title": "Service Id",
             "type": "string"
+          },
+          "session_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ordinal session number for this client",
+            "title": "Session Number"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Physical or online"
           },
           "status": {
             "$ref": "#/components/schemas/SessionStatus",
@@ -7796,6 +9345,100 @@
       "ServiceSessionUpdate": {
         "description": "Request schema for updating session information.",
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User ID of approver",
+            "title": "Approved By"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Individual / Group / Family / Couples"
+          },
+          "client_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "New or repeat client"
+          },
+          "clinical_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionClinicalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Clinical continuation outcome"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Diagnosis reference ID",
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "DiagnosisType reference ID",
+            "title": "Diagnosis Type Id"
+          },
+          "headcount": {
+            "anyOf": [
+              {
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Participant count (group sessions)",
+            "title": "Headcount"
+          },
+          "issue_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Presenting issue for this session",
+            "title": "Issue Topic"
+          },
           "location": {
             "anyOf": [
               {
@@ -7819,6 +9462,54 @@
             ],
             "description": "Session notes",
             "title": "Notes"
+          },
+          "partner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner name (couples/family sessions)",
+            "title": "Partner Name"
+          },
+          "partner_relationship": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Partner's relationship to client",
+            "title": "Partner Relationship"
+          },
+          "rate_ugx": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-session rate in UGX",
+            "title": "Rate Ugx"
+          },
+          "session_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Physical or online"
           }
         },
         "title": "ServiceSessionUpdate",
@@ -7928,6 +9619,26 @@
         "title": "ServiceUpdateGroupSettings",
         "type": "object"
       },
+      "SessionCategory": {
+        "enum": [
+          "Individual",
+          "Group",
+          "Family",
+          "Couples"
+        ],
+        "title": "SessionCategory",
+        "type": "string"
+      },
+      "SessionClinicalStatus": {
+        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED \u2014 client returns for follow-up (xlsx: T).\nREFERRED        \u2014 client referred elsewhere (xlsx: R).\nCOMPLETED       \u2014 case episode closed this session (xlsx: C).",
+        "enum": [
+          "ToBeContinued",
+          "Referred",
+          "Completed"
+        ],
+        "title": "SessionClinicalStatus",
+        "type": "string"
+      },
       "SessionStatus": {
         "enum": [
           "Scheduled",
@@ -7937,6 +9648,14 @@
           "No Show"
         ],
         "title": "SessionStatus",
+        "type": "string"
+      },
+      "SessionType": {
+        "enum": [
+          "Physical",
+          "Online"
+        ],
+        "title": "SessionType",
         "type": "string"
       },
       "SetInitialPasswordRequest": {
@@ -8383,6 +10102,33 @@
         "title": "TemplateSectionInput",
         "type": "object"
       },
+      "TenantAzureSsoRequest": {
+        "description": "Request schema for configuring or disabling Azure AD SSO on a tenant.",
+        "properties": {
+          "azure_tenant_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Azure AD directory ID (tid). Required when enabling SSO.",
+            "title": "Azure Tenant Id"
+          },
+          "enabled": {
+            "default": true,
+            "description": "Whether SSO is active. Set false to keep the ID but pause sign-in.",
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "title": "TenantAzureSsoRequest",
+        "type": "object"
+      },
       "TenantConsentStatus": {
         "enum": [
           "Active",
@@ -8394,6 +10140,19 @@
       "TenantCreate": {
         "description": "Request schema for creating a tenant.",
         "properties": {
+          "admin_email": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Email for the tenant admin user. Defaults to admin_{code}@evexia.test if not provided.",
+            "title": "Admin Email"
+          },
           "code": {
             "description": "Tenant code (lowercase alphanumeric with hyphens)",
             "maxLength": 15,
@@ -8493,6 +10252,24 @@
             ],
             "description": "Admin password (only when SET_PASSWORD_BASE_URL is not set; otherwise use set_password_url)",
             "title": "Admin Password"
+          },
+          "azure_sso_enabled": {
+            "default": false,
+            "description": "Whether Azure SSO is enabled",
+            "title": "Azure Sso Enabled",
+            "type": "boolean"
+          },
+          "azure_tenant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Azure AD directory ID for SSO (tid claim)",
+            "title": "Azure Tenant Id"
           },
           "code": {
             "description": "Tenant code",
@@ -8857,11 +10634,20 @@
         "type": "object"
       },
       "TriageInstrumentCode": {
-        "description": "Versioned identifiers for the supported triage instruments.\n\n``JOSEPH7`` \u2014 Joseph's 7-variable counsellor-callback screen (SAD \u00a7B.4).\n``WOS5`` \u2014 5-item Work Outcome Scale (SAD \u00a72.3.1; pre/post case).\n``PHQ9`` \u2014 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.",
+        "description": "Versioned identifiers for the supported triage instruments.\n\n``JOSEPH7`` \u2014 Joseph's 7-variable counsellor-callback screen.\n``WOS5`` \u2014 5-item Work Outcome Scale (pre/post case).\n``PHQ9`` \u2014 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.\n``GAD7`` \u2014 7-item Generalized Anxiety Disorder screen.\n``CSSRS`` \u2014 Columbia Suicide Severity Rating Scale (brief).\n``AUDIT_C`` \u2014 3-item alcohol-use disorders screener.\n``DAST10`` \u2014 10-item Drug Abuse Screening Test.\n``WHO5`` \u2014 5-item WHO wellbeing index.\n``K10`` \u2014 Kessler 10 psychological distress.\n``WSAS`` \u2014 Work and Social Adjustment Scale.\n``DASS21`` \u2014 Depression, Anxiety, Stress 21-item scale.\n``PCL5`` \u2014 PTSD Checklist for DSM-5 (post-CISM).",
         "enum": [
           "JOSEPH7",
           "WOS5",
-          "PHQ9"
+          "PHQ9",
+          "GAD7",
+          "CSSRS",
+          "AUDIT_C",
+          "DAST10",
+          "WHO5",
+          "K10",
+          "WSAS",
+          "DASS21",
+          "PCL5"
         ],
         "title": "TriageInstrumentCode",
         "type": "string"
@@ -9079,6 +10865,21 @@
         "title": "UgandaRegion",
         "type": "string"
       },
+      "UpdateClinicalNoteBodyRequest": {
+        "properties": {
+          "body": {
+            "additionalProperties": true,
+            "minProperties": 1,
+            "title": "Body",
+            "type": "object"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "UpdateClinicalNoteBodyRequest",
+        "type": "object"
+      },
       "UpdateDependentInfoRequest": {
         "additionalProperties": false,
         "description": "Request schema for updating dependent information.",
@@ -9199,6 +11000,11 @@
             ],
             "description": "Preferred language"
           },
+          "role": {
+            "$ref": "#/components/schemas/TenantRole",
+            "default": "User",
+            "description": "Initial tenant role (Admin/User/Viewer). Defaults to User."
+          },
           "timezone": {
             "anyOf": [
               {
@@ -9282,6 +11088,35 @@
       "UserResponse": {
         "description": "Response schema for user.",
         "properties": {
+          "auth_provider": {
+            "$ref": "#/components/schemas/AuthProvider",
+            "default": "password",
+            "description": "Credential type used to sign in (password or azure_ad)."
+          },
+          "azure_oid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Azure AD Object ID. Populated after the user's first SSO sign-in.",
+            "title": "Azure Oid"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Display name sourced from the identity provider (e.g. Azure AD). Null for password-only users unless set by an admin.",
+            "title": "Display Name"
+          },
           "email": {
             "description": "User email address",
             "title": "Email",
@@ -9443,6 +11278,18 @@
       "UserUpdatePasswordRequest": {
         "description": "Request schema for updating user password.",
         "properties": {
+          "current_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Existing password. REQUIRED for self-service change; ignored when an admin is resetting another user's password.",
+            "title": "Current Password"
+          },
           "password": {
             "description": "New password (will be hashed)",
             "minLength": 8,
@@ -9484,6 +11331,20 @@
           }
         },
         "title": "UserUpdatePreferencesRequest",
+        "type": "object"
+      },
+      "UserUpdateRoleRequest": {
+        "description": "Request schema for changing a user's tenant role.",
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/TenantRole",
+            "description": "New tenant role (Admin/User/Viewer)."
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "UserUpdateRoleRequest",
         "type": "object"
       },
       "UtilisationEventCreate": {
@@ -9637,7 +11498,7 @@
       "UtilisationTierSchema": {
         "properties": {
           "unit_rate": {
-            "$ref": "#/components/schemas/MoneySchema"
+            "$ref": "#/components/schemas/app__api__schemas__pricing_schemas__MoneySchema-Input"
           },
           "up_to_units": {
             "exclusiveMinimum": 0.0,
@@ -9654,6 +11515,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -9734,6 +11602,55 @@
         ],
         "title": "MoneySchema",
         "type": "object"
+      },
+      "app__api__schemas__pricing_schemas__MoneySchema-Input": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "title": "Amount"
+          },
+          "currency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "MoneySchema",
+        "type": "object"
+      },
+      "app__api__schemas__pricing_schemas__MoneySchema-Output": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "currency": {
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "title": "MoneySchema",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -9745,7 +11662,7 @@
   },
   "info": {
     "description": "Evex\u00eda API - Employee Assistance Program Management",
-    "title": "Allevia",
+    "title": "Evexia",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -10595,6 +12512,80 @@
         ]
       }
     },
+    "/auth/azure/callback": {
+      "get": {
+        "description": "Azure redirects here after the user signs in.\n\nFlow:\n1. Verify CSRF state (HMAC-signed, self-contained)\n2. Exchange code for Azure id_token\n3. Extract oid + tid + email from token claims\n4. Resolve Evexia tenant via tenants.azure_tenant_id == tid\n5. Find user by azure_oid (returning SSO user) or email (first-time link)\n6. Issue internal JWT (same claims as password login)\n7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI",
+        "operationId": "azure_callback_auth_azure_callback_get",
+        "parameters": [
+          {
+            "description": "Authorization code from Azure",
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "description": "Authorization code from Azure",
+              "title": "Code",
+              "type": "string"
+            }
+          },
+          {
+            "description": "CSRF state from the login redirect",
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "description": "CSRF state from the login redirect",
+              "title": "State",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Azure AD SSO callback \u2014 exchanges code for internal JWT",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/auth/azure/login": {
+      "get": {
+        "description": "Start the Azure AD OAuth2 flow.  No credentials required from the user.\nThe browser is redirected to Microsoft's login page; after authentication\nAzure redirects back to /auth/azure/callback.\n\nRedirects to the frontend error page when SSO is not configured.",
+        "operationId": "azure_login_auth_azure_login_get",
+        "responses": {
+          "302": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Initiate Azure AD SSO \u2014 redirects to Microsoft login",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "description": "Authenticate a user with tenant code, email, and password.\n\nReturns a JWT access token that can be used for subsequent API requests.\nThe token includes user_id, tenant_id, and email in its claims.\n\nArgs:\n    request_body: Login credentials (tenant_code, email, password)\n    request: HTTP request (for rate limit and IP)\n    tenant_repo: Tenant repository\n    user_repo: User repository\n    db: Database session\n    \nReturns:\n    LoginResponse with access token and user information\n    \nRaises:\n    HTTPException: If authentication fails (401) or rate limit exceeded (429)",
@@ -10681,7 +12672,7 @@
     },
     "/auth/me": {
       "get": {
-        "description": "Return current user identity (user_id, tenant_id, email). Used for cookie-based auth init.",
+        "description": "Return current user identity (user_id, tenant_id, email, role).\n\nFalls back to the DB for email and role since legacy JWTs may not carry\nthem; the BE is the source of truth.",
         "operationId": "auth_me_auth_me_get",
         "responses": {
           "200": {
@@ -10787,6 +12778,167 @@
         "summary": "Set initial admin password using one-time token",
         "tags": [
           "authentication"
+        ]
+      }
+    },
+    "/authorizations/{authorization_id}/consume": {
+      "post": {
+        "operationId": "consume_session_authorizations__authorization_id__consume_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "authorization_id",
+            "required": true,
+            "schema": {
+              "title": "Authorization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decrement an authorization by one session",
+        "tags": [
+          "eap-programmes"
+        ]
+      }
+    },
+    "/authorizations/{authorization_id}/grant-extension": {
+      "post": {
+        "operationId": "grant_extension_authorizations__authorization_id__grant_extension_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "authorization_id",
+            "required": true,
+            "schema": {
+              "title": "Authorization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantExtensionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Grant a pending extension (clinician + admin two-person sign-off)",
+        "tags": [
+          "eap-programmes"
+        ]
+      }
+    },
+    "/authorizations/{authorization_id}/request-extension": {
+      "post": {
+        "operationId": "request_extension_authorizations__authorization_id__request_extension_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "authorization_id",
+            "required": true,
+            "schema": {
+              "title": "Authorization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestExtensionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Request an extension to the session cap",
+        "tags": [
+          "eap-programmes"
         ]
       }
     },
@@ -11551,6 +13703,463 @@
         "summary": "Aggregated outreach status / triage / crisis stats for the campaign",
         "tags": [
           "care-callbacks"
+        ]
+      }
+    },
+    "/cases": {
+      "get": {
+        "operationId": "list_cases_cases_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseResponse"
+                  },
+                  "title": "Response List Cases Cases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List cases for the current tenant",
+        "tags": [
+          "cases"
+        ]
+      },
+      "post": {
+        "operationId": "open_case_cases_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open a clinical case (resolves the eligible member to a clinical subject)",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}": {
+      "get": {
+        "operationId": "get_case_cases__case_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one case",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/advance": {
+      "post": {
+        "operationId": "advance_case_cases__case_id__advance_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Advance the case status (Intake \u2192 Assessment \u2192 Active)",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/assign-counsellor": {
+      "post": {
+        "operationId": "assign_counsellor_cases__case_id__assign_counsellor_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignCounsellorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Assign a counsellor to the case",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/authorize": {
+      "post": {
+        "operationId": "authorize_case_cases__case_id__authorize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorizeCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Authorize a case from a programme cap",
+        "tags": [
+          "eap-programmes"
+        ]
+      }
+    },
+    "/cases/{case_id}/clinical-notes": {
+      "get": {
+        "operationId": "list_notes_for_case_cases__case_id__clinical_notes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClinicalNoteResponse"
+                  },
+                  "title": "Response List Notes For Case Cases  Case Id  Clinical Notes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List clinical notes for a case",
+        "tags": [
+          "clinical-notes"
+        ]
+      }
+    },
+    "/cases/{case_id}/close": {
+      "post": {
+        "operationId": "close_case_cases__case_id__close_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Close the case",
+        "tags": [
+          "cases"
+        ]
+      }
+    },
+    "/cases/{case_id}/refer-out": {
+      "post": {
+        "operationId": "refer_out_case_cases__case_id__refer_out_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferOutCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Refer the case out to an external provider",
+        "tags": [
+          "cases"
         ]
       }
     },
@@ -13085,6 +15694,213 @@
         "summary": "Verify a client",
         "tags": [
           "clients"
+        ]
+      }
+    },
+    "/clinical-notes": {
+      "post": {
+        "operationId": "create_note_clinical_notes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicalNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalNoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Author a draft clinical note attached to a case",
+        "tags": [
+          "clinical-notes"
+        ]
+      }
+    },
+    "/clinical-notes/{note_id}": {
+      "patch": {
+        "operationId": "update_note_clinical_notes__note_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicalNoteBodyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalNoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Edit a draft note (signed notes require an amendment instead)",
+        "tags": [
+          "clinical-notes"
+        ]
+      }
+    },
+    "/clinical-notes/{note_id}/amend": {
+      "post": {
+        "operationId": "amend_note_clinical_notes__note_id__amend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmendClinicalNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalNoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Append an amendment to a signed note",
+        "tags": [
+          "clinical-notes"
+        ]
+      }
+    },
+    "/clinical-notes/{note_id}/sign": {
+      "post": {
+        "operationId": "sign_note_clinical_notes__note_id__sign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalNoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sign a draft note (only the author may sign)",
+        "tags": [
+          "clinical-notes"
         ]
       }
     },
@@ -16165,6 +18981,269 @@
         ]
       }
     },
+    "/eap-programmes": {
+      "get": {
+        "operationId": "list_programmes_eap_programmes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EAPProgrammeResponse"
+                  },
+                  "title": "Response List Programmes Eap Programmes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List EAP programmes for the current tenant",
+        "tags": [
+          "eap-programmes"
+        ]
+      },
+      "post": {
+        "operationId": "create_programme_eap_programmes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEAPProgrammeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EAPProgrammeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create an EAP programme attached to a contract",
+        "tags": [
+          "eap-programmes"
+        ]
+      }
+    },
+    "/eap-programmes/{programme_id}": {
+      "get": {
+        "operationId": "get_programme_eap_programmes__programme_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "programme_id",
+            "required": true,
+            "schema": {
+              "title": "Programme Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EAPProgrammeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one EAP programme",
+        "tags": [
+          "eap-programmes"
+        ]
+      }
+    },
+    "/eligible-members": {
+      "get": {
+        "operationId": "list_eligible_members_eligible_members_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EligibleMemberResponse"
+                  },
+                  "title": "Response List Eligible Members Eligible Members Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List eligible members for a client",
+        "tags": [
+          "eligible-members"
+        ]
+      },
+      "post": {
+        "operationId": "enrol_eligible_member_eligible_members_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EligibleMemberEnrol"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EligibleMemberResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Enrol an eligible member (auto-creates the linked clinical subject)",
+        "tags": [
+          "eligible-members"
+        ]
+      }
+    },
+    "/eligible-members/{member_id}": {
+      "get": {
+        "operationId": "get_eligible_member_eligible_members__member_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EligibleMemberResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get one eligible member",
+        "tags": [
+          "eligible-members"
+        ]
+      }
+    },
     "/engagements": {
       "get": {
         "operationId": "list_engagements_engagements_get",
@@ -16960,7 +20039,7 @@
     },
     "/industries/{industry_id}": {
       "get": {
-        "description": "Get industry by ID.",
+        "description": "Get industry by ID. Same-tenant ownership enforced.",
         "operationId": "get_industry_industries__industry_id__get",
         "parameters": [
           {
@@ -16995,13 +20074,18 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get industry by ID",
         "tags": [
           "industries"
         ]
       },
       "patch": {
-        "description": "Update an industry.",
+        "description": "Update an industry. Requires ADMIN role + same-tenant ownership.",
         "operationId": "update_industry_industries__industry_id__patch",
         "parameters": [
           {
@@ -17059,7 +20143,7 @@
     },
     "/industries/{industry_id}/activate": {
       "post": {
-        "description": "Activate an industry.",
+        "description": "Activate an industry. ADMIN-only, same-tenant.",
         "operationId": "activate_industry_industries__industry_id__activate_post",
         "parameters": [
           {
@@ -17164,7 +20248,7 @@
     },
     "/industries/{industry_id}/deactivate": {
       "post": {
-        "description": "Deactivate an industry.",
+        "description": "Deactivate an industry. ADMIN-only, same-tenant.",
         "operationId": "deactivate_industry_industries__industry_id__deactivate_post",
         "parameters": [
           {
@@ -19412,6 +22496,54 @@
         ]
       }
     },
+    "/persons/by-user/{user_id}": {
+      "get": {
+        "description": "Get person by user ID.",
+        "operationId": "get_person_by_user_id_persons_by_user__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get person by user ID",
+        "tags": [
+          "persons"
+        ]
+      }
+    },
     "/persons/tenant/{tenant_id}/type/{person_type}": {
       "get": {
         "description": "Get all persons of a specific type within a tenant.",
@@ -19467,54 +22599,6 @@
           }
         ],
         "summary": "Get persons by type",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/user/{user_id}": {
-      "get": {
-        "description": "Get person by user ID.",
-        "operationId": "get_person_by_user_id_persons_user__user_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "user_id",
-            "required": true,
-            "schema": {
-              "title": "User Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get person by user ID",
         "tags": [
           "persons"
         ]
@@ -23054,7 +26138,7 @@
     },
     "/tenants/": {
       "get": {
-        "description": "List tenants with filtering, searching, and pagination.",
+        "description": "List tenants. Platform-admin users (members of PLATFORM_TENANT_ID) see all\ntenants; everyone else sees only their own tenant.",
         "operationId": "list_tenants_tenants__get",
         "parameters": [
           {
@@ -23185,6 +26269,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List tenants with filtering and pagination",
         "tags": [
           "tenants"
@@ -23279,7 +26368,7 @@
     },
     "/tenants/code/{code}": {
       "get": {
-        "description": "Get tenant by code.",
+        "description": "Get tenant by code.\n\nNon-platform users can only resolve their own tenant by code (prevents\ncross-tenant enumeration via known codes).",
         "operationId": "get_tenant_by_code_tenants_code__code__get",
         "parameters": [
           {
@@ -23314,6 +26403,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get tenant by code",
         "tags": [
           "tenants"
@@ -23515,6 +26609,64 @@
           }
         ],
         "summary": "Archive a tenant",
+        "tags": [
+          "tenants"
+        ]
+      }
+    },
+    "/tenants/{tenant_id}/azure-sso": {
+      "patch": {
+        "description": "Set or update Azure AD SSO config for a tenant.\n\n- Pass `azure_tenant_id` + `enabled=true` to wire SSO.\n- Pass `enabled=false` (with or without `azure_tenant_id`) to pause SSO without losing the stored ID.\n- Pass `azure_tenant_id=null` + `enabled=false` to fully clear.",
+        "operationId": "update_azure_sso_tenants__tenant_id__azure_sso_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantAzureSsoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Configure or disable Azure AD SSO for a tenant",
         "tags": [
           "tenants"
         ]
@@ -23972,6 +27124,24 @@
               ],
               "description": "Filter by email verification status",
               "title": "Is Email Verified"
+            }
+          },
+          {
+            "description": "Filter by two-factor enrolment",
+            "in": "query",
+            "name": "is_two_factor_enabled",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by two-factor enrolment",
+              "title": "Is Two Factor Enabled"
             }
           },
           {
@@ -24459,7 +27629,7 @@
     },
     "/users/{user_id}/disable-2fa": {
       "post": {
-        "description": "Disable two-factor authentication for a user.",
+        "description": "Disable two-factor authentication. Self-service or ADMIN-only override.",
         "operationId": "disable_two_factor_users__user_id__disable_2fa_post",
         "parameters": [
           {
@@ -24507,7 +27677,7 @@
     },
     "/users/{user_id}/enable-2fa": {
       "post": {
-        "description": "Enable two-factor authentication for a user.",
+        "description": "Enable two-factor authentication. Self-service or ADMIN-only override.",
         "operationId": "enable_two_factor_users__user_id__enable_2fa_post",
         "parameters": [
           {
@@ -24555,7 +27725,7 @@
     },
     "/users/{user_id}/password": {
       "patch": {
-        "description": "Update user password.",
+        "description": "Update user password.\n\n- Self-service (caller == target): `current_password` MUST be provided and verified.\n- Admin override (caller has ADMIN role, different user): `current_password` is not required.",
         "operationId": "update_user_password_users__user_id__password_patch",
         "parameters": [
           {
@@ -24613,7 +27783,7 @@
     },
     "/users/{user_id}/preferences": {
       "patch": {
-        "description": "Update user preferences.",
+        "description": "Update user preferences. Self-service or ADMIN-only override.",
         "operationId": "update_user_preferences_users__user_id__preferences_patch",
         "parameters": [
           {
@@ -24669,10 +27839,10 @@
         ]
       }
     },
-    "/users/{user_id}/record-login": {
-      "post": {
-        "description": "Record user login (updates last_login_at).",
-        "operationId": "record_user_login_users__user_id__record_login_post",
+    "/users/{user_id}/role": {
+      "patch": {
+        "description": "Change a user's tenant role. ADMIN-only.\n\nGuards against demoting the last admin in a tenant \u2014 that would leave the\ntenant unmanageable.",
+        "operationId": "update_user_role_users__user_id__role_patch",
         "parameters": [
           {
             "in": "path",
@@ -24684,6 +27854,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdateRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -24711,7 +27891,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Record user login",
+        "summary": "Change a user's tenant role (Admin/User/Viewer)",
         "tags": [
           "users"
         ]

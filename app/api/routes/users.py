@@ -524,6 +524,9 @@ async def list_users(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: UserStatus | None = Query(None, description="Filter by user status"),
     is_email_verified: bool | None = Query(None, description="Filter by email verification status"),
+    is_two_factor_enabled: bool | None = Query(
+        None, description="Filter by two-factor enrolment"
+    ),
     search: str | None = Query(None, description="Search in user email"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -540,6 +543,7 @@ async def list_users(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_email_verified=is_email_verified,
+        is_two_factor_enabled=is_two_factor_enabled,
         search=search,
         limit=limit,
         offset=offset,
@@ -551,6 +555,7 @@ async def list_users(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_email_verified=is_email_verified,
+        is_two_factor_enabled=is_two_factor_enabled,
         search=search,
     )
 

@@ -158,12 +158,13 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
         filters: dict[str, Any] | None = None,
         search: str | None = None,
         search_fields: list[str] | None = None,
+        extra_conditions: Sequence[Any] | None = None,
     ) -> Sequence[TEntity]:
         """
         Internal helper to query entities with filtering, searching, and pagination.
-        
+
         Subclasses should call this from their domain-specific list_all methods.
-        
+
         Args:
             tenant_id: Tenant identifier (raw value)
             limit: Maximum number of results
@@ -173,20 +174,28 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
             filters: Dictionary of field=value filters
             search: Search string
             search_fields: Fields to search in
+            extra_conditions: Pre-built SQLAlchemy conditions for filters that are
+                not simple column equality (e.g. nullable-timestamp flags). Pass
+                these rather than filtering the returned page in Python — post-
+                filtering a paginated result silently drops rows and desynchronises
+                the page from its count.
         """
         stmt = select(self.model_class).where(
             self.model_class.tenant_id == tenant_id,
         )
-        
+
         if hasattr(self.model_class, 'deleted_at'):
             stmt = stmt.where(self.model_class.deleted_at.is_(None))
-        
+
         # Apply filters
         if filters:
             for key, value in filters.items():
                 if value is not None and hasattr(self.model_class, key):
                     stmt = stmt.where(getattr(self.model_class, key) == value)
-        
+
+        for condition in extra_conditions or ():
+            stmt = stmt.where(condition)
+
         # Apply search
         if search and search_fields:
             search_conditions = []
