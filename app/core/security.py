@@ -34,12 +34,6 @@ COOKIE_REFRESH_TOKEN = "evexia_refresh_token"
 class TokenData(BaseModel):
     """Data extracted from JWT token.
 
-    ``access_scopes`` carries the bounded-context split that gates the privacy
-    wall (see :class:`~app.domain.enums.AccessScope`). Tokens minted before the
-    scope rollout have an empty list; route guards treat that as legacy
-    PLATFORM_ADMIN — clinical-only routes will refuse them once the auth backend
-    emits explicit scopes everywhere.
-
     ``role`` is the tenant-level role (ADMIN / USER / VIEWER) embedded in the
     token at mint time.  This lets viewer-guard middleware check the role without
     a DB round-trip on every mutation request.
@@ -50,7 +44,6 @@ class TokenData(BaseModel):
     email: str | None = None
     exp: datetime | None = None
     jti: str | None = None
-    access_scopes: list[str] = []
     role: str | None = None
 
 
@@ -113,7 +106,6 @@ def create_access_token(
     email: str | None = None,
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
-    access_scopes: list[str] | None = None,
     role: str | None = None,
 ) -> str:
     """
@@ -145,9 +137,6 @@ def create_access_token(
 
     if email:
         to_encode["email"] = email
-
-    if access_scopes:
-        to_encode["access_scopes"] = list(access_scopes)
 
     if role:
         to_encode["role"] = role
@@ -227,15 +216,11 @@ def decode_token(token: str) -> TokenData:
         if user_id is None or tenant_id is None:
             raise AuthenticationException("Invalid token: missing required claims")
 
-        scopes_claim = payload.get("access_scopes") or []
-        if not isinstance(scopes_claim, list):
-            scopes_claim = []
         return TokenData(
             user_id=user_id,
             tenant_id=tenant_id,
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
-            access_scopes=[str(s) for s in scopes_claim],
             role=payload.get("role"),
         )
     except JWTError as e:

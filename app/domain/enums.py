@@ -427,19 +427,6 @@ class MemberRelation(str, Enum):
     DEPENDENT_OTHER = "DependentOther"
 
 
-class AccessScope(str, Enum):
-    """Bounded-context split between the employer-facing and clinical surfaces.
-
-    A token's scope determines which routes it may reach. The clinical scope is
-    a strict superset of nothing: a clinical user has zero employer-side
-    privilege and vice versa, even within the same tenant.
-    """
-
-    EMPLOYER_PORTAL = "EmployerPortal"
-    CLINICAL = "Clinical"
-    PLATFORM_ADMIN = "PlatformAdmin"
-
-
 class CaseStatus(str, Enum):
     """Lifecycle of a clinical case."""
 

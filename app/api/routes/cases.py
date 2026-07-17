@@ -23,9 +23,9 @@ from app.application.use_cases.case_use_cases import (
     OpenCaseUseCase,
     ReferOutCaseUseCase,
 )
-from app.core.authorization import require_clinical_scope, require_same_tenant
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.case import Case
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.eligible_member_repository import (
@@ -86,7 +86,7 @@ def _to_response(c: Case) -> CaseResponse:
 async def open_case(
     data: OpenCaseRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     link_repo: EligibleMemberClinicalLinkRepository = Depends(
         get_eligible_member_clinical_link_repository
@@ -116,7 +116,7 @@ async def open_case(
 )
 @readonly()
 async def list_cases(
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -132,7 +132,7 @@ async def list_cases(
 @readonly()
 async def get_case(
     case_id: str,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -153,7 +153,7 @@ async def assign_counsellor(
     case_id: str,
     data: AssignCounsellorRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -176,7 +176,7 @@ async def advance_case(
     case_id: str,
     data: AdvanceCaseRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -198,7 +198,7 @@ async def close_case(
     case_id: str,
     data: CloseCaseRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -222,7 +222,7 @@ async def refer_out_case(
     case_id: str,
     data: ReferOutCaseRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     case_repo: CaseRepository = Depends(get_case_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),

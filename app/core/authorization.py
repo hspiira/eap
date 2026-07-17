@@ -38,7 +38,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.entities.service import ServiceEntity
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.entities.user import UserEntity
-from app.domain.enums import AccessScope, TenantRole
+from app.domain.enums import TenantRole
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -164,63 +164,6 @@ async def require_same_tenant(
             detail="Access denied to this tenant",
         )
     return current_user
-
-
-def _token_has_scope(token: TokenData, scope: AccessScope) -> bool:
-    return scope.value in (token.access_scopes or [])
-
-
-def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool | None = None):
-    """Dependency factory enforcing the bounded-context access-scope split.
-
-    A token is admitted when *any* of ``allowed_scopes`` appears in its
-    ``access_scopes`` claim.
-
-    Tokens minted before the scope rollout carry no claim, and are admitted so
-    the rollout could be incremental — which means they bypass the scope wall
-    entirely. That is governed by ``SCOPE_FAIL_CLOSED_ON_LEGACY``, so the cutover
-    is a per-environment config change rather than a deploy. Pass
-    ``fail_closed_on_legacy=True`` to refuse them on a given route regardless.
-
-    See §4 of 11_RELEASE_RUNBOOK_AND_OPEN_ACTIONS.md — this needs a date.
-    """
-
-    allowed = {s.value for s in allowed_scopes}
-
-    async def _require(
-        current_user: TokenData = Depends(get_current_user),
-    ) -> TokenData:
-        fail_closed = (
-            settings.SCOPE_FAIL_CLOSED_ON_LEGACY
-            if fail_closed_on_legacy is None
-            else fail_closed_on_legacy
-        )
-        scopes = current_user.access_scopes or []
-        if not scopes and not fail_closed:
-            return current_user
-        if any(s in allowed for s in scopes):
-            return current_user
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Access scope insufficient for this route; "
-                f"required one of {sorted(allowed)}"
-            ),
-        )
-
-    return _require
-
-
-require_clinical_scope = require_scope(
-    AccessScope.CLINICAL, AccessScope.PLATFORM_ADMIN
-)
-"""Use as ``Depends(require_clinical_scope)`` on every clinical-only route."""
-
-
-require_employer_scope = require_scope(
-    AccessScope.EMPLOYER_PORTAL, AccessScope.PLATFORM_ADMIN
-)
-"""Use as ``Depends(require_employer_scope)`` on employer-portal routes."""
 
 
 async def require_platform_admin(

@@ -24,9 +24,9 @@ from app.application.use_cases.eap_programme_use_cases import (
     GrantAuthorizationExtensionUseCase,
     RequestAuthorizationExtensionUseCase,
 )
-from app.core.authorization import require_clinical_scope, require_same_tenant
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.authorization import Authorization
 from app.domain.entities.eap_programme import EAPProgramme
 from app.domain.repositories.case_repository import CaseRepository
@@ -100,7 +100,7 @@ def _to_authorization(a: Authorization) -> AuthorizationResponse:
 async def create_programme(
     data: CreateEAPProgrammeRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -138,7 +138,7 @@ async def create_programme(
 )
 @readonly()
 async def list_programmes(
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -154,7 +154,7 @@ async def list_programmes(
 @readonly()
 async def get_programme(
     programme_id: str,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -176,7 +176,7 @@ async def authorize_case(
     case_id: str,
     data: AuthorizeCaseRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     programme_repo: EAPProgrammeRepository = Depends(
         get_eap_programme_repository
     ),
@@ -205,7 +205,7 @@ async def authorize_case(
 async def consume_session(
     authorization_id: str,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: AuthorizationRepository = Depends(get_authorization_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -227,7 +227,7 @@ async def request_extension(
     authorization_id: str,
     data: RequestExtensionRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: AuthorizationRepository = Depends(get_authorization_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -251,7 +251,7 @@ async def grant_extension(
     authorization_id: str,
     data: GrantExtensionRequest,
     request: Request,
-    current_user: TokenData = Depends(require_clinical_scope),
+    current_user: TokenData = Depends(get_current_user),
     repo: AuthorizationRepository = Depends(get_authorization_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),

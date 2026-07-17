@@ -90,17 +90,6 @@ class Settings(BaseSettings):
             "to be set, otherwise all tenant creation is rejected with 403 (fail-closed)."
         ),
     )
-    SCOPE_FAIL_CLOSED_ON_LEGACY: bool = Field(
-        default=False,
-        description=(
-            "If True, refuse tokens with no access_scopes claim. Tokens minted "
-            "before the scope rollout have no claim and currently bypass the "
-            "scope wall entirely. Flipping this invalidates every such token at "
-            "once, so pick a date at least REFRESH_TOKEN_EXPIRE_DAYS after a "
-            "release, by which point none can still be alive. Per-environment, "
-            "so the cutover is a config change and not a deploy."
-        ),
-    )
     ENFORCE_SUBSCRIPTION_LIMITS: bool = Field(
         default=False,
         description=(
