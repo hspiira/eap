@@ -101,7 +101,7 @@ def main(argv: list[str]) -> int:
             )
         return 1
     print(
-        f"Pyright gate OK for "
+        "Pyright gate OK for "
         + ", ".join(str(r.relative_to(repo_root)) for r in gated_roots)
     )
     return 0
