@@ -226,25 +226,32 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
         filters: dict[str, Any] | None = None,
         search: str | None = None,
         search_fields: list[str] | None = None,
+        extra_conditions: Sequence[Any] | None = None,
     ) -> int:
         """
         Internal helper to count entities in tenant matching filters.
-        
+
         Subclasses should call this from their domain-specific count methods.
+        Pass the same `filters`/`extra_conditions` the matching `_query_all` call
+        uses — a count built from a different filter set than its page produces
+        pagination over a total the caller can never reach.
         """
         id_col = getattr(self.model_class, self.id_column)
         stmt = select(func.count(id_col)).where(
             self.model_class.tenant_id == tenant_id,
         )
-        
+
         if hasattr(self.model_class, 'deleted_at'):
             stmt = stmt.where(self.model_class.deleted_at.is_(None))
-        
+
         if filters:
             for key, value in filters.items():
                 if value is not None and hasattr(self.model_class, key):
                     stmt = stmt.where(getattr(self.model_class, key) == value)
-        
+
+        for condition in extra_conditions or ():
+            stmt = stmt.where(condition)
+
         if search and search_fields:
             search_conditions = []
             for field in search_fields:

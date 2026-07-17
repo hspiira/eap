@@ -24302,6 +24302,44 @@
             }
           },
           {
+            "description": "Only sessions scheduled at or after this instant (ISO 8601)",
+            "in": "query",
+            "name": "scheduled_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only sessions scheduled at or after this instant (ISO 8601)",
+              "title": "Scheduled From"
+            }
+          },
+          {
+            "description": "Only sessions scheduled at or before this instant (ISO 8601)",
+            "in": "query",
+            "name": "scheduled_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only sessions scheduled at or before this instant (ISO 8601)",
+              "title": "Scheduled To"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",

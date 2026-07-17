@@ -5,6 +5,8 @@ FastAPI routes for Service Session operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -417,6 +419,12 @@ async def list_service_sessions(
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
     status: SessionStatus | None = Query(None, description="Filter by session status"),
+    scheduled_from: datetime | None = Query(
+        None, description="Only sessions scheduled at or after this instant (ISO 8601)"
+    ),
+    scheduled_to: datetime | None = Query(
+        None, description="Only sessions scheduled at or before this instant (ISO 8601)"
+    ),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     sort_by: str = Query("scheduled_at", description="Field to sort by"),
@@ -433,6 +441,8 @@ async def list_service_sessions(
         provider_id=PersonId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        scheduled_from=scheduled_from,
+        scheduled_to=scheduled_to,
         limit=limit,
         offset=offset,
         sort_by=sort_by,
@@ -445,6 +455,8 @@ async def list_service_sessions(
         provider_id=PersonId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        scheduled_from=scheduled_from,
+        scheduled_to=scheduled_to,
     )
 
     return ServiceSessionListResponse(

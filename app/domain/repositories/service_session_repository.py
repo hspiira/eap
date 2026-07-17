@@ -6,6 +6,7 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
+from datetime import datetime
 from typing import Sequence
 
 from app.domain.entities.service_session import ServiceSessionEntity
@@ -78,6 +79,8 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        scheduled_from: datetime | None = None,
+        scheduled_to: datetime | None = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = "scheduled_at",
@@ -85,22 +88,24 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
     ) -> Sequence[ServiceSessionEntity]:
         """
         List sessions with filtering, searching, and pagination.
-        
+
         Args:
             tenant_id: Tenant identifier
             person_id: Filter by person identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
             status: Filter by session status
+            scheduled_from: Only sessions scheduled at or after this instant
+            scheduled_to: Only sessions scheduled at or before this instant
             limit: Maximum number of results
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of ServiceSessionEntity
         """
-    
+
     @abstractmethod
     async def count(
         self,
@@ -109,17 +114,23 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        scheduled_from: datetime | None = None,
+        scheduled_to: datetime | None = None,
     ) -> int:
         """
         Count sessions matching filters.
-        
+
+        Must apply exactly the same filters as `list_all`.
+
         Args:
             tenant_id: Tenant identifier
             person_id: Filter by person identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
             status: Filter by session status
-            
+            scheduled_from: Only sessions scheduled at or after this instant
+            scheduled_to: Only sessions scheduled at or before this instant
+
         Returns:
             Total count
         """
