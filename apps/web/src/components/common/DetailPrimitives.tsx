@@ -4,15 +4,7 @@ import { Lock } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * The building blocks of a detail page.
- *
- * Each of these had been copy-pasted into every `$id.tsx` route — 50 definitions
- * across 11 files. They were near-identical, but not quite: the copies had
- * already begun to drift (see `Stat`), which is the cost this consolidation is
- * really paying off. Prop shapes here are the union of what the copies took, so
- * every existing call site renders exactly as it did.
- */
+/** Shared building blocks for detail pages. */
 
 export function DetailCard({
   title,
@@ -85,12 +77,8 @@ export function DetailRow({
 export function Stat({
   label,
   value,
-  /**
-   * `numeric` (default) sets the value in mono, as most stats are counts or
-   * durations. `text` is for prose values, which read badly in mono.
-   */
+  /** `text` for prose values, which read badly in mono. */
   variant = "numeric",
-  /** Clip an overlong value instead of letting it widen the tile. */
   truncate,
 }: {
   label: string

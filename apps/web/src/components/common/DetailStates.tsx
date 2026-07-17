@@ -98,13 +98,8 @@ interface DetailQueryLike {
 }
 
 /**
- * Renders the loading / not-found / failed states of a detail query, or `null`
- * when the caller should render the entity.
- *
- * The distinction matters: these pages used to `catch` every failure into a null
- * entity and render "not found", so a timeout or a 500 told the user the record
- * did not exist. Only a real 404 means that; anything else is a failure the user
- * can retry.
+ * Loading / not-found / failed states for a detail query; `null` when the caller
+ * should render the entity. Only a 404 means missing — anything else is retryable.
  */
 export function renderDetailState(
   query: DetailQueryLike,

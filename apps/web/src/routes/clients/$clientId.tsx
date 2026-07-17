@@ -65,6 +65,7 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
@@ -424,7 +425,7 @@ function Hero({ client, verified }: { client: Client; verified: boolean }) {
         aria-hidden
         className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
       >
-        {initial(client.name)}
+        {nameInitials(client.name)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {client.name}
@@ -720,10 +721,3 @@ function fmtCount(n: number | null | undefined): string {
   return n.toLocaleString()
 }
 
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

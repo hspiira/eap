@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
@@ -317,7 +318,7 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
               aria-hidden
               className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
             >
-              {initial(client.name)}
+              {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
@@ -383,14 +384,6 @@ function buildLifecycleSummary(c: Contract | null): string | null {
   if (days < 0) return `Past ${label} by ${Math.abs(days)} days.`
   if (days === 0) return `${label.charAt(0).toUpperCase() + label.slice(1)} is today.`
   return `${days} days until ${label}.`
-}
-
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
 }
 
 function ServicesPanel({

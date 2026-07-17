@@ -20,6 +20,7 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -482,30 +483,6 @@ export function isOverdue(
   if (status === EngagementStatus.DELIVERED || status === EngagementStatus.CLOSED) return false
   if (status === EngagementStatus.CANCELLED) return false
   return Date.parse(due) < Date.now()
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
 }
 
 function filterAndSort(

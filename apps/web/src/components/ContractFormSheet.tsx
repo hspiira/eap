@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Contract } from "@/types/entities"
 import { PaymentFrequency } from "@/types/enums"
@@ -325,7 +326,7 @@ function LockedClientSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? initial(resolved.name) : "··"}
+        {resolved ? nameInitials(resolved.name) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
@@ -365,7 +366,7 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
           aria-hidden
           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
         >
-          {initial(selected.name)}
+          {nameInitials(selected.name)}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
@@ -412,7 +413,7 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
                     aria-hidden
                     className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                   >
-                    {initial(c.name)}
+                    {nameInitials(c.name)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-fg">
@@ -432,10 +433,3 @@ function ClientPicker({ value, onChange }: ClientPickerProps) {
   )
 }
 
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

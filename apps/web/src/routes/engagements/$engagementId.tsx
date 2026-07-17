@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
 import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
@@ -825,7 +826,7 @@ function DetailRail({
               aria-hidden
               className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
             >
-              {clientInitial(client.name)}
+              {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
@@ -861,13 +862,5 @@ function DetailRail({
       </RailSection>
     </div>
   )
-}
-
-function clientInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
 }
 

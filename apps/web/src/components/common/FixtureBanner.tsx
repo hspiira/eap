@@ -2,14 +2,7 @@ import { FlaskConical } from "lucide-react"
 
 import { useFixtures } from "@/lib/fixtures"
 
-/**
- * Marks the session as running on fixture data.
- *
- * Several resources (engagements, surveys, care-callbacks, incidents,
- * diagnoses, questionnaires, pricing) serve local fixtures rather than calling
- * the API. That was previously silent, so fabricated rows were indistinguishable
- * from real ones and a broken BE endpoint looked like a working screen.
- */
+/** Marks the session as running on fixture data rather than the API. */
 export function FixtureBanner() {
   if (!useFixtures()) return null
   return (

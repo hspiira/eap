@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { CallbackCampaign, Client, User } from "@/types/entities"
 import {
@@ -372,7 +373,7 @@ function LockedClientSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? clientInitial(resolved.name) : "··"}
+        {resolved ? nameInitials(resolved.name) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
@@ -413,7 +414,7 @@ function ClientPicker({
           aria-hidden
           className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
         >
-          {clientInitial(selected.name)}
+          {nameInitials(selected.name)}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
@@ -459,7 +460,7 @@ function ClientPicker({
                     aria-hidden
                     className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                   >
-                    {clientInitial(c.name)}
+                    {nameInitials(c.name)}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-fg">
@@ -569,10 +570,3 @@ function CounsellorMultiPicker({
   )
 }
 
-function clientInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}
