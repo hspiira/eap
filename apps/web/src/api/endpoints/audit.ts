@@ -26,7 +26,7 @@ export const auditApi = {
   },
 
   async list(params?: AuditListParams): Promise<PaginatedResponse<AuditLog>> {
-    return apiClient.get<PaginatedResponse<AuditLog>>('/audit/logs', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<AuditLog>>('/audit/logs', params)
   },
 
   async getChanges(logId: string): Promise<AuditLogChange[] | Record<string, unknown>> {

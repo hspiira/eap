@@ -133,7 +133,7 @@ export const pricingApi = {
     // TODO(P2 #4): replace contractId placeholder once contract context is wired
     return apiClient.get<InvoiceLinePreview[]>(
       `/contracts/${(pricing as unknown as { contract_id?: string }).contract_id ?? 'unknown'}/invoice-preview`,
-      params as Record<string, unknown>,
+      params,
     )
   },
 }

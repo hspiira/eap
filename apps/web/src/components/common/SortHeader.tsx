@@ -17,10 +17,20 @@ export function nextSort(prev: SortState, field: string): SortState {
   return { field: undefined, desc: false }
 }
 
+/**
+ * Reads `field` off a row by name. This is the one place allowed to widen a row
+ * to an index signature — `sort.field` is a runtime string (it comes from column
+ * definitions and the URL), so it cannot be checked statically. Callers that need
+ * a computed or renamed column should pass their own `getValue` instead.
+ */
+export function fieldValue<T>(row: T, field: string): unknown {
+  return (row as unknown as Record<string, unknown>)[field]
+}
+
 export function compareSort<T>(
   items: ReadonlyArray<T>,
   sort: SortState,
-  getValue: (row: T, field: string) => unknown,
+  getValue: (row: T, field: string) => unknown = fieldValue,
 ): T[] {
   if (!sort.field) return [...items]
   const dir = sort.desc ? -1 : 1

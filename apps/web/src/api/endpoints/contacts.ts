@@ -35,7 +35,7 @@ export const contactsApi = {
    * List contacts
    */
   async list(params?: ListParams): Promise<PaginatedResponse<Contact>> {
-    return apiClient.get<PaginatedResponse<Contact>>('/contacts', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Contact>>('/contacts', params)
   },
 
   /**

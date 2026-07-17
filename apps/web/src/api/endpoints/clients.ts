@@ -46,7 +46,7 @@ export const clientsApi = {
    * List clients
    */
   async list(params?: ClientListParams): Promise<PaginatedResponse<Client>> {
-    return apiClient.get<PaginatedResponse<Client>>('/clients', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Client>>('/clients', params)
   },
 
   /**
@@ -143,7 +143,7 @@ export const clientsApi = {
     clientId: string,
     params?: ListParams
   ): Promise<PaginatedResponse<Client>> {
-    return apiClient.get<PaginatedResponse<Client>>(`/clients/${clientId}/children`, params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Client>>(`/clients/${clientId}/children`, params)
   },
 
   /**

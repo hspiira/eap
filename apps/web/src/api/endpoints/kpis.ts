@@ -43,7 +43,7 @@ export const kpisApi = {
    * List KPIs
    */
   async list(params?: ListParams): Promise<PaginatedResponse<KPI>> {
-    return apiClient.get<PaginatedResponse<KPI>>('/kpis', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<KPI>>('/kpis', params)
   },
 
   /**

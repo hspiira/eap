@@ -64,7 +64,7 @@ export const eligibleMembersApi = {
   async list(params: EligibleMemberListParams): Promise<EligibleMember[]> {
     return apiClient.get<EligibleMember[]>(
       '/eligible-members',
-      params as unknown as Record<string, unknown>,
+      params,
     )
   },
 

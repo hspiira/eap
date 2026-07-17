@@ -83,7 +83,7 @@ export const careCallbacksApi = {
     if (useFixture()) return Promise.resolve(paginate(fixtureListCases(params)))
     return apiClient.get<PaginatedResponse<CallbackCase>>(
       '/outreach-records',
-      params as Record<string, unknown>,
+      params,
     )
   },
 

@@ -14,7 +14,7 @@ import {
   UserCog,
 } from "lucide-react"
 
-import { usersApi } from "@/api/endpoints/users"
+import { type UserListParams,usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -55,6 +55,15 @@ import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { AuthProvider, UserStatus } from "@/types/enums"
 
+function isSecurity(value: unknown): value is Exclude<SecurityFilter, "all"> {
+  return (
+    value === "verified" ||
+    value === "unverified" ||
+    value === "2fa-on" ||
+    value === "2fa-off"
+  )
+}
+
 function isStatus(value: unknown): value is UserStatus {
   return (
     value === UserStatus.ACTIVE ||
@@ -69,10 +78,16 @@ function isStatus(value: unknown): value is UserStatus {
 export const Route = createFileRoute("/users/")({
   component: UsersListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: UserStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: UserStatus
+      security?: Exclude<SecurityFilter, "all">
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (isSecurity(search.security)) out.security = search.security
     return out
   },
 })
@@ -104,7 +119,6 @@ function UsersListPage() {
   const searchParams = useSearch({ from: "/users/" })
   const navigate = useNavigate({ from: "/users/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [security, setSecurity] = useState<SecurityFilter>("all")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
@@ -118,6 +132,7 @@ function UsersListPage() {
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
+  const activeSecurity: SecurityFilter = searchParams.security ?? "all"
 
   useEffect(() => {
     if (searchParams.new) {
@@ -139,25 +154,32 @@ function UsersListPage() {
     setPage(1)
   }
 
-  const query = useEntityList({
+  const handleSecurityChange = (next: SecurityFilter) => {
+    const security = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, security }), replace: true })
+    setPage(1)
+  }
+
+  const query = useEntityList<User, UserListParams>({
     resource: "users",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
+      ...securityParams(activeSecurity),
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,
     },
     listFn: usersApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterBySecurity(allItems, security)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || security !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeSecurity !== "all"
 
   return (
     <PageShell
@@ -198,9 +220,9 @@ function UsersListPage() {
         <FilterTrigger
           icon={ShieldCheck}
           label="Security"
-          value={security}
+          value={activeSecurity}
           options={SECURITY_OPTIONS}
-          onChange={setSecurity}
+          onChange={handleSecurityChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -419,17 +441,24 @@ function IconButton({
   )
 }
 
-function filterBySecurity(items: User[], filter: SecurityFilter): User[] {
+/**
+ * Maps the security dropdown onto server-side params. This used to filter the
+ * fetched page in memory, which contradicted the server's `total` and hid
+ * matching users on later pages.
+ */
+function securityParams(
+  filter: SecurityFilter,
+): Pick<UserListParams, "is_email_verified" | "is_two_factor_enabled"> {
   switch (filter) {
     case "verified":
-      return items.filter((u) => u.is_email_verified)
+      return { is_email_verified: true }
     case "unverified":
-      return items.filter((u) => !u.is_email_verified)
+      return { is_email_verified: false }
     case "2fa-on":
-      return items.filter((u) => u.is_two_factor_enabled)
+      return { is_two_factor_enabled: true }
     case "2fa-off":
-      return items.filter((u) => !u.is_two_factor_enabled)
+      return { is_two_factor_enabled: false }
     default:
-      return items
+      return {}
   }
 }

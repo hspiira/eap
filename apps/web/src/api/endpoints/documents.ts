@@ -64,7 +64,7 @@ export const documentsApi = {
    * List documents
    */
   async list(params?: ListParams): Promise<PaginatedResponse<Document>> {
-    return apiClient.get<PaginatedResponse<Document>>('/documents', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Document>>('/documents', params)
   },
 
   /**

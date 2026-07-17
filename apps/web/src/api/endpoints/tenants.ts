@@ -66,7 +66,7 @@ export const tenantsApi = {
   async list(params?: ListParams): Promise<PaginatedResponse<Tenant>> {
     return apiClient.get<PaginatedResponse<Tenant>>(
       '/tenants',
-      params as Record<string, unknown>,
+      params,
     )
   },
 

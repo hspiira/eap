@@ -17,6 +17,14 @@ export interface ActivityCreate {
   metadata?: Record<string, unknown> | null
 }
 
+/** Mirrors the query params on `GET /activities/` in the BE OpenAPI schema. */
+export interface ActivityListParams extends ListParams {
+  client_id?: string
+  activity_type?: ActivityType
+  created_by?: string
+  is_important?: boolean
+}
+
 export const activitiesApi = {
   async create(data: ActivityCreate): Promise<Activity> {
     return apiClient.post<Activity>('/activities', data)
@@ -26,8 +34,8 @@ export const activitiesApi = {
     return apiClient.get<Activity>(`/activities/${activityId}`)
   },
 
-  async list(params?: ListParams): Promise<PaginatedResponse<Activity>> {
-    return apiClient.get<PaginatedResponse<Activity>>('/activities', params as Record<string, unknown>)
+  async list(params?: ActivityListParams): Promise<PaginatedResponse<Activity>> {
+    return apiClient.get<PaginatedResponse<Activity>>('/activities', params)
   },
 
   async update(activityId: string, data: Partial<ActivityCreate>): Promise<Activity> {

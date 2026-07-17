@@ -151,13 +151,8 @@ function PersonDetailPage() {
   useEffect(() => {
     setSessionsLoading(true)
     serviceSessionsApi
-      .list({
-        limit: 20,
-        ...({ person_id: personId } as Record<string, unknown>),
-      })
-      .then((res) =>
-        setSessions((res.items ?? []).filter((s) => s.person_id === personId)),
-      )
+      .list({ limit: 20, person_id: personId })
+      .then((res) => setSessions(res.items ?? []))
       .catch(() => setSessions([]))
       .finally(() => setSessionsLoading(false))
   }, [personId])

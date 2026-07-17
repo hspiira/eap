@@ -23,6 +23,12 @@ import type { Contract, ListParams, PaginatedResponse } from '../types'
 
 export type { ContractCreate, ContractRenewRequest, ContractTerminateRequest, ContractUpdate }
 
+/** Mirrors the query params on `GET /contracts/` in the BE OpenAPI schema. */
+export interface ContractListParams extends ListParams {
+  client_id?: string
+  payment_status?: string
+}
+
 export const contractsApi = {
   async create(contractData: ContractCreate): Promise<Contract> {
     return apiClient.post<Contract>('/contracts', contractData)
@@ -32,8 +38,8 @@ export const contractsApi = {
     return apiClient.get<Contract>(`/contracts/${contractId}`)
   },
 
-  async list(params?: ListParams): Promise<PaginatedResponse<Contract>> {
-    return apiClient.get<PaginatedResponse<Contract>>('/contracts', params as Record<string, unknown>)
+  async list(params?: ContractListParams): Promise<PaginatedResponse<Contract>> {
+    return apiClient.get<PaginatedResponse<Contract>>('/contracts', params)
   },
 
   /** BE `ContractUpdate` accepts only `{billing_rate?, payment_frequency?, is_auto_renew?}`. */

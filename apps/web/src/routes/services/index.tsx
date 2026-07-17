@@ -10,7 +10,7 @@ import {
   Wrench,
 } from "lucide-react"
 
-import { servicesApi } from "@/api/endpoints/services"
+import { type ServiceListParams,servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
 import {
   FilterBar,
@@ -60,10 +60,16 @@ function isStatus(value: unknown): value is BaseStatus {
 export const Route = createFileRoute("/services/")({
   component: ServicesListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: BaseStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: BaseStatus
+      group?: "individual" | "group"
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (search.group === "individual" || search.group === "group") out.group = search.group
     return out
   },
 })
@@ -90,7 +96,6 @@ function ServicesListPage() {
   const searchParams = useSearch({ from: "/services/" })
   const navigate = useNavigate({ from: "/services/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
@@ -103,6 +108,7 @@ function ServicesListPage() {
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
+  const activeGroup: GroupFilter = searchParams.group ?? "all"
 
   useEffect(() => {
     if (searchParams.new) {
@@ -124,24 +130,31 @@ function ServicesListPage() {
     setPage(1)
   }
 
-  const query = useEntityList({
+  const handleGroupChange = (next: GroupFilter) => {
+    const group = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, group }), replace: true })
+    setPage(1)
+  }
+
+  const query = useEntityList<Service, ServiceListParams>({
     resource: "services",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
+      is_group_service: activeGroup === "all" ? undefined : activeGroup === "group",
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,
     },
     listFn: servicesApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterByGroup(allItems, groupFilter)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || groupFilter !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeGroup !== "all"
 
   return (
     <PageShell
@@ -180,9 +193,9 @@ function ServicesListPage() {
         />
         <FilterTrigger
           label="Any size"
-          value={groupFilter}
+          value={activeGroup}
           options={GROUP_OPTIONS}
-          onChange={setGroupFilter}
+          onChange={handleGroupChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -274,7 +287,7 @@ function ServicesListPage() {
 }
 
 function ServiceRow({ row }: { row: Service }) {
-  const allowGroup = Boolean(row.group_settings?.allow_group_sessions)
+  const allowGroup = Boolean(row.is_group_service)
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
@@ -320,8 +333,7 @@ function ServiceRow({ row }: { row: Service }) {
       <TableCell>
         {allowGroup ? (
           <span className="text-xs text-fg">
-            {row.group_settings?.min_group_size ?? "?"}–
-            {row.group_settings?.max_group_size ?? "?"}
+            {row.max_participants != null ? `Up to ${row.max_participants}` : "Group"}
           </span>
         ) : (
           <span className="text-xs text-fg/55">Individual</span>
@@ -397,8 +409,3 @@ function IconButton({
   )
 }
 
-function filterByGroup(items: Service[], filter: GroupFilter): Service[] {
-  if (filter === "all") return items
-  if (filter === "group") return items.filter((s) => s.group_settings?.allow_group_sessions)
-  return items.filter((s) => !s.group_settings?.allow_group_sessions)
-}

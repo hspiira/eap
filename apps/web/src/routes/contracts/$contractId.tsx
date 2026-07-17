@@ -76,15 +76,8 @@ function ContractDetailPage() {
   const fetchAssignments = useCallback(() => {
     setAssignmentsLoading(true)
     return serviceAssignmentsApi
-      .list({
-        limit: 50,
-        ...({ contract_id: contractId } as Record<string, unknown>),
-      })
-      .then((res) =>
-        setAssignments(
-          (res.items ?? []).filter((a) => a.contract_id === contractId),
-        ),
-      )
+      .list({ limit: 50, contract_id: contractId })
+      .then((res) => setAssignments(res.items ?? []))
       .catch(() => setAssignments([]))
       .finally(() => setAssignmentsLoading(false))
   }, [contractId])

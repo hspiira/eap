@@ -50,7 +50,7 @@ import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Person } from "@/types/entities"
-import { PersonType } from "@/types/enums"
+import { BaseStatus, PersonType } from "@/types/enums"
 
 function isType(value: unknown): value is PersonType {
   return (
@@ -61,6 +61,10 @@ function isType(value: unknown): value is PersonType {
   )
 }
 
+function isStatus(value: unknown): value is BaseStatus {
+  return STATUS_VALUES.includes(value as BaseStatus)
+}
+
 export const Route = createFileRoute("/persons/")({
   component: PersonsListPage,
   validateSearch: (search: Record<string, unknown>) => {
@@ -69,6 +73,7 @@ export const Route = createFileRoute("/persons/")({
       search?: string
       type?: PersonType
       client_id?: string
+      status?: BaseStatus
     } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
@@ -76,6 +81,7 @@ export const Route = createFileRoute("/persons/")({
     if (typeof search.client_id === "string" && search.client_id.trim()) {
       out.client_id = search.client_id
     }
+    if (isStatus(search.status)) out.status = search.status
     return out
   },
 })
@@ -88,11 +94,17 @@ const TYPE_OPTIONS = [
   { value: PersonType.PLATFORM_STAFF, label: PERSON_TYPE_LABELS[PersonType.PLATFORM_STAFF] },
 ] as const
 
+const STATUS_VALUES: ReadonlyArray<BaseStatus> = [
+  BaseStatus.ACTIVE,
+  BaseStatus.INACTIVE,
+  BaseStatus.ARCHIVED,
+]
+
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
-  { value: "Archived", label: "Archived" },
+  { value: BaseStatus.ACTIVE, label: "Active" },
+  { value: BaseStatus.INACTIVE, label: "Inactive" },
+  { value: BaseStatus.ARCHIVED, label: "Archived" },
 ] as const
 
 type TypeFilter = (typeof TYPE_OPTIONS)[number]["value"]
@@ -104,7 +116,6 @@ function PersonsListPage() {
   const searchParams = useSearch({ from: "/persons/" })
   const navigate = useNavigate({ from: "/persons/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
@@ -119,6 +130,7 @@ function PersonsListPage() {
   const activeSearch = debouncedSearch || undefined
   const activeType = searchParams.type
   const activeClientId = searchParams.client_id
+  const activeStatus = searchParams.status
 
   useEffect(() => {
     if (searchParams.new) {
@@ -137,6 +149,12 @@ function PersonsListPage() {
   const handleTypeChange = (next: TypeFilter) => {
     const type = next === "all" ? undefined : next
     navigate({ search: (prev) => ({ ...prev, type }), replace: true })
+    setPage(1)
+  }
+
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
     setPage(1)
   }
 
@@ -164,16 +182,13 @@ function PersonsListPage() {
       search: activeSearch,
       person_type: activeType,
       client_id: activeClientId,
+      status: activeStatus,
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,
     },
     listFn: personsApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items =
-    statusFilter === "all"
-      ? allItems
-      : allItems.filter((p) => p.status === statusFilter)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -181,7 +196,7 @@ function PersonsListPage() {
     Boolean(activeSearch) ||
     Boolean(activeType) ||
     Boolean(activeClientId) ||
-    statusFilter !== "all"
+    Boolean(activeStatus)
 
   return (
     <PageShell
@@ -218,6 +233,12 @@ function PersonsListPage() {
             onRemove={clearClient}
           />
         ) : null}
+        {activeStatus ? (
+          <FilterChip
+            label={`Status is ${activeStatus}`}
+            onRemove={() => handleStatusChange("all")}
+          />
+        ) : null}
         <FilterTrigger
           label="All roles"
           value={(activeType ?? "all") as TypeFilter}
@@ -226,9 +247,9 @@ function PersonsListPage() {
         />
         <FilterTrigger
           label="All statuses"
-          value={statusFilter}
+          value={(activeStatus ?? "all") as StatusFilter}
           options={STATUS_OPTIONS}
-          onChange={setStatusFilter}
+          onChange={handleStatusChange}
         />
         <div className="ml-auto" />
         <FilterSearch

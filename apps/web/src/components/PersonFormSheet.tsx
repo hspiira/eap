@@ -32,7 +32,7 @@ import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { personsApi } from "@/api/endpoints/persons"
+import { type PersonListParams,personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import type { EmploymentInfoCreateSchema } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
@@ -775,18 +775,19 @@ function PrimaryEmployeePicker({
 }) {
   const [query, setQuery] = useState("")
   const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Person>({
+  const list = useEntityList<Person, PersonListParams>({
     resource: "persons",
     params: {
       page: 1,
       limit: 8,
       search: debounced || undefined,
-    } as Record<string, unknown>,
+      // Filtered server-side: filtering the 8 fetched rows client-side hid
+      // matching employees whenever the page was filled by other person types.
+      person_type: PersonType.CLIENT_EMPLOYEE,
+    },
     listFn: personsApi.list,
   })
-  const items = (list.data?.items ?? []).filter(
-    (p) => p.person_type === PersonType.CLIENT_EMPLOYEE,
-  )
+  const items = list.data?.items ?? []
   const selected = items.find((p) => p.id === value)
 
   if (selected) {

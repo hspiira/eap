@@ -14,6 +14,12 @@ import type { ListParams, PaginatedResponse, ServiceAssignment } from '../types'
 
 export type { ServiceAssignmentCreate, ServiceAssignmentUpdate }
 
+/** Mirrors the query params on `GET /service-assignments/` in the BE OpenAPI schema. */
+export interface ServiceAssignmentListParams extends ListParams {
+  service_id?: string
+  contract_id?: string
+}
+
 export const serviceAssignmentsApi = {
   /**
    * Create a new service assignment
@@ -32,8 +38,10 @@ export const serviceAssignmentsApi = {
   /**
    * List service assignments
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<ServiceAssignment>> {
-    return apiClient.get<PaginatedResponse<ServiceAssignment>>('/service-assignments', params as Record<string, unknown>)
+  async list(
+    params?: ServiceAssignmentListParams,
+  ): Promise<PaginatedResponse<ServiceAssignment>> {
+    return apiClient.get<PaginatedResponse<ServiceAssignment>>('/service-assignments', params)
   },
 
   /**

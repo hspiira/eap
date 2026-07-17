@@ -42,6 +42,6 @@ export const diagnosesApi = {
 
   async list(params: DiagnosisListParams = {}): Promise<Diagnosis[]> {
     if (useFixture()) return Promise.resolve(fixtureListDiagnoses(params.type_code))
-    return apiClient.get<Diagnosis[]>('/diagnoses', params as Record<string, unknown>)
+    return apiClient.get<Diagnosis[]>('/diagnoses', params)
   },
 }

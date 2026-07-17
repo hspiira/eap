@@ -75,15 +75,8 @@ function ServiceDetailPage() {
   useEffect(() => {
     setAssignmentsLoading(true)
     serviceAssignmentsApi
-      .list({
-        limit: 50,
-        ...({ service_id: serviceId } as Record<string, unknown>),
-      })
-      .then((res) =>
-        setAssignments(
-          (res.items ?? []).filter((a) => a.service_id === serviceId),
-        ),
-      )
+      .list({ limit: 50, service_id: serviceId })
+      .then((res) => setAssignments(res.items ?? []))
       .catch(() => setAssignments([]))
       .finally(() => setAssignmentsLoading(false))
   }, [serviceId])
@@ -91,13 +84,8 @@ function ServiceDetailPage() {
   useEffect(() => {
     setSessionsLoading(true)
     serviceSessionsApi
-      .list({
-        limit: 20,
-        ...({ service_id: serviceId } as Record<string, unknown>),
-      })
-      .then((res) =>
-        setSessions((res.items ?? []).filter((s) => s.service_id === serviceId)),
-      )
+      .list({ limit: 20, service_id: serviceId })
+      .then((res) => setSessions(res.items ?? []))
       .catch(() => setSessions([]))
       .finally(() => setSessionsLoading(false))
   }, [serviceId])

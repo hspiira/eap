@@ -22,7 +22,7 @@ import {
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { SurveyFormSheet } from "@/components/SurveyFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -355,17 +355,5 @@ function filterAndSort(
         s.source.toLowerCase().includes(q),
     )
   }
-  if (opts.sort.field) {
-    const dir = opts.sort.desc ? -1 : 1
-    out = [...out].sort((a, b) => {
-      const av = (a as unknown as Record<string, unknown>)[opts.sort.field as string]
-      const bv = (b as unknown as Record<string, unknown>)[opts.sort.field as string]
-      if (av == null && bv == null) return 0
-      if (av == null) return 1
-      if (bv == null) return -1
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir
-      return String(av).localeCompare(String(bv)) * dir
-    })
-  }
-  return out
+  return compareSort(out, opts.sort)
 }

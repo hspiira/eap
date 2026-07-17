@@ -16,6 +16,12 @@ export type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings }
 /** @deprecated use `ServiceUpdateGroupSettings` from `@/api/generated`. */
 export type GroupSettingsUpdate = ServiceUpdateGroupSettings
 
+/** Mirrors the query params on `GET /services/` in the BE OpenAPI schema. */
+export interface ServiceListParams extends ListParams {
+  category?: string
+  is_group_service?: boolean
+}
+
 export const servicesApi = {
   /**
    * Create a new service
@@ -34,8 +40,8 @@ export const servicesApi = {
   /**
    * List services
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<Service>> {
-    return apiClient.get<PaginatedResponse<Service>>('/services', params as Record<string, unknown>)
+  async list(params?: ServiceListParams): Promise<PaginatedResponse<Service>> {
+    return apiClient.get<PaginatedResponse<Service>>('/services', params)
   },
 
   /**

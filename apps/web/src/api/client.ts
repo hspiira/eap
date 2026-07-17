@@ -9,6 +9,7 @@ import { useTenantStore } from '@/store/slices/tenantSlice'
 import type {
   ApiClientConfig,
   FieldErrors,
+  QueryParams,
   RequestOptions,
 } from '@/types/api'
 import { ApiError } from '@/types/api'
@@ -197,26 +198,28 @@ class ApiClient {
   /**
    * Build request URL with query parameters
    */
-  private buildUrl(endpoint: string, params?: Record<string, unknown>): string {
+  private buildUrl(endpoint: string, params?: QueryParams): string {
     const url = new URL(endpoint, this.baseUrl)
     const tenantId = this.getTenantId()
     const skipTenant = this.shouldSkipTenantId(endpoint)
+    const entries = params ? Object.entries(params) : []
+    const hasExplicitTenant = entries.some(
+      ([key, value]) => key === 'tenant_id' && value !== undefined && value !== null,
+    )
 
-    if (tenantId && !skipTenant && !params?.tenant_id) {
+    if (tenantId && !skipTenant && !hasExplicitTenant) {
       url.searchParams.set('tenant_id', tenantId)
     }
 
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach((v) => url.searchParams.append(key, String(v)))
-          } else {
-            url.searchParams.set(key, String(value))
-          }
+    entries.forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach((v) => url.searchParams.append(key, String(v)))
+        } else {
+          url.searchParams.set(key, String(value))
         }
-      })
-    }
+      }
+    })
 
     return url.toString()
   }
@@ -641,7 +644,7 @@ class ApiClient {
    */
   async get<T>(
     endpoint: string,
-    params?: Record<string, unknown>,
+    params?: QueryParams,
     options?: RequestOptions
   ): Promise<T> {
     const fullUrl = this.buildUrl(endpoint, params)

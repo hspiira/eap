@@ -29,6 +29,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import {
   compareSort,
+  fieldValue,
   nextSort,
   SortHeader,
   type SortState,
@@ -112,11 +113,8 @@ function ClientDetailPage() {
   const fetchContracts = useCallback(() => {
     setContractsLoading(true)
     return contractsApi
-      .list({ limit: 20, ...({ client_id: clientId } as Record<string, unknown>) })
-      .then((res) => {
-        const items = (res.items ?? []).filter((c: Contract) => c.client_id === clientId)
-        setContracts(items.slice(0, 10))
-      })
+      .list({ limit: 10, client_id: clientId })
+      .then((res) => setContracts(res.items ?? []))
       .catch(() => setContracts([]))
       .finally(() => setContractsLoading(false))
   }, [clientId])
@@ -498,10 +496,9 @@ function ContractsPanel({
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
-  const sorted = compareSort(contracts, sort, (row, field) => {
-    if (field === "number") return row.contract_number ?? row.id
-    return (row as unknown as Record<string, unknown>)[field]
-  })
+  const sorted = compareSort(contracts, sort, (row, field) =>
+    field === "number" ? (row.contract_number ?? row.id) : fieldValue(row, field),
+  )
 
   if (loading) {
     return <p className="text-sm text-fg/65">Loading contracts…</p>

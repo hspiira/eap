@@ -5,6 +5,12 @@
 import apiClient from '../client'
 import type { CreateRequest, ListParams, PaginatedResponse, User } from '../types'
 
+/** Mirrors the query params on `GET /users/` in the BE OpenAPI schema. */
+export interface UserListParams extends ListParams {
+  is_email_verified?: boolean
+  is_two_factor_enabled?: boolean
+}
+
 export interface UserCreate extends CreateRequest {
   email: string
   password?: string
@@ -67,8 +73,8 @@ export const usersApi = {
   /**
    * List users
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<User>> {
-    return apiClient.get<PaginatedResponse<User>>('/users', params as Record<string, unknown> | undefined)
+  async list(params?: UserListParams): Promise<PaginatedResponse<User>> {
+    return apiClient.get<PaginatedResponse<User>>('/users', params)
   },
 
   /**
