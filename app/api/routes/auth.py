@@ -223,6 +223,10 @@ async def login(
             lock_duration=lockout_window,
         )
         await user_repo.save(user)
+        # Commit before raising. @transactional rolls back on HTTPException, and
+        # a failed login always ends in one — so without this the counter is
+        # discarded every time and the account lockout never fires.
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid tenant code or credentials",
