@@ -11,10 +11,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_client_repository,
     get_contract_repository,
     get_tenant_repository,
+    pagination,
 )
 from app.api.schemas.client_schemas import (
     AddressSchema,
@@ -438,8 +440,7 @@ async def list_clients(
     is_verified: bool | None = Query(None, description="Filter by verification status"),
     tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
     search: str | None = Query(None, description="Search in client name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     current_user: TokenData = Depends(require_same_tenant),
@@ -447,7 +448,6 @@ async def list_clients(
     db: AsyncSession = Depends(get_db),
 ):
     """List clients with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     clients = await client_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -455,8 +455,8 @@ async def list_clients(
         is_verified=is_verified,
         tier=tier,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -472,9 +472,9 @@ async def list_clients(
     return ClientListResponse(
         items=[_to_client_response(client) for client in clients],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -584,15 +584,13 @@ async def get_client_stats(
 @readonly()
 async def get_child_clients(
     parent: ClientEntity = Depends(get_client_for_current_tenant),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child clients of a parent client."""
     tenant_id = parent.tenant_id.value
     client_id = parent.id.value
-    offset = (page - 1) * limit
 
     # Get child clients
     stmt = select(ClientModel).where(
@@ -600,7 +598,7 @@ async def get_child_clients(
         ClientModel.parent_client_id == client_id,
         ClientModel.deleted_at.is_(None),
     )
-    stmt = stmt.order_by(ClientModel.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(ClientModel.created_at.desc()).limit(pg.limit).offset(pg.offset)
 
     result = await db.execute(stmt)
     models = result.scalars().all()
@@ -619,7 +617,7 @@ async def get_child_clients(
     return ClientListResponse(
         items=[_to_client_response(c) for c in clients],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )

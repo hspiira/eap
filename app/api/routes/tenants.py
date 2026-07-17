@@ -9,12 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_client_repository,
     get_industry_repository,
     get_password_set_token_repository,
     get_tenant_repository,
     get_user_repository,
+    pagination,
 )
 from app.api.schemas.tenant_schemas import (
     SubscriptionUpdateRequest,
@@ -429,8 +431,7 @@ async def list_tenants(
         None, description="Filter by subscription tier"
     ),
     search: str | None = Query(None, description="Search in name or code"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     current_user: TokenData = Depends(get_current_user),
@@ -451,18 +452,17 @@ async def list_tenants(
             items=[_to_tenant_response(t) for t in items],
             total=len(items),
             page=1,
-            limit=limit,
+            limit=pg.limit,
             has_more=False,
         )
 
-    offset = (page - 1) * limit
 
     tenants = await tenant_repo.list_all(
         status=status,
         subscription_tier=subscription_tier,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -476,9 +476,9 @@ async def list_tenants(
     return TenantListResponse(
         items=[_to_tenant_response(tenant) for tenant in tenants],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

@@ -8,7 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_document_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_document_repository,
+    pagination,
+)
 from app.api.schemas.document_schemas import (
     DocumentCreate,
     DocumentCreateVersion,
@@ -286,15 +291,13 @@ async def list_documents(
     person_id: str | None = Query(None, description="Filter by associated person"),
     is_confidential: bool | None = Query(None, description="Filter by confidentiality"),
     search: str | None = Query(None, description="Search in document name or description"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     document_repo: DocumentRepository = Depends(get_document_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List documents with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     documents = await document_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -305,8 +308,8 @@ async def list_documents(
         person_id=person_id,
         is_confidential=is_confidential,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -325,9 +328,9 @@ async def list_documents(
     return DocumentListResponse(
         items=[_to_document_response(doc) for doc in documents],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

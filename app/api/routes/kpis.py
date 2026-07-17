@@ -9,9 +9,11 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_kpi_assignment_repository,
     get_kpi_repository,
+    pagination,
 )
 from app.api.schemas.kpi_schemas import (
     KPIAssignmentCreate,
@@ -211,23 +213,21 @@ async def list_kpis(
     category: KPICategory | None = Query(None, description="Filter by KPI category"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in KPI name or description"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List KPIs with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     kpis = await kpi_repo.list_all(
         tenant_id=TenantId(tenant_id),
         category=category,
         is_active=is_active,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -242,9 +242,9 @@ async def list_kpis(
     return KPIListResponse(
         items=[_to_kpi_response(kpi) for kpi in kpis],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -403,15 +403,13 @@ async def list_kpi_assignments(
     client_id: str | None = Query(None, description="Filter by client"),
     contract_id: str | None = Query(None, description="Filter by contract"),
     is_active: bool | None = Query(None, description="Filter by active status"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List KPI assignments with filtering and pagination."""
-    offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -419,8 +417,8 @@ async def list_kpi_assignments(
         client_id=client_id,
         contract_id=contract_id,
         is_active=is_active,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -436,9 +434,9 @@ async def list_kpi_assignments(
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

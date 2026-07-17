@@ -8,7 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_industry_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_industry_repository,
+    pagination,
+)
 from app.api.schemas.industry_schemas import (
     IndustryCreate,
     IndustryListResponse,
@@ -176,21 +181,19 @@ async def list_industries(
     parent_id: str | None = Query(None, description="Filter by parent industry"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in industry name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=500, description="Items per page"),
+    pg: PageParams = Depends(pagination(max_limit=500)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List industries with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     industries = await industry_repo.list_all(
         tenant_id=TenantId(tenant_id),
         parent_id=IndustryId(parent_id) if parent_id else None,
         is_active=is_active,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await industry_repo.count(
@@ -203,9 +206,9 @@ async def list_industries(
     return IndustryListResponse(
         items=[_to_industry_response(i) for i in industries],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

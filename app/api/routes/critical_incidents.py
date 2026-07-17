@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_critical_incident_repository,
+    pagination,
 )
 from app.api.schemas.critical_incident_schemas import (
     CriticalIncidentCreate,
@@ -194,15 +196,13 @@ async def after_action(
 @readonly()
 async def list_incidents(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    pg: PageParams = Depends(pagination()),
     current_user: TokenData = Depends(require_same_tenant),
     repo: CriticalIncidentRepository = Depends(get_critical_incident_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    offset = (page - 1) * limit
     incidents = await repo.list_for_tenant(
-        TenantId(tenant_id), limit=limit, offset=offset
+        TenantId(tenant_id), limit=pg.limit, offset=pg.offset
     )
     return CriticalIncidentListResponse(
         items=[_to_response(i) for i in incidents],

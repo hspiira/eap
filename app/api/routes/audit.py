@@ -9,7 +9,7 @@ Write operations (logging) are handled by use cases called from middleware/decor
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.dependencies import get_audit_repository
+from app.api.dependencies import PageParams, get_audit_repository, pagination
 from app.api.schemas.audit_schemas import (
     AuditLogListResponse,
     AuditLogResponse,
@@ -85,8 +85,7 @@ async def list_audit_logs(
     resource_id: str | None = Query(None, description="Filter by resource identifier"),
     start_date: str | None = Query(None, description="Filter by start date (ISO format)"),
     end_date: str | None = Query(None, description="Filter by end date (ISO format)"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("occurred_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     audit_repo: AuditRepository = Depends(get_audit_repository),
@@ -96,7 +95,6 @@ async def list_audit_logs(
 
     This is a QUERY operation - audit logs are immutable.
     """
-    offset = (page - 1) * limit
 
     audit_logs = await audit_repo.list_audit_logs(
         tenant_id=TenantId(tenant_id),
@@ -106,8 +104,8 @@ async def list_audit_logs(
         resource_id=resource_id,
         start_date=start_date,
         end_date=end_date,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -129,9 +127,9 @@ async def list_audit_logs(
     return AuditLogListResponse(
         items=audit_log_responses,
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -180,8 +178,7 @@ async def get_entity_changes(
     entity_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     audit_repo: AuditRepository = Depends(get_audit_repository),
 ):
     """
@@ -189,12 +186,11 @@ async def get_entity_changes(
 
     This is a QUERY operation - entity changes are immutable.
     """
-    offset = (page - 1) * limit
 
     get_use_case = GetAuditLogUseCase(audit_repo)
 
     entity_changes = await get_use_case.execute_entity_history(
-        TenantId(tenant_id), entity_type, entity_id, limit, offset
+        TenantId(tenant_id), entity_type, entity_id, pg.limit, pg.offset
     )
 
     total = await audit_repo.count_entity_changes(
@@ -208,7 +204,7 @@ async def get_entity_changes(
     return EntityChangeListResponse(
         items=entity_change_responses,
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )

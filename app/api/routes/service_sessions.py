@@ -10,7 +10,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_service_session_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_service_session_repository,
+    pagination,
+)
 from app.api.schemas.service_session_schemas import (
     ServiceSessionCancelRequest,
     ServiceSessionCompleteRequest,
@@ -363,15 +368,13 @@ async def list_service_sessions(
     scheduled_to: datetime | None = Query(
         None, description="Only sessions scheduled at or before this instant (ISO 8601)"
     ),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("scheduled_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List service sessions with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -381,8 +384,8 @@ async def list_service_sessions(
         status=status,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -400,9 +403,9 @@ async def list_service_sessions(
     return ServiceSessionListResponse(
         items=[_to_service_session_response(session) for session in sessions],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

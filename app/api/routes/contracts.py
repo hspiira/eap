@@ -11,7 +11,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_contract_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_contract_repository,
+    pagination,
+)
 from app.api.schemas.contract_schemas import (
     ContractCreate,
     ContractListResponse,
@@ -361,8 +366,7 @@ async def list_contracts(
         None,
         description="Only contracts whose term ends at or before this instant (ISO 8601)",
     ),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     contract_repo: ContractRepository = Depends(get_contract_repository),
@@ -376,7 +380,6 @@ async def list_contracts(
     term ends in the next 30 days") without the server needing to know what
     "30 days" means to the caller.
     """
-    offset = (page - 1) * limit
 
     contracts = await contract_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -386,8 +389,8 @@ async def list_contracts(
         is_auto_renew=is_auto_renew,
         ends_from=ends_from,
         ends_to=ends_to,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -405,9 +408,9 @@ async def list_contracts(
     return ContractListResponse(
         items=[_to_contract_response(contract) for contract in contracts],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

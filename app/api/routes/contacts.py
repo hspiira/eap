@@ -3,7 +3,12 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_contact_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_contact_repository,
+    pagination,
+)
 from app.api.schemas.contact_schemas import (
     ContactCreate,
     ContactListResponse,
@@ -169,13 +174,11 @@ async def list_contacts(
     is_active: bool | None = Query(None, description="Filter by active status"),
     is_primary: bool | None = Query(None, description="Filter by primary status"),
     search: str | None = Query(None, description="Search in contact name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List contacts with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     contacts = await contact_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -183,8 +186,8 @@ async def list_contacts(
         is_active=is_active,
         is_primary=is_primary,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await contact_repo.count(
@@ -198,9 +201,9 @@ async def list_contacts(
     return ContactListResponse(
         items=[_to_contact_response(contact) for contact in contacts],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

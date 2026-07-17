@@ -9,10 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_client_repository,
     get_person_repository,
     get_user_repository,
+    pagination,
 )
 from app.api.schemas.person_schemas import (
     AddSecondaryRoleRequest,
@@ -676,15 +678,13 @@ async def list_persons(
     person_type: PersonType | None = Query(None, description="Filter by person type"),
     client_id: str | None = Query(None, description="Filter by client ID (employment_info.client_id)"),
     search: str | None = Query(None, description="Search in user email"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     person_repo: PersonRepository = Depends(get_person_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List persons with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
     client_id_vo = ClientId(client_id) if client_id else None
 
     persons = await person_repo.list_all(
@@ -693,8 +693,8 @@ async def list_persons(
         person_type=person_type,
         client_id=client_id_vo,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -710,9 +710,9 @@ async def list_persons(
     return PersonListResponse(
         items=[_to_person_response(person) for person in persons],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

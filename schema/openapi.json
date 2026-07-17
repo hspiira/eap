@@ -12328,6 +12328,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "occurred_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -12352,30 +12376,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "occurred_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -13179,22 +13179,26 @@
             }
           },
           {
+            "description": "Page number",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "Page number",
               "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
           },
           {
+            "description": "Items per page",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 20,
+              "description": "Items per page",
               "maximum": 100,
               "minimum": 1,
               "title": "Limit",
@@ -13609,22 +13613,26 @@
             }
           },
           {
+            "description": "Page number",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "Page number",
               "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
           },
           {
+            "description": "Items per page",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 50,
+              "description": "Items per page",
               "maximum": 200,
               "minimum": 1,
               "title": "Limit",
@@ -14667,6 +14675,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -14691,30 +14723,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -16541,6 +16549,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -16565,30 +16597,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -17419,22 +17427,26 @@
             }
           },
           {
+            "description": "Page number",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "Page number",
               "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
           },
           {
+            "description": "Items per page",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
               "default": 20,
+              "description": "Items per page",
               "maximum": 100,
               "minimum": 1,
               "title": "Limit",
@@ -18053,6 +18065,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -18077,30 +18113,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -20419,6 +20431,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -20443,30 +20479,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -20646,6 +20658,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -20670,30 +20706,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -22423,6 +22435,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -22447,30 +22483,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -24396,6 +24408,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "scheduled_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -24420,30 +24456,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "scheduled_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -25286,6 +25298,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -25310,30 +25346,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -26290,6 +26302,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -26314,30 +26350,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],
@@ -27257,6 +27269,30 @@
             }
           },
           {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",
@@ -27281,30 +27317,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
             }
           }
         ],

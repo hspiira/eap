@@ -3,7 +3,12 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_client_tag_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_client_tag_repository,
+    pagination,
+)
 from app.api.schemas.client_tag_schemas import (
     ClientTagCreate,
     ClientTagListResponse,
@@ -153,20 +158,18 @@ async def list_client_tags(
     current_user: TokenData = Depends(require_same_tenant),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in tag name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     tag_repo: ClientTagRepository = Depends(get_client_tag_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List client tags with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     tags = await tag_repo.list_all(
         tenant_id=TenantId(tenant_id),
         is_active=is_active,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await tag_repo.count(
@@ -178,9 +181,9 @@ async def list_client_tags(
     return ClientTagListResponse(
         items=[_to_client_tag_response(t) for t in tags],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

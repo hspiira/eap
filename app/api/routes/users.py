@@ -9,7 +9,13 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_tenant_repository,
+    get_user_repository,
+    pagination,
+)
 from app.api.schemas.user_schemas import (
     UserBanRequest,
     UserCreate,
@@ -443,8 +449,7 @@ async def list_users(
         None, description="Filter by two-factor enrolment"
     ),
     search: str | None = Query(None, description="Search in user email"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     current_user: TokenData = Depends(require_same_tenant),
@@ -452,7 +457,6 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ):
     """List users with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     users = await user_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -460,8 +464,8 @@ async def list_users(
         is_email_verified=is_email_verified,
         is_two_factor_enabled=is_two_factor_enabled,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -477,9 +481,9 @@ async def list_users(
     return UserListResponse(
         items=[_to_user_response(user) for user in users],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

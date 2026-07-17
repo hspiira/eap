@@ -8,7 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_service_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_service_repository,
+    pagination,
+)
 from app.api.schemas.service_schemas import (
     ServiceCreate,
     ServiceListResponse,
@@ -247,15 +252,13 @@ async def list_services(
     search: str | None = Query(None, description="Search in service name"),
     category: str | None = Query(None, description="Filter by category"),
     is_group_service: bool | None = Query(None, description="Filter by group service"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     service_repo: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List services with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     services = await service_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -263,8 +266,8 @@ async def list_services(
         search=search,
         category=category,
         is_group_service=is_group_service,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -280,9 +283,9 @@ async def list_services(
     return ServiceListResponse(
         items=[_to_service_response(service) for service in services],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

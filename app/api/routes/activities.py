@@ -5,7 +5,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_activity_repository, get_audit_event_handler
+from app.api.dependencies import (
+    PageParams,
+    get_activity_repository,
+    get_audit_event_handler,
+    pagination,
+)
 from app.api.schemas.activity_schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -127,13 +132,11 @@ async def list_activities(
     date_to: datetime | None = Query(None, description="Filter to date"),
     is_important: bool | None = Query(None, description="Filter by important status"),
     search: str | None = Query(None, description="Search in description or subject"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List activities with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     activities = await activity_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -144,8 +147,8 @@ async def list_activities(
         date_to=date_to,
         is_important=is_important,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await activity_repo.count(
@@ -162,9 +165,9 @@ async def list_activities(
     return ActivityListResponse(
         items=[_to_activity_response(activity) for activity in activities],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

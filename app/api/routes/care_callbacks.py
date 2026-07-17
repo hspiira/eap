@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_care_callback_campaign_repository,
     get_outreach_record_repository,
+    pagination,
 )
 from app.api.schemas.care_callback_schemas import (
     CampaignSummaryResponse,
@@ -289,17 +291,15 @@ async def campaign_summary(
 @readonly()
 async def list_campaigns(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    pg: PageParams = Depends(pagination()),
     current_user: TokenData = Depends(require_same_tenant),
     repo: CareCallbackCampaignRepository = Depends(
         get_care_callback_campaign_repository
     ),
     db: AsyncSession = Depends(get_db),
 ):
-    offset = (page - 1) * limit
     campaigns = await repo.list_for_tenant(
-        TenantId(tenant_id), limit=limit, offset=offset
+        TenantId(tenant_id), limit=pg.limit, offset=pg.offset
     )
     return [_to_campaign_response(c) for c in campaigns]
 
@@ -631,8 +631,7 @@ async def get_outreach(
 @readonly()
 async def list_campaign_outreach(
     campaign_id: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
+    pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
     campaign_repo: CareCallbackCampaignRepository = Depends(
         get_care_callback_campaign_repository
     ),
@@ -642,11 +641,10 @@ async def list_campaign_outreach(
     campaign = await campaign_repo.get_by_id(CareCallbackCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Care Callback campaign not found")
-    offset = (page - 1) * limit
     records = await outreach_repo.list_for_campaign(
         campaign.tenant_id,
         campaign.id,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
     return [_to_outreach_response(r) for r in records]
