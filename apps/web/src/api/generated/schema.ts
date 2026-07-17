@@ -1390,6 +1390,11 @@ export interface paths {
         /**
          * List contracts with filtering and pagination
          * @description List contracts with filtering, searching, and pagination.
+         *
+         *     `ends_from`/`ends_to` window the end of the contract term; combined with
+         *     `is_auto_renew` they express a renewal window ("auto-renewing contracts whose
+         *     term ends in the next 30 days") without the server needing to know what
+         *     "30 days" means to the caller.
          */
         get: operations["list_contracts_contracts__get"];
         put?: never;
@@ -10590,14 +10595,14 @@ export interface operations {
                 start_date?: string | null;
                 /** @description Filter by end date (ISO format) */
                 end_date?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -11118,7 +11123,9 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Page number */
                 page?: number;
+                /** @description Items per page */
                 limit?: number;
             };
             header?: never;
@@ -11379,7 +11386,9 @@ export interface operations {
     list_campaign_outreach_care_callback_campaigns__campaign_id__outreach_records_get: {
         parameters: {
             query?: {
+                /** @description Page number */
                 page?: number;
+                /** @description Items per page */
                 limit?: number;
             };
             header?: never;
@@ -11978,14 +11987,14 @@ export interface operations {
                 tier?: components["schemas"]["ClientTier"] | null;
                 /** @description Search in client name */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -13000,14 +13009,20 @@ export interface operations {
                 status?: components["schemas"]["ContractStatus"] | null;
                 /** @description Filter by payment status */
                 payment_status?: components["schemas"]["PaymentStatus"] | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
+                /** @description Filter by whether the contract auto-renews */
+                is_auto_renew?: boolean | null;
+                /** @description Only contracts whose term ends at or after this instant (ISO 8601) */
+                ends_from?: string | null;
+                /** @description Only contracts whose term ends at or before this instant (ISO 8601) */
+                ends_to?: string | null;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -13510,7 +13525,9 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Page number */
                 page?: number;
+                /** @description Items per page */
                 limit?: number;
             };
             header?: never;
@@ -13822,14 +13839,14 @@ export interface operations {
                 is_confidential?: boolean | null;
                 /** @description Search in document name or description */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -15247,14 +15264,14 @@ export interface operations {
                 is_active?: boolean | null;
                 /** @description Search in KPI name or description */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -15329,14 +15346,14 @@ export interface operations {
                 contract_id?: string | null;
                 /** @description Filter by active status */
                 is_active?: boolean | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -16377,14 +16394,14 @@ export interface operations {
                 client_id?: string | null;
                 /** @description Search in user email */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -17467,14 +17484,14 @@ export interface operations {
                 scheduled_from?: string | null;
                 /** @description Only sessions scheduled at or before this instant (ISO 8601) */
                 scheduled_to?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -17947,14 +17964,14 @@ export interface operations {
                 category?: string | null;
                 /** @description Filter by group service */
                 is_group_service?: boolean | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -18530,14 +18547,14 @@ export interface operations {
                 subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
                 /** @description Search in name or code */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -19088,14 +19105,14 @@ export interface operations {
                 is_two_factor_enabled?: boolean | null;
                 /** @description Search in user email */
                 search?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
                 sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
             };
             header?: never;
             path?: never;
