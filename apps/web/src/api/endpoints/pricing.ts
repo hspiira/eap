@@ -8,6 +8,7 @@
  * this module with a proper contract-scoped pricing surface.
  */
 
+import { useFixtures } from '@/lib/fixtures'
 import { PricingModel } from '@/types/enums'
 
 import apiClient from '../client'
@@ -16,11 +17,6 @@ import type { ContractPricing, InvoiceLinePreview } from '../types'
 export interface PricingPreviewParams {
   /** Optional projected sessions / utilisation per month for preview math. */
   projected_sessions?: number
-}
-
-function useFixture(): boolean {
-  if (typeof import.meta === 'undefined') return true
-  return import.meta.env.DEV
 }
 
 function previewLocally(
@@ -129,7 +125,7 @@ export const pricingApi = {
     pricing: ContractPricing,
     params: PricingPreviewParams = {},
   ): Promise<InvoiceLinePreview[]> {
-    if (useFixture()) return Promise.resolve(previewLocally(pricing, params))
+    if (useFixtures()) return Promise.resolve(previewLocally(pricing, params))
     // TODO(P2 #4): replace contractId placeholder once contract context is wired
     return apiClient.get<InvoiceLinePreview[]>(
       `/contracts/${(pricing as unknown as { contract_id?: string }).contract_id ?? 'unknown'}/invoice-preview`,

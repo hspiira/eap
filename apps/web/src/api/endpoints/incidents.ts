@@ -7,6 +7,7 @@
  *   GET  /{id}/after-action — printable after-action report
  */
 
+import { useFixtures } from '@/lib/fixtures'
 import type { IncidentSeverity } from '@/types/enums'
 
 import apiClient from '../client'
@@ -28,14 +29,9 @@ export interface IncidentCreate {
   affected_population: number
 }
 
-function useFixture(): boolean {
-  if (typeof import.meta === 'undefined') return true
-  return import.meta.env.DEV
-}
-
 export const incidentsApi = {
   async list(): Promise<PaginatedResponse<Incident>> {
-    if (useFixture()) {
+    if (useFixtures()) {
       const items = fixtureGetAll()
       return Promise.resolve({ items, total: items.length, page: 1, limit: items.length, has_more: false })
     }
@@ -43,7 +39,7 @@ export const incidentsApi = {
   },
 
   async getById(id: string): Promise<Incident> {
-    if (useFixture()) {
+    if (useFixtures()) {
       const found = fixtureGetById(id)
       if (!found) throw new Error(`Incident ${id} not found`)
       return Promise.resolve(found)
@@ -52,19 +48,19 @@ export const incidentsApi = {
   },
 
   async create(data: IncidentCreate): Promise<Incident> {
-    if (useFixture()) return Promise.resolve(fixtureCreate(data))
+    if (useFixtures()) return Promise.resolve(fixtureCreate(data))
     return apiClient.post<Incident>('/critical-incidents', data)
   },
 
   /** Returns fixture timeline; live path will use GET /{id}/after-action in P2 #5. */
   async getTimeline(incidentId: string): Promise<IncidentTimelineEvent[]> {
-    if (useFixture()) return Promise.resolve(fixtureGetTimeline(incidentId))
+    if (useFixtures()) return Promise.resolve(fixtureGetTimeline(incidentId))
     return apiClient.get<IncidentTimelineEvent[]>(`/critical-incidents/${incidentId}/after-action`)
   },
 
   /** Adds a note/phase entry. Live path uses POST /{id}/phases in P2 #5. */
   async appendNote(incidentId: string, message: string): Promise<IncidentTimelineEvent> {
-    if (useFixture()) return Promise.resolve(fixtureAppendNote(incidentId, message))
+    if (useFixtures()) return Promise.resolve(fixtureAppendNote(incidentId, message))
     return apiClient.post<IncidentTimelineEvent>(`/critical-incidents/${incidentId}/phases`, { message })
   },
 }
