@@ -18,6 +18,11 @@ import {
   type AnswersMap,
   QuestionnaireRenderer,
 } from "@/components/care-callbacks/QuestionnaireRenderer"
+import {
+  DetailCard,
+  RailSection,
+  Stat,
+} from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -414,9 +419,9 @@ function DetailRail({
     <div className="space-y-5">
       <RailSection title="Case state">
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Attempts" value={callCase.attempt_count} />
-          <Stat label="Status" value={<CaseStatusPill status={callCase.status} />} />
-          <Stat
+          <Stat variant="text" label="Attempts" value={callCase.attempt_count} />
+          <Stat variant="text" label="Status" value={<CaseStatusPill status={callCase.status} />} />
+          <Stat variant="text"
             label="Started"
             value={
               callCase.started_at
@@ -424,7 +429,7 @@ function DetailRail({
                 : "—"
             }
           />
-          <Stat
+          <Stat variant="text"
             label="Closed"
             value={
               callCase.closed_at
@@ -559,47 +564,6 @@ function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
     >
       {status}
     </span>
-  )
-}
-
-function DetailCard({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-sm border border-fg/10 bg-surface p-4">
-      <h3 className="mb-3 text-sm font-semibold text-fg">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function RailSection({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <section className={cn("space-y-2", className)}>
-      <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[11px] font-medium tracking-wide text-fg/55">{label}</div>
-      <div className="mt-0.5 text-sm font-semibold text-fg">{value}</div>
-    </div>
   )
 }
 

@@ -15,6 +15,13 @@ import {
 import { clientsApi } from "@/api/endpoints/clients"
 import { engagementsApi } from "@/api/endpoints/engagements"
 import { usersApi } from "@/api/endpoints/users"
+import {
+  DetailCard,
+  DetailGrid,
+  DetailRow,
+  RailSection,
+  Stat,
+} from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { PageShell } from "@/components/common/PageShell"
@@ -780,21 +787,21 @@ function DetailRail({
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat
+          <Stat truncate
             label="Hours"
             value={engagement.hours_logged.toFixed(1)}
           />
-          <Stat
+          <Stat truncate
             label="Budget"
             value={
               engagement.budget_hours ? `${engagement.budget_hours}h` : "Open"
             }
           />
-          <Stat
+          <Stat truncate
             label="Util"
             value={budgetPct !== null ? `${budgetPct}%` : "—"}
           />
-          <Stat
+          <Stat truncate
             label="Rate"
             value={
               engagement.hourly_rate != null
@@ -852,72 +859,6 @@ function DetailRail({
           </div>
         )}
       </RailSection>
-    </div>
-  )
-}
-
-function DetailCard({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-sm border border-fg/10 bg-surface p-4">
-      <h3 className="mb-3 text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function RailSection({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <section className={cn("space-y-2", className)}>
-      <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[11px] font-medium tracking-wide text-fg/55">{label}</div>
-      <div className="mt-0.5 truncate font-mono text-base font-semibold text-fg">
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
-}
-
-function DetailRow({
-  label,
-  value,
-  fullWidth,
-}: {
-  label: string
-  value: React.ReactNode
-  fullWidth?: boolean
-}) {
-  return (
-    <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-fg">
-        {value || <span className="text-fg/40">—</span>}
-      </dd>
     </div>
   )
 }

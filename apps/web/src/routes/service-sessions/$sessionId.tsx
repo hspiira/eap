@@ -18,6 +18,13 @@ import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import {
+  DetailCard,
+  DetailGrid,
+  DetailRow,
+  RailSection,
+  Stat,
+} from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
@@ -708,80 +715,6 @@ function RescheduleDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function DetailCard({
-  title,
-  phiLabel,
-  children,
-}: {
-  title: string
-  phiLabel?: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-sm border border-fg/10 bg-surface p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-        {phiLabel ? (
-          <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-fg/40">
-            <Lock className="size-2.5" aria-hidden />
-            {phiLabel}
-          </span>
-        ) : null}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function RailSection({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <section className={cn("space-y-2", className)}>
-      <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[11px] font-medium tracking-wide text-fg/55">{label}</div>
-      <div className="mt-0.5 font-mono text-base font-semibold text-fg">{value}</div>
-    </div>
-  )
-}
-
-function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
-}
-
-function DetailRow({
-  label,
-  value,
-  fullWidth,
-}: {
-  label: string
-  value: React.ReactNode
-  fullWidth?: boolean
-}) {
-  return (
-    <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-fg">
-        {value || <span className="text-fg/40">—</span>}
-      </dd>
-    </div>
   )
 }
 
