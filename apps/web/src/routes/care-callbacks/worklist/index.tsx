@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { nameInitials } from "@/lib/display"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { CallbackCase } from "@/types/entities"
@@ -269,7 +270,7 @@ function CaseRow({ row }: { row: CallbackCase }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitial(row.person_display_name)}
+            {nameInitials(row.person_display_name)}
           </span>
           <span className="text-sm font-medium text-fg group-hover:text-primary">
             {row.person_display_name}
@@ -347,14 +348,6 @@ function Pip({ label, value }: { label: string; value: number }) {
       <span className="font-mono text-sm font-semibold text-fg">{value}</span>
     </span>
   )
-}
-
-function personInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
 }
 
 function filterAndSort(

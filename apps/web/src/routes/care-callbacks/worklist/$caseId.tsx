@@ -40,6 +40,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
 import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
@@ -378,7 +379,7 @@ function Hero({
         aria-hidden
         className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
       >
-        {personInitial(callCase.person_display_name)}
+        {nameInitials(callCase.person_display_name)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {callCase.person_display_name}
@@ -471,7 +472,7 @@ function DetailRail({
             aria-hidden
             className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitial(callCase.person_display_name)}
+            {nameInitials(callCase.person_display_name)}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-fg">
@@ -565,14 +566,6 @@ function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
       {status}
     </span>
   )
-}
-
-function personInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
 }
 
 function hasAnyAnswer(map: AnswersMap): boolean {
