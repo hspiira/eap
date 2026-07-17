@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -13,11 +14,11 @@ import {
 
 import { personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
@@ -43,6 +44,7 @@ import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Person, User } from "@/types/entities"
 import { AuthProvider, TenantRole } from "@/types/enums"
@@ -58,9 +60,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "security", "preference
 function UserDetailPage() {
   const { userId } = Route.useParams()
   const navigate = useNavigate()
-  const [user, setUser] = useState<User | null>(null)
-  const [person, setPerson] = useState<Person | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
@@ -68,39 +68,18 @@ function UserDetailPage() {
   const [verifyLoading, setVerifyLoading] = useState(false)
   const canWrite = useCanWrite()
 
-  const fetchUser = useCallback(async () => {
-    try {
-      setLoading(true)
-      setUser(await usersApi.getById(userId))
-    } catch (_err) {
-      setUser(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [userId])
+  const userQuery = useEntityDetail<User>({
+    resource: "users",
+    id: userId,
+    detailFn: usersApi.getById,
+  })
+  const user = userQuery.data ?? null
 
-  useEffect(() => {
-    fetchUser()
-  }, [fetchUser])
-
-  useEffect(() => {
-    if (!user) {
-      setPerson(null)
-      return
-    }
-    let cancelled = false
-    personsApi
-      .getByUserId(user.id)
-      .then((p) => {
-        if (!cancelled) setPerson(p)
-      })
-      .catch(() => {
-        if (!cancelled) setPerson(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [user])
+  const { data: person = null } = useQuery({
+    queryKey: ["persons", "by-user", userId],
+    queryFn: () => personsApi.getByUserId(userId),
+    enabled: !!user,
+  })
 
   const [reasonPrompt, setReasonPrompt] = useState<{
     action: "suspend" | "ban" | "terminate" | "deactivate"
@@ -118,7 +97,7 @@ function UserDetailPage() {
       setActionLoading(true)
       try {
         if (action === "activate") await usersApi.activate(id)
-        await fetchUser()
+        await queryClient.invalidateQueries({ queryKey: ["users"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -126,21 +105,21 @@ function UserDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchUser, toast],
+    [queryClient, toast],
   )
 
   const handleVerifyEmail = useCallback(async () => {
     setVerifyLoading(true)
     try {
       await usersApi.verifyEmail(userId)
-      await fetchUser()
+      await queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.showSuccess("Email marked as verified")
     } catch (err) {
       toast.showError(normalizeErrorMessage(err, "Could not verify email — please try again"))
     } finally {
       setVerifyLoading(false)
     }
-  }, [fetchUser, toast, userId])
+  }, [queryClient, toast, userId])
 
   const confirmReasonAction = useCallback(async () => {
     if (!reasonPrompt) return
@@ -154,7 +133,7 @@ function UserDetailPage() {
       else if (action === "terminate") await usersApi.terminate(id, reason)
       else if (action === "deactivate")
         await usersApi.deactivate(id, reason || undefined)
-      await fetchUser()
+      await queryClient.invalidateQueries({ queryKey: ["users"] })
       setReasonPrompt(null)
       setReasonValue("")
       toast.showSuccess("Status updated")
@@ -163,40 +142,16 @@ function UserDetailPage() {
     } finally {
       setActionLoading(false)
     }
-  }, [fetchUser, reasonPrompt, reasonValue, toast])
+  }, [queryClient, reasonPrompt, reasonValue, toast])
 
-  if (loading) {
-    return (
-      <PageShell icon={UserCog} breadcrumb="People · Platform Users · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!user) {
-    return (
-      <PageShell icon={UserCog} breadcrumb="People · Platform Users · Not found">
-        <EmptyState
-          icon={UserCog}
-          title="User not found"
-          description="They may have been terminated or never existed."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/users" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to users
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(userQuery, {
+    icon: UserCog,
+    breadcrumb: "People · Platform Users",
+    entity: "user",
+    backTo: () => navigate({ to: "/users" }),
+    backLabel: "Back to users",
+  })
+  if (state || !user) return state
 
   return (
     <PageShell
@@ -235,7 +190,9 @@ function UserDetailPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         user={user}
-        onSaved={(updated) => setUser(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("users", updated.id), updated)
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
@@ -308,7 +265,15 @@ function UserDetailPage() {
                   </DetailCard>
 
                   <div className="mt-4">
-                    <RoleCard user={user} onChanged={(updated) => setUser(updated)} />
+                    <RoleCard
+                      user={user}
+                      onChanged={(updated) =>
+                        queryClient.setQueryData(
+                          entityDetailKey("users", updated.id),
+                          updated,
+                        )
+                      }
+                    />
                   </div>
                 </div>
               </TabPanel>

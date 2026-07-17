@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -13,10 +14,10 @@ import {
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
@@ -32,6 +33,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Service, ServiceAssignment, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -46,49 +48,30 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "contracts", "sessions"
 function ServiceDetailPage() {
   const { serviceId } = Route.useParams()
   const navigate = useNavigate()
-  const [service, setService] = useState<Service | null>(null)
-  const [assignments, setAssignments] = useState<ServiceAssignment[]>([])
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false)
-  const [sessions, setSessions] = useState<ServiceSession[]>([])
-  const [sessionsLoading, setSessionsLoading] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
-  const fetchService = useCallback(async () => {
-    try {
-      setLoading(true)
-      setService(await servicesApi.getById(serviceId))
-    } catch (_err) {
-      setService(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [serviceId])
+  const serviceQuery = useEntityDetail<Service>({
+    resource: "services",
+    id: serviceId,
+    detailFn: servicesApi.getById,
+  })
+  const service = serviceQuery.data ?? null
 
-  useEffect(() => {
-    fetchService()
-  }, [fetchService])
+  const assignmentsQuery = useQuery({
+    queryKey: entityListKey("service-assignments", { service_id: serviceId, limit: 50 }),
+    queryFn: () => serviceAssignmentsApi.list({ limit: 50, service_id: serviceId }),
+  })
+  const assignments = assignmentsQuery.data?.items ?? []
 
-  useEffect(() => {
-    setAssignmentsLoading(true)
-    serviceAssignmentsApi
-      .list({ limit: 50, service_id: serviceId })
-      .then((res) => setAssignments(res.items ?? []))
-      .catch(() => setAssignments([]))
-      .finally(() => setAssignmentsLoading(false))
-  }, [serviceId])
-
-  useEffect(() => {
-    setSessionsLoading(true)
-    serviceSessionsApi
-      .list({ limit: 20, service_id: serviceId })
-      .then((res) => setSessions(res.items ?? []))
-      .catch(() => setSessions([]))
-      .finally(() => setSessionsLoading(false))
-  }, [serviceId])
+  const sessionsQuery = useQuery({
+    queryKey: entityListKey("service-sessions", { service_id: serviceId, limit: 20 }),
+    queryFn: () => serviceSessionsApi.list({ limit: 20, service_id: serviceId }),
+  })
+  const sessions = sessionsQuery.data?.items ?? []
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -98,7 +81,7 @@ function ServiceDetailPage() {
         else if (action === "deactivate") await servicesApi.deactivate(id)
         else if (action === "archive") await servicesApi.archive(id)
         else if (action === "restore") await servicesApi.restore(id)
-        await fetchService()
+        await queryClient.invalidateQueries({ queryKey: ["services"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -106,41 +89,17 @@ function ServiceDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchService, toast],
+    [queryClient, toast],
   )
 
-  if (loading) {
-    return (
-      <PageShell icon={Wrench} breadcrumb="Catalog · Services · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!service) {
-    return (
-      <PageShell icon={Wrench} breadcrumb="Catalog · Services · Not found">
-        <EmptyState
-          icon={Wrench}
-          title="Service not found"
-          description="It may have been archived or doesn't exist."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/services" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to services
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(serviceQuery, {
+    icon: Wrench,
+    breadcrumb: "Catalog · Services",
+    entity: "service",
+    backTo: () => navigate({ to: "/services" }),
+    backLabel: "Back to services",
+  })
+  if (state || !service) return state
 
   return (
     <PageShell
@@ -177,7 +136,9 @@ function ServiceDetailPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         service={service}
-        onSaved={(updated) => setService(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("services", updated.id), updated)
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
@@ -247,13 +208,13 @@ function ServiceDetailPage() {
               </TabPanel>
 
               <TabPanel value="contracts">
-                <ContractsPanel assignments={assignments} loading={assignmentsLoading} />
+                <ContractsPanel assignments={assignments} loading={assignmentsQuery.isPending} />
               </TabPanel>
 
               <TabPanel value="sessions">
                 <SessionsPanel
                   sessions={sessions}
-                  loading={sessionsLoading}
+                  loading={sessionsQuery.isPending}
                   serviceId={serviceId}
                 />
               </TabPanel>

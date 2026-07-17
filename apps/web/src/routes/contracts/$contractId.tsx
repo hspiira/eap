@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -13,10 +14,10 @@ import {
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
@@ -33,6 +34,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -47,63 +49,32 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "billing", 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
   const navigate = useNavigate()
-  const [contract, setContract] = useState<Contract | null>(null)
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
-  const [assignments, setAssignments] = useState<ServiceAssignment[]>([])
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false)
 
-  const fetchContract = useCallback(async () => {
-    try {
-      setLoading(true)
-      setContract(await contractsApi.getById(contractId))
-    } catch (_err) {
-      setContract(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [contractId])
+  const contractQuery = useEntityDetail<Contract>({
+    resource: "contracts",
+    id: contractId,
+    detailFn: contractsApi.getById,
+  })
+  const contract = contractQuery.data ?? null
 
-  useEffect(() => {
-    fetchContract()
-  }, [fetchContract])
+  const assignmentsQuery = useQuery({
+    queryKey: entityListKey("service-assignments", { contract_id: contractId, limit: 50 }),
+    queryFn: () => serviceAssignmentsApi.list({ limit: 50, contract_id: contractId }),
+  })
+  const assignments = assignmentsQuery.data?.items ?? []
 
-  const fetchAssignments = useCallback(() => {
-    setAssignmentsLoading(true)
-    return serviceAssignmentsApi
-      .list({ limit: 50, contract_id: contractId })
-      .then((res) => setAssignments(res.items ?? []))
-      .catch(() => setAssignments([]))
-      .finally(() => setAssignmentsLoading(false))
-  }, [contractId])
-
-  useEffect(() => {
-    fetchAssignments()
-  }, [fetchAssignments])
-
-  useEffect(() => {
-    if (!contract?.client_id) {
-      setClient(null)
-      return
-    }
-    let cancelled = false
-    clientsApi
-      .getById(contract.client_id)
-      .then((c) => {
-        if (!cancelled) setClient(c)
-      })
-      .catch(() => {
-        if (!cancelled) setClient(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [contract?.client_id])
+  const clientId = contract?.client_id
+  const { data: client = null } = useQuery({
+    queryKey: entityDetailKey("clients", clientId ?? ""),
+    queryFn: () => clientsApi.getById(clientId as string),
+    enabled: !!clientId,
+  })
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -118,7 +89,7 @@ function ContractDetailPage() {
           next.setFullYear(next.getFullYear() + 1)
           await contractsApi.renew(id, { new_end_date: next.toISOString() })
         }
-        await fetchContract()
+        await queryClient.invalidateQueries({ queryKey: ["contracts"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -126,43 +97,19 @@ function ContractDetailPage() {
         setActionLoading(false)
       }
     },
-    [contract, fetchContract, toast],
+    [contract, queryClient, toast],
   )
 
   const lifecycleSummary = useMemo(() => buildLifecycleSummary(contract), [contract])
 
-  if (loading) {
-    return (
-      <PageShell icon={FileSignature} breadcrumb="Commercial · Contracts · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!contract) {
-    return (
-      <PageShell icon={FileSignature} breadcrumb="Commercial · Contracts · Not found">
-        <EmptyState
-          icon={FileSignature}
-          title="Contract not found"
-          description="The contract you're looking for may have been terminated or doesn't exist."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/contracts" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to contracts
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(contractQuery, {
+    icon: FileSignature,
+    breadcrumb: "Commercial · Contracts",
+    entity: "contract",
+    backTo: () => navigate({ to: "/contracts" }),
+    backLabel: "Back to contracts",
+  })
+  if (state || !contract) return state
 
   const number = contract.id
 
@@ -202,7 +149,9 @@ function ContractDetailPage() {
         onOpenChange={setEditOpen}
         contract={contract}
         client={client}
-        onSaved={(updated) => setContract(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("contracts", updated.id), updated)
+        }
       />
 
       <ServiceAssignmentFormSheet
@@ -211,7 +160,7 @@ function ContractDetailPage() {
         contractId={contract.id}
         contract={contract}
         onSaved={() => {
-          fetchAssignments()
+          void queryClient.invalidateQueries({ queryKey: ["service-assignments"] })
           setTab("services")
         }}
       />
@@ -265,7 +214,7 @@ function ContractDetailPage() {
               <TabPanel value="services">
                 <ServicesPanel
                   assignments={assignments}
-                  loading={assignmentsLoading}
+                  loading={assignmentsQuery.isPending}
                   onAdd={() => setAddAssignmentOpen(true)}
                 />
               </TabPanel>

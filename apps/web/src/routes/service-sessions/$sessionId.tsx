@@ -18,11 +18,11 @@ import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
@@ -40,10 +40,10 @@ import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type {
   Person,
-  Provider,
   Service,
   ServiceSession,
 } from "@/types/entities"
@@ -61,82 +61,46 @@ function ServiceSessionDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
-  const [session, setSession] = useState<ServiceSession | null>(null)
-  const [service, setService] = useState<Service | null>(null)
-  const [person, setPerson] = useState<Person | null>(null)
-  const [provider, setProvider] = useState<Provider | null>(null)
-  const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
 
+  const sessionQuery = useEntityDetail<ServiceSession>({
+    resource: "service-sessions",
+    id: sessionId,
+    detailFn: serviceSessionsApi.getById,
+  })
+  const session = sessionQuery.data ?? null
+
   const diagnosisTreeQuery = useQuery({
-    queryKey: ['diagnoses', 'tree'],
+    queryKey: ["diagnoses", "tree"],
     queryFn: () => diagnosesApi.getTree(),
     staleTime: 5 * 60_000,
     enabled: !!session?.diagnosis_id,
   })
 
-  const fetchSession = useCallback(async () => {
-    try {
-      setLoading(true)
-      setSession(await serviceSessionsApi.getById(sessionId))
-    } catch (_err) {
-      setSession(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [sessionId])
+  const { data: service = null } = useQuery({
+    queryKey: entityDetailKey("services", session?.service_id ?? ""),
+    queryFn: () => servicesApi.getById(session!.service_id),
+    enabled: !!session?.service_id,
+  })
 
-  useEffect(() => {
-    fetchSession()
-  }, [fetchSession])
+  const { data: person = null } = useQuery({
+    queryKey: entityDetailKey("persons", session?.person_id ?? ""),
+    queryFn: () => personsApi.getById(session!.person_id),
+    enabled: !!session?.person_id,
+  })
 
-  useEffect(() => {
-    if (!session) {
-      setService(null)
-      setPerson(null)
-      setProvider(null)
-      return
-    }
-    let cancelled = false
-    servicesApi
-      .getById(session.service_id)
-      .then((s) => {
-        if (!cancelled) setService(s)
-      })
-      .catch(() => {
-        if (!cancelled) setService(null)
-      })
-    personsApi
-      .getById(session.person_id)
-      .then((p) => {
-        if (!cancelled) setPerson(p)
-      })
-      .catch(() => {
-        if (!cancelled) setPerson(null)
-      })
-    if (session.service_provider_id) {
-      providersApi
-        .list({ page: 1, limit: 1, search: session.service_provider_id })
-        .then((res) => {
-          if (cancelled) return
-          const found = (res.items ?? []).find(
-            (p) => p.id === session.service_provider_id,
-          )
-          setProvider(found ?? null)
-        })
-        .catch(() => {
-          if (!cancelled) setProvider(null)
-        })
-    } else {
-      setProvider(null)
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [session])
+  const providerId = session?.service_provider_id
+  const { data: provider = null } = useQuery({
+    queryKey: entityDetailKey("providers", providerId ?? ""),
+    queryFn: async () => {
+      const res = await providersApi.list({ page: 1, limit: 1, search: providerId as string })
+      return (res.items ?? []).find((p) => p.id === providerId) ?? null
+    },
+    enabled: !!providerId,
+  })
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -155,7 +119,7 @@ function ServiceSessionDetailPage() {
         else if (action === "archive") await serviceSessionsApi.archive(id)
         else if (action === "restore") await serviceSessionsApi.restore(id)
         else if (action === "reschedule") setRescheduleOpen(true)
-        await fetchSession()
+        await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
         await queryClient.invalidateQueries({ queryKey: ["service-sessions", "list"] })
         if (action !== "reschedule") showSuccess("Status updated")
       } catch (err) {
@@ -164,7 +128,7 @@ function ServiceSessionDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchSession, queryClient, showSuccess, showError],
+    [queryClient, queryClient, showSuccess, showError],
   )
 
   const submitFeedback = useCallback(
@@ -186,47 +150,23 @@ function ServiceSessionDetailPage() {
         const updated = await serviceSessionsApi.updateFeedback(session.id, {
           feedback: feedbackText,
         })
-        setSession(updated)
+        queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
         showSuccess("Feedback saved")
       } catch (err) {
         showError(err instanceof Error ? err.message : "Failed to save feedback")
       }
     },
-    [session, showSuccess, showError],
+    [session, queryClient, showSuccess, showError],
   )
 
-  if (loading) {
-    return (
-      <PageShell icon={CalendarClock} breadcrumb="Delivery · Sessions · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!session) {
-    return (
-      <PageShell icon={CalendarClock} breadcrumb="Delivery · Sessions · Not found">
-        <EmptyState
-          icon={CalendarClock}
-          title="Session not found"
-          description="It may have been archived or never existed."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/service-sessions" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to sessions
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(sessionQuery, {
+    icon: CalendarClock,
+    breadcrumb: "Delivery · Sessions",
+    entity: "session",
+    backTo: () => navigate({ to: "/service-sessions" }),
+    backLabel: "Back to sessions",
+  })
+  if (state || !session) return state
 
   return (
     <PageShell
@@ -265,7 +205,12 @@ function ServiceSessionDetailPage() {
         session={session}
         service={service}
         person={person}
-        onSaved={(updated) => setSession(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(
+            entityDetailKey("service-sessions", updated.id),
+            updated,
+          )
+        }
       />
 
       <RescheduleDialog
@@ -281,7 +226,10 @@ function ServiceSessionDetailPage() {
           if (notes?.trim()) {
             await serviceSessionsApi.update(session.id, { notes: notes.trim() })
           }
-          setSession(updated)
+          queryClient.setQueryData(
+            entityDetailKey("service-sessions", updated.id),
+            updated,
+          )
           await queryClient.invalidateQueries({
             queryKey: ["service-sessions", "list"],
           })

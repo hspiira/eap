@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -23,10 +24,10 @@ import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
 import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import {
   compareSort,
   fieldValue,
@@ -59,6 +60,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import { ClientTier, PersonType } from "@/types/enums"
@@ -76,75 +78,53 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts"
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
   const navigate = useNavigate()
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
-  const [stats, setStats] = useState<ClientStats | null>(null)
-  const [statsLoading, setStatsLoading] = useState(false)
-  const [children, setChildren] = useState<Client[]>([])
-  const [childrenLoading, setChildrenLoading] = useState(false)
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [contractsLoading, setContractsLoading] = useState(false)
-  const [tags, setTags] = useState<ClientTag[]>([])
-  const [tagsLoading, setTagsLoading] = useState(false)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addPersonOpen, setAddPersonOpen] = useState(false)
 
-  const fetchClient = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await clientsApi.getById(clientId)
-      setClient(data)
-    } catch (_err) {
-      setClient(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [clientId])
+  const clientQuery = useEntityDetail<Client>({
+    resource: "clients",
+    id: clientId,
+    detailFn: clientsApi.getById,
+  })
+  const client = clientQuery.data ?? null
 
-  useEffect(() => {
-    fetchClient()
-  }, [fetchClient])
+  // The related panels only make sense once the client itself resolves; gating
+  // on it also stops them firing for an id that turns out not to exist.
+  const enabled = !!client
 
-  const fetchContracts = useCallback(() => {
-    setContractsLoading(true)
-    return contractsApi
-      .list({ limit: 10, client_id: clientId })
-      .then((res) => setContracts(res.items ?? []))
-      .catch(() => setContracts([]))
-      .finally(() => setContractsLoading(false))
-  }, [clientId])
+  const statsQuery = useQuery({
+    queryKey: ["clients", "stats", clientId],
+    queryFn: () => clientsApi.getStats(clientId),
+    enabled,
+  })
+  const stats = statsQuery.data ?? null
 
-  useEffect(() => {
-    if (!client) return
-    setStatsLoading(true)
-    setChildrenLoading(true)
-    setTagsLoading(true)
+  const childrenQuery = useQuery({
+    queryKey: entityListKey("clients", { parent: clientId, limit: 10 }),
+    queryFn: () => clientsApi.getChildren(clientId, { limit: 10 }),
+    enabled,
+  })
+  const children = childrenQuery.data?.items ?? []
 
-    clientsApi
-      .getStats(clientId)
-      .then(setStats)
-      .catch(() => setStats(null))
-      .finally(() => setStatsLoading(false))
+  const contractsQuery = useQuery({
+    queryKey: entityListKey("contracts", { client_id: clientId, limit: 10 }),
+    queryFn: () => contractsApi.list({ limit: 10, client_id: clientId }),
+    enabled,
+  })
+  const contracts = contractsQuery.data?.items ?? []
 
-    clientsApi
-      .getChildren(clientId, { limit: 10 })
-      .then((res) => setChildren(res.items ?? []))
-      .catch(() => setChildren([]))
-      .finally(() => setChildrenLoading(false))
-
-    fetchContracts()
-
-    clientsApi
-      .getTags(clientId)
-      .then(setTags)
-      .catch(() => setTags([]))
-      .finally(() => setTagsLoading(false))
-  }, [client, clientId, fetchContracts])
+  const tagsQuery = useQuery({
+    queryKey: ["client-tags", "for-client", clientId],
+    queryFn: () => clientsApi.getTags(clientId),
+    enabled,
+  })
+  const tags = tagsQuery.data ?? []
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -155,7 +135,7 @@ function ClientDetailPage() {
         else if (action === "archive") await clientsApi.archive(id)
         else if (action === "restore") await clientsApi.restore(id)
         else if (action === "terminate") await clientsApi.terminate(id, "Terminated from UI")
-        await fetchClient()
+        await queryClient.invalidateQueries({ queryKey: ["clients"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -163,7 +143,7 @@ function ClientDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchClient, toast],
+    [queryClient, toast],
   )
 
   const handleTierChange = useCallback(
@@ -171,7 +151,7 @@ function ClientDetailPage() {
       setTierLoading(true)
       try {
         const updated = await clientsApi.setTier(clientId, tier)
-        setClient(updated)
+        queryClient.setQueryData(entityDetailKey("clients", clientId), updated)
         toast.showSuccess("Tier updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Tier update failed"))
@@ -179,7 +159,7 @@ function ClientDetailPage() {
         setTierLoading(false)
       }
     },
-    [clientId, toast],
+    [clientId, queryClient, toast],
   )
 
   const hasBilling = client
@@ -281,33 +261,14 @@ function ClientDetailPage() {
       }))
   }, [upcomingItems])
 
-  if (loading) {
-    return (
-      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton railPanels={6} />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!client) {
-    return (
-      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · Not found">
-        <EmptyState
-          icon={Building2}
-          title="Client not found"
-          description="The client you're looking for may have been archived or doesn't exist."
-          action={
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate({ to: "/clients" })}>
-              <ArrowLeft className="size-4" />
-              Back to clients
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(clientQuery, {
+    icon: Building2,
+    breadcrumb: "Organization & Clients · Clients",
+    entity: "client",
+    backTo: () => navigate({ to: "/clients" }),
+    backLabel: "Back to clients",
+  })
+  if (state || !client) return state
 
   return (
     <PageShell
@@ -344,7 +305,9 @@ function ClientDetailPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         client={client}
-        onSaved={(updated) => setClient(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
+        }
       />
 
       <ContractFormSheet
@@ -353,7 +316,7 @@ function ClientDetailPage() {
         clientId={clientId}
         client={client}
         onSaved={() => {
-          fetchContracts()
+          void queryClient.invalidateQueries({ queryKey: ["contracts"] })
           setTab("contracts")
         }}
       />
@@ -401,7 +364,7 @@ function ClientDetailPage() {
               <TabPanel value="contracts">
                 <ContractsPanel
                   contracts={contracts}
-                  loading={contractsLoading}
+                  loading={contractsQuery.isPending}
                   onAdd={() => setAddContractOpen(true)}
                 />
               </TabPanel>
@@ -432,11 +395,11 @@ function ClientDetailPage() {
             <DetailRail
               client={client}
               stats={stats}
-              statsLoading={statsLoading}
+              statsLoading={statsQuery.isPending}
               tags={tags}
-              tagsLoading={tagsLoading}
+              tagsLoading={tagsQuery.isPending}
               children={children}
-              childrenLoading={childrenLoading}
+              childrenLoading={childrenQuery.isPending}
               onAction={handleAction}
               actionLoading={actionLoading}
               onTierChange={handleTierChange}

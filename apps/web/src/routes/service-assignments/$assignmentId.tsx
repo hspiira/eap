@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -12,10 +13,10 @@ import {
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -37,57 +39,32 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "history"]
 function ServiceAssignmentDetailPage() {
   const { assignmentId } = Route.useParams()
   const navigate = useNavigate()
-  const [assignment, setAssignment] = useState<ServiceAssignment | null>(null)
-  const [contract, setContract] = useState<Contract | null>(null)
-  const [service, setService] = useState<Service | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
-  const fetchAssignment = useCallback(async () => {
-    try {
-      setLoading(true)
-      setAssignment(await serviceAssignmentsApi.getById(assignmentId))
-    } catch (_err) {
-      setAssignment(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [assignmentId])
+  const assignmentQuery = useEntityDetail<ServiceAssignment>({
+    resource: "service-assignments",
+    id: assignmentId,
+    detailFn: serviceAssignmentsApi.getById,
+  })
+  const assignment = assignmentQuery.data ?? null
 
-  useEffect(() => {
-    fetchAssignment()
-  }, [fetchAssignment])
+  const contractId = assignment?.contract_id
+  const { data: contract = null } = useQuery({
+    queryKey: entityDetailKey("contracts", contractId ?? ""),
+    queryFn: () => contractsApi.getById(contractId as string),
+    enabled: !!contractId,
+  })
 
-  useEffect(() => {
-    if (!assignment) {
-      setContract(null)
-      setService(null)
-      return
-    }
-    let cancelled = false
-    contractsApi
-      .getById(assignment.contract_id)
-      .then((c) => {
-        if (!cancelled) setContract(c)
-      })
-      .catch(() => {
-        if (!cancelled) setContract(null)
-      })
-    servicesApi
-      .getById(assignment.service_id)
-      .then((s) => {
-        if (!cancelled) setService(s)
-      })
-      .catch(() => {
-        if (!cancelled) setService(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [assignment])
+  const serviceId = assignment?.service_id
+  const { data: service = null } = useQuery({
+    queryKey: entityDetailKey("services", serviceId ?? ""),
+    queryFn: () => servicesApi.getById(serviceId as string),
+    enabled: !!serviceId,
+  })
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -97,7 +74,7 @@ function ServiceAssignmentDetailPage() {
         else if (action === "deactivate") await serviceAssignmentsApi.deactivate(id)
         else if (action === "archive") await serviceAssignmentsApi.archive(id)
         else if (action === "restore") await serviceAssignmentsApi.restore(id)
-        await fetchAssignment()
+        await queryClient.invalidateQueries({ queryKey: ["service-assignments"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -105,44 +82,17 @@ function ServiceAssignmentDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchAssignment, toast],
+    [queryClient, toast],
   )
 
-  if (loading) {
-    return (
-      <PageShell icon={FileCheck} breadcrumb="Commercial · Service Assignments · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!assignment) {
-    return (
-      <PageShell
-        icon={FileCheck}
-        breadcrumb="Commercial · Service Assignments · Not found"
-      >
-        <EmptyState
-          icon={FileCheck}
-          title="Assignment not found"
-          description="It may have been archived or never existed."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/service-assignments" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to assignments
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(assignmentQuery, {
+    icon: FileCheck,
+    breadcrumb: "Commercial · Service assignments",
+    entity: "assignment",
+    backTo: () => navigate({ to: "/service-assignments" }),
+    backLabel: "Back to assignments",
+  })
+  if (state || !assignment) return state
 
   const label = `${assignment.contract_id.slice(0, 8)} · ${
     service?.name ?? assignment.service_id.slice(0, 8)
@@ -184,7 +134,12 @@ function ServiceAssignmentDetailPage() {
         onOpenChange={setEditOpen}
         assignment={assignment}
         contract={contract}
-        onSaved={(updated) => setAssignment(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(
+            entityDetailKey("service-assignments", updated.id),
+            updated,
+          )
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
