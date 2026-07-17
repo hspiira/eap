@@ -17463,6 +17463,10 @@ export interface operations {
                 service_id?: string | null;
                 /** @description Filter by session status */
                 status?: components["schemas"]["SessionStatus"] | null;
+                /** @description Only sessions scheduled at or after this instant (ISO 8601) */
+                scheduled_from?: string | null;
+                /** @description Only sessions scheduled at or before this instant (ISO 8601) */
+                scheduled_to?: string | null;
                 /** @description Page number */
                 page?: number;
                 /** @description Items per page */

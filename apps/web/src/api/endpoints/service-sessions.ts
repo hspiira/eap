@@ -24,6 +24,10 @@ export interface ServiceSessionListParams extends ListParams {
   person_id?: string
   provider_id?: string
   service_id?: string
+  /** ISO 8601 instant; inclusive lower bound on `scheduled_at`. */
+  scheduled_from?: string
+  /** ISO 8601 instant; inclusive upper bound on `scheduled_at`. */
+  scheduled_to?: string
 }
 
 export const serviceSessionsApi = {

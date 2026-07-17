@@ -12,7 +12,10 @@ import {
 } from "lucide-react"
 
 import { personsApi } from "@/api/endpoints/persons"
-import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
+import {
+  type ServiceSessionListParams,
+  serviceSessionsApi,
+} from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -66,6 +69,10 @@ function isStatus(value: unknown): value is SessionStatus {
   )
 }
 
+function isRange(value: unknown): value is Exclude<RangeFilter, "all"> {
+  return value === "today" || value === "7d" || value === "30d" || value === "past"
+}
+
 export const Route = createFileRoute("/service-sessions/")({
   component: ServiceSessionsListPage,
   validateSearch: (search: Record<string, unknown>) => {
@@ -75,6 +82,7 @@ export const Route = createFileRoute("/service-sessions/")({
       status?: SessionStatus
       service_id?: string
       person_id?: string
+      range?: Exclude<RangeFilter, "all">
     } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
@@ -83,6 +91,7 @@ export const Route = createFileRoute("/service-sessions/")({
       out.service_id = search.service_id
     if (typeof search.person_id === "string" && search.person_id.trim())
       out.person_id = search.person_id
+    if (isRange(search.range)) out.range = search.range
     return out
   },
 })
@@ -113,7 +122,6 @@ function ServiceSessionsListPage() {
   const searchParams = useSearch({ from: "/service-sessions/" })
   const navigate = useNavigate({ from: "/service-sessions/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [range, setRange] = useState<RangeFilter>("all")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortState>({ field: "scheduled_at", desc: true })
@@ -129,6 +137,11 @@ function ServiceSessionsListPage() {
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
   const activePersonId = searchParams.person_id
+  const activeRange: RangeFilter = searchParams.range ?? "all"
+
+  // Anchored to the selected range, not to render: `new Date()` inline would mint
+  // a new query key on every render and refetch forever.
+  const rangeParams = useMemo(() => rangeBounds(activeRange, new Date()), [activeRange])
 
   useEffect(() => {
     if (searchParams.new) {
@@ -155,6 +168,12 @@ function ServiceSessionsListPage() {
   const clearPerson = () =>
     navigate({ search: (prev) => ({ ...prev, person_id: undefined }), replace: true })
 
+  const handleRangeChange = (next: RangeFilter) => {
+    const range = next === "all" ? undefined : next
+    navigate({ search: (prev) => ({ ...prev, range }), replace: true })
+    setPage(1)
+  }
+
   const { data: servicesData } = useQuery({
     queryKey: ["services", "lookup"],
     queryFn: () => servicesApi.list({ limit: 200 }),
@@ -173,7 +192,7 @@ function ServiceSessionsListPage() {
     staleTime: 10 * 60_000,
   })
 
-  const query = useEntityList({
+  const query = useEntityList<ServiceSession, ServiceSessionListParams>({
     resource: "service-sessions",
     params: {
       page,
@@ -182,13 +201,13 @@ function ServiceSessionsListPage() {
       status: activeStatus,
       service_id: activeServiceId,
       person_id: activePersonId,
+      ...rangeParams,
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,
     },
     listFn: serviceSessionsApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = useMemo(() => filterByRange(allItems, range), [allItems, range])
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const selection = useTableSelection(items)
   const loading = query.isPending
@@ -198,7 +217,7 @@ function ServiceSessionsListPage() {
     Boolean(activeStatus) ||
     Boolean(activeServiceId) ||
     Boolean(activePersonId) ||
-    range !== "all"
+    activeRange !== "all"
 
   const activeServiceLabel = activeServiceId
     ? (servicesById.get(activeServiceId)?.name ?? activeServiceId.slice(0, 8))
@@ -260,9 +279,9 @@ function ServiceSessionsListPage() {
         <FilterTrigger
           icon={CalendarClock}
           label="All time"
-          value={range}
+          value={activeRange}
           options={RANGE_OPTIONS}
-          onChange={setRange}
+          onChange={handleRangeChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -541,28 +560,34 @@ function IconButton({
   )
 }
 
-function filterByRange(items: ServiceSession[], range: RangeFilter): ServiceSession[] {
-  if (range === "all") return items
-  const now = new Date()
-  if (range === "past") {
-    return items.filter((s) => new Date(s.scheduled_at) < now)
-  }
+/**
+ * Turns the range dropdown into absolute instants for the server to filter on.
+ * This used to filter the fetched page in memory, which contradicted the total
+ * returned alongside it.
+ *
+ * The bounds are computed here rather than named to the server ("today") on
+ * purpose: "today" means the viewer's calendar day, so the browser is the only
+ * thing that knows where it starts and ends. `now` is passed in so the mapping
+ * stays a pure function.
+ */
+function rangeBounds(
+  range: RangeFilter,
+  now: Date,
+): Pick<ServiceSessionListParams, "scheduled_from" | "scheduled_to"> {
+  if (range === "all") return {}
+  if (range === "past") return { scheduled_to: now.toISOString() }
   if (range === "today") {
     const start = new Date(now)
     start.setHours(0, 0, 0, 0)
     const end = new Date(now)
     end.setHours(23, 59, 59, 999)
-    return items.filter((s) => {
-      const t = new Date(s.scheduled_at).getTime()
-      return t >= start.getTime() && t <= end.getTime()
-    })
+    return { scheduled_from: start.toISOString(), scheduled_to: end.toISOString() }
   }
   const days = range === "7d" ? 7 : 30
-  const horizon = new Date(now.getTime() + days * 86_400_000)
-  return items.filter((s) => {
-    const t = new Date(s.scheduled_at).getTime()
-    return t >= now.getTime() && t <= horizon.getTime()
-  })
+  return {
+    scheduled_from: now.toISOString(),
+    scheduled_to: new Date(now.getTime() + days * 86_400_000).toISOString(),
+  }
 }
 
 function isBackfill(s: ServiceSession): boolean {
