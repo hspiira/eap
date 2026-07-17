@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -15,10 +16,10 @@ import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { usersApi } from "@/api/endpoints/users"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
@@ -35,6 +36,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, Person, ServiceSession, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
@@ -63,99 +65,45 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
 function PersonDetailPage() {
   const { personId } = Route.useParams()
   const navigate = useNavigate()
-  const [person, setPerson] = useState<Person | null>(null)
-  const [client, setClient] = useState<Client | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [primaryEmployee, setPrimaryEmployee] = useState<Person | null>(null)
-  const [sessions, setSessions] = useState<ServiceSession[]>([])
-  const [sessionsLoading, setSessionsLoading] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
 
-  const fetchPerson = useCallback(async () => {
-    try {
-      setLoading(true)
-      setPerson(await personsApi.getById(personId))
-    } catch (_err) {
-      setPerson(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [personId])
+  const personQuery = useEntityDetail<Person>({
+    resource: "persons",
+    id: personId,
+    detailFn: personsApi.getById,
+  })
+  const person = personQuery.data ?? null
 
-  useEffect(() => {
-    fetchPerson()
-  }, [fetchPerson])
+  const clientId = person?.employment_info?.client_id
+  const { data: client = null } = useQuery({
+    queryKey: entityDetailKey("clients", clientId ?? ""),
+    queryFn: () => clientsApi.getById(clientId as string),
+    enabled: !!clientId,
+  })
 
-  useEffect(() => {
-    if (!person?.employment_info?.client_id) {
-      setClient(null)
-      return
-    }
-    let cancelled = false
-    clientsApi
-      .getById(person.employment_info!.client_id)
-      .then((c) => {
-        if (!cancelled) setClient(c)
-      })
-      .catch(() => {
-        if (!cancelled) setClient(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [person?.employment_info?.client_id])
+  const userId = person?.user_id
+  const { data: user = null } = useQuery({
+    queryKey: entityDetailKey("users", userId ?? ""),
+    queryFn: () => usersApi.getById(userId as string),
+    enabled: !!userId,
+  })
 
-  useEffect(() => {
-    if (!person?.user_id) {
-      setUser(null)
-      return
-    }
-    let cancelled = false
-    usersApi
-      .getById(person.user_id)
-      .then((u) => {
-        if (!cancelled) setUser(u)
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [person?.user_id])
+  const primaryEmployeeId = person?.dependent_info?.primary_employee_id
+  const { data: primaryEmployee = null } = useQuery({
+    queryKey: entityDetailKey("persons", primaryEmployeeId ?? ""),
+    queryFn: () => personsApi.getById(primaryEmployeeId as string),
+    enabled: !!primaryEmployeeId,
+  })
 
-  useEffect(() => {
-    const primaryId = person?.dependent_info?.primary_employee_id
-    if (!primaryId) {
-      setPrimaryEmployee(null)
-      return
-    }
-    let cancelled = false
-    personsApi
-      .getById(primaryId)
-      .then((p) => {
-        if (!cancelled) setPrimaryEmployee(p)
-      })
-      .catch(() => {
-        if (!cancelled) setPrimaryEmployee(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [person?.dependent_info?.primary_employee_id])
-
-  useEffect(() => {
-    setSessionsLoading(true)
-    serviceSessionsApi
-      .list({ limit: 20, person_id: personId })
-      .then((res) => setSessions(res.items ?? []))
-      .catch(() => setSessions([]))
-      .finally(() => setSessionsLoading(false))
-  }, [personId])
+  const sessionsQuery = useQuery({
+    queryKey: entityListKey("service-sessions", { person_id: personId, limit: 20 }),
+    queryFn: () => serviceSessionsApi.list({ limit: 20, person_id: personId }),
+  })
+  const sessions = sessionsQuery.data?.items ?? []
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -166,7 +114,9 @@ function PersonDetailPage() {
         else if (action === "archive") await personsApi.archive(id)
         else if (action === "restore") await personsApi.restore(id)
         else if (action === "terminate") await personsApi.terminate(id, "Terminated from UI")
-        await fetchPerson()
+        // Invalidate rather than refetch by hand: this also refreshes the persons
+        // list behind the page, which a targeted refetch would leave stale.
+        await queryClient.invalidateQueries({ queryKey: ["persons"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -174,41 +124,17 @@ function PersonDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchPerson, toast],
+    [queryClient, toast],
   )
 
-  if (loading) {
-    return (
-      <PageShell icon={Users} breadcrumb="People · Persons · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!person) {
-    return (
-      <PageShell icon={Users} breadcrumb="People · Persons · Not found">
-        <EmptyState
-          icon={Users}
-          title="Person not found"
-          description="They may have been archived or never existed."
-          action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/persons" })}
-            >
-              <ArrowLeft className="size-4" />
-              Back to persons
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(personQuery, {
+    icon: Users,
+    breadcrumb: "People · Persons",
+    entity: "person",
+    backTo: () => navigate({ to: "/persons" }),
+    backLabel: "Back to persons",
+  })
+  if (state || !person) return state
 
   const fullName = displayName(person, user)
   const isDependent = person.person_type === PersonType.DEPENDENT
@@ -250,7 +176,9 @@ function PersonDetailPage() {
         onOpenChange={setEditOpen}
         person={person}
         client={client}
-        onSaved={(updated) => setPerson(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("persons", updated.id), updated)
+        }
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
@@ -438,7 +366,7 @@ function PersonDetailPage() {
               <TabPanel value="sessions">
                 <SessionsPanel
                   sessions={sessions}
-                  loading={sessionsLoading}
+                  loading={sessionsQuery.isPending}
                   personId={personId}
                 />
               </TabPanel>
