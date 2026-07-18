@@ -1,8 +1,5 @@
 @import "tailwindcss";
 @import "./theme/index.css";
-@import "./styles/theme/tokens-base.css";
-@import "./styles/theme/tokens-light.css";
-@import "./styles/theme/tokens-dark.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -93,7 +90,7 @@
   /*
    * New semantic tokens — preferred for all new code.
    * Declared after the legacy block so they win on collision via cascade.
-   * Source values live in styles/theme/tokens-{light,dark}.css.
+   * Source values live in theme/tokens-{light,dark}.css.
    *
    * App utilities: bg-bg, text-fg, bg-brand, border-border, bg-success, …
    * shadcn-conventional utilities: bg-primary, bg-secondary, bg-muted,
@@ -212,7 +209,7 @@ button {
 }
 
 /*
- * Sidebar tokens are now defined in styles/theme/tokens-{light,dark}.css —
+ * Sidebar tokens are now defined in theme/tokens-{light,dark}.css —
  * bound to the new neutral ramp + brand. The legacy :root/.dark blocks here
  * have been removed.
  */
