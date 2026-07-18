@@ -4,6 +4,7 @@
  */
 
 import type {
+  AccessScope,
   AccreditationStatus,
   ActivityType,
   AuthProvider,
@@ -184,6 +185,7 @@ export interface User extends BaseEntity {
   azure_oid?: string | null
   display_name?: string | null
   auth_provider?: AuthProvider
+  access_scopes?: AccessScope[]
 }
 
 /**

@@ -469,3 +469,12 @@ export enum TenantRole {
   USER = 'User',
   VIEWER = 'Viewer',
 }
+
+/**
+ * Per-user grants gating the clinical / employer bounded contexts.
+ * Clinical guards PHI surfaces; only platform admins may grant it.
+ */
+export enum AccessScope {
+  CLINICAL = 'Clinical',
+  EMPLOYER_PORTAL = 'EmployerPortal',
+}

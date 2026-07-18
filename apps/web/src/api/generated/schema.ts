@@ -4506,6 +4506,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/access-scopes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace a user's access-scope grants
+         * @description Replace the user's scope grants. ADMIN-only.
+         *
+         *     Clinical is the PHI wall: only a platform admin may grant or revoke it.
+         *     Tenant admins manage EmployerPortal for their own users.
+         */
+        patch: operations["update_user_access_scopes_users__user_id__access_scopes_patch"];
+        trace?: never;
+    };
     "/users/{user_id}/activate": {
         parameters: {
             query?: never;
@@ -4753,6 +4776,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AccessScope
+         * @description Per-user grants that gate the clinical / employer bounded contexts.
+         *
+         *     CLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).
+         *     Nobody holds it by default; platform admins grant it to counsellors.
+         *     Employer HR must never see clinical data — that is the product's core
+         *     privacy promise, so clinical routes fail closed on a missing grant.
+         *     Platform-admin status stays tenant-based and does NOT imply CLINICAL.
+         * @enum {string}
+         */
+        AccessScope: "Clinical" | "EmployerPortal";
         /**
          * AccreditationStatus
          * @description Where the provider sits in the accreditation pipeline.
@@ -8032,6 +8067,11 @@ export interface components {
          */
         MeResponse: {
             /**
+             * Access Scopes
+             * @description Scope grants for this session (Clinical / EmployerPortal)
+             */
+            access_scopes?: string[];
+            /**
              * Email
              * @description User email address
              */
@@ -10082,6 +10122,11 @@ export interface components {
          */
         UserResponse: {
             /**
+             * Access Scopes
+             * @description Scope grants gating the clinical/employer bounded contexts.
+             */
+            access_scopes?: components["schemas"]["AccessScope"][];
+            /**
              * @description Credential type used to sign in (password or azure_ad).
              * @default password
              */
@@ -10216,6 +10261,17 @@ export interface components {
         UserUpdateRoleRequest: {
             /** @description New tenant role (Admin/User/Viewer). */
             role: components["schemas"]["TenantRole"];
+        };
+        /**
+         * UserUpdateScopesRequest
+         * @description Request schema for replacing a user's access-scope grants.
+         */
+        UserUpdateScopesRequest: {
+            /**
+             * Access Scopes
+             * @description Full replacement set of scope grants. Clinical can only be granted or revoked by a platform admin.
+             */
+            access_scopes: components["schemas"]["AccessScope"][];
         };
         /** UtilisationEventCreate */
         UtilisationEventCreate: {
@@ -19251,6 +19307,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_access_scopes_users__user_id__access_scopes_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdateScopesRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

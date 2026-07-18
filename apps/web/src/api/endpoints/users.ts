@@ -2,6 +2,8 @@
  * Users API Endpoints
  */
 
+import type { AccessScope } from '@/types/enums'
+
 import apiClient from '../client'
 import type { CreateRequest, ListParams, PaginatedResponse, User } from '../types'
 
@@ -96,6 +98,10 @@ export const usersApi = {
    */
   async updateRole(userId: string, data: UserUpdateRoleRequest): Promise<User> {
     return apiClient.patch<User>(`/users/${userId}/role`, data)
+  },
+
+  async updateAccessScopes(userId: string, access_scopes: AccessScope[]): Promise<User> {
+    return apiClient.patch<User>(`/users/${userId}/access-scopes`, { access_scopes })
   },
 
   /**

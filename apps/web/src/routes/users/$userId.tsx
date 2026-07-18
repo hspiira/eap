@@ -45,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
@@ -52,8 +53,9 @@ import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Person, User } from "@/types/entities"
-import { AuthProvider, TenantRole } from "@/types/enums"
+import { AccessScope, AuthProvider, TenantRole } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/users/$userId")({
@@ -361,6 +363,20 @@ function UserDetailPage() {
                     </DetailGrid>
                   </DetailCard>
                 </div>
+
+                {canWrite && (
+                  <div className="mt-4">
+                    <AccessScopesCard
+                      user={user}
+                      onChanged={(updated) =>
+                        queryClient.setQueryData(
+                          entityDetailKey("users", updated.id),
+                          updated,
+                        )
+                      }
+                    />
+                  </div>
+                )}
               </TabPanel>
 
               <TabPanel value="preferences">
@@ -604,11 +620,77 @@ function DetailRail({ user, person, onAction, actionLoading, onVerifyEmail, veri
   )
 }
 
+const SCOPE_LABEL: Record<AccessScope, string> = {
+  [AccessScope.CLINICAL]: "Clinical",
+  [AccessScope.EMPLOYER_PORTAL]: "Employer portal",
+}
+
 const ROLE_LABEL: Record<TenantRole, string> = {
   [TenantRole.ADMIN]: "Admin",
   [TenantRole.USER]: "User",
   [TenantRole.VIEWER]: "Viewer",
 }
+
+function AccessScopesCard({
+  user,
+  onChanged,
+}: {
+  user: User
+  onChanged: (updated: User) => void
+}) {
+  const toast = useToast()
+  const currentTenantId = useTenantStore((st) => st.currentTenantId)
+  const platformTenant = (import.meta.env.VITE_PLATFORM_TENANT_ID ?? "").trim()
+  const canGrantClinical = !platformTenant || currentTenantId === platformTenant
+  const scopes = user.access_scopes ?? []
+  const [submitting, setSubmitting] = useState(false)
+
+  async function toggle(scope: AccessScope, next: boolean) {
+    const updatedScopes = next ? [...scopes, scope] : scopes.filter((sc) => sc !== scope)
+    setSubmitting(true)
+    try {
+      const updated = await usersApi.updateAccessScopes(user.id, updatedScopes)
+      onChanged(updated)
+      toast.showSuccess(next ? `${SCOPE_LABEL[scope]} granted` : `${SCOPE_LABEL[scope]} revoked`)
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Could not update access scopes"))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <DetailCard title="Access scopes">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-fg">Clinical</p>
+            <p className="text-xs text-fg/55">
+              Cases, clinical notes and EAP programmes. Only platform admins can change this.
+            </p>
+          </div>
+          <Switch
+            checked={scopes.includes(AccessScope.CLINICAL)}
+            disabled={submitting || !canGrantClinical}
+            onCheckedChange={(v) => toggle(AccessScope.CLINICAL, v)}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-fg">Employer portal</p>
+            <p className="text-xs text-fg/55">Employer-facing reporting surfaces.</p>
+          </div>
+          <Switch
+            checked={scopes.includes(AccessScope.EMPLOYER_PORTAL)}
+            disabled={submitting}
+            onCheckedChange={(v) => toggle(AccessScope.EMPLOYER_PORTAL, v)}
+          />
+        </div>
+      </div>
+    </DetailCard>
+  )
+}
+
 
 function RoleCard({
   user,
