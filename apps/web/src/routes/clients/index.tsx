@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
@@ -25,7 +25,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -91,37 +91,16 @@ const ROW_BORDER = "border-fg/8"
 function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
   const navigate = useNavigate({ from: "/clients/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen: addModalOpen, setAddOpen: setAddModalOpen,
+    page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const [timeRange, setTimeRange] = useState<TimeRange>("12h")
-  const [addModalOpen, setAddModalOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeTier = searchParams.tier
 
-  useEffect(() => {
-    if (searchParams.new) setAddModalOpen(true)
-  }, [searchParams.new])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
-  const handleTierChange = (next: TierFilter) => {
-    const tier = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
-    setPage(1)
-  }
+  const handleTierChange = (next: TierFilter) =>
+    setFilter("tier", next === "all" ? undefined : next)
 
   const query = useEntityList({
     resource: "clients",
@@ -130,8 +109,7 @@ function ClientsListPage() {
       limit,
       search: activeSearch,
       tier: activeTier,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: clientsApi.list,
   })

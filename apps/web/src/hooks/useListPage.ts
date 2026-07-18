@@ -29,15 +29,19 @@ export function useListPage<S extends ListSearch>({
   searchParams,
   navigate,
   limit = 20,
+  initialSort,
 }: {
   searchParams: S
   navigate: NavigateFn
   limit?: number
+  initialSort?: SortState
 }) {
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
   const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const [sort, setSort] = useState<SortState>(
+    initialSort ?? { field: undefined, desc: false },
+  )
 
   const debounced = useDebouncedValue(searchInput.trim(), 300)
   const activeSearch = debounced || undefined

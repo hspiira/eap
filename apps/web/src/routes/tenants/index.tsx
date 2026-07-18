@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
 import {
@@ -39,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useListPage } from '@/hooks/useListPage'
 import { normalizeErrorMessage } from '@/lib/errors'
 import { useEntityList } from '@/lib/queries'
 import type { Tenant } from '@/types/entities'
@@ -56,14 +56,13 @@ function isStatus(v: unknown): v is TenantStatus {
 
 export const Route = createFileRoute('/tenants/')({
   component: TenantsListPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    new: search.new === '1' || search.new === true || undefined,
-    search:
-      typeof search.search === 'string' && search.search.trim()
-        ? search.search
-        : undefined,
-    status: isStatus(search.status) ? search.status : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const out: { new?: boolean; search?: string; status?: TenantStatus } = {}
+    if (search.new === '1' || search.new === true) out.new = true
+    if (typeof search.search === 'string' && search.search.trim()) out.search = search.search
+    if (isStatus(search.status)) out.status = search.status
+    return out
+  },
 })
 
 const STATUS_OPTIONS = [
@@ -87,22 +86,12 @@ function TenantsListPage() {
 function TenantsListBody() {
   const searchParams = useSearch({ from: '/tenants/' })
   const navigate = useNavigate({ from: '/tenants/' })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? '')
-  const [page, setPage] = useState(1)
-  const [addOpen, setAddOpen] = useState(false)
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, setFilter,
+  } = useListPage({ searchParams, navigate })
   const [credentials, setCredentials] = useState<TenantCreateResponse | null>(null)
-  const limit = 20
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
-
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
 
   const params = {
     limit,
@@ -122,14 +111,7 @@ function TenantsListBody() {
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   function setStatus(next: StatusFilter) {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        status: next === 'all' ? undefined : (next as TenantStatus),
-      }),
-      replace: true,
-    })
-    setPage(1)
+    setFilter('status', next === 'all' ? undefined : (next as TenantStatus))
   }
 
   function clearAll() {

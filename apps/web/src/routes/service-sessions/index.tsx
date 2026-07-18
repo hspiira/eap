@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -30,7 +30,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
 import { Button } from "@/components/ui/button"
@@ -52,7 +52,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { displayName } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -122,19 +122,15 @@ const ROW_BORDER = "border-fg/8"
 function ServiceSessionsListPage() {
   const searchParams = useSearch({ from: "/service-sessions/" })
   const navigate = useNavigate({ from: "/service-sessions/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: "scheduled_at", desc: true })
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: { field: "scheduled_at", desc: true },
+  })
   const canWrite = useCanWrite()
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
   const activePersonId = searchParams.person_id
@@ -144,36 +140,14 @@ function ServiceSessionsListPage() {
   // a new query key on every render and refetch forever.
   const rangeParams = useMemo(() => rangeBounds(activeRange, new Date()), [activeRange])
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
+  const handleStatusChange = (next: StatusFilter) =>
+    setFilter("status", next === "all" ? undefined : next)
 
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
+  const clearService = () => setFilter("service_id", undefined)
+  const clearPerson = () => setFilter("person_id", undefined)
 
-  const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
-  }
-
-  const clearService = () =>
-    navigate({ search: (prev) => ({ ...prev, service_id: undefined }), replace: true })
-  const clearPerson = () =>
-    navigate({ search: (prev) => ({ ...prev, person_id: undefined }), replace: true })
-
-  const handleRangeChange = (next: RangeFilter) => {
-    const range = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, range }), replace: true })
-    setPage(1)
-  }
+  const handleRangeChange = (next: RangeFilter) =>
+    setFilter("range", next === "all" ? undefined : next)
 
   const { data: servicesData } = useQuery({
     queryKey: ["services", "lookup"],
@@ -203,8 +177,7 @@ function ServiceSessionsListPage() {
       service_id: activeServiceId,
       person_id: activePersonId,
       ...rangeParams,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: serviceSessionsApi.list,
   })
