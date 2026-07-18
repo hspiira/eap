@@ -45,6 +45,7 @@ class TokenData(BaseModel):
     exp: datetime | None = None
     jti: str | None = None
     role: str | None = None
+    access_scopes: list[str] = []
 
 
 class Token(BaseModel):
@@ -105,6 +106,7 @@ def create_access_token(
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
     role: str | None = None,
+    access_scopes: list[str] | None = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -136,6 +138,9 @@ def create_access_token(
 
     if role:
         to_encode["role"] = role
+
+    if access_scopes:
+        to_encode["access_scopes"] = list(access_scopes)
 
     if additional_claims:
         to_encode.update(additional_claims)
@@ -206,12 +211,16 @@ def decode_token(token: str) -> TokenData:
         if user_id is None or tenant_id is None:
             raise AuthenticationException("Invalid token: missing required claims")
 
+        scopes_claim = payload.get("access_scopes") or []
+        if not isinstance(scopes_claim, list):
+            scopes_claim = []
         return TokenData(
             user_id=user_id,
             tenant_id=tenant_id,
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
             role=payload.get("role"),
+            access_scopes=[str(s) for s in scopes_claim],
         )
     except JWTError as e:
         raise AuthenticationException(f"Invalid token: {str(e)}") from e
@@ -313,6 +322,7 @@ def create_token_response(
     email: str | None = None,
     refresh_jti: str | None = None,
     role: str | None = None,
+    access_scopes: list[str] | None = None,
 ) -> Token:
     """Create access and refresh tokens. Optional refresh_jti for revocation support."""
     access_token = create_access_token(
@@ -320,6 +330,7 @@ def create_token_response(
         tenant_id=tenant_id,
         email=email,
         role=role,
+        access_scopes=access_scopes,
     )
     refresh_token = create_refresh_token(
         user_id=user_id,

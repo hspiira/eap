@@ -38,7 +38,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.entities.service import ServiceEntity
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.entities.user import UserEntity
-from app.domain.enums import TenantRole
+from app.domain.enums import AccessScope, TenantRole
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -164,6 +164,40 @@ async def require_same_tenant(
             detail="Access denied to this tenant",
         )
     return current_user
+
+
+def require_scope(*allowed_scopes: AccessScope):
+    """Dependency factory for the clinical/employer privacy wall.
+
+    Admits a token only when its ``access_scopes`` claim contains one of
+    ``allowed_scopes``. Fails closed: a token with no grants is refused.
+    There is no legacy escape hatch — scopes are stamped at mint from the
+    DB user, so every valid token carries its current grants.
+    """
+
+    allowed = {s.value for s in allowed_scopes}
+
+    async def _require(
+        current_user: TokenData = Depends(get_current_user),
+    ) -> TokenData:
+        if any(s in allowed for s in current_user.access_scopes):
+            return current_user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access scope insufficient for this route",
+        )
+
+    return _require
+
+
+require_clinical_scope = require_scope(AccessScope.CLINICAL)
+"""Guards PHI surfaces: cases, clinical notes, EAP programmes."""
+
+
+def is_platform_admin(current_user: TokenData) -> bool:
+    """True when the token belongs to the platform tenant (and one is configured)."""
+    platform_tenant_id = getattr(settings, "PLATFORM_TENANT_ID", "").strip()
+    return bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
 
 
 async def require_platform_admin(

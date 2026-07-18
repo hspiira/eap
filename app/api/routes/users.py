@@ -27,6 +27,7 @@ from app.api.schemas.user_schemas import (
     UserUpdatePasswordRequest,
     UserUpdatePreferencesRequest,
     UserUpdateRoleRequest,
+    UserUpdateScopesRequest,
 )
 from app.application.use_cases.transitions import (
     TransitionUseCase,
@@ -38,6 +39,7 @@ from app.application.use_cases.user_use_cases import (
 )
 from app.core.authorization import (
     get_user_in_tenant,
+    is_platform_admin,
     require_same_tenant,
     require_self_or_role,
     require_tenant_role,
@@ -45,7 +47,7 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user, verify_password
 from app.domain.entities.user import UserEntity
-from app.domain.enums import TenantRole, UserStatus
+from app.domain.enums import AccessScope, TenantRole, UserStatus
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -83,6 +85,7 @@ def _to_user_response(user: UserEntity) -> UserResponse:
         azure_oid=user.azure_oid,
         display_name=user.display_name,
         auth_provider=user.auth_provider,
+        access_scopes=user.access_scopes,
     )
 
 
@@ -191,6 +194,41 @@ async def update_user_role(
             )
 
     user.role = body.role
+    await user_repo.save(user)
+    await audit_change(user, audit_handler, current_user, request)
+    return _to_user_response(user)
+
+
+@router.patch(
+    "/{user_id}/access-scopes",
+    response_model=UserResponse,
+    summary="Replace a user's access-scope grants",
+)
+@transactional()
+async def update_user_access_scopes(
+    request: Request,
+    body: UserUpdateScopesRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the user's scope grants. ADMIN-only.
+
+    Clinical is the PHI wall: only a platform admin may grant or revoke it.
+    Tenant admins manage EmployerPortal for their own users.
+    """
+    clinical_before = AccessScope.CLINICAL in user.access_scopes
+    clinical_after = AccessScope.CLINICAL in body.access_scopes
+    if clinical_before != clinical_after and not is_platform_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a platform admin can grant or revoke the Clinical scope",
+        )
+
+    user.set_access_scopes(body.access_scopes)
     await user_repo.save(user)
     await audit_change(user, audit_handler, current_user, request)
     return _to_user_response(user)
@@ -516,7 +554,7 @@ async def get_user_by_email(
     """Get user by email within a tenant."""
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     if not user:
-        raise ValueError("User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return _to_user_response(user)
 
 

@@ -8,6 +8,7 @@ This is a data container only - no business logic.
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, Enum, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
@@ -98,6 +99,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
     azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    access_scopes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")
     auth_provider: Mapped[AuthProvider] = mapped_column(
         EnumValueType(AuthProvider),
         nullable=False,

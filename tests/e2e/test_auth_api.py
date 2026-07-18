@@ -21,6 +21,7 @@ from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
 from app.core.database import get_db  # noqa: E402
+from app.core.login_rate_limit import MemoryLoginRateLimitBackend  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -39,6 +40,9 @@ async def auth_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, N
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    # The per-IP login limiter is in-process and every test shares one fake IP;
+    # without a fresh backend the file 429s itself partway through.
+    app.state.login_rate_limit_backend = MemoryLoginRateLimitBackend()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

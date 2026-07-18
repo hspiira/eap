@@ -112,11 +112,13 @@ async def auth_me(
     """
     email = current_user.email or ""
     role: str | None = None
+    access_scopes: list[str] = list(current_user.access_scopes)
     try:
         user = await user_repo.get_by_id(UserId(current_user.user_id))
         if user:
             email = user.email.value
             role = user.role.value
+            access_scopes = [sc.value for sc in user.access_scopes]
     except Exception:
         # Degrade to token-only identity rather than failing /me, but do not let a
         # DB outage look like a healthy response with a missing role.
@@ -130,6 +132,7 @@ async def auth_me(
         tenant_id=current_user.tenant_id,
         email=email,
         role=role,
+        access_scopes=access_scopes,
     )
 
 
@@ -254,6 +257,7 @@ async def login(
         email=user.email.value,
         refresh_jti=refresh_jti,
         role=user.role.value if user.role else None,
+        access_scopes=[sc.value for sc in user.access_scopes],
     )
     if refresh_jti:
         await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)
@@ -372,6 +376,7 @@ async def refresh_token(
         email=token_data.email,
         refresh_jti=refresh_jti,
         role=user.role.value if user.role else None,
+        access_scopes=[sc.value for sc in user.access_scopes],
     )
     if rotation:
         await refresh_token_repo.save(refresh_jti, token_data.user_id, token_data.tenant_id)
@@ -584,6 +589,7 @@ async def azure_callback(
         email=user.email.value,
         refresh_jti=refresh_jti,
         role=user.role.value if user.role else None,
+        access_scopes=[sc.value for sc in user.access_scopes],
     )
     if refresh_jti:
         await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)

@@ -1,6 +1,15 @@
 {
   "components": {
     "schemas": {
+      "AccessScope": {
+        "description": "Per-user grants that gate the clinical / employer bounded contexts.\n\nCLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).\nNobody holds it by default; platform admins grant it to counsellors.\nEmployer HR must never see clinical data \u2014 that is the product's core\nprivacy promise, so clinical routes fail closed on a missing grant.\nPlatform-admin status stays tenant-based and does NOT imply CLINICAL.",
+        "enum": [
+          "Clinical",
+          "EmployerPortal"
+        ],
+        "title": "AccessScope",
+        "type": "string"
+      },
       "AccreditationStatus": {
         "description": "Where the provider sits in the accreditation pipeline.",
         "enum": [
@@ -6869,6 +6878,14 @@
       "MeResponse": {
         "description": "Response schema for GET /auth/me (current user from token or cookie).",
         "properties": {
+          "access_scopes": {
+            "description": "Scope grants for this session (Clinical / EmployerPortal)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Access Scopes",
+            "type": "array"
+          },
           "email": {
             "description": "User email address",
             "title": "Email",
@@ -11088,6 +11105,14 @@
       "UserResponse": {
         "description": "Response schema for user.",
         "properties": {
+          "access_scopes": {
+            "description": "Scope grants gating the clinical/employer bounded contexts.",
+            "items": {
+              "$ref": "#/components/schemas/AccessScope"
+            },
+            "title": "Access Scopes",
+            "type": "array"
+          },
           "auth_provider": {
             "$ref": "#/components/schemas/AuthProvider",
             "default": "password",
@@ -11345,6 +11370,24 @@
           "role"
         ],
         "title": "UserUpdateRoleRequest",
+        "type": "object"
+      },
+      "UserUpdateScopesRequest": {
+        "description": "Request schema for replacing a user's access-scope grants.",
+        "properties": {
+          "access_scopes": {
+            "description": "Full replacement set of scope grants. Clinical can only be granted or revoked by a platform admin.",
+            "items": {
+              "$ref": "#/components/schemas/AccessScope"
+            },
+            "title": "Access Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "access_scopes"
+        ],
+        "title": "UserUpdateScopesRequest",
         "type": "object"
       },
       "UtilisationEventCreate": {
@@ -12588,7 +12631,7 @@
     },
     "/auth/login": {
       "post": {
-        "description": "Authenticate a user with tenant code, email, and password.\n\nReturns a JWT access token that can be used for subsequent API requests.\nThe token includes user_id, tenant_id, and email in its claims.\n\nArgs:\n    request_body: Login credentials (tenant_code, email, password)\n    request: HTTP request (for rate limit and IP)\n    tenant_repo: Tenant repository\n    user_repo: User repository\n    db: Database session\n    \nReturns:\n    LoginResponse with access token and user information\n    \nRaises:\n    HTTPException: If authentication fails (401) or rate limit exceeded (429)",
+        "description": "Authenticate a user with tenant code, email, and password.\n\nReturns a JWT access token that can be used for subsequent API requests.\nThe token includes user_id, tenant_id, and email in its claims.\n\nArgs:\n    request_body: Login credentials (tenant_code, email, password)\n    request: HTTP request (for rate limit and IP)\n    tenant_repo: Tenant repository\n    user_repo: User repository\n    db: Database session\n\nReturns:\n    LoginResponse with access token and user information\n\nRaises:\n    HTTPException: If authentication fails (401) or rate limit exceeded (429)",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -27564,6 +27607,64 @@
           }
         ],
         "summary": "Get user by ID",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/access-scopes": {
+      "patch": {
+        "description": "Replace the user's scope grants. ADMIN-only.\n\nClinical is the PHI wall: only a platform admin may grant or revoke it.\nTenant admins manage EmployerPortal for their own users.",
+        "operationId": "update_user_access_scopes_users__user_id__access_scopes_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdateScopesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Replace a user's access-scope grants",
         "tags": [
           "users"
         ]

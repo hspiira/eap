@@ -439,6 +439,20 @@ class MemberRelation(str, Enum):
     DEPENDENT_OTHER = "DependentOther"
 
 
+class AccessScope(str, Enum):
+    """Per-user grants that gate the clinical / employer bounded contexts.
+
+    CLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).
+    Nobody holds it by default; platform admins grant it to counsellors.
+    Employer HR must never see clinical data — that is the product's core
+    privacy promise, so clinical routes fail closed on a missing grant.
+    Platform-admin status stays tenant-based and does NOT imply CLINICAL.
+    """
+
+    CLINICAL = "Clinical"
+    EMPLOYER_PORTAL = "EmployerPortal"
+
+
 class CaseStatus(str, Enum):
     """Lifecycle of a clinical case."""
 

@@ -97,7 +97,7 @@ class TestGetUser:
         response = await client.get("/users/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetUserByEmail:
@@ -512,23 +512,15 @@ class TestUpdatePreferences:
 
 
 class TestRecordLogin:
-    """Tests for POST /users/{user_id}/record-login endpoint."""
+    """record-login is intentionally not an HTTP route — last_login_at is
+    server-derived during login. This pins the removal so it doesn't come back."""
 
-    async def test_record_login_success(self, client: AsyncClient, test_api_user_active: dict):
-        """Test recording user login."""
+    async def test_record_login_is_not_a_route(
+        self, client: AsyncClient, test_api_user_active: dict
+    ):
         user_id = test_api_user_active["id"]
-
         response = await client.post(f"/users/{user_id}/record-login")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["last_login_at"] is not None
-
-    async def test_record_login_not_found(self, client: AsyncClient):
-        """Test recording login for non-existent user."""
-        response = await client.post("/users/nonexistent-id/record-login")
-
-        assert response.status_code == 404
+        assert response.status_code in (404, 405)
 
 
 # =============================================================================

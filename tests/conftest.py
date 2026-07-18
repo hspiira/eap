@@ -18,6 +18,7 @@ import pytest_asyncio
 from fastapi import Depends, Request
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.api.dependencies import (
     get_audit_repository,
@@ -50,10 +51,13 @@ TEST_DATABASE_URL = os.environ.get(
     "postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test",
 )
 
-# Create test engine
+# Module-global engine + per-test event loops: pooled connections would be
+# created on one test's loop and reused on the next ("attached to a different
+# loop"). NullPool closes every connection on release so none cross loops.
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False,
+    poolclass=NullPool,
 )
 
 # Async session factory for tests

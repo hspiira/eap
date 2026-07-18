@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
+from app.domain.enums import AccessScope, AuthProvider, Language, TenantRole, UserStatus
 
 # === Request Schemas ===
 
@@ -32,6 +32,18 @@ class UserUpdateRoleRequest(BaseModel):
     """Request schema for changing a user's tenant role."""
 
     role: TenantRole = Field(..., description="New tenant role (Admin/User/Viewer).")
+
+
+class UserUpdateScopesRequest(BaseModel):
+    """Request schema for replacing a user's access-scope grants."""
+
+    access_scopes: list[AccessScope] = Field(
+        ...,
+        description=(
+            "Full replacement set of scope grants. Clinical can only be "
+            "granted or revoked by a platform admin."
+        ),
+    )
 
 
 class UserSuspendRequest(BaseModel):
@@ -113,6 +125,10 @@ class UserResponse(BaseModel):
     auth_provider: AuthProvider = Field(
         default=AuthProvider.PASSWORD,
         description="Credential type used to sign in (password or azure_ad).",
+    )
+    access_scopes: list[AccessScope] = Field(
+        default_factory=list,
+        description="Scope grants gating the clinical/employer bounded contexts.",
     )
 
     model_config = ConfigDict(from_attributes=True)

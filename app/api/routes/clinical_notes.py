@@ -21,9 +21,9 @@ from app.application.use_cases.clinical_note_use_cases import (
     SignClinicalNoteUseCase,
     UpdateDraftNoteBodyUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import require_clinical_scope, require_same_tenant
 from app.core.database import get_db
-from app.core.security import TokenData, get_current_user
+from app.core.security import TokenData
 from app.domain.entities.clinical_note import ClinicalNote
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.clinical_note_repository import (
@@ -79,7 +79,7 @@ def _to_response(n: ClinicalNote) -> ClinicalNoteResponse:
 async def create_note(
     data: CreateClinicalNoteRequest,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_clinical_scope),
     case_repo: CaseRepository = Depends(get_case_repository),
     note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -106,7 +106,7 @@ async def update_note(
     note_id: str,
     data: UpdateClinicalNoteBodyRequest,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_clinical_scope),
     note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -128,7 +128,7 @@ async def update_note(
 async def sign_note(
     note_id: str,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_clinical_scope),
     note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -151,7 +151,7 @@ async def amend_note(
     note_id: str,
     data: AmendClinicalNoteRequest,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_clinical_scope),
     note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -174,7 +174,7 @@ async def amend_note(
 @readonly()
 async def list_notes_for_case(
     case_id: str,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_clinical_scope),
     case_repo: CaseRepository = Depends(get_case_repository),
     note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     db: AsyncSession = Depends(get_db),

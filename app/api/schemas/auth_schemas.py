@@ -102,3 +102,7 @@ class MeResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     email: str = Field(..., description="User email address")
     role: str | None = Field(None, description="Tenant role (Admin/User/Viewer)")
+    access_scopes: list[str] = Field(
+        default_factory=list,
+        description="Scope grants for this session (Clinical / EmployerPortal)",
+    )

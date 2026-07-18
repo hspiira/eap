@@ -8,7 +8,7 @@ Scoped to a Tenant for multi-tenancy.
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
+from app.domain.enums import AccessScope, AuthProvider, Language, TenantRole, UserStatus
 from app.domain.events import (
     DomainEvent,
     UserActivated,
@@ -51,6 +51,7 @@ class UserEntity:
     azure_oid: str | None = None
     auth_provider: AuthProvider = AuthProvider.PASSWORD
     display_name: str | None = None
+    access_scopes: list[AccessScope] = field(default_factory=list[AccessScope])
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
@@ -228,6 +229,17 @@ class UserEntity:
             self.verify_email()
         if was_locked:
             self.events.append(UserLockoutCleared(occurred_at=now, user_id=self.id))
+
+    def set_access_scopes(self, scopes: list[AccessScope]) -> None:
+        """Replace the user's access-scope grants (deduplicated, order-stable)."""
+        seen: set[AccessScope] = set()
+        deduped: list[AccessScope] = []
+        for s in scopes:
+            if s not in seen:
+                seen.add(s)
+                deduped.append(s)
+        self.access_scopes = deduped
+        self.updated_at = utc_now()
 
     def link_azure_identity(self, azure_oid: str) -> None:
         """Link this user to an Azure AD identity (called on first SSO login)."""
