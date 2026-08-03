@@ -11,6 +11,7 @@ import type { CreateRequest, ListParams, PaginatedResponse, User } from '../type
 export interface UserListParams extends ListParams {
   is_email_verified?: boolean
   is_two_factor_enabled?: boolean
+  access_scope?: AccessScope
 }
 
 export interface UserCreate extends CreateRequest {

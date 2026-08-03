@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Case, ClinicalNote, ClinicalNoteBody } from "@/types/entities"
-import { CaseClosureReason, CaseStatus, ClinicalNoteType } from "@/types/enums"
+import { AccessScope, CaseClosureReason, CaseStatus, ClinicalNoteType } from "@/types/enums"
 import {
   CaseClosureReasonLabel,
   CasePresentingProblemLabel,
@@ -206,7 +206,7 @@ export function AssignCounsellorDialog({
   const [submitting, setSubmitting] = useState(false)
   const { data } = useQuery({
     queryKey: ["users", "list", "for-counsellor-assign"],
-    queryFn: () => usersApi.list({ limit: 100 }),
+    queryFn: () => usersApi.list({ limit: 100, access_scope: AccessScope.CLINICAL }),
     enabled: open,
   })
   const users = data?.items ?? []
@@ -229,7 +229,8 @@ export function AssignCounsellorDialog({
         <DialogHeader>
           <DialogTitle>Assign counsellor</DialogTitle>
           <DialogDescription>
-            Advancing this case to Active requires a counsellor to already be assigned.
+            Advancing this case to Active requires a counsellor to already be assigned. Only
+            users with Clinical access are shown.
           </DialogDescription>
         </DialogHeader>
         <FormField label="Counsellor" required>
