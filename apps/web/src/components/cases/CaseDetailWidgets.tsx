@@ -606,10 +606,10 @@ export function CreateNoteDialog({
 
 const NOTE_BODY_FIELD_LABELS: [key: string, label: string][] = [
   ["data", "Data"],
-  ["assessment", "Assessment"],
-  ["plan", "Plan"],
   ["subjective", "Subjective"],
   ["objective", "Objective"],
+  ["assessment", "Assessment"],
+  ["plan", "Plan"],
   ["summary", "Summary"],
 ]
 

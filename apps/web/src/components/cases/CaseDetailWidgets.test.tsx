@@ -39,4 +39,19 @@ describe("noteBodyEntries", () => {
       ["Summary", "Phone contact, brief check-in."],
     ])
   })
+
+  it("orders fully-populated SOAP sections correctly (Subjective, Objective, Assessment, Plan)", () => {
+    const entries = noteBodyEntries({
+      subjective: "Reports fatigue and difficulty concentrating.",
+      objective: "BP 120/80, HR 72, alert and oriented x3.",
+      assessment: "Adjustment disorder with mixed mood disturbance.",
+      plan: "Prescribe sertraline 50mg daily; follow-up in 2 weeks.",
+    })
+    expect(entries).toEqual([
+      ["Subjective", "Reports fatigue and difficulty concentrating."],
+      ["Objective", "BP 120/80, HR 72, alert and oriented x3."],
+      ["Assessment", "Adjustment disorder with mixed mood disturbance."],
+      ["Plan", "Prescribe sertraline 50mg daily; follow-up in 2 weeks."],
+    ])
+  })
 })
