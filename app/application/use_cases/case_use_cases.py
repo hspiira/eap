@@ -23,7 +23,7 @@ from app.domain.enums import (
     ClinicalNoteType,
     PresentingProblem,
 )
-from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.exceptions import DomainError, InvalidStateError, NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.clinical_note_repository import ClinicalNoteRepository
 from app.domain.repositories.eligible_member_repository import (
@@ -204,16 +204,20 @@ class ReferOutCaseUseCase:
         self._repo = repository
         self._notes = note_repository
 
-    async def execute(self, *, case_id: CaseId, notes: str, referred_by: UserId) -> Case:
+    async def execute(
+        self, *, case_id: CaseId, notes: str, referred_by: UserId, tenant_id: TenantId
+    ) -> Case:
         if not notes:
             raise DomainError("refer_out requires explanatory notes")
         case = await self._repo.get_by_id(case_id)
-        if case is None:
+        if case is None or case.tenant_id.value != tenant_id.value:
             raise NotFoundError(
                 f"Case not found: {case_id.value}",
                 resource_type="Case",
                 resource_id=case_id.value,
             )
+        if case.is_terminal():
+            raise InvalidStateError(f"Cannot refer out a {case.status.value} case")
         now = utc_now()
         note = ClinicalNote(
             id=ClinicalNoteId(generate_cuid()),

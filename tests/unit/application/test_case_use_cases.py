@@ -19,7 +19,7 @@ from app.domain.enums import (
     PresentingProblem,
     UserStatus,
 )
-from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.exceptions import DomainError, InvalidStateError, NotFoundError
 from app.domain.value_objects.core import (
     CaseId,
     ClientId,
@@ -31,7 +31,12 @@ from app.domain.value_objects.core import (
 )
 
 
-def _case(*, tenant_id: str = "t-1", referral_notes: str | None = None) -> Case:
+def _case(
+    *,
+    tenant_id: str = "t-1",
+    referral_notes: str | None = None,
+    status: CaseStatus = CaseStatus.INTAKE,
+) -> Case:
     now = datetime.now(UTC)
     return Case(
         id=CaseId("case-1"),
@@ -40,7 +45,7 @@ def _case(*, tenant_id: str = "t-1", referral_notes: str | None = None) -> Case:
         client_id=ClientId("client-1"),
         presenting_problem=PresentingProblem.STRESS,
         referral_source=CaseReferralSource.SELF,
-        status=CaseStatus.INTAKE,
+        status=status,
         opened_at=now,
         referral_notes=referral_notes,
         created_at=now,
@@ -48,7 +53,9 @@ def _case(*, tenant_id: str = "t-1", referral_notes: str | None = None) -> Case:
     )
 
 
-def _user(*, user_id: str, tenant_id: str = "t-1", scopes: list[AccessScope] | None = None) -> UserEntity:
+def _user(
+    *, user_id: str, tenant_id: str = "t-1", scopes: list[AccessScope] | None = None
+) -> UserEntity:
     now = datetime.now(UTC)
     return UserEntity(
         id=UserId(user_id),
@@ -116,6 +123,7 @@ class TestReferOutCaseUseCase:
             case_id=CaseId("case-1"),
             notes="Client requires specialised substance-use care; referring externally.",
             referred_by=UserId("counsellor-1"),
+            tenant_id=TenantId("t-1"),
         )
 
         assert result.status == CaseStatus.REFERRED_OUT
@@ -132,15 +140,57 @@ class TestReferOutCaseUseCase:
         cases.store["case-1"] = _case()
         use_case = ReferOutCaseUseCase(cases, _FakeNoteRepo())
         with pytest.raises(DomainError, match="notes"):
-            await use_case.execute(case_id=CaseId("case-1"), notes="", referred_by=UserId("u-1"))
+            await use_case.execute(
+                case_id=CaseId("case-1"),
+                notes="",
+                referred_by=UserId("u-1"),
+                tenant_id=TenantId("t-1"),
+            )
 
     @pytest.mark.asyncio
     async def test_unknown_case_404s(self):
         use_case = ReferOutCaseUseCase(_FakeCaseRepo(), _FakeNoteRepo())
         with pytest.raises(NotFoundError):
             await use_case.execute(
-                case_id=CaseId("ghost"), notes="notes", referred_by=UserId("u-1")
+                case_id=CaseId("ghost"),
+                notes="notes",
+                referred_by=UserId("u-1"),
+                tenant_id=TenantId("t-1"),
             )
+
+    @pytest.mark.asyncio
+    async def test_case_in_another_tenant_404s_and_creates_no_note(self):
+        cases = _FakeCaseRepo()
+        notes = _FakeNoteRepo()
+        cases.store["case-1"] = _case(tenant_id="t-2")
+        use_case = ReferOutCaseUseCase(cases, notes)
+
+        with pytest.raises(NotFoundError):
+            await use_case.execute(
+                case_id=CaseId("case-1"),
+                notes="notes",
+                referred_by=UserId("u-1"),
+                tenant_id=TenantId("t-1"),
+            )
+
+        assert notes.store == {}
+
+    @pytest.mark.asyncio
+    async def test_terminal_case_raises_invalid_state_and_creates_no_note(self):
+        cases = _FakeCaseRepo()
+        notes = _FakeNoteRepo()
+        cases.store["case-1"] = _case(status=CaseStatus.CLOSED)
+        use_case = ReferOutCaseUseCase(cases, notes)
+
+        with pytest.raises(InvalidStateError):
+            await use_case.execute(
+                case_id=CaseId("case-1"),
+                notes="notes",
+                referred_by=UserId("u-1"),
+                tenant_id=TenantId("t-1"),
+            )
+
+        assert notes.store == {}
 
 
 class TestAssignCounsellorUseCase:

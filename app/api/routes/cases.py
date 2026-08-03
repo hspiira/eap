@@ -234,6 +234,7 @@ async def refer_out_case(
         case_id=CaseId(case_id),
         notes=data.notes,
         referred_by=UserId(current_user.user_id),
+        tenant_id=TenantId(current_user.tenant_id),
     )
     await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)

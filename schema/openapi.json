@@ -27312,6 +27312,24 @@
             }
           },
           {
+            "description": "Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)",
+            "in": "query",
+            "name": "access_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AccessScope"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)",
+              "title": "Access Scope"
+            }
+          },
+          {
             "description": "Field to sort by",
             "in": "query",
             "name": "sort_by",

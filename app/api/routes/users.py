@@ -487,7 +487,8 @@ async def list_users(
     is_two_factor_enabled: bool | None = Query(None, description="Filter by two-factor enrolment"),
     search: str | None = Query(None, description="Search in user email"),
     access_scope: AccessScope | None = Query(
-        None, description="Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)"
+        None,
+        description="Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)",
     ),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
