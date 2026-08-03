@@ -486,6 +486,9 @@ async def list_users(
     is_email_verified: bool | None = Query(None, description="Filter by email verification status"),
     is_two_factor_enabled: bool | None = Query(None, description="Filter by two-factor enrolment"),
     search: str | None = Query(None, description="Search in user email"),
+    access_scope: AccessScope | None = Query(
+        None, description="Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)"
+    ),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
@@ -505,6 +508,7 @@ async def list_users(
         offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
+        access_scope=access_scope,
     )
 
     total = await user_repo.count(
@@ -513,6 +517,7 @@ async def list_users(
         is_email_verified=is_email_verified,
         is_two_factor_enabled=is_two_factor_enabled,
         search=search,
+        access_scope=access_scope,
     )
 
     return UserListResponse(

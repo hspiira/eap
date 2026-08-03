@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import func, select, update
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import UserStatus
+from app.domain.enums import AccessScope, UserStatus
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
@@ -81,6 +81,7 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
         offset: int = 0,
         sort_by: str = "created_at",
         sort_desc: bool = True,
+        access_scope: AccessScope | None = None,
     ) -> Sequence[UserEntity]:
         """List users with filtering, searching, and pagination."""
         # Build filters dict for base class
@@ -103,7 +104,10 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
             filters=filters,
             search=search,
             search_fields=["email"],
-            extra_conditions=self._verified_conditions(is_email_verified),
+            extra_conditions=[
+                *self._verified_conditions(is_email_verified),
+                *self._access_scope_conditions(access_scope),
+            ],
         )
 
     @staticmethod
@@ -115,6 +119,13 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
             return [UserModel.email_verified_at.isnot(None)]
         return [UserModel.email_verified_at.is_(None)]
 
+    @staticmethod
+    def _access_scope_conditions(access_scope: AccessScope | None) -> list[Any]:
+        """SQL condition for the `access_scope` filter. Shared by list_all/count."""
+        if access_scope is None:
+            return []
+        return [UserModel.access_scopes.contains([access_scope.value])]
+
     async def count(
         self,
         tenant_id: TenantId,
@@ -122,6 +133,7 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
         is_email_verified: bool | None = None,
         is_two_factor_enabled: bool | None = None,
         search: str | None = None,
+        access_scope: AccessScope | None = None,
     ) -> int:
         """Count users matching filters. Must mirror list_all's filters exactly."""
         stmt = select(func.count(UserModel.id)).where(
@@ -134,6 +146,8 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
         if is_two_factor_enabled is not None:
             stmt = stmt.where(UserModel.is_two_factor_enabled == is_two_factor_enabled)
         for condition in self._verified_conditions(is_email_verified):
+            stmt = stmt.where(condition)
+        for condition in self._access_scope_conditions(access_scope):
             stmt = stmt.where(condition)
         if search:
             stmt = stmt.where(UserModel.email.ilike(f"%{search}%"))
