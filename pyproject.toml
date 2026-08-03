@@ -172,7 +172,8 @@ ignore_imports = [
     # Tech debt (must be eliminated; track in IMPLEMENTATION_PLAN.md Phase 1):
     "app.api.routes.auth -> app.infrastructure.repositories.password_set_token_repository",
     "app.api.routes.auth -> app.infrastructure.repositories.refresh_token_repository",
-    "app.api.routes.auth -> app.infrastructure.services.azure_sso_service",
+    "app.api.routes.auth_azure -> app.infrastructure.repositories.refresh_token_repository",
+    "app.api.routes.auth_azure -> app.infrastructure.services.azure_sso_service",
     "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
     "app.api.routes.clients -> app.infrastructure.models.client_model",
     "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",

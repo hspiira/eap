@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app.api.routes.activities import router as activities_router
 from app.api.routes.audit import router as audit_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.auth_azure import router as auth_azure_router
 from app.api.routes.benchmark import router as benchmark_router
 from app.api.routes.care_callbacks import router as care_callbacks_router
 from app.api.routes.cases import router as cases_router
@@ -42,6 +43,7 @@ from app.api.routes.users import router as users_router
 def register_routers(app: FastAPI) -> None:
     """Register all API routers on the FastAPI app."""
     app.include_router(auth_router)
+    app.include_router(auth_azure_router)
     app.include_router(tenants_router)
     app.include_router(users_router)
     app.include_router(persons_router)
@@ -78,6 +80,7 @@ __all__ = [
     "activities_router",
     "audit_router",
     "auth_router",
+    "auth_azure_router",
     "benchmark_router",
     "care_callbacks_router",
     "cases_router",
