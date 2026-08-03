@@ -395,19 +395,27 @@ export function CloseCaseDialog({
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(CaseClosureReason).map((r) => (
-                <SelectItem
-                  key={r}
-                  value={r}
-                  disabled={r === CaseClosureReason.GOALS_MET && goalsMetBlocked}
-                >
-                  {CaseClosureReasonLabel[r]}
-                </SelectItem>
-              ))}
+              {Object.values(CaseClosureReason).map((r) => {
+                const isGoalsMetBlocked = r === CaseClosureReason.GOALS_MET && goalsMetBlocked
+                return (
+                  <SelectItem
+                    key={r}
+                    value={r}
+                    disabled={isGoalsMetBlocked}
+                    title={
+                      isGoalsMetBlocked
+                        ? "Requires a closure screener to be recorded first"
+                        : undefined
+                    }
+                  >
+                    {CaseClosureReasonLabel[r]}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </FormField>
-        {reason === CaseClosureReason.GOALS_MET && goalsMetBlocked ? (
+        {goalsMetBlocked ? (
           <p className="text-xs text-danger">
             Goals-met closure needs a closure screener recorded first.
           </p>
