@@ -4,11 +4,17 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
+import { parseError } from '@/api/errors'
+import {
+  buildAuthHeaders,
+  buildHeaders,
+  buildUrl,
+  type SessionContext,
+} from '@/api/request-shape'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type {
   ApiClientConfig,
-  FieldErrors,
   QueryParams,
   RequestOptions,
 } from '@/types/api'
@@ -179,104 +185,30 @@ class ApiClient {
     }
   }
 
-  /**
-   * Paths that must work WITHOUT tenant context (auth, tenant bootstrap).
-   * All other endpoints require tenant_id: we add ?tenant_id= and x-tenant-id for every
-   * GET/POST/PATCH/DELETE (list, create, update, etc.). Backend requires tenant context
-   * for all data fetch and post operations.
-   * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context.
-   */
-  private shouldSkipTenantId(endpoint: string): boolean {
-    const pathname = new URL(endpoint, 'http://x').pathname
-    if (pathname.startsWith('/auth/')) return true
-    if (pathname === '/tenants') return true
-    if (pathname.startsWith('/tenants/check-code')) return true
-    if (/^\/tenants\/[^/]+$/.test(pathname)) return true // GET /tenants/:id
-    return false
-  }
-
-  /**
-   * Build request URL with query parameters
-   */
-  private buildUrl(endpoint: string, params?: QueryParams): string {
-    const url = new URL(endpoint, this.baseUrl)
-    const tenantId = this.getTenantId()
-    const skipTenant = this.shouldSkipTenantId(endpoint)
-    const entries = params ? Object.entries(params) : []
-    const hasExplicitTenant = entries.some(
-      ([key, value]) => key === 'tenant_id' && value !== undefined && value !== null,
-    )
-
-    if (tenantId && !skipTenant && !hasExplicitTenant) {
-      url.searchParams.set('tenant_id', tenantId)
+  /** Snapshot of the session state request-shaping functions need. */
+  private session(): SessionContext {
+    return {
+      token: this.getToken(),
+      csrfToken: this.getCsrfToken(),
+      tenantId: this.getTenantId(),
+      useCookies: useCookies(),
     }
-
-    entries.forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          value.forEach((v) => url.searchParams.append(key, String(v)))
-        } else {
-          url.searchParams.set(key, String(value))
-        }
-      }
-    })
-
-    return url.toString()
   }
 
-  /**
-   * Build request headers
-   */
+  private buildUrl(endpoint: string, params?: QueryParams): string {
+    return buildUrl(this.baseUrl, endpoint, this.getTenantId(), params)
+  }
+
   private buildHeaders(
     customHeaders?: Record<string, string>,
     endpoint?: string,
-    excludeSensitiveHeaders?: boolean
+    excludeSensitiveHeaders?: boolean,
   ): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    }
-
-    if (!excludeSensitiveHeaders) {
-      if (!useCookies()) {
-        const token = this.getToken()
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-      } else {
-        const csrf = this.getCsrfToken()
-        if (csrf) headers['X-CSRF-Token'] = csrf
-      }
-      const tenantId = this.getTenantId()
-      const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
-      if (tenantId && !skipTenant) {
-        headers['x-tenant-id'] = tenantId
-      }
-    }
-
-    return headers
+    return buildHeaders(this.session(), customHeaders, endpoint, excludeSensitiveHeaders)
   }
 
-  /**
-   * Build auth-only headers (no Content-Type) for FormData/blob requests
-   */
   private buildAuthHeaders(endpoint?: string): Record<string, string> {
-    const headers: Record<string, string> = {}
-    if (!useCookies()) {
-      const token = this.getToken()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-    } else {
-      const csrf = this.getCsrfToken()
-      if (csrf) headers['X-CSRF-Token'] = csrf
-    }
-    const tenantId = this.getTenantId()
-    const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
-    if (tenantId && !skipTenant) {
-      headers['x-tenant-id'] = tenantId
-    }
-    return headers
+    return buildAuthHeaders(this.session(), endpoint)
   }
 
   /**
@@ -316,7 +248,7 @@ class ApiClient {
     )
 
     if (!response.ok) {
-      throw await this.parseError(response)
+      throw await parseError(response)
     }
 
     return this.parseBody<T>(response)
@@ -352,89 +284,6 @@ class ApiClient {
    * Parse error response.
    * Supports both EAP shape ({ error, message, details? }) and FastAPI HTTPException ({ detail: string | array }).
    */
-  private async parseError(response: Response): Promise<ApiError> {
-    let body: unknown
-    try {
-      body = await response.json()
-    } catch (_err) {
-      body = null
-    }
-
-    const message = this.normalizeErrorMessageBody(body, response)
-    const errorCode = this.normalizeErrorCodeBody(body, response.status)
-    const fieldErrors = this.normalizeFieldErrorsBody(body)
-    const data = this.normalizeErrorDataBody(body)
-
-    return new ApiError(message, errorCode, response.status, fieldErrors, data)
-  }
-
-  /**
-   * Pass through server-provided extra fields (e.g. `retry_after_seconds` for lockout)
-   * minus the ones we already extract into typed fields.
-   */
-  private normalizeErrorDataBody(body: unknown): Record<string, unknown> | undefined {
-    if (!body || typeof body !== 'object') return undefined
-    const b = body as Record<string, unknown>
-    const reserved = new Set(['error', 'message', 'detail', 'details', 'timestamp', 'path', 'request_id'])
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(b)) {
-      if (!reserved.has(k)) out[k] = v
-    }
-    return Object.keys(out).length > 0 ? out : undefined
-  }
-
-  private normalizeErrorMessageBody(body: unknown, response: Response): string {
-    if (body && typeof body === 'object') {
-      const b = body as Record<string, unknown>
-      if (typeof b.message === 'string' && b.message) return b.message
-      const detail = b.detail
-      if (typeof detail === 'string' && detail) return detail
-      if (Array.isArray(detail) && detail.length > 0) {
-        const first = detail[0]
-        if (first && typeof first === 'object' && first !== null && 'msg' in first && typeof (first as { msg: unknown }).msg === 'string') {
-          return (first as { msg: string }).msg
-        }
-        return String(first)
-      }
-    }
-    return response.statusText || 'An unknown error occurred'
-  }
-
-  private normalizeErrorCodeBody(body: unknown, status: number): string {
-    if (body && typeof body === 'object') {
-      const b = body as Record<string, unknown>
-      if (typeof b.error === 'string' && b.error) return b.error
-    }
-    switch (status) {
-      case 401:
-        return 'AUTHENTICATION_ERROR'
-      case 403:
-        return 'AUTHORIZATION_ERROR'
-      case 404:
-        return 'NOT_FOUND'
-      default:
-        return 'HTTP_ERROR'
-    }
-  }
-
-  private normalizeFieldErrorsBody(body: unknown): FieldErrors | undefined {
-    if (!body || typeof body !== 'object') return undefined
-    const b = body as Record<string, unknown>
-    const details = b.details
-    if (!Array.isArray(details)) return undefined
-    const acc: FieldErrors = {}
-    for (const d of details) {
-      if (d && typeof d === 'object' && d !== null && 'field' in d && (d as { field: unknown }).field) {
-        const field = String((d as { field: unknown }).field)
-        const msg = typeof (d as { message?: unknown }).message === 'string'
-          ? (d as { message: string }).message
-          : String(d)
-        acc[field] = msg
-      }
-    }
-    return Object.keys(acc).length > 0 ? acc : undefined
-  }
-
   /**
    * Handle authentication errors
    */
@@ -563,7 +412,7 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        throw await this.parseError(response)
+        throw await parseError(response)
       }
 
       return this.parseBody<T>(response)
