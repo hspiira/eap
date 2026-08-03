@@ -1,51 +1,55 @@
+import { useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  Phone,
-} from "lucide-react"
+import { AlertTriangle, Phone } from "lucide-react"
 
-import { CrisisAlert } from "@/components/care-callbacks/CrisisAlert"
+import { RailSection, Stat } from "@/components/common/DetailPrimitives"
+import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
 import {
-  DetailCard,
-  RailSection,
-  Stat,
-} from "@/components/common/DetailPrimitives"
-import { nameInitials } from "@/lib/display"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { CallbackCase, CallbackOutcome } from "@/types/entities"
-import { CallbackCaseStatus } from "@/types/enums"
+import type { OutreachRecord } from "@/types/entities"
+import { OutreachStatus } from "@/types/enums"
 
 export function Hero({
-  callCase,
+  outreach,
   campaignName,
 }: {
-  callCase: CallbackCase
+  outreach: OutreachRecord
   campaignName: string | null
 }) {
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
       >
-        {nameInitials(callCase.person_display_name)}
+        <Phone className="size-4" />
       </span>
-      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
-        {callCase.person_display_name}
+      <h1 className="shrink truncate font-mono text-sm font-semibold leading-tight text-fg">
+        {outreach.person_id}
       </h1>
       {campaignName ? (
         <Link
           to="/care-callbacks/$campaignId"
-          params={{ campaignId: callCase.campaign_id }}
+          params={{ campaignId: outreach.campaign_id }}
           className="text-xs text-fg/65 hover:text-primary"
         >
           {campaignName}
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
-      <CaseStatusPill status={callCase.status} />
-      {callCase.crisis_flagged ? (
+      <CaseStatusPill status={outreach.status} />
+      {outreach.crisis_flag ? (
         <span className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[11px] font-medium text-danger-fg">
           <AlertTriangle className="size-3" />
           Crisis
@@ -56,40 +60,102 @@ export function Hero({
 }
 
 export function DetailRail({
-  callCase,
+  outreach,
   campaignId,
   campaignName,
-  crisisActive,
+  isMine,
+  actionLoading,
+  onAssignToMe,
+  onLogAttempt,
+  onOpenTerminate,
+  onOpenEscalate,
 }: {
-  callCase: CallbackCase
+  outreach: OutreachRecord
   campaignId: string
   campaignName: string | null
-  crisisActive: boolean
+  isMine: boolean
+  actionLoading: boolean
+  onAssignToMe: () => void
+  onLogAttempt: () => void
+  onOpenTerminate: () => void
+  onOpenEscalate: () => void
 }) {
+  const isTerminal =
+    outreach.status === OutreachStatus.COMPLETED ||
+    outreach.status === OutreachStatus.UNREACHABLE ||
+    outreach.status === OutreachStatus.DECLINED ||
+    outreach.status === OutreachStatus.ESCALATED
+  const canLogAttempt = isMine && !isTerminal && outreach.status !== OutreachStatus.PENDING
+  const canTerminate = isMine && !isTerminal && outreach.status !== OutreachStatus.PENDING
+
   return (
     <div className="space-y-5">
-      <RailSection title="Case state">
+      <RailSection title="Record">
         <div className="grid grid-cols-2 gap-3">
-          <Stat variant="text" label="Attempts" value={callCase.attempt_count} />
-          <Stat variant="text" label="Status" value={<CaseStatusPill status={callCase.status} />} />
-          <Stat variant="text"
-            label="Started"
-            value={
-              callCase.started_at
-                ? new Date(callCase.started_at).toLocaleDateString()
-                : "—"
-            }
+          <Stat variant="text" label="Attempts" value={outreach.contact_attempts} />
+          <Stat variant="text" label="Status" value={<CaseStatusPill status={outreach.status} />} />
+          <Stat
+            variant="text"
+            label="Assigned"
+            value={outreach.assigned_at ? new Date(outreach.assigned_at).toLocaleDateString() : "—"}
           />
-          <Stat variant="text"
-            label="Closed"
-            value={
-              callCase.closed_at
-                ? new Date(callCase.closed_at).toLocaleDateString()
-                : "—"
-            }
+          <Stat
+            variant="text"
+            label="Completed"
+            value={outreach.completed_at ? new Date(outreach.completed_at).toLocaleDateString() : "—"}
           />
         </div>
       </RailSection>
+
+      {!isTerminal ? (
+        <RailSection title="Actions">
+          <div className="space-y-2">
+            {outreach.status === OutreachStatus.PENDING ? (
+              <Button
+                size="sm"
+                className="h-7 w-full gap-1.5"
+                onClick={onAssignToMe}
+                disabled={actionLoading}
+              >
+                Claim this record
+              </Button>
+            ) : null}
+            {canLogAttempt ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 w-full gap-1.5"
+                onClick={onLogAttempt}
+                disabled={actionLoading}
+              >
+                Log contact attempt
+              </Button>
+            ) : null}
+            {canTerminate ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 w-full gap-1.5"
+                  onClick={onOpenTerminate}
+                  disabled={actionLoading}
+                >
+                  Complete / no answer / decline
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 w-full gap-1.5 text-danger"
+                  onClick={onOpenEscalate}
+                  disabled={actionLoading}
+                >
+                  Escalate
+                </Button>
+              </>
+            ) : null}
+          </div>
+        </RailSection>
+      ) : null}
 
       <RailSection title="Campaign">
         <Link
@@ -112,98 +178,152 @@ export function DetailRail({
         </Link>
       </RailSection>
 
-      <RailSection title="Subject">
+      <RailSection title="Person">
         <Link
           to="/persons/$personId"
-          params={{ personId: callCase.person_id }}
+          params={{ personId: outreach.person_id }}
           className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
         >
           <span
             aria-hidden
             className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {nameInitials(callCase.person_display_name)}
+            {outreach.person_id.slice(0, 2).toUpperCase()}
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-fg">
-              {callCase.person_display_name}
-            </p>
-            <p className="truncate font-mono text-[11px] text-fg/55">
-              {callCase.person_id.slice(0, 8)}
-            </p>
-          </div>
+          <p className="truncate font-mono text-[11px] text-fg/55">{outreach.person_id}</p>
         </Link>
       </RailSection>
-
-      {crisisActive ? (
-        <RailSection title="Crisis">
-          <p className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger-fg">
-            <AlertTriangle className="mr-1 inline size-3" />
-            Crisis protocol must be invoked. Submitting will latch this case to{" "}
-            <em>Crisis Escalated</em>.
-          </p>
-        </RailSection>
-      ) : null}
     </div>
   )
 }
 
-export function ExistingOutcomeCard({ outcome }: { outcome: CallbackOutcome }) {
-  return (
-    <DetailCard title="Outcome on file">
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-xs text-fg/55">
-          {new Date(outcome.recorded_at).toLocaleString()} · by{" "}
-          <span className="font-mono">{outcome.recorded_by_user_id}</span>
-        </span>
-      </header>
-      {outcome.crisis_flagged ? (
-        <CrisisAlert reasons={outcome.crisis_reasons} />
-      ) : null}
-      <div className="mt-3 space-y-3">
-        <AnswersBlock title="Pre-call answers" answers={outcome.pre_answers} />
-        {outcome.post_answers ? (
-          <AnswersBlock title="Post-call answers" answers={outcome.post_answers} />
-        ) : null}
-        {outcome.counsellor_notes ? (
-          <div>
-            <p className="text-[11px] font-semibold tracking-wide text-fg/55">
-              Counsellor notes
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm text-fg">
-              {outcome.counsellor_notes}
-            </p>
-          </div>
-        ) : null}
-      </div>
-    </DetailCard>
-  )
-}
+const TERMINATE_OPTIONS = [
+  { key: "complete", label: "Completed", action: "complete" as const },
+  { key: "unreachable", label: "No answer / unreachable", action: "unreachable" as const },
+  { key: "declined", label: "Declined", action: "decline" as const },
+]
+type TerminateAction = (typeof TERMINATE_OPTIONS)[number]["action"]
 
-export function AnswersBlock({
-  title,
-  answers,
+export function TerminateDialog({
+  open,
+  onOpenChange,
+  onConfirm,
 }: {
-  title: string
-  answers: Record<string, string | number | string[] | null>
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (action: TerminateAction, notes: string) => Promise<void>
 }) {
+  const [action, setAction] = useState<TerminateAction>("complete")
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleConfirm = async () => {
+    setSubmitting(true)
+    try {
+      await onConfirm(action, notes.trim())
+      onOpenChange(false)
+      setNotes("")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <div>
-      <p className="text-[11px] font-semibold tracking-wide text-fg/55">{title}</p>
-      <pre className="mt-1 whitespace-pre-wrap wrap-break-word rounded-sm border border-fg/10 bg-bg px-2.5 py-2 text-xs text-fg/80">
-        {JSON.stringify(answers, null, 2)}
-      </pre>
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Close out this record</DialogTitle>
+        </DialogHeader>
+        <FormField label="Outcome" required>
+          <RadioGroup value={action} onValueChange={(v) => setAction(v as TerminateAction)}>
+            <div className="space-y-1.5">
+              {TERMINATE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.key}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-2 text-sm",
+                    action === opt.action ? "border-primary/40 bg-primary/5" : "border-fg/15",
+                  )}
+                >
+                  <RadioGroupItem value={opt.action} />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </RadioGroup>
+        </FormField>
+        <FormField label="Notes" optional htmlFor="terminate-notes">
+          <Textarea id="terminate-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </FormField>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleConfirm} disabled={submitting}>
+            {submitting ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
+export function EscalateDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (notes: string) => Promise<void>
+}) {
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleConfirm = async () => {
+    if (!notes.trim()) return
+    setSubmitting(true)
+    try {
+      await onConfirm(notes.trim())
+      onOpenChange(false)
+      setNotes("")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Escalate</DialogTitle>
+          <DialogDescription>
+            Notes are required — they explain why this is being escalated.
+          </DialogDescription>
+        </DialogHeader>
+        <FormField label="Notes" required>
+          <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </FormField>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleConfirm} disabled={!notes.trim() || submitting}>
+            {submitting ? "Escalating…" : "Escalate"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function CaseStatusPill({ status }: { status: OutreachStatus }) {
   const tone =
-    status === CallbackCaseStatus.CRISIS_ESCALATED
+    status === OutreachStatus.ESCALATED
       ? "border-danger/30 bg-danger-soft text-danger-fg"
-      : status === CallbackCaseStatus.COMPLETED
+      : status === OutreachStatus.COMPLETED
         ? "border-primary/30 bg-primary/10 text-primary"
-        : status === CallbackCaseStatus.IN_PROGRESS
+        : status === OutreachStatus.CONTACTED
           ? "border-fg/25 bg-bg text-fg"
           : "border-fg/15 bg-bg text-fg/75"
   return (

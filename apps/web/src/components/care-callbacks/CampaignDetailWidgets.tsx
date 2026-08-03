@@ -1,12 +1,17 @@
+import { useEffect, useState } from "react"
+
 import { Link } from "@tanstack/react-router"
 import {
   AlertTriangle,
   ChevronRight,
   Phone,
   ShieldCheck,
+  X,
 } from "lucide-react"
 
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
+import { personsApi } from "@/api/endpoints/persons"
+import { usersApi } from "@/api/endpoints/users"
 import {
   DetailCard,
   DetailGrid,
@@ -15,6 +20,16 @@ import {
   Stat,
 } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -23,16 +38,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { nameInitials } from "@/lib/display"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { displayName, nameInitials } from "@/lib/display"
+import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { CampaignStatusPill } from "@/routes/care-callbacks/index"
 import type {
   CallbackCampaign,
   CallbackCampaignAggregate,
-  CallbackCase,
   Client,
+  OutreachRecord,
+  Person,
+  User,
 } from "@/types/entities"
-import { CallbackCaseStatus } from "@/types/enums"
+import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
 export function Hero({
   campaign,
@@ -72,15 +91,15 @@ export function CasesPanel({
   cases,
   loading,
 }: {
-  cases: CallbackCase[]
+  cases: OutreachRecord[]
   loading: boolean
 }) {
-  if (loading) return <p className="text-sm text-fg/65">Loading cases…</p>
+  if (loading) return <p className="text-sm text-fg/65">Loading outreach records…</p>
   if (cases.length === 0) {
     return (
       <EmptyState
-        title="No cases generated yet"
-        description="Cases are seeded into counsellor worklists when the campaign is activated."
+        title="No outreach records yet"
+        description="Enrol persons into this campaign to create Pending outreach records."
       />
     )
   }
@@ -90,7 +109,7 @@ export function CasesPanel({
         <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
           <TableRow className="border-fg/8 hover:bg-transparent">
             <TableHead>Person</TableHead>
-            <TableHead>Assigned</TableHead>
+            <TableHead>Counsellor</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-fg/65">Attempts</TableHead>
             <TableHead className="w-10 text-right text-fg/65">
@@ -105,27 +124,31 @@ export function CasesPanel({
                 <Link
                   to="/care-callbacks/worklist/$caseId"
                   params={{ caseId: c.id }}
-                  className="text-sm font-medium text-fg group-hover:text-primary"
+                  className="font-mono text-xs text-fg group-hover:text-primary"
                 >
-                  {c.person_display_name}
+                  {c.person_id}
                 </Link>
               </TableCell>
               <TableCell>
-                <Link
-                  to="/users/$userId"
-                  params={{ userId: c.assigned_user_id }}
-                  className="font-mono text-xs text-fg/75 hover:text-primary"
-                >
-                  {c.assigned_user_id}
-                </Link>
+                {c.counsellor_id ? (
+                  <Link
+                    to="/users/$userId"
+                    params={{ userId: c.counsellor_id }}
+                    className="font-mono text-xs text-fg/75 hover:text-primary"
+                  >
+                    {c.counsellor_id}
+                  </Link>
+                ) : (
+                  <span className="text-xs text-fg/45">Unassigned</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1.5">
                   <CaseStatusPill status={c.status} />
-                  {c.crisis_flagged ? (
+                  {c.crisis_flag ? (
                     <span
                       className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger-fg"
-                      title="Crisis protocol invoked"
+                      title="Crisis flag raised"
                     >
                       <AlertTriangle className="size-3" />
                       Crisis
@@ -134,7 +157,7 @@ export function CasesPanel({
                 </div>
               </TableCell>
               <TableCell className="font-mono text-xs text-fg/75">
-                {c.attempt_count}
+                {c.contact_attempts}
               </TableCell>
               <TableCell className="text-right">
                 <Link
@@ -246,23 +269,38 @@ export function DetailRail({
   campaign,
   client,
   completionPct,
+  inProgressCount,
   crisisCount,
+  onActivate,
+  onComplete,
+  onArchive,
+  onEnrol,
+  actionLoading,
 }: {
   campaign: CallbackCampaign
   client: Client | null
   completionPct: number
+  inProgressCount: number
   crisisCount: number
+  onActivate: () => void
+  onComplete: () => void
+  onArchive: () => void
+  onEnrol: () => void
+  actionLoading: boolean
 }) {
+  const isDraft = campaign.status === CareCallbackCampaignStatus.DRAFT
+  const isActive = campaign.status === CareCallbackCampaignStatus.ACTIVE
+  const isCompleted = campaign.status === CareCallbackCampaignStatus.COMPLETED
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Cases" value={campaign.case_count} />
+          <Stat label="Target" value={campaign.target_count} />
           <Stat
             label="Done"
             value={`${completionPct}%`}
           />
-          <Stat label="In progress" value={campaign.cases_in_progress} />
+          <Stat label="In progress" value={inProgressCount} />
           <Stat
             label="Crisis"
             value={
@@ -273,6 +311,58 @@ export function DetailRail({
               )
             }
           />
+        </div>
+      </RailSection>
+
+      <RailSection title="Lifecycle">
+        <div className="space-y-2">
+          {isDraft || isActive ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 w-full gap-1.5"
+              onClick={onEnrol}
+              disabled={actionLoading}
+            >
+              Enrol persons
+            </Button>
+          ) : null}
+          {isDraft ? (
+            <Button
+              size="sm"
+              className="h-7 w-full gap-1.5"
+              onClick={onActivate}
+              disabled={actionLoading || campaign.counsellor_pool.length === 0}
+              title={
+                campaign.counsellor_pool.length === 0
+                  ? "Add at least one counsellor to activate"
+                  : undefined
+              }
+            >
+              Activate
+            </Button>
+          ) : null}
+          {isActive ? (
+            <Button
+              size="sm"
+              className="h-7 w-full gap-1.5"
+              onClick={onComplete}
+              disabled={actionLoading}
+            >
+              Complete
+            </Button>
+          ) : null}
+          {isDraft || isCompleted ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 w-full gap-1.5 text-danger"
+              onClick={onArchive}
+              disabled={actionLoading}
+            >
+              Archive
+            </Button>
+          ) : null}
         </div>
       </RailSection>
 
@@ -308,11 +398,11 @@ export function DetailRail({
   )
 }
 
-export function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
+export function CaseStatusPill({ status }: { status: OutreachStatus }) {
   const tone =
-    status === CallbackCaseStatus.CRISIS_ESCALATED
+    status === OutreachStatus.ESCALATED
       ? "border-danger/30 bg-danger-soft text-danger-fg"
-      : status === CallbackCaseStatus.COMPLETED
+      : status === OutreachStatus.COMPLETED
         ? "border-primary/30 bg-primary/10 text-primary"
         : "border-fg/15 bg-bg text-fg/75"
   return (
@@ -333,4 +423,216 @@ function topHistogramEntry(h: Record<string, number>): string {
   entries.sort((a, b) => b[1] - a[1])
   const [value, count] = entries[0]
   return `${value} (${count})`
+}
+
+export function CounsellorPoolDialog({
+  open,
+  onOpenChange,
+  currentPool,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  currentPool: string[]
+  onSave: (pool: string[]) => Promise<void>
+}) {
+  const [pool, setPool] = useState<string[]>(currentPool)
+  const [submitting, setSubmitting] = useState(false)
+  const [query, setQuery] = useState("")
+  const debounced = useDebouncedValue(query.trim(), 250)
+
+  useEffect(() => {
+    if (open) setPool(currentPool)
+  }, [open, currentPool])
+
+  const list = useEntityList<User>({
+    resource: "users",
+    params: { page: 1, limit: 8, search: debounced || undefined },
+    listFn: usersApi.list,
+  })
+  const items = list.data?.items ?? []
+  const selectedSet = new Set(pool)
+  const toggle = (id: string) =>
+    setPool((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+
+  const handleSave = async () => {
+    setSubmitting(true)
+    try {
+      await onSave(pool)
+      onOpenChange(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Counsellor pool</DialogTitle>
+          <DialogDescription>
+            Who can claim outreach records for this campaign. Requires at least one
+            counsellor before the campaign can be activated.
+          </DialogDescription>
+        </DialogHeader>
+        {pool.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {pool.map((id) => {
+              const user = items.find((u) => u.id === id)
+              return (
+                <span
+                  key={id}
+                  className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs text-primary"
+                >
+                  {user?.email ?? id.slice(0, 12)}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggle(id)}
+                    aria-label={`Remove ${user?.email ?? id}`}
+                    className="size-4 p-0 hover:bg-primary/15"
+                  >
+                    <X className="size-3" />
+                  </Button>
+                </span>
+              )
+            })}
+          </div>
+        ) : null}
+        <Input placeholder="Search users by email…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <div className="max-h-44 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
+          {items.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-fg/55">
+              {debounced ? "No users match." : "Start typing to search users."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-fg/8">
+              {items.map((u) => (
+                <li key={u.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => toggle(u.id)}
+                    className="flex h-auto w-full items-center justify-between gap-2.5 px-3 py-2 text-left"
+                  >
+                    <span className="min-w-0 truncate text-sm text-fg">{u.email}</span>
+                    {selectedSet.has(u.id) ? (
+                      <span className="shrink-0 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        Selected
+                      </span>
+                    ) : null}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={pool.length === 0 || submitting}>
+            {submitting ? "Saving…" : "Save pool"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function EnrolDialog({
+  open,
+  onOpenChange,
+  onEnrol,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEnrol: (personIds: string[]) => Promise<void>
+}) {
+  const [personIds, setPersonIds] = useState<string[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [query, setQuery] = useState("")
+  const debounced = useDebouncedValue(query.trim(), 250)
+
+  useEffect(() => {
+    if (!open) setPersonIds([])
+  }, [open])
+
+  const list = useEntityList<Person>({
+    resource: "persons",
+    params: { page: 1, limit: 8, search: debounced || undefined },
+    listFn: personsApi.list,
+  })
+  const items = list.data?.items ?? []
+  const selectedSet = new Set(personIds)
+  const toggle = (id: string) =>
+    setPersonIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+
+  const handleEnrol = async () => {
+    setSubmitting(true)
+    try {
+      await onEnrol(personIds)
+      onOpenChange(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Enrol persons</DialogTitle>
+          <DialogDescription>
+            Each person becomes a new Pending outreach record in this campaign.
+          </DialogDescription>
+        </DialogHeader>
+        <Input placeholder="Search persons…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <div className="max-h-52 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
+          {items.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-fg/55">
+              {debounced ? "No persons match." : "Start typing to search persons."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-fg/8">
+              {items.map((p) => (
+                <li key={p.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => toggle(p.id)}
+                    className="flex h-auto w-full items-center justify-between gap-2.5 px-3 py-2 text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+                      >
+                        {nameInitials(displayName(p))}
+                      </span>
+                      <span className="min-w-0 truncate text-sm text-fg">{displayName(p)}</span>
+                    </span>
+                    {selectedSet.has(p.id) ? (
+                      <span className="shrink-0 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        Selected
+                      </span>
+                    ) : null}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleEnrol} disabled={personIds.length === 0 || submitting}>
+            {submitting ? "Enrolling…" : `Enrol ${personIds.length || ""}`.trim()}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

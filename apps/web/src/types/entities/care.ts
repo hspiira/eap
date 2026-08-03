@@ -1,14 +1,14 @@
 import type {
-  CallbackCampaignStatus,
-  CallbackCaseStatus,
-  CallbackSamplingStrategy,
+  CareCallbackCampaignStatus,
   IncidentSeverity,
   IncidentStatus,
   IncidentTimelineEventKind,
+  OutreachStatus,
   QuestionnaireAdministration,
   QuestionnaireQuestionType,
   SurveySource,
   SurveyStatus,
+  TriageRiskLevel,
 } from '../enums'
 import type { BaseEntity } from './base'
 
@@ -81,82 +81,70 @@ export interface QuestionnaireOption {
 }
 
 /**
- * Counsellor-Initiated Care Call campaign (Phase 3 flagship).
+ * Counsellor-Initiated Care Callback campaign — mirrors BE `CareCallbackCampaignResponse`.
  *
- * One campaign defines audience + sampling + period + counsellor pool. The BE generates
- * `CallbackCase` rows — one per sampled person — into each counsellor's worklist.
+ * A campaign defines a target audience size + period + counsellor pool for a client.
+ * `POST /enrol` adds persons; each becomes a Pending `OutreachRecord` that a counsellor
+ * must explicitly claim (assign) before working it — there is no auto round-robin.
+ *
+ * Known BE gap: `completed_count`/derived `progress_ratio` never update — nothing calls
+ * the entity's `increment_completed()`. Derive "completed" from a campaign summary's
+ * `outreach_by_status.Completed` instead of trusting this field.
  */
 export interface CallbackCampaign extends BaseEntity {
   client_id: string
   name: string
-  description?: string | null
-  status: CallbackCampaignStatus
-  /** ISO date — first day cases are opened for outreach. */
   period_start: string
-  /** ISO date — outreach window closes; cases not yet completed roll into reporting as no-answer. */
   period_end: string
-  sampling: CallbackSamplingStrategy
-  /** Honoured when `sampling !== FULL`. */
-  sample_size?: number | null
-  /** User IDs of counsellors assigned to the pool. The pool drives case round-robin. */
-  counsellor_user_ids: string[]
-  /** Slug of the questionnaire used for triage (must match a `Questionnaire.code`). */
-  questionnaire_code: string
-  /** Optional WOS-5 follow-up administered after the call (`Questionnaire.code`). */
-  followup_questionnaire_code?: string | null
-  /** Set when the campaign was generated. Read-only for the FE. */
-  case_count: number
-  cases_completed: number
-  cases_in_progress: number
+  target_count: number
+  completed_count: number
+  counsellor_pool: string[]
+  status: CareCallbackCampaignStatus
+  sampling_notes?: string | null
+  created_by: string
+  activated_at?: string | null
+  completed_at?: string | null
+}
+
+/** Mirrors BE `CampaignSummaryResponse` (`GET /care-callback-campaigns/{id}/summary`). */
+export interface CallbackCampaignSummary {
+  campaign_id: string
+  client_id: string
+  name: string
+  status: CareCallbackCampaignStatus
+  target_count: number
+  completed_count: number
+  progress_ratio: number
+  outreach_total: number
+  /** Keys are OutreachStatus values; a status with zero records is simply absent. */
+  outreach_by_status: Partial<Record<OutreachStatus, number>>
+  triage_completed: number
+  crisis_flags: number
+  period_start: string
+  period_end: string
+  generated_at: string
 }
 
 /**
- * One person × campaign assignment. The counsellor works the queue, runs triage, and
- * records an outcome. Crisis flags raise `CRISIS_ESCALATED` and notify the supervisor.
+ * One person's outreach within a campaign — mirrors BE `OutreachRecordResponse`.
+ * Pending -> Assigned -> Contacted -> one of the four terminal statuses.
+ * Unlike a clinical Case, `person_id` here is a real person reference — Care
+ * Callbacks is not behind the clinical privacy wall.
  */
-export interface CallbackCase extends BaseEntity {
+export interface OutreachRecord extends BaseEntity {
   campaign_id: string
   person_id: string
-  /** Denormalised for worklist rendering. The BE strips PII at the report layer. */
-  person_display_name: string
-  /** ID of the source service-session that made the person eligible for this campaign. */
-  source_session_id?: string | null
-  assigned_user_id: string
-  status: CallbackCaseStatus
-  /** Set when the counsellor opens the case. */
-  started_at?: string | null
-  /** Set on `COMPLETED` / `NO_ANSWER` / `DECLINED` / `CRISIS_ESCALATED`. */
-  closed_at?: string | null
-  /** ISO date — when the next attempt is allowed for `NO_ANSWER` cases. */
-  next_attempt_at?: string | null
-  attempt_count: number
-  /** Set when an outcome has been recorded. */
-  outcome_id?: string | null
-  /** Latched when the questionnaire emits a crisis answer (e.g. PHQ-9 item-9 > 0). */
-  crisis_flagged: boolean
-}
-
-/**
- * Triage outcome for a single case. Answers are `key → primitive` (numeric scale, choice id, free text).
- * BE stores the canonical aggregate; FE only ever submits a fresh outcome.
- */
-export interface CallbackOutcome {
-  id: string
-  case_id: string
-  questionnaire_code: string
-  followup_questionnaire_code?: string | null
-  /** Pre-call answers (Joseph 7-variable + PHQ-9 item-9). */
-  pre_answers: Record<string, string | number | string[] | null>
-  /** Optional post-call follow-up (WOS-5 post). May be empty if call did not complete. */
-  post_answers?: Record<string, string | number | string[] | null> | null
-  /** Free-text counsellor notes — must NEVER appear in aggregated reports. */
-  counsellor_notes?: string | null
-  /** True when at least one rule fired (e.g. PHQ-9 item-9 > 0). */
-  crisis_flagged: boolean
-  /** Human-readable list of triggered rules; rendered in the case timeline. */
-  crisis_reasons: string[]
-  recorded_at: string
-  recorded_by_user_id: string
+  counsellor_id?: string | null
+  status: OutreachStatus
+  contact_attempts: number
+  assigned_at?: string | null
+  last_attempted_at?: string | null
+  completed_at?: string | null
+  /** Plain string on the wire, not enum-validated in the response. */
+  triage_instrument_code?: string | null
+  triage_risk_level?: TriageRiskLevel | null
+  crisis_flag: boolean
+  notes?: string | null
 }
 
 /**

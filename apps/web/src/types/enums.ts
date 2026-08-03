@@ -359,38 +359,62 @@ export enum IncidentTimelineEventKind {
 }
 
 /**
- * Lifecycle status of a counsellor-initiated care-callback campaign (Phase 3 flagship).
+ * Lifecycle status of a counsellor-initiated care-callback campaign.
+ * Wire-true: Draft -> Active -> Completed, with Draft -> Archived also
+ * allowed (skip straight to archived without ever activating).
  */
-export enum CallbackCampaignStatus {
+export enum CareCallbackCampaignStatus {
   DRAFT = 'Draft',
-  SCHEDULED = 'Scheduled',
   ACTIVE = 'Active',
   COMPLETED = 'Completed',
-  CANCELLED = 'Cancelled',
+  ARCHIVED = 'Archived',
 }
 
 /**
- * Sampling strategy for selecting cases into a callback campaign.
- * - FULL: every eligible session in the period.
- * - RANDOM: random N from the eligible pool (`sample_size` honoured).
- * - STRATIFIED: random N stratified by diagnosis bucket / department (BE-driven).
+ * Status of a single outreach record within a campaign.
+ * Pending -> Assigned -> Contacted -> one of the four terminal statuses.
  */
-export enum CallbackSamplingStrategy {
-  FULL = 'Full',
-  RANDOM = 'Random',
-  STRATIFIED = 'Stratified',
-}
-
-/**
- * Per-case status inside an outreach worklist.
- */
-export enum CallbackCaseStatus {
-  QUEUED = 'Queued',
-  IN_PROGRESS = 'In Progress',
+export enum OutreachStatus {
+  PENDING = 'Pending',
+  ASSIGNED = 'Assigned',
+  CONTACTED = 'Contacted',
   COMPLETED = 'Completed',
-  NO_ANSWER = 'No Answer',
+  UNREACHABLE = 'Unreachable',
   DECLINED = 'Declined',
-  CRISIS_ESCALATED = 'Crisis Escalated',
+  ESCALATED = 'Escalated',
+}
+
+/** Auto-derived risk classification from a scored triage instrument. */
+export enum TriageRiskLevel {
+  LOW = 'Low',
+  MODERATE = 'Moderate',
+  HIGH = 'High',
+  CRITICAL = 'Critical',
+}
+
+/** The 12 standardised triage instruments the BE's catalogue can score. */
+export enum TriageInstrumentCode {
+  JOSEPH7 = 'JOSEPH7',
+  WOS5 = 'WOS5',
+  PHQ9 = 'PHQ9',
+  GAD7 = 'GAD7',
+  CSSRS = 'CSSRS',
+  AUDIT_C = 'AUDIT_C',
+  DAST10 = 'DAST10',
+  WHO5 = 'WHO5',
+  K10 = 'K10',
+  WSAS = 'WSAS',
+  DASS21 = 'DASS21',
+  PCL5 = 'PCL5',
+}
+
+/** Stage-of-change, derived by some instruments (e.g. JOSEPH7). */
+export enum StageOfChange {
+  PRECONTEMPLATION = 'Precontemplation',
+  CONTEMPLATION = 'Contemplation',
+  PREPARATION = 'Preparation',
+  ACTION = 'Action',
+  MAINTENANCE = 'Maintenance',
 }
 
 /**

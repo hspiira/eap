@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign, CallbackCampaignAggregate } from "@/types/entities"
-import { CallbackCampaignStatus } from "@/types/enums"
+import { CareCallbackCampaignStatus } from "@/types/enums"
 
 
 function topHistogramEntry(h: Record<string, number>): string {
@@ -50,8 +50,8 @@ export function WaveSummaryBody({
           <h2 className="text-2xl font-semibold text-fg">{campaign.name}</h2>
           <CampaignStatusPill status={campaign.status} />
         </div>
-        {campaign.description ? (
-          <p className="mt-2 max-w-2xl text-sm text-fg/65">{campaign.description}</p>
+        {campaign.sampling_notes ? (
+          <p className="mt-2 max-w-2xl text-sm text-fg/65">{campaign.sampling_notes}</p>
         ) : null}
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
           <Field
@@ -64,16 +64,8 @@ export function WaveSummaryBody({
               </>
             }
           />
-          <Field
-            label="Sampling"
-            value={
-              <span className="font-mono">
-                {campaign.sampling}
-                {campaign.sample_size ? ` (n=${campaign.sample_size})` : ""}
-              </span>
-            }
-          />
-          <Field label="Counsellors" value={campaign.counsellor_user_ids.length} />
+          <Field label="Target" value={campaign.target_count} />
+          <Field label="Counsellors" value={campaign.counsellor_pool.length} />
         </dl>
       </section>
 
@@ -143,11 +135,11 @@ export function WaveSummaryBody({
       )}
 
       <ReportSection title="Counsellor pool">
-        {campaign.counsellor_user_ids.length === 0 ? (
+        {campaign.counsellor_pool.length === 0 ? (
           <p className="text-xs text-fg/55">No counsellors on this wave.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {campaign.counsellor_user_ids.map((id) => (
+            {campaign.counsellor_pool.map((id) => (
               <li
                 key={id}
                 className="flex items-center gap-2 rounded-sm border border-fg/10 bg-bg px-2.5 py-1.5 print:bg-white"
@@ -174,13 +166,13 @@ export function WaveSummaryBody({
   )
 }
 
-export function CampaignStatusPill({ status }: { status: CallbackCampaignStatus }) {
+export function CampaignStatusPill({ status }: { status: CareCallbackCampaignStatus }) {
   const tone =
-    status === CallbackCampaignStatus.ACTIVE
+    status === CareCallbackCampaignStatus.ACTIVE
       ? "border-primary/30 bg-primary/10 text-primary"
-      : status === CallbackCampaignStatus.CANCELLED
+      : status === CareCallbackCampaignStatus.ARCHIVED
         ? "border-danger/30 bg-danger-soft text-danger-fg"
-        : status === CallbackCampaignStatus.COMPLETED
+        : status === CareCallbackCampaignStatus.COMPLETED
           ? "border-fg/15 bg-bg text-fg/65 print:bg-white"
           : "border-fg/20 bg-bg text-fg print:bg-white"
   return (

@@ -9,11 +9,14 @@ import { cn } from "@/lib/utils"
 export function DetailCard({
   title,
   phiLabel,
+  action,
   children,
 }: {
   title: string
   /** Marks the card as showing protected health information. */
   phiLabel?: string
+  /** Optional control rendered at the top-right of the header (e.g. an Edit button). */
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -27,7 +30,10 @@ export function DetailCard({
           </span>
         </div>
       ) : (
-        <h3 className="mb-3 text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
+        <div className="mb-3 flex items-center gap-2">
+          <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
+          {action ? <span className="ml-auto">{action}</span> : null}
+        </div>
       )}
       {children}
     </section>

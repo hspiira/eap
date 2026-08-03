@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
@@ -11,7 +13,9 @@ import { clientsApi } from "@/api/endpoints/clients"
 import {
   AggregatePanel,
   CasesPanel,
+  CounsellorPoolDialog,
   DetailRail,
+  EnrolDialog,
   Hero,
 } from "@/components/care-callbacks/CampaignDetailWidgets"
 import {
@@ -24,14 +28,18 @@ import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { entityDetailKey } from "@/lib/queries"
 import { CampaignStatusPill } from "@/routes/care-callbacks/index"
 import type {
   CallbackCampaign,
   CallbackCampaignAggregate,
-  CallbackCase,
   Client,
+  OutreachRecord,
 } from "@/types/entities"
+import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
 export const Route = createFileRoute("/care-callbacks/$campaignId")({
   component: CampaignDetailPage,
@@ -43,13 +51,19 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "cases", "aggregate", "
 function CampaignDetailPage() {
   const { campaignId } = Route.useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { showSuccess, showError } = useToast()
+  const [actionLoading, setActionLoading] = useState(false)
+  const [poolOpen, setPoolOpen] = useState(false)
+  const [enrolOpen, setEnrolOpen] = useState(false)
+
   const campaignQuery = useQuery({
     queryKey: ["care-callback-campaigns", "detail", campaignId],
     queryFn: () => careCallbacksApi.getCampaign(campaignId),
   })
   const casesQuery = useQuery({
-    queryKey: ["care-callback-cases", "list", { campaign_id: campaignId }],
-    queryFn: () => careCallbacksApi.listCases({ campaign_id: campaignId }),
+    queryKey: ["outreach-records", "for-campaign", campaignId],
+    queryFn: () => careCallbacksApi.listOutreachForCampaign(campaignId, { limit: 200 }),
   })
   const aggregateQuery = useQuery({
     queryKey: ["care-callback-campaigns", "aggregate", campaignId],
@@ -62,6 +76,53 @@ function CampaignDetailPage() {
     queryFn: () => clientsApi.getById(clientId as string),
     enabled: !!clientId,
   })
+
+  const refreshCampaign = () =>
+    queryClient.invalidateQueries({ queryKey: entityDetailKey("care-callback-campaigns", campaignId) })
+  const refreshCases = () =>
+    queryClient.invalidateQueries({ queryKey: ["outreach-records", "for-campaign", campaignId] })
+
+  const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
+    setActionLoading(true)
+    try {
+      await action()
+      await refreshCampaign()
+      showSuccess(successMessage)
+    } catch (err) {
+      showError(normalizeErrorMessage(err, "Action failed — please try again"))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleActivate = () =>
+    runAction(() => careCallbacksApi.activateCampaign(campaignId), "Campaign activated")
+  const handleComplete = () =>
+    runAction(() => careCallbacksApi.completeCampaign(campaignId), "Campaign completed")
+  const handleArchive = () =>
+    runAction(() => careCallbacksApi.archiveCampaign(campaignId), "Campaign archived")
+
+  const handleSavePool = async (pool: string[]) => {
+    try {
+      await careCallbacksApi.updateCounsellorPool(campaignId, pool)
+      await refreshCampaign()
+      showSuccess("Counsellor pool updated")
+    } catch (err) {
+      showError(normalizeErrorMessage(err, "Could not update counsellor pool"))
+      throw err
+    }
+  }
+
+  const handleEnrol = async (personIds: string[]) => {
+    try {
+      await careCallbacksApi.enrol(campaignId, personIds)
+      await refreshCases()
+      showSuccess(`Enrolled ${personIds.length} ${personIds.length === 1 ? "person" : "persons"}`)
+    } catch (err) {
+      showError(normalizeErrorMessage(err, "Could not enrol persons"))
+      throw err
+    }
+  }
 
   if (campaignQuery.isPending) {
     return (
@@ -78,7 +139,7 @@ function CampaignDetailPage() {
         <EmptyState
           icon={Phone}
           title="Campaign not found"
-          description="It may have been cancelled or never existed."
+          description="It may have been archived or never existed."
           action={
             <Button
               variant="outline"
@@ -101,14 +162,29 @@ function CampaignDetailPage() {
   const client = clientQuery.data ?? null
 
   return (
-    <CampaignDetail
-      campaign={campaign}
-      cases={cases}
-      aggregate={aggregate}
-      client={client}
-      casesLoading={casesQuery.isPending}
-      aggregateLoading={aggregateQuery.isPending}
-    />
+    <>
+      <CampaignDetail
+        campaign={campaign}
+        cases={cases}
+        aggregate={aggregate}
+        client={client}
+        casesLoading={casesQuery.isPending}
+        aggregateLoading={aggregateQuery.isPending}
+        actionLoading={actionLoading}
+        onActivate={handleActivate}
+        onComplete={handleComplete}
+        onArchive={handleArchive}
+        onEditPool={() => setPoolOpen(true)}
+        onEnrol={() => setEnrolOpen(true)}
+      />
+      <CounsellorPoolDialog
+        open={poolOpen}
+        onOpenChange={setPoolOpen}
+        currentPool={campaign.counsellor_pool}
+        onSave={handleSavePool}
+      />
+      <EnrolDialog open={enrolOpen} onOpenChange={setEnrolOpen} onEnrol={handleEnrol} />
+    </>
   )
 }
 
@@ -119,22 +195,38 @@ function CampaignDetail({
   client,
   casesLoading,
   aggregateLoading,
+  actionLoading,
+  onActivate,
+  onComplete,
+  onArchive,
+  onEditPool,
+  onEnrol,
 }: {
   campaign: CallbackCampaign
-  cases: CallbackCase[]
+  cases: OutreachRecord[]
   aggregate: CallbackCampaignAggregate | null
   client: Client | null
   casesLoading: boolean
   aggregateLoading: boolean
+  actionLoading: boolean
+  onActivate: () => void
+  onComplete: () => void
+  onArchive: () => void
+  onEditPool: () => void
+  onEnrol: () => void
 }) {
   const navigate = useNavigate()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
-  const total = campaign.case_count
-  const completionPct = total
-    ? Math.round((campaign.cases_completed / total) * 100)
-    : 0
-  const crisisCount = cases.filter((c) => c.crisis_flagged).length
+  const total = campaign.target_count
+  // completed_count is a known BE gap (nothing calls increment_completed()) —
+  // derive from the fetched records instead of trusting the campaign field.
+  const completedCount = cases.filter((c) => c.status === OutreachStatus.COMPLETED).length
+  const completionPct = total ? Math.round((completedCount / total) * 100) : 0
+  const inProgressCount = cases.filter(
+    (c) => c.status === OutreachStatus.ASSIGNED || c.status === OutreachStatus.CONTACTED,
+  ).length
+  const crisisCount = cases.filter((c) => c.crisis_flag).length
 
   return (
     <PageShell
@@ -186,23 +278,15 @@ function CampaignDetail({
                     <DetailGrid>
                       <DetailRow label="Name" value={campaign.name} fullWidth />
                       <DetailRow
-                        label="Description"
-                        value={campaign.description}
+                        label="Sampling notes"
+                        value={campaign.sampling_notes}
                         fullWidth
                       />
                       <DetailRow
                         label="Status"
                         value={<CampaignStatusPill status={campaign.status} />}
                       />
-                      <DetailRow
-                        label="Sampling"
-                        value={
-                          <span className="font-mono">
-                            {campaign.sampling}
-                            {campaign.sample_size ? ` (n=${campaign.sample_size})` : ""}
-                          </span>
-                        }
-                      />
+                      <DetailRow label="Target" value={campaign.target_count} />
                     </DetailGrid>
                   </DetailCard>
 
@@ -216,38 +300,41 @@ function CampaignDetail({
                         label="End"
                         value={new Date(campaign.period_end).toLocaleDateString()}
                       />
-                    </DetailGrid>
-                  </DetailCard>
-
-                  <DetailCard title="Questionnaires">
-                    <DetailGrid>
                       <DetailRow
-                        label="Triage"
+                        label="Activated"
                         value={
-                          <span className="font-mono">{campaign.questionnaire_code}</span>
+                          campaign.activated_at
+                            ? new Date(campaign.activated_at).toLocaleDateString()
+                            : null
                         }
-                        fullWidth
                       />
                       <DetailRow
-                        label="Follow-up"
+                        label="Completed"
                         value={
-                          campaign.followup_questionnaire_code ? (
-                            <span className="font-mono">
-                              {campaign.followup_questionnaire_code}
-                            </span>
-                          ) : null
+                          campaign.completed_at
+                            ? new Date(campaign.completed_at).toLocaleDateString()
+                            : null
                         }
-                        fullWidth
                       />
                     </DetailGrid>
                   </DetailCard>
 
-                  <DetailCard title="Counsellor pool">
-                    {campaign.counsellor_user_ids.length === 0 ? (
+                  <DetailCard
+                    title="Counsellor pool"
+                    action={
+                      campaign.status === CareCallbackCampaignStatus.COMPLETED ||
+                      campaign.status === CareCallbackCampaignStatus.ARCHIVED ? undefined : (
+                        <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={onEditPool}>
+                          Edit
+                        </Button>
+                      )
+                    }
+                  >
+                    {campaign.counsellor_pool.length === 0 ? (
                       <p className="text-xs text-fg/55">No counsellors assigned.</p>
                     ) : (
                       <ul className="space-y-1.5">
-                        {campaign.counsellor_user_ids.map((id) => (
+                        {campaign.counsellor_pool.map((id) => (
                           <li
                             key={id}
                             className="flex items-center gap-2 rounded-sm border border-fg/10 bg-bg px-2.5 py-1.5"
@@ -295,7 +382,13 @@ function CampaignDetail({
               campaign={campaign}
               client={client}
               completionPct={completionPct}
+              inProgressCount={inProgressCount}
               crisisCount={crisisCount}
+              onActivate={onActivate}
+              onComplete={onComplete}
+              onArchive={onArchive}
+              onEnrol={onEnrol}
+              actionLoading={actionLoading}
             />
           </aside>
         </div>
@@ -303,4 +396,3 @@ function CampaignDetail({
     </PageShell>
   )
 }
-

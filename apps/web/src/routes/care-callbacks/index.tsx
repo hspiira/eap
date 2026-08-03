@@ -47,22 +47,21 @@ import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
-import { CallbackCampaignStatus } from "@/types/enums"
+import { CareCallbackCampaignStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is CallbackCampaignStatus {
+function isStatus(v: unknown): v is CareCallbackCampaignStatus {
   return (
-    v === CallbackCampaignStatus.DRAFT ||
-    v === CallbackCampaignStatus.SCHEDULED ||
-    v === CallbackCampaignStatus.ACTIVE ||
-    v === CallbackCampaignStatus.COMPLETED ||
-    v === CallbackCampaignStatus.CANCELLED
+    v === CareCallbackCampaignStatus.DRAFT ||
+    v === CareCallbackCampaignStatus.ACTIVE ||
+    v === CareCallbackCampaignStatus.COMPLETED ||
+    v === CareCallbackCampaignStatus.ARCHIVED
   )
 }
 
 export const Route = createFileRoute("/care-callbacks/")({
   component: CampaignsListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: CallbackCampaignStatus } = {}
+    const out: { new?: boolean; search?: string; status?: CareCallbackCampaignStatus } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
@@ -72,11 +71,10 @@ export const Route = createFileRoute("/care-callbacks/")({
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: CallbackCampaignStatus.DRAFT, label: "Draft" },
-  { value: CallbackCampaignStatus.SCHEDULED, label: "Scheduled" },
-  { value: CallbackCampaignStatus.ACTIVE, label: "Active" },
-  { value: CallbackCampaignStatus.COMPLETED, label: "Completed" },
-  { value: CallbackCampaignStatus.CANCELLED, label: "Cancelled" },
+  { value: CareCallbackCampaignStatus.DRAFT, label: "Draft" },
+  { value: CareCallbackCampaignStatus.ACTIVE, label: "Active" },
+  { value: CareCallbackCampaignStatus.COMPLETED, label: "Completed" },
+  { value: CareCallbackCampaignStatus.ARCHIVED, label: "Archived" },
 ] as const
 
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
@@ -112,7 +110,7 @@ function CampaignsListPage() {
   const loading = query.isPending
   const error = query.isError ? "Failed to load campaigns." : null
   const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : (next as CallbackCampaignStatus)
+    const status = next === "all" ? undefined : (next as CareCallbackCampaignStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
@@ -253,8 +251,8 @@ function CampaignsListPage() {
 }
 
 function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isSelected: boolean; onToggle: () => void }) {
-  const total = row.case_count
-  const completionPct = total ? Math.round((row.cases_completed / total) * 100) : 0
+  const total = row.target_count
+  const completionPct = total ? Math.round((row.completed_count / total) * 100) : 0
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
@@ -277,8 +275,7 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg/55">
-              Sampling: {row.sampling}
-              {row.sample_size ? ` (n=${row.sample_size})` : ""}
+              Target: {row.target_count}
             </span>
           </span>
         </Link>
@@ -292,13 +289,13 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
         {new Date(row.period_end).toLocaleDateString()}
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/75">
-        {row.counsellor_user_ids.length}
+        {row.counsellor_pool.length}
       </TableCell>
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
             <span>
-              {row.cases_completed}/{total}
+              {row.completed_count}/{total}
             </span>
             <span className="font-mono">{completionPct}%</span>
           </div>
@@ -341,7 +338,7 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
   )
 }
 
-export function CampaignStatusPill({ status }: { status: CallbackCampaignStatus }) {
+export function CampaignStatusPill({ status }: { status: CareCallbackCampaignStatus }) {
   const tone = statusTone(status)
   return (
     <span
@@ -355,15 +352,13 @@ export function CampaignStatusPill({ status }: { status: CallbackCampaignStatus 
   )
 }
 
-function statusTone(status: CallbackCampaignStatus): string {
+function statusTone(status: CareCallbackCampaignStatus): string {
   switch (status) {
-    case CallbackCampaignStatus.ACTIVE:
+    case CareCallbackCampaignStatus.ACTIVE:
       return "border-primary/30 bg-primary/10 text-primary"
-    case CallbackCampaignStatus.SCHEDULED:
-      return "border-fg/20 bg-bg text-fg"
-    case CallbackCampaignStatus.COMPLETED:
+    case CareCallbackCampaignStatus.COMPLETED:
       return "border-fg/15 bg-bg text-fg/60"
-    case CallbackCampaignStatus.CANCELLED:
+    case CareCallbackCampaignStatus.ARCHIVED:
       return "border-danger/30 bg-danger-soft text-danger-fg"
     default:
       return "border-fg/15 bg-bg text-fg/65"
@@ -374,7 +369,7 @@ function filterAndSort(
   items: CallbackCampaign[],
   opts: {
     search: string
-    status?: CallbackCampaignStatus
+    status?: CareCallbackCampaignStatus
     sort: SortState
   },
 ): CallbackCampaign[] {
@@ -385,7 +380,7 @@ function filterAndSort(
     out = out.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        c.description?.toLowerCase().includes(q) ||
+        c.sampling_notes?.toLowerCase().includes(q) ||
         c.client_id.toLowerCase().includes(q),
     )
   }
