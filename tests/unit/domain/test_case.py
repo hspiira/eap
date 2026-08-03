@@ -167,18 +167,24 @@ class TestClose:
 class TestReferOut:
     def test_marks_referred_out(self):
         c = _case()
-        c.refer_out(notes="Client moved out of region; referring to local clinic")
+        c.refer_out(closure_summary_note_id="note-1")
         assert c.status == CaseStatus.REFERRED_OUT
         assert c.closure_reason == CaseClosureReason.REFERRED_OUT
-        assert c.referral_notes is not None
+        assert c.closure_summary_note_id == "note-1"
         assert c.closed_at is not None
 
-    def test_requires_notes(self):
+    def test_does_not_touch_referral_notes(self):
         c = _case()
-        with pytest.raises(DomainError, match="notes"):
-            c.refer_out(notes="")
+        c.referral_notes = "Referred by HR due to conduct concerns"
+        c.refer_out(closure_summary_note_id="note-1")
+        assert c.referral_notes == "Referred by HR due to conduct concerns"
+
+    def test_requires_closure_summary_note_id(self):
+        c = _case()
+        with pytest.raises(DomainError, match="closure summary note"):
+            c.refer_out(closure_summary_note_id="")
 
     def test_cannot_refer_terminal(self):
         c = _case(status=CaseStatus.CLOSED)
         with pytest.raises(InvalidStateError):
-            c.refer_out(notes="late")
+            c.refer_out(closure_summary_note_id="note-1")

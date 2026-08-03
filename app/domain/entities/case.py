@@ -215,18 +215,18 @@ class Case:
     def refer_out(
         self,
         *,
-        notes: str,
+        closure_summary_note_id: str,
         now: datetime | None = None,
     ) -> None:
-        if not notes:
-            raise DomainError("refer_out requires explanatory notes")
+        if not closure_summary_note_id:
+            raise DomainError("refer_out requires a closure summary note")
         if self.is_terminal():
             raise InvalidStateError(f"Cannot refer out a {self.status.value} case")
         now = now or utc_now()
         old = self.status
         self.status = CaseStatus.REFERRED_OUT
         self.closure_reason = CaseClosureReason.REFERRED_OUT
-        self.referral_notes = notes
+        self.closure_summary_note_id = closure_summary_note_id
         self.closed_at = now
         self.updated_at = now
         self.events.append(
