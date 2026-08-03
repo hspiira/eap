@@ -25,6 +25,8 @@ export interface MeResponse {
   user_id: string
   tenant_id: string
   email: string
+  role?: string | null
+  access_scopes?: string[]
 }
 
 export const authApi = {

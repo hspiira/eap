@@ -109,6 +109,14 @@ export enum PersonType {
   SERVICE_PROVIDER = 'ServiceProvider',
 }
 
+/** Lifecycle of an EAP-eligible member as supplied by the employer. */
+export enum EligibilityStatus {
+  ACTIVE = 'Active',
+  SUSPENDED = 'Suspended',
+  TERMINATED = 'Terminated',
+  PENDING = 'Pending',
+}
+
 /**
  * Work status
  */
@@ -507,4 +515,77 @@ export enum TenantRole {
 export enum AccessScope {
   CLINICAL = 'Clinical',
   EMPLOYER_PORTAL = 'EmployerPortal',
+}
+
+/** Lifecycle of a clinical case. */
+export enum CaseStatus {
+  INTAKE = 'Intake',
+  ASSESSMENT = 'Assessment',
+  ACTIVE = 'Active',
+  CLOSED = 'Closed',
+  REFERRED_OUT = 'ReferredOut',
+  NO_SHOW_CLOSED = 'NoShowClosed',
+}
+
+export enum CaseReferralSource {
+  SELF = 'Self',
+  INFORMAL_MANAGER = 'InformalManager',
+  FORMAL_MANDATORY = 'FormalMandatory',
+  HR = 'HR',
+  CISM_FOLLOW_UP = 'CISMFollowUp',
+  EMPLOYER_PROACTIVE = 'EmployerProactive',
+}
+
+export enum PresentingProblem {
+  MENTAL_HEALTH = 'MentalHealth',
+  STRESS = 'Stress',
+  RELATIONSHIP = 'Relationship',
+  WORK = 'Work',
+  FINANCIAL = 'Financial',
+  SUBSTANCE = 'Substance',
+  BEREAVEMENT = 'Bereavement',
+  TRAUMA = 'Trauma',
+  FAMILY_CHILD = 'FamilyChild',
+  OTHER = 'Other',
+}
+
+export enum CaseClosureReason {
+  GOALS_MET = 'GoalsMet',
+  CLIENT_DISCONTINUED = 'ClientDiscontinued',
+  REFERRED_OUT = 'ReferredOut',
+  NO_SHOW = 'NoShow',
+  SESSION_CAP_REACHED = 'SessionCapReached',
+  INELIGIBLE = 'Ineligible',
+  OTHER = 'Other',
+}
+
+/** Note template — each shapes a different `body` on the wire (see clinical-notes API). */
+export enum ClinicalNoteType {
+  DAP = 'DAP',
+  SOAP = 'SOAP',
+  PHONE_CONTACT = 'PhoneContact',
+  CRISIS_CONTACT = 'CrisisContact',
+  CLOSURE_SUMMARY = 'ClosureSummary',
+  SUPERVISION = 'Supervision',
+}
+
+/** Session-cap authorization lifecycle. */
+export enum AuthorizationStatus {
+  ACTIVE = 'Active',
+  EXTENSION_REQUESTED = 'ExtensionRequested',
+  EXTENDED = 'Extended',
+  EXHAUSTED = 'Exhausted',
+  EXPIRED = 'Expired',
+  CLOSED = 'Closed',
+}
+
+/** Billable service category an authorization's session cap applies to. */
+export enum ServiceCategory {
+  SHORT_TERM_COUNSELLING = 'ShortTermCounselling',
+  CRISIS_INTERVENTION = 'CrisisIntervention',
+  SUBSTANCE_USE = 'SubstanceUse',
+  MANAGER_CONSULT = 'ManagerConsult',
+  WORK_LIFE_REFERRAL = 'WorkLifeReferral',
+  CISM_RESPONSE = 'CISMResponse',
+  WELLNESS_COACHING = 'WellnessCoaching',
 }

@@ -49,6 +49,7 @@ import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
 import { Route as EngagementsIndexRouteImport } from './routes/engagements/index'
 import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as CasesIndexRouteImport } from './routes/cases/index'
 import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
 import { Route as UsersNewRouteImport } from './routes/users/new'
 import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
@@ -76,6 +77,7 @@ import { Route as ContractsNewRouteImport } from './routes/contracts/new'
 import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
+import { Route as CasesCaseIdRouteImport } from './routes/cases/$caseId'
 import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
 import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
 import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
@@ -286,6 +288,11 @@ const ClientsIndexRoute = ClientsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ClientsRoute,
 } as any)
+const CasesIndexRoute = CasesIndexRouteImport.update({
+  id: '/cases/',
+  path: '/cases/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CareCallbacksIndexRoute = CareCallbacksIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -423,6 +430,11 @@ const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   path: '/$clientId',
   getParentRoute: () => ClientsRoute,
 } as any)
+const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
+  id: '/cases/$caseId',
+  path: '/cases/$caseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CareCallbacksWorklistRoute = CareCallbacksWorklistRouteImport.update({
   id: '/worklist',
   path: '/worklist',
@@ -504,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -531,6 +544,7 @@ export interface FileRoutesByFullPath {
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks/': typeof CareCallbacksIndexRoute
+  '/cases/': typeof CasesIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/engagements/': typeof EngagementsIndexRoute
@@ -567,6 +581,7 @@ export interface FileRoutesByTo {
   '/auth/sso': typeof AuthSsoRoute
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -594,6 +609,7 @@ export interface FileRoutesByTo {
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks': typeof CareCallbacksIndexRoute
+  '/cases': typeof CasesIndexRoute
   '/clients': typeof ClientsIndexRoute
   '/contracts': typeof ContractsIndexRoute
   '/engagements': typeof EngagementsIndexRoute
@@ -646,6 +662,7 @@ export interface FileRoutesById {
   '/care-callbacks/$campaignId': typeof CareCallbacksCampaignIdRoute
   '/care-callbacks/new': typeof CareCallbacksNewRoute
   '/care-callbacks/worklist': typeof CareCallbacksWorklistRouteWithChildren
+  '/cases/$caseId': typeof CasesCaseIdRoute
   '/clients/$clientId': typeof ClientsClientIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/contracts/$contractId': typeof ContractsContractIdRoute
@@ -673,6 +690,7 @@ export interface FileRoutesById {
   '/users/$userId': typeof UsersUserIdRoute
   '/users/new': typeof UsersNewRoute
   '/care-callbacks/': typeof CareCallbacksIndexRoute
+  '/cases/': typeof CasesIndexRoute
   '/clients/': typeof ClientsIndexRoute
   '/contracts/': typeof ContractsIndexRoute
   '/engagements/': typeof EngagementsIndexRoute
@@ -726,6 +744,7 @@ export interface FileRouteTypes {
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
+    | '/cases/$caseId'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -753,6 +772,7 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks/'
+    | '/cases/'
     | '/clients/'
     | '/contracts/'
     | '/engagements/'
@@ -789,6 +809,7 @@ export interface FileRouteTypes {
     | '/auth/sso'
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
+    | '/cases/$caseId'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -816,6 +837,7 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks'
+    | '/cases'
     | '/clients'
     | '/contracts'
     | '/engagements'
@@ -867,6 +889,7 @@ export interface FileRouteTypes {
     | '/care-callbacks/$campaignId'
     | '/care-callbacks/new'
     | '/care-callbacks/worklist'
+    | '/cases/$caseId'
     | '/clients/$clientId'
     | '/clients/new'
     | '/contracts/$contractId'
@@ -894,6 +917,7 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/users/new'
     | '/care-callbacks/'
+    | '/cases/'
     | '/clients/'
     | '/contracts/'
     | '/engagements/'
@@ -940,8 +964,10 @@ export interface RootRouteChildren {
   SurveysRoute: typeof SurveysRouteWithChildren
   TagsRoute: typeof TagsRouteWithChildren
   UsersRoute: typeof UsersRouteWithChildren
+  CasesCaseIdRoute: typeof CasesCaseIdRoute
   TenantsTenantIdRoute: typeof TenantsTenantIdRoute
   TenantsNewRoute: typeof TenantsNewRoute
+  CasesIndexRoute: typeof CasesIndexRoute
   TenantsIndexRoute: typeof TenantsIndexRoute
 }
 
@@ -1227,6 +1253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsIndexRouteImport
       parentRoute: typeof ClientsRoute
     }
+    '/cases/': {
+      id: '/cases/'
+      path: '/cases'
+      fullPath: '/cases/'
+      preLoaderRoute: typeof CasesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/care-callbacks/': {
       id: '/care-callbacks/'
       path: '/'
@@ -1415,6 +1448,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/clients/$clientId'
       preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof ClientsRoute
+    }
+    '/cases/$caseId': {
+      id: '/cases/$caseId'
+      path: '/cases/$caseId'
+      fullPath: '/cases/$caseId'
+      preLoaderRoute: typeof CasesCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/care-callbacks/worklist': {
       id: '/care-callbacks/worklist'
@@ -1753,8 +1793,10 @@ const rootRouteChildren: RootRouteChildren = {
   SurveysRoute: SurveysRouteWithChildren,
   TagsRoute: TagsRouteWithChildren,
   UsersRoute: UsersRouteWithChildren,
+  CasesCaseIdRoute: CasesCaseIdRoute,
   TenantsTenantIdRoute: TenantsTenantIdRoute,
   TenantsNewRoute: TenantsNewRoute,
+  CasesIndexRoute: CasesIndexRoute,
   TenantsIndexRoute: TenantsIndexRoute,
 }
 export const routeTree = rootRouteImport

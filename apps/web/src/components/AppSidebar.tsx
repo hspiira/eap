@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Handshake,
   Headphones,
+  HeartPulse,
   Home,
   MessageSquare,
   PhoneCall,
@@ -39,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useHasClinicalScope } from "@/hooks/useCanWrite"
 import { type FeatureFlag, featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
@@ -52,6 +54,8 @@ type NavItem = {
   iconClassName?: string
   flag?: FeatureFlag
   platformAdmin?: boolean
+  /** Requires the Clinical access scope — hidden entirely otherwise (privacy wall). */
+  clinicalScope?: boolean
 }
 
 function platformTenantId(): string {
@@ -69,6 +73,7 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/persons", label: "Persons", icon: Users },
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
+  { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },
   { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
   { to: "/care-callbacks/worklist", label: "My Worklist", icon: Headphones },
   { to: "/surveys", label: "Surveys", icon: MessageSquare },
@@ -90,12 +95,17 @@ const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/tenants", label: "Tenants", icon: ShieldCheck, platformAdmin: true },
 ]
 
-function isItemEnabled(item: NavItem, currentTenantId: string | null): boolean {
+function isItemEnabled(
+  item: NavItem,
+  currentTenantId: string | null,
+  hasClinicalScope: boolean,
+): boolean {
   if (item.flag && !featureFlags[item.flag]) return false
   if (item.platformAdmin) {
     const required = platformTenantId()
     if (required && currentTenantId !== required) return false
   }
+  if (item.clinicalScope && !hasClinicalScope) return false
   return true
 }
 
@@ -177,9 +187,10 @@ function NavItem({
 function ExpandedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
-  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
 
@@ -315,9 +326,10 @@ function CollapsedHeader() {
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
-  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
 

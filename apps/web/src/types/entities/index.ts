@@ -5,6 +5,7 @@
 export * from './audit'
 export * from './base'
 export * from './care'
+export * from './clinical'
 export * from './commercial'
 export * from './consultancy'
 export * from './delivery'
