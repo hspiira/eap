@@ -13,6 +13,7 @@ import type {
   CallbackCaseStatus,
   CallbackSamplingStrategy,
   ClientTier,
+  ClientType,
   ContactMethod,
   ContractStatus,
   DeliverableStatus,
@@ -38,7 +39,10 @@ import type {
   QuestionnaireAdministration,
   QuestionnaireQuestionType,
   RelationType,
+  SessionCategory,
+  SessionClinicalStatus,
   SessionStatus,
+  SessionType,
   StaffRole,
   SurveySource,
   SurveyStatus,
@@ -361,24 +365,35 @@ export interface Service extends BaseEntity {
 /**
  * Service Session
  */
+/** Mirrors BE `ServiceSessionResponse` — field names and types are wire-true. */
 export interface ServiceSession extends BaseEntity {
   service_id: string
   person_id: string
-  service_provider_id?: string | null
-  contract_id?: string | null
+  provider_id?: string | null
   status: SessionStatus
   scheduled_at: string
   completed_at?: string | null
+  duration?: number | null
   location?: string | null
   notes?: string | null
+  category?: SessionCategory | null
+  session_type?: SessionType | null
+  client_type?: ClientType | null
+  clinical_outcome?: SessionClinicalStatus | null
+  headcount?: number | null
+  issue_topic?: string | null
+  partner_name?: string | null
+  partner_relationship?: string | null
+  rate_ugx?: number | null
+  session_number?: number | null
+  approved_by?: string | null
   diagnosis_id?: string | null
-  /** Free-text diagnosis. Deprecated path — only used when VITE_DIAGNOSIS_FREETEXT_FALLBACK is on. */
-  diagnosis_text?: string | null
-  feedback?: {
-    rating?: number | null
-    comments?: string | null
-  } | null
-  metadata?: Record<string, unknown> | null
+  diagnosis_type_id?: string | null
+  cancellation_reason?: string | null
+  reschedule_count?: number | null
+  /** Plain text on the wire — there is no structured rating object. */
+  feedback?: string | null
+  is_active?: boolean
 }
 
 /**

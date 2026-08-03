@@ -8,7 +8,6 @@ import {
   CalendarRange,
   Lock,
   Pencil,
-  Star,
   Users,
   Wrench,
 } from "lucide-react"
@@ -43,12 +42,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
-import { cn } from "@/lib/utils"
 import type {
   Person,
   Service,
@@ -72,6 +71,8 @@ function ServiceSessionDetailPage() {
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [editOpen, setEditOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
+  const [completeOpen, setCompleteOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
 
   const sessionQuery = useEntityDetail<ServiceSession>({
     resource: "service-sessions",
@@ -99,7 +100,7 @@ function ServiceSessionDetailPage() {
     enabled: !!session?.person_id,
   })
 
-  const providerId = session?.service_provider_id
+  const providerId = session?.provider_id
   const { data: provider = null } = useQuery({
     queryKey: entityDetailKey("providers", providerId ?? ""),
     queryFn: async () => {
@@ -111,18 +112,17 @@ function ServiceSessionDetailPage() {
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
+      if (action === "complete") {
+        setCompleteOpen(true)
+        return
+      }
+      if (action === "cancel") {
+        setCancelOpen(true)
+        return
+      }
       setActionLoading(true)
       try {
-        // BE requires a body on complete/cancel; minimal sane defaults for now.
-        // TODO(P1): surface a dialog to capture duration+notes / cancel reason.
-        if (action === "complete") {
-          await serviceSessionsApi.complete(id, {
-            duration: 60,
-            notes: "Session completed.",
-          })
-        } else if (action === "cancel") {
-          await serviceSessionsApi.cancel(id, { reason: "Cancelled by counsellor." })
-        } else if (action === "no-show") await serviceSessionsApi.noShow(id)
+        if (action === "no-show") await serviceSessionsApi.noShow(id)
         else if (action === "archive") await serviceSessionsApi.archive(id)
         else if (action === "restore") await serviceSessionsApi.restore(id)
         else if (action === "reschedule") setRescheduleOpen(true)
@@ -138,24 +138,36 @@ function ServiceSessionDetailPage() {
     [queryClient, queryClient, showSuccess, showError],
   )
 
+  const confirmComplete = useCallback(
+    async (duration: number, notes: string) => {
+      if (!session) return
+      await serviceSessionsApi.complete(session.id, { duration, notes })
+      await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
+      showSuccess("Session completed")
+    },
+    [session, queryClient, showSuccess],
+  )
+
+  const confirmCancel = useCallback(
+    async (reason: string) => {
+      if (!session) return
+      await serviceSessionsApi.cancel(session.id, { reason })
+      await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
+      showSuccess("Session cancelled")
+    },
+    [session, queryClient, showSuccess],
+  )
+
   const submitFeedback = useCallback(
-    async (rating: number | null, comments: string | null) => {
+    async (feedback: string) => {
       if (!session) return
       try {
-        // BE accepts `{feedback: string≥1}` only — combine rating + comments
-        // into a single line until we surface a richer feedback shape on the BE.
-        const feedbackText = [
-          rating != null ? `Rating: ${rating}/5` : null,
-          comments?.trim() || null,
-        ]
-          .filter(Boolean)
-          .join(" — ")
-        if (!feedbackText) {
-          showError("Add a rating or comment before saving.")
+        if (!feedback.trim()) {
+          showError("Write the feedback before saving.")
           return
         }
         const updated = await serviceSessionsApi.updateFeedback(session.id, {
-          feedback: feedbackText,
+          feedback: feedback.trim(),
         })
         queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
         showSuccess("Feedback saved")
@@ -220,6 +232,17 @@ function ServiceSessionDetailPage() {
         }
       />
 
+      <CompleteDialog
+        open={completeOpen}
+        onOpenChange={setCompleteOpen}
+        defaultDuration={service?.duration_minutes ?? 60}
+        onConfirm={confirmComplete}
+      />
+      <CancelDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onConfirm={confirmCancel}
+      />
       <RescheduleDialog
         open={rescheduleOpen}
         onOpenChange={setRescheduleOpen}
@@ -255,7 +278,6 @@ function ServiceSessionDetailPage() {
               </TabsList>
 
               <TabPanel value="overview">
-                <BackfillNotice session={session} />
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <DetailCard title="Schedule">
                     <DetailGrid>
@@ -354,7 +376,7 @@ function ServiceSessionDetailPage() {
                           </p>
                         </div>
                       </div>
-                    ) : session.service_provider_id ? (
+                    ) : session.provider_id ? (
                       <p className="text-xs text-fg/55">Loading provider…</p>
                     ) : (
                       <p className="text-xs text-fg/55">No provider assigned.</p>
@@ -479,7 +501,6 @@ function DetailRail({
   onAction,
   actionLoading,
 }: DetailRailProps) {
-  const rating = session.feedback?.rating ?? null
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
@@ -488,10 +509,7 @@ function DetailRail({
             label="Duration"
             value={service?.duration_minutes != null ? `${service.duration_minutes}m` : "—"}
           />
-          <Stat
-            label="Rating"
-            value={rating != null ? `${rating}/5` : "—"}
-          />
+          <Stat label="Feedback" value={session.feedback ? "Received" : "—"} />
         </div>
       </RailSection>
 
@@ -558,21 +576,19 @@ function FeedbackPanel({
   onSubmit,
 }: {
   session: ServiceSession
-  onSubmit: (rating: number | null, comments: string | null) => Promise<void>
+  onSubmit: (feedback: string) => Promise<void>
 }) {
-  const [rating, setRating] = useState<number | null>(session.feedback?.rating ?? null)
-  const [comments, setComments] = useState(session.feedback?.comments ?? "")
+  const [feedback, setFeedback] = useState(session.feedback ?? "")
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setRating(session.feedback?.rating ?? null)
-    setComments(session.feedback?.comments ?? "")
+    setFeedback(session.feedback ?? "")
   }, [session])
 
   const submit = async () => {
     setSaving(true)
     try {
-      await onSubmit(rating, comments.trim() || null)
+      await onSubmit(feedback)
     } finally {
       setSaving(false)
     }
@@ -581,52 +597,17 @@ function FeedbackPanel({
   return (
     <DetailCard title="Subject feedback" phiLabel="PHI · access logged">
       <div className="space-y-4">
-        <FormField label="Rating" optional>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Button
-                key={n}
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setRating(rating === n ? null : n)}
-                aria-label={`${n} stars`}
-                className={cn(
-                  "size-8 p-0 hover:bg-surface-hover",
-                  rating != null && n <= rating ? "text-primary" : "text-fg/35",
-                )}
-              >
-                <Star
-                  className={cn(
-                    "size-4",
-                    rating != null && n <= rating ? "fill-primary" : "",
-                  )}
-                />
-              </Button>
-            ))}
-            {rating != null ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setRating(null)}
-                className="ml-2 h-auto p-0 text-xs text-fg/55 hover:bg-transparent hover:text-fg"
-              >
-                Clear
-              </Button>
-            ) : null}
-          </div>
-        </FormField>
-        <FormField label="Comments" optional htmlFor="ss-comments">
-          <Input
-            id="ss-comments"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
+        <FormField label="Feedback" optional htmlFor="ss-feedback">
+          <Textarea
+            id="ss-feedback"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
             placeholder="Anything the subject shared about the session…"
+            rows={4}
           />
         </FormField>
         <div className="flex justify-end">
-          <Button size="sm" onClick={submit} disabled={saving}>
+          <Button size="sm" onClick={submit} disabled={saving || !feedback.trim()}>
             {saving ? "Saving…" : "Save feedback"}
           </Button>
         </div>
@@ -634,6 +615,159 @@ function FeedbackPanel({
     </DetailCard>
   )
 }
+
+function CompleteDialog({
+  open,
+  onOpenChange,
+  defaultDuration,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  defaultDuration: number
+  onConfirm: (duration: number, notes: string) => Promise<void>
+}) {
+  const [duration, setDuration] = useState(String(defaultDuration))
+  const [notes, setNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setDuration(String(defaultDuration))
+      setNotes("")
+    }
+  }, [open, defaultDuration])
+
+  const minutes = Number(duration)
+  const valid = Number.isFinite(minutes) && minutes > 0 && notes.trim().length > 0
+
+  const handleConfirm = async () => {
+    if (!valid) return
+    setSubmitting(true)
+    try {
+      await onConfirm(minutes, notes.trim())
+      onOpenChange(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Complete session</DialogTitle>
+          <DialogDescription>
+            Duration and a session note become part of the clinical record.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <FormField label="Duration (minutes)" required htmlFor="complete-duration">
+            <Input
+              id="complete-duration"
+              type="number"
+              min={1}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Session notes" required htmlFor="complete-notes">
+            <Textarea
+              id="complete-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What happened in this session?"
+              rows={3}
+            />
+          </FormField>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            Back
+          </Button>
+          <Button size="sm" onClick={handleConfirm} disabled={!valid || submitting}>
+            {submitting ? "Saving…" : "Complete session"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+function CancelDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: (reason: string) => Promise<void>
+}) {
+  const [reason, setReason] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (open) setReason("")
+  }, [open])
+
+  const handleConfirm = async () => {
+    if (!reason.trim()) return
+    setSubmitting(true)
+    try {
+      await onConfirm(reason.trim())
+      onOpenChange(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cancel session</DialogTitle>
+          <DialogDescription>
+            The reason is recorded on the session.
+          </DialogDescription>
+        </DialogHeader>
+        <FormField label="Reason" required htmlFor="cancel-reason">
+          <Textarea
+            id="cancel-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why is this session being cancelled?"
+            rows={3}
+          />
+        </FormField>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            Back
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={!reason.trim() || submitting}
+          >
+            {submitting ? "Saving…" : "Cancel session"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 
 function RescheduleDialog({
   open,
@@ -726,28 +860,4 @@ function toLocalDatetime(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-function BackfillNotice({ session }: { session: ServiceSession }) {
-  const backfill = (session.metadata as Record<string, unknown> | null | undefined)
-    ?.backfill as
-    | { logged_at?: string; reason?: string | null; source?: string }
-    | undefined
-  if (!backfill) return null
-  return (
-    <div className="mb-4 rounded-sm border border-fg/15 bg-surface px-3 py-2.5">
-      <div className="flex items-start gap-2.5">
-        <CalendarRange className="mt-0.5 size-3.5 shrink-0 text-fg/65" />
-        <div className="min-w-0 flex-1 text-xs">
-          <p className="font-medium text-fg">Logged after the fact</p>
-          <p className="mt-0.5 text-fg/65">
-            Entered{" "}
-            {backfill.logged_at
-              ? new Date(backfill.logged_at).toLocaleString()
-              : "later"}
-            {backfill.reason ? ` · ${backfill.reason}` : null}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
 

@@ -13,24 +13,41 @@ import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { displayName, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
+import { ClientType, SessionCategory, SessionType } from "@/types/enums"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
     person_id: z.string().trim().min(1, "Person is required"),
     service_provider_id: z.string().optional(),
-    contract_id: z.string().optional(),
     scheduled_at: z
       .string()
       .min(1, "Scheduled time is required")
       .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
     location: z.string().optional(),
     notes: z.string().optional(),
+    category: z.nativeEnum(SessionCategory).optional(),
+    session_type: z.nativeEnum(SessionType).optional(),
+    client_type: z.nativeEnum(ClientType).optional(),
+    headcount: z.string().optional(),
+    issue_topic: z.string().optional(),
+    partner_name: z.string().optional(),
+    partner_relationship: z.string().optional(),
+    rate_ugx: z.string().optional(),
+    session_number: z.string().optional(),
     diagnosis_id: z.string().nullable().optional(),
+    diagnosis_type_id: z.string().nullable().optional(),
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
@@ -45,6 +62,15 @@ const schema = z
     path: ["backfill_reason"],
     message: "Reason is required when logging a past session",
   })
+  .refine(
+    (d) =>
+      d.category !== SessionCategory.GROUP ||
+      (Number.isFinite(Number(d.headcount)) && Number(d.headcount) >= 2),
+    {
+      path: ["headcount"],
+      message: "Group sessions need a headcount of at least 2",
+    },
+  )
 
 type Values = z.infer<typeof schema>
 
@@ -52,11 +78,20 @@ const EMPTY: Values = {
   service_id: "",
   person_id: "",
   service_provider_id: "",
-  contract_id: "",
   scheduled_at: "",
   location: "",
   notes: "",
+  category: undefined,
+  session_type: undefined,
+  client_type: undefined,
+  headcount: "",
+  issue_topic: "",
+  partner_name: "",
+  partner_relationship: "",
+  rate_ugx: "",
+  session_number: "",
   diagnosis_id: null,
+  diagnosis_type_id: null,
   is_backfill: false,
   backfill_reason: "",
 }
@@ -96,6 +131,7 @@ export function ServiceSessionFormSheet({
       Parameters<typeof serviceSessionsApi.create>[0] & {
         __isBackfill?: boolean
         __backfillReason?: string | null
+        __notes?: string
       },
       ServiceSession,
       ServiceSession
@@ -107,39 +143,59 @@ export function ServiceSessionFormSheet({
       onOpenChange,
       entity: session,
       toFormValues,
-      // BE `ServiceSessionCreate` only accepts `{service_id, provider_id,
-      // person_id, scheduled_at, location?}`. `notes`, `diagnosis_*`, and
-      // `metadata` are NOT accepted at create time — `notes` belongs on the
-      // complete-request, diagnosis is set via a separate flow, backfill
-      // intent is communicated by the FE via `__isBackfill` and translated
-      // into a `complete()` call after create.
+      // Backfill intent is FE-only: `__isBackfill` translates into a
+      // `complete()` call after create; the typed reason becomes the
+      // completion note. `notes` is edit-only (create has nowhere to put it).
       parsePayload: (values) => {
         const isBackfill = !session && Boolean(values.is_backfill)
+        const num = (v: string | undefined) => {
+          const n = Number(v)
+          return v?.trim() && Number.isFinite(n) ? n : undefined
+        }
         return {
           service_id: values.service_id,
           person_id: values.person_id,
           provider_id: values.service_provider_id || "",
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
+          category: values.category ?? undefined,
+          session_type: values.session_type ?? undefined,
+          client_type: values.client_type ?? undefined,
+          headcount: num(values.headcount),
+          issue_topic: values.issue_topic?.trim() || undefined,
+          partner_name: values.partner_name?.trim() || undefined,
+          partner_relationship: values.partner_relationship?.trim() || undefined,
+          rate_ugx: num(values.rate_ugx),
+          session_number: num(values.session_number),
+          diagnosis_id: values.diagnosis_id ?? undefined,
+          diagnosis_type_id: values.diagnosis_type_id ?? undefined,
           __isBackfill: isBackfill,
           __backfillReason: isBackfill ? (values.backfill_reason?.trim() || null) : null,
+          __notes: values.notes?.trim() || undefined,
         }
       },
       save: async ({ payload, entity, isEdit }) => {
-        const { __isBackfill, __backfillReason, ...body } = payload
-        // BE `ServiceSessionUpdate` (PATCH) shape may differ from create —
-        // for now we send the same body and the BE silently ignores extras
-        // on update. Once openapi.json exposes ServiceSessionUpdate we can
-        // tighten this.
-        let result = isEdit && entity
-          ? await serviceSessionsApi.update(entity.id, body)
-          : await serviceSessionsApi.create(body)
+        const { __isBackfill, __backfillReason, __notes, ...body } = payload
+        if (isEdit && entity) {
+          // PATCH takes the clinical/admin fields (+ notes); scheduling is
+          // immutable here — reschedule is its own transition on the detail page.
+          const {
+            service_id: _s,
+            person_id: _p,
+            provider_id: _pr,
+            scheduled_at: _at,
+            session_number: _sn,
+            ...updatable
+          } = body
+          return serviceSessionsApi.update(entity.id, { ...updatable, notes: __notes })
+        }
+        let result = await serviceSessionsApi.create(body)
         if (__isBackfill && result?.id) {
-          // BE `ServiceSessionCompleteRequest` requires `{duration, notes}`.
-          // Backfill defaults to the service's scheduled duration; the user-
-          // typed reason becomes the completion note.
+          // A backfilled session is complete by definition. Duration comes
+          // from the service's configured length; the reason becomes the note.
+          const svc = await servicesApi.getById(body.service_id).catch(() => null)
           result = await serviceSessionsApi.complete(result.id, {
-            duration: 60, // TODO: read from selected Service.duration_minutes
+            duration: svc?.duration_minutes ?? 60,
             notes: __backfillReason ?? "Backfilled from manual entry",
           })
         }
@@ -153,6 +209,11 @@ export function ServiceSessionFormSheet({
   const watchedPerson = watch("person_id")
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
+  const watchedCategory = watch("category")
+  const isGroup = watchedCategory === SessionCategory.GROUP
+  const isPartnered =
+    watchedCategory === SessionCategory.COUPLES ||
+    watchedCategory === SessionCategory.FAMILY
 
   const errors = formState.errors
 
@@ -201,6 +262,45 @@ export function ServiceSessionFormSheet({
           )}
         </FormField>
         <Input type="hidden" {...register("service_id")} />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Category" optional error={errors.category?.message}>
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <EnumSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={Object.values(SessionCategory)}
+                />
+              )}
+            />
+          </FormField>
+          <FormField label="Delivery" optional error={errors.session_type?.message}>
+            <Controller
+              control={control}
+              name="session_type"
+              render={({ field }) => (
+                <EnumSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={Object.values(SessionType)}
+                />
+              )}
+            />
+          </FormField>
+        </div>
+        {isGroup ? (
+          <FormField
+            label="Headcount"
+            required
+            description="Number of participants — group sessions need at least 2."
+            error={errors.headcount?.message}
+            htmlFor="ss-headcount"
+          >
+            <Input id="ss-headcount" type="number" min={2} {...register("headcount")} />
+          </FormField>
+        ) : null}
       </FormSection>
 
       <FormSection title="Subject">
@@ -217,6 +317,44 @@ export function ServiceSessionFormSheet({
           )}
         </FormField>
         <Input type="hidden" {...register("person_id")} />
+        <FormField label="Client type" optional error={errors.client_type?.message}>
+          <Controller
+            control={control}
+            name="client_type"
+            render={({ field }) => (
+              <EnumSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={Object.values(ClientType)}
+                placeholder="New or returning?"
+              />
+            )}
+          />
+        </FormField>
+        {isPartnered ? (
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              label="Partner name"
+              optional
+              error={errors.partner_name?.message}
+              htmlFor="ss-partner-name"
+            >
+              <Input id="ss-partner-name" {...register("partner_name")} />
+            </FormField>
+            <FormField
+              label="Relationship"
+              optional
+              error={errors.partner_relationship?.message}
+              htmlFor="ss-partner-rel"
+            >
+              <Input
+                id="ss-partner-rel"
+                placeholder="e.g. Spouse"
+                {...register("partner_relationship")}
+              />
+            </FormField>
+          </div>
+        ) : null}
       </FormSection>
 
       <FormSection
@@ -235,6 +373,25 @@ export function ServiceSessionFormSheet({
           />
         </FormField>
         <Input type="hidden" {...register("service_provider_id")} />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            label="Rate (UGX)"
+            optional
+            error={errors.rate_ugx?.message}
+            htmlFor="ss-rate"
+          >
+            <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
+          </FormField>
+          <FormField
+            label="Session number"
+            optional
+            description="Position in the person's episode, e.g. 3 of 6."
+            error={errors.session_number?.message}
+            htmlFor="ss-session-no"
+          >
+            <Input id="ss-session-no" type="number" min={1} {...register("session_number")} />
+          </FormField>
+        </div>
       </FormSection>
 
       <FormSection title={watchedBackfill ? "When it happened" : "Schedule"}>
@@ -302,6 +459,15 @@ export function ServiceSessionFormSheet({
       </FormSection>
 
       <FormSection title="Clinical">
+        <FormField
+          label="Issue / topic"
+          optional
+          description="Presenting issue, in the taxonomy's terms."
+          error={errors.issue_topic?.message}
+          htmlFor="ss-issue"
+        >
+          <Input id="ss-issue" {...register("issue_topic")} />
+        </FormField>
         <FormField label="Diagnosis" optional error={errors.diagnosis_id?.message}>
           <Controller
             control={control}
@@ -309,22 +475,56 @@ export function ServiceSessionFormSheet({
             render={({ field }) => (
               <DiagnosisSelector
                 value={field.value ?? null}
-                onChange={(id) => field.onChange(id ?? null)}
+                onChange={(id, diagnosis) => {
+                  field.onChange(id ?? null)
+                  setValue("diagnosis_type_id", diagnosis?.type_id ?? null, {
+                    shouldDirty: true,
+                  })
+                }}
               />
             )}
           />
         </FormField>
-        <FormField
-          label="Notes"
-          optional
-          description="Internal notes — not shared with the subject."
-          error={errors.notes?.message}
-          htmlFor="ss-notes"
-        >
-          <Input id="ss-notes" {...register("notes")} />
-        </FormField>
+        {isEdit ? (
+          <FormField
+            label="Notes"
+            optional
+            description="Internal notes — not shared with the subject."
+            error={errors.notes?.message}
+            htmlFor="ss-notes"
+          >
+            <Input id="ss-notes" {...register("notes")} />
+          </FormField>
+        ) : null}
       </FormSection>
     </SheetForm>
+  )
+}
+
+function EnumSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  placeholder = "Select…",
+}: {
+  value: T | undefined
+  onChange: (v: T) => void
+  options: readonly T[] | T[]
+  placeholder?: string
+}) {
+  return (
+    <Select value={value ?? ""} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
@@ -332,12 +532,23 @@ function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
     person_id: s.person_id,
-    service_provider_id: s.service_provider_id ?? "",
-    contract_id: s.contract_id ?? "",
+    service_provider_id: s.provider_id ?? "",
     scheduled_at: toLocalDatetime(s.scheduled_at),
     location: s.location ?? "",
     notes: s.notes ?? "",
+    category: s.category ?? undefined,
+    session_type: s.session_type ?? undefined,
+    client_type: s.client_type ?? undefined,
+    headcount: s.headcount != null ? String(s.headcount) : "",
+    issue_topic: s.issue_topic ?? "",
+    partner_name: s.partner_name ?? "",
+    partner_relationship: s.partner_relationship ?? "",
+    rate_ugx: s.rate_ugx != null ? String(s.rate_ugx) : "",
+    session_number: s.session_number != null ? String(s.session_number) : "",
     diagnosis_id: s.diagnosis_id ?? null,
+    diagnosis_type_id: s.diagnosis_type_id ?? null,
+    is_backfill: false,
+    backfill_reason: "",
   }
 }
 

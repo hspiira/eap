@@ -4,10 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
-  CalendarClock,
-  ChevronRight,
   Pencil,
-  Plus,
   UserCog,
   Users,
 } from "lucide-react"
@@ -26,24 +23,17 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { SessionHistory } from "@/components/common/SessionHistory"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, nameInitials, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
-import type { Client, Person, ServiceSession, User } from "@/types/entities"
+import type { Client, Person, User } from "@/types/entities"
 import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -369,11 +359,7 @@ function PersonDetailPage() {
               </TabPanel>
 
               <TabPanel value="sessions">
-                <SessionsPanel
-                  sessions={sessions}
-                  loading={sessionsQuery.isPending}
-                  personId={personId}
-                />
+                <SessionHistory personId={personId} />
               </TabPanel>
 
               <TabPanel value="history">
@@ -522,92 +508,3 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
   )
 }
 
-function SessionsPanel({
-  sessions,
-  loading,
-  personId,
-}: {
-  sessions: ServiceSession[]
-  loading: boolean
-  personId: string
-}) {
-  if (loading) return <p className="text-sm text-fg/65">Loading sessions…</p>
-  if (sessions.length === 0) {
-    return (
-      <EmptyState
-        icon={CalendarClock}
-        title="No sessions yet"
-        description="Sessions delivered to this person will show up here."
-        action={
-          <Link
-            to="/service-sessions"
-            search={{ new: true, person_id: personId }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-fg/15 bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-hover"
-          >
-            <Plus className="size-4" />
-            Schedule session
-          </Link>
-        }
-      />
-    )
-  }
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">{sessions.length} recent sessions.</p>
-        <Link
-          to="/service-sessions"
-          search={{ person_id: personId }}
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          View all
-        </Link>
-      </div>
-      <div className="overflow-hidden border border-fg/10 bg-surface">
-        <Table className="w-full caption-bottom text-sm">
-          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-            <TableRow className="border-fg/8 hover:bg-transparent">
-              <TableHead>Scheduled</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-10 text-right text-fg/65">
-                <span className="sr-only">Open</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sessions.slice(0, 10).map((s) => (
-              <TableRow key={s.id} className="group border-fg/8">
-                <TableCell className="text-sm text-fg">
-                  {new Date(s.scheduled_at).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Link
-                    to="/services/$serviceId"
-                    params={{ serviceId: s.service_id }}
-                    className="font-mono text-xs text-fg/75 hover:text-primary"
-                  >
-                    {s.service_id.slice(0, 8)}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={s.status} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link
-                    to="/service-sessions/$sessionId"
-                    params={{ sessionId: s.id }}
-                    aria-label="Open session"
-                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
-                  >
-                    <ChevronRight className="size-3.5" />
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  )
-}

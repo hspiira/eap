@@ -59,6 +59,36 @@ export enum SessionStatus {
   NO_SHOW = 'No Show',
 }
 
+/** Physical or online delivery. */
+export enum SessionType {
+  PHYSICAL = 'Physical',
+  ONLINE = 'Online',
+}
+
+/** Session composition. Group requires a headcount of at least 2. */
+export enum SessionCategory {
+  INDIVIDUAL = 'Individual',
+  GROUP = 'Group',
+  FAMILY = 'Family',
+  COUPLES = 'Couples',
+}
+
+/** Whether the person is new to the service or returning. */
+export enum ClientType {
+  NEW = 'New',
+  REPEAT = 'Repeat',
+}
+
+/**
+ * Clinical continuation outcome recorded at session end.
+ * Distinct from SessionStatus (the scheduling lifecycle).
+ */
+export enum SessionClinicalStatus {
+  TO_BE_CONTINUED = 'ToBeContinued',
+  REFERRED = 'Referred',
+  COMPLETED = 'Completed',
+}
+
 /**
  * Document status
  */

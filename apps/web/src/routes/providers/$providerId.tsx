@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import { nonCompeteClausesApi } from "@/api/endpoints/non-compete-clauses"
 import { providersApi } from "@/api/endpoints/providers"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { SessionHistory } from "@/components/common/SessionHistory"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/providers/$providerId")({
   component: ProviderDetailPage,
 })
 
-type Tab = "overview" | "accreditation" | "non-compete"
+type Tab = "overview" | "accreditation" | "non-compete" | "sessions"
 
 function ProviderDetailPage() {
   const { providerId } = Route.useParams()
@@ -99,12 +100,16 @@ function ProviderDetailPage() {
           <TabButton current={tab} value="non-compete" onClick={setTab}>
             Non-compete
           </TabButton>
+          <TabButton current={tab} value="sessions" onClick={setTab}>
+            Sessions
+          </TabButton>
         </nav>
 
         <div className="border border-fg/20 bg-white p-6">
           {tab === "overview" && <OverviewPanel provider={p} />}
           {tab === "accreditation" && <AccreditationPanel provider={p} />}
           {tab === "non-compete" && <NonCompetePanel provider={p} />}
+          {tab === "sessions" && <SessionHistory providerId={p.id} />}
         </div>
       </div>
     </div>
