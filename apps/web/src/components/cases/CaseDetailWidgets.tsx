@@ -604,13 +604,37 @@ export function CreateNoteDialog({
   )
 }
 
-function bodyText(body: ClinicalNoteBody): string {
+const NOTE_BODY_FIELD_LABELS: [key: string, label: string][] = [
+  ["data", "Data"],
+  ["assessment", "Assessment"],
+  ["plan", "Plan"],
+  ["subjective", "Subjective"],
+  ["objective", "Objective"],
+  ["summary", "Summary"],
+]
+
+export function noteBodyEntries(body: ClinicalNoteBody): [label: string, text: string][] {
   const b = body as Record<string, string>
-  if (b.summary) return b.summary
-  const dap = [b.data, b.assessment, b.plan].filter(Boolean).join(" — ")
-  if (dap) return dap
-  const soap = [b.subjective, b.objective].filter(Boolean).join(" — ")
-  return soap || "—"
+  return NOTE_BODY_FIELD_LABELS.filter(([key]) => (b[key] ?? "").trim().length > 0).map(
+    ([key, label]) => [label, b[key]],
+  )
+}
+
+function NoteBody({ body }: { body: ClinicalNoteBody }) {
+  const entries = noteBodyEntries(body)
+  if (entries.length === 0) {
+    return <p className="text-sm text-fg/85">—</p>
+  }
+  return (
+    <dl className="space-y-2">
+      {entries.map(([label, text]) => (
+        <div key={label}>
+          <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
+          <dd className="mt-0.5 whitespace-pre-wrap text-sm text-fg/85">{text}</dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 export function NotesPanel({
@@ -646,7 +670,7 @@ export function NotesPanel({
         <div className="space-y-2">
           {notes.map((n) => (
             <DetailCard key={n.id} title={ClinicalNoteTypeLabel[n.note_type]} phiLabel="PHI · access logged">
-              <p className="whitespace-pre-wrap text-sm text-fg/85">{bodyText(n.body)}</p>
+              <NoteBody body={n.body} />
               <div className="mt-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 text-xs text-fg/55">
                   {n.signed_at ? (
