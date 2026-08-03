@@ -3,11 +3,10 @@ import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { personsApi } from "@/api/endpoints/persons"
-import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
-import { EntityPicker, PickerRow } from "@/components/common/EntityPicker"
+import { PersonPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -23,7 +22,7 @@ import {
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { displayName, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
-import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
+import type { Person, Service, ServiceSession } from "@/types/entities"
 import { ClientType, SessionCategory, SessionType } from "@/types/enums"
 
 const schema = z
@@ -635,74 +634,6 @@ function LockedPersonSummary({
         Locked
       </span>
     </div>
-  )
-}
-
-function ServicePicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  return (
-    <EntityPicker<Service>
-      resource="services"
-      listFn={servicesApi.list}
-      value={value}
-      onChange={onChange}
-      placeholder="Search services…"
-      emptyPrompt="Start typing to search services."
-      emptyNoMatch="No services match."
-      renderSelected={(s) => (
-        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? "—"} size="md" />
-      )}
-      renderRow={(s) => (
-        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? "—"} />
-      )}
-    />
-  )
-}
-
-function PersonPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  return (
-    <EntityPicker<Person>
-      resource="persons"
-      listFn={personsApi.list}
-      value={value}
-      onChange={onChange}
-      placeholder="Search persons…"
-      emptyPrompt="Start typing to search persons."
-      emptyNoMatch="No persons match."
-      renderSelected={(p) => (
-        <PickerRow
-          initials={personInitials(p)}
-          primary={displayName(p)}
-          secondary={p.person_type}
-          size="md"
-        />
-      )}
-      renderRow={(p) => (
-        <PickerRow initials={personInitials(p)} primary={displayName(p)} secondary={p.person_type} />
-      )}
-    />
-  )
-}
-
-function ProviderPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  const row = (p: Provider) => (
-    <PickerRow
-      initials="PR"
-      primary={p.id}
-      secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
-    />
-  )
-  return (
-    <EntityPicker<Provider>
-      resource="providers"
-      listFn={providersApi.list}
-      value={value}
-      onChange={onChange}
-      placeholder="Search providers…"
-      emptyPrompt="Start typing to search providers."
-      emptyNoMatch="No providers match."
-      renderSelected={row}
-      renderRow={row}
-    />
   )
 }
 

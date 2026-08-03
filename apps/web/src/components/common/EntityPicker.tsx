@@ -2,13 +2,16 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { personsApi } from "@/api/endpoints/persons"
+import { providersApi } from "@/api/endpoints/providers"
+import { servicesApi } from "@/api/endpoints/services"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { nameInitials } from "@/lib/display"
+import { displayName, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client } from "@/types/entities"
+import type { Client, Person, Provider, Service } from "@/types/entities"
 
 /** Search-and-select over a paginated resource. */
 export function EntityPicker<T extends { id: string }, P extends ListParams = ListParams>({
@@ -157,6 +160,106 @@ export function ClientPicker({
       )}
       renderRow={(c) => (
         <PickerRow initials={nameInitials(c.name)} primary={c.name} secondary={c.code} />
+      )}
+    />
+  )
+}
+
+/** Service search-and-select. Was copy-pasted into two form sheets. */
+export function ServicePicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <EntityPicker<Service>
+      resource="services"
+      listFn={servicesApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search services by name…"
+      emptyPrompt="Start typing to search services."
+      emptyNoMatch="No services match."
+      renderSelected={(s) => (
+        <PickerRow
+          initials="SV"
+          primary={s.name}
+          secondary={s.service_type ?? s.category ?? "—"}
+          size="md"
+        />
+      )}
+      renderRow={(s) => (
+        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? s.category ?? "—"} />
+      )}
+    />
+  )
+}
+
+/** Person search-and-select. Was copy-pasted into form sheets that assign a session or service to someone. */
+export function PersonPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <EntityPicker<Person>
+      resource="persons"
+      listFn={personsApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search persons…"
+      emptyPrompt="Start typing to search persons."
+      emptyNoMatch="No persons match."
+      renderSelected={(p) => (
+        <PickerRow
+          initials={personInitials(p)}
+          primary={displayName(p)}
+          secondary={p.person_type}
+          size="md"
+        />
+      )}
+      renderRow={(p) => (
+        <PickerRow initials={personInitials(p)} primary={displayName(p)} secondary={p.person_type} />
+      )}
+    />
+  )
+}
+
+/** Provider search-and-select. Was copy-pasted into two form sheets. */
+export function ProviderPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <EntityPicker<Provider>
+      resource="providers"
+      listFn={providersApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search providers…"
+      emptyPrompt="Start typing to search providers."
+      emptyNoMatch="No providers match."
+      renderSelected={(p) => (
+        <PickerRow
+          initials="PR"
+          primary={p.id}
+          secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
+          size="md"
+        />
+      )}
+      renderRow={(p) => (
+        <PickerRow
+          initials="PR"
+          primary={p.id}
+          secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
+        />
       )}
     />
   )

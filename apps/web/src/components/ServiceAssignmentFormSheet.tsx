@@ -3,9 +3,8 @@ import { z } from "zod"
 
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
-import { servicesApi } from "@/api/endpoints/services"
 import type { ServiceAssignmentCreate } from "@/api/generated"
-import { EntityPicker, PickerRow } from "@/components/common/EntityPicker"
+import { EntityPicker, PickerRow, ServicePicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -13,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { useEntityList } from "@/lib/queries"
-import type { Contract, Service, ServiceAssignment } from "@/types/entities"
+import type { Contract, ServiceAssignment } from "@/types/entities"
 
 // Schema mirrors the BE `ServiceAssignmentCreate` (see openapi.json). Active-
 // period dates are intentionally derived from the parent contract on the BE,
@@ -220,29 +219,6 @@ function ContractPicker({ value, onChange }: { value: string; onChange: (id: str
       placeholder="Search contracts by number…"
       emptyPrompt="Start typing to search contracts."
       emptyNoMatch="No contracts match."
-      renderSelected={row}
-      renderRow={row}
-    />
-  )
-}
-
-function ServicePicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  const row = (s: Service) => (
-    <PickerRow
-      initials="SV"
-      primary={s.name}
-      secondary={s.service_type ?? s.category ?? s.id.slice(0, 8)}
-    />
-  )
-  return (
-    <EntityPicker<Service>
-      resource="services"
-      listFn={servicesApi.list}
-      value={value}
-      onChange={onChange}
-      placeholder="Search services by name…"
-      emptyPrompt="Start typing to search services."
-      emptyNoMatch="No services match."
       renderSelected={row}
       renderRow={row}
     />
