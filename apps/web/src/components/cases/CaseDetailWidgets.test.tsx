@@ -1,10 +1,10 @@
-import { describe, expect, it, vi } from "vitest"
-import userEvent from "@testing-library/user-event"
 import { screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
-import { renderWithProviders } from "@/test/utils"
 import { CloseCaseDialog, noteBodyEntries } from "@/components/cases/CaseDetailWidgets"
-import { CaseStatus, PresentingProblem, CaseReferralSource } from "@/types/enums"
+import { renderWithProviders } from "@/test/utils"
+import { CaseReferralSource, CaseStatus, PresentingProblem } from "@/types/enums"
 
 // jsdom doesn't implement the Pointer Events capture APIs or scrollIntoView that
 // Radix's Select relies on, so opening it via userEvent throws without these stubs.
