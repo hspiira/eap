@@ -245,6 +245,19 @@ export type RelationType =
   | 'Other'
 
 /**
+ * Relationship of an EligibleMember to the primary employee. Distinct from
+ * RelationType (used for DependentInfo) — similar-looking but a different
+ * enum on the wire; do not conflate the two.
+ */
+export enum MemberRelation {
+  EMPLOYEE = 'Employee',
+  SPOUSE = 'Spouse',
+  CHILD = 'Child',
+  DOMESTIC_PARTNER = 'DomesticPartner',
+  DEPENDENT_OTHER = 'DependentOther',
+}
+
+/**
  * Client tier — assigned by ops, drives reporting and SLA expectations.
  * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.
  */

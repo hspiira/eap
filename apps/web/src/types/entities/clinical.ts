@@ -5,6 +5,7 @@ import type {
   CaseStatus,
   ClinicalNoteType,
   EligibilityStatus,
+  MemberRelation,
   PresentingProblem,
   RelationType,
   ServiceCategory,
@@ -20,7 +21,7 @@ export interface EligibleMember {
   tenant_id: string
   client_id: string
   employer_member_id: string
-  relation: RelationType
+  relation: MemberRelation
   status: EligibilityStatus
   primary_employee_member_id?: string | null
   coverage_start: string
