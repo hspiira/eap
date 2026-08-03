@@ -24,7 +24,7 @@ import { useFixtures } from '@/lib/fixtures'
 import type { TriageInstrumentCode, TriageRiskLevel } from '@/types/enums'
 
 import apiClient from '../client'
-import type { CallbackCampaign, CallbackCampaignAggregate, CallbackCampaignSummary, OutreachRecord, PaginatedResponse } from '../types'
+import type { CallbackCampaign, CallbackCampaignAggregate, CallbackCampaignSummary, OutreachRecord } from '../types'
 import {
   fixtureAggregateCampaign,
   fixtureCreateCampaign,
@@ -85,15 +85,12 @@ export interface TriageScoreResult {
   stage_of_change?: string | null
 }
 
-function paginate<T>(items: T[]): PaginatedResponse<T> {
-  return { items, total: items.length, page: 1, limit: items.length, has_more: false }
-}
-
 export const careCallbacksApi = {
   // ── Campaigns ────────────────────────────────────────────────────────────
-  async listCampaigns(): Promise<PaginatedResponse<CallbackCampaign>> {
-    if (useFixtures()) return Promise.resolve(paginate(fixtureListCampaigns()))
-    return apiClient.get<PaginatedResponse<CallbackCampaign>>('/care-callback-campaigns')
+  /** Bare array on the wire — not a PaginatedResponse envelope. */
+  async listCampaigns(): Promise<CallbackCampaign[]> {
+    if (useFixtures()) return Promise.resolve(fixtureListCampaigns())
+    return apiClient.get<CallbackCampaign[]>('/care-callback-campaigns')
   },
 
   async getCampaign(id: string): Promise<CallbackCampaign> {
@@ -152,12 +149,16 @@ export const careCallbacksApi = {
   },
 
   // ── Outreach records ─────────────────────────────────────────────────────
-  /** Campaign-scoped only — the BE has no bare GET /outreach-records collection. */
+  /**
+   * Campaign-scoped only — the BE has no bare GET /outreach-records collection.
+   * page/limit slice the result, but the response is a bare array with no
+   * total/has_more — there's no way to tell if more pages exist.
+   */
   async listOutreachForCampaign(
     campaignId: string,
     params: OutreachListParams = {},
-  ): Promise<PaginatedResponse<OutreachRecord>> {
-    return apiClient.get<PaginatedResponse<OutreachRecord>>(
+  ): Promise<OutreachRecord[]> {
+    return apiClient.get<OutreachRecord[]>(
       `/care-callback-campaigns/${campaignId}/outreach-records`,
       params,
     )

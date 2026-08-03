@@ -79,7 +79,7 @@ function useMyOutreachAcrossCampaigns(counsellorId: string | null) {
     queryFn: () => careCallbacksApi.listCampaigns(),
     staleTime: 30_000,
   })
-  const activeCampaigns = (campaignsQuery.data?.items ?? []).filter(
+  const activeCampaigns = (campaignsQuery.data ?? []).filter(
     (c) => c.status === CareCallbackCampaignStatus.ACTIVE,
   )
 
@@ -94,7 +94,7 @@ function useMyOutreachAcrossCampaigns(counsellorId: string | null) {
   const isPending = campaignsQuery.isPending || (!!counsellorId && recordQueries.some((q) => q.isPending))
   const campaignNameById = new Map(activeCampaigns.map((c) => [c.id, c.name]))
   const records = recordQueries
-    .flatMap((q) => q.data?.items ?? [])
+    .flatMap((q) => q.data ?? [])
     .filter((r) => r.counsellor_id === counsellorId)
 
   return { records, campaignNameById, isPending }

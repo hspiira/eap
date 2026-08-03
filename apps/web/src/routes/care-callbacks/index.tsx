@@ -100,7 +100,7 @@ function CampaignsListPage() {
     queryFn: () => careCallbacksApi.listCampaigns(),
     staleTime: 30_000,
   })
-  const allItems = query.data?.items ?? []
+  const allItems = query.data ?? []
   const items = filterAndSort(allItems, {
     search: searchInput.trim(),
     status: searchParams.status,

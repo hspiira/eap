@@ -233,6 +233,9 @@ export function TerminateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Close out this record</DialogTitle>
+          <DialogDescription>
+            Choose how this attempt closed. Notes are optional.
+          </DialogDescription>
         </DialogHeader>
         <FormField label="Outcome" required>
           <RadioGroup value={action} onValueChange={(v) => setAction(v as TerminateAction)}>

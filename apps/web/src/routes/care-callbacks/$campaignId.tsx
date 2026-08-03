@@ -157,7 +157,7 @@ function CampaignDetailPage() {
   }
 
   const campaign = campaignQuery.data
-  const cases = casesQuery.data?.items ?? []
+  const cases = casesQuery.data ?? []
   const aggregate = aggregateQuery.data ?? null
   const client = clientQuery.data ?? null
 

@@ -11,10 +11,10 @@ import { CareCallbackCampaignStatus } from '@/types/enums'
  * path for it — so it belongs in an e2e/integration suite, not here.
  */
 describe('careCallbacksApi (fixture mode)', () => {
-  it('lists seeded campaigns most-recent first', async () => {
+  it('lists seeded campaigns most-recent first (bare array — not a PaginatedResponse)', async () => {
     const r = await careCallbacksApi.listCampaigns()
-    expect(r.items.length).toBeGreaterThanOrEqual(2)
-    expect(r.items[0].status).toBeTypeOf('string')
+    expect(r.length).toBeGreaterThanOrEqual(2)
+    expect(r[0].status).toBeTypeOf('string')
   })
 
   it('createCampaign drafts a new campaign with zeroed completed_count', async () => {
