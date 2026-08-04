@@ -38,6 +38,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
+import { formatDate, formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import {
   EngagementStatusPill,
@@ -222,12 +223,8 @@ export function DeliverablesPanel({
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{d.title}</p>
                 <p className="truncate text-xs text-fg/55">
-                  {d.due_date
-                    ? `Due ${new Date(d.due_date).toLocaleDateString()}`
-                    : "No due date"}
-                  {d.submitted_at
-                    ? ` · submitted ${new Date(d.submitted_at).toLocaleDateString()}`
-                    : ""}
+                  {d.due_date ? `Due ${formatDate(d.due_date)}` : "No due date"}
+                  {d.submitted_at ? ` · submitted ${formatDate(d.submitted_at)}` : ""}
                 </p>
               </div>
               <Select
@@ -381,7 +378,7 @@ export function HoursPanel({
               {entries.map((e) => (
                 <TableRow key={e.id} className="border-fg/8 last:border-0">
                   <TableCell className="px-3 py-2">
-                    {new Date(e.occurred_on).toLocaleDateString()}
+                    {formatDate(e.occurred_on)}
                   </TableCell>
                   <TableCell className="px-3 py-2 text-right font-mono">
                     {e.hours.toFixed(2)}
@@ -430,7 +427,7 @@ export function TimelinePanel({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-medium text-fg/55">
-                {new Date(e.at).toLocaleString()} ·{" "}
+                {formatDateTime(e.at)} ·{" "}
                 <span className="font-mono">{e.actor}</span> ·{" "}
                 <TimelineKindPill kind={e.kind} />
               </p>

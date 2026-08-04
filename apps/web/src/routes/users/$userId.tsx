@@ -47,6 +47,7 @@ import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { AuthProvider } from "@/types/enums"
@@ -220,18 +221,12 @@ function UserDetailPage() {
                       />
                       <DetailRow
                         label="Last login"
-                        value={
-                          user.last_login_at
-                            ? new Date(user.last_login_at).toLocaleString()
-                            : null
-                        }
+                        value={user.last_login_at ? formatDateTime(user.last_login_at) : null}
                       />
                       <DetailRow
                         label="Status changed"
                         value={
-                          user.status_changed_at
-                            ? new Date(user.status_changed_at).toLocaleString()
-                            : null
+                          user.status_changed_at ? formatDateTime(user.status_changed_at) : null
                         }
                       />
                     </DetailGrid>
@@ -297,11 +292,7 @@ function UserDetailPage() {
                     />
                     <DetailRow
                       label="Verified at"
-                      value={
-                        user.email_verified_at
-                          ? new Date(user.email_verified_at).toLocaleString()
-                          : null
-                      }
+                      value={user.email_verified_at ? formatDateTime(user.email_verified_at) : null}
                     />
                   </DetailGrid>
                 </DetailCard>

@@ -31,24 +31,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { OutreachRecord } from "@/types/entities"
 import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is OutreachStatus {
-  return Object.values(OutreachStatus).includes(v as OutreachStatus)
-}
-
 export const Route = createFileRoute("/care-callbacks/worklist/")({
   component: WorklistPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { search?: string; status?: OutreachStatus; crisis?: boolean } = {}
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (search.crisis === "1" || search.crisis === true) out.crisis = true
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(OutreachStatus),
+    crisis: (v) => (v === "1" || v === true ? true : undefined),
+  }),
 })
 
 const STATUS_OPTIONS = [
@@ -316,7 +311,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         </div>
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.last_attempted_at ? new Date(row.last_attempted_at).toLocaleDateString() : "—"}
+        {formatDate(row.last_attempted_at)}
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/75">{row.contact_attempts}</TableCell>
       <TableCell className="text-right">

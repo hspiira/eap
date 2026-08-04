@@ -56,45 +56,22 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { displayName } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
+import { queryKeys } from "@/lib/query-keys"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Service, ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
-function isStatus(value: unknown): value is SessionStatus {
-  return (
-    value === SessionStatus.SCHEDULED ||
-    value === SessionStatus.RESCHEDULED ||
-    value === SessionStatus.COMPLETED ||
-    value === SessionStatus.CANCELLED ||
-    value === SessionStatus.NO_SHOW
-  )
-}
-
-function isRange(value: unknown): value is Exclude<RangeFilter, "all"> {
-  return value === "today" || value === "7d" || value === "30d" || value === "past"
-}
-
 export const Route = createFileRoute("/service-sessions/")({
   component: ServiceSessionsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: SessionStatus
-      service_id?: string
-      person_id?: string
-      range?: Exclude<RangeFilter, "all">
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (typeof search.service_id === "string" && search.service_id.trim())
-      out.service_id = search.service_id
-    if (typeof search.person_id === "string" && search.person_id.trim())
-      out.person_id = search.person_id
-    if (isRange(search.range)) out.range = search.range
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(SessionStatus),
+    service_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    person_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    range: (v): Exclude<RangeFilter, "all"> | undefined =>
+      v === "today" || v === "7d" || v === "30d" || v === "past" ? v : undefined,
+  }),
 })
 
 const STATUS_OPTIONS = [
@@ -161,7 +138,7 @@ function ServiceSessionsListPage() {
   }, [servicesData])
 
   const { data: activePersonForChip = null } = useQuery({
-    queryKey: ["person", activePersonId],
+    queryKey: queryKeys.persons.detail(activePersonId ?? ""),
     queryFn: () => personsApi.getById(activePersonId!),
     enabled: !!activePersonId,
     staleTime: 10 * 60_000,
@@ -371,12 +348,12 @@ function SessionRow({
 }) {
   const linkedService = servicesById.get(row.service_id) ?? null
   const { data: linkedPerson = null } = useQuery({
-    queryKey: ["person", row.person_id],
+    queryKey: queryKeys.persons.detail(row.person_id),
     queryFn: () => personsApi.getById(row.person_id),
     staleTime: 10 * 60_000,
   })
   const { data: linkedPersonUser = null } = useQuery({
-    queryKey: ["user", linkedPerson?.user_id],
+    queryKey: queryKeys.users.detail(linkedPerson?.user_id ?? ""),
     queryFn: () => usersApi.getById(linkedPerson!.user_id!),
     enabled: !!linkedPerson?.user_id,
     staleTime: 10 * 60_000,
@@ -385,7 +362,7 @@ function SessionRow({
     ? displayName(linkedPerson, linkedPersonUser)
     : row.person_id.slice(0, 8)
   const scheduled = new Date(row.scheduled_at)
-  const dateLabel = scheduled.toLocaleDateString()
+  const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>

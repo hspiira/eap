@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDateTime } from "@/lib/format"
 import { entityListKey } from "@/lib/queries"
 import type { Service } from "@/types/entities"
 
@@ -114,7 +115,7 @@ export function SessionHistory({
             {sessions.slice(0, limit).map((s) => (
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">
-                  {new Date(s.scheduled_at).toLocaleString()}
+                  {formatDateTime(s.scheduled_at)}
                 </TableCell>
                 <TableCell className="text-sm text-fg/75">
                   {servicesById.get(s.service_id)?.name ?? "—"}

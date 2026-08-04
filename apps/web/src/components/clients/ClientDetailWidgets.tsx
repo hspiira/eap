@@ -63,6 +63,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { nameInitials } from "@/lib/display"
+import { formatDate } from "@/lib/format"
 import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -185,10 +186,10 @@ export function ContractsPanel({
                 <StatusBadge status={c.status} />
               </TableCell>
               <TableCell className="text-sm text-fg/75">
-                {new Date(c.period.start_date).toLocaleDateString()}
+                {formatDate(c.period.start_date)}
               </TableCell>
               <TableCell className="text-sm text-fg/75">
-                {new Date(c.period.end_date).toLocaleDateString()}
+                {formatDate(c.period.end_date)}
               </TableCell>
               <TableCell className="text-right">
                 <Link

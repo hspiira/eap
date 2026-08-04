@@ -42,27 +42,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Survey } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is SurveyStatus {
-  return (
-    v === SurveyStatus.DRAFT ||
-    v === SurveyStatus.COLLECTING ||
-    v === SurveyStatus.CLOSED
-  )
-}
-
 export const Route = createFileRoute("/surveys/")({
   component: SurveysListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: SurveyStatus } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({ status: enumParam(SurveyStatus) }),
 })
 
 const STATUS_OPTIONS = [
@@ -255,9 +243,9 @@ function SurveyRow({ row, isSelected, onToggle }: { row: Survey; isSelected: boo
         <SurveyStatusPill status={row.status} />
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {new Date(row.period_start).toLocaleDateString()}
+        {formatDate(row.period_start)}
         <span className="text-fg/40"> – </span>
-        {new Date(row.period_end).toLocaleDateString()}
+        {formatDate(row.period_end)}
       </TableCell>
       <TableCell className="text-xs text-fg/75">{row.source}</TableCell>
       <TableCell className="font-mono text-xs text-fg/75">{row.response_count}</TableCell>

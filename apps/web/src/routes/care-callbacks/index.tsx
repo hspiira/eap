@@ -45,28 +45,15 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
 import { CareCallbackCampaignStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is CareCallbackCampaignStatus {
-  return (
-    v === CareCallbackCampaignStatus.DRAFT ||
-    v === CareCallbackCampaignStatus.ACTIVE ||
-    v === CareCallbackCampaignStatus.COMPLETED ||
-    v === CareCallbackCampaignStatus.ARCHIVED
-  )
-}
-
 export const Route = createFileRoute("/care-callbacks/")({
   component: CampaignsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: CareCallbackCampaignStatus } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({ status: enumParam(CareCallbackCampaignStatus) }),
 })
 
 const STATUS_OPTIONS = [
@@ -284,9 +271,9 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
         <CampaignStatusPill status={row.status} />
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {new Date(row.period_start).toLocaleDateString()}
+        {formatDate(row.period_start)}
         <span className="text-fg/40"> – </span>
-        {new Date(row.period_end).toLocaleDateString()}
+        {formatDate(row.period_end)}
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/75">
         {row.counsellor_pool.length}

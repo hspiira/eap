@@ -50,41 +50,18 @@ import { useListPage } from "@/hooks/useListPage"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { queryKeys } from "@/lib/query-keys"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client, Person } from "@/types/entities"
 import { BaseStatus, PersonType } from "@/types/enums"
 
-function isType(value: unknown): value is PersonType {
-  return (
-    value === PersonType.CLIENT_EMPLOYEE ||
-    value === PersonType.DEPENDENT ||
-    value === PersonType.SERVICE_PROVIDER ||
-    value === PersonType.PLATFORM_STAFF
-  )
-}
-
-function isStatus(value: unknown): value is BaseStatus {
-  return STATUS_VALUES.includes(value as BaseStatus)
-}
-
 export const Route = createFileRoute("/persons/")({
   component: PersonsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      type?: PersonType
-      client_id?: string
-      status?: BaseStatus
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isType(search.type)) out.type = search.type
-    if (typeof search.client_id === "string" && search.client_id.trim()) {
-      out.client_id = search.client_id
-    }
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({
+    type: enumParam(PersonType),
+    client_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    status: (v) => (STATUS_VALUES.includes(v as BaseStatus) ? (v as BaseStatus) : undefined),
+  }),
 })
 
 const TYPE_OPTIONS = [
@@ -337,7 +314,7 @@ function PersonRow({
   clientsById: Map<string, Client>
 }) {
   const { data: linkedUser = null } = useQuery({
-    queryKey: ["user", row.user_id],
+    queryKey: queryKeys.users.detail(row.user_id ?? ""),
     queryFn: () => usersApi.getById(row.user_id!),
     enabled: !!row.user_id,
     staleTime: 10 * 60_000,

@@ -40,6 +40,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Service, ServiceAssignment, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -398,7 +399,7 @@ function SessionsPanel({
             {sessions.slice(0, 10).map((s) => (
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">
-                  {new Date(s.scheduled_at).toLocaleString()}
+                  {formatDateTime(s.scheduled_at)}
                 </TableCell>
                 <TableCell>
                   <Link

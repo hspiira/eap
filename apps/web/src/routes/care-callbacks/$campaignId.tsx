@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { entityDetailKey } from "@/lib/queries"
 import { CampaignStatusPill } from "@/routes/care-callbacks/index"
 import type {
@@ -294,27 +295,19 @@ function CampaignDetail({
                     <DetailGrid>
                       <DetailRow
                         label="Start"
-                        value={new Date(campaign.period_start).toLocaleDateString()}
+                        value={formatDate(campaign.period_start)}
                       />
                       <DetailRow
                         label="End"
-                        value={new Date(campaign.period_end).toLocaleDateString()}
+                        value={formatDate(campaign.period_end)}
                       />
                       <DetailRow
                         label="Activated"
-                        value={
-                          campaign.activated_at
-                            ? new Date(campaign.activated_at).toLocaleDateString()
-                            : null
-                        }
+                        value={campaign.activated_at ? formatDate(campaign.activated_at) : null}
                       />
                       <DetailRow
                         label="Completed"
-                        value={
-                          campaign.completed_at
-                            ? new Date(campaign.completed_at).toLocaleDateString()
-                            : null
-                        }
+                        value={campaign.completed_at ? formatDate(campaign.completed_at) : null}
                       />
                     </DetailGrid>
                   </DetailCard>

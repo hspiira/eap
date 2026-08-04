@@ -41,28 +41,15 @@ import {
 } from '@/components/ui/table'
 import { useListPage } from '@/hooks/useListPage'
 import { normalizeErrorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
 import { useEntityList } from '@/lib/queries'
+import { enumParam, listSearchSchema } from '@/lib/search-params'
 import type { Tenant } from '@/types/entities'
 import { TenantStatus } from '@/types/enums'
 
-function isStatus(v: unknown): v is TenantStatus {
-  return (
-    v === TenantStatus.ACTIVE ||
-    v === TenantStatus.SUSPENDED ||
-    v === TenantStatus.TERMINATED ||
-    v === TenantStatus.ARCHIVED
-  )
-}
-
 export const Route = createFileRoute('/tenants/')({
   component: TenantsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: TenantStatus } = {}
-    if (search.new === '1' || search.new === true) out.new = true
-    if (typeof search.search === 'string' && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({ status: enumParam(TenantStatus) }),
 })
 
 const STATUS_OPTIONS = [
@@ -292,7 +279,7 @@ function AdminCredentialsDialog({
                 </dd>
                 {creds.set_password_expires_at ? (
                   <p className="mt-1 text-xs text-fg-muted">
-                    Expires {new Date(creds.set_password_expires_at).toLocaleString()}
+                    Expires {formatDateTime(creds.set_password_expires_at)}
                   </p>
                 ) : null}
               </div>

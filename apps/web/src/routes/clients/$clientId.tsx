@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import type { ClientTier} from "@/types/enums";
@@ -176,7 +177,7 @@ function ClientDetailPage() {
         list.push({
           id: `contract-expiring-${c.id}`,
           title: `Contract ending soon: ${c.id.slice(0, 8)}`,
-          description: `End date: ${end.toLocaleDateString()}`,
+          description: `End date: ${formatDate(end)}`,
           severity: "high",
           link: `/contracts/${c.id}`,
           linkLabel: "View contract",

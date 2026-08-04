@@ -38,6 +38,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type {
   ServiceSession,
@@ -179,7 +180,7 @@ function ServiceSessionDetailPage() {
   return (
     <PageShell
       icon={CalendarClock}
-      breadcrumb={`Delivery · Sessions · ${new Date(session.scheduled_at).toLocaleString()}`}
+      breadcrumb={`Delivery · Sessions · ${formatDateTime(session.scheduled_at)}`}
       actions={
         <>
           <Button
@@ -272,16 +273,12 @@ function ServiceSessionDetailPage() {
                     <DetailGrid>
                       <DetailRow
                         label="Scheduled at"
-                        value={new Date(session.scheduled_at).toLocaleString()}
+                        value={formatDateTime(session.scheduled_at)}
                         fullWidth
                       />
                       <DetailRow
                         label="Completed at"
-                        value={
-                          session.completed_at
-                            ? new Date(session.completed_at).toLocaleString()
-                            : null
-                        }
+                        value={session.completed_at ? formatDateTime(session.completed_at) : null}
                         fullWidth
                       />
                       <DetailRow label="Status" value={<StatusBadge status={session.status} />} />

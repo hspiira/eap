@@ -44,48 +44,19 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Engagement } from "@/types/entities"
 import { EngagementStatus, EngagementType } from "@/types/enums"
 
-function isStatus(v: unknown): v is EngagementStatus {
-  return (
-    v === EngagementStatus.SCOPING ||
-    v === EngagementStatus.ACTIVE ||
-    v === EngagementStatus.DELIVERED ||
-    v === EngagementStatus.CLOSED ||
-    v === EngagementStatus.CANCELLED
-  )
-}
-
-function isType(v: unknown): v is EngagementType {
-  return (
-    v === EngagementType.POLICY_DRAFT ||
-    v === EngagementType.TRAINING ||
-    v === EngagementType.ASSESSMENT ||
-    v === EngagementType.ADVISORY ||
-    v === EngagementType.AUDIT ||
-    v === EngagementType.OTHER
-  )
-}
-
 export const Route = createFileRoute("/engagements/")({
   component: EngagementsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: EngagementStatus
-      type?: EngagementType
-      overdue?: boolean
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (isType(search.type)) out.type = search.type
-    if (search.overdue === "1" || search.overdue === true) out.overdue = true
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(EngagementStatus),
+    type: enumParam(EngagementType),
+    overdue: (v) => (v === "1" || v === true ? true : undefined),
+  }),
 })
 
 const STATUS_OPTIONS = [
@@ -356,7 +327,7 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg/55">
-              Started {new Date(row.start_date).toLocaleDateString()}
+              Started {formatDate(row.start_date)}
             </span>
           </span>
         </Link>
@@ -377,7 +348,7 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
       </TableCell>
       <TableCell className="text-xs text-fg/75">{row.engagement_type}</TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.due_date ? new Date(row.due_date).toLocaleDateString() : "—"}
+        {formatDate(row.due_date)}
       </TableCell>
       <TableCell>
         <div className="min-w-32">

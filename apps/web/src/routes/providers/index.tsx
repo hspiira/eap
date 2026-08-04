@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import {
   AccreditationStatus,
   PanelStatus,
@@ -22,21 +23,12 @@ import {
 const REGIONS = Object.values(ProviderRegion)
 const TIERS = Object.values(ProviderTier)
 
-function isTier(v: unknown): v is ProviderTier {
-  return typeof v === "string" && (TIERS as string[]).includes(v)
-}
-function isRegion(v: unknown): v is ProviderRegion {
-  return typeof v === "string" && (REGIONS as string[]).includes(v)
-}
+const parseTier = enumParam(ProviderTier)
+const parseRegion = enumParam(ProviderRegion)
 
 export const Route = createFileRoute("/providers/")({
   component: ProvidersListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { tier?: ProviderTier; region?: ProviderRegion } = {}
-    if (isTier(search.tier)) out.tier = search.tier
-    if (isRegion(search.region)) out.region = search.region
-    return out
-  },
+  validateSearch: listSearchSchema({ tier: parseTier, region: parseRegion }),
 })
 
 function ProvidersListPage() {
@@ -62,11 +54,11 @@ function ProvidersListPage() {
   }, [query.data?.items, params.tier, params.region])
 
   const setTier = (v: string) => {
-    const tier = isTier(v) ? v : undefined
+    const tier = parseTier(v)
     navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
   }
   const setRegion = (v: string) => {
-    const region = isRegion(v) ? v : undefined
+    const region = parseRegion(v)
     navigate({ search: (prev) => ({ ...prev, region }), replace: true })
   }
 

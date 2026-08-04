@@ -45,6 +45,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { displayName } from "@/lib/display"
+import { formatDateTime } from "@/lib/format"
 import type {
   Person,
   Service,
@@ -70,7 +71,7 @@ export function Hero({
         <CalendarClock className="size-4" />
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
-        {new Date(session.scheduled_at).toLocaleString()}
+        {formatDateTime(session.scheduled_at)}
       </h1>
       {service ? (
         <Link
@@ -416,7 +417,7 @@ export function RescheduleDialog({
           <DialogTitle>Reschedule session</DialogTitle>
           <DialogDescription>
             <CalendarRange className="mr-1 inline size-3" />
-            Previous time: {new Date(currentISO).toLocaleString()}
+            Previous time: {formatDateTime(currentISO)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
