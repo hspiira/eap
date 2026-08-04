@@ -59,44 +59,19 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { queryKeys } from "@/lib/query-keys"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Service, ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
-function isStatus(value: unknown): value is SessionStatus {
-  return (
-    value === SessionStatus.SCHEDULED ||
-    value === SessionStatus.RESCHEDULED ||
-    value === SessionStatus.COMPLETED ||
-    value === SessionStatus.CANCELLED ||
-    value === SessionStatus.NO_SHOW
-  )
-}
-
-function isRange(value: unknown): value is Exclude<RangeFilter, "all"> {
-  return value === "today" || value === "7d" || value === "30d" || value === "past"
-}
-
 export const Route = createFileRoute("/service-sessions/")({
   component: ServiceSessionsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: SessionStatus
-      service_id?: string
-      person_id?: string
-      range?: Exclude<RangeFilter, "all">
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (typeof search.service_id === "string" && search.service_id.trim())
-      out.service_id = search.service_id
-    if (typeof search.person_id === "string" && search.person_id.trim())
-      out.person_id = search.person_id
-    if (isRange(search.range)) out.range = search.range
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(SessionStatus),
+    service_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    person_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    range: (v): Exclude<RangeFilter, "all"> | undefined =>
+      v === "today" || v === "7d" || v === "30d" || v === "past" ? v : undefined,
+  }),
 })
 
 const STATUS_OPTIONS = [

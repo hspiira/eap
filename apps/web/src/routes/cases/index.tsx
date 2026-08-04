@@ -29,16 +29,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Case } from "@/types/entities"
 import { CaseStatus, PresentingProblem } from "@/types/enums"
 import { CasePresentingProblemLabel, CaseReferralSourceLabel } from "@/utils/caseLabels"
-
-function isStatus(v: unknown): v is CaseStatus {
-  return Object.values(CaseStatus).includes(v as CaseStatus)
-}
-function isPresentingProblem(v: unknown): v is PresentingProblem {
-  return Object.values(PresentingProblem).includes(v as PresentingProblem)
-}
 
 export const Route = createFileRoute("/cases/")({
   component: () => (
@@ -46,20 +40,10 @@ export const Route = createFileRoute("/cases/")({
       <CasesListPage />
     </RequireClinicalScope>
   ),
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: CaseStatus
-      presenting_problem?: PresentingProblem
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (isPresentingProblem(search.presenting_problem))
-      out.presenting_problem = search.presenting_problem
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(CaseStatus),
+    presenting_problem: enumParam(PresentingProblem),
+  }),
 })
 
 const STATUS_OPTIONS = [

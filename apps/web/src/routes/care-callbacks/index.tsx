@@ -46,28 +46,14 @@ import {
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
 import { CareCallbackCampaignStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is CareCallbackCampaignStatus {
-  return (
-    v === CareCallbackCampaignStatus.DRAFT ||
-    v === CareCallbackCampaignStatus.ACTIVE ||
-    v === CareCallbackCampaignStatus.COMPLETED ||
-    v === CareCallbackCampaignStatus.ARCHIVED
-  )
-}
-
 export const Route = createFileRoute("/care-callbacks/")({
   component: CampaignsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: CareCallbackCampaignStatus } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({ status: enumParam(CareCallbackCampaignStatus) }),
 })
 
 const STATUS_OPTIONS = [

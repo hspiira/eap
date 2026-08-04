@@ -32,24 +32,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { OutreachRecord } from "@/types/entities"
 import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is OutreachStatus {
-  return Object.values(OutreachStatus).includes(v as OutreachStatus)
-}
-
 export const Route = createFileRoute("/care-callbacks/worklist/")({
   component: WorklistPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { search?: string; status?: OutreachStatus; crisis?: boolean } = {}
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (search.crisis === "1" || search.crisis === true) out.crisis = true
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(OutreachStatus),
+    crisis: (v) => (v === "1" || v === true ? true : undefined),
+  }),
 })
 
 const STATUS_OPTIONS = [

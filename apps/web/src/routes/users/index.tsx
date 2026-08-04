@@ -52,44 +52,19 @@ import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { User } from "@/types/entities"
 import { AuthProvider, UserStatus } from "@/types/enums"
 
-function isSecurity(value: unknown): value is Exclude<SecurityFilter, "all"> {
-  return (
-    value === "verified" ||
-    value === "unverified" ||
-    value === "2fa-on" ||
-    value === "2fa-off"
-  )
-}
-
-function isStatus(value: unknown): value is UserStatus {
-  return (
-    value === UserStatus.ACTIVE ||
-    value === UserStatus.SUSPENDED ||
-    value === UserStatus.BANNED ||
-    value === UserStatus.TERMINATED ||
-    value === UserStatus.PENDING_VERIFICATION ||
-    value === UserStatus.INACTIVE
-  )
-}
-
 export const Route = createFileRoute("/users/")({
   component: UsersListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: UserStatus
-      security?: Exclude<SecurityFilter, "all">
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (isSecurity(search.security)) out.security = search.security
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(UserStatus),
+    security: (v): Exclude<SecurityFilter, "all"> | undefined =>
+      v === "verified" || v === "unverified" || v === "2fa-on" || v === "2fa-off"
+        ? v
+        : undefined,
+  }),
 })
 
 const STATUS_OPTIONS = [

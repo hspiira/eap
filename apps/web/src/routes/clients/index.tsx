@@ -51,22 +51,13 @@ import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 
-function isTier(value: unknown): value is ClientTier {
-  return value === ClientTier.A || value === ClientTier.B || value === ClientTier.C
-}
-
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; tier?: ClientTier } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isTier(search.tier)) out.tier = search.tier
-    return out
-  },
+  validateSearch: listSearchSchema({ tier: enumParam(ClientTier) }),
 })
 
 const TIER_OPTIONS = [

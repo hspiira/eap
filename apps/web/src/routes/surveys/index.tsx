@@ -43,27 +43,14 @@ import {
 } from "@/components/ui/table"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Survey } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is SurveyStatus {
-  return (
-    v === SurveyStatus.DRAFT ||
-    v === SurveyStatus.COLLECTING ||
-    v === SurveyStatus.CLOSED
-  )
-}
-
 export const Route = createFileRoute("/surveys/")({
   component: SurveysListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: SurveyStatus } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    return out
-  },
+  validateSearch: listSearchSchema({ status: enumParam(SurveyStatus) }),
 })
 
 const STATUS_OPTIONS = [

@@ -52,39 +52,17 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client, Contract } from "@/types/entities"
 import { ContractStatus } from "@/types/enums"
 
-function isStatus(value: unknown): value is ContractStatus {
-  return (
-    value === ContractStatus.ACTIVE ||
-    value === ContractStatus.PENDING ||
-    value === ContractStatus.DRAFT ||
-    value === ContractStatus.EXPIRED ||
-    value === ContractStatus.RENEWED ||
-    value === ContractStatus.TERMINATED
-  )
-}
-
-function isRenewal(value: unknown): value is Exclude<RenewalFilter, "all"> {
-  return value === "30d" || value === "90d" || value === "expired"
-}
-
 export const Route = createFileRoute("/contracts/")({
   component: ContractsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: ContractStatus
-      renewal?: Exclude<RenewalFilter, "all">
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (isRenewal(search.renewal)) out.renewal = search.renewal
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: enumParam(ContractStatus),
+    renewal: (v): Exclude<RenewalFilter, "all"> | undefined =>
+      v === "30d" || v === "90d" || v === "expired" ? v : undefined,
+  }),
 })
 
 const STATUS_OPTIONS = [

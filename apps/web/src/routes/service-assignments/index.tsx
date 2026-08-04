@@ -45,35 +45,23 @@ import {
 import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { listSearchSchema } from "@/lib/search-params"
 import type { ServiceAssignment } from "@/types/entities"
 import { BaseStatus } from "@/types/enums"
 
-function isStatus(value: unknown): value is BaseStatus {
-  return (
-    value === BaseStatus.ACTIVE ||
-    value === BaseStatus.INACTIVE ||
-    value === BaseStatus.PENDING ||
-    value === BaseStatus.ARCHIVED
-  )
-}
+const ASSIGNMENT_STATUSES: ReadonlyArray<BaseStatus> = [
+  BaseStatus.ACTIVE,
+  BaseStatus.INACTIVE,
+  BaseStatus.PENDING,
+  BaseStatus.ARCHIVED,
+]
 
 export const Route = createFileRoute("/service-assignments/")({
   component: ServiceAssignmentsListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: BaseStatus
-      contract_id?: string
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (typeof search.contract_id === "string" && search.contract_id.trim()) {
-      out.contract_id = search.contract_id
-    }
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: (v) => (ASSIGNMENT_STATUSES.includes(v as BaseStatus) ? (v as BaseStatus) : undefined),
+    contract_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+  }),
 })
 
 const STATUS_OPTIONS = [

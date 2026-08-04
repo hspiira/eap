@@ -45,33 +45,24 @@ import {
 import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { listSearchSchema } from "@/lib/search-params"
 import type { Service } from "@/types/entities"
 import { BaseStatus } from "@/types/enums"
 
-function isStatus(value: unknown): value is BaseStatus {
-  return (
-    value === BaseStatus.ACTIVE ||
-    value === BaseStatus.INACTIVE ||
-    value === BaseStatus.PENDING ||
-    value === BaseStatus.ARCHIVED
-  )
-}
+const SERVICE_STATUSES: ReadonlyArray<BaseStatus> = [
+  BaseStatus.ACTIVE,
+  BaseStatus.INACTIVE,
+  BaseStatus.PENDING,
+  BaseStatus.ARCHIVED,
+]
 
 export const Route = createFileRoute("/services/")({
   component: ServicesListPage,
-  validateSearch: (search: Record<string, unknown>) => {
-    const out: {
-      new?: boolean
-      search?: string
-      status?: BaseStatus
-      group?: "individual" | "group"
-    } = {}
-    if (search.new === "1" || search.new === true) out.new = true
-    if (typeof search.search === "string" && search.search.trim()) out.search = search.search
-    if (isStatus(search.status)) out.status = search.status
-    if (search.group === "individual" || search.group === "group") out.group = search.group
-    return out
-  },
+  validateSearch: listSearchSchema({
+    status: (v) => (SERVICE_STATUSES.includes(v as BaseStatus) ? (v as BaseStatus) : undefined),
+    group: (v): "individual" | "group" | undefined =>
+      v === "individual" || v === "group" ? v : undefined,
+  }),
 })
 
 const STATUS_OPTIONS = [
