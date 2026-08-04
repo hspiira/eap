@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDate } from "@/lib/format"
 import type { Case } from "@/types/entities"
 import { CaseStatus, PresentingProblem } from "@/types/enums"
 import { CasePresentingProblemLabel, CaseReferralSourceLabel } from "@/utils/caseLabels"
@@ -206,7 +207,7 @@ function CasesListPage() {
                       {CaseReferralSourceLabel[c.referral_source]}
                     </TableCell>
                     <TableCell className="text-sm text-fg/75">
-                      {new Date(c.opened_at).toLocaleDateString()}
+                      {formatDate(c.opened_at)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={c.status} />

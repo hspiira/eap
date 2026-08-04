@@ -35,6 +35,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
+import { formatDate, formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { SurveyStatusPill } from "@/routes/surveys/index"
 import type { Client, Survey, SurveyAggregate } from "@/types/entities"
@@ -186,29 +187,19 @@ function SurveyDetailPage() {
 
                   <DetailCard title="Window">
                     <DetailGrid>
-                      <DetailRow
-                        label="Start"
-                        value={new Date(survey.period_start).toLocaleDateString()}
-                      />
-                      <DetailRow
-                        label="End"
-                        value={new Date(survey.period_end).toLocaleDateString()}
-                      />
+                      <DetailRow label="Start" value={formatDate(survey.period_start)} />
+                      <DetailRow label="End" value={formatDate(survey.period_end)} />
                       <DetailRow
                         label="First response"
                         value={
                           survey.first_response_at
-                            ? new Date(survey.first_response_at).toLocaleString()
+                            ? formatDateTime(survey.first_response_at)
                             : null
                         }
                       />
                       <DetailRow
                         label="Closed"
-                        value={
-                          survey.closed_at
-                            ? new Date(survey.closed_at).toLocaleString()
-                            : null
-                        }
+                        value={survey.closed_at ? formatDateTime(survey.closed_at) : null}
                       />
                     </DetailGrid>
                   </DetailCard>

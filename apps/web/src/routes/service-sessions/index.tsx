@@ -56,7 +56,9 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { displayName } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
+import { queryKeys } from "@/lib/query-keys"
 import type { Service, ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
@@ -161,7 +163,7 @@ function ServiceSessionsListPage() {
   }, [servicesData])
 
   const { data: activePersonForChip = null } = useQuery({
-    queryKey: ["person", activePersonId],
+    queryKey: queryKeys.persons.detail(activePersonId ?? ""),
     queryFn: () => personsApi.getById(activePersonId!),
     enabled: !!activePersonId,
     staleTime: 10 * 60_000,
@@ -371,12 +373,12 @@ function SessionRow({
 }) {
   const linkedService = servicesById.get(row.service_id) ?? null
   const { data: linkedPerson = null } = useQuery({
-    queryKey: ["person", row.person_id],
+    queryKey: queryKeys.persons.detail(row.person_id),
     queryFn: () => personsApi.getById(row.person_id),
     staleTime: 10 * 60_000,
   })
   const { data: linkedPersonUser = null } = useQuery({
-    queryKey: ["user", linkedPerson?.user_id],
+    queryKey: queryKeys.users.detail(linkedPerson?.user_id ?? ""),
     queryFn: () => usersApi.getById(linkedPerson!.user_id!),
     enabled: !!linkedPerson?.user_id,
     staleTime: 10 * 60_000,
@@ -385,7 +387,7 @@ function SessionRow({
     ? displayName(linkedPerson, linkedPersonUser)
     : row.person_id.slice(0, 8)
   const scheduled = new Date(row.scheduled_at)
-  const dateLabel = scheduled.toLocaleDateString()
+  const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>

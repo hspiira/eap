@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { OutreachRecord } from "@/types/entities"
@@ -316,7 +317,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         </div>
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.last_attempted_at ? new Date(row.last_attempted_at).toLocaleDateString() : "—"}
+        {formatDate(row.last_attempted_at)}
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/75">{row.contact_attempts}</TableCell>
       <TableCell className="text-right">

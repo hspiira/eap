@@ -30,6 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDateTime } from "@/lib/format"
+import { queryKeys } from "@/lib/query-keys"
 import type { Case, ClinicalNote, ClinicalNoteBody } from "@/types/entities"
 import { AccessScope, CaseClosureReason, CaseStatus, ClinicalNoteType } from "@/types/enums"
 import {
@@ -79,10 +81,10 @@ export function OverviewPanel({ caseData }: { caseData: Case }) {
 
       <DetailCard title="Timeline">
         <DetailGrid>
-          <DetailRow label="Opened" value={new Date(caseData.opened_at).toLocaleString()} />
+          <DetailRow label="Opened" value={formatDateTime(caseData.opened_at)} />
           <DetailRow
             label="Closed"
-            value={caseData.closed_at ? new Date(caseData.closed_at).toLocaleString() : null}
+            value={caseData.closed_at ? formatDateTime(caseData.closed_at) : null}
           />
           <DetailRow
             label="Closure reason"
@@ -131,7 +133,7 @@ export function DetailRail({
     caseData.status === CaseStatus.REFERRED_OUT ||
     caseData.status === CaseStatus.NO_SHOW_CLOSED
   const { data: counsellor } = useQuery({
-    queryKey: ["user", caseData.assigned_counsellor_id ?? ""],
+    queryKey: queryKeys.users.detail(caseData.assigned_counsellor_id ?? ""),
     queryFn: () => usersApi.getById(caseData.assigned_counsellor_id as string),
     enabled: !!caseData.assigned_counsellor_id,
   })
@@ -683,7 +685,7 @@ export function NotesPanel({
                 <span className="inline-flex items-center gap-1 text-xs text-fg/55">
                   {n.signed_at ? (
                     <>
-                      <Lock className="size-3" /> Signed {new Date(n.signed_at).toLocaleString()}
+                      <Lock className="size-3" /> Signed {formatDateTime(n.signed_at)}
                     </>
                   ) : (
                     "Draft"

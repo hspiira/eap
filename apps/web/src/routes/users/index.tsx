@@ -50,6 +50,7 @@ import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { AuthProvider, UserStatus } from "@/types/enums"
@@ -344,7 +345,7 @@ function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean
         )}
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.last_login_at ? new Date(row.last_login_at).toLocaleDateString() : "—"}
+        {formatDate(row.last_login_at)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

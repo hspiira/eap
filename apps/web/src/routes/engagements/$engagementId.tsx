@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage } from "@/lib/errors"
+import { formatDate, formatMoney } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import {
@@ -202,23 +203,15 @@ function EngagementDetailPage() {
                     <DetailGrid>
                       <DetailRow
                         label="Start"
-                        value={new Date(engagement.start_date).toLocaleDateString()}
+                        value={formatDate(engagement.start_date)}
                       />
                       <DetailRow
                         label="Due"
-                        value={
-                          engagement.due_date
-                            ? new Date(engagement.due_date).toLocaleDateString()
-                            : null
-                        }
+                        value={engagement.due_date ? formatDate(engagement.due_date) : null}
                       />
                       <DetailRow
                         label="Closed"
-                        value={
-                          engagement.closed_at
-                            ? new Date(engagement.closed_at).toLocaleDateString()
-                            : null
-                        }
+                        value={engagement.closed_at ? formatDate(engagement.closed_at) : null}
                       />
                     </DetailGrid>
                     {overdue ? (
@@ -235,7 +228,7 @@ function EngagementDetailPage() {
                         label="Hourly rate"
                         value={
                           engagement.hourly_rate != null
-                            ? `${engagement.currency ?? ""} ${engagement.hourly_rate.toLocaleString()}`.trim()
+                            ? formatMoney(engagement.hourly_rate, engagement.currency)
                             : null
                         }
                       />

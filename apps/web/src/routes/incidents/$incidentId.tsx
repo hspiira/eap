@@ -9,6 +9,7 @@ import { SeverityBadge } from "@/components/common/SeverityBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import type { IncidentTimelineEvent } from "@/types/entities"
 
@@ -103,7 +104,7 @@ function IncidentDetailPage() {
               <SeverityBadge severity={inc.severity} />
               <StatusBadge status={inc.status} />
               <span className="text-xs text-fg/60">
-                Occurred {new Date(inc.occurred_at).toLocaleString()}
+                Occurred {formatDateTime(inc.occurred_at)}
               </span>
             </div>
             <dl className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -179,7 +180,7 @@ function TimelineRow({ event }: { event: IncidentTimelineEvent }) {
         aria-hidden
       />
       <p className="text-xs tracking-wide text-fg/60">
-        {event.kind} · {new Date(event.at).toLocaleString()} · {event.actor}
+        {event.kind} · {formatDateTime(event.at)} · {event.actor}
       </p>
       <p className="mt-1 text-sm text-fg">{event.message}</p>
     </li>

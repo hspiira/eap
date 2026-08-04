@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/contexts/ToastContext'
 import { normalizeErrorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
 import type { Tenant } from '@/types/entities'
 import { TenantStatus } from '@/types/enums'
 
@@ -83,7 +84,7 @@ export function OverviewCard({ tenant }: { tenant: Tenant }) {
         <Field label="Custom branding" value={tenant.settings?.custom_branding ? 'Enabled' : 'Disabled'} />
         <Field
           label="Created"
-          value={tenant.created_at ? new Date(tenant.created_at).toLocaleString() : '—'}
+          value={formatDateTime(tenant.created_at)}
         />
       </dl>
     </section>

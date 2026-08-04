@@ -50,6 +50,7 @@ import { useListPage } from "@/hooks/useListPage"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
+import { queryKeys } from "@/lib/query-keys"
 import type { Client, Person } from "@/types/entities"
 import { BaseStatus, PersonType } from "@/types/enums"
 
@@ -337,7 +338,7 @@ function PersonRow({
   clientsById: Map<string, Client>
 }) {
   const { data: linkedUser = null } = useQuery({
-    queryKey: ["user", row.user_id],
+    queryKey: queryKeys.users.detail(row.user_id ?? ""),
     queryFn: () => usersApi.getById(row.user_id!),
     enabled: !!row.user_id,
     staleTime: 10 * 60_000,

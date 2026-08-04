@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -302,18 +303,8 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
     <div className="space-y-5">
       <RailSection title="Active period">
         <DetailGrid>
-          <DetailRow
-            label="Start"
-            value={
-              contract ? new Date(contract.period.start_date).toLocaleDateString() : "—"
-            }
-          />
-          <DetailRow
-            label="End"
-            value={
-              contract ? new Date(contract.period.end_date).toLocaleDateString() : "—"
-            }
-          />
+          <DetailRow label="Start" value={formatDate(contract?.period.start_date)} />
+          <DetailRow label="End" value={formatDate(contract?.period.end_date)} />
         </DetailGrid>
         <p className="mt-2 text-[11px] text-fg/50">Inherited from the parent contract.</p>
       </RailSection>

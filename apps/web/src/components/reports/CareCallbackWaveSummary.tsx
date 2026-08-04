@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDate, formatDateTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign, CallbackCampaignAggregate } from "@/types/entities"
 import { CareCallbackCampaignStatus } from "@/types/enums"
@@ -58,9 +59,9 @@ export function WaveSummaryBody({
             label="Period"
             value={
               <>
-                {new Date(campaign.period_start).toLocaleDateString()}
+                {formatDate(campaign.period_start)}
                 <span className="mx-1 text-fg/45">–</span>
-                {new Date(campaign.period_end).toLocaleDateString()}
+                {formatDate(campaign.period_end)}
               </>
             }
           />
@@ -160,7 +161,7 @@ export function WaveSummaryBody({
       <footer className="border-t border-fg/10 pt-4 text-[11px] text-fg/55">
         <ShieldCheck className="mr-1 inline size-3 text-primary" />
         Aggregate report — no PII. Counsellor notes are excluded by design. Generated{" "}
-        {new Date().toLocaleString()}.
+        {formatDateTime(new Date())}.
       </footer>
     </>
   )

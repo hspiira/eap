@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { incidentsApi } from "@/api/endpoints/incidents"
 import { SeverityBadge } from "@/components/common/SeverityBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { formatDateTime } from "@/lib/format"
 
 export const Route = createFileRoute("/incidents/")({
   component: IncidentsListPage,
@@ -56,7 +57,7 @@ function IncidentsListPage() {
                     </Link>
                     <p className="mt-1 text-sm text-fg/70 line-clamp-2">{inc.description}</p>
                     <p className="mt-1 text-xs text-fg/60">
-                      {new Date(inc.occurred_at).toLocaleString()} · {inc.affected_population}{" "}
+                      {formatDateTime(inc.occurred_at)} · {inc.affected_population}{" "}
                       affected · {inc.linked_session_ids?.length ?? 0} session(s) linked
                     </p>
                   </div>

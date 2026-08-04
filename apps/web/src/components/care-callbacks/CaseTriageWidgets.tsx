@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { OutreachRecord } from "@/types/entities"
 import { OutreachStatus } from "@/types/enums"
@@ -97,12 +98,12 @@ export function DetailRail({
           <Stat
             variant="text"
             label="Assigned"
-            value={outreach.assigned_at ? new Date(outreach.assigned_at).toLocaleDateString() : "—"}
+            value={formatDate(outreach.assigned_at)}
           />
           <Stat
             variant="text"
             label="Completed"
-            value={outreach.completed_at ? new Date(outreach.completed_at).toLocaleDateString() : "—"}
+            value={formatDate(outreach.completed_at)}
           />
         </div>
       </RailSection>
