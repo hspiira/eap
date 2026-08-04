@@ -12,3 +12,7 @@ docs/
 .env
 allevia.db
 *.db
+
+# pytest-cov writes this on every local run; it was tracked, so it dirtied
+# the working tree after each test invocation.
+.coverage
