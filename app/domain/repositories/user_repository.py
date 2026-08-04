@@ -9,7 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import UserStatus
+from app.domain.enums import AccessScope, UserStatus
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 
@@ -47,6 +47,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         offset: int = 0,
         sort_by: str = "created_at",
         sort_desc: bool = True,
+        access_scope: AccessScope | None = None,
     ) -> Sequence[UserEntity]:
         """
         List users with filtering, searching, and pagination.
@@ -61,6 +62,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
+            access_scope: Filter to users holding this access scope
 
         Returns:
             Sequence of UserEntity
@@ -74,6 +76,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         is_email_verified: bool | None = None,
         is_two_factor_enabled: bool | None = None,
         search: str | None = None,
+        access_scope: AccessScope | None = None,
     ) -> int:
         """
         Count users matching filters.
@@ -87,6 +90,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
             is_email_verified: Filter by email verification status
             is_two_factor_enabled: Filter by two-factor enrolment
             search: Search in user email
+            access_scope: Filter to users holding this access scope
 
         Returns:
             Total count

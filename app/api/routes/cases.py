@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import (
     get_audit_event_handler,
     get_case_repository,
+    get_clinical_note_repository,
     get_eligible_member_clinical_link_repository,
+    get_user_repository,
 )
 from app.api.schemas.case_schemas import (
     AdvanceCaseRequest,
@@ -28,9 +30,11 @@ from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.case import Case
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.clinical_note_repository import ClinicalNoteRepository
 from app.domain.repositories.eligible_member_repository import (
     EligibleMemberClinicalLinkRepository,
 )
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     CaseId,
     ClientId,
@@ -151,12 +155,14 @@ async def assign_counsellor(
     request: Request,
     current_user: TokenData = Depends(require_clinical_scope),
     case_repo: CaseRepository = Depends(get_case_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    case = await AssignCounsellorUseCase(case_repo).execute(
+    case = await AssignCounsellorUseCase(case_repo, user_repo).execute(
         case_id=CaseId(case_id),
         counsellor_id=PersonId(data.counsellor_id),
+        tenant_id=TenantId(current_user.tenant_id),
     )
     await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)
@@ -220,9 +226,15 @@ async def refer_out_case(
     request: Request,
     current_user: TokenData = Depends(require_clinical_scope),
     case_repo: CaseRepository = Depends(get_case_repository),
+    note_repo: ClinicalNoteRepository = Depends(get_clinical_note_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    case = await ReferOutCaseUseCase(case_repo).execute(case_id=CaseId(case_id), notes=data.notes)
+    case = await ReferOutCaseUseCase(case_repo, note_repo).execute(
+        case_id=CaseId(case_id),
+        notes=data.notes,
+        referred_by=UserId(current_user.user_id),
+        tenant_id=TenantId(current_user.tenant_id),
+    )
     await audit_change(case, audit_handler, current_user, request)
     return _to_response(case)

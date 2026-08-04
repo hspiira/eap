@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from app.domain.enums import AccessScope
 from app.domain.value_objects.core import TenantId
 from app.infrastructure.repositories.user_repository import UserRepositoryImpl
 
@@ -138,3 +139,22 @@ class TestTwoFactorFilter:
     ) -> None:
         filters = await self._capture_filters(repo, monkeypatch)
         assert "is_two_factor_enabled" not in filters
+
+
+class TestAccessScopeConditions:
+    def test_none_produces_no_condition(self, repo: UserRepositoryImpl) -> None:
+        assert repo._access_scope_conditions(None) == []
+
+    def test_clinical_filters_on_jsonb_containment(self, repo: UserRepositoryImpl) -> None:
+        sql = _condition_sql(repo._access_scope_conditions(AccessScope.CLINICAL))
+        assert len(sql) == 1
+        assert "access_scopes" in sql[0]
+
+
+class TestListAllPushesAccessScopeToSql(TestListAllPushesFilterToSql):
+    async def test_access_scope_is_passed_as_sql_condition(
+        self, repo: UserRepositoryImpl, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seen = await self._capture(repo, monkeypatch, access_scope=AccessScope.CLINICAL)
+        sql = _condition_sql(list(seen["extra_conditions"]))
+        assert any("access_scopes" in s for s in sql)

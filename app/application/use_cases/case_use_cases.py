@@ -14,20 +14,27 @@ from app.application.use_cases.eligible_member_use_cases import (
     ResolveClinicalSubjectUseCase,
 )
 from app.domain.entities.case import Case
+from app.domain.entities.clinical_note import ClinicalNote
 from app.domain.enums import (
+    AccessScope,
     CaseClosureReason,
     CaseReferralSource,
     CaseStatus,
+    ClinicalNoteType,
     PresentingProblem,
 )
-from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.exceptions import DomainError, InvalidStateError, NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.clinical_note_repository import ClinicalNoteRepository
 from app.domain.repositories.eligible_member_repository import (
     EligibleMemberClinicalLinkRepository,
 )
+from app.domain.repositories.user_repository import UserRepository
+from app.domain.value_objects.clinical_note_body import NarrativeBody
 from app.domain.value_objects.core import (
     CaseId,
     ClientId,
+    ClinicalNoteId,
     ClinicalSubjectId,
     EligibleMemberId,
     PersonId,
@@ -35,6 +42,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.utils.datetime import utc_now
+from app.shared.utils.generators import generate_cuid
 
 
 class OpenCaseUseCase(BaseUseCase[Case, CaseId]):
@@ -123,16 +131,28 @@ class OpenCaseForSubjectUseCase(BaseUseCase[Case, CaseId]):
 
 
 class AssignCounsellorUseCase:
-    def __init__(self, repository: CaseRepository):
+    def __init__(self, repository: CaseRepository, user_repository: UserRepository):
         self._repo = repository
+        self._users = user_repository
 
-    async def execute(self, *, case_id: CaseId, counsellor_id: PersonId) -> Case:
+    async def execute(
+        self, *, case_id: CaseId, counsellor_id: PersonId, tenant_id: TenantId
+    ) -> Case:
         case = await self._repo.get_by_id(case_id)
         if case is None:
             raise NotFoundError(
                 f"Case not found: {case_id.value}",
                 resource_type="Case",
                 resource_id=case_id.value,
+            )
+        counsellor = await self._users.get_by_id(UserId(counsellor_id.value))
+        if (
+            counsellor is None
+            or counsellor.tenant_id.value != tenant_id.value
+            or AccessScope.CLINICAL not in counsellor.access_scopes
+        ):
+            raise DomainError(
+                "counsellor_id must reference a user with Clinical access in this tenant"
             )
         case.assign_counsellor(counsellor_id)
         await self._repo.save(case)
@@ -180,19 +200,37 @@ class CloseCaseUseCase:
 
 
 class ReferOutCaseUseCase:
-    def __init__(self, repository: CaseRepository):
+    def __init__(self, repository: CaseRepository, note_repository: ClinicalNoteRepository):
         self._repo = repository
+        self._notes = note_repository
 
-    async def execute(self, *, case_id: CaseId, notes: str) -> Case:
+    async def execute(
+        self, *, case_id: CaseId, notes: str, referred_by: UserId, tenant_id: TenantId
+    ) -> Case:
         if not notes:
             raise DomainError("refer_out requires explanatory notes")
         case = await self._repo.get_by_id(case_id)
-        if case is None:
+        if case is None or case.tenant_id.value != tenant_id.value:
             raise NotFoundError(
                 f"Case not found: {case_id.value}",
                 resource_type="Case",
                 resource_id=case_id.value,
             )
-        case.refer_out(notes=notes)
+        if case.is_terminal():
+            raise InvalidStateError(f"Cannot refer out a {case.status.value} case")
+        now = utc_now()
+        note = ClinicalNote(
+            id=ClinicalNoteId(generate_cuid()),
+            tenant_id=case.tenant_id,
+            case_id=case.id,
+            clinical_subject_id=case.clinical_subject_id,
+            note_type=ClinicalNoteType.CLOSURE_SUMMARY,
+            body=NarrativeBody(summary=notes).as_dict(),
+            author_id=referred_by,
+            created_at=now,
+            updated_at=now,
+        )
+        await self._notes.save(note)
+        case.refer_out(closure_summary_note_id=note.id.value)
         await self._repo.save(case)
         return case
