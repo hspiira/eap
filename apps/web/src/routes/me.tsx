@@ -26,6 +26,7 @@ import {
 import { useToast } from '@/contexts/ToastContext'
 import { useApiForm } from '@/hooks/useApiForm'
 import { authActions } from '@/lib/auth-store'
+import { queryKeys } from '@/lib/query-keys'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { User } from '@/types/entities'
@@ -132,7 +133,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
   const toast = useToast()
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ['user', userId],
+    queryKey: queryKeys.users.detail(userId),
     queryFn: () => usersApi.getById(userId),
     staleTime: 60_000,
   })
@@ -144,7 +145,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
         timezone: values.timezone,
       }),
     onSuccess: (updated) => {
-      queryClient.setQueryData(['user', userId], updated)
+      queryClient.setQueryData(queryKeys.users.detail(userId), updated)
       toast.showSuccess('Preferences saved')
     },
   })

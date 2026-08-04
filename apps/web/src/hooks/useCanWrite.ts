@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { usersApi } from '@/api/endpoints/users'
+import { queryKeys } from '@/lib/query-keys'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { AccessScope, TenantRole } from '@/types/enums'
 
 function useCurrentUser() {
   const userId = useAuthStore((s) => s.user_id)
   return useQuery({
-    queryKey: ['user', userId],
+    queryKey: queryKeys.users.detail(userId ?? ''),
     queryFn: () => usersApi.getById(userId!),
     enabled: !!userId,
     staleTime: 5 * 60_000,
