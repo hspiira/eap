@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./theme/index.css";
+@import "./components/landing/landing.css";
 
 @custom-variant dark (&:is(.dark *));
 
