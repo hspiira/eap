@@ -69,35 +69,44 @@ class AzureSSOService:
         Build the Microsoft login redirect URL.
 
         Returns:
-            (auth_url, state) — redirect the browser to auth_url; the state
-            value is already embedded in auth_url by MSAL.
+            (auth_url, nonce) — redirect the browser to auth_url; the state
+            value is already embedded in auth_url by MSAL. The caller MUST
+            store `nonce` in a short-lived HttpOnly cookie and pass it back to
+            `exchange_code`, which binds the OAuth round-trip to this browser
+            (see `_verify_state`).
         """
         self._require_config()
-        state = self._create_state()
+        state, nonce = self._create_state()
         app = self._get_msal_app()
         auth_url = app.get_authorization_request_url(
             scopes=self._SCOPES,
             redirect_uri=settings.AZURE_REDIRECT_URI,
             state=state,
         )
-        return auth_url, state
+        return auth_url, nonce
 
-    def exchange_code(self, code: str, state: str) -> AzureClaims:
+    def exchange_code(
+        self, code: str, state: str, expected_nonce: str | None = None
+    ) -> AzureClaims:
         """
         Verify the CSRF state and exchange the authorization code for claims.
 
         Args:
             code: The authorization code from Azure's callback query string
             state: The state parameter from Azure's callback query string
+            expected_nonce: The nonce issued at /azure/login and stored in the
+                browser's cookie. Required — a None/empty value means the
+                browser never started this flow (or the cookie expired), which
+                is exactly the login-CSRF case we reject.
 
         Returns:
             Verified AzureClaims with oid, tid, email
 
         Raises:
-            ValueError: If state is invalid/expired or token exchange fails
+            ValueError: If state is invalid/expired/foreign or token exchange fails
         """
         self._require_config()
-        self._verify_state(state)
+        self._verify_state(state, expected_nonce)
 
         app = self._get_msal_app()
         result = app.acquire_token_by_authorization_code(
@@ -133,15 +142,27 @@ class AzureSSOService:
     # State signing (HMAC-SHA256, self-contained, no server storage)
     # -------------------------------------------------------------------------
 
-    def _create_state(self) -> str:
+    def _create_state(self) -> tuple[str, str]:
+        """Return (state_token, nonce). The nonce must be cookied by the caller."""
         nonce = secrets.token_urlsafe(16)
         exp = int(time.time()) + self._STATE_TTL_SECONDS
         payload = f"{nonce}:{exp}"
         sig = self._sign(payload)
         raw = f"{payload}:{sig}"
-        return base64.urlsafe_b64encode(raw.encode()).decode()
+        return base64.urlsafe_b64encode(raw.encode()).decode(), nonce
 
-    def _verify_state(self, state: str) -> None:
+    def _verify_state(self, state: str, expected_nonce: str | None = None) -> None:
+        """
+        Validate the state token: well-formed, unexpired, correctly signed, and
+        belonging to THIS browser.
+
+        The signature alone only proves "this server minted this token recently"
+        — not "this browser began this flow". Without the nonce comparison an
+        attacker can start their own login, capture the resulting code+state,
+        and feed it to a victim's browser, silently signing the victim into the
+        attacker's account (login CSRF). Matching against the nonce cookie set
+        at /azure/login closes that.
+        """
         try:
             decoded = base64.urlsafe_b64decode(state.encode()).decode()
             # Format: nonce:exp:signature  — nonce may contain url-safe chars but not ':'
@@ -156,6 +177,8 @@ class AzureSSOService:
             expected = self._sign(payload)
             if not hmac.compare_digest(sig, expected):
                 raise ValueError("state signature mismatch")
+            if not expected_nonce or not hmac.compare_digest(nonce, expected_nonce):
+                raise ValueError("state was not issued to this browser")
         except ValueError:
             raise
         except Exception as exc:
