@@ -21,9 +21,7 @@ from app.domain.value_objects.core import (
 from app.shared.utils.datetime import utc_now
 
 
-class CreateCriticalIncidentUseCase(
-    BaseUseCase[CriticalIncidentEntity, CriticalIncidentId]
-):
+class CreateCriticalIncidentUseCase(BaseUseCase[CriticalIncidentEntity, CriticalIncidentId]):
     """Log a new critical incident and emit ``CriticalIncidentLogged``."""
 
     def __init__(self, repository: CriticalIncidentRepository):
@@ -58,21 +56,15 @@ class CreateCriticalIncidentUseCase(
         return await self._save_and_publish_events(incident)
 
 
-class GetCriticalIncidentUseCase(
-    BaseUseCase[CriticalIncidentEntity, CriticalIncidentId]
-):
+class GetCriticalIncidentUseCase(BaseUseCase[CriticalIncidentEntity, CriticalIncidentId]):
     def __init__(self, repository: CriticalIncidentRepository):
         super().__init__(repository)
         self._repo = repository
 
-    async def execute(
-        self, incident_id: CriticalIncidentId
-    ) -> CriticalIncidentEntity | None:
+    async def execute(self, incident_id: CriticalIncidentId) -> CriticalIncidentEntity | None:
         return await self._repo.get_by_id(incident_id)
 
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 100, offset: int = 0
     ) -> list[CriticalIncidentEntity]:
-        return await self._repo.list_for_tenant(
-            tenant_id, limit=limit, offset=offset
-        )
+        return await self._repo.list_for_tenant(tenant_id, limit=limit, offset=offset)

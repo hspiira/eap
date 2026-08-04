@@ -23,35 +23,24 @@ from app.domain.value_objects.core import (
 class ManagerConsultRepository(BaseRepository[ManagerConsult, ManagerConsultId]):
     async def list_for_manager(
         self, tenant_id: TenantId, manager_id: PersonId
-    ) -> list[ManagerConsult]:
-        ...
+    ) -> list[ManagerConsult]: ...
 
 
-class WorkLifeProviderRepository(
-    BaseRepository[WorkLifeProvider, WorkLifeProviderId]
-):
+class WorkLifeProviderRepository(BaseRepository[WorkLifeProvider, WorkLifeProviderId]):
     async def list_for_service(
         self, tenant_id: TenantId, service_type: WorkLifeServiceType
-    ) -> list[WorkLifeProvider]:
-        ...
+    ) -> list[WorkLifeProvider]: ...
 
-    async def list_active(self, tenant_id: TenantId) -> list[WorkLifeProvider]:
-        ...
+    async def list_active(self, tenant_id: TenantId) -> list[WorkLifeProvider]: ...
 
 
-class WorkLifeReferralRepository(
-    BaseRepository[WorkLifeReferral, WorkLifeReferralId]
-):
+class WorkLifeReferralRepository(BaseRepository[WorkLifeReferral, WorkLifeReferralId]):
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[WorkLifeReferral]:
-        ...
+    ) -> list[WorkLifeReferral]: ...
 
 
-class TrainingEnrolmentRepository(
-    BaseRepository[TrainingEnrolment, TrainingEnrolmentId]
-):
+class TrainingEnrolmentRepository(BaseRepository[TrainingEnrolment, TrainingEnrolmentId]):
     async def list_for_trainee(
         self, tenant_id: TenantId, trainee_id: UserId
-    ) -> list[TrainingEnrolment]:
-        ...
+    ) -> list[TrainingEnrolment]: ...

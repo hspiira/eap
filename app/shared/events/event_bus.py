@@ -20,9 +20,10 @@ handlers remain compatible.
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 from app.domain.events import DomainEvent
 
@@ -45,14 +46,14 @@ class EventSubscription:
 class EventBus:
     """
     Simple in-process event bus for domain events.
-    
+
     Features:
     - Subscribe handlers to specific event types
     - Publish events to all subscribed handlers
     - Async handler execution
     - Error isolation (one handler failure doesn't affect others)
     - Event history for debugging
-    
+
     For production with multiple instances, consider:
     - Redis Pub/Sub
     - RabbitMQ
@@ -74,7 +75,7 @@ class EventBus:
     ) -> None:
         """
         Subscribe a handler to an event type.
-        
+
         Args:
             event_type: The type of event to subscribe to
             handler: Async function to handle the event
@@ -96,11 +97,11 @@ class EventBus:
     ) -> bool:
         """
         Unsubscribe a handler from an event type.
-        
+
         Args:
             event_type: The type of event
             handler: The handler to remove
-            
+
         Returns:
             True if handler was found and removed, False otherwise
         """
@@ -108,23 +109,25 @@ class EventBus:
         for i, sub in enumerate(subscriptions):
             if sub.handler == handler:
                 subscriptions.pop(i)
-                logger.debug(f"Unsubscribed handler '{sub.handler_name}' from {event_type.__name__}")
+                logger.debug(
+                    f"Unsubscribed handler '{sub.handler_name}' from {event_type.__name__}"
+                )
                 return True
         return False
 
     async def publish(self, event: DomainEvent) -> list[Exception]:
         """
         Publish an event to all subscribed handlers.
-        
+
         Args:
             event: The domain event to publish
-            
+
         Returns:
             List of exceptions from failed handlers (empty if all succeeded)
         """
         event_type = type(event)
         subscriptions = self._handlers.get(event_type, [])
-        
+
         # Also check for handlers subscribed to base DomainEvent
         base_subscriptions = self._handlers.get(DomainEvent, [])
         all_subscriptions = subscriptions + base_subscriptions
@@ -138,18 +141,16 @@ class EventBus:
 
         # Execute all handlers
         errors: list[Exception] = []
-        
+
         for subscription in all_subscriptions:
             try:
                 logger.debug(
-                    f"Executing handler '{subscription.handler_name}' "
-                    f"for {event_type.__name__}"
+                    f"Executing handler '{subscription.handler_name}' for {event_type.__name__}"
                 )
                 await subscription.handler(event)
             except Exception as e:
                 logger.exception(
-                    f"Handler '{subscription.handler_name}' failed for "
-                    f"{event_type.__name__}: {e}"
+                    f"Handler '{subscription.handler_name}' failed for {event_type.__name__}: {e}"
                 )
                 errors.append(e)
 
@@ -158,10 +159,10 @@ class EventBus:
     async def publish_all(self, events: list[DomainEvent]) -> dict[DomainEvent, list[Exception]]:
         """
         Publish multiple events.
-        
+
         Args:
             events: List of domain events to publish
-            
+
         Returns:
             Dictionary mapping events to their handler errors
         """
@@ -175,10 +176,10 @@ class EventBus:
     def _record_event(self, event: DomainEvent) -> None:
         """Record event in history for debugging."""
         self._history.append((event, datetime.now(UTC)))
-        
+
         # Trim history if needed
         if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+            self._history = self._history[-self._max_history :]
 
     def get_history(
         self,
@@ -187,19 +188,16 @@ class EventBus:
     ) -> list[tuple[DomainEvent, datetime]]:
         """
         Get event history for debugging.
-        
+
         Args:
             event_type: Optional filter by event type
             limit: Maximum number of events to return
-            
+
         Returns:
             List of (event, published_at) tuples
         """
         if event_type:
-            filtered = [
-                (e, t) for e, t in self._history
-                if isinstance(e, event_type)
-            ]
+            filtered = [(e, t) for e, t in self._history if isinstance(e, event_type)]
             return filtered[-limit:]
         return self._history[-limit:]
 
@@ -209,17 +207,17 @@ class EventBus:
     ) -> dict[str, list[str]]:
         """
         Get current subscriptions for debugging.
-        
+
         Args:
             event_type: Optional filter by event type
-            
+
         Returns:
             Dictionary mapping event type names to handler names
         """
         if event_type:
             subs = self._handlers.get(event_type, [])
             return {event_type.__name__: [s.handler_name for s in subs]}
-        
+
         return {
             event_type.__name__: [s.handler_name for s in subs]
             for event_type, subs in self._handlers.items()
@@ -242,14 +240,16 @@ event_bus = EventBus()
 def on_event(event_type: type[DomainEvent]):
     """
     Decorator to register an event handler.
-    
+
     Usage:
         @on_event(UserActivated)
         async def handle_user_activated(event: UserActivated):
             # Handle the event
             pass
     """
+
     def decorator(handler: EventHandler) -> EventHandler:
         event_bus.subscribe(event_type, handler)
         return handler
+
     return decorator

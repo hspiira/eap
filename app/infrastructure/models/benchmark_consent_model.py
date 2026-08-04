@@ -37,13 +37,7 @@ class BenchmarkConsentModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
     version: Mapped[str] = mapped_column(String(50), nullable=False)
     granted_by: Mapped[str] = mapped_column(String(25), nullable=False)
-    granted_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    withdrawn_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    withdrawn_by: Mapped[str | None] = mapped_column(
-        String(25), nullable=True
-    )
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    withdrawn_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
     withdrawn_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

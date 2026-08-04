@@ -58,9 +58,7 @@ class ClientMapper:
 
         # Reconstruct optional value objects
         industry_id = IndustryId(model.industry_id) if model.industry_id else None
-        parent_client_id = (
-            ClientId(model.parent_client_id) if model.parent_client_id else None
-        )
+        parent_client_id = ClientId(model.parent_client_id) if model.parent_client_id else None
 
         # Reconstruct enums
         status = BaseStatus(model.status)
@@ -127,9 +125,7 @@ class ClientMapper:
             contact_info=contact_dict,
             billing_address=billing_address_dict,
             industry_id=entity.industry_id.value if entity.industry_id else None,
-            parent_client_id=entity.parent_client_id.value
-            if entity.parent_client_id
-            else None,
+            parent_client_id=entity.parent_client_id.value if entity.parent_client_id else None,
             status=entity.status,
             is_verified=entity.is_verified,
             preferred_contact_method=entity.preferred_contact_method,

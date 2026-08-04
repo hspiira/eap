@@ -59,9 +59,7 @@ class CreateEngagementUseCase(BaseUseCase[Engagement, EngagementId]):
         return await self._save_and_publish_events(engagement)
 
 
-def _load_or_404(
-    engagement: Engagement | None, engagement_id: EngagementId
-) -> Engagement:
+def _load_or_404(engagement: Engagement | None, engagement_id: EngagementId) -> Engagement:
     if engagement is None:
         raise NotFoundError(
             f"Engagement not found: {engagement_id.value}",
@@ -83,9 +81,7 @@ class AddDeliverableUseCase:
         description: str | None = None,
         due_date: date | None = None,
     ) -> Deliverable:
-        engagement = _load_or_404(
-            await self._repo.get_by_id(engagement_id), engagement_id
-        )
+        engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         deliverable = engagement.add_deliverable(
             deliverable_id=DeliverableId(generate_cuid()),
             title=title,
@@ -107,12 +103,8 @@ class UpdateDeliverableStatusUseCase:
         deliverable_id: DeliverableId,
         status: DeliverableStatus,
     ) -> Deliverable:
-        engagement = _load_or_404(
-            await self._repo.get_by_id(engagement_id), engagement_id
-        )
-        d = engagement.update_deliverable_status(
-            deliverable_id=deliverable_id, status=status
-        )
+        engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
+        d = engagement.update_deliverable_status(deliverable_id=deliverable_id, status=status)
         await self._repo.save(engagement)
         return d
 
@@ -130,9 +122,7 @@ class LogHoursUseCase:
         hours: float,
         note: str | None = None,
     ) -> HoursLogEntry:
-        engagement = _load_or_404(
-            await self._repo.get_by_id(engagement_id), engagement_id
-        )
+        engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         entry = engagement.log_hours(
             entry_id=HoursLogEntryId(generate_cuid()),
             user_id=user_id,
@@ -151,14 +141,10 @@ class GetEngagementSummaryUseCase:
         self._repo = repository
 
     async def execute(self, engagement_id: EngagementId) -> dict:
-        engagement = _load_or_404(
-            await self._repo.get_by_id(engagement_id), engagement_id
-        )
+        engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         deliverable_mix: dict[str, int] = {}
         for d in engagement.deliverables:
-            deliverable_mix[d.status.value] = (
-                deliverable_mix.get(d.status.value, 0) + 1
-            )
+            deliverable_mix[d.status.value] = deliverable_mix.get(d.status.value, 0) + 1
         return {
             "engagement_id": engagement.id.value,
             "client_id": engagement.client_id.value,
@@ -171,8 +157,6 @@ class GetEngagementSummaryUseCase:
             "period_start": engagement.period_start.isoformat()
             if engagement.period_start
             else None,
-            "period_end": engagement.period_end.isoformat()
-            if engagement.period_end
-            else None,
+            "period_end": engagement.period_end.isoformat() if engagement.period_end else None,
             "generated_at": utc_now().isoformat(),
         }

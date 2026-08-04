@@ -116,9 +116,7 @@ class TestUserTransitions:
     @pytest.mark.asyncio
     async def test_verify_email(self, mock_user_repo, user_id, pending_user):
         mock_user_repo.get_by_id.return_value = pending_user
-        await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.VERIFY_EMAIL
-        )
+        await _transition_use_case(mock_user_repo).execute(user_id, UserTransition.VERIFY_EMAIL)
         assert pending_user.email_verified_at is not None
 
     @pytest.mark.asyncio

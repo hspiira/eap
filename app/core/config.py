@@ -8,6 +8,7 @@ No defaults are provided - missing values will raise validation errors.
 
 import os
 import warnings
+
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -33,9 +34,7 @@ class Settings(BaseSettings):
     APP_NAME: str = Field(description="Application name")
     APP_VERSION: str = Field(description="Application version")
     DEBUG: bool = Field(description="Debug mode")
-    ENVIRONMENT: str = Field(
-        description="Environment: development, staging, production"
-    )
+    ENVIRONMENT: str = Field(description="Environment: development, staging, production")
 
     # Database
     DATABASE_URL: str = Field(description="Database connection URL")
@@ -44,9 +43,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = Field(description="Secret key for JWT tokens")
     ALGORITHM: str = Field(description="JWT algorithm")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        description="JWT token expiration in minutes"
-    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(description="JWT token expiration in minutes")
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
         default=7, description="Refresh token expiration in days"
     )
@@ -68,23 +65,22 @@ class Settings(BaseSettings):
     )
 
     # CORS
-    CORS_ORIGINS: str = Field(
-        description="Comma-separated list of allowed CORS origins"
-    )
+    CORS_ORIGINS: str = Field(description="Comma-separated list of allowed CORS origins")
 
     # Logging
-    LOG_LEVEL: str = Field(
-        description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL"
-    )
+    LOG_LEVEL: str = Field(description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL")
 
     # Authorization
     STRICT_ACTIVE_USER_CHECK: bool = Field(
-        default=False,
+        default=True,
         description="If True, get_current_active_user and refresh validate user/tenant in DB",
     )
     REQUIRE_PLATFORM_ADMIN_FOR_TENANT_CREATION: bool = Field(
-        default=False,
-        description="If True, POST /tenants requires platform admin",
+        default=True,
+        description=(
+            "If True, POST /tenants requires platform admin. Requires PLATFORM_TENANT_ID "
+            "to be set, otherwise all tenant creation is rejected with 403 (fail-closed)."
+        ),
     )
     ENFORCE_SUBSCRIPTION_LIMITS: bool = Field(
         default=False,
@@ -187,22 +183,21 @@ class Settings(BaseSettings):
     # Value between 0.0 (log none) and 1.0 (log all)
     # Default: 1.0 (log all) - set to lower value (e.g., 0.1 for 10%) to reduce volume
     AUDIT_SAMPLE_RATE: float = Field(
-        default=1.0,
-        description="Sampling rate for LIST/VIEW audit actions (0.0-1.0)"
+        default=1.0, description="Sampling rate for LIST/VIEW audit actions (0.0-1.0)"
     )
-    
+
     # Comma-separated list of resource types to always audit (even for LIST/VIEW)
     # Example: "Person,Client" - these will always be logged regardless of sample rate
     AUDIT_ALWAYS_LOG_RESOURCES: str = Field(
         default="",
-        description="Comma-separated resource types to always audit (e.g., 'Person,Client')"
+        description="Comma-separated resource types to always audit (e.g., 'Person,Client')",
     )
-    
+
     # Comma-separated list of resource types to never audit for LIST/VIEW
     # Example: "AuditLog,Health" - these will never be logged for LIST/VIEW actions
     AUDIT_SKIP_RESOURCES: str = Field(
         default="",
-        description="Comma-separated resource types to skip for LIST/VIEW (e.g., 'AuditLog,Health')"
+        description="Comma-separated resource types to skip for LIST/VIEW (e.g., 'AuditLog,Health')",
     )
 
     @field_validator("DATABASE_URL")
@@ -245,9 +240,7 @@ class Settings(BaseSettings):
         """Validate login rate limit backend."""
         allowed = {"memory", "redis"}
         if v.lower() not in allowed:
-            raise ValueError(
-                f"LOGIN_RATE_LIMIT_BACKEND must be one of {allowed}"
-            )
+            raise ValueError(f"LOGIN_RATE_LIMIT_BACKEND must be one of {allowed}")
         return v.lower()
 
     @field_validator("AUDIT_SAMPLE_RATE")
@@ -262,19 +255,19 @@ class Settings(BaseSettings):
     def validate_config(self) -> "Settings":
         """Validate configuration and warn about missing or invalid values."""
         missing = []
-        
+
         # Check for empty strings (which might indicate missing env vars)
         if not self.SECRET_KEY or self.SECRET_KEY.strip() == "":
             missing.append("SECRET_KEY")
         if not self.DATABASE_URL or self.DATABASE_URL.strip() == "":
             missing.append("DATABASE_URL")
-        
+
         if missing:
-            raise ValueError(  
-                f"Missing required configuration: {', '.join(missing)}. "  
-                "Set these via environment variables."  
-            ) 
-        
+            raise ValueError(
+                f"Missing required configuration: {', '.join(missing)}. "
+                "Set these via environment variables."
+            )
+
         if self.LOGIN_RATE_LIMIT_BACKEND == "redis" and not (self.REDIS_URL or "").strip():
             warnings.warn(
                 "LOGIN_RATE_LIMIT_BACKEND is 'redis' but REDIS_URL is empty. "
@@ -298,11 +291,7 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         """Get CORS origins as a list."""
-        return [
-            origin.strip()
-            for origin in self.CORS_ORIGINS.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     @property
     def is_development(self) -> bool:

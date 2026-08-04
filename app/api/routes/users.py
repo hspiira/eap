@@ -9,16 +9,13 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_user_in_tenant,
-    require_same_tenant,
-    require_self_or_role,
-    require_tenant_role,
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_tenant_repository,
+    get_user_repository,
+    pagination,
 )
-from app.core.security import TokenData, get_current_user, verify_password
-from app.domain.enums import TenantRole
-
-from app.api.dependencies import get_audit_event_handler, get_tenant_repository, get_user_repository
 from app.api.schemas.user_schemas import (
     UserBanRequest,
     UserCreate,
@@ -30,6 +27,7 @@ from app.api.schemas.user_schemas import (
     UserUpdatePasswordRequest,
     UserUpdatePreferencesRequest,
     UserUpdateRoleRequest,
+    UserUpdateScopesRequest,
 )
 from app.application.use_cases.transitions import (
     TransitionUseCase,
@@ -39,16 +37,24 @@ from app.application.use_cases.user_use_cases import (
     CreateUserUseCase,
     GetUserUseCase,
 )
+from app.core.authorization import (
+    get_user_in_tenant,
+    is_platform_admin,
+    require_same_tenant,
+    require_self_or_role,
+    require_tenant_role,
+)
 from app.core.database import get_db
-from app.domain.enums import UserStatus
+from app.core.security import TokenData, get_current_user, verify_password
 from app.domain.entities.user import UserEntity
+from app.domain.enums import AccessScope, TenantRole, UserStatus
 from app.domain.exceptions import EvexiaException
-from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.tenant_repository import TenantRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -56,6 +62,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 def _hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     from app.core.security import hash_password
+
     return hash_password(password)
 
 
@@ -78,6 +85,7 @@ def _to_user_response(user: UserEntity) -> UserResponse:
         azure_oid=user.azure_oid,
         display_name=user.display_name,
         auth_provider=user.auth_provider,
+        access_scopes=user.access_scopes,
     )
 
 
@@ -114,11 +122,10 @@ async def create_user(
             role=data.role,
         )
     except EvexiaException as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
     if data.preferred_language or data.timezone:
-        user_transition: TransitionUseCase = TransitionUseCase(user_repo)
-        user_transition.entity_name = "User"
+        user_transition = TransitionUseCase(user_repo, "User")
         user = await user_transition.execute(
             user.id,
             UserTransition.UPDATE_PREFERENCES,
@@ -126,13 +133,7 @@ async def create_user(
             timezone=data.timezone,
         )
 
-    await audit_entity_operation(
-        entity=user,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(user, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_user_response(user)
 
 
@@ -152,16 +153,9 @@ async def verify_user_email(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify user email address."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.VERIFY_EMAIL)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -201,13 +195,42 @@ async def update_user_role(
 
     user.role = body.role
     await user_repo.save(user)
-    await audit_entity_operation(
-        entity=user,
-        audit_handler=audit_handler,
-        tenant_id=user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(user, audit_handler, current_user, request)
+    return _to_user_response(user)
+
+
+@router.patch(
+    "/{user_id}/access-scopes",
+    response_model=UserResponse,
+    summary="Replace a user's access-scope grants",
+)
+@transactional()
+async def update_user_access_scopes(
+    request: Request,
+    body: UserUpdateScopesRequest,
+    current_user: TokenData = Depends(get_current_user),
+    user: UserEntity = Depends(get_user_in_tenant),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
+    user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace the user's scope grants. ADMIN-only.
+
+    Clinical is the PHI wall: only a platform admin may grant or revoke it.
+    Tenant admins manage EmployerPortal for their own users.
+    """
+    clinical_before = AccessScope.CLINICAL in user.access_scopes
+    clinical_after = AccessScope.CLINICAL in body.access_scopes
+    if clinical_before != clinical_after and not is_platform_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a platform admin can grant or revoke the Clinical scope",
+        )
+
+    user.set_access_scopes(body.access_scopes)
+    await user_repo.save(user)
+    await audit_change(user, audit_handler, current_user, request)
     return _to_user_response(user)
 
 
@@ -227,16 +250,9 @@ async def activate_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a user."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -257,16 +273,9 @@ async def suspend_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a user."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.SUSPEND, reason=body.reason)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -287,16 +296,9 @@ async def ban_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Ban a user."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.BAN, reason=body.reason)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -317,16 +319,9 @@ async def deactivate_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a user."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.DEACTIVATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -347,16 +342,9 @@ async def terminate_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a user."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.TERMINATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -397,18 +385,11 @@ async def update_user_password(
             )
 
     password_hash = _hash_password(body.password)
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(
         user.id, UserTransition.UPDATE_PASSWORD, password_hash=password_hash
     )
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -429,21 +410,14 @@ async def update_user_preferences(
     db: AsyncSession = Depends(get_db),
 ):
     """Update user preferences. Self-service or ADMIN-only override."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(
         user.id,
         UserTransition.UPDATE_PREFERENCES,
         preferred_language=body.preferred_language,
         timezone=body.timezone,
     )
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -463,16 +437,9 @@ async def enable_two_factor(
     db: AsyncSession = Depends(get_db),
 ):
     """Enable two-factor authentication. Self-service or ADMIN-only override."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.ENABLE_TWO_FACTOR)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -492,16 +459,9 @@ async def disable_two_factor(
     db: AsyncSession = Depends(get_db),
 ):
     """Disable two-factor authentication. Self-service or ADMIN-only override."""
-    use_case: TransitionUseCase = TransitionUseCase(user_repo)
-    use_case.entity_name = "User"
+    use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(user.id, UserTransition.DISABLE_TWO_FACTOR)
-    await audit_entity_operation(
-        entity=updated_user,
-        audit_handler=audit_handler,
-        tenant_id=updated_user.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
 
@@ -524,9 +484,13 @@ async def list_users(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: UserStatus | None = Query(None, description="Filter by user status"),
     is_email_verified: bool | None = Query(None, description="Filter by email verification status"),
+    is_two_factor_enabled: bool | None = Query(None, description="Filter by two-factor enrolment"),
     search: str | None = Query(None, description="Search in user email"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    access_scope: AccessScope | None = Query(
+        None,
+        description="Filter to users holding this access scope (e.g. Clinical, for counsellor pickers)",
+    ),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     current_user: TokenData = Depends(require_same_tenant),
@@ -534,32 +498,35 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ):
     """List users with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     users = await user_repo.list_all(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_email_verified=is_email_verified,
+        is_two_factor_enabled=is_two_factor_enabled,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
+        access_scope=access_scope,
     )
 
     total = await user_repo.count(
         tenant_id=TenantId(tenant_id),
         status=status,
         is_email_verified=is_email_verified,
+        is_two_factor_enabled=is_two_factor_enabled,
         search=search,
+        access_scope=access_scope,
     )
 
     return UserListResponse(
         items=[_to_user_response(user) for user in users],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -593,7 +560,7 @@ async def get_user_by_email(
     """Get user by email within a tenant."""
     user = await GetUserUseCase(user_repo).execute_by_email(Email(email), TenantId(tenant_id))
     if not user:
-        raise ValueError("User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return _to_user_response(user)
 
 

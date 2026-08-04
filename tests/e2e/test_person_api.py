@@ -8,7 +8,6 @@ Comprehensive tests for all person endpoints covering:
 - Secondary roles (Add, Remove)
 """
 
-
 import pytest
 from httpx import AsyncClient
 
@@ -23,9 +22,7 @@ pytestmark = pytest.mark.asyncio
 class TestGetPerson:
     """Tests for GET /persons/{person_id} endpoint."""
 
-    async def test_get_person_by_id_success(
-        self, client: AsyncClient, test_client_employee: dict
-    ):
+    async def test_get_person_by_id_success(self, client: AsyncClient, test_client_employee: dict):
         """Test getting a person by ID."""
         person_id = test_client_employee["id"]
 
@@ -66,9 +63,7 @@ class TestGetPersonByUserId:
         assert data["user_id"] == user_id
         assert data["id"] == test_client_employee["id"]
 
-    async def test_get_person_by_user_id_not_found(
-        self, client: AsyncClient, test_tenant: dict
-    ):
+    async def test_get_person_by_user_id_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test getting person by non-existent user ID returns 404."""
         response = await client.get("/persons/user/nonexistent-user-id")
 
@@ -84,9 +79,7 @@ class TestGetPersonsByType:
         """Test getting persons by type."""
         tenant_id = test_tenant["id"]
 
-        response = await client.get(
-            f"/persons/tenant/{tenant_id}/type/ClientEmployee"
-        )
+        response = await client.get(f"/persons/tenant/{tenant_id}/type/ClientEmployee")
 
         assert response.status_code == 200
         data = response.json()
@@ -94,15 +87,11 @@ class TestGetPersonsByType:
         assert len(data) >= 1
         assert all(p["person_type"] == "ClientEmployee" for p in data)
 
-    async def test_get_persons_by_type_empty(
-        self, client: AsyncClient, test_tenant: dict
-    ):
+    async def test_get_persons_by_type_empty(self, client: AsyncClient, test_tenant: dict):
         """Test getting persons by type when none exist."""
         tenant_id = test_tenant["id"]
 
-        response = await client.get(
-            f"/persons/tenant/{tenant_id}/type/Dependent"
-        )
+        response = await client.get(f"/persons/tenant/{tenant_id}/type/Dependent")
 
         assert response.status_code == 200
         data = response.json()
@@ -119,18 +108,14 @@ class TestGetPersonsByType:
         tenant_id = test_tenant["id"]
 
         # Get client employees
-        ce_response = await client.get(
-            f"/persons/tenant/{tenant_id}/type/ClientEmployee"
-        )
+        ce_response = await client.get(f"/persons/tenant/{tenant_id}/type/ClientEmployee")
         assert ce_response.status_code == 200
         ce_data = ce_response.json()
         assert len(ce_data) >= 1
         assert all(p["person_type"] == "ClientEmployee" for p in ce_data)
 
         # Get service providers
-        sp_response = await client.get(
-            f"/persons/tenant/{tenant_id}/type/ServiceProvider"
-        )
+        sp_response = await client.get(f"/persons/tenant/{tenant_id}/type/ServiceProvider")
         assert sp_response.status_code == 200
         sp_data = sp_response.json()
         assert len(sp_data) >= 1
@@ -190,9 +175,7 @@ class TestListPersons:
         """Test person list pagination."""
         tenant_id = test_tenant["id"]
 
-        response = await client.get(
-            f"/persons/?tenant_id={tenant_id}&page=1&limit=1"
-        )
+        response = await client.get(f"/persons/?tenant_id={tenant_id}&page=1&limit=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -211,18 +194,14 @@ class TestListPersons:
         tenant_id = test_tenant["id"]
 
         # Filter by Active status
-        response = await client.get(
-            f"/persons/?tenant_id={tenant_id}&status=Active"
-        )
+        response = await client.get(f"/persons/?tenant_id={tenant_id}&status=Active")
         data = response.json()
 
         assert response.status_code == 200
         assert all(p["status"] == "Active" for p in data["items"])
 
         # Filter by Pending status
-        response = await client.get(
-            f"/persons/?tenant_id={tenant_id}&status=Pending"
-        )
+        response = await client.get(f"/persons/?tenant_id={tenant_id}&status=Pending")
         data = response.json()
 
         assert response.status_code == 200
@@ -239,9 +218,7 @@ class TestListPersons:
         tenant_id = test_tenant["id"]
 
         # Filter by ClientEmployee
-        response = await client.get(
-            f"/persons/?tenant_id={tenant_id}&person_type=ClientEmployee"
-        )
+        response = await client.get(f"/persons/?tenant_id={tenant_id}&person_type=ClientEmployee")
         data = response.json()
 
         assert response.status_code == 200
@@ -256,9 +233,7 @@ class TestListPersons:
 class TestActivatePerson:
     """Tests for POST /persons/{person_id}/activate endpoint."""
 
-    async def test_activate_pending_person(
-        self, client: AsyncClient, test_pending_person: dict
-    ):
+    async def test_activate_pending_person(self, client: AsyncClient, test_pending_person: dict):
         """Test activating a pending person."""
         person_id = test_pending_person["id"]
 
@@ -290,9 +265,7 @@ class TestActivatePerson:
 class TestDeactivatePerson:
     """Tests for POST /persons/{person_id}/deactivate endpoint."""
 
-    async def test_deactivate_person_success(
-        self, client: AsyncClient, test_client_employee: dict
-    ):
+    async def test_deactivate_person_success(self, client: AsyncClient, test_client_employee: dict):
         """Test deactivating an active person."""
         person_id = test_client_employee["id"]
 
@@ -340,9 +313,7 @@ class TestDeactivatePerson:
 class TestTerminatePerson:
     """Tests for POST /persons/{person_id}/terminate endpoint."""
 
-    async def test_terminate_person_success(
-        self, client: AsyncClient, test_client_employee: dict
-    ):
+    async def test_terminate_person_success(self, client: AsyncClient, test_client_employee: dict):
         """Test terminating a person."""
         person_id = test_client_employee["id"]
 
@@ -355,9 +326,7 @@ class TestTerminatePerson:
         data = response.json()
         assert data["status"] == "Deleted"
 
-    async def test_terminate_requires_reason(
-        self, client: AsyncClient, test_pending_person: dict
-    ):
+    async def test_terminate_requires_reason(self, client: AsyncClient, test_pending_person: dict):
         """Test that termination requires a reason."""
         person_id = test_pending_person["id"]
 
@@ -381,9 +350,7 @@ class TestTerminatePerson:
 class TestArchivePerson:
     """Tests for POST /persons/{person_id}/archive endpoint."""
 
-    async def test_archive_person_success(
-        self, client: AsyncClient, test_client_employee: dict
-    ):
+    async def test_archive_person_success(self, client: AsyncClient, test_client_employee: dict):
         """Test archiving a person."""
         person_id = test_client_employee["id"]
 
@@ -419,9 +386,7 @@ class TestArchivePerson:
 class TestRestorePerson:
     """Tests for POST /persons/{person_id}/restore endpoint."""
 
-    async def test_restore_archived_person(
-        self, client: AsyncClient, test_client_employee: dict
-    ):
+    async def test_restore_archived_person(self, client: AsyncClient, test_client_employee: dict):
         """Test restoring an archived person."""
         person_id = test_client_employee["id"]
 
@@ -718,9 +683,7 @@ class TestRemoveSecondaryRole:
 
         assert response.status_code == 400
 
-    async def test_remove_secondary_role_not_found(
-        self, client: AsyncClient, test_tenant: dict
-    ):
+    async def test_remove_secondary_role_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test removing secondary role from non-existent person."""
         response = await client.delete("/persons/nonexistent-id/secondary-role")
 

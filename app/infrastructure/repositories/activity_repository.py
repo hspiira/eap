@@ -14,7 +14,9 @@ from app.infrastructure.models.activity_model import ActivityModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ActivityRepositoryImpl(TenantScopedRepositoryImpl[ActivityEntity, ActivityModel, ActivityId], ActivityRepository):
+class ActivityRepositoryImpl(
+    TenantScopedRepositoryImpl[ActivityEntity, ActivityModel, ActivityId], ActivityRepository
+):
     """
     SQLAlchemy implementation of ActivityRepository.
 
@@ -39,13 +41,19 @@ class ActivityRepositoryImpl(TenantScopedRepositoryImpl[ActivityEntity, Activity
 
     # Domain-specific queries (not in base class)
 
-    async def get_by_client_id(self, client_id: str, tenant_id: TenantId) -> Sequence[ActivityEntity]:
+    async def get_by_client_id(
+        self, client_id: str, tenant_id: TenantId
+    ) -> Sequence[ActivityEntity]:
         """Get all activities for a client."""
-        stmt = select(ActivityModel).where(
-            ActivityModel.client_id == client_id,
-            ActivityModel.tenant_id == tenant_id.value,
-            ActivityModel.deleted_at.is_(None),
-        ).order_by(ActivityModel.occurred_at.desc())
+        stmt = (
+            select(ActivityModel)
+            .where(
+                ActivityModel.client_id == client_id,
+                ActivityModel.tenant_id == tenant_id.value,
+                ActivityModel.deleted_at.is_(None),
+            )
+            .order_by(ActivityModel.occurred_at.desc())
+        )
         result = await self.session.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]

@@ -42,7 +42,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["engagements"])
 
@@ -116,13 +116,7 @@ async def create_engagement(
         period_end=data.period_end,
         created_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=engagement,
-        audit_handler=audit_handler,
-        tenant_id=engagement.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -270,18 +264,9 @@ async def activate_engagement(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "Engagement"
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.ACTIVATE
-    )
-    await audit_entity_operation(
-        entity=engagement,
-        audit_handler=audit_handler,
-        tenant_id=engagement.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    use_case = TransitionUseCase(repo, "Engagement")
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.ACTIVATE)
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -299,11 +284,9 @@ async def deliver_engagement(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "Engagement"
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.DELIVER
-    )
+    use_case = TransitionUseCase(repo, "Engagement")
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.DELIVER)
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -321,11 +304,9 @@ async def invoice_engagement(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "Engagement"
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.INVOICE
-    )
+    use_case = TransitionUseCase(repo, "Engagement")
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.INVOICE)
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)
 
 
@@ -343,9 +324,7 @@ async def close_engagement(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "Engagement"
-    engagement = await use_case.execute(
-        EngagementId(engagement_id), EngagementTransition.CLOSE
-    )
+    use_case = TransitionUseCase(repo, "Engagement")
+    engagement = await use_case.execute(EngagementId(engagement_id), EngagementTransition.CLOSE)
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_engagement_response(engagement)

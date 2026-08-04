@@ -76,9 +76,7 @@ class CreateClinicalNoteUseCase:
     ) -> ClinicalNote:
         case = await _load_case_or_404(self._cases, case_id)
         if case.is_terminal():
-            raise DomainError(
-                f"Cannot add notes to a {case.status.value} case"
-            )
+            raise DomainError(f"Cannot add notes to a {case.status.value} case")
         validated_body = _resolve_body(note_type, body)
         now = utc_now()
         note = ClinicalNote(
@@ -125,9 +123,7 @@ class SignClinicalNoteUseCase:
     def __init__(self, repository: ClinicalNoteRepository):
         self._repo = repository
 
-    async def execute(
-        self, *, note_id: ClinicalNoteId, signer_id: UserId
-    ) -> ClinicalNote:
+    async def execute(self, *, note_id: ClinicalNoteId, signer_id: UserId) -> ClinicalNote:
         note = await self._repo.get_by_id(note_id)
         if note is None:
             raise NotFoundError(

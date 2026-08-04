@@ -10,7 +10,9 @@ from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ClientId, ContactInfo, Email, TenantId
 
 
-def _client(*, status: BaseStatus = BaseStatus.ACTIVE, tier: ClientTier | None = None) -> ClientEntity:
+def _client(
+    *, status: BaseStatus = BaseStatus.ACTIVE, tier: ClientTier | None = None
+) -> ClientEntity:
     now = datetime.now(UTC)
     return ClientEntity(
         id=ClientId("c-1"),

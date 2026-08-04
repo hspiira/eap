@@ -33,10 +33,13 @@ TTransition = TypeVar("TTransition", bound=Enum)
 class TransitionUseCase(BaseUseCase[TEntity, TId], Generic[TEntity, TId, TTransition]):
     """Generic dispatcher mapping a transition enum to the entity method."""
 
-    entity_name: str = "Entity"
-
-    def __init__(self, repository: RepositoryProtocol[TEntity, TId]) -> None:
+    def __init__(
+        self,
+        repository: RepositoryProtocol[TEntity, TId],
+        entity_name: str = "Entity",
+    ) -> None:
         super().__init__(repository)
+        self.entity_name = entity_name
 
     async def execute(
         self,
@@ -56,9 +59,7 @@ class TransitionUseCase(BaseUseCase[TEntity, TId], Generic[TEntity, TId, TTransi
         method_name = transition.value
         method = getattr(entity, method_name, None)
         if not callable(method):
-            raise DomainError(
-                f"{self.entity_name} does not support transition '{method_name}'"
-            )
+            raise DomainError(f"{self.entity_name} does not support transition '{method_name}'")
 
         method(**kwargs)
         if hasattr(entity, "updated_at"):

@@ -49,9 +49,7 @@ class ClinicalNoteRepositoryImpl(ClinicalNoteRepository):
         existing = await self._session.get(ClinicalNoteModel, entity_id.value)
         return existing is not None
 
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[ClinicalNote]:
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[ClinicalNote]:
         stmt = (
             select(ClinicalNoteModel)
             .where(

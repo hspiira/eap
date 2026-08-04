@@ -18,10 +18,11 @@ import sys
 
 # Ensure project root is on path when run as script
 from pathlib import Path
+
 _project_root = Path(__file__).resolve().parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -29,7 +30,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import AsyncSessionLocal, engine
+from app.core.database import AsyncSessionLocal
 from app.domain.enums import (
     AuditActionType,
     BaseStatus,
@@ -45,8 +46,8 @@ from app.domain.enums import (
     PersonType,
     SessionStatus,
     SubscriptionTier,
-    TenantStatus,
     TenantRole,
+    TenantStatus,
     UserStatus,
 )
 from app.infrastructure.models import (
@@ -71,18 +72,31 @@ from app.infrastructure.models import (
 )
 from app.infrastructure.models.refresh_token_model import RefreshTokenModel
 
-
 # Path to seed data (relative to project root)
 SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "seed_data.json"
 
 # PostgreSQL native enum types (only for columns created as PG enums in initial migration)
 # Tables added in later migrations (services, documents, kpis, etc.) use String for status/type.
 _PG_ENUM_COLUMNS = {
-    "tenants": {"status": (TenantStatus, "tenantstatus"), "subscription_tier": (SubscriptionTier, "subscriptiontier")},
+    "tenants": {
+        "status": (TenantStatus, "tenantstatus"),
+        "subscription_tier": (SubscriptionTier, "subscriptiontier"),
+    },
     "users": {"status": (UserStatus, "userstatus"), "preferred_language": (Language, "language")},
-    "clients": {"status": (BaseStatus, "basestatus"), "preferred_contact_method": (ContactMethod, "contactmethod")},
-    "persons": {"person_type": (PersonType, "persontype"), "secondary_person_type": (PersonType, "persontype"), "status": (BaseStatus, "basestatus")},
-    "contracts": {"payment_frequency": (PaymentFrequency, "paymentfrequency"), "payment_status": (PaymentStatus, "paymentstatus"), "status": (ContractStatus, "contractstatus")},
+    "clients": {
+        "status": (BaseStatus, "basestatus"),
+        "preferred_contact_method": (ContactMethod, "contactmethod"),
+    },
+    "persons": {
+        "person_type": (PersonType, "persontype"),
+        "secondary_person_type": (PersonType, "persontype"),
+        "status": (BaseStatus, "basestatus"),
+    },
+    "contracts": {
+        "payment_frequency": (PaymentFrequency, "paymentfrequency"),
+        "payment_status": (PaymentStatus, "paymentstatus"),
+        "status": (ContractStatus, "contractstatus"),
+    },
 }
 
 # Tables to truncate in reverse dependency order (--clear)
@@ -169,7 +183,9 @@ def build_users(rows: list[dict]) -> list[UserModel]:
             email=r["email"],
             password_hash=r.get("password_hash"),
             status=UserStatus(r["status"]),
-            preferred_language=Language(r["preferred_language"]) if r.get("preferred_language") else None,
+            preferred_language=Language(r["preferred_language"])
+            if r.get("preferred_language")
+            else None,
             timezone=r.get("timezone"),
             role=TenantRole(r["role"]),
             is_two_factor_enabled=r.get("is_two_factor_enabled", False),
@@ -220,7 +236,9 @@ def build_clients(rows: list[dict]) -> list[ClientModel]:
             parent_client_id=r.get("parent_client_id"),
             status=BaseStatus(r["status"]),
             is_verified=r.get("is_verified", False),
-            preferred_contact_method=ContactMethod(r["preferred_contact_method"]) if r.get("preferred_contact_method") else None,
+            preferred_contact_method=ContactMethod(r["preferred_contact_method"])
+            if r.get("preferred_contact_method")
+            else None,
         )
         for r in rows
     ]
@@ -253,7 +271,9 @@ def build_persons(rows: list[dict]) -> list[PersonModel]:
             user_id=r["user_id"],
             person_type=PersonType(r["person_type"]),
             is_dual_role=r.get("is_dual_role", False),
-            secondary_person_type=PersonType(r["secondary_person_type"]) if r.get("secondary_person_type") else None,
+            secondary_person_type=PersonType(r["secondary_person_type"])
+            if r.get("secondary_person_type")
+            else None,
             family_id=r.get("family_id"),
             employment_info=r.get("employment_info"),
             license_info=r.get("license_info"),
@@ -330,7 +350,7 @@ def build_service_sessions(rows: list[dict]) -> list[ServiceSessionModel]:
             service_id=r["service_id"],
             provider_id=r["provider_id"],
             person_id=r["person_id"],
-            scheduled_at=parse_dt(r["scheduled_at"]) or datetime.now(timezone.utc),
+            scheduled_at=parse_dt(r["scheduled_at"]) or datetime.now(UTC),
             status=SessionStatus(r["status"]),
             reschedule_count=r.get("reschedule_count", 0),
             completed_at=parse_dt(r.get("completed_at")),
@@ -418,7 +438,7 @@ def build_activities(rows: list[dict]) -> list[ActivityModel]:
             description=r["description"],
             outcome=r.get("outcome"),
             created_by=r["created_by"],
-            occurred_at=parse_dt(r["occurred_at"]) or datetime.now(timezone.utc),
+            occurred_at=parse_dt(r["occurred_at"]) or datetime.now(UTC),
             next_follow_up=parse_dt(r.get("next_follow_up")),
             is_important=r.get("is_important", False),
         )
@@ -431,7 +451,7 @@ def _naive_utc(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
     if dt.tzinfo:
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        dt = dt.astimezone(UTC).replace(tzinfo=None)
     return dt
 
 
@@ -448,7 +468,7 @@ def build_audit_logs(rows: list[dict]) -> list[AuditLogModel]:
             ip_address=r.get("ip_address"),
             user_agent=r.get("user_agent"),
             extra_metadata=r.get("extra_metadata"),
-            occurred_at=_naive_utc(parse_dt(r["occurred_at"]) or datetime.now(timezone.utc)),
+            occurred_at=_naive_utc(parse_dt(r["occurred_at"]) or datetime.now(UTC)),
         )
         for r in rows
     ]
@@ -473,7 +493,7 @@ def build_password_set_tokens(rows: list[dict]) -> list[PasswordSetTokenModel]:
             id=r["id"],
             token_hash=(r["token_hash"])[:64],  # column is VARCHAR(64)
             user_id=r["user_id"],
-            expires_at=parse_dt(r["expires_at"]) or datetime.now(timezone.utc),
+            expires_at=parse_dt(r["expires_at"]) or datetime.now(UTC),
             used_at=parse_dt(r.get("used_at")),
         )
         for r in rows
@@ -486,7 +506,7 @@ def build_refresh_tokens(rows: list[dict]) -> list[RefreshTokenModel]:
             jti=r["jti"],
             user_id=r["user_id"],
             tenant_id=r["tenant_id"],
-            created_at=parse_dt(r.get("created_at")) or datetime.now(timezone.utc),
+            created_at=parse_dt(r.get("created_at")) or datetime.now(UTC),
             revoked_at=parse_dt(r.get("revoked_at")),
         )
         for r in rows
@@ -572,6 +592,7 @@ def main() -> None:
         raise SystemExit(f"Seed file not found: {SEED_PATH}")
 
     import asyncio
+
     asyncio.run(run_load(clear=args.clear))
 
 

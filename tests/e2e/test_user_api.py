@@ -23,9 +23,7 @@ pytestmark = pytest.mark.asyncio
 class TestCreateUser:
     """Tests for POST /users/ endpoint."""
 
-    async def test_create_user_success(
-        self, client: AsyncClient, user_test_tenant: dict
-    ):
+    async def test_create_user_success(self, client: AsyncClient, user_test_tenant: dict):
         """Test creating a user with email and password."""
         tenant_id = user_test_tenant["id"]
 
@@ -46,9 +44,7 @@ class TestCreateUser:
         assert data["is_two_factor_enabled"] is False
         assert data["is_active"] is False
 
-    async def test_create_user_with_preferences(
-        self, client: AsyncClient, user_test_tenant: dict
-    ):
+    async def test_create_user_with_preferences(self, client: AsyncClient, user_test_tenant: dict):
         """Test creating a user with preferences."""
         tenant_id = user_test_tenant["id"]
 
@@ -85,9 +81,7 @@ class TestCreateUser:
 class TestGetUser:
     """Tests for GET /users/{user_id} endpoint."""
 
-    async def test_get_user_by_id_success(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_get_user_by_id_success(self, client: AsyncClient, test_api_user: dict):
         """Test getting a user by ID."""
         user_id = test_api_user["id"]
 
@@ -103,7 +97,7 @@ class TestGetUser:
         response = await client.get("/users/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetUserByEmail:
@@ -116,23 +110,17 @@ class TestGetUserByEmail:
         tenant_id = user_test_tenant["id"]
         email = test_api_user["email"]
 
-        response = await client.get(
-            f"/users/email/{email}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/users/email/{email}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["email"] == email
 
-    async def test_get_user_by_email_not_found(
-        self, client: AsyncClient, user_test_tenant: dict
-    ):
+    async def test_get_user_by_email_not_found(self, client: AsyncClient, user_test_tenant: dict):
         """Test getting user by non-existent email returns 404."""
         tenant_id = user_test_tenant["id"]
 
-        response = await client.get(
-            f"/users/email/nonexistent@example.com?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/users/email/nonexistent@example.com?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -140,9 +128,7 @@ class TestGetUserByEmail:
 class TestCheckEmailAvailability:
     """Tests for GET /users/check-email/{email} endpoint."""
 
-    async def test_check_available_email(
-        self, client: AsyncClient, user_test_tenant: dict
-    ):
+    async def test_check_available_email(self, client: AsyncClient, user_test_tenant: dict):
         """Test checking an available email."""
         tenant_id = user_test_tenant["id"]
 
@@ -161,9 +147,7 @@ class TestCheckEmailAvailability:
         tenant_id = user_test_tenant["id"]
         email = test_api_user["email"]
 
-        response = await client.get(
-            f"/users/check-email/{email}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/users/check-email/{email}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -184,9 +168,7 @@ class TestListUsers:
 
         assert response.status_code == 422
 
-    async def test_list_users_empty(
-        self, client: AsyncClient, user_test_tenant: dict
-    ):
+    async def test_list_users_empty(self, client: AsyncClient, user_test_tenant: dict):
         """Test listing users for a newly created tenant (has one admin user)."""
         # Create a new tenant (backend auto-creates one admin user per tenant)
         new_tenant = await client.post(
@@ -207,7 +189,11 @@ class TestListUsers:
         assert any("admin_" in u.get("email", "") for u in data["items"])
 
     async def test_list_users_success(
-        self, client: AsyncClient, user_test_tenant: dict, test_api_user: dict, test_api_user_2: dict
+        self,
+        client: AsyncClient,
+        user_test_tenant: dict,
+        test_api_user: dict,
+        test_api_user_2: dict,
     ):
         """Test listing users with results."""
         tenant_id = user_test_tenant["id"]
@@ -225,9 +211,7 @@ class TestListUsers:
         """Test user list pagination."""
         tenant_id = user_test_tenant["id"]
 
-        response = await client.get(
-            f"/users/?tenant_id={tenant_id}&page=1&limit=1"
-        )
+        response = await client.get(f"/users/?tenant_id={tenant_id}&page=1&limit=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -241,9 +225,7 @@ class TestListUsers:
         """Test filtering users by status."""
         tenant_id = user_test_tenant["id"]
 
-        response = await client.get(
-            f"/users/?tenant_id={tenant_id}&status=Active"
-        )
+        response = await client.get(f"/users/?tenant_id={tenant_id}&status=Active")
         data = response.json()
 
         assert response.status_code == 200
@@ -258,9 +240,7 @@ class TestListUsers:
 class TestVerifyEmail:
     """Tests for POST /users/{user_id}/verify-email endpoint."""
 
-    async def test_verify_email_success(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_verify_email_success(self, client: AsyncClient, test_api_user: dict):
         """Test verifying user email."""
         user_id = test_api_user["id"]
 
@@ -286,12 +266,10 @@ class TestVerifyEmail:
 class TestActivateUser:
     """Tests for POST /users/{user_id}/activate endpoint."""
 
-    async def test_activate_user_success(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_activate_user_success(self, client: AsyncClient, test_api_user: dict):
         """Test activating a pending user."""
         user_id = test_api_user["id"]
-        
+
         # Verify email first
         await client.post(f"/users/{user_id}/verify-email")
 
@@ -312,9 +290,7 @@ class TestActivateUser:
 class TestSuspendUser:
     """Tests for POST /users/{user_id}/suspend endpoint."""
 
-    async def test_suspend_user_success(
-        self, client: AsyncClient, test_api_user_active: dict
-    ):
+    async def test_suspend_user_success(self, client: AsyncClient, test_api_user_active: dict):
         """Test suspending an active user."""
         user_id = test_api_user_active["id"]
 
@@ -327,9 +303,7 @@ class TestSuspendUser:
         data = response.json()
         assert data["status"] == "Suspended"
 
-    async def test_suspend_requires_reason(
-        self, client: AsyncClient, test_api_user_active: dict
-    ):
+    async def test_suspend_requires_reason(self, client: AsyncClient, test_api_user_active: dict):
         """Test that suspending requires a reason."""
         user_id = test_api_user_active["id"]
 
@@ -353,9 +327,7 @@ class TestSuspendUser:
 class TestBanUser:
     """Tests for POST /users/{user_id}/ban endpoint."""
 
-    async def test_ban_user_success(
-        self, client: AsyncClient, test_api_user_active: dict
-    ):
+    async def test_ban_user_success(self, client: AsyncClient, test_api_user_active: dict):
         """Test banning a user."""
         user_id = test_api_user_active["id"]
 
@@ -381,9 +353,7 @@ class TestBanUser:
 class TestDeactivateUser:
     """Tests for POST /users/{user_id}/deactivate endpoint."""
 
-    async def test_deactivate_user_success(
-        self, client: AsyncClient, test_api_user_active: dict
-    ):
+    async def test_deactivate_user_success(self, client: AsyncClient, test_api_user_active: dict):
         """Test deactivating a user."""
         user_id = test_api_user_active["id"]
 
@@ -409,9 +379,7 @@ class TestDeactivateUser:
 class TestTerminateUser:
     """Tests for POST /users/{user_id}/terminate endpoint."""
 
-    async def test_terminate_user_success(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_terminate_user_success(self, client: AsyncClient, test_api_user: dict):
         """Test terminating a user."""
         user_id = test_api_user["id"]
 
@@ -442,9 +410,7 @@ class TestTerminateUser:
 class TestTwoFactorAuthentication:
     """Tests for 2FA endpoints."""
 
-    async def test_enable_two_factor_success(
-        self, client: AsyncClient, test_api_user_active: dict
-    ):
+    async def test_enable_two_factor_success(self, client: AsyncClient, test_api_user_active: dict):
         """Test enabling 2FA."""
         user_id = test_api_user_active["id"]
 
@@ -485,9 +451,7 @@ class TestTwoFactorAuthentication:
 class TestUpdatePassword:
     """Tests for PATCH /users/{user_id}/password endpoint."""
 
-    async def test_update_password_success(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_update_password_success(self, client: AsyncClient, test_api_user: dict):
         """Test updating user password."""
         user_id = test_api_user["id"]
 
@@ -511,9 +475,7 @@ class TestUpdatePassword:
 class TestUpdatePreferences:
     """Tests for PATCH /users/{user_id}/preferences endpoint."""
 
-    async def test_update_preferences_language(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_update_preferences_language(self, client: AsyncClient, test_api_user: dict):
         """Test updating user preferred language."""
         user_id = test_api_user["id"]
 
@@ -526,9 +488,7 @@ class TestUpdatePreferences:
         data = response.json()
         assert data["preferred_language"] == "fr"
 
-    async def test_update_preferences_timezone(
-        self, client: AsyncClient, test_api_user: dict
-    ):
+    async def test_update_preferences_timezone(self, client: AsyncClient, test_api_user: dict):
         """Test updating user timezone."""
         user_id = test_api_user["id"]
 
@@ -552,25 +512,15 @@ class TestUpdatePreferences:
 
 
 class TestRecordLogin:
-    """Tests for POST /users/{user_id}/record-login endpoint."""
+    """record-login is intentionally not an HTTP route — last_login_at is
+    server-derived during login. This pins the removal so it doesn't come back."""
 
-    async def test_record_login_success(
+    async def test_record_login_is_not_a_route(
         self, client: AsyncClient, test_api_user_active: dict
     ):
-        """Test recording user login."""
         user_id = test_api_user_active["id"]
-
         response = await client.post(f"/users/{user_id}/record-login")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["last_login_at"] is not None
-
-    async def test_record_login_not_found(self, client: AsyncClient):
-        """Test recording login for non-existent user."""
-        response = await client.post("/users/nonexistent-id/record-login")
-
-        assert response.status_code == 404
+        assert response.status_code in (404, 405)
 
 
 # =============================================================================

@@ -88,9 +88,7 @@ class CrisisContactRepositoryImpl(CrisisContactRepository):
         rows = (await self._session.execute(stmt)).scalars().all()
         return [CrisisContactMapper.to_entity(r) for r in rows]
 
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[CrisisContact]:
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[CrisisContact]:
         stmt = (
             select(CrisisContactModel)
             .where(

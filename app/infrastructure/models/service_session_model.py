@@ -27,9 +27,7 @@ from app.infrastructure.models.base import (
 )
 
 
-class ServiceSessionModel(
-    CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin
-):
+class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     """
     SQLAlchemy Model for Service Session aggregate.
 
@@ -70,15 +68,9 @@ class ServiceSessionModel(
     )
 
     # Relationships
-    service_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
-    provider_id: Mapped[str] = mapped_column(
-        ForeignKey("persons.id"), nullable=False, index=True
-    )
-    person_id: Mapped[str] = mapped_column(
-        ForeignKey("persons.id"), nullable=False, index=True
-    )
+    service_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    provider_id: Mapped[str] = mapped_column(ForeignKey("persons.id"), nullable=False, index=True)
+    person_id: Mapped[str] = mapped_column(ForeignKey("persons.id"), nullable=False, index=True)
 
     # Scheduling
     scheduled_at: Mapped[datetime] = mapped_column(
@@ -87,34 +79,24 @@ class ServiceSessionModel(
     status: Mapped[SessionStatus] = mapped_column(
         EnumValueType(SessionStatus), nullable=False, default=SessionStatus.SCHEDULED
     )
-    reschedule_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
-    )
+    reschedule_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # Completion
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Details
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
-    cancellation_reason: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )
+    cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Optional link to a CISM critical-incident response
-    incident_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
+    incident_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
 
     # Phase 4 #D-Import: idempotency key for re-runnable historical loads.
     # Unique per tenant; absent for organic in-app sessions.
-    import_source_id: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, index=True
-    )
+    import_source_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
 
     # Care Activity Log fields
     session_type: Mapped[SessionType | None] = mapped_column(
@@ -125,15 +107,9 @@ class ServiceSessionModel(
     )
     rate_ugx: Mapped[int | None] = mapped_column(Integer, nullable=True)
     issue_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
-    diagnosis_type_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
-    diagnosis_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
-    approved_by: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
+    diagnosis_type_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    diagnosis_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    approved_by: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
     session_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     partner_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     partner_relationship: Mapped[str | None] = mapped_column(String(100), nullable=True)

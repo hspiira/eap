@@ -52,9 +52,7 @@ class RiskAssessmentMapper:
             requires_safety_plan=model.requires_safety_plan,
             requires_mandatory_report=model.requires_mandatory_report,
             rationale=model.rationale,
-            questionnaire_response_ids=tuple(
-                model.questionnaire_response_ids or []
-            ),
+            questionnaire_response_ids=tuple(model.questionnaire_response_ids or []),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -68,9 +66,7 @@ class RiskAssessmentMapper:
             tenant_id=entity.tenant_id.value,
             clinical_subject_id=entity.clinical_subject_id.value,
             case_id=entity.case_id.value if entity.case_id else None,
-            crisis_contact_id=entity.crisis_contact_id.value
-            if entity.crisis_contact_id
-            else None,
+            crisis_contact_id=entity.crisis_contact_id.value if entity.crisis_contact_id else None,
             assessor_id=entity.assessor_id.value,
             assessed_at=ensure_utc(entity.assessed_at),
             risk_level=entity.risk_level,
@@ -81,9 +77,7 @@ class RiskAssessmentMapper:
             requires_safety_plan=entity.requires_safety_plan,
             requires_mandatory_report=entity.requires_mandatory_report,
             rationale=entity.rationale,
-            questionnaire_response_ids=list(
-                entity.questionnaire_response_ids
-            ),
+            questionnaire_response_ids=list(entity.questionnaire_response_ids),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )
@@ -103,40 +97,20 @@ class SafetyPlanMapper:
             clinician_id=UserId(model.clinician_id),
             status=SafetyPlanStatus(model.status),
             warning_signs=tuple(model.warning_signs or []),
-            internal_coping_strategies=tuple(
-                model.internal_coping_strategies or []
-            ),
+            internal_coping_strategies=tuple(model.internal_coping_strategies or []),
             social_distractions=tuple(model.social_distractions or []),
-            social_contacts_for_help=tuple(
-                model.social_contacts_for_help or []
-            ),
-            professional_help_resources=tuple(
-                model.professional_help_resources or []
-            ),
+            social_contacts_for_help=tuple(model.social_contacts_for_help or []),
+            professional_help_resources=tuple(model.professional_help_resources or []),
             means_restriction_plan=tuple(model.means_restriction_plan or []),
-            activated_at=ensure_utc(model.activated_at)
-            if model.activated_at
-            else None,
-            next_review_at=ensure_utc(model.next_review_at)
-            if model.next_review_at
-            else None,
-            reviewed_at=ensure_utc(model.reviewed_at)
-            if model.reviewed_at
-            else None,
-            reviewed_by=UserId(model.reviewed_by)
-            if model.reviewed_by
-            else None,
-            supersedes_safety_plan_id=SafetyPlanId(
-                model.supersedes_safety_plan_id
-            )
+            activated_at=ensure_utc(model.activated_at) if model.activated_at else None,
+            next_review_at=ensure_utc(model.next_review_at) if model.next_review_at else None,
+            reviewed_at=ensure_utc(model.reviewed_at) if model.reviewed_at else None,
+            reviewed_by=UserId(model.reviewed_by) if model.reviewed_by else None,
+            supersedes_safety_plan_id=SafetyPlanId(model.supersedes_safety_plan_id)
             if model.supersedes_safety_plan_id
             else None,
-            superseded_by=SafetyPlanId(model.superseded_by)
-            if model.superseded_by
-            else None,
-            superseded_at=ensure_utc(model.superseded_at)
-            if model.superseded_at
-            else None,
+            superseded_by=SafetyPlanId(model.superseded_by) if model.superseded_by else None,
+            superseded_at=ensure_utc(model.superseded_at) if model.superseded_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -150,9 +124,7 @@ class SafetyPlanMapper:
             tenant_id=entity.tenant_id.value,
             clinical_subject_id=entity.clinical_subject_id.value,
             case_id=entity.case_id.value if entity.case_id else None,
-            crisis_contact_id=entity.crisis_contact_id.value
-            if entity.crisis_contact_id
-            else None,
+            crisis_contact_id=entity.crisis_contact_id.value if entity.crisis_contact_id else None,
             clinician_id=entity.clinician_id.value,
             status=entity.status,
             warning_signs=list(entity.warning_signs),
@@ -161,25 +133,15 @@ class SafetyPlanMapper:
             social_contacts_for_help=list(entity.social_contacts_for_help),
             professional_help_resources=list(entity.professional_help_resources),
             means_restriction_plan=list(entity.means_restriction_plan),
-            activated_at=ensure_utc(entity.activated_at)
-            if entity.activated_at
-            else None,
-            next_review_at=ensure_utc(entity.next_review_at)
-            if entity.next_review_at
-            else None,
-            reviewed_at=ensure_utc(entity.reviewed_at)
-            if entity.reviewed_at
-            else None,
+            activated_at=ensure_utc(entity.activated_at) if entity.activated_at else None,
+            next_review_at=ensure_utc(entity.next_review_at) if entity.next_review_at else None,
+            reviewed_at=ensure_utc(entity.reviewed_at) if entity.reviewed_at else None,
             reviewed_by=entity.reviewed_by.value if entity.reviewed_by else None,
             supersedes_safety_plan_id=entity.supersedes_safety_plan_id.value
             if entity.supersedes_safety_plan_id
             else None,
-            superseded_by=entity.superseded_by.value
-            if entity.superseded_by
-            else None,
-            superseded_at=ensure_utc(entity.superseded_at)
-            if entity.superseded_at
-            else None,
+            superseded_by=entity.superseded_by.value if entity.superseded_by else None,
+            superseded_at=ensure_utc(entity.superseded_at) if entity.superseded_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )
@@ -215,9 +177,7 @@ class MandatoryReportMapper:
             clinical_subject_id=entity.clinical_subject_id.value,
             risk_assessment_id=entity.risk_assessment_id.value,
             case_id=entity.case_id.value if entity.case_id else None,
-            crisis_contact_id=entity.crisis_contact_id.value
-            if entity.crisis_contact_id
-            else None,
+            crisis_contact_id=entity.crisis_contact_id.value if entity.crisis_contact_id else None,
             report_type=entity.report_type,
             submitted_to=entity.submitted_to,
             submitted_at=ensure_utc(entity.submitted_at),
@@ -242,12 +202,8 @@ class CaringContactMapper:
             channel=CaringContactChannel(model.channel),
             due_at=ensure_utc(model.due_at),
             outcome=CaringContactOutcome(model.outcome),
-            attempted_at=ensure_utc(model.attempted_at)
-            if model.attempted_at
-            else None,
-            completed_at=ensure_utc(model.completed_at)
-            if model.completed_at
-            else None,
+            attempted_at=ensure_utc(model.attempted_at) if model.attempted_at else None,
+            completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
             handled_by=UserId(model.handled_by) if model.handled_by else None,
             notes=model.notes,
             created_at=ensure_utc(model.created_at),
@@ -267,12 +223,8 @@ class CaringContactMapper:
             channel=entity.channel,
             due_at=ensure_utc(entity.due_at),
             outcome=entity.outcome,
-            attempted_at=ensure_utc(entity.attempted_at)
-            if entity.attempted_at
-            else None,
-            completed_at=ensure_utc(entity.completed_at)
-            if entity.completed_at
-            else None,
+            attempted_at=ensure_utc(entity.attempted_at) if entity.attempted_at else None,
+            completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,
             handled_by=entity.handled_by.value if entity.handled_by else None,
             notes=entity.notes,
             created_at=ensure_utc(entity.created_at),

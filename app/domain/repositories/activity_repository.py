@@ -5,8 +5,8 @@ Defines the contract for Activity data access.
 """
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Sequence
 
 from app.domain.entities.activity import ActivityEntity
 from app.domain.repositories.base_repository import BaseRepository
@@ -21,7 +21,7 @@ class ActivityRepository(BaseRepository[ActivityEntity, ActivityId]):
         self, client_id: str, tenant_id: TenantId
     ) -> Sequence[ActivityEntity]:
         """Get all activities for a client."""
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -37,7 +37,7 @@ class ActivityRepository(BaseRepository[ActivityEntity, ActivityId]):
         offset: int = 0,
     ) -> Sequence[ActivityEntity]:
         """List activities with filtering."""
-    
+
     @abstractmethod
     async def count(
         self,

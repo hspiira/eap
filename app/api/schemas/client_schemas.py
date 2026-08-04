@@ -10,8 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 
-
 # === Value Object Schemas ===
+
 
 class ContactInfoSchema(BaseModel):
     """Contact information schema."""
@@ -31,6 +31,7 @@ class AddressSchema(BaseModel):
 
 
 # === Request Schemas ===
+
 
 class ContactInfoCreate(BaseModel):
     """Contact information for creation."""
@@ -53,7 +54,12 @@ class ClientCreate(BaseModel):
     """Request schema for creating a client."""
 
     name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Client name")
-    code: str = Field(..., min_length=3, max_length=5, description="Client code (3-5 characters, unique per tenant)")
+    code: str = Field(
+        ...,
+        min_length=3,
+        max_length=5,
+        description="Client code (3-5 characters, unique per tenant)",
+    )
     contact_info: ContactInfoCreate = Field(..., description="Contact information")
     billing_address: AddressCreate | None = Field(None, description="Billing address")
     industry_id: str | None = Field(None, description="Industry identifier")
@@ -84,7 +90,9 @@ class ClientDeactivateRequest(BaseModel):
 class ClientUpdate(BaseModel):
     """Request schema for updating client basic information."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Client name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Client name"
+    )
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )
@@ -110,6 +118,7 @@ class ClientUpdateBillingAddress(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class ClientResponse(BaseModel):
     """Response schema for client."""

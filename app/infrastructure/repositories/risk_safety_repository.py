@@ -64,9 +64,7 @@ class RiskAssessmentRepositoryImpl(RiskAssessmentRepository):
             existing.requires_safety_plan = new_model.requires_safety_plan
             existing.requires_mandatory_report = new_model.requires_mandatory_report
             existing.rationale = new_model.rationale
-            existing.questionnaire_response_ids = (
-                new_model.questionnaire_response_ids
-            )
+            existing.questionnaire_response_ids = new_model.questionnaire_response_ids
             existing.updated_at = new_model.updated_at
         await self._session.flush()
 
@@ -80,9 +78,7 @@ class RiskAssessmentRepositoryImpl(RiskAssessmentRepository):
         existing = await self._session.get(RiskAssessmentModel, entity_id.value)
         return existing is not None
 
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[RiskAssessment]:
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[RiskAssessment]:
         stmt = (
             select(RiskAssessmentModel)
             .where(
@@ -128,9 +124,7 @@ class SafetyPlanRepositoryImpl(SafetyPlanRepository):
             existing.internal_coping_strategies = new_model.internal_coping_strategies
             existing.social_distractions = new_model.social_distractions
             existing.social_contacts_for_help = new_model.social_contacts_for_help
-            existing.professional_help_resources = (
-                new_model.professional_help_resources
-            )
+            existing.professional_help_resources = new_model.professional_help_resources
             existing.means_restriction_plan = new_model.means_restriction_plan
             existing.activated_at = new_model.activated_at
             existing.next_review_at = new_model.next_review_at
@@ -181,9 +175,7 @@ class MandatoryReportRepositoryImpl(MandatoryReportRepository):
         if existing is None:
             self._session.add(new_model)
         else:
-            existing.external_reference_number = (
-                new_model.external_reference_number
-            )
+            existing.external_reference_number = new_model.external_reference_number
             existing.contact_email = new_model.contact_email
             existing.contact_phone = new_model.contact_phone
             existing.updated_at = new_model.updated_at

@@ -2,7 +2,6 @@
 
 from app.core.webhook_signature import compute_signature, verify_signature
 
-
 SECRET = "test-secret-with-sufficient-length-padding"
 
 

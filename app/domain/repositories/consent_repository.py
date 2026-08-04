@@ -17,8 +17,7 @@ from app.domain.value_objects.core import (
 class ConsentRepository(BaseRepository[Consent, ConsentId]):
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[Consent]:
-        ...
+    ) -> list[Consent]: ...
 
     async def find_active_for_disclosure(
         self,
@@ -28,8 +27,7 @@ class ConsentRepository(BaseRepository[Consent, ConsentId]):
         scope: ConsentScope,
         purpose: ConsentPurpose,
         disclosure_to: str,
-    ) -> Consent | None:
-        ...
+    ) -> Consent | None: ...
 
 
 class DataSharingRegisterRepository(
@@ -37,22 +35,14 @@ class DataSharingRegisterRepository(
 ):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 200
-    ) -> list[DataSharingRegisterEntry]:
-        ...
+    ) -> list[DataSharingRegisterEntry]: ...
 
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[DataSharingRegisterEntry]:
-        ...
+    ) -> list[DataSharingRegisterEntry]: ...
 
 
 class DPOContactRepository(BaseRepository[DPOContact, DPOContactId]):
-    async def current_for_tenant(
-        self, tenant_id: TenantId
-    ) -> DPOContact | None:
-        ...
+    async def current_for_tenant(self, tenant_id: TenantId) -> DPOContact | None: ...
 
-    async def list_for_tenant(
-        self, tenant_id: TenantId
-    ) -> list[DPOContact]:
-        ...
+    async def list_for_tenant(self, tenant_id: TenantId) -> list[DPOContact]: ...

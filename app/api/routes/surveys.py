@@ -42,7 +42,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["surveys"])
 
@@ -97,13 +97,7 @@ async def create_survey_campaign(
         period_end=data.period_end,
         anonymous=data.anonymous,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -155,18 +149,11 @@ async def activate_survey_campaign(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "SurveyCampaign"
+    use_case = TransitionUseCase(repo, "SurveyCampaign")
     campaign = await use_case.execute(
         SurveyCampaignId(campaign_id), SurveyCampaignTransition.ACTIVATE
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -184,18 +171,9 @@ async def close_survey_campaign(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "SurveyCampaign"
-    campaign = await use_case.execute(
-        SurveyCampaignId(campaign_id), SurveyCampaignTransition.CLOSE
-    )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    use_case = TransitionUseCase(repo, "SurveyCampaign")
+    campaign = await use_case.execute(SurveyCampaignId(campaign_id), SurveyCampaignTransition.CLOSE)
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -238,7 +216,7 @@ async def ingest_survey_response(
     try:
         parsed = WebhookPayload.model_validate(json.loads(raw))
     except (json.JSONDecodeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}")
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}") from exc
     use_case = IngestSurveyResponseUseCase(campaign_repo, response_repo)
     try:
         record, fresh = await use_case.execute(
@@ -251,7 +229,7 @@ async def ingest_survey_response(
             metrics=parsed.metrics,
         )
     except IngestSurveyResponseUseCase.SignatureInvalid as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     return SurveyResponseAcceptedResponse(
         response_id=record.id.value,
         accepted=True,

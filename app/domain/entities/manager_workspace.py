@@ -78,13 +78,9 @@ class ManagerConsult:
     def is_closed(self) -> bool:
         return self.closed_at is not None
 
-    def attach_referral(
-        self, case_id: CaseId, *, now: datetime | None = None
-    ) -> None:
+    def attach_referral(self, case_id: CaseId, *, now: datetime | None = None) -> None:
         if self.is_closed():
-            raise InvalidStateError(
-                "Cannot attach a referral to a closed manager consult"
-            )
+            raise InvalidStateError("Cannot attach a referral to a closed manager consult")
         now = now or utc_now()
         self.triggered_referral_case_id = case_id
         self.updated_at = now
@@ -182,9 +178,7 @@ class WorkLifeReferral:
         self, provider_id: WorkLifeProviderId, *, now: datetime | None = None
     ) -> None:
         if self.is_terminal():
-            raise InvalidStateError(
-                "Cannot reassign provider on a terminal referral"
-            )
+            raise InvalidStateError("Cannot reassign provider on a terminal referral")
         self.referred_provider_id = provider_id
         self.outcome = WorkLifeReferralOutcome.ACCEPTED
         self.updated_at = now or utc_now()
@@ -258,19 +252,13 @@ class TrainingEnrolment:
             TrainingEnrolmentStatus.ENROLLED,
             TrainingEnrolmentStatus.EXPIRED,
         }:
-            raise InvalidStateError(
-                f"Cannot complete from {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot complete from {self.status.value}")
         now = now or utc_now()
         self.status = TrainingEnrolmentStatus.COMPLETED
         self.completed_at = now
         self.expires_on = expires_on
         self.updated_at = now
-        self.events.append(
-            TrainingEnrolmentCompleted(
-                occurred_at=now, enrolment_id=self.id
-            )
-        )
+        self.events.append(TrainingEnrolmentCompleted(occurred_at=now, enrolment_id=self.id))
 
     def mark_expired_if_due(self, *, today: date | None = None) -> bool:
         if self.status != TrainingEnrolmentStatus.COMPLETED:

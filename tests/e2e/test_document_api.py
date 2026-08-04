@@ -8,7 +8,7 @@ Comprehensive tests for all document endpoints covering:
 - Confidentiality and expiry settings
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -103,9 +103,7 @@ class TestListDocuments:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/documents/?tenant_id={tenant_id}&page=1&limit=10"
-        )
+        response = await client.get(f"/documents/?tenant_id={tenant_id}&page=1&limit=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -164,7 +162,7 @@ class TestSetDocumentExpiry:
 
     async def test_set_expiry_not_found(self, client: AsyncClient):
         """Test setting expiry for non-existent document."""
-        expires_at = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        expires_at = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         response = await client.patch(
             "/documents/nonexistent-id/expiry",
             json={"expires_at": expires_at},
@@ -194,9 +192,7 @@ class TestGetLatestDocumentVersion:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/documents/nonexistent-id/latest?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/documents/nonexistent-id/latest?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -285,7 +281,7 @@ class TestDocumentIntegration:
         assert conf_resp.json()["is_confidential"] is True
 
         # Set expiry
-        expires_at = (datetime.now(timezone.utc) + timedelta(days=90)).isoformat()
+        expires_at = (datetime.now(UTC) + timedelta(days=90)).isoformat()
         expiry_resp = await client.patch(
             f"/documents/{doc_id}/expiry",
             json={"expires_at": expires_at},

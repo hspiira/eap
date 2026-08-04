@@ -30,8 +30,21 @@ Design Notes:
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, date
-from typing import Union
+from datetime import date, datetime
+
+from app.domain.entities.user import UserEntity
+from app.domain.enums import BaseStatus, PanelStatus, PersonType, ProviderTier
+from app.domain.events import (
+    DomainEvent,
+    PersonActivated,
+    PersonDeactivated,
+    PersonSecondaryRoleAdded,
+    PersonSecondaryRoleRemoved,
+    PersonTerminated,
+    ProviderPanelStatusChanged,
+    ProviderTierChanged,
+)
+from app.domain.exceptions import DomainError, InvariantViolation
 from app.domain.value_objects.core import (
     ClientId,
     DependentInfo,
@@ -44,23 +57,11 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-from app.domain.entities.user import UserEntity
-from app.domain.enums import PersonType, BaseStatus, PanelStatus, ProviderTier
-from app.domain.events import (
-    DomainEvent,
-    PersonActivated,
-    PersonDeactivated,
-    PersonTerminated,
-    PersonSecondaryRoleAdded,
-    PersonSecondaryRoleRemoved,
-    ProviderPanelStatusChanged,
-    ProviderTierChanged,
-)
-from app.domain.exceptions import DomainError, InvariantViolation
 from app.shared.utils.datetime import utc_now
 
 # Error messages
 _DEPENDENT_DUAL_ROLE_ERROR = "Dependents cannot have dual roles"
+
 
 @dataclass
 class PersonEntity:
@@ -83,13 +84,15 @@ class PersonEntity:
     staff_info: StaffInfo | None = None  # PLATFORM_STAFF
     dependent_info: DependentInfo | None = None  # DEPENDENT
     emergency_contact: EmergencyContact | None = None
-    family_id: PersonId | None = None  # Points to primary employee in family (for family code grouping)
+    family_id: PersonId | None = (
+        None  # Points to primary employee in family (for family code grouping)
+    )
     last_service_date: date | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     # === Behaviors ===
-    
+
     def activate(self) -> None:
         """Activate person for operation"""
         if self.status == BaseStatus.DELETED:
@@ -99,8 +102,10 @@ class PersonEntity:
         self.status = BaseStatus.ACTIVE
         now = utc_now()
         self.updated_at = now
-        self.events.append(PersonActivated(occurred_at=now, person_id=self.id, person_type=self.person_type))
-    
+        self.events.append(
+            PersonActivated(occurred_at=now, person_id=self.id, person_type=self.person_type)
+        )
+
     def deactivate(self, reason: str | None = None) -> None:
         """Deactivate person"""
         if self.status == BaseStatus.DELETED:
@@ -111,7 +116,7 @@ class PersonEntity:
         now = utc_now()
         self.updated_at = now
         self.events.append(PersonDeactivated(occurred_at=now, person_id=self.id, reason=reason))
-    
+
     def terminate(self, reason: str) -> None:
         """Permanently terminate person"""
         if not reason:
@@ -123,10 +128,8 @@ class PersonEntity:
         self.deleted_at = now
         self.updated_at = now
         self.events.append(PersonTerminated(occurred_at=now, person_id=self.id, reason=reason))
-    
-    def is_eligible_for_services(
-        self, primary_employee: "PersonEntity | None" = None
-    ) -> bool:
+
+    def is_eligible_for_services(self, primary_employee: "PersonEntity | None" = None) -> bool:
         """Whether this person is eligible to receive services.
 
         For DEPENDENT persons, eligibility is composed of:
@@ -155,63 +158,69 @@ class PersonEntity:
             return self.license_info is not None and self.license_info.is_valid()
 
         return True  # PLATFORM_STAFF
-    
+
     def add_secondary_role(
-        self, 
-        role: PersonType, 
-        info: Union[EmploymentInfo, LicenseInfo, StaffInfo]
+        self, role: PersonType, info: EmploymentInfo | LicenseInfo | StaffInfo
     ) -> None:
         """Add a secondary role to the person with role-specific information.
-        
+
         Args:
             role: The secondary person type to add
             info: The role-specific value object (EmploymentInfo, LicenseInfo, or StaffInfo)
-            
+
         Raises:
             DomainError: If the person is a dependent, role matches primary, or role/info mismatch
         """
         if self.person_type == PersonType.DEPENDENT:
             raise DomainError(_DEPENDENT_DUAL_ROLE_ERROR)
-        
+
         if role == PersonType.DEPENDENT:
             raise DomainError("Cannot add dependent as secondary role")
-        
+
         if role == self.person_type:
-            raise DomainError(f"Cannot add {role.value} as secondary role when it is already the primary role")
-        
+            raise DomainError(
+                f"Cannot add {role.value} as secondary role when it is already the primary role"
+            )
+
         # Check max 2 clients rule for CLIENT_EMPLOYEE roles
         if role == PersonType.CLIENT_EMPLOYEE:
             if not isinstance(info, EmploymentInfo):
-                raise DomainError(f"CLIENT_EMPLOYEE role requires EmploymentInfo, got {type(info).__name__}")
+                raise DomainError(
+                    f"CLIENT_EMPLOYEE role requires EmploymentInfo, got {type(info).__name__}"
+                )
             self._check_max_clients_rule(info.client_id)
             self.employment_info = info
         elif role == PersonType.SERVICE_PROVIDER:
             if not isinstance(info, LicenseInfo):
-                raise DomainError(f"SERVICE_PROVIDER role requires LicenseInfo, got {type(info).__name__}")
+                raise DomainError(
+                    f"SERVICE_PROVIDER role requires LicenseInfo, got {type(info).__name__}"
+                )
             self.license_info = info
         elif role == PersonType.PLATFORM_STAFF:
             if not isinstance(info, StaffInfo):
-                raise DomainError(f"PLATFORM_STAFF role requires StaffInfo, got {type(info).__name__}")
+                raise DomainError(
+                    f"PLATFORM_STAFF role requires StaffInfo, got {type(info).__name__}"
+                )
             self.staff_info = info
         else:
             raise DomainError(f"Invalid secondary role: {role}")
-        
+
         self.is_dual_role = True
         self.secondary_person_type = role
         now = utc_now()
         self.updated_at = now
         self._ensure_invariants()
         self.events.append(PersonSecondaryRoleAdded(occurred_at=now, person_id=self.id, role=role))
-    
+
     def remove_secondary_role(self) -> None:
         """Remove the secondary role from the person.
-        
+
         Raises:
             DomainError: If the person doesn't have a secondary role
         """
         if not self.is_dual_role or not self.secondary_person_type:
             raise DomainError("Person does not have a secondary role to remove")
-        
+
         # Clear role-specific info based on secondary role
         if self.secondary_person_type == PersonType.CLIENT_EMPLOYEE:
             # Only clear if it's not the primary role
@@ -223,15 +232,17 @@ class PersonEntity:
         elif self.secondary_person_type == PersonType.PLATFORM_STAFF:
             if self.person_type != PersonType.PLATFORM_STAFF:
                 self.staff_info = None
-        
+
         removed_role = self.secondary_person_type
         self.is_dual_role = False
         self.secondary_person_type = None
         now = utc_now()
         self.updated_at = now
         self._ensure_invariants()
-        self.events.append(PersonSecondaryRoleRemoved(occurred_at=now, person_id=self.id, role=removed_role))
-    
+        self.events.append(
+            PersonSecondaryRoleRemoved(occurred_at=now, person_id=self.id, role=removed_role)
+        )
+
     def update_emergency_contact(self, contact: EmergencyContact) -> None:
         """Update emergency contact information."""
         if self.status == BaseStatus.DELETED:
@@ -239,7 +250,7 @@ class PersonEntity:
         self.emergency_contact = contact
         now = utc_now()
         self.updated_at = now
-    
+
     def update_employment_info(self, info: EmploymentInfo) -> None:
         """Update employment information."""
         if self.status == BaseStatus.DELETED:
@@ -249,25 +260,25 @@ class PersonEntity:
         self.employment_info = info
         self.updated_at = utc_now()
         self._ensure_invariants()
-    
+
     def _check_max_clients_rule(self, new_client_id: ClientId) -> None:
         """Check that person is not already employee/dependent for more than 1 client."""
         clients: set[ClientId] = set()
-        
+
         if self.person_type == PersonType.CLIENT_EMPLOYEE and self.employment_info:
             clients.add(self.employment_info.client_id)
         elif self.person_type == PersonType.DEPENDENT and self.dependent_info:
             pass
-        
+
         if self.secondary_person_type == PersonType.CLIENT_EMPLOYEE and self.employment_info:
             clients.add(self.employment_info.client_id)
-        
+
         if new_client_id in clients:
             return
-        
+
         if len(clients) >= 2:
             raise DomainError("Person cannot be employee or dependent for more than 2 clients")
-    
+
     def update_license_info(self, info: LicenseInfo) -> None:
         """Update license information."""
         if self.status == BaseStatus.DELETED:
@@ -280,7 +291,10 @@ class PersonEntity:
         """Set or replace the provider's panel profile (tier/region/accreditation)."""
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot update provider profile for deleted person")
-        if self.person_type != PersonType.SERVICE_PROVIDER and self.secondary_person_type != PersonType.SERVICE_PROVIDER:
+        if (
+            self.person_type != PersonType.SERVICE_PROVIDER
+            and self.secondary_person_type != PersonType.SERVICE_PROVIDER
+        ):
             raise DomainError("Provider profile is only valid for SERVICE_PROVIDER persons")
         self.provider_profile = profile
         self.updated_at = utc_now()
@@ -307,6 +321,7 @@ class PersonEntity:
             return
         old_status = profile.panel_status
         from dataclasses import replace
+
         self.provider_profile = replace(profile, panel_status=new_status)
         now = utc_now()
         self.updated_at = now
@@ -338,6 +353,7 @@ class PersonEntity:
             return
         old_tier = profile.tier
         from dataclasses import replace
+
         self.provider_profile = replace(profile, tier=new_tier)
         now = utc_now()
         self.updated_at = now
@@ -351,7 +367,7 @@ class PersonEntity:
                 reason=reason,
             )
         )
-    
+
     def update_staff_info(self, info: StaffInfo) -> None:
         """Update staff information."""
         if self.status == BaseStatus.DELETED:
@@ -372,7 +388,7 @@ class PersonEntity:
 
     def archive(self) -> None:
         """Archive person (softer than terminate).
-        
+
         Sets status to ARCHIVED. This is reversible via restore().
         Note: archive() does NOT set _deleted_at; only terminate() does.
         """
@@ -382,10 +398,10 @@ class PersonEntity:
             raise DomainError("Person is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
-    
+
     def restore(self) -> None:
         """Restore archived person to active status.
-        
+
         Only restores from ARCHIVED to ACTIVE. Terminated persons (DELETED status)
         cannot be restored as termination is permanent.
         """
@@ -397,13 +413,21 @@ class PersonEntity:
             raise DomainError("Person must be archived to restore")
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
-    
+
     # === Factory Methods ===
-    
+
     @classmethod
-    def create_client_employee(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, employment_info: EmploymentInfo, family_id: PersonId | None = None) -> 'PersonEntity':
+    def create_client_employee(
+        cls,
+        id: PersonId,
+        tenant_id: TenantId,
+        user_id: UserId,
+        profile: UserEntity,
+        employment_info: EmploymentInfo,
+        family_id: PersonId | None = None,
+    ) -> "PersonEntity":
         """Factory for CLIENT_EMPLOYEE type
-        
+
         Args:
             id: Person identifier
             tenant_id: Tenant identifier
@@ -424,13 +448,20 @@ class PersonEntity:
             family_id=family_id,  # Set family_id if part of existing family
             status=BaseStatus.PENDING,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         person._ensure_invariants()
         return person
-    
+
     @classmethod
-    def create_service_provider(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, license_info: LicenseInfo) -> 'PersonEntity':
+    def create_service_provider(
+        cls,
+        id: PersonId,
+        tenant_id: TenantId,
+        user_id: UserId,
+        profile: UserEntity,
+        license_info: LicenseInfo,
+    ) -> "PersonEntity":
         """Factory for SERVICE_PROVIDER type"""
         now = utc_now()
         person = cls(
@@ -443,16 +474,24 @@ class PersonEntity:
             license_info=license_info,
             status=BaseStatus.PENDING,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         person._ensure_invariants()
         return person
-    
+
     @classmethod
-    def create_dependent(cls, id: PersonId, tenant_id: TenantId, user_id: UserId, profile: UserEntity, dependent_info: DependentInfo, primary_employee: 'PersonEntity') -> 'PersonEntity':
+    def create_dependent(
+        cls,
+        id: PersonId,
+        tenant_id: TenantId,
+        user_id: UserId,
+        profile: UserEntity,
+        dependent_info: DependentInfo,
+        primary_employee: "PersonEntity",
+    ) -> "PersonEntity":
         """
         Factory for DEPENDENT type.
-        
+
         Args:
             id: Person identifier
             tenant_id: Tenant identifier
@@ -460,7 +499,7 @@ class PersonEntity:
             profile: User profile entity
             dependent_info: Dependent information (includes primary_employee_id)
             primary_employee: The primary employee person entity (must be CLIENT_EMPLOYEE)
-            
+
         Raises:
             DomainError: If primary employee is not a CLIENT_EMPLOYEE
         """
@@ -471,7 +510,9 @@ class PersonEntity:
             raise DomainError("Primary employee must have employment info")
 
         if dependent_info.primary_employee_id != primary_employee.id:
-            raise DomainError("Dependent info primary_employee_id must match provided primary_employee")
+            raise DomainError(
+                "Dependent info primary_employee_id must match provided primary_employee"
+            )
 
         now = utc_now()
         person = cls(
@@ -485,12 +526,11 @@ class PersonEntity:
             family_id=primary_employee.family_id or primary_employee.id,
             status=BaseStatus.PENDING,
             created_at=now,
-            updated_at=now
+            updated_at=now,
         )
         person._ensure_invariants()
         return person
-    
-    
+
     def _ensure_invariants(self) -> None:
         """Ensure person invariants are met"""
         if not self.id:
@@ -499,7 +539,7 @@ class PersonEntity:
             raise InvariantViolation("Person must have a tenant ID")
         if not self.user_id:
             raise InvariantViolation("Person must have a user ID")
-        
+
         if self.person_type == PersonType.DEPENDENT:
             if not self.dependent_info:
                 raise InvariantViolation("Dependents must have dependent info")
@@ -507,27 +547,31 @@ class PersonEntity:
                 raise InvariantViolation("Dependents cannot have dual roles")
             if not self.family_id:
                 raise InvariantViolation("Dependents must have a family_id (primary employee)")
-        
+
         if self.person_type == PersonType.SERVICE_PROVIDER:
             if not self.license_info:
                 raise InvariantViolation("Service providers must have license info")
-        
+
         if self.person_type == PersonType.CLIENT_EMPLOYEE:
             if not self.employment_info:
                 raise InvariantViolation("Client employees must have employment info")
-        
+
         if self.person_type == PersonType.PLATFORM_STAFF:
             if not self.staff_info:
                 raise InvariantViolation("Platform staff must have staff info")
-        
+
         # Secondary role invariants
         if self.is_dual_role and self.secondary_person_type:
             if self.secondary_person_type == PersonType.CLIENT_EMPLOYEE:
                 if not self.employment_info:
-                    raise InvariantViolation("Secondary CLIENT_EMPLOYEE role requires employment info")
+                    raise InvariantViolation(
+                        "Secondary CLIENT_EMPLOYEE role requires employment info"
+                    )
             elif self.secondary_person_type == PersonType.SERVICE_PROVIDER:
                 if not self.license_info:
-                    raise InvariantViolation("Secondary SERVICE_PROVIDER role requires license info")
+                    raise InvariantViolation(
+                        "Secondary SERVICE_PROVIDER role requires license info"
+                    )
             elif self.secondary_person_type == PersonType.PLATFORM_STAFF:
                 if not self.staff_info:
                     raise InvariantViolation("Secondary PLATFORM_STAFF role requires staff info")

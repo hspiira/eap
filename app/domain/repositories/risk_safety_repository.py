@@ -18,40 +18,30 @@ from app.domain.value_objects.core import (
 
 
 class RiskAssessmentRepository(BaseRepository[RiskAssessment, RiskAssessmentId]):
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[RiskAssessment]:
-        ...
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[RiskAssessment]: ...
 
     async def list_for_crisis_contact(
         self, tenant_id: TenantId, crisis_contact_id: CrisisContactId
-    ) -> list[RiskAssessment]:
-        ...
+    ) -> list[RiskAssessment]: ...
 
 
 class SafetyPlanRepository(BaseRepository[SafetyPlan, SafetyPlanId]):
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[SafetyPlan]:
-        ...
+    ) -> list[SafetyPlan]: ...
 
 
-class MandatoryReportRepository(
-    BaseRepository[MandatoryReport, MandatoryReportId]
-):
+class MandatoryReportRepository(BaseRepository[MandatoryReport, MandatoryReportId]):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 100
-    ) -> list[MandatoryReport]:
-        ...
+    ) -> list[MandatoryReport]: ...
 
 
 class CaringContactRepository(BaseRepository[CaringContact, CaringContactId]):
     async def list_pending(
         self, tenant_id: TenantId, *, before: object | None = None
-    ) -> list[CaringContact]:
-        ...
+    ) -> list[CaringContact]: ...
 
     async def list_for_subject(
         self, tenant_id: TenantId, subject_id: ClinicalSubjectId
-    ) -> list[CaringContact]:
-        ...
+    ) -> list[CaringContact]: ...

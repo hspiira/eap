@@ -34,7 +34,7 @@ from app.domain.value_objects.core import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/non-compete-clauses", tags=["non-compete"])
 
@@ -88,13 +88,7 @@ async def create_non_compete(
         updated_at=now,
     )
     await repo.save(clause)
-    await audit_entity_operation(
-        entity=clause,
-        audit_handler=audit_handler,
-        tenant_id=clause.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(clause, audit_handler, current_user, request)
     return _to_response(clause)
 
 
@@ -117,20 +111,13 @@ async def sign_non_compete(
     existing = await repo.get_by_id(NonCompeteClauseId(clause_id))
     if existing is None or existing.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Non-compete clause not found")
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "NonCompeteClause"
+    use_case = TransitionUseCase(repo, "NonCompeteClause")
     clause = await use_case.execute(
         NonCompeteClauseId(clause_id),
         NonCompeteTransition.SIGN,
         signed_by=UserId(body.signed_by),
     )
-    await audit_entity_operation(
-        entity=clause,
-        audit_handler=audit_handler,
-        tenant_id=clause.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(clause, audit_handler, current_user, request)
     return _to_response(clause)
 
 
@@ -152,20 +139,13 @@ async def revoke_non_compete(
     existing = await repo.get_by_id(NonCompeteClauseId(clause_id))
     if existing is None or existing.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Non-compete clause not found")
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "NonCompeteClause"
+    use_case = TransitionUseCase(repo, "NonCompeteClause")
     clause = await use_case.execute(
         NonCompeteClauseId(clause_id),
         NonCompeteTransition.REVOKE,
         reason=body.reason,
     )
-    await audit_entity_operation(
-        entity=clause,
-        audit_handler=audit_handler,
-        tenant_id=clause.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(clause, audit_handler, current_user, request)
     return _to_response(clause)
 
 
@@ -201,7 +181,5 @@ async def list_for_provider(
     repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    clauses = await repo.list_for_provider(
-        TenantId(tenant_id), PersonId(provider_id)
-    )
+    clauses = await repo.list_for_provider(TenantId(tenant_id), PersonId(provider_id))
     return [_to_response(c) for c in clauses]

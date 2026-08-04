@@ -47,16 +47,10 @@ class EligibleMember:
     def __post_init__(self) -> None:
         if not self.employer_member_id:
             raise DomainError("EligibleMember requires an employer_member_id")
-        if (
-            self.coverage_end
-            and self.coverage_start
-            and self.coverage_end < self.coverage_start
-        ):
+        if self.coverage_end and self.coverage_start and self.coverage_end < self.coverage_start:
             raise DomainError("coverage_end must be on or after coverage_start")
         if self.relation != MemberRelation.EMPLOYEE and self.primary_employee_member_id is None:
-            raise DomainError(
-                f"{self.relation.value} requires a primary_employee_member_id"
-            )
+            raise DomainError(f"{self.relation.value} requires a primary_employee_member_id")
 
     def suspend(self, now: datetime | None = None) -> None:
         if self.status == EligibilityStatus.TERMINATED:
@@ -73,9 +67,7 @@ class EligibleMember:
             EligibilityStatus.SUSPENDED,
             EligibilityStatus.PENDING,
         }:
-            raise InvalidStateError(
-                f"Cannot reinstate a {self.status.value} member"
-            )
+            raise InvalidStateError(f"Cannot reinstate a {self.status.value} member")
         now = now or utc_now()
         self.status = EligibilityStatus.ACTIVE
         self.suspended_at = None

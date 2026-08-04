@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime, timedelta
 
-from app.shared.utils.datetime import utc_now
-
 import pytest
 
 from app.domain.entities.consent import Consent
@@ -31,6 +29,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.shared.utils.datetime import utc_now
 
 
 def _consent(**overrides) -> Consent:
@@ -63,9 +62,7 @@ class TestConsentLifecycle:
 
     def test_other_purpose_requires_detail(self):
         with pytest.raises(DomainError):
-            _consent(
-                purpose=ConsentPurpose.OTHER, purpose_other_detail=None
-            )
+            _consent(purpose=ConsentPurpose.OTHER, purpose_other_detail=None)
 
     def test_grant_then_active(self):
         c = _consent()

@@ -27,7 +27,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 CARING_CONTACT_CADENCE: tuple[timedelta, ...] = (
     timedelta(hours=24),
     timedelta(days=7),
@@ -77,9 +76,7 @@ class CaringContact:
         if outcome == CaringContactOutcome.PENDING:
             raise DomainError("record_outcome requires a terminal outcome")
         if not self.is_pending():
-            raise InvalidStateError(
-                "Caring-contact outcome has already been recorded"
-            )
+            raise InvalidStateError("Caring-contact outcome has already been recorded")
         now = now or utc_now()
         self.outcome = outcome
         self.handled_by = handled_by

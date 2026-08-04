@@ -19,8 +19,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.value_objects.core import PersonId, TenantId
-from app.infrastructure.models.engagement_model import EngagementModel
 from app.infrastructure.models.care_callback_model import OutreachRecordModel
+from app.infrastructure.models.engagement_model import EngagementModel
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.user_model import UserModel
@@ -48,42 +48,48 @@ class SqlDSARDataCollector:
                 "engagement_hours": [],
                 "note": "Subject not found in this tenant",
             }
-        user = (
-            await self._session.get(UserModel, person.user_id)
-            if person.user_id
-            else None
-        )
+        user = await self._session.get(UserModel, person.user_id) if person.user_id else None
         sessions = (
-            await self._session.execute(
-                select(ServiceSessionModel).where(
-                    ServiceSessionModel.tenant_id == tenant_id.value,
-                    ServiceSessionModel.person_id == subject_person_id.value,
+            (
+                await self._session.execute(
+                    select(ServiceSessionModel).where(
+                        ServiceSessionModel.tenant_id == tenant_id.value,
+                        ServiceSessionModel.person_id == subject_person_id.value,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         outreach = (
-            await self._session.execute(
-                select(OutreachRecordModel).where(
-                    OutreachRecordModel.tenant_id == tenant_id.value,
-                    OutreachRecordModel.person_id == subject_person_id.value,
+            (
+                await self._session.execute(
+                    select(OutreachRecordModel).where(
+                        OutreachRecordModel.tenant_id == tenant_id.value,
+                        OutreachRecordModel.person_id == subject_person_id.value,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         engagements = (
-            await self._session.execute(
-                select(EngagementModel).where(
-                    EngagementModel.tenant_id == tenant_id.value,
+            (
+                await self._session.execute(
+                    select(EngagementModel).where(
+                        EngagementModel.tenant_id == tenant_id.value,
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         engagement_hours: list[dict[str, Any]] = []
         if user is not None:
             for eng in engagements:
                 for entry in eng.hours_log or []:
                     if entry.get("user_id") == person.user_id:
-                        engagement_hours.append(
-                            {**entry, "engagement_id": eng.id}
-                        )
+                        engagement_hours.append({**entry, "engagement_id": eng.id})
         return {
             "person": {
                 "id": person.id,
@@ -96,17 +102,13 @@ class SqlDSARDataCollector:
                 "provider_profile": person.provider_profile,
                 "dependent_info": person.dependent_info,
                 "staff_info": person.staff_info,
-                "created_at": person.created_at.isoformat()
-                if person.created_at
-                else None,
+                "created_at": person.created_at.isoformat() if person.created_at else None,
             },
             "user": {
                 "id": user.id,
                 "email": user.email,
                 "status": user.status,
-                "created_at": user.created_at.isoformat()
-                if user.created_at
-                else None,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
             }
             if user is not None
             else None,
@@ -114,9 +116,7 @@ class SqlDSARDataCollector:
                 {
                     "id": s.id,
                     "service_id": s.service_id,
-                    "scheduled_at": s.scheduled_at.isoformat()
-                    if s.scheduled_at
-                    else None,
+                    "scheduled_at": s.scheduled_at.isoformat() if s.scheduled_at else None,
                     "status": s.status,
                     "reschedule_count": s.reschedule_count,
                 }
@@ -164,11 +164,7 @@ class SqlDSARTombstoner:
         token = _make_tombstone_token(subject_person_id.value)
         synthetic_email = f"tombstone-{token}@erased.local"
 
-        user = (
-            await self._session.get(UserModel, person.user_id)
-            if person.user_id
-            else None
-        )
+        user = await self._session.get(UserModel, person.user_id) if person.user_id else None
         if user is not None:
             user.email = synthetic_email
             user.password_hash = None

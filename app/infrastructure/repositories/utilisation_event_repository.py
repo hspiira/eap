@@ -26,9 +26,7 @@ class UtilisationEventRepositoryImpl(UtilisationEventRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: UtilisationEventId
-    ) -> UtilisationEventEntity | None:
+    async def get_by_id(self, entity_id: UtilisationEventId) -> UtilisationEventEntity | None:
         row = await self._session.get(UtilisationEventModel, entity_id.value)
         return UtilisationEventMapper.to_entity(row) if row else None
 

@@ -5,7 +5,7 @@ subtotal arithmetic, and any model-specific notes.
 """
 
 import decimal
-from datetime import UTC, date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -41,8 +41,8 @@ def _money(value: str, currency: str = "UGX") -> Money:
 def _contract(pricing: ContractPricing) -> ContractEntity:
     now = datetime.now(UTC)
     period = DateRange(
-        start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        end_date=datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc),
+        start_date=datetime(2026, 1, 1, tzinfo=UTC),
+        end_date=datetime(2026, 12, 31, 23, 59, 59, tzinfo=UTC),
     )
     return ContractEntity(
         id=ContractId("c-1"),

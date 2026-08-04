@@ -10,7 +10,4 @@ from app.domain.value_objects.core import (
 
 
 class ClinicalNoteRepository(BaseRepository[ClinicalNote, ClinicalNoteId]):
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[ClinicalNote]:
-        ...
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[ClinicalNote]: ...

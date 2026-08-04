@@ -11,7 +11,6 @@ from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle dispatched via TransitionUseCase + IndustryTransition.
 
 

@@ -3,10 +3,12 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_contact_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_contact_repository,
+    pagination,
+)
 from app.api.schemas.contact_schemas import (
     ContactCreate,
     ContactListResponse,
@@ -22,13 +24,15 @@ from app.application.use_cases.transitions import (
     ContactTransition,
     TransitionUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.contact import ContactEntity
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
@@ -81,13 +85,7 @@ async def create_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_contact_response(contact)
 
 
@@ -117,13 +115,7 @@ async def update_contact(
         is_primary=data.is_primary,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 
@@ -142,16 +134,9 @@ async def activate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a contact."""
-    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
-    use_case.entity_name = "Contact"
+    use_case = TransitionUseCase(contact_repo, "Contact")
     contact = await use_case.execute(ContactId(contact_id), ContactTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 
@@ -170,16 +155,9 @@ async def deactivate_contact(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a contact."""
-    use_case: TransitionUseCase = TransitionUseCase(contact_repo)
-    use_case.entity_name = "Contact"
+    use_case = TransitionUseCase(contact_repo, "Contact")
     contact = await use_case.execute(ContactId(contact_id), ContactTransition.DEACTIVATE)
-    await audit_entity_operation(
-        entity=contact,
-        audit_handler=audit_handler,
-        tenant_id=contact.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
 
@@ -196,13 +174,11 @@ async def list_contacts(
     is_active: bool | None = Query(None, description="Filter by active status"),
     is_primary: bool | None = Query(None, description="Filter by primary status"),
     search: str | None = Query(None, description="Search in contact name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List contacts with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     contacts = await contact_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -210,8 +186,8 @@ async def list_contacts(
         is_active=is_active,
         is_primary=is_primary,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await contact_repo.count(
@@ -225,9 +201,9 @@ async def list_contacts(
     return ContactListResponse(
         items=[_to_contact_response(contact) for contact in contacts],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -274,6 +250,7 @@ async def get_primary_contact(
     if not contact:
         raise ValueError("Primary contact not found")
     return _to_contact_response(contact)
+
 
 @router.get(
     "/{contact_id}",

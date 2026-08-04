@@ -16,10 +16,10 @@ Idempotency:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
-from typing import Iterable
 
 from app.domain.enums import SessionStatus
 
@@ -51,9 +51,7 @@ class CanonicalMappings:
     service_codes: dict[str, str] = field(default_factory=dict[str, str])
     provider_codes: dict[str, str] = field(default_factory=dict[str, str])
     person_codes: dict[str, str] = field(default_factory=dict[str, str])
-    status_text: dict[str, SessionStatus] = field(
-        default_factory=dict[str, SessionStatus]
-    )
+    status_text: dict[str, SessionStatus] = field(default_factory=dict[str, SessionStatus])
 
 
 @dataclass(frozen=True)

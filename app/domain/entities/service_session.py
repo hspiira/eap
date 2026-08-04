@@ -6,11 +6,19 @@ Represents an individual service delivery session.
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from app.domain.value_objects.core import SessionId, TenantId, ServiceId, PersonId
-from app.domain.enums import SessionStatus, SessionType, SessionCategory, ClientType, SessionClinicalStatus
-from app.domain.events import DomainEvent, SessionCompleted, SessionCancelled, SessionRescheduled
+
+from app.domain.enums import (
+    ClientType,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
+from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
 from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
 from app.shared.utils.datetime import utc_now
+
 
 @dataclass
 class ServiceSessionEntity:
@@ -25,7 +33,7 @@ class ServiceSessionEntity:
     created_at: datetime
     updated_at: datetime
     reschedule_count: int
-    
+
     # Optional fields (with defaults)
     completed_at: datetime | None = None
     duration: int | None = None
@@ -37,22 +45,22 @@ class ServiceSessionEntity:
     deleted_at: datetime | None = None
 
     # Care Activity Log fields
-    session_type: SessionType | None = None          # Physical / Online
-    category: SessionCategory | None = None          # Individual / Group / Family / Couples
-    rate_ugx: int | None = None                      # Per-session rate in UGX
-    issue_topic: str | None = None                   # Presenting issue for this session (encrypted at rest)
-    diagnosis_type_id: str | None = None             # Ref to DiagnosisType.id
-    diagnosis_id: str | None = None                  # Ref to Diagnosis.id
-    approved_by: str | None = None                   # UserId who approved the session
-    session_number: int | None = None                # Ordinal session number for this client
-    partner_name: str | None = None                  # Couples/family partner (encrypted at rest)
-    partner_relationship: str | None = None          # Relationship of partner to primary client
-    headcount: int | None = None                     # Participant count for group sessions
-    client_type: ClientType | None = None            # New / Repeat
+    session_type: SessionType | None = None  # Physical / Online
+    category: SessionCategory | None = None  # Individual / Group / Family / Couples
+    rate_ugx: int | None = None  # Per-session rate in UGX
+    issue_topic: str | None = None  # Presenting issue for this session (encrypted at rest)
+    diagnosis_type_id: str | None = None  # Ref to DiagnosisType.id
+    diagnosis_id: str | None = None  # Ref to Diagnosis.id
+    approved_by: str | None = None  # UserId who approved the session
+    session_number: int | None = None  # Ordinal session number for this client
+    partner_name: str | None = None  # Couples/family partner (encrypted at rest)
+    partner_relationship: str | None = None  # Relationship of partner to primary client
+    headcount: int | None = None  # Participant count for group sessions
+    client_type: ClientType | None = None  # New / Repeat
     clinical_outcome: SessionClinicalStatus | None = None  # ToBeContinued / Referred / Completed
 
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
-    
+
     def complete(self, duration: int, notes: str | None = None) -> None:
         if self.status not in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED}:
             raise DomainError("Only scheduled sessions can be completed")
@@ -64,8 +72,10 @@ class ServiceSessionEntity:
         self.completed_at = utc_now()
         self.duration = duration
         self.notes = notes
-        self.events.append(SessionCompleted(occurred_at=utc_now(), session_id=self.id, person_id=self.person_id))
-    
+        self.events.append(
+            SessionCompleted(occurred_at=utc_now(), session_id=self.id, person_id=self.person_id)
+        )
+
     def cancel(self, reason: str) -> None:
         """Cancel a session"""
         if self.deleted_at:
@@ -77,8 +87,10 @@ class ServiceSessionEntity:
         self.status = SessionStatus.CANCELLED
         self.cancellation_reason = reason
         self.updated_at = utc_now()
-        self.events.append(SessionCancelled(occurred_at=utc_now(), session_id=self.id, reason=reason))
-    
+        self.events.append(
+            SessionCancelled(occurred_at=utc_now(), session_id=self.id, reason=reason)
+        )
+
     def reschedule(self, new_scheduled_at: datetime) -> None:
         """Reschedule a session"""
         if self.deleted_at:
@@ -91,8 +103,12 @@ class ServiceSessionEntity:
         self.scheduled_at = new_scheduled_at
         self.reschedule_count += 1
         self.updated_at = utc_now()
-        self.events.append(SessionRescheduled(occurred_at=utc_now(), session_id=self.id, new_scheduled_at=new_scheduled_at))
-    
+        self.events.append(
+            SessionRescheduled(
+                occurred_at=utc_now(), session_id=self.id, new_scheduled_at=new_scheduled_at
+            )
+        )
+
     def mark_no_show(self) -> None:
         """Mark a session as no-show"""
         if self.deleted_at:
@@ -101,7 +117,7 @@ class ServiceSessionEntity:
             raise DomainError("Cannot mark completed or finalized session as no-show")
         self.status = SessionStatus.NO_SHOW
         self.updated_at = utc_now()
-    
+
     def update_location(self, location: str | None) -> None:
         """Update session location"""
         if self.deleted_at:
@@ -110,14 +126,14 @@ class ServiceSessionEntity:
             raise DomainError("Cannot update location for completed or cancelled session")
         self.location = location
         self.updated_at = utc_now()
-    
+
     def update_notes(self, notes: str | None) -> None:
         """Update session notes"""
         if self.deleted_at:
             raise DomainError("Cannot update notes for deleted session")
         self.notes = notes
         self.updated_at = utc_now()
-    
+
     def update_feedback(self, feedback: str | None) -> None:
         """Update session feedback"""
         if self.deleted_at:
@@ -126,7 +142,7 @@ class ServiceSessionEntity:
             raise DomainError("Feedback can only be added to completed sessions")
         self.feedback = feedback
         self.updated_at = utc_now()
-    
+
     def archive(self) -> None:
         """Archive a session"""
         if self.deleted_at:
@@ -134,14 +150,14 @@ class ServiceSessionEntity:
         # Archive is a soft delete operation
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
-    
+
     def restore(self) -> None:
         """Restore an archived session"""
         if not self.deleted_at:
             raise DomainError("Session is not archived and does not need restoration")
         self.deleted_at = None
         self.updated_at = utc_now()
-    
+
     def set_session_type(self, session_type: SessionType) -> None:
         if self.deleted_at:
             raise DomainError("Cannot update deleted session")
@@ -214,7 +230,10 @@ class ServiceSessionEntity:
 
     def is_active(self) -> bool:
         """Check if session is active (scheduled or rescheduled)"""
-        return self.status in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED} and self.deleted_at is None
+        return (
+            self.status in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED}
+            and self.deleted_at is None
+        )
 
     # === Public Properties ===
 

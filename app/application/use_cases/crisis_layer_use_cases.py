@@ -156,9 +156,7 @@ class RecordRiskAssessmentUseCase:
         questionnaire_response_ids: tuple[str, ...] = (),
     ) -> RiskAssessment:
         if case_id is None and crisis_contact_id is None:
-            raise DomainError(
-                "Risk assessment must be linked to a case or crisis contact"
-            )
+            raise DomainError("Risk assessment must be linked to a case or crisis contact")
         now = utc_now()
         assessment = RiskAssessment(
             id=RiskAssessmentId(generate_cuid()),
@@ -278,13 +276,9 @@ class SubmitMandatoryReportUseCase:
                 resource_id=risk_assessment_id.value,
             )
         if not risk.requires_mandatory_report:
-            raise DomainError(
-                "Underlying risk assessment does not require a mandatory report"
-            )
+            raise DomainError("Underlying risk assessment does not require a mandatory report")
         if risk.tenant_id != tenant_id:
-            raise DomainError(
-                "Risk assessment tenant does not match the submitting tenant"
-            )
+            raise DomainError("Risk assessment tenant does not match the submitting tenant")
         now = utc_now()
         report = MandatoryReport(
             id=MandatoryReportId(generate_cuid()),
@@ -337,12 +331,8 @@ class ScheduleCaringContactsUseCase:
                 resource_id=crisis_contact_id.value,
             )
         if contact.clinical_subject_id is None:
-            raise DomainError(
-                "Cannot schedule caring contacts without a clinical subject"
-            )
-        existing = await self._caring.list_for_subject(
-            tenant_id, contact.clinical_subject_id
-        )
+            raise DomainError("Cannot schedule caring contacts without a clinical subject")
+        existing = await self._caring.list_for_subject(tenant_id, contact.clinical_subject_id)
         for c in existing:
             if c.crisis_contact_id == crisis_contact_id:
                 return [c for c in existing if c.crisis_contact_id == crisis_contact_id]
@@ -386,8 +376,6 @@ class RecordCaringContactOutcomeUseCase:
                 resource_type="CaringContact",
                 resource_id=caring_contact_id.value,
             )
-        contact.record_outcome(
-            outcome=outcome, handled_by=handled_by, notes=notes
-        )
+        contact.record_outcome(outcome=outcome, handled_by=handled_by, notes=notes)
         await self._repo.save(contact)
         return contact

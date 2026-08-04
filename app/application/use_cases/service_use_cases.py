@@ -12,7 +12,6 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle dispatched via TransitionUseCase + ServiceTransition.
 
 
@@ -129,8 +128,6 @@ class GetServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         """Get service by ID."""
         return await self.repository.get_by_id(service_id)
 
-    async def execute_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ServiceEntity | None:
+    async def execute_by_name(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
         """Get service by name within a tenant."""
         return await self.service_repository.get_by_name(tenant_id, name)

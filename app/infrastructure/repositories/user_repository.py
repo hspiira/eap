@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import func, select, update
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import UserStatus
+from app.domain.enums import AccessScope, UserStatus
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.mappers.user_mapper import UserMapper
@@ -75,20 +75,27 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
         tenant_id: TenantId,
         status: UserStatus | None = None,
         is_email_verified: bool | None = None,
+        is_two_factor_enabled: bool | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = "created_at",
         sort_desc: bool = True,
+        access_scope: AccessScope | None = None,
     ) -> Sequence[UserEntity]:
         """List users with filtering, searching, and pagination."""
         # Build filters dict for base class
         filters: dict[str, Any] = {}
         if status:
             filters["status"] = status
+        if is_two_factor_enabled is not None:
+            filters["is_two_factor_enabled"] = is_two_factor_enabled
 
-        # Use base class for common functionality
-        entities = await self._query_all(
+        # Verification is stored as a nullable timestamp, so it cannot go through
+        # the equality-based `filters` dict. It must still be applied in SQL: this
+        # filter used to run in Python over the already-paginated page, which
+        # returned fewer rows than `limit` and disagreed with `count()` below.
+        return await self._query_all(
             tenant_id=tenant_id.value,
             limit=limit,
             offset=offset,
@@ -97,26 +104,38 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
             filters=filters,
             search=search,
             search_fields=["email"],
+            extra_conditions=[
+                *self._verified_conditions(is_email_verified),
+                *self._access_scope_conditions(access_scope),
+            ],
         )
 
-        # Apply email verification filter (special case)
-        if is_email_verified is not None:
-            entities = [
-                e for e in entities
-                if e.is_email_verified == is_email_verified
-            ]
+    @staticmethod
+    def _verified_conditions(is_email_verified: bool | None) -> list[Any]:
+        """SQL conditions for the `is_email_verified` flag. Shared by list_all/count."""
+        if is_email_verified is None:
+            return []
+        if is_email_verified:
+            return [UserModel.email_verified_at.isnot(None)]
+        return [UserModel.email_verified_at.is_(None)]
 
-        return entities
+    @staticmethod
+    def _access_scope_conditions(access_scope: AccessScope | None) -> list[Any]:
+        """SQL condition for the `access_scope` filter. Shared by list_all/count."""
+        if access_scope is None:
+            return []
+        return [UserModel.access_scopes.contains([access_scope.value])]
 
     async def count(
         self,
         tenant_id: TenantId,
         status: UserStatus | None = None,
         is_email_verified: bool | None = None,
+        is_two_factor_enabled: bool | None = None,
         search: str | None = None,
+        access_scope: AccessScope | None = None,
     ) -> int:
-        """Count users matching filters."""
-        # For accurate count with email verification filter, use direct query
+        """Count users matching filters. Must mirror list_all's filters exactly."""
         stmt = select(func.count(UserModel.id)).where(
             UserModel.tenant_id == tenant_id.value,
             UserModel.deleted_at.is_(None),
@@ -124,11 +143,12 @@ class UserRepositoryImpl(TenantScopedRepositoryImpl[UserEntity, UserModel, UserI
 
         if status:
             stmt = stmt.where(UserModel.status == status)
-        if is_email_verified is not None:
-            if is_email_verified:
-                stmt = stmt.where(UserModel.email_verified_at.isnot(None))
-            else:
-                stmt = stmt.where(UserModel.email_verified_at.is_(None))
+        if is_two_factor_enabled is not None:
+            stmt = stmt.where(UserModel.is_two_factor_enabled == is_two_factor_enabled)
+        for condition in self._verified_conditions(is_email_verified):
+            stmt = stmt.where(condition)
+        for condition in self._access_scope_conditions(access_scope):
+            stmt = stmt.where(condition)
         if search:
             stmt = stmt.where(UserModel.email.ilike(f"%{search}%"))
 

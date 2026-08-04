@@ -121,9 +121,7 @@ class IngestSurveyResponseUseCase:
             )
         if not external_response_id:
             raise DomainError("external_response_id is required")
-        existing = await self._responses.find_by_external_id(
-            campaign_id, external_response_id
-        )
+        existing = await self._responses.find_by_external_id(campaign_id, external_response_id)
         if existing is not None:
             return existing, False
         now = utc_now()

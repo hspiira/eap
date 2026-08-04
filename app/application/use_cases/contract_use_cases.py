@@ -20,7 +20,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle / single-field updates dispatched via TransitionUseCase + ContractTransition.
 
 
@@ -115,6 +114,4 @@ class GetContractUseCase(BaseUseCase[ContractEntity, ContractId]):
         self, tenant_id: TenantId, client_id: ClientId
     ) -> ContractEntity | None:
         """Get active contract for a client."""
-        return await self.contract_repository.get_active_by_client_id(
-            tenant_id, client_id
-        )
+        return await self.contract_repository.get_active_by_client_id(tenant_id, client_id)

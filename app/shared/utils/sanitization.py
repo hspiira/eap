@@ -1,8 +1,9 @@
 """Input sanitization utilities."""
 
-import nh3
 import re
 from typing import Any, ClassVar
+
+import nh3
 
 
 class InputSanitizer:
@@ -65,20 +66,20 @@ class InputSanitizer:
     def sanitize_dict(cls, data: dict[str, Any], max_depth: int = 100) -> dict[str, Any]:
         """
         Recursively sanitize dictionary values.
-        
+
         Args:
             data: Dictionary to sanitize
             max_depth: Maximum recursion depth (default 100)
-            
+
         Returns:
             Sanitized dictionary
-            
+
         Raises:
             ValueError: If max_depth <= 0
         """
         if max_depth <= 0:
             raise ValueError("Maximum recursion depth exceeded or invalid max_depth")
-        
+
         sanitized = {}
 
         for key, value in data.items():
@@ -97,20 +98,20 @@ class InputSanitizer:
     def sanitize_list(cls, data: list[Any], max_depth: int = 100) -> list[Any]:
         """
         Recursively sanitize list values.
-        
+
         Args:
             data: List to sanitize
             max_depth: Maximum recursion depth (default 100)
-            
+
         Returns:
             Sanitized list
-            
+
         Raises:
             ValueError: If max_depth <= 0
         """
         if max_depth <= 0:
             raise ValueError("Maximum recursion depth exceeded or invalid max_depth")
-        
+
         sanitized = []
 
         for item in data:

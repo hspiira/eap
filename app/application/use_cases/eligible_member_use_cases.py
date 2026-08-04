@@ -23,8 +23,8 @@ from app.domain.services.pseudonymisation import generate_pseudonym
 from app.domain.value_objects.core import (
     ClientId,
     ClinicalSubjectId,
-    Email,
     EligibleMemberId,
+    Email,
     TenantId,
     UserId,
 )

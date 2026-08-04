@@ -10,13 +10,13 @@ from typing import Any
 
 from sqlalchemy import select
 
-from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
+from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
+from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
 from app.infrastructure.mappers.kpi_mapper import (
     KPIAssignmentMapper,
     KPIMapper,
@@ -51,9 +51,7 @@ class KPIRepositoryImpl(TenantScopedRepositoryImpl[KPIEntity, KPIModel, KPIId], 
         """Extract raw ID value."""
         return entity_id.value
 
-    async def get_by_name(
-        self, name: str, tenant_id: TenantId
-    ) -> KPIEntity | None:
+    async def get_by_name(self, name: str, tenant_id: TenantId) -> KPIEntity | None:
         """Get KPI by name within tenant, excluding soft-deleted KPIs."""
         stmt = select(KPIModel).where(
             KPIModel.name == name,
@@ -118,7 +116,10 @@ class KPIRepositoryImpl(TenantScopedRepositoryImpl[KPIEntity, KPIModel, KPIId], 
         )
 
 
-class KPIAssignmentRepositoryImpl(TenantScopedRepositoryImpl[KPIAssignmentEntity, KPIAssignmentModel, KPIAssignmentId], KPIAssignmentRepository):
+class KPIAssignmentRepositoryImpl(
+    TenantScopedRepositoryImpl[KPIAssignmentEntity, KPIAssignmentModel, KPIAssignmentId],
+    KPIAssignmentRepository,
+):
     """
     SQLAlchemy implementation of KPIAssignmentRepository.
 

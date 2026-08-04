@@ -60,9 +60,7 @@ class FitnessForDuty:
 
     def __post_init__(self) -> None:
         if not self.business_necessity_rationale:
-            raise DomainError(
-                "FitnessForDuty requires a business-necessity rationale"
-            )
+            raise DomainError("FitnessForDuty requires a business-necessity rationale")
         if not self.job_role_summary:
             raise DomainError("FitnessForDuty requires a job_role_summary")
         if self.created_at == self.updated_at and not self.events:
@@ -93,9 +91,7 @@ class FitnessForDuty:
             outcome == FitnessForDutyOutcome.FIT_WITH_RESTRICTIONS
             and not accommodation_recommendations
         ):
-            raise DomainError(
-                "FitWithRestrictions requires accommodation_recommendations"
-            )
+            raise DomainError("FitWithRestrictions requires accommodation_recommendations")
         now = now or utc_now()
         self.outcome = outcome
         self.assessor_id = assessor_id
@@ -157,9 +153,7 @@ class ReturnToWorkPlan:
 
     def __post_init__(self) -> None:
         if not self.accommodations:
-            raise DomainError(
-                "ReturnToWorkPlan requires at least one accommodation"
-            )
+            raise DomainError("ReturnToWorkPlan requires at least one accommodation")
         if self.ends_on is not None and self.ends_on < self.starts_on:
             raise DomainError("ends_on cannot precede starts_on")
 
@@ -177,43 +171,31 @@ class ReturnToWorkPlan:
         now: datetime | None = None,
     ) -> None:
         if self.status != ReturnToWorkPlanStatus.DRAFT:
-            raise InvalidStateError(
-                f"Cannot activate a {self.status.value} plan"
-            )
+            raise InvalidStateError(f"Cannot activate a {self.status.value} plan")
         if employer_signoff_user_id == clinician_signoff_user_id:
-            raise DomainError(
-                "Employer and clinician sign-off must come from different users"
-            )
+            raise DomainError("Employer and clinician sign-off must come from different users")
         now = now or utc_now()
         self.status = ReturnToWorkPlanStatus.ACTIVE
         self.activated_at = now
         self.employer_signoff_user_id = employer_signoff_user_id
         self.clinician_signoff_user_id = clinician_signoff_user_id
         self.updated_at = now
-        self.events.append(
-            ReturnToWorkPlanActivated(occurred_at=now, plan_id=self.id)
-        )
+        self.events.append(ReturnToWorkPlanActivated(occurred_at=now, plan_id=self.id))
 
     def complete(self, *, now: datetime | None = None) -> None:
         if self.status != ReturnToWorkPlanStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot complete a {self.status.value} plan"
-            )
+            raise InvalidStateError(f"Cannot complete a {self.status.value} plan")
         now = now or utc_now()
         self.status = ReturnToWorkPlanStatus.COMPLETED
         self.completed_at = now
         self.updated_at = now
-        self.events.append(
-            ReturnToWorkPlanCompleted(occurred_at=now, plan_id=self.id)
-        )
+        self.events.append(ReturnToWorkPlanCompleted(occurred_at=now, plan_id=self.id))
 
     def cancel(self, *, reason: str, now: datetime | None = None) -> None:
         if not reason:
             raise DomainError("Cancellation requires a reason")
         if self.is_terminal():
-            raise InvalidStateError(
-                f"Cannot cancel a {self.status.value} plan"
-            )
+            raise InvalidStateError(f"Cannot cancel a {self.status.value} plan")
         now = now or utc_now()
         self.status = ReturnToWorkPlanStatus.CANCELLED
         self.cancelled_at = now

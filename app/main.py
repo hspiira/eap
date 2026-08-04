@@ -31,15 +31,17 @@ configure_logging(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 
-async def _validate_active_user(request: Request, token_data: "TokenData") -> None:
+async def _validate_active_user(request: Request, token_data: TokenData) -> None:
     """Validate that user and tenant exist and are active. Raises HTTP 401 if not."""
     from fastapi import HTTPException
     from starlette import status
+
     from app.core.database import AsyncSessionLocal
-    from app.infrastructure.repositories.user_repository import UserRepositoryImpl
-    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
-    from app.domain.value_objects.core import UserId, TenantId
     from app.domain.enums import TenantStatus
+    from app.domain.value_objects.core import TenantId, UserId
+    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+    from app.infrastructure.repositories.user_repository import UserRepositoryImpl
+
     async with AsyncSessionLocal() as session:
         user_repo = UserRepositoryImpl(session)
         tenant_repo = TenantRepositoryImpl(session)
@@ -64,6 +66,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     from app.core.login_rate_limit import get_login_rate_limit_backend
+
     app.state.login_rate_limit_backend = get_login_rate_limit_backend(
         settings.LOGIN_RATE_LIMIT_BACKEND,
         settings.REDIS_URL or "",
@@ -73,10 +76,12 @@ async def lifespan(app: FastAPI):
     else:
         app.state.validate_active_user = None
     from app.shared.events.handlers import register_default_handlers
+
     register_default_handlers()
     logger.info("Event handlers registered")
     yield
     from app.shared.events.event_bus import event_bus
+
     event_bus.clear_handlers()
     logger.info(f"Shutting down {settings.APP_NAME}")
 
@@ -133,4 +138,5 @@ async def metrics(request: Request):
     Returns JSON. For Prometheus, use an exporter or sidecar that consumes this.
     """
     from app.shared.middleware.metrics import get_metrics
+
     return get_metrics(request.app.state)

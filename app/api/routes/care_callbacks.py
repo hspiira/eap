@@ -4,9 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_care_callback_campaign_repository,
     get_outreach_record_repository,
+    pagination,
 )
 from app.api.schemas.care_callback_schemas import (
     CampaignSummaryResponse,
@@ -30,8 +32,6 @@ from app.application.use_cases.care_callback_use_cases import (
     GetCampaignSummaryUseCase,
     ScoreAndRecordTriageUseCase,
 )
-from app.domain.enums import StageOfChange, TriageInstrumentCode
-from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.application.use_cases.transitions import (
     CareCallbackCampaignTransition,
     OutreachTransition,
@@ -42,10 +42,12 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.care_callback_campaign import CareCallbackCampaign
 from app.domain.entities.outreach_record import OutreachRecord
+from app.domain.enums import StageOfChange, TriageInstrumentCode
 from app.domain.repositories.care_callback_repository import (
     CareCallbackCampaignRepository,
     OutreachRecordRepository,
 )
+from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,
@@ -56,7 +58,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["care-callbacks"])
 
@@ -118,9 +120,7 @@ async def create_campaign(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -136,13 +136,7 @@ async def create_campaign(
         created_by=UserId(current_user.user_id),
         sampling_notes=data.sampling_notes,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -156,25 +150,16 @@ async def activate_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CareCallbackCampaign"
+    use_case = TransitionUseCase(repo, "CareCallbackCampaign")
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.ACTIVATE,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -188,25 +173,16 @@ async def complete_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CareCallbackCampaign"
+    use_case = TransitionUseCase(repo, "CareCallbackCampaign")
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.COMPLETE,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -220,25 +196,16 @@ async def archive_campaign(
     campaign_id: str,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CareCallbackCampaign"
+    use_case = TransitionUseCase(repo, "CareCallbackCampaign")
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.ARCHIVE,
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -253,26 +220,17 @@ async def update_counsellor_pool(
     data: CounsellorPoolUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "CareCallbackCampaign"
+    use_case = TransitionUseCase(repo, "CareCallbackCampaign")
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.UPDATE_COUNSELLOR_POOL,
         pool=tuple(PersonId(p) for p in data.counsellor_pool),
     )
-    await audit_entity_operation(
-        entity=campaign,
-        audit_handler=audit_handler,
-        tenant_id=campaign.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
 
@@ -284,9 +242,7 @@ async def update_counsellor_pool(
 @readonly()
 async def get_campaign(
     campaign_id: str,
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
     campaign = await repo.get_by_id(CareCallbackCampaignId(campaign_id))
@@ -303,9 +259,7 @@ async def get_campaign(
 @readonly()
 async def campaign_summary(
     campaign_id: str,
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -323,18 +277,12 @@ async def campaign_summary(
 @readonly()
 async def list_campaigns(
     tenant_id: str = Query(..., description="Tenant identifier"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    pg: PageParams = Depends(pagination()),
     current_user: TokenData = Depends(require_same_tenant),
-    repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    offset = (page - 1) * limit
-    campaigns = await repo.list_for_tenant(
-        TenantId(tenant_id), limit=limit, offset=offset
-    )
+    campaigns = await repo.list_for_tenant(TenantId(tenant_id), limit=pg.limit, offset=pg.offset)
     return [_to_campaign_response(c) for c in campaigns]
 
 
@@ -353,15 +301,11 @@ async def enrol_persons(
     data: EnrolPersonsRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    campaign_repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    records = await EnrolPersonsInCampaignUseCase(
-        campaign_repo, outreach_repo
-    ).execute(
+    records = await EnrolPersonsInCampaignUseCase(campaign_repo, outreach_repo).execute(
         campaign_id=CareCallbackCampaignId(campaign_id),
         person_ids=[PersonId(p) for p in data.person_ids],
     )
@@ -383,20 +327,13 @@ async def assign_outreach(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.ASSIGN,
         counsellor_id=PersonId(data.counsellor_id),
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -414,18 +351,11 @@ async def record_attempt(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id), OutreachTransition.RECORD_ATTEMPT
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -444,8 +374,7 @@ async def record_triage(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.RECORD_TRIAGE,
@@ -456,13 +385,7 @@ async def record_triage(
         crisis_flag=data.crisis_flag,
         crisis_reason=data.crisis_reason,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -547,13 +470,7 @@ async def score_and_record_triage(
         instrument_code=data.instrument_code,
         responses=data.responses,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     stage_value = scored.derived.get("stage_of_change")
     return TriageScoreResponse(
         instrument_code=scored.instrument_code,
@@ -582,20 +499,13 @@ async def complete_outreach(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.COMPLETE,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -614,20 +524,13 @@ async def mark_unreachable(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.MARK_UNREACHABLE,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -646,20 +549,13 @@ async def mark_declined(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.MARK_DECLINED,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -678,20 +574,13 @@ async def escalate_outreach(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case: TransitionUseCase = TransitionUseCase(repo)
-    use_case.entity_name = "OutreachRecord"
+    use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.ESCALATE,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=record,
-        audit_handler=audit_handler,
-        tenant_id=record.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
 
 
@@ -720,22 +609,18 @@ async def get_outreach(
 @readonly()
 async def list_campaign_outreach(
     campaign_id: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
-    campaign_repo: CareCallbackCampaignRepository = Depends(
-        get_care_callback_campaign_repository
-    ),
+    pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
+    campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
     campaign = await campaign_repo.get_by_id(CareCallbackCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Care Callback campaign not found")
-    offset = (page - 1) * limit
     records = await outreach_repo.list_for_campaign(
         campaign.tenant_id,
         campaign.id,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
     return [_to_outreach_response(r) for r in records]

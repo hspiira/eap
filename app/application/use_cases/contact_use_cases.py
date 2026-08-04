@@ -6,7 +6,6 @@ from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, Email, TenantId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle dispatched via TransitionUseCase + ContactTransition.
 
 

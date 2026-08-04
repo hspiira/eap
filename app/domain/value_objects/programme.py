@@ -25,17 +25,13 @@ class ProgrammeSessionCap:
         if self.per_issue_per_year < 0:
             raise DomainError("per_issue_per_year cannot be negative")
         if self.per_year is not None and self.per_year < self.per_issue_per_year:
-            raise DomainError(
-                "per_year cannot be less than per_issue_per_year"
-            )
+            raise DomainError("per_year cannot be less than per_issue_per_year")
         if (
             self.per_household_per_year is not None
             and self.per_year is not None
             and self.per_household_per_year < self.per_year
         ):
-            raise DomainError(
-                "per_household_per_year cannot be less than per_year"
-            )
+            raise DomainError("per_household_per_year cannot be less than per_year")
 
     def as_dict(self) -> dict[str, int | str | None]:
         return {

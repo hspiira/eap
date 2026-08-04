@@ -46,13 +46,9 @@ class AuditEventHandler:
             action_type = map_domain_event_to_audit_action(type(event).__name__)
             field_changes: list[dict[str, Any]] = []
             if action_type.value == "CREATE":
-                field_changes = [
-                    fc.__dict__ for fc in extract_field_changes(None, entity)
-                ]
+                field_changes = [fc.__dict__ for fc in extract_field_changes(None, entity)]
             elif action_type.value == "UPDATE" and old_entity is not None:
-                field_changes = [
-                    fc.__dict__ for fc in extract_field_changes(old_entity, entity)
-                ]
+                field_changes = [fc.__dict__ for fc in extract_field_changes(old_entity, entity)]
 
             event_type_name = type(event).__name__
             payload = {

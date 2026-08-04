@@ -7,6 +7,8 @@ Comprehensive tests for all service assignment endpoints covering:
 - Service-contract relationships
 """
 
+from datetime import UTC
+
 import pytest
 from httpx import AsyncClient
 
@@ -161,7 +163,7 @@ class TestServiceAssignmentIntegration:
 
     async def test_assignment_crud_flow(self, client: AsyncClient):
         """Test complete service assignment CRUD flow."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         # Create tenant
         tenant_resp = await client.post(
@@ -196,8 +198,8 @@ class TestServiceAssignmentIntegration:
         await client.post(f"/clients/{client_id}/activate")
 
         # Create contract
-        start_date = datetime.now(timezone.utc).isoformat()
-        end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
         contract_resp = await client.post(
             f"/contracts/?tenant_id={tenant_id}",
             json={

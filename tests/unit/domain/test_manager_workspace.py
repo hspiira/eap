@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime, timedelta
 
-from app.shared.utils.datetime import utc_now
-
 import pytest
 
 from app.domain.entities.manager_workspace import (
@@ -39,6 +37,7 @@ from app.domain.value_objects.core import (
     WorkLifeProviderId,
     WorkLifeReferralId,
 )
+from app.shared.utils.datetime import utc_now
 
 
 def _consult(**overrides) -> ManagerConsult:
@@ -72,9 +71,7 @@ class TestManagerConsult:
         c.events.clear()
         c.attach_referral(CaseId("case-1"))
         assert c.triggered_referral_case_id == CaseId("case-1")
-        assert any(
-            isinstance(e, ManagerConsultReferralFiled) for e in c.events
-        )
+        assert any(isinstance(e, ManagerConsultReferralFiled) for e in c.events)
 
     def test_cannot_attach_referral_after_close(self):
         c = _consult()
@@ -193,9 +190,7 @@ class TestTrainingEnrolment:
         t.mark_completed(expires_on=utc_now().date() + timedelta(days=365))
         assert t.status == TrainingEnrolmentStatus.COMPLETED
         assert t.completed_at is not None
-        assert any(
-            isinstance(e, TrainingEnrolmentCompleted) for e in t.events
-        )
+        assert any(isinstance(e, TrainingEnrolmentCompleted) for e in t.events)
 
     def test_mark_expired_idempotent(self):
         t = _enrolment()

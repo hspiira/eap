@@ -38,10 +38,6 @@ class CriticalIncidentModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         default=CriticalIncidentStatus.OPEN,
         index=True,
     )
-    phases: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=False, server_default="[]"
-    )
+    phases: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, server_default="[]")
     after_action_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    closed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

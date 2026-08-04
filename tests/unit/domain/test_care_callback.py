@@ -29,7 +29,6 @@ from app.domain.value_objects.core import (
     UserId,
 )
 
-
 # ---------- Campaign helpers ----------
 
 
@@ -177,9 +176,7 @@ class TestCampaignFSM:
 # ---------- Outreach helpers ----------
 
 
-def _outreach(
-    *, status: OutreachStatus = OutreachStatus.PENDING
-) -> OutreachRecord:
+def _outreach(*, status: OutreachStatus = OutreachStatus.PENDING) -> OutreachRecord:
     now = datetime.now(UTC)
     return OutreachRecord(
         id=OutreachRecordId("o-1"),

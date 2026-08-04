@@ -69,9 +69,7 @@ class EAPProgrammeMapper:
             geographic_scope=entity.geographic_scope,
             description=entity.description,
             caps=[c.as_dict() for c in entity.caps],
-            eligible_dependent_relations=[
-                r.value for r in entity.eligible_dependent_relations
-            ],
+            eligible_dependent_relations=[r.value for r in entity.eligible_dependent_relations],
             is_active=entity.is_active,
             created_by=entity.created_by.value if entity.created_by else None,
             created_at=ensure_utc(entity.created_at),
@@ -107,9 +105,7 @@ class AuthorizationMapper:
             extension_admin_signoff=UserId(model.extension_admin_signoff)
             if model.extension_admin_signoff
             else None,
-            extended_at=ensure_utc(model.extended_at)
-            if model.extended_at
-            else None,
+            extended_at=ensure_utc(model.extended_at) if model.extended_at else None,
             closed_at=ensure_utc(model.closed_at) if model.closed_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -144,9 +140,7 @@ class AuthorizationMapper:
             extension_admin_signoff=entity.extension_admin_signoff.value
             if entity.extension_admin_signoff
             else None,
-            extended_at=ensure_utc(entity.extended_at)
-            if entity.extended_at
-            else None,
+            extended_at=ensure_utc(entity.extended_at) if entity.extended_at else None,
             closed_at=ensure_utc(entity.closed_at) if entity.closed_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),

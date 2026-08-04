@@ -7,7 +7,6 @@ from app.domain.repositories.service_assignment_repository import ServiceAssignm
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
-
 # Lifecycle dispatched via TransitionUseCase + ServiceAssignmentTransition.
 
 

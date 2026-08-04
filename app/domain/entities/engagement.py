@@ -54,9 +54,7 @@ class Deliverable:
 
     def start(self) -> None:
         if self.status != DeliverableStatus.PENDING:
-            raise InvalidStateError(
-                f"Cannot start a {self.status.value} deliverable"
-            )
+            raise InvalidStateError(f"Cannot start a {self.status.value} deliverable")
         self.status = DeliverableStatus.IN_PROGRESS
 
     def deliver(self, *, when: datetime | None = None) -> None:
@@ -64,17 +62,13 @@ class Deliverable:
             DeliverableStatus.PENDING,
             DeliverableStatus.IN_PROGRESS,
         }:
-            raise InvalidStateError(
-                f"Cannot deliver a {self.status.value} deliverable"
-            )
+            raise InvalidStateError(f"Cannot deliver a {self.status.value} deliverable")
         self.status = DeliverableStatus.DELIVERED
         self.delivered_at = when or utc_now()
 
     def accept(self) -> None:
         if self.status != DeliverableStatus.DELIVERED:
-            raise InvalidStateError(
-                f"Cannot accept a {self.status.value} deliverable"
-            )
+            raise InvalidStateError(f"Cannot accept a {self.status.value} deliverable")
         self.status = DeliverableStatus.ACCEPTED
 
 
@@ -121,11 +115,7 @@ class Engagement:
     def __post_init__(self) -> None:
         if not self.name:
             raise DomainError("Engagement requires a name")
-        if (
-            self.period_start
-            and self.period_end
-            and self.period_end < self.period_start
-        ):
+        if self.period_start and self.period_end and self.period_end < self.period_start:
             raise DomainError("period_end must be on or after period_start")
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
@@ -149,9 +139,7 @@ class Engagement:
         due_date: date | None = None,
     ) -> Deliverable:
         if not self._is_open():
-            raise InvalidStateError(
-                f"Cannot add deliverables to a {self.status.value} engagement"
-            )
+            raise InvalidStateError(f"Cannot add deliverables to a {self.status.value} engagement")
         d = Deliverable(
             id=deliverable_id,
             title=title,
@@ -168,9 +156,7 @@ class Engagement:
                 f"Cannot remove deliverables from a {self.status.value} engagement"
             )
         before = len(self.deliverables)
-        self.deliverables = [
-            d for d in self.deliverables if d.id != deliverable_id
-        ]
+        self.deliverables = [d for d in self.deliverables if d.id != deliverable_id]
         if len(self.deliverables) == before:
             raise DomainError(f"Deliverable not found: {deliverable_id.value}")
         self.updated_at = utc_now()
@@ -199,9 +185,7 @@ class Engagement:
         elif status == DeliverableStatus.ACCEPTED:
             d.accept()
         else:
-            raise DomainError(
-                f"Use add_deliverable to set initial status; got {status.value}"
-            )
+            raise DomainError(f"Use add_deliverable to set initial status; got {status.value}")
         self.updated_at = utc_now()
         return d
 
@@ -246,24 +230,18 @@ class Engagement:
 
     def activate(self, now: datetime | None = None) -> None:
         if self.status != EngagementStatus.DRAFT:
-            raise InvalidStateError(
-                f"Cannot activate an engagement in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot activate an engagement in status {self.status.value}")
         if not self.deliverables:
             raise DomainError("Cannot activate an engagement with no deliverables")
         now = now or utc_now()
         self.status = EngagementStatus.ACTIVE
         self.activated_at = now
         self.updated_at = now
-        self.events.append(
-            EngagementActivated(occurred_at=now, engagement_id=self.id)
-        )
+        self.events.append(EngagementActivated(occurred_at=now, engagement_id=self.id))
 
     def deliver(self, now: datetime | None = None) -> None:
         if self.status != EngagementStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot mark delivered from status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot mark delivered from status {self.status.value}")
         outstanding = [
             d
             for d in self.deliverables
@@ -278,32 +256,22 @@ class Engagement:
         self.status = EngagementStatus.DELIVERED
         self.delivered_at = now
         self.updated_at = now
-        self.events.append(
-            EngagementDelivered(occurred_at=now, engagement_id=self.id)
-        )
+        self.events.append(EngagementDelivered(occurred_at=now, engagement_id=self.id))
 
     def invoice(self, now: datetime | None = None) -> None:
         if self.status != EngagementStatus.DELIVERED:
-            raise InvalidStateError(
-                f"Cannot invoice an engagement in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot invoice an engagement in status {self.status.value}")
         now = now or utc_now()
         self.status = EngagementStatus.INVOICED
         self.invoiced_at = now
         self.updated_at = now
-        self.events.append(
-            EngagementInvoiced(occurred_at=now, engagement_id=self.id)
-        )
+        self.events.append(EngagementInvoiced(occurred_at=now, engagement_id=self.id))
 
     def close(self, now: datetime | None = None) -> None:
         if self.status != EngagementStatus.INVOICED:
-            raise InvalidStateError(
-                f"Cannot close an engagement in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot close an engagement in status {self.status.value}")
         now = now or utc_now()
         self.status = EngagementStatus.CLOSED
         self.closed_at = now
         self.updated_at = now
-        self.events.append(
-            EngagementClosed(occurred_at=now, engagement_id=self.id)
-        )
+        self.events.append(EngagementClosed(occurred_at=now, engagement_id=self.id))

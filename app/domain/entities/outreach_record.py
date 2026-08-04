@@ -25,7 +25,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 _TERMINAL_STATUSES = {
     OutreachStatus.COMPLETED,
     OutreachStatus.UNREACHABLE,
@@ -84,9 +83,7 @@ class OutreachRecord:
     def record_attempt(self, now: datetime | None = None) -> None:
         """Counsellor tried to reach the person; bumps contact_attempts."""
         if self.status in _TERMINAL_STATUSES:
-            raise InvalidStateError(
-                f"Cannot record attempt in terminal status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot record attempt in terminal status {self.status.value}")
         if self.status == OutreachStatus.PENDING:
             raise InvalidStateError("Outreach must be assigned before contact attempts")
         now = now or utc_now()
@@ -109,9 +106,7 @@ class OutreachRecord:
     ) -> None:
         """Attach triage payload + computed risk/crisis classification."""
         if self.status in _TERMINAL_STATUSES:
-            raise InvalidStateError(
-                f"Cannot record triage in terminal status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot record triage in terminal status {self.status.value}")
         if not instrument_code:
             raise DomainError("Triage requires an instrument code")
         now = now or utc_now()
@@ -154,9 +149,7 @@ class OutreachRecord:
         now: datetime | None,
     ) -> None:
         if self.status in _TERMINAL_STATUSES:
-            raise InvalidStateError(
-                f"Outreach is already in terminal status {self.status.value}"
-            )
+            raise InvalidStateError(f"Outreach is already in terminal status {self.status.value}")
         if self.status == OutreachStatus.PENDING:
             raise InvalidStateError("Cannot terminate a pending outreach without assignment")
         now = now or utc_now()

@@ -137,9 +137,7 @@ class TestCreateClient:
 class TestGetClient:
     """Tests for GET /clients/{client_id} endpoint."""
 
-    async def test_get_client_by_id_success(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_get_client_by_id_success(self, client: AsyncClient, test_client: dict):
         """Test getting a client by ID."""
         client_id = test_client["id"]
 
@@ -150,9 +148,7 @@ class TestGetClient:
         assert data["id"] == client_id
         assert data["name"] == test_client["name"]
 
-    async def test_get_client_not_found(
-        self, client: AsyncClient, client_test_tenant: dict
-    ):
+    async def test_get_client_not_found(self, client: AsyncClient, client_test_tenant: dict):
         """Test getting a non-existent client returns 404."""
         response = await client.get("/clients/nonexistent-id-12345")
 
@@ -170,9 +166,7 @@ class TestGetClientByName:
         tenant_id = client_test_tenant["id"]
         name = test_client["name"]
 
-        response = await client.get(
-            f"/clients/name/{name}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/name/{name}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -184,9 +178,7 @@ class TestGetClientByName:
         """Test getting a non-existent client by name returns 404."""
         tenant_id = client_test_tenant["id"]
 
-        response = await client.get(
-            f"/clients/name/NonExistentCompany?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/name/NonExistentCompany?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -194,15 +186,11 @@ class TestGetClientByName:
 class TestCheckNameAvailability:
     """Tests for GET /clients/check-name/{name} endpoint."""
 
-    async def test_check_available_name(
-        self, client: AsyncClient, client_test_tenant: dict
-    ):
+    async def test_check_available_name(self, client: AsyncClient, client_test_tenant: dict):
         """Test checking an available name."""
         tenant_id = client_test_tenant["id"]
 
-        response = await client.get(
-            f"/clients/check-name/UniqueNewName?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/check-name/UniqueNewName?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -216,9 +204,7 @@ class TestCheckNameAvailability:
         tenant_id = client_test_tenant["id"]
         name = test_client["name"]
 
-        response = await client.get(
-            f"/clients/check-name/{name}?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/check-name/{name}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -239,9 +225,7 @@ class TestListClients:
 
         assert response.status_code == 422
 
-    async def test_list_clients_empty(
-        self, client: AsyncClient, client_test_tenant: dict
-    ):
+    async def test_list_clients_empty(self, client: AsyncClient, client_test_tenant: dict):
         """Test listing clients when none exist (besides fixture)."""
         # Create a new tenant with no clients
         new_tenant = await client.post(
@@ -276,9 +260,7 @@ class TestListClients:
         """Test client list pagination."""
         tenant_id = client_test_tenant["id"]
 
-        response = await client.get(
-            f"/clients/?tenant_id={tenant_id}&page=1&limit=1"
-        )
+        response = await client.get(f"/clients/?tenant_id={tenant_id}&page=1&limit=1")
 
         assert response.status_code == 200
         data = response.json()
@@ -287,15 +269,17 @@ class TestListClients:
         assert data["limit"] == 1
 
     async def test_list_clients_filter_by_status(
-        self, client: AsyncClient, client_test_tenant: dict, test_client: dict, test_client_active: dict
+        self,
+        client: AsyncClient,
+        client_test_tenant: dict,
+        test_client: dict,
+        test_client_active: dict,
     ):
         """Test filtering clients by status."""
         tenant_id = client_test_tenant["id"]
 
         # Filter by Active status
-        response = await client.get(
-            f"/clients/?tenant_id={tenant_id}&status=Active"
-        )
+        response = await client.get(f"/clients/?tenant_id={tenant_id}&status=Active")
         data = response.json()
 
         assert response.status_code == 200
@@ -308,9 +292,7 @@ class TestListClients:
         tenant_id = client_test_tenant["id"]
 
         # Filter by not verified
-        response = await client.get(
-            f"/clients/?tenant_id={tenant_id}&is_verified=false"
-        )
+        response = await client.get(f"/clients/?tenant_id={tenant_id}&is_verified=false")
         data = response.json()
 
         assert response.status_code == 200
@@ -323,9 +305,7 @@ class TestListClients:
         tenant_id = client_test_tenant["id"]
         search_term = test_client["name"][:4]
 
-        response = await client.get(
-            f"/clients/?tenant_id={tenant_id}&search={search_term}"
-        )
+        response = await client.get(f"/clients/?tenant_id={tenant_id}&search={search_term}")
 
         assert response.status_code == 200
         data = response.json()
@@ -347,23 +327,17 @@ class TestVerifyClient:
         client_id = test_client["id"]
         verifier_id = verifier_user["id"]
 
-        response = await client.post(
-            f"/clients/{client_id}/verify?verified_by={verifier_id}"
-        )
+        response = await client.post(f"/clients/{client_id}/verify?verified_by={verifier_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["is_verified"] is True
 
-    async def test_verify_client_not_found(
-        self, client: AsyncClient, verifier_user: dict
-    ):
+    async def test_verify_client_not_found(self, client: AsyncClient, verifier_user: dict):
         """Test verifying a non-existent client."""
         verifier_id = verifier_user["id"]
 
-        response = await client.post(
-            f"/clients/nonexistent-id/verify?verified_by={verifier_id}"
-        )
+        response = await client.post(f"/clients/nonexistent-id/verify?verified_by={verifier_id}")
 
         assert response.status_code == 404
 
@@ -376,9 +350,7 @@ class TestVerifyClient:
 class TestActivateClient:
     """Tests for POST /clients/{client_id}/activate endpoint."""
 
-    async def test_activate_pending_client(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_activate_pending_client(self, client: AsyncClient, test_client: dict):
         """Test activating a pending client."""
         client_id = test_client["id"]
 
@@ -410,9 +382,7 @@ class TestActivateClient:
 class TestDeactivateClient:
     """Tests for POST /clients/{client_id}/deactivate endpoint."""
 
-    async def test_deactivate_client_success(
-        self, client: AsyncClient, test_client_active: dict
-    ):
+    async def test_deactivate_client_success(self, client: AsyncClient, test_client_active: dict):
         """Test deactivating an active client."""
         client_id = test_client_active["id"]
 
@@ -460,9 +430,7 @@ class TestDeactivateClient:
 class TestSuspendClient:
     """Tests for POST /clients/{client_id}/suspend endpoint."""
 
-    async def test_suspend_client_success(
-        self, client: AsyncClient, test_client_active: dict
-    ):
+    async def test_suspend_client_success(self, client: AsyncClient, test_client_active: dict):
         """Test suspending a client."""
         client_id = test_client_active["id"]
 
@@ -475,9 +443,7 @@ class TestSuspendClient:
         data = response.json()
         assert data["status"] == "Inactive"
 
-    async def test_suspend_requires_reason(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_suspend_requires_reason(self, client: AsyncClient, test_client: dict):
         """Test that suspending requires a reason."""
         client_id = test_client["id"]
 
@@ -501,9 +467,7 @@ class TestSuspendClient:
 class TestTerminateClient:
     """Tests for POST /clients/{client_id}/terminate endpoint."""
 
-    async def test_terminate_client_success(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_terminate_client_success(self, client: AsyncClient, test_client: dict):
         """Test terminating a client."""
         client_id = test_client["id"]
 
@@ -516,9 +480,7 @@ class TestTerminateClient:
         data = response.json()
         assert data["status"] == "Deleted"
 
-    async def test_terminate_requires_reason(
-        self, client: AsyncClient, test_client_2: dict
-    ):
+    async def test_terminate_requires_reason(self, client: AsyncClient, test_client_2: dict):
         """Test that terminating requires a reason."""
         client_id = test_client_2["id"]
 
@@ -542,9 +504,7 @@ class TestTerminateClient:
 class TestArchiveClient:
     """Tests for POST /clients/{client_id}/archive endpoint."""
 
-    async def test_archive_client_success(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_archive_client_success(self, client: AsyncClient, test_client: dict):
         """Test archiving a client."""
         client_id = test_client["id"]
 
@@ -554,9 +514,7 @@ class TestArchiveClient:
         data = response.json()
         assert data["status"] == "Archived"
 
-    async def test_archive_already_archived_fails(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_archive_already_archived_fails(self, client: AsyncClient, test_client: dict):
         """Test that archiving an already archived client fails."""
         client_id = test_client["id"]
 
@@ -579,9 +537,7 @@ class TestArchiveClient:
 class TestRestoreClient:
     """Tests for POST /clients/{client_id}/restore endpoint."""
 
-    async def test_restore_archived_client(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_restore_archived_client(self, client: AsyncClient, test_client: dict):
         """Test restoring an archived client."""
         client_id = test_client["id"]
 
@@ -595,9 +551,7 @@ class TestRestoreClient:
         data = response.json()
         assert data["status"] == "Active"
 
-    async def test_restore_active_client_fails(
-        self, client: AsyncClient, test_client_active: dict
-    ):
+    async def test_restore_active_client_fails(self, client: AsyncClient, test_client_active: dict):
         """Test that restoring an already active client fails."""
         client_id = test_client_active["id"]
 
@@ -620,9 +574,7 @@ class TestRestoreClient:
 class TestUpdateClient:
     """Tests for PATCH /clients/{client_id} endpoint."""
 
-    async def test_update_client_name(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_update_client_name(self, client: AsyncClient, test_client: dict):
         """Test updating client name."""
         client_id = test_client["id"]
 
@@ -635,9 +587,7 @@ class TestUpdateClient:
         data = response.json()
         assert data["name"] == "Updated Company Name"
 
-    async def test_update_client_preferred_contact(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_update_client_preferred_contact(self, client: AsyncClient, test_client: dict):
         """Test updating preferred contact method."""
         client_id = test_client["id"]
 
@@ -663,9 +613,7 @@ class TestUpdateClient:
 class TestUpdateContactInfo:
     """Tests for PATCH /clients/{client_id}/contact-info endpoint."""
 
-    async def test_update_contact_info_success(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_update_contact_info_success(self, client: AsyncClient, test_client: dict):
         """Test updating contact information."""
         client_id = test_client["id"]
 
@@ -703,9 +651,7 @@ class TestUpdateContactInfo:
 class TestUpdateBillingAddress:
     """Tests for PATCH /clients/{client_id}/billing-address endpoint."""
 
-    async def test_update_billing_address_success(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_update_billing_address_success(self, client: AsyncClient, test_client: dict):
         """Test updating billing address."""
         client_id = test_client["id"]
 
@@ -726,9 +672,7 @@ class TestUpdateBillingAddress:
         assert data["billing_address"]["street"] == "789 Billing Ave"
         assert data["billing_address"]["city"] == "Chicago"
 
-    async def test_update_billing_address_to_null(
-        self, client: AsyncClient, test_client: dict
-    ):
+    async def test_update_billing_address_to_null(self, client: AsyncClient, test_client: dict):
         """Test removing billing address by setting to null."""
         client_id = test_client["id"]
 
@@ -772,9 +716,7 @@ class TestGetClientStats:
         tenant_id = client_test_tenant["id"]
         client_id = test_client["id"]
 
-        response = await client.get(
-            f"/clients/{client_id}/stats?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/{client_id}/stats?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -786,29 +728,27 @@ class TestGetClientStats:
         assert "status" in data
 
     async def test_get_client_stats_with_children(
-        self, client: AsyncClient, client_test_tenant: dict, test_parent_client: dict, test_child_client: dict
+        self,
+        client: AsyncClient,
+        client_test_tenant: dict,
+        test_parent_client: dict,
+        test_child_client: dict,
     ):
         """Test getting stats for client with children."""
         tenant_id = client_test_tenant["id"]
         client_id = test_parent_client["id"]
 
-        response = await client.get(
-            f"/clients/{client_id}/stats?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/{client_id}/stats?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["child_clients_count"] >= 1
 
-    async def test_get_client_stats_not_found(
-        self, client: AsyncClient, client_test_tenant: dict
-    ):
+    async def test_get_client_stats_not_found(self, client: AsyncClient, client_test_tenant: dict):
         """Test getting stats for non-existent client."""
         tenant_id = client_test_tenant["id"]
 
-        response = await client.get(
-            f"/clients/nonexistent-id/stats?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/nonexistent-id/stats?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -817,15 +757,17 @@ class TestGetChildClients:
     """Tests for GET /clients/{client_id}/children endpoint."""
 
     async def test_get_child_clients_success(
-        self, client: AsyncClient, client_test_tenant: dict, test_parent_client: dict, test_child_client: dict
+        self,
+        client: AsyncClient,
+        client_test_tenant: dict,
+        test_parent_client: dict,
+        test_child_client: dict,
     ):
         """Test getting child clients."""
         tenant_id = client_test_tenant["id"]
         parent_id = test_parent_client["id"]
 
-        response = await client.get(
-            f"/clients/{parent_id}/children?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/{parent_id}/children?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -840,9 +782,7 @@ class TestGetChildClients:
         tenant_id = client_test_tenant["id"]
         client_id = test_client["id"]
 
-        response = await client.get(
-            f"/clients/{client_id}/children?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/{client_id}/children?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -855,9 +795,7 @@ class TestGetChildClients:
         """Test getting children for non-existent parent."""
         tenant_id = client_test_tenant["id"]
 
-        response = await client.get(
-            f"/clients/nonexistent-id/children?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/clients/nonexistent-id/children?tenant_id={tenant_id}")
 
         assert response.status_code == 404
 
@@ -929,9 +867,7 @@ class TestClientLifecycleFlow:
         assert activate_response.json()["status"] == "Active"
         assert activate_response.json()["is_verified"] is True
 
-    async def test_crud_operations_integration(
-        self, client: AsyncClient, client_test_tenant: dict
-    ):
+    async def test_crud_operations_integration(self, client: AsyncClient, client_test_tenant: dict):
         """Test CRUD operations in sequence."""
         tenant_id = client_test_tenant["id"]
 
@@ -1005,13 +941,9 @@ class TestClientLifecycleFlow:
             child_ids.append(child_response.json()["id"])
 
         # Verify children
-        children_response = await client.get(
-            f"/clients/{parent_id}/children?tenant_id={tenant_id}"
-        )
+        children_response = await client.get(f"/clients/{parent_id}/children?tenant_id={tenant_id}")
         assert children_response.json()["total"] == 3
 
         # Verify stats
-        stats_response = await client.get(
-            f"/clients/{parent_id}/stats?tenant_id={tenant_id}"
-        )
+        stats_response = await client.get(f"/clients/{parent_id}/stats?tenant_id={tenant_id}")
         assert stats_response.json()["child_clients_count"] == 3

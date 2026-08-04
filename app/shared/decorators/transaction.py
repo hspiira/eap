@@ -7,7 +7,8 @@ Eliminates repetitive try/except/commit/rollback patterns.
 
 import functools
 import logging
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,16 +26,16 @@ def transactional(
 ):
     """
     Decorator that wraps a route handler with transaction management.
-    
+
     Automatically handles:
     - Committing on success
     - Rolling back on error
     - Converting exceptions to appropriate HTTP responses
-    
+
     Args:
         get_session_param: Name of the parameter that contains the AsyncSession
         commit: Whether to commit on success (default True)
-    
+
     Usage:
         @router.post("/items/")
         @transactional()
@@ -46,12 +47,13 @@ def transactional(
             item = await use_case.execute(...)
             return _to_response(item)
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> T:
             # Get the session from kwargs
             session: AsyncSession | None = kwargs.get(get_session_param)
-            
+
             if session is None:
                 # Session not found, just execute without transaction management
                 logger.warning(
@@ -59,15 +61,15 @@ def transactional(
                     f"for {func.__name__}. Executing without transaction management."
                 )
                 return await func(*args, **kwargs)
-            
+
             try:
                 result = await func(*args, **kwargs)
-                
+
                 if commit:
                     await session.commit()
-                
+
                 return result
-                
+
             except EvexiaException:
                 # Includes DomainError, NotFoundError, ConflictError, etc.
                 # The exception carries its own http_status; the global
@@ -84,12 +86,12 @@ def transactional(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=str(e),
                 ) from e
-                
+
             except HTTPException:
                 # Re-raise HTTP exceptions as-is
                 await session.rollback()
                 raise
-                
+
             except Exception as e:
                 await session.rollback()
                 logger.exception(f"Unexpected error in {func.__name__}: {e}")
@@ -97,15 +99,16 @@ def transactional(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="An unexpected error occurred",
                 ) from e
-        
+
         return wrapper
+
     return decorator
 
 
 def readonly(get_session_param: str = "db"):
     """
     Decorator for read-only operations (no commit).
-    
+
     Usage:
         @router.get("/items/{item_id}")
         @readonly()

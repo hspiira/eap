@@ -71,7 +71,9 @@ PHQ9 = Questionnaire(
         QuestionnaireItem("item6", "Feeling bad about yourself", 0, 3),
         QuestionnaireItem("item7", "Trouble concentrating", 0, 3),
         QuestionnaireItem("item8", "Moving or speaking slowly / restlessness", 0, 3),
-        QuestionnaireItem("item9", "Thoughts that you would be better off dead or of self-harm", 0, 3),
+        QuestionnaireItem(
+            "item9", "Thoughts that you would be better off dead or of self-harm", 0, 3
+        ),
     ),
 )
 
@@ -80,9 +82,7 @@ GAD7 = Questionnaire(
     code=TriageInstrumentCode.GAD7,
     version="1",
     title="Generalized Anxiety Disorder (GAD-7)",
-    items=tuple(
-        QuestionnaireItem(f"g{i}", f"Item {i}", 0, 3) for i in range(1, 8)
-    ),
+    items=tuple(QuestionnaireItem(f"g{i}", f"Item {i}", 0, 3) for i in range(1, 8)),
 )
 
 CSSRS = Questionnaire(
@@ -95,9 +95,7 @@ CSSRS = Questionnaire(
         QuestionnaireItem("c3", "Active ideation with method (without plan)", 0, 1),
         QuestionnaireItem("c4", "Active ideation with intent (without specific plan)", 0, 1),
         QuestionnaireItem("c5", "Active ideation with specific plan and intent", 0, 1),
-        QuestionnaireItem(
-            "c6", "Suicide behaviour in lifetime", 0, 1
-        ),
+        QuestionnaireItem("c6", "Suicide behaviour in lifetime", 0, 1),
         QuestionnaireItem(
             "c6_recent",
             "Suicide behaviour within past 3 months",
@@ -111,63 +109,49 @@ AUDIT_C = Questionnaire(
     code=TriageInstrumentCode.AUDIT_C,
     version="1",
     title="AUDIT-C alcohol-use screen",
-    items=tuple(
-        QuestionnaireItem(f"a{i}", f"Item {i}", 0, 4) for i in range(1, 4)
-    ),
+    items=tuple(QuestionnaireItem(f"a{i}", f"Item {i}", 0, 4) for i in range(1, 4)),
 )
 
 DAST10 = Questionnaire(
     code=TriageInstrumentCode.DAST10,
     version="1",
     title="Drug Abuse Screening Test (10-item)",
-    items=tuple(
-        QuestionnaireItem(f"d{i}", f"Item {i}", 0, 1) for i in range(1, 11)
-    ),
+    items=tuple(QuestionnaireItem(f"d{i}", f"Item {i}", 0, 1) for i in range(1, 11)),
 )
 
 WHO5 = Questionnaire(
     code=TriageInstrumentCode.WHO5,
     version="1",
     title="WHO-5 Wellbeing Index",
-    items=tuple(
-        QuestionnaireItem(f"h{i}", f"Item {i}", 0, 5) for i in range(1, 6)
-    ),
+    items=tuple(QuestionnaireItem(f"h{i}", f"Item {i}", 0, 5) for i in range(1, 6)),
 )
 
 K10 = Questionnaire(
     code=TriageInstrumentCode.K10,
     version="1",
     title="Kessler Psychological Distress Scale (K10)",
-    items=tuple(
-        QuestionnaireItem(f"k{i}", f"Item {i}", 1, 5) for i in range(1, 11)
-    ),
+    items=tuple(QuestionnaireItem(f"k{i}", f"Item {i}", 1, 5) for i in range(1, 11)),
 )
 
 WSAS = Questionnaire(
     code=TriageInstrumentCode.WSAS,
     version="1",
     title="Work and Social Adjustment Scale",
-    items=tuple(
-        QuestionnaireItem(f"s{i}", f"Item {i}", 0, 8) for i in range(1, 6)
-    ),
+    items=tuple(QuestionnaireItem(f"s{i}", f"Item {i}", 0, 8) for i in range(1, 6)),
 )
 
 DASS21 = Questionnaire(
     code=TriageInstrumentCode.DASS21,
     version="1",
     title="Depression, Anxiety, Stress Scale (21-item)",
-    items=tuple(
-        QuestionnaireItem(f"da{i}", f"Item {i}", 0, 3) for i in range(1, 22)
-    ),
+    items=tuple(QuestionnaireItem(f"da{i}", f"Item {i}", 0, 3) for i in range(1, 22)),
 )
 
 PCL5 = Questionnaire(
     code=TriageInstrumentCode.PCL5,
     version="1",
     title="PTSD Checklist for DSM-5 (PCL-5)",
-    items=tuple(
-        QuestionnaireItem(f"p{i}", f"Item {i}", 0, 4) for i in range(1, 21)
-    ),
+    items=tuple(QuestionnaireItem(f"p{i}", f"Item {i}", 0, 4) for i in range(1, 21)),
 )
 
 
@@ -509,9 +493,7 @@ _SCORERS = {
 }
 
 
-def score_triage(
-    code: TriageInstrumentCode, responses: dict[str, int]
-) -> QuestionnaireResponse:
+def score_triage(code: TriageInstrumentCode, responses: dict[str, int]) -> QuestionnaireResponse:
     """Validate and score raw triage answers against the current catalogue.
 
     Raises ``ValueError`` for unknown instruments, missing/extra item codes,

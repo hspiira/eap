@@ -23,9 +23,7 @@ class DSARRequestMapper:
             status=DSARRequestStatus(model.status),
             requested_by=UserId(model.requested_by),
             started_at=ensure_utc(model.started_at) if model.started_at else None,
-            completed_at=ensure_utc(model.completed_at)
-            if model.completed_at
-            else None,
+            completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
             failed_reason=model.failed_reason,
             output=model.output,
             erasure_executes_at=ensure_utc(model.erasure_executes_at)
@@ -47,9 +45,7 @@ class DSARRequestMapper:
             status=entity.status,
             requested_by=entity.requested_by.value,
             started_at=ensure_utc(entity.started_at) if entity.started_at else None,
-            completed_at=ensure_utc(entity.completed_at)
-            if entity.completed_at
-            else None,
+            completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,
             failed_reason=entity.failed_reason,
             output=entity.output,
             erasure_executes_at=ensure_utc(entity.erasure_executes_at)

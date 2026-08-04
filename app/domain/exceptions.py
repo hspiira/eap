@@ -55,8 +55,7 @@ class EvexiaException(Exception):
         details_list: list[dict[str, Any]] | None = None
         if self.details:
             details_list = [
-                {"field": k, "message": str(v), "code": None}
-                for k, v in self.details.items()
+                {"field": k, "message": str(v), "code": None} for k, v in self.details.items()
             ]
         return {
             "error": self.error_code,
@@ -88,7 +87,10 @@ class AuthorizationException(EvexiaException):
     def __init__(self, resource: str, action: str):
         message = f"Permission denied: {action} on {resource}"
         super().__init__(
-            message, "AUTHORIZATION_ERROR", {"resource": resource, "action": action}, http_status=403
+            message,
+            "AUTHORIZATION_ERROR",
+            {"resource": resource, "action": action},
+            http_status=403,
         )
 
 

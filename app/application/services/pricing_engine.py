@@ -37,9 +37,7 @@ class PricingEngine:
         if contract.pricing is None:
             raise DomainError("Contract has no pricing configuration")
         pricing = contract.pricing
-        events_in_window = [
-            e for e in events if period_from <= e.occurred_on <= period_to
-        ]
+        events_in_window = [e for e in events if period_from <= e.occurred_on <= period_to]
         if pricing.model == PricingModel.RETAINER:
             lines, notes = _retainer(pricing)
         elif pricing.model == PricingModel.FRAMEWORK:
@@ -165,9 +163,7 @@ def _value_add(pricing: ContractPricing) -> tuple[list[InvoiceLine], list[str]]:
     ]
 
 
-def _rate_for_event(
-    pricing: ContractPricing, event: UtilisationEventEntity
-) -> Money | None:
+def _rate_for_event(pricing: ContractPricing, event: UtilisationEventEntity) -> Money | None:
     if pricing.rate_card is None or event.service_code is None:
         return None
     return pricing.rate_card.rate_for(event.service_code)

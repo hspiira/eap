@@ -133,9 +133,7 @@ class TestBulkUpdatePanelStatus:
             reason="80→8 panel cull",
         )
         assert set(result.updated) == {"p1", "p2"}
-        assert (
-            repo.people["p1"].provider_profile.panel_status == PanelStatus.REMOVED
-        )
+        assert repo.people["p1"].provider_profile.panel_status == PanelStatus.REMOVED
 
     @pytest.mark.asyncio
     async def test_skips_unchanged_provider(self):
@@ -242,9 +240,7 @@ class TestChangeProviderTier:
 # ---------- Eligibility ----------
 
 
-def _clause(
-    *, status: NonCompeteStatus = NonCompeteStatus.ACTIVE
-) -> NonCompeteClauseEntity:
+def _clause(*, status: NonCompeteStatus = NonCompeteStatus.ACTIVE) -> NonCompeteClauseEntity:
     now = datetime.now(UTC)
     return NonCompeteClauseEntity(
         id=NonCompeteClauseId("c-1"),
@@ -264,9 +260,7 @@ class TestCheckProviderEligibility:
     async def test_panel_eligible_no_clauses(self):
         p = _provider("p1", _profile())
         repo = _FakePersonRepo(p)
-        out = await CheckProviderEligibilityUseCase(
-            repo, _FakeClauseRepo()
-        ).execute(
+        out = await CheckProviderEligibilityUseCase(repo, _FakeClauseRepo()).execute(
             tenant_id=TenantId("t-1"),
             provider_id=PersonId("p1"),
             client_id=ClientId("client-x"),
@@ -279,9 +273,7 @@ class TestCheckProviderEligibility:
     async def test_blocked_when_panel_suspended(self):
         p = _provider("p1", _profile(panel=PanelStatus.SUSPENDED))
         repo = _FakePersonRepo(p)
-        out = await CheckProviderEligibilityUseCase(
-            repo, _FakeClauseRepo()
-        ).execute(
+        out = await CheckProviderEligibilityUseCase(repo, _FakeClauseRepo()).execute(
             tenant_id=TenantId("t-1"),
             provider_id=PersonId("p1"),
         )
@@ -317,9 +309,7 @@ class TestCheckProviderEligibility:
     async def test_unknown_provider_404(self):
         repo = _FakePersonRepo()
         with pytest.raises(NotFoundError):
-            await CheckProviderEligibilityUseCase(
-                repo, _FakeClauseRepo()
-            ).execute(
+            await CheckProviderEligibilityUseCase(repo, _FakeClauseRepo()).execute(
                 tenant_id=TenantId("t-1"),
                 provider_id=PersonId("ghost"),
             )

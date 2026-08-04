@@ -6,7 +6,7 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
@@ -17,23 +17,23 @@ from app.domain.value_objects.core import TenantId
 class TenantRepository(BaseRepository[TenantEntity, TenantId]):
     """
     Repository interface for Tenant aggregate.
-    
+
     Repositories are ONLY for aggregate roots.
     This interface is in the domain layer - implementation in infrastructure.
     """
-    
+
     @abstractmethod
     async def get_by_code(self, code: str) -> TenantEntity | None:
         """
         Get tenant by code string.
-        
+
         Args:
             code: Tenant code string
-            
+
         Returns:
             TenantEntity if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_all(
         self,
@@ -47,7 +47,7 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
     ) -> Sequence[TenantEntity]:
         """
         List tenants with filtering, searching, and pagination.
-        
+
         Args:
             status: Filter by tenant status
             subscription_tier: Filter by subscription tier
@@ -56,11 +56,11 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
             offset: Number of results to skip
             sort_by: Field to sort by
             sort_desc: Sort in descending order
-            
+
         Returns:
             Sequence of TenantEntity
         """
-    
+
     @abstractmethod
     async def get_by_azure_tenant_id(self, azure_tenant_id: str) -> TenantEntity | None:
         """
@@ -82,12 +82,12 @@ class TenantRepository(BaseRepository[TenantEntity, TenantId]):
     ) -> int:
         """
         Count tenants matching filters.
-        
+
         Args:
             status: Filter by tenant status
             subscription_tier: Filter by subscription tier
             search: Search in name or code
-            
+
         Returns:
             Total count
         """

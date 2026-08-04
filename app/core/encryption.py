@@ -32,7 +32,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from app.core.config import settings
 
-
 _VERSION_V1 = b"\x01"
 _NONCE_BYTES = 12
 _DEK_BYTES = 32

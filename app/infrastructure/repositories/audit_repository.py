@@ -10,6 +10,7 @@ be altered even if application code is compromised.
 """
 
 from collections.abc import Sequence
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,9 +64,7 @@ class AuditRepositoryImpl(AuditRepository):
         self.session.add(model)
         # Note: commit is typically handled by the application service/unit of work
 
-    async def get_audit_log_by_id(
-        self, audit_log_id: AuditLogId
-    ) -> AuditLog | None:
+    async def get_audit_log_by_id(self, audit_log_id: AuditLogId) -> AuditLog | None:
         """Get audit log by ID."""
         stmt = select(AuditLogModel).where(AuditLogModel.id == audit_log_id.value)
         result = await self.session.execute(stmt)
@@ -91,9 +90,7 @@ class AuditRepositoryImpl(AuditRepository):
         sort_desc: bool = True,
     ) -> Sequence[AuditLog]:
         """List audit logs with filtering and pagination."""
-        stmt = select(AuditLogModel).where(
-            AuditLogModel.tenant_id == tenant_id.value
-        )
+        stmt = select(AuditLogModel).where(AuditLogModel.tenant_id == tenant_id.value)
 
         # Apply filters
         if user_id:
@@ -106,10 +103,12 @@ class AuditRepositoryImpl(AuditRepository):
             stmt = stmt.where(AuditLogModel.resource_id == resource_id)
         if start_date:
             from datetime import datetime
+
             start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
             stmt = stmt.where(AuditLogModel.occurred_at >= start_dt)
         if end_date:
             from datetime import datetime
+
             end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
             stmt = stmt.where(AuditLogModel.occurred_at <= end_dt)
 
@@ -154,10 +153,12 @@ class AuditRepositoryImpl(AuditRepository):
             stmt = stmt.where(AuditLogModel.resource_id == resource_id)
         if start_date:
             from datetime import datetime
+
             start_dt = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
             stmt = stmt.where(AuditLogModel.occurred_at >= start_dt)
         if end_date:
             from datetime import datetime
+
             end_dt = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
             stmt = stmt.where(AuditLogModel.occurred_at <= end_dt)
 
@@ -168,9 +169,7 @@ class AuditRepositoryImpl(AuditRepository):
         self, audit_log_id: AuditLogId
     ) -> Sequence[EntityChange]:
         """Get all entity changes for an audit log."""
-        stmt = select(EntityChangeModel).where(
-            EntityChangeModel.audit_log_id == audit_log_id.value
-        )
+        stmt = select(EntityChangeModel).where(EntityChangeModel.audit_log_id == audit_log_id.value)
         result = await self.session.execute(stmt)
         models = result.scalars().all()
 

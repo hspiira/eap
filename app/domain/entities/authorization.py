@@ -59,9 +59,7 @@ class Authorization:
         if self.sessions_used < 0:
             raise DomainError("sessions_used cannot be negative")
         if self.sessions_used > self.sessions_granted:
-            raise DomainError(
-                "sessions_used cannot exceed sessions_granted"
-            )
+            raise DomainError("sessions_used cannot exceed sessions_granted")
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
                 AuthorizationGranted(
@@ -90,9 +88,7 @@ class Authorization:
 
     def consume_session(self, *, now: datetime | None = None) -> None:
         if not self.is_active():
-            raise InvalidStateError(
-                f"Cannot consume from a {self.status.value} authorization"
-            )
+            raise InvalidStateError(f"Cannot consume from a {self.status.value} authorization")
         if self.is_expired():
             self.status = AuthorizationStatus.EXPIRED
             self.updated_at = now or utc_now()
@@ -152,9 +148,7 @@ class Authorization:
         now: datetime | None = None,
     ) -> None:
         if self.status != AuthorizationStatus.EXTENSION_REQUESTED:
-            raise InvalidStateError(
-                "Only EXTENSION_REQUESTED authorizations can be extended"
-            )
+            raise InvalidStateError("Only EXTENSION_REQUESTED authorizations can be extended")
         if not self.extension_requested_sessions:
             raise DomainError("No pending extension to grant")
         now = now or utc_now()

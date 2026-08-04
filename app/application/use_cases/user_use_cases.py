@@ -14,7 +14,6 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
-
 # =============================================================================
 # CREATE USE CASE (special - not a lifecycle operation)
 # =============================================================================
@@ -114,9 +113,7 @@ class GetUserUseCase(BaseUseCase[UserEntity, UserId]):
         """
         return await self.repository.get_by_id(user_id)
 
-    async def execute_by_email(
-        self, email: Email, tenant_id: TenantId
-    ) -> UserEntity | None:
+    async def execute_by_email(self, email: Email, tenant_id: TenantId) -> UserEntity | None:
         """
         Get user by email within a tenant.
 

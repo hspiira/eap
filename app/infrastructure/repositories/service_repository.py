@@ -19,7 +19,9 @@ from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ServiceRepositoryImpl(TenantScopedRepositoryImpl[ServiceEntity, ServiceModel, ServiceId], ServiceRepository):
+class ServiceRepositoryImpl(
+    TenantScopedRepositoryImpl[ServiceEntity, ServiceModel, ServiceId], ServiceRepository
+):
     """
     SQLAlchemy implementation of ServiceRepository.
 
@@ -44,9 +46,7 @@ class ServiceRepositoryImpl(TenantScopedRepositoryImpl[ServiceEntity, ServiceMod
 
     # Domain-specific queries (not in base class)
 
-    async def get_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ServiceEntity | None:
+    async def get_by_name(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
         """Get service by name within tenant, excluding soft-deleted services."""
         stmt = select(ServiceModel).where(
             ServiceModel.tenant_id == tenant_id.value,

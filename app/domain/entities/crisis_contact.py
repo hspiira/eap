@@ -80,9 +80,7 @@ class CrisisContact:
         self.clinical_subject_id = subject_id
         self.updated_at = now or utc_now()
 
-    def attach_case(
-        self, case_id: CaseId, *, now: datetime | None = None
-    ) -> None:
+    def attach_case(self, case_id: CaseId, *, now: datetime | None = None) -> None:
         self.case_id = case_id
         self.updated_at = now or utc_now()
 
@@ -95,9 +93,7 @@ class CrisisContact:
         now: datetime | None = None,
     ) -> None:
         if self.is_resolved():
-            raise InvalidStateError(
-                "Cannot record assessment on a resolved crisis contact"
-            )
+            raise InvalidStateError("Cannot record assessment on a resolved crisis contact")
         self.risk_assessment_id = risk_assessment_id
         self.risk_level = risk_level
         self.cssrs_administered = cssrs_administered or self.cssrs_administered
@@ -118,9 +114,7 @@ class CrisisContact:
         if destination == CrisisWarmHandoff.NONE:
             raise DomainError("Use record_warm_handoff for actual handoffs only")
         if self.is_resolved():
-            raise InvalidStateError(
-                "Cannot record handoff on a resolved crisis contact"
-            )
+            raise InvalidStateError("Cannot record handoff on a resolved crisis contact")
         now = now or utc_now()
         self.warm_handoff = destination
         self.dispatched_at = now

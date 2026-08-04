@@ -3,20 +3,22 @@ Test Configuration and Fixtures
 
 Provides async test client and database fixtures for E2E testing.
 """
+
 # Force test environment before any app imports so rate limiting uses test limits
 import os
+
 os.environ["ENVIRONMENT"] = "test"
 
 from collections.abc import AsyncGenerator
-from datetime import date
+from datetime import UTC, date
 from typing import Any
 
 import pytest
 import pytest_asyncio
+from fastapi import Depends, Request
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from fastapi import Depends, Request
+from sqlalchemy.pool import NullPool
 
 from app.api.dependencies import (
     get_audit_repository,
@@ -29,53 +31,53 @@ from app.core.authorization import (
     get_document_for_current_tenant,
     get_user_in_tenant,
 )
+from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.document import DocumentEntity
 from app.domain.entities.user import UserEntity
+from app.domain.enums import TenantRole, UserStatus
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.value_objects.core import AuditLogId, DocumentId, Email, TenantId, UserId
 from app.infrastructure.models.base import Base
-from app.core.database import get_db
-from app.core.security import TokenData, get_current_user
 from app.main import app
-from app.shared.utils.generators import generate_cuid
-from app.domain.value_objects.core import AuditLogId, DocumentId, UserId, TenantId, Email
-from app.domain.enums import TenantRole, UserStatus
 from app.shared.utils.datetime import utc_now
-
+from app.shared.utils.generators import generate_cuid
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test",
 )
 
-# Create test engine
+# Module-global engine + per-test event loops: pooled connections would be
+# created on one test's loop and reused on the next ("attached to a different
+# loop"). NullPool closes every connection on release so none cross loops.
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
     echo=False,
+    poolclass=NullPool,
 )
 
 # Async session factory for tests
-TestAsyncSessionLocal = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestAsyncSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Create a fresh database session for each test.
-    
+
     Creates all tables before the test and drops them after.
     """
     # Create all tables
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async with TestAsyncSessionLocal() as session:
         yield session
-    
+
     # Drop all tables after test
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -86,26 +88,29 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     Create an async test client with overridden database and authentication dependencies.
     """
-    
+
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
-    
+
     async def override_get_current_user(request: Request) -> TokenData:
         """Mock authentication for tests - returns a test user token with tenant_id from path or query."""
         # Path params (e.g. /tenants/{tenant_id}) take precedence so require_same_tenant passes
-        tenant_id = request.path_params.get("tenant_id") or request.query_params.get("tenant_id", "test-tenant-id")
+        tenant_id = request.path_params.get("tenant_id") or request.query_params.get(
+            "tenant_id", "test-tenant-id"
+        )
         return TokenData(
             user_id="test-user-id",
             tenant_id=tenant_id,
             email="test@example.com",
         )
-    
+
     async def override_get_user_in_tenant(
         user_id: str,
         user_repo: UserRepository = Depends(get_user_repository),
     ) -> UserEntity:
         """In tests, load user by ID without tenant check so existing E2E tests pass."""
         from fastapi import HTTPException
+
         user = await user_repo.get_by_id(UserId(user_id))
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -117,6 +122,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     ) -> AuditLog:
         """In tests, load audit log by ID without tenant check."""
         from fastapi import HTTPException
+
         log = await audit_repo.get_audit_log_by_id(AuditLogId(audit_log_id))
         if not log:
             raise HTTPException(status_code=404, detail="Audit log not found")
@@ -128,6 +134,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     ) -> DocumentEntity:
         """In tests, load document by ID without tenant check."""
         from fastapi import HTTPException
+
         doc = await document_repo.get_by_id(DocumentId(document_id))
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
@@ -243,9 +250,9 @@ async def test_tenant(client: AsyncClient) -> dict[str, Any]:
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a test user directly in the database."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
-    
+    from app.infrastructure.models.user_model import UserModel
+
     user_id = generate_cuid()
     user = UserModel(
         id=user_id,
@@ -256,7 +263,7 @@ async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, An
     )
     db_session.add(user)
     await db_session.commit()
-    
+
     return {
         "id": user_id,
         "tenant_id": test_tenant["id"],
@@ -268,9 +275,9 @@ async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, An
 @pytest_asyncio.fixture
 async def test_user_2(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a second test user directly in the database."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
-    
+    from app.infrastructure.models.user_model import UserModel
+
     user_id = generate_cuid()
     user = UserModel(
         id=user_id,
@@ -281,7 +288,7 @@ async def test_user_2(db_session: AsyncSession, test_tenant: dict) -> dict[str, 
     )
     db_session.add(user)
     await db_session.commit()
-    
+
     return {
         "id": user_id,
         "tenant_id": test_tenant["id"],
@@ -295,9 +302,9 @@ async def test_client_employee(
     db_session: AsyncSession, test_tenant: dict, test_user: dict
 ) -> dict[str, Any]:
     """Create a test client employee person directly in the database."""
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType, WorkStatus
-    
+    from app.infrastructure.models.person_model import PersonModel
+
     person_id = generate_cuid()
     person = PersonModel(
         id=person_id,
@@ -316,7 +323,7 @@ async def test_client_employee(
     )
     db_session.add(person)
     await db_session.commit()
-    
+
     return {
         "id": person_id,
         "tenant_id": test_tenant["id"],
@@ -331,9 +338,9 @@ async def test_service_provider(
     db_session: AsyncSession, test_tenant: dict, test_user_2: dict
 ) -> dict[str, Any]:
     """Create a test service provider person directly in the database."""
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType
-    
+    from app.infrastructure.models.person_model import PersonModel
+
     person_id = generate_cuid()
     person = PersonModel(
         id=person_id,
@@ -350,7 +357,7 @@ async def test_service_provider(
     )
     db_session.add(person)
     await db_session.commit()
-    
+
     return {
         "id": person_id,
         "tenant_id": test_tenant["id"],
@@ -361,14 +368,12 @@ async def test_service_provider(
 
 
 @pytest_asyncio.fixture
-async def test_pending_person(
-    db_session: AsyncSession, test_tenant: dict
-) -> dict[str, Any]:
+async def test_pending_person(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a test person in PENDING status."""
-    from app.infrastructure.models.user_model import UserModel
-    from app.infrastructure.models.person_model import PersonModel
     from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
-    
+    from app.infrastructure.models.person_model import PersonModel
+    from app.infrastructure.models.user_model import UserModel
+
     # Create user first
     user_id = generate_cuid()
     user = UserModel(
@@ -379,7 +384,7 @@ async def test_pending_person(
         is_two_factor_enabled=False,
     )
     db_session.add(user)
-    
+
     # Create pending person
     person_id = generate_cuid()
     person = PersonModel(
@@ -398,7 +403,7 @@ async def test_pending_person(
     )
     db_session.add(person)
     await db_session.commit()
-    
+
     return {
         "id": person_id,
         "tenant_id": test_tenant["id"],
@@ -526,12 +531,10 @@ async def test_client(
 
 
 @pytest_asyncio.fixture
-async def test_client_active(
-    client: AsyncClient, client_test_tenant: dict
-) -> dict[str, Any]:
+async def test_client_active(client: AsyncClient, client_test_tenant: dict) -> dict[str, Any]:
     """Create and activate a test client."""
     tenant_id = client_test_tenant["id"]
-    
+
     # Create client
     create_response = await client.post(
         f"/clients/?tenant_id={tenant_id}",
@@ -546,18 +549,16 @@ async def test_client_active(
     )
     assert create_response.status_code == 201
     client_data = create_response.json()
-    
+
     # Activate client
     activate_response = await client.post(f"/clients/{client_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
 @pytest_asyncio.fixture
-async def test_client_2(
-    client: AsyncClient, client_test_tenant: dict
-) -> dict[str, Any]:
+async def test_client_2(client: AsyncClient, client_test_tenant: dict) -> dict[str, Any]:
     """Create a second test client."""
     tenant_id = client_test_tenant["id"]
     response = await client.post(
@@ -576,9 +577,7 @@ async def test_client_2(
 
 
 @pytest_asyncio.fixture
-async def test_parent_client(
-    client: AsyncClient, client_test_tenant: dict
-) -> dict[str, Any]:
+async def test_parent_client(client: AsyncClient, client_test_tenant: dict) -> dict[str, Any]:
     """Create a parent test client."""
     tenant_id = client_test_tenant["id"]
     response = await client.post(
@@ -621,9 +620,9 @@ async def test_child_client(
 @pytest_asyncio.fixture
 async def verifier_user(db_session: AsyncSession, client_test_tenant: dict) -> dict[str, Any]:
     """Create a user who can verify clients."""
-    from app.infrastructure.models.user_model import UserModel
     from app.domain.enums import UserStatus
-    
+    from app.infrastructure.models.user_model import UserModel
+
     user_id = generate_cuid()
     user = UserModel(
         id=user_id,
@@ -634,7 +633,7 @@ async def verifier_user(db_session: AsyncSession, client_test_tenant: dict) -> d
     )
     db_session.add(user)
     await db_session.commit()
-    
+
     return {
         "id": user_id,
         "tenant_id": client_test_tenant["id"],
@@ -669,12 +668,10 @@ async def contract_test_tenant(client: AsyncClient) -> dict[str, Any]:
 
 
 @pytest_asyncio.fixture
-async def contract_test_client(
-    client: AsyncClient, contract_test_tenant: dict
-) -> dict[str, Any]:
+async def contract_test_client(client: AsyncClient, contract_test_tenant: dict) -> dict[str, Any]:
     """Create and activate a test client for contract tests."""
     tenant_id = contract_test_tenant["id"]
-    
+
     # Create client
     create_response = await client.post(
         f"/clients/?tenant_id={tenant_id}",
@@ -689,21 +686,19 @@ async def contract_test_client(
     )
     assert create_response.status_code == 201
     client_data = create_response.json()
-    
+
     # Activate client
     activate_response = await client.post(f"/clients/{client_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
 @pytest_asyncio.fixture
-async def contract_test_client_2(
-    client: AsyncClient, contract_test_tenant: dict
-) -> dict[str, Any]:
+async def contract_test_client_2(client: AsyncClient, contract_test_tenant: dict) -> dict[str, Any]:
     """Create a second test client for contract tests."""
     tenant_id = contract_test_tenant["id"]
-    
+
     create_response = await client.post(
         f"/clients/?tenant_id={tenant_id}",
         json={
@@ -717,22 +712,22 @@ async def contract_test_client_2(
     )
     assert create_response.status_code == 201
     client_data = create_response.json()
-    
+
     # Activate client
     activate_response = await client.post(f"/clients/{client_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
 @pytest.fixture
 def sample_contract_data(contract_test_client: dict) -> dict[str, Any]:
     """Sample contract creation data."""
-    from datetime import datetime, timedelta, timezone
-    
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
-    
+    from datetime import datetime, timedelta
+
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+
     return {
         "client_id": contract_test_client["id"],
         "start_date": start_date,
@@ -751,12 +746,12 @@ async def test_contract(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
 ) -> dict[str, Any]:
     """Create a test contract via API."""
-    from datetime import datetime, timedelta, timezone
-    
+    from datetime import datetime, timedelta
+
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
-    
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
         json={
@@ -780,12 +775,12 @@ async def test_contract_active(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
 ) -> dict[str, Any]:
     """Create and activate a test contract."""
-    from datetime import datetime, timedelta, timezone
-    
+    from datetime import datetime, timedelta
+
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
-    
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+
     # Create contract
     create_response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
@@ -803,11 +798,11 @@ async def test_contract_active(
     )
     assert create_response.status_code == 201
     contract_data = create_response.json()
-    
+
     # Activate contract
     activate_response = await client.post(f"/contracts/{contract_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
@@ -816,12 +811,12 @@ async def test_contract_2(
     client: AsyncClient, contract_test_tenant: dict, contract_test_client_2: dict
 ) -> dict[str, Any]:
     """Create a second test contract for a different client."""
-    from datetime import datetime, timedelta, timezone
-    
+    from datetime import datetime, timedelta
+
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(timezone.utc).isoformat()
-    end_date = (datetime.now(timezone.utc) + timedelta(days=180)).isoformat()
-    
+    start_date = datetime.now(UTC).isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=180)).isoformat()
+
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
         json={
@@ -861,9 +856,7 @@ async def user_test_tenant(client: AsyncClient) -> dict[str, Any]:
 
 
 @pytest_asyncio.fixture
-async def test_api_user(
-    client: AsyncClient, user_test_tenant: dict
-) -> dict[str, Any]:
+async def test_api_user(client: AsyncClient, user_test_tenant: dict) -> dict[str, Any]:
     """Create a test user via API."""
     tenant_id = user_test_tenant["id"]
     response = await client.post(
@@ -878,9 +871,7 @@ async def test_api_user(
 
 
 @pytest_asyncio.fixture
-async def test_api_user_2(
-    client: AsyncClient, user_test_tenant: dict
-) -> dict[str, Any]:
+async def test_api_user_2(client: AsyncClient, user_test_tenant: dict) -> dict[str, Any]:
     """Create a second test user via API."""
     tenant_id = user_test_tenant["id"]
     response = await client.post(
@@ -895,12 +886,10 @@ async def test_api_user_2(
 
 
 @pytest_asyncio.fixture
-async def test_api_user_active(
-    client: AsyncClient, user_test_tenant: dict
-) -> dict[str, Any]:
+async def test_api_user_active(client: AsyncClient, user_test_tenant: dict) -> dict[str, Any]:
     """Create and activate a test user."""
     tenant_id = user_test_tenant["id"]
-    
+
     # Create user
     create_response = await client.post(
         f"/users/?tenant_id={tenant_id}",
@@ -911,14 +900,14 @@ async def test_api_user_active(
     )
     assert create_response.status_code == 201
     user_data = create_response.json()
-    
+
     # Verify email first
     await client.post(f"/users/{user_data['id']}/verify-email")
-    
+
     # Activate user
     activate_response = await client.post(f"/users/{user_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
@@ -943,9 +932,7 @@ async def service_test_tenant(client: AsyncClient) -> dict[str, Any]:
 
 
 @pytest_asyncio.fixture
-async def test_service(
-    client: AsyncClient, service_test_tenant: dict
-) -> dict[str, Any]:
+async def test_service(client: AsyncClient, service_test_tenant: dict) -> dict[str, Any]:
     """Create a test service via API."""
     tenant_id = service_test_tenant["id"]
     response = await client.post(
@@ -963,12 +950,10 @@ async def test_service(
 
 
 @pytest_asyncio.fixture
-async def test_service_active(
-    client: AsyncClient, service_test_tenant: dict
-) -> dict[str, Any]:
+async def test_service_active(client: AsyncClient, service_test_tenant: dict) -> dict[str, Any]:
     """Create and activate a test service."""
     tenant_id = service_test_tenant["id"]
-    
+
     # Create service
     create_response = await client.post(
         f"/services/?tenant_id={tenant_id}",
@@ -982,18 +967,16 @@ async def test_service_active(
     )
     assert create_response.status_code == 201
     service_data = create_response.json()
-    
+
     # Activate service
     activate_response = await client.post(f"/services/{service_data['id']}/activate")
     assert activate_response.status_code == 200
-    
+
     return activate_response.json()
 
 
 @pytest_asyncio.fixture
-async def test_group_service(
-    client: AsyncClient, service_test_tenant: dict
-) -> dict[str, Any]:
+async def test_group_service(client: AsyncClient, service_test_tenant: dict) -> dict[str, Any]:
     """Create a group service via API."""
     tenant_id = service_test_tenant["id"]
     response = await client.post(
@@ -1012,9 +995,7 @@ async def test_group_service(
 
 
 @pytest_asyncio.fixture
-async def test_service_2(
-    client: AsyncClient, service_test_tenant: dict
-) -> dict[str, Any]:
+async def test_service_2(client: AsyncClient, service_test_tenant: dict) -> dict[str, Any]:
     """Create a second test service."""
     tenant_id = service_test_tenant["id"]
     response = await client.post(
@@ -1052,9 +1033,7 @@ async def session_test_tenant(client: AsyncClient) -> dict[str, Any]:
 
 
 @pytest_asyncio.fixture
-async def session_test_service(
-    client: AsyncClient, session_test_tenant: dict
-) -> dict[str, Any]:
+async def session_test_service(client: AsyncClient, session_test_tenant: dict) -> dict[str, Any]:
     """Create a test service for sessions."""
     tenant_id = session_test_tenant["id"]
     response = await client.post(
@@ -1076,10 +1055,10 @@ async def session_test_provider(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
     """Create a provider person for session tests."""
+    from app.domain.enums import BaseStatus, PersonType, UserStatus
     from app.infrastructure.models.person_model import PersonModel
     from app.infrastructure.models.user_model import UserModel
-    from app.domain.enums import PersonType, BaseStatus, UserStatus
-    
+
     # Create user first
     user_id = generate_cuid()
     user = UserModel(
@@ -1091,7 +1070,7 @@ async def session_test_provider(
     )
     db_session.add(user)
     await db_session.flush()
-    
+
     # Create provider person
     person_id = generate_cuid()
     person = PersonModel(
@@ -1109,7 +1088,7 @@ async def session_test_provider(
     )
     db_session.add(person)
     await db_session.commit()
-    
+
     return {
         "id": person_id,
         "user_id": user_id,
@@ -1122,11 +1101,12 @@ async def session_test_client_person(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
     """Create a client employee person for session tests."""
+    from datetime import date
+
+    from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
     from app.infrastructure.models.person_model import PersonModel
     from app.infrastructure.models.user_model import UserModel
-    from app.domain.enums import PersonType, BaseStatus, UserStatus, WorkStatus
-    from datetime import date
-    
+
     # Create user first
     user_id = generate_cuid()
     user = UserModel(
@@ -1138,7 +1118,7 @@ async def session_test_client_person(
     )
     db_session.add(user)
     await db_session.flush()
-    
+
     # Create client employee person
     person_id = generate_cuid()
     person = PersonModel(
@@ -1157,7 +1137,7 @@ async def session_test_client_person(
     )
     db_session.add(person)
     await db_session.commit()
-    
+
     return {
         "id": person_id,
         "user_id": user_id,
@@ -1174,11 +1154,11 @@ async def test_service_session(
     session_test_client_person: dict,
 ) -> dict[str, Any]:
     """Create a test service session via API."""
-    from datetime import datetime, timedelta, timezone
-    
+    from datetime import datetime, timedelta
+
     tenant_id = session_test_tenant["id"]
-    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-    
+    scheduled_at = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
     response = await client.post(
         f"/service-sessions/?tenant_id={tenant_id}",
         json={
@@ -1202,11 +1182,11 @@ async def test_service_session_2(
     session_test_client_person: dict,
 ) -> dict[str, Any]:
     """Create a second test service session."""
-    from datetime import datetime, timedelta, timezone
-    
+    from datetime import datetime, timedelta
+
     tenant_id = session_test_tenant["id"]
-    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=14)).isoformat()
-    
+    scheduled_at = (datetime.now(UTC) + timedelta(days=14)).isoformat()
+
     response = await client.post(
         f"/service-sessions/?tenant_id={tenant_id}",
         json={

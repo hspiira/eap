@@ -34,12 +34,6 @@ COOKIE_REFRESH_TOKEN = "evexia_refresh_token"
 class TokenData(BaseModel):
     """Data extracted from JWT token.
 
-    ``access_scopes`` carries the bounded-context split that gates the privacy
-    wall (see :class:`~app.domain.enums.AccessScope`). Tokens minted before the
-    scope rollout have an empty list; route guards treat that as legacy
-    PLATFORM_ADMIN — clinical-only routes will refuse them once the auth backend
-    emits explicit scopes everywhere.
-
     ``role`` is the tenant-level role (ADMIN / USER / VIEWER) embedded in the
     token at mint time.  This lets viewer-guard middleware check the role without
     a DB round-trip on every mutation request.
@@ -50,8 +44,8 @@ class TokenData(BaseModel):
     email: str | None = None
     exp: datetime | None = None
     jti: str | None = None
-    access_scopes: list[str] = []
     role: str | None = None
+    access_scopes: list[str] = []
 
 
 class Token(BaseModel):
@@ -95,9 +89,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         True if password matches, False otherwise
     """
     try:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-        )
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
         return False
 
@@ -113,8 +105,8 @@ def create_access_token(
     email: str | None = None,
     additional_claims: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
-    access_scopes: list[str] | None = None,
     role: str | None = None,
+    access_scopes: list[str] | None = None,
 ) -> str:
     """
     Create a JWT access token.
@@ -132,9 +124,7 @@ def create_access_token(
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode: dict[str, Any] = {
         "sub": user_id,
@@ -146,18 +136,16 @@ def create_access_token(
     if email:
         to_encode["email"] = email
 
-    if access_scopes:
-        to_encode["access_scopes"] = list(access_scopes)
-
     if role:
         to_encode["role"] = role
+
+    if access_scopes:
+        to_encode["access_scopes"] = list(access_scopes)
 
     if additional_claims:
         to_encode.update(additional_claims)
 
-    encoded_jwt = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -183,9 +171,7 @@ def create_refresh_token(
 def decode_refresh_token(token: str) -> TokenData:
     """Decode refresh token and validate it's a refresh token."""
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "refresh":
             raise AuthenticationException("Invalid token type")
         user_id = payload.get("sub")
@@ -199,7 +185,7 @@ def decode_refresh_token(token: str) -> TokenData:
             jti=jti,
         )
     except JWTError as e:
-        raise AuthenticationException(f"Invalid refresh token: {str(e)}")
+        raise AuthenticationException(f"Invalid refresh token: {str(e)}") from e
 
 
 def decode_token(token: str) -> TokenData:
@@ -216,9 +202,7 @@ def decode_token(token: str) -> TokenData:
         AuthenticationException: If token is invalid or expired
     """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id: str = payload.get("sub")
         tenant_id: str = payload.get("tenant_id")
         email: str | None = payload.get("email")
@@ -235,11 +219,11 @@ def decode_token(token: str) -> TokenData:
             tenant_id=tenant_id,
             email=email,
             exp=datetime.fromtimestamp(exp, tz=UTC) if exp else None,
-            access_scopes=[str(s) for s in scopes_claim],
             role=payload.get("role"),
+            access_scopes=[str(s) for s in scopes_claim],
         )
     except JWTError as e:
-        raise AuthenticationException(f"Invalid token: {str(e)}")
+        raise AuthenticationException(f"Invalid token: {str(e)}") from e
 
 
 # =============================================================================
@@ -338,6 +322,7 @@ def create_token_response(
     email: str | None = None,
     refresh_jti: str | None = None,
     role: str | None = None,
+    access_scopes: list[str] | None = None,
 ) -> Token:
     """Create access and refresh tokens. Optional refresh_jti for revocation support."""
     access_token = create_access_token(
@@ -345,6 +330,7 @@ def create_token_response(
         tenant_id=tenant_id,
         email=email,
         role=role,
+        access_scopes=access_scopes,
     )
     refresh_token = create_refresh_token(
         user_id=user_id,

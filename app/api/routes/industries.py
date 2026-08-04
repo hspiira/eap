@@ -8,15 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_industry_in_tenant,
-    require_same_tenant,
-    require_tenant_role,
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_industry_repository,
+    pagination,
 )
-from app.domain.enums import TenantRole
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_industry_repository
 from app.api.schemas.industry_schemas import (
     IndustryCreate,
     IndustryListResponse,
@@ -31,13 +28,20 @@ from app.application.use_cases.transitions import (
     IndustryTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_industry_in_tenant,
+    require_same_tenant,
+    require_tenant_role,
+)
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.industry import IndustryEntity
+from app.domain.enums import TenantRole
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/industries", tags=["industries"])
 
@@ -50,7 +54,9 @@ def _to_industry_response(industry: IndustryEntity) -> IndustryResponse:
         name=industry.name,
         description=industry.description,
         code=industry.code,
-        parent_industry_id=industry.parent_industry_id.value if industry.parent_industry_id else None,
+        parent_industry_id=industry.parent_industry_id.value
+        if industry.parent_industry_id
+        else None,
         is_active=industry.is_active(),
         created_at=industry.created_at.isoformat(),
         updated_at=industry.updated_at.isoformat(),
@@ -86,13 +92,7 @@ async def create_industry(
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
     )
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_industry_response(industry)
 
 
@@ -120,13 +120,7 @@ async def update_industry(
         code=data.code,
         parent_industry_id=IndustryId(data.parent_industry_id) if data.parent_industry_id else None,
     )
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 
@@ -146,16 +140,9 @@ async def activate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate an industry. ADMIN-only, same-tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
-    use_case.entity_name = "Industry"
+    use_case = TransitionUseCase(industry_repo, "Industry")
     industry = await use_case.execute(industry.id, IndustryTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 
@@ -175,16 +162,9 @@ async def deactivate_industry(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate an industry. ADMIN-only, same-tenant."""
-    use_case: TransitionUseCase = TransitionUseCase(industry_repo)
-    use_case.entity_name = "Industry"
+    use_case = TransitionUseCase(industry_repo, "Industry")
     industry = await use_case.execute(industry.id, IndustryTransition.DEACTIVATE)
-    await audit_entity_operation(
-        entity=industry,
-        audit_handler=audit_handler,
-        tenant_id=industry.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
 
@@ -203,21 +183,19 @@ async def list_industries(
     parent_id: str | None = Query(None, description="Filter by parent industry"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in industry name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=500, description="Items per page"),
+    pg: PageParams = Depends(pagination(max_limit=500)),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List industries with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     industries = await industry_repo.list_all(
         tenant_id=TenantId(tenant_id),
         parent_id=IndustryId(parent_id) if parent_id else None,
         is_active=is_active,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await industry_repo.count(
@@ -230,9 +208,9 @@ async def list_industries(
     return IndustryListResponse(
         items=[_to_industry_response(i) for i in industries],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -264,9 +242,7 @@ async def get_industry_children(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child industries for a parent industry."""
-    children = await industry_repo.get_children(
-        IndustryId(industry_id), TenantId(tenant_id)
-    )
+    children = await industry_repo.get_children(IndustryId(industry_id), TenantId(tenant_id))
     return IndustryListResponse(
         items=[_to_industry_response(c) for c in children],
         total=len(children),

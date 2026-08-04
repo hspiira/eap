@@ -8,13 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_document_for_current_tenant,
-    require_same_tenant,
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_document_repository,
+    pagination,
 )
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_document_repository
 from app.api.schemas.document_schemas import (
     DocumentCreate,
     DocumentCreateVersion,
@@ -36,14 +35,19 @@ from app.application.use_cases.transitions import (
     DocumentTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_document_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import DocumentStatus, DocumentType
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.document import DocumentEntity
+from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -64,9 +68,7 @@ def _to_document_response(document: DocumentEntity) -> DocumentResponse:
         file_size=document.file_size,
         mime_type=document.mime_type,
         previous_version_id=(
-            document.previous_version_id.value
-            if document.previous_version_id
-            else None
+            document.previous_version_id.value if document.previous_version_id else None
         ),
         uploaded_by=document.uploaded_by.value if document.uploaded_by else None,
         client_id=document.client_id,
@@ -120,13 +122,7 @@ async def create_document(
         expires_at=data.expires_at,
         is_confidential=data.is_confidential,
     )
-    await audit_entity_operation(
-        entity=document,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(document, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_document_response(document)
 
 
@@ -145,16 +141,9 @@ async def publish_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a document (make it available)."""
-    use_case: TransitionUseCase = TransitionUseCase(document_repo)
-    use_case.entity_name = "Document"
+    use_case = TransitionUseCase(document_repo, "Document")
     updated = await use_case.execute(document.id, DocumentTransition.PUBLISH)
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -173,16 +162,9 @@ async def archive_document(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a document."""
-    use_case: TransitionUseCase = TransitionUseCase(document_repo)
-    use_case.entity_name = "Document"
+    use_case = TransitionUseCase(document_repo, "Document")
     updated = await use_case.execute(document.id, DocumentTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -213,13 +195,7 @@ async def create_document_version(
         file_size=data.file_size,
         mime_type=data.mime_type,
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -244,13 +220,7 @@ async def update_document(
         name=data.name,
         description=data.description,
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -273,13 +243,7 @@ async def set_document_confidentiality(
     updated = await SetDocumentConfidentialityUseCase(document_repo).execute(
         document.id, data.is_confidential
     )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -299,16 +263,8 @@ async def set_document_expiry(
     db: AsyncSession = Depends(get_db),
 ):
     """Set document expiry date."""
-    updated = await SetDocumentExpiryUseCase(document_repo).execute(
-        document.id, data.expires_at
-    )
-    await audit_entity_operation(
-        entity=updated,
-        audit_handler=audit_handler,
-        tenant_id=updated.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    updated = await SetDocumentExpiryUseCase(document_repo).execute(document.id, data.expires_at)
+    await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
 
@@ -331,15 +287,13 @@ async def list_documents(
     person_id: str | None = Query(None, description="Filter by associated person"),
     is_confidential: bool | None = Query(None, description="Filter by confidentiality"),
     search: str | None = Query(None, description="Search in document name or description"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     document_repo: DocumentRepository = Depends(get_document_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List documents with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     documents = await document_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -350,8 +304,8 @@ async def list_documents(
         person_id=person_id,
         is_confidential=is_confidential,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -370,9 +324,9 @@ async def list_documents(
     return DocumentListResponse(
         items=[_to_document_response(doc) for doc in documents],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -404,9 +358,7 @@ async def get_document_versions(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all versions of a document."""
-    versions = await document_repo.get_versions(
-        DocumentId(document_id), TenantId(tenant_id)
-    )
+    versions = await document_repo.get_versions(DocumentId(document_id), TenantId(tenant_id))
     return DocumentVersionResponse(
         versions=[_to_document_response(version) for version in versions],
         total=len(versions),
@@ -427,9 +379,7 @@ async def get_latest_document_version(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the latest version of a document."""
-    latest = await document_repo.get_latest_version(
-        DocumentId(document_id), TenantId(tenant_id)
-    )
+    latest = await document_repo.get_latest_version(DocumentId(document_id), TenantId(tenant_id))
     if not latest:
         raise ValueError("Document not found")
     return _to_document_response(latest)

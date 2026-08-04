@@ -50,23 +50,17 @@ class TestValidateRow:
         assert out.status == SessionStatus.COMPLETED
 
     def test_unmapped_client(self):
-        out = validate_row(
-            _row(client_code="UNKNOWN"), _mappings(), existing_source_ids=set()
-        )
+        out = validate_row(_row(client_code="UNKNOWN"), _mappings(), existing_source_ids=set())
         assert isinstance(out, RejectedRow)
         assert out.classification == ImportClassification.REJECTED_UNMAPPED_CLIENT
 
     def test_unmapped_service(self):
-        out = validate_row(
-            _row(service_code="HUNGRY"), _mappings(), existing_source_ids=set()
-        )
+        out = validate_row(_row(service_code="HUNGRY"), _mappings(), existing_source_ids=set())
         assert isinstance(out, RejectedRow)
         assert out.classification == ImportClassification.REJECTED_UNMAPPED_SERVICE
 
     def test_unmapped_status(self):
-        out = validate_row(
-            _row(status_text="QUEUED"), _mappings(), existing_source_ids=set()
-        )
+        out = validate_row(_row(status_text="QUEUED"), _mappings(), existing_source_ids=set())
         assert isinstance(out, RejectedRow)
         assert out.classification == ImportClassification.REJECTED_UNMAPPED_STATUS
 
@@ -98,16 +92,12 @@ class TestValidateRow:
         assert out.classification == ImportClassification.REJECTED_DUPLICATE
 
     def test_missing_source_id(self):
-        out = validate_row(
-            _row(source_id=""), _mappings(), existing_source_ids=set()
-        )
+        out = validate_row(_row(source_id=""), _mappings(), existing_source_ids=set())
         assert isinstance(out, RejectedRow)
         assert out.classification == ImportClassification.REJECTED_MISSING_FIELD
 
     def test_missing_required_field(self):
-        out = validate_row(
-            _row(client_code=""), _mappings(), existing_source_ids=set()
-        )
+        out = validate_row(_row(client_code=""), _mappings(), existing_source_ids=set())
         assert isinstance(out, RejectedRow)
         assert out.classification == ImportClassification.REJECTED_MISSING_FIELD
 
@@ -133,15 +123,10 @@ class TestValidateRows:
             _row(source_id="excel-1"),
             _row(source_id="excel-2"),
         ]
-        report = validate_rows(
-            rows, _mappings(), existing_source_ids={"excel-1"}
-        )
+        report = validate_rows(rows, _mappings(), existing_source_ids={"excel-1"})
         assert report.accepted_count == 1
         assert report.rejected[0].source_id == "excel-1"
-        assert (
-            report.rejected[0].classification
-            == ImportClassification.REJECTED_DUPLICATE
-        )
+        assert report.rejected[0].classification == ImportClassification.REJECTED_DUPLICATE
 
     def test_summary_shape(self):
         rows = [

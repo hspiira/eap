@@ -8,12 +8,12 @@ This is a data container only - no business logic.
 from datetime import date, datetime
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Date,
     DateTime,
     Enum,
     ForeignKey,
-    JSON,
     String,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -53,12 +53,16 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     )
 
     # Relationships
-    client_id: Mapped[str] = mapped_column(
-        ForeignKey("clients.id"), nullable=False, index=True
-    )
+    client_id: Mapped[str] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
 
-    # Contract period (stored as JSON)
-    period: Mapped[dict] = mapped_column(JSON, nullable=False)
+    # Contract period. Real columns rather than a JSON blob so the term can be
+    # filtered and sorted in SQL — the renewal window needs an indexed range scan,
+    # and `period->>'end_date'` would neither use an index nor typecheck as a date.
+    # The domain still models this as a single DateRange; the mapper joins them.
+    start_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
 
     # Billing (stored as JSON)
     billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)
@@ -103,14 +107,10 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
 
     # Signing
     signed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    signed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Termination
-    termination_reason: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )
+    termination_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Pricing model + serialised pricing config (Phase 2 #D-Pricing)
     pricing_model: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)

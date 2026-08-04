@@ -11,9 +11,7 @@ from app.domain.value_objects.core import (
 )
 
 
-class UtilisationEventRepository(
-    BaseRepository[UtilisationEventEntity, UtilisationEventId]
-):
+class UtilisationEventRepository(BaseRepository[UtilisationEventEntity, UtilisationEventId]):
     async def list_for_contract(
         self,
         tenant_id: TenantId,
@@ -21,5 +19,4 @@ class UtilisationEventRepository(
         *,
         from_date: date | None = None,
         to_date: date | None = None,
-    ) -> list[UtilisationEventEntity]:
-        ...
+    ) -> list[UtilisationEventEntity]: ...

@@ -5,7 +5,7 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, JSON, String
+from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
@@ -34,14 +34,18 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
             name="client_status_check",
         ),
         CheckConstraint(
-            "preferred_contact_method IS NULL OR preferred_contact_method IN (" + ", ".join(f"'{e.value}'" for e in ContactMethod) + ")",
+            "preferred_contact_method IS NULL OR preferred_contact_method IN ("
+            + ", ".join(f"'{e.value}'" for e in ContactMethod)
+            + ")",
             name="client_contact_method_check",
         ),
     )
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    code: Mapped[str] = mapped_column(String(5), nullable=False, index=True)  # 3-5 character unique code
+    code: Mapped[str] = mapped_column(
+        String(5), nullable=False, index=True
+    )  # 3-5 character unique code
     contact_info: Mapped[dict] = mapped_column(JSON, nullable=False)
     billing_address: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 

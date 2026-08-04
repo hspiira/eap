@@ -88,9 +88,7 @@ class ContractPricing:
         if self.model == PricingModel.ADMIN_UTILISATION and (
             self.admin_fee_floor is None or self.rate_card is None
         ):
-            raise ValueError(
-                "ADMIN_UTILISATION pricing requires admin_fee_floor and rate_card"
-            )
+            raise ValueError("ADMIN_UTILISATION pricing requires admin_fee_floor and rate_card")
         if self.model == PricingModel.VALUE_ADD and self.parent_contract_id is None:
             raise ValueError("VALUE_ADD pricing requires parent_contract_id")
 

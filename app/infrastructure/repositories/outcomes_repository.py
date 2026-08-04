@@ -60,9 +60,7 @@ class OutcomeMeasureRepositoryImpl(OutcomeMeasureRepository):
         existing = await self._session.get(OutcomeMeasureModel, entity_id.value)
         return existing is not None
 
-    async def list_for_case(
-        self, tenant_id: TenantId, case_id: CaseId
-    ) -> list[OutcomeMeasure]:
+    async def list_for_case(self, tenant_id: TenantId, case_id: CaseId) -> list[OutcomeMeasure]:
         stmt = (
             select(OutcomeMeasureModel)
             .where(
@@ -92,9 +90,7 @@ class FitnessForDutyRepositoryImpl(FitnessForDutyRepository):
             existing.outcome = new_model.outcome
             existing.assessed_at = new_model.assessed_at
             existing.assessor_id = new_model.assessor_id
-            existing.accommodation_recommendations = (
-                new_model.accommodation_recommendations
-            )
+            existing.accommodation_recommendations = new_model.accommodation_recommendations
             existing.employer_report_at = new_model.employer_report_at
             existing.updated_at = new_model.updated_at
         await self._session.flush()
@@ -128,16 +124,12 @@ class ReturnToWorkPlanRepositoryImpl(ReturnToWorkPlanRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: ReturnToWorkPlanId
-    ) -> ReturnToWorkPlan | None:
+    async def get_by_id(self, entity_id: ReturnToWorkPlanId) -> ReturnToWorkPlan | None:
         row = await self._session.get(ReturnToWorkPlanModel, entity_id.value)
         return ReturnToWorkPlanMapper.to_entity(row) if row else None
 
     async def save(self, entity: ReturnToWorkPlan) -> None:
-        existing = await self._session.get(
-            ReturnToWorkPlanModel, entity.id.value
-        )
+        existing = await self._session.get(ReturnToWorkPlanModel, entity.id.value)
         new_model = ReturnToWorkPlanMapper.to_model(entity)
         if existing is None:
             self._session.add(new_model)
@@ -157,17 +149,13 @@ class ReturnToWorkPlanRepositoryImpl(ReturnToWorkPlanRepository):
         await self._session.flush()
 
     async def delete(self, entity_id: ReturnToWorkPlanId) -> None:
-        existing = await self._session.get(
-            ReturnToWorkPlanModel, entity_id.value
-        )
+        existing = await self._session.get(ReturnToWorkPlanModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: ReturnToWorkPlanId) -> bool:
-        existing = await self._session.get(
-            ReturnToWorkPlanModel, entity_id.value
-        )
+        existing = await self._session.get(ReturnToWorkPlanModel, entity_id.value)
         return existing is not None
 
     async def list_for_subject(

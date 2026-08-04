@@ -122,9 +122,7 @@ def _ffd(**overrides) -> FitnessForDuty:
         client_id=ClientId("client-1"),
         requested_at=now,
         requested_by=UserId("hr-1"),
-        business_necessity_rationale=(
-            "Performance decline after time off; safety-sensitive role"
-        ),
+        business_necessity_rationale=("Performance decline after time off; safety-sensitive role"),
         job_role_summary="Truck driver — safety-sensitive (DOT)",
         outcome=FitnessForDutyOutcome.PENDING,
         created_at=now,
@@ -164,9 +162,7 @@ class TestFitnessForDuty:
 
     def test_double_record_blocked(self):
         f = _ffd()
-        f.record_outcome(
-            outcome=FitnessForDutyOutcome.FIT, assessor_id=UserId("clin-1")
-        )
+        f.record_outcome(outcome=FitnessForDutyOutcome.FIT, assessor_id=UserId("clin-1"))
         with pytest.raises(InvalidStateError):
             f.record_outcome(
                 outcome=FitnessForDutyOutcome.NOT_FIT,

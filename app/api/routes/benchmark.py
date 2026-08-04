@@ -36,7 +36,7 @@ from app.domain.value_objects.core import (
 )
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 
@@ -69,9 +69,7 @@ async def grant_consent(
     data: GrantConsentRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: BenchmarkConsentRepository = Depends(
-        get_benchmark_consent_repository
-    ),
+    repo: BenchmarkConsentRepository = Depends(get_benchmark_consent_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -82,13 +80,7 @@ async def grant_consent(
         version=data.version,
         granted_by=UserId(current_user.user_id),
     )
-    await audit_entity_operation(
-        entity=consent,
-        audit_handler=audit_handler,
-        tenant_id=consent.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(consent, audit_handler, current_user, request)
     return _to_consent_response(consent)
 
 
@@ -103,9 +95,7 @@ async def withdraw_consent(
     data: WithdrawConsentRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    repo: BenchmarkConsentRepository = Depends(
-        get_benchmark_consent_repository
-    ),
+    repo: BenchmarkConsentRepository = Depends(get_benchmark_consent_repository),
     db: AsyncSession = Depends(get_db),
 ):
     out = await WithdrawBenchmarkConsentUseCase(repo).execute(
@@ -125,9 +115,7 @@ async def withdraw_consent(
 @readonly()
 async def list_consents(
     current_user: TokenData = Depends(get_current_user),
-    repo: BenchmarkConsentRepository = Depends(
-        get_benchmark_consent_repository
-    ),
+    repo: BenchmarkConsentRepository = Depends(get_benchmark_consent_repository),
     db: AsyncSession = Depends(get_db),
 ):
     rows = await repo.list_for_tenant(TenantId(current_user.tenant_id))
@@ -149,22 +137,17 @@ async def get_benchmark(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     current_user: TokenData = Depends(get_current_user),
-    consents: BenchmarkConsentRepository = Depends(
-        get_benchmark_consent_repository
-    ),
+    consents: BenchmarkConsentRepository = Depends(get_benchmark_consent_repository),
     collector=Depends(get_benchmark_collector),
     db: AsyncSession = Depends(get_db),
 ):
     # Caller must hold an active consent for the scope they are querying.
-    own = await consents.find_active_for_tenant_scope(
-        TenantId(current_user.tenant_id), scope
-    )
+    own = await consents.find_active_for_tenant_scope(TenantId(current_user.tenant_id), scope)
     if own is None:
         raise HTTPException(
             status_code=403,
             detail=(
-                f"Tenant has no active consent for scope {scope.value}; "
-                "grant one before querying"
+                f"Tenant has no active consent for scope {scope.value}; grant one before querying"
             ),
         )
     result = await GetCrossTenantBenchmarkUseCase(consents, collector).execute(

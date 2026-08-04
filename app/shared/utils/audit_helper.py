@@ -10,16 +10,14 @@ from app.domain.enums import AuditActionType
 from app.domain.value_objects.audit import FieldChange
 
 
-def extract_field_changes(
-    old_entity: Any | None, new_entity: Any
-) -> list[FieldChange]:
+def extract_field_changes(old_entity: Any | None, new_entity: Any) -> list[FieldChange]:
     """
     Extract field changes between old and new entity states.
-    
+
     Args:
         old_entity: Previous entity state (None for creates)
         new_entity: Current entity state
-        
+
     Returns:
         List of FieldChange value objects
     """
@@ -33,21 +31,19 @@ def extract_field_changes(
                 FieldChange(
                     field_name="id",
                     old_value=None,
-                    new_value=new_entity.id.value if hasattr(new_entity.id, "value") else str(new_entity.id),
+                    new_value=new_entity.id.value
+                    if hasattr(new_entity.id, "value")
+                    else str(new_entity.id),
                 )
             )
         return changes
 
     # Compare fields (only private fields starting with _)
     old_dict = {
-        k: v
-        for k, v in old_entity.__dict__.items()
-        if k.startswith("_") and not k.startswith("__")
+        k: v for k, v in old_entity.__dict__.items() if k.startswith("_") and not k.startswith("__")
     }
     new_dict = {
-        k: v
-        for k, v in new_entity.__dict__.items()
-        if k.startswith("_") and not k.startswith("__")
+        k: v for k, v in new_entity.__dict__.items() if k.startswith("_") and not k.startswith("__")
     }
 
     # Skip events and deleted_at for change tracking
@@ -88,10 +84,10 @@ def extract_field_changes(
 def map_domain_event_to_audit_action(event_type: str) -> AuditActionType:
     """
     Map domain event type to audit action type.
-    
+
     Args:
         event_type: Domain event class name
-        
+
     Returns:
         AuditActionType
     """
@@ -115,10 +111,10 @@ def map_domain_event_to_audit_action(event_type: str) -> AuditActionType:
 def get_resource_type_from_entity(entity: Any) -> str:
     """
     Get resource type from entity class name.
-    
+
     Args:
         entity: Domain entity
-        
+
     Returns:
         Resource type string (e.g., "Tenant", "Person")
     """

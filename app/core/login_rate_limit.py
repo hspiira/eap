@@ -8,7 +8,7 @@ Supports pluggable backends: "memory" (per-process) or "redis" (shared across in
 """
 
 import time
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from typing import Protocol
 
 from fastapi import HTTPException, Request
@@ -40,9 +40,7 @@ class MemoryLoginRateLimitBackend:
     ) -> None:
         self._window_sec = window_sec
         self._max_attempts = max_attempts
-        self._attempts: dict[str, deque[float]] = defaultdict(
-            lambda: deque(maxlen=100)
-        )
+        self._attempts: dict[str, deque[float]] = defaultdict(lambda: deque(maxlen=100))
 
     def check(self, ip: str) -> None:
         now = time.time()

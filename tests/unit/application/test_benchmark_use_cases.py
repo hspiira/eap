@@ -57,8 +57,7 @@ class _FakeConsentRepo:
         return [
             c
             for c in self.store.values()
-            if c.scope == scope
-            and c.status == TenantConsentStatus.ACTIVE
+            if c.scope == scope and c.status == TenantConsentStatus.ACTIVE
         ]
 
     async def find_active_for_tenant_scope(self, tenant_id, scope):
@@ -76,9 +75,7 @@ class _FakeCollector:
     def __init__(self, per_tenant: dict[str, float]):
         self.per_tenant = per_tenant
 
-    async def per_tenant_values(
-        self, *, tenant_ids, scope, from_date, to_date
-    ) -> dict[str, float]:
+    async def per_tenant_values(self, *, tenant_ids, scope, from_date, to_date) -> dict[str, float]:
         ids = {t.value for t in tenant_ids}
         return {tid: v for tid, v in self.per_tenant.items() if tid in ids}
 
@@ -144,14 +141,9 @@ class TestCrossTenantBenchmark:
     async def test_suppressed_below_floor(self):
         # Only 3 consenting tenants — well below default k=10
         repo = _FakeConsentRepo(
-            *(
-                _consent(f"t-{i}", BenchmarkScope.SESSION_VOLUME)
-                for i in range(3)
-            )
+            *(_consent(f"t-{i}", BenchmarkScope.SESSION_VOLUME) for i in range(3))
         )
-        collector = _FakeCollector(
-            per_tenant={f"t-{i}": float(i + 1) for i in range(3)}
-        )
+        collector = _FakeCollector(per_tenant={f"t-{i}": float(i + 1) for i in range(3)})
         out = await GetCrossTenantBenchmarkUseCase(repo, collector).execute(
             scope=BenchmarkScope.SESSION_VOLUME,
             metric_code="completed_session_count",
@@ -163,14 +155,9 @@ class TestCrossTenantBenchmark:
     @pytest.mark.asyncio
     async def test_discloses_at_floor(self):
         repo = _FakeConsentRepo(
-            *(
-                _consent(f"t-{i}", BenchmarkScope.SESSION_VOLUME)
-                for i in range(10)
-            )
+            *(_consent(f"t-{i}", BenchmarkScope.SESSION_VOLUME) for i in range(10))
         )
-        collector = _FakeCollector(
-            per_tenant={f"t-{i}": 5.0 for i in range(10)}
-        )
+        collector = _FakeCollector(per_tenant={f"t-{i}": 5.0 for i in range(10)})
         out = await GetCrossTenantBenchmarkUseCase(repo, collector).execute(
             scope=BenchmarkScope.SESSION_VOLUME,
             metric_code="completed_session_count",
@@ -184,21 +171,15 @@ class TestCrossTenantBenchmark:
         repo = _FakeConsentRepo(
             *(_consent(f"t-{i}", BenchmarkScope.SATISFACTION) for i in range(3))
         )
-        collector = _FakeCollector(
-            per_tenant={f"t-{i}": float(i) for i in range(3)}
-        )
-        out = await GetCrossTenantBenchmarkUseCase(
-            repo, collector, floor=3
-        ).execute(
+        collector = _FakeCollector(per_tenant={f"t-{i}": float(i) for i in range(3)})
+        out = await GetCrossTenantBenchmarkUseCase(repo, collector, floor=3).execute(
             scope=BenchmarkScope.SATISFACTION, metric_code="satisfaction_proxy"
         )
         assert out.suppressed is False
 
     @pytest.mark.asyncio
     async def test_no_consenting_tenants_yields_zero_contributors(self):
-        out = await GetCrossTenantBenchmarkUseCase(
-            _FakeConsentRepo(), _FakeCollector({})
-        ).execute(
+        out = await GetCrossTenantBenchmarkUseCase(_FakeConsentRepo(), _FakeCollector({})).execute(
             scope=BenchmarkScope.SESSION_VOLUME, metric_code="x"
         )
         assert out.contributor_count == 0

@@ -30,9 +30,7 @@ def _section(
 _UNSET: object = object()
 
 
-def _template(
-    *, sections: list[TemplateSection] | object = _UNSET
-) -> ReportTemplate:
+def _template(*, sections: list[TemplateSection] | object = _UNSET) -> ReportTemplate:
     now = datetime.now(UTC)
     if sections is _UNSET:
         sections = [_section()]

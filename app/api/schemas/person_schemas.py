@@ -20,14 +20,16 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import BaseStatus, PersonType, RelationType, StaffRole, WorkStatus
 
-
 # === Value Object Schemas ===
+
 
 class EmploymentInfoSchema(BaseModel):
     """Employment information schema."""
 
     client_id: str = Field(..., description="Client identifier")
-    employee_code: str = Field(..., description="Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)")
+    employee_code: str = Field(
+        ..., description="Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)"
+    )
     role: str = Field(..., description="Job role")
     start_date: date = Field(..., description="Employment start date")
     status: WorkStatus = Field(..., description="Work status")
@@ -97,6 +99,7 @@ class EmergencyContactSchema(BaseModel):
 
 # === Request Schemas ===
 
+
 class PersonDeactivateRequest(BaseModel):
     """Request schema for deactivating a person."""
 
@@ -124,8 +127,9 @@ class AddSecondaryRoleRequest(BaseModel):
     staff_info: StaffInfoSchema | None = Field(
         None, description="Staff info (for PLATFORM_STAFF role)"
     )
+
     @model_validator(mode="after")
-    def _validate_role_payload(self) -> 'AddSecondaryRoleRequest':
+    def _validate_role_payload(self) -> "AddSecondaryRoleRequest":
         if self.role == PersonType.CLIENT_EMPLOYEE and self.employment_info is None:
             raise ValueError("employment_info is required for CLIENT_EMPLOYEE role")
         if self.role == PersonType.SERVICE_PROVIDER and self.license_info is None:
@@ -146,9 +150,7 @@ class UpdateEmergencyContactRequest(BaseModel):
 class UpdateEmploymentInfoRequest(BaseModel):
     """Request schema for updating employment information."""
 
-    employment_info: EmploymentInfoSchema = Field(
-        ..., description="Employment information"
-    )
+    employment_info: EmploymentInfoSchema = Field(..., description="Employment information")
 
 
 class UpdateLicenseInfoRequest(BaseModel):
@@ -175,6 +177,7 @@ class UpdateDependentInfoRequest(BaseModel):
 
 # === Create (discriminated by person_type) ===
 
+
 class PersonCreate(BaseModel):
     """
     Request schema for creating a person.
@@ -183,16 +186,18 @@ class PersonCreate(BaseModel):
     then either employment_info (for CLIENT_EMPLOYEE) or dependent_info (for DEPENDENT).
     """
 
-    person_type: PersonType = Field(..., description="Primary person type (CLIENT_EMPLOYEE or DEPENDENT)")
+    person_type: PersonType = Field(
+        ..., description="Primary person type (CLIENT_EMPLOYEE or DEPENDENT)"
+    )
     user_id: str = Field(..., description="User identifier (user must exist)")
     tenant_id: str = Field(..., description="Tenant identifier")
     employment_info: EmploymentInfoCreateSchema | None = Field(
         None, description="Required for CLIENT_EMPLOYEE"
     )
-    dependent_info: DependentInfoSchema | None = Field(
-        None, description="Required for DEPENDENT"
+    dependent_info: DependentInfoSchema | None = Field(None, description="Required for DEPENDENT")
+    family_id: str | None = Field(
+        None, description="Family identifier (optional, for CLIENT_EMPLOYEE)"
     )
-    family_id: str | None = Field(None, description="Family identifier (optional, for CLIENT_EMPLOYEE)")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -209,6 +214,7 @@ class PersonCreate(BaseModel):
 
 # === Response Schemas ===
 
+
 class PersonResponse(BaseModel):
     """Response schema for person."""
 
@@ -217,21 +223,13 @@ class PersonResponse(BaseModel):
     user_id: str = Field(..., description="User identifier")
     person_type: PersonType = Field(..., description="Primary person type")
     is_dual_role: bool = Field(..., description="Whether person has dual role")
-    secondary_person_type: PersonType | None = Field(
-        None, description="Secondary person type"
-    )
+    secondary_person_type: PersonType | None = Field(None, description="Secondary person type")
     status: BaseStatus = Field(..., description="Person status")
-    employment_info: EmploymentInfoSchema | None = Field(
-        None, description="Employment information"
-    )
+    employment_info: EmploymentInfoSchema | None = Field(None, description="Employment information")
     license_info: LicenseInfoSchema | None = Field(None, description="License information")
     staff_info: StaffInfoSchema | None = Field(None, description="Staff information")
-    dependent_info: DependentInfoSchema | None = Field(
-        None, description="Dependent information"
-    )
-    emergency_contact: EmergencyContactSchema | None = Field(
-        None, description="Emergency contact"
-    )
+    dependent_info: DependentInfoSchema | None = Field(None, description="Dependent information")
+    emergency_contact: EmergencyContactSchema | None = Field(None, description="Emergency contact")
     provider_profile: "ProviderProfileSchema | None" = Field(
         None,
         description=(
@@ -239,7 +237,9 @@ class PersonResponse(BaseModel):
             "Carries tier, region, accreditation, panel status, specialties."
         ),
     )
-    family_id: str | None = Field(None, description="Family identifier (points to primary employee)")
+    family_id: str | None = Field(
+        None, description="Family identifier (points to primary employee)"
+    )
     last_service_date: date | None = Field(None, description="Last service date")
     is_eligible_for_services: bool = Field(..., description="Eligible for services")
 

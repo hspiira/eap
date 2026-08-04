@@ -5,10 +5,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_activity_repository
+from app.api.dependencies import (
+    PageParams,
+    get_activity_repository,
+    get_audit_event_handler,
+    pagination,
+)
 from app.api.schemas.activity_schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -20,13 +22,15 @@ from app.application.use_cases.activity_use_cases import (
     GetActivityUseCase,
     UpdateActivityUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.activity import ActivityEntity
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -81,13 +85,7 @@ async def create_activity(
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
     )
-    await audit_entity_operation(
-        entity=activity,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(activity, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_activity_response(activity)
 
 
@@ -114,13 +112,7 @@ async def update_activity(
         next_follow_up=data.next_follow_up,
         is_important=data.is_important,
     )
-    await audit_entity_operation(
-        entity=activity,
-        audit_handler=audit_handler,
-        tenant_id=activity.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(activity, audit_handler, current_user, request)
     return _to_activity_response(activity)
 
 
@@ -140,13 +132,11 @@ async def list_activities(
     date_to: datetime | None = Query(None, description="Filter to date"),
     is_important: bool | None = Query(None, description="Filter by important status"),
     search: str | None = Query(None, description="Search in description or subject"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List activities with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     activities = await activity_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -157,8 +147,8 @@ async def list_activities(
         date_to=date_to,
         is_important=is_important,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await activity_repo.count(
@@ -175,9 +165,9 @@ async def list_activities(
     return ActivityListResponse(
         items=[_to_activity_response(activity) for activity in activities],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

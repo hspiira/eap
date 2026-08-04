@@ -65,7 +65,7 @@ async def main() -> None:
         if delivered == 0:
             try:
                 await asyncio.wait_for(stopping.wait(), timeout=_IDLE_SLEEP_SECONDS)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
     logger.info("outbox worker stopped")

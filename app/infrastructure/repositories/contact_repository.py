@@ -13,7 +13,9 @@ from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactModel, ContactId], ContactRepository):
+class ContactRepositoryImpl(
+    TenantScopedRepositoryImpl[ContactEntity, ContactModel, ContactId], ContactRepository
+):
     """
     SQLAlchemy implementation of ContactRepository.
 
@@ -36,7 +38,9 @@ class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactMod
         """Extract raw ID value."""
         return entity_id.value
 
-    async def get_by_client_id(self, client_id: str, tenant_id: TenantId) -> Sequence[ContactEntity]:
+    async def get_by_client_id(
+        self, client_id: str, tenant_id: TenantId
+    ) -> Sequence[ContactEntity]:
         """Get all contacts for a client."""
         stmt = select(ContactModel).where(
             ContactModel.client_id == client_id,
@@ -47,7 +51,9 @@ class ContactRepositoryImpl(TenantScopedRepositoryImpl[ContactEntity, ContactMod
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
 
-    async def get_primary_contact(self, client_id: str, tenant_id: TenantId) -> ContactEntity | None:
+    async def get_primary_contact(
+        self, client_id: str, tenant_id: TenantId
+    ) -> ContactEntity | None:
         """Get the primary contact for a client."""
         stmt = select(ContactModel).where(
             ContactModel.client_id == client_id,

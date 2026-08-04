@@ -69,25 +69,19 @@ class CareCallbackCampaign:
     def activate(self, now: datetime | None = None) -> None:
         """Open the campaign for outreach work."""
         if self.status != CareCallbackCampaignStatus.DRAFT:
-            raise InvalidStateError(
-                f"Cannot activate campaign in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot activate campaign in status {self.status.value}")
         if not self.counsellor_pool:
             raise DomainError("Cannot activate a campaign with an empty counsellor pool")
         now = now or utc_now()
         self.status = CareCallbackCampaignStatus.ACTIVE
         self.activated_at = now
         self.updated_at = now
-        self.events.append(
-            CareCallbackCampaignActivated(occurred_at=now, campaign_id=self.id)
-        )
+        self.events.append(CareCallbackCampaignActivated(occurred_at=now, campaign_id=self.id))
 
     def complete(self, now: datetime | None = None) -> None:
         """Close the campaign; aggregated metrics are final after this point."""
         if self.status != CareCallbackCampaignStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot complete campaign in status {self.status.value}"
-            )
+            raise InvalidStateError(f"Cannot complete campaign in status {self.status.value}")
         now = now or utc_now()
         self.status = CareCallbackCampaignStatus.COMPLETED
         self.completed_at = now
@@ -126,9 +120,7 @@ class CareCallbackCampaign:
     def increment_completed(self, now: datetime | None = None) -> None:
         """Bump the campaign's completed counter as outreach records finish."""
         if self.status != CareCallbackCampaignStatus.ACTIVE:
-            raise InvalidStateError(
-                f"Cannot record completions on a {self.status.value} campaign"
-            )
+            raise InvalidStateError(f"Cannot record completions on a {self.status.value} campaign")
         self.completed_count += 1
         self.updated_at = now or utc_now()
 

@@ -33,9 +33,7 @@ class CareCallbackCampaignMapper:
             period_start=model.period_start,
             period_end=model.period_end,
             target_count=model.target_count,
-            counsellor_pool=tuple(
-                PersonId(pid) for pid in (model.counsellor_pool or [])
-            ),
+            counsellor_pool=tuple(PersonId(pid) for pid in (model.counsellor_pool or [])),
             status=CareCallbackCampaignStatus(model.status),
             sampling_notes=model.sampling_notes,
             created_by=UserId(model.created_by),
@@ -73,11 +71,7 @@ class CareCallbackCampaignMapper:
 class OutreachRecordMapper:
     @staticmethod
     def to_entity(model: OutreachRecordModel) -> OutreachRecord:
-        risk = (
-            TriageRiskLevel(model.triage_risk_level)
-            if model.triage_risk_level
-            else None
-        )
+        risk = TriageRiskLevel(model.triage_risk_level) if model.triage_risk_level else None
         entity = OutreachRecord(
             id=OutreachRecordId(model.id),
             tenant_id=TenantId(model.tenant_id),

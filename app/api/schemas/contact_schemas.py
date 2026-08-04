@@ -21,7 +21,9 @@ class ContactCreate(BaseModel):
 class ContactUpdate(BaseModel):
     """Request schema for updating a contact."""
 
-    name: OptionalSanitizedStr = Field(None, min_length=1, max_length=255, description="Contact name")
+    name: OptionalSanitizedStr = Field(
+        None, min_length=1, max_length=255, description="Contact name"
+    )
     title: OptionalSanitizedStr = Field(None, max_length=255, description="Job title")
     email: EmailStr | None = Field(None, description="Email address")
     phone: str | None = Field(None, max_length=50, description="Phone number")

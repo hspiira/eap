@@ -42,8 +42,7 @@ class _QueryRunnerProtocol(Protocol):
         *,
         tenant_id: str,
         run_parameters: dict[str, Any],
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
 
 class CreateReportTemplateUseCase(BaseUseCase[ReportTemplate, ReportTemplateId]):
@@ -176,9 +175,7 @@ class GetReportRunUseCase:
 RENEWAL_PACK_CODE = "renewal_pack_v1"
 
 
-def build_renewal_pack_sections(
-    *, client_id: str | None = None
-) -> list[TemplateSection]:
+def build_renewal_pack_sections(*, client_id: str | None = None) -> list[TemplateSection]:
     """Canonical 4-section renewal pack (Phase 3 #D-Reports v1 / SAD §15).
 
     Each section names the concrete query the runner executes; the optional

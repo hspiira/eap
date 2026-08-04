@@ -19,7 +19,9 @@ from app.infrastructure.models.document_model import DocumentModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, DocumentModel, DocumentId], DocumentRepository):
+class DocumentRepositoryImpl(
+    TenantScopedRepositoryImpl[DocumentEntity, DocumentModel, DocumentId], DocumentRepository
+):
     """
     SQLAlchemy implementation of DocumentRepository.
 
@@ -41,7 +43,6 @@ class DocumentRepositoryImpl(TenantScopedRepositoryImpl[DocumentEntity, Document
     def _get_id_value(self, entity_id: DocumentId) -> Any:
         """Extract raw ID value."""
         return entity_id.value
-
 
     async def get_versions(
         self, document_id: DocumentId, tenant_id: TenantId

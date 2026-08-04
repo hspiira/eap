@@ -5,15 +5,16 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 
-
 # === Request Schemas ===
+
 
 class KPICreate(BaseModel):
     """Request schema for creating a KPI."""
@@ -50,7 +51,7 @@ class KPIAssignmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
-    def validate_client_or_contract(self) -> 'KPICreate':
+    def validate_client_or_contract(self) -> "KPICreate":
         """Validate that either client_id or contract_id is provided, but not both."""
         if not self.client_id and not self.contract_id:
             raise ValueError("Either client_id or contract_id must be provided")
@@ -66,6 +67,7 @@ class KPIAssignmentUpdate(BaseModel):
 
 
 # === Response Schemas ===
+
 
 class KPIResponse(BaseModel):
     """Response schema for KPI."""

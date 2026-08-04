@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.person import PersonEntity
 from app.domain.enums import PersonType
-from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.services.employee_code_generator import EmployeeCodeGenerator
 from app.domain.value_objects.core import (
     ClientId,
@@ -45,9 +45,7 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
         super().__init__(person_repository)
         self.person_repository = person_repository
         self.client_repository = client_repository
-        self.code_generator = EmployeeCodeGenerator(
-            person_repository, client_repository
-        )
+        self.code_generator = EmployeeCodeGenerator(person_repository, client_repository)
 
     async def execute(
         self,
@@ -66,7 +64,7 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
     ) -> PersonEntity:
         """
         Create a new client employee person.
-        
+
         Args:
             person_id: Person identifier
             tenant_id: Tenant identifier
@@ -80,7 +78,7 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
             employee_id: External employee ID (optional)
             end_date: Employment end date (optional)
             family_id: Optional family identifier (if adding to existing family)
-            
+
         Returns:
             Created PersonEntity
         """
@@ -96,7 +94,7 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
         )
 
         from app.domain.value_objects.core import EmploymentInfo
-        
+
         employment_info = EmploymentInfo(
             client_id=client_id,
             employee_code=employee_code,
@@ -139,17 +137,17 @@ class CreateDependentUseCase(BaseUseCase[PersonEntity, PersonId]):
     ) -> PersonEntity:
         """
         Create a new dependent person.
-        
+
         Args:
             person_id: Person identifier
             tenant_id: Tenant identifier
             user_id: User identifier
             profile: User profile entity
             dependent_info: Dependent information (includes primary_employee_id)
-            
+
         Returns:
             Created PersonEntity
-            
+
         Raises:
             ValueError: If person already exists for user or primary employee not found/invalid
         """
@@ -171,9 +169,7 @@ class CreateDependentUseCase(BaseUseCase[PersonEntity, PersonId]):
             )
 
         if primary_employee.tenant_id != tenant_id:
-            raise ValueError(
-                "Primary employee must belong to the same tenant as the dependent"
-            )
+            raise ValueError("Primary employee must belong to the same tenant as the dependent")
 
         person = PersonEntity.create_dependent(
             id=person_id,
@@ -203,9 +199,7 @@ class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
         super().__init__(person_repository)
         self.client_repository = client_repository
         if client_repository:
-            self.code_generator = EmployeeCodeGenerator(
-                person_repository, client_repository
-            )
+            self.code_generator = EmployeeCodeGenerator(person_repository, client_repository)
         else:
             self.code_generator = None
 
@@ -219,7 +213,7 @@ class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
     ) -> PersonEntity:
         """
         Add a secondary role to a person.
-        
+
         Args:
             person_id: Person identifier
             role: Secondary role type
@@ -249,7 +243,7 @@ class AddSecondaryRoleUseCase(BaseUseCase[PersonEntity, PersonId]):
                     employee_id=info.employee_id,
                     end_date=info.end_date,
                 )
-        
+
         person.add_secondary_role(role, info)
         return await self._save_and_publish_events(person)
 
@@ -282,8 +276,6 @@ class GetPersonsByTypeUseCase(BaseUseCase[PersonEntity, PersonId]):
         super().__init__(person_repository)
         self.person_repository = person_repository
 
-    async def execute(
-        self, tenant_id: TenantId, person_type: PersonType
-    ) -> list[PersonEntity]:
+    async def execute(self, tenant_id: TenantId, person_type: PersonType) -> list[PersonEntity]:
         """Get all persons of a specific type within a tenant."""
         return await self.person_repository.get_by_type(tenant_id, person_type)

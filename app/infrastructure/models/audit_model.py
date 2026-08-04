@@ -9,7 +9,7 @@ Audit logs are immutable - no updates or deletes.
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, JSON, String, Text
+from sqlalchemy import JSON, CheckConstraint, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.enums import AuditActionType
@@ -34,20 +34,12 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
 
     # User reference
-    user_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
+    user_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
 
     # Action details
-    action_type: Mapped[AuditActionType] = mapped_column(
-        String(50), nullable=False, index=True
-    )
-    resource_type: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True
-    )
-    resource_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
+    action_type: Mapped[AuditActionType] = mapped_column(String(50), nullable=False, index=True)
+    resource_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    resource_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
 
     # Description and context
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -57,9 +49,7 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         "metadata", JSON, nullable=True
     )  # Column name is 'metadata' in DB, attribute is 'extra_metadata' in Python
 
-    occurred_at: Mapped[datetime] = mapped_column(
-        nullable=False, index=True
-    )
+    occurred_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
 
     is_special_category: Mapped[bool] = mapped_column(
         nullable=False, default=False, server_default="false", index=True
@@ -92,12 +82,8 @@ class EntityChangeModel(CuidMixin, Base, TimestampMixin):
     )
 
     # Entity reference
-    entity_type: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True
-    )
-    entity_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    entity_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    entity_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
 
     # Field changes stored as JSON array
     field_changes: Mapped[list[dict]] = mapped_column(JSON, nullable=False)

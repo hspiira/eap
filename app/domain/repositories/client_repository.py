@@ -6,7 +6,7 @@ Implementation lives in infrastructure layer.
 """
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier
@@ -23,9 +23,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
     """
 
     @abstractmethod
-    async def get_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ClientEntity | None:
+    async def get_by_name(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
         """
         Get client by name within a tenant.
 
@@ -36,7 +34,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         Returns:
             ClientEntity if found, None otherwise
         """
-    
+
     @abstractmethod
     async def list_all(
         self,

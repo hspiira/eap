@@ -5,7 +5,7 @@ Database representation of Tenant aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import Boolean, CheckConstraint, Enum, JSON, String
+from sqlalchemy import JSON, Boolean, CheckConstraint, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import SubscriptionTier, TenantStatus

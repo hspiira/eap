@@ -45,19 +45,12 @@ class EAPProgramme:
             raise DomainError("EAPProgramme requires a name")
         if not self.caps:
             raise DomainError("EAPProgramme requires at least one session cap")
-        if (
-            self.effective_until
-            and self.effective_until < self.effective_from
-        ):
-            raise DomainError(
-                "effective_until must be on or after effective_from"
-            )
+        if self.effective_until and self.effective_until < self.effective_from:
+            raise DomainError("effective_until must be on or after effective_from")
         seen: set[ServiceCategory] = set()
         for cap in self.caps:
             if cap.service_category in seen:
-                raise DomainError(
-                    f"Duplicate cap for {cap.service_category.value}"
-                )
+                raise DomainError(f"Duplicate cap for {cap.service_category.value}")
             seen.add(cap.service_category)
         if self.created_at == self.updated_at and not self.events:
             self.events.append(

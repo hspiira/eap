@@ -3,10 +3,12 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_service_assignment_repository
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_service_assignment_repository,
+    pagination,
+)
 from app.api.schemas.service_assignment_schemas import (
     ServiceAssignmentCreate,
     ServiceAssignmentListResponse,
@@ -22,19 +24,23 @@ from app.application.use_cases.transitions import (
     ServiceAssignmentTransition,
     TransitionUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
-from app.domain.enums import BaseStatus
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
+from app.domain.enums import BaseStatus
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/service-assignments", tags=["service-assignments"])
 
 
-def _to_service_assignment_response(assignment: ServiceAssignmentEntity) -> ServiceAssignmentResponse:
+def _to_service_assignment_response(
+    assignment: ServiceAssignmentEntity,
+) -> ServiceAssignmentResponse:
     """Map ServiceAssignmentEntity to API response using public properties."""
     return ServiceAssignmentResponse(
         id=assignment.id.value,
@@ -77,13 +83,7 @@ async def create_service_assignment(
         assigned_by=assigned_by,
         notes=data.notes,
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_service_assignment_response(assignment)
 
 
@@ -106,13 +106,7 @@ async def update_service_assignment(
     assignment = await UpdateServiceAssignmentUseCase(assignment_repo).execute(
         ServiceAssignmentId(assignment_id), data.notes
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 
@@ -131,18 +125,11 @@ async def activate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 
@@ -161,18 +148,11 @@ async def deactivate_service_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
 
 
@@ -188,21 +168,19 @@ async def list_service_assignments(
     service_id: str | None = Query(None, description="Filter by service"),
     contract_id: str | None = Query(None, description="Filter by contract"),
     status: BaseStatus | None = Query(None, description="Filter by status"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List service assignments with filtering and pagination."""
-    offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(service_id) if service_id else None,
         contract_id=ContractId(contract_id) if contract_id else None,
         status=status,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
     )
 
     total = await assignment_repo.count(
@@ -215,9 +193,9 @@ async def list_service_assignments(
     return ServiceAssignmentListResponse(
         items=[_to_service_assignment_response(a) for a in assignments],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

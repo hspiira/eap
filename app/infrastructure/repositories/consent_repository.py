@@ -26,8 +26,8 @@ from app.infrastructure.mappers.consent_mappers import (
 )
 from app.infrastructure.models.consent_models import (
     ConsentModel,
-    DPOContactModel,
     DataSharingRegisterEntryModel,
+    DPOContactModel,
 )
 
 
@@ -48,12 +48,8 @@ class ConsentRepositoryImpl(ConsentRepository):
             existing.status = new_model.status
             existing.expires_on = new_model.expires_on
             existing.granted_at = new_model.granted_at
-            existing.granted_by_subject_reference = (
-                new_model.granted_by_subject_reference
-            )
-            existing.signed_artifact_document_id = (
-                new_model.signed_artifact_document_id
-            )
+            existing.granted_by_subject_reference = new_model.granted_by_subject_reference
+            existing.signed_artifact_document_id = new_model.signed_artifact_document_id
             existing.revoked_at = new_model.revoked_at
             existing.revoked_reason = new_model.revoked_reason
             existing.updated_at = new_model.updated_at
@@ -114,31 +110,23 @@ class DataSharingRegisterRepositoryImpl(DataSharingRegisterRepository):
     async def get_by_id(
         self, entity_id: DataSharingRegisterEntryId
     ) -> DataSharingRegisterEntry | None:
-        row = await self._session.get(
-            DataSharingRegisterEntryModel, entity_id.value
-        )
+        row = await self._session.get(DataSharingRegisterEntryModel, entity_id.value)
         return DataSharingRegisterMapper.to_entity(row) if row else None
 
     async def save(self, entity: DataSharingRegisterEntry) -> None:
-        existing = await self._session.get(
-            DataSharingRegisterEntryModel, entity.id.value
-        )
+        existing = await self._session.get(DataSharingRegisterEntryModel, entity.id.value)
         if existing is None:
             self._session.add(DataSharingRegisterMapper.to_model(entity))
         await self._session.flush()
 
     async def delete(self, entity_id: DataSharingRegisterEntryId) -> None:
-        existing = await self._session.get(
-            DataSharingRegisterEntryModel, entity_id.value
-        )
+        existing = await self._session.get(DataSharingRegisterEntryModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: DataSharingRegisterEntryId) -> bool:
-        existing = await self._session.get(
-            DataSharingRegisterEntryModel, entity_id.value
-        )
+        existing = await self._session.get(DataSharingRegisterEntryModel, entity_id.value)
         return existing is not None
 
     async def list_for_tenant(
@@ -160,8 +148,7 @@ class DataSharingRegisterRepositoryImpl(DataSharingRegisterRepository):
             select(DataSharingRegisterEntryModel)
             .where(
                 DataSharingRegisterEntryModel.tenant_id == tenant_id.value,
-                DataSharingRegisterEntryModel.subject_clinical_subject_id
-                == subject_id.value,
+                DataSharingRegisterEntryModel.subject_clinical_subject_id == subject_id.value,
             )
             .order_by(DataSharingRegisterEntryModel.shared_at.desc())
         )
@@ -203,9 +190,7 @@ class DPOContactRepositoryImpl(DPOContactRepository):
         existing = await self._session.get(DPOContactModel, entity_id.value)
         return existing is not None
 
-    async def current_for_tenant(
-        self, tenant_id: TenantId
-    ) -> DPOContact | None:
+    async def current_for_tenant(self, tenant_id: TenantId) -> DPOContact | None:
         stmt = (
             select(DPOContactModel)
             .where(
@@ -217,9 +202,7 @@ class DPOContactRepositoryImpl(DPOContactRepository):
         row = (await self._session.execute(stmt)).scalars().first()
         return DPOContactMapper.to_entity(row) if row else None
 
-    async def list_for_tenant(
-        self, tenant_id: TenantId
-    ) -> list[DPOContact]:
+    async def list_for_tenant(self, tenant_id: TenantId) -> list[DPOContact]:
         stmt = (
             select(DPOContactModel)
             .where(DPOContactModel.tenant_id == tenant_id.value)

@@ -4,11 +4,11 @@ Authentication API Routes
 FastAPI routes for authentication operations.
 """
 
+import logging
 from datetime import timedelta
-from urllib.parse import quote
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -17,8 +17,6 @@ from app.api.dependencies import (
     get_tenant_repository,
     get_user_repository,
 )
-from app.core.config import settings
-from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
 from app.api.schemas.auth_schemas import (
     LoginRequest,
     LoginResponse,
@@ -28,7 +26,9 @@ from app.api.schemas.auth_schemas import (
     RefreshResponse,
     SetInitialPasswordRequest,
 )
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
 from app.core.security import (
     COOKIE_ACCESS_TOKEN,
     COOKIE_REFRESH_TOKEN,
@@ -43,7 +43,6 @@ from app.domain.enums import TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
-from app.infrastructure.services.azure_sso_service import AzureSSOService
 from app.infrastructure.repositories.password_set_token_repository import (
     PasswordSetTokenRepository,
 )
@@ -52,6 +51,8 @@ from app.infrastructure.repositories.refresh_token_repository import (
 )
 from app.shared.decorators import transactional
 from app.shared.utils.generators import generate_cuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -109,18 +110,27 @@ async def auth_me(
     """
     email = current_user.email or ""
     role: str | None = None
+    access_scopes: list[str] = list(current_user.access_scopes)
     try:
         user = await user_repo.get_by_id(UserId(current_user.user_id))
         if user:
             email = user.email.value
             role = user.role.value
+            access_scopes = [sc.value for sc in user.access_scopes]
     except Exception:
-        pass
+        # Degrade to token-only identity rather than failing /me, but do not let a
+        # DB outage look like a healthy response with a missing role.
+        logger.warning(
+            "auth.me: user lookup failed; falling back to token claims",
+            extra={"user_id": current_user.user_id},
+            exc_info=True,
+        )
     return MeResponse(
         user_id=current_user.user_id,
         tenant_id=current_user.tenant_id,
         email=email,
         role=role,
+        access_scopes=access_scopes,
     )
 
 
@@ -136,27 +146,25 @@ async def login(
     request: Request,
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Authenticate a user with tenant code, email, and password.
-    
+
     Returns a JWT access token that can be used for subsequent API requests.
     The token includes user_id, tenant_id, and email in its claims.
-    
+
     Args:
         request_body: Login credentials (tenant_code, email, password)
         request: HTTP request (for rate limit and IP)
         tenant_repo: Tenant repository
         user_repo: User repository
         db: Database session
-        
+
     Returns:
         LoginResponse with access token and user information
-        
+
     Raises:
         HTTPException: If authentication fails (401) or rate limit exceeded (429)
     """
@@ -214,6 +222,10 @@ async def login(
             lock_duration=lockout_window,
         )
         await user_repo.save(user)
+        # Commit before raising. @transactional rolls back on HTTPException, and
+        # a failed login always ends in one — so without this the counter is
+        # discarded every time and the account lockout never fires.
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid tenant code or credentials",
@@ -230,10 +242,7 @@ async def login(
     await user_repo.save(user)
 
     # Optionally revoke all previous refresh tokens for this user before issuing a new one
-    if (
-        getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False)
-        and refresh_token_repo
-    ):
+    if getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False) and refresh_token_repo:
         await refresh_token_repo.revoke_all_for_user(user.id.value)
 
     # Create and return token (store refresh jti when revocation is enabled)
@@ -246,11 +255,10 @@ async def login(
         email=user.email.value,
         refresh_jti=refresh_jti,
         role=user.role.value if user.role else None,
+        access_scopes=[sc.value for sc in user.access_scopes],
     )
     if refresh_jti:
-        await refresh_token_repo.save(
-            refresh_jti, user.id.value, tenant.id.value
-        )
+        await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)
 
     login_response = LoginResponse(
         access_token=token.access_token,
@@ -297,9 +305,7 @@ async def refresh_token(
     body: RefreshRequest | None = Body(None),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Exchange refresh token for new access and refresh tokens. Optionally rotates refresh token."""
@@ -316,12 +322,12 @@ async def refresh_token(
         )
     try:
         token_data = decode_refresh_token(refresh_token_value)
-    except Exception:
+    except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from err
 
     # When revocation is enabled, require stored token and ensure it is not revoked
     if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and token_data.jti:
@@ -368,11 +374,10 @@ async def refresh_token(
         email=token_data.email,
         refresh_jti=refresh_jti,
         role=user.role.value if user.role else None,
+        access_scopes=[sc.value for sc in user.access_scopes],
     )
     if rotation:
-        await refresh_token_repo.save(
-            refresh_jti, token_data.user_id, token_data.tenant_id
-        )
+        await refresh_token_repo.save(refresh_jti, token_data.user_id, token_data.tenant_id)
 
     refresh_response = RefreshResponse(
         access_token=token.access_token,
@@ -418,9 +423,7 @@ async def refresh_token(
 async def logout(
     request: Request,
     body: LogoutRequest | None = Body(None),
-    refresh_token_repo: RefreshTokenRepository = Depends(
-        get_refresh_token_repository
-    ),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Revoke a refresh token so it can no longer be used. No-op if token has no jti or revocation is disabled."""
@@ -430,12 +433,20 @@ async def logout(
     if not refresh_token_value and body is not None:
         refresh_token_value = body.refresh_token
     if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_value:
+        jti: str | None = None
         try:
             token_data = decode_refresh_token(refresh_token_value)
-            if token_data.jti:
-                await refresh_token_repo.revoke(token_data.jti)
+            jti = token_data.jti
+            if jti:
+                await refresh_token_repo.revoke(jti)
         except Exception:
-            pass
+            # Logout still succeeds (cookies are cleared below), but an unrevoked
+            # refresh token remains usable until it expires — that needs a trail.
+            logger.warning(
+                "auth.logout: refresh token revocation failed; token may remain valid until expiry",
+                extra={"jti": jti},
+                exc_info=True,
+            )
     if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
         from fastapi.responses import Response
 
@@ -462,160 +473,3 @@ async def logout(
 # =============================================================================
 # AZURE AD SSO — Option C (Sign in with Microsoft, no tenant code required)
 # =============================================================================
-
-
-@router.get(
-    "/azure/login",
-    status_code=status.HTTP_302_FOUND,
-    summary="Initiate Azure AD SSO — redirects to Microsoft login",
-    include_in_schema=True,
-)
-async def azure_login() -> RedirectResponse:
-    """
-    Start the Azure AD OAuth2 flow.  No credentials required from the user.
-    The browser is redirected to Microsoft's login page; after authentication
-    Azure redirects back to /auth/azure/callback.
-
-    Redirects to the frontend error page when SSO is not configured.
-    """
-    if not settings.azure_sso_configured:
-        error_url = f"{settings.AZURE_FRONTEND_REDIRECT_URI}?error={quote('Microsoft SSO is not configured on this server. Contact your administrator.')}"
-        return RedirectResponse(error_url, status_code=status.HTTP_302_FOUND)
-    sso = AzureSSOService()
-    auth_url, _ = sso.build_auth_url()
-    return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
-
-
-@router.get(
-    "/azure/callback",
-    status_code=status.HTTP_302_FOUND,
-    summary="Azure AD SSO callback — exchanges code for internal JWT",
-    include_in_schema=True,
-)
-@transactional()
-async def azure_callback(
-    code: str = Query(..., description="Authorization code from Azure"),
-    state: str = Query(..., description="CSRF state from the login redirect"),
-    tenant_repo: TenantRepository = Depends(get_tenant_repository),
-    user_repo: UserRepository = Depends(get_user_repository),
-    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
-    db: AsyncSession = Depends(get_db),
-) -> RedirectResponse:
-    """
-    Azure redirects here after the user signs in.
-
-    Flow:
-    1. Verify CSRF state (HMAC-signed, self-contained)
-    2. Exchange code for Azure id_token
-    3. Extract oid + tid + email from token claims
-    4. Resolve Evexia tenant via tenants.azure_tenant_id == tid
-    5. Find user by azure_oid (returning SSO user) or email (first-time link)
-    6. Issue internal JWT (same claims as password login)
-    7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    def _error_redirect(message: str) -> RedirectResponse:
-        url = f"{settings.AZURE_FRONTEND_REDIRECT_URI}?error={quote(message)}"
-        return RedirectResponse(url, status_code=status.HTTP_302_FOUND)
-
-    sso = AzureSSOService()
-
-    try:
-        claims = sso.exchange_code(code, state)
-    except ValueError as exc:
-        return _error_redirect(f"Authentication failed: {exc}")
-
-    logger.info(
-        "[azure-callback] received claims tid=%s email=%s oid=%s",
-        claims.tid, claims.email, claims.oid,
-    )
-    tenant = await tenant_repo.get_by_azure_tenant_id(claims.tid)
-    if not tenant:
-        return _error_redirect(
-            "Your organisation is not registered in Evexia. Contact your administrator."
-        )
-    if not tenant.azure_sso_enabled:
-        return _error_redirect("Microsoft sign-in is not enabled for your organisation.")
-    if tenant.status != TenantStatus.ACTIVE:
-        return _error_redirect(
-            f"Organisation account is {tenant.status.value.lower()}. Access denied."
-        )
-
-    # Resolve user — by OID first (returning user), then by email (first SSO login)
-    user = await user_repo.get_by_azure_oid(claims.oid, tenant.id)
-    if not user:
-        user = await user_repo.get_by_email(Email(claims.email), tenant.id)
-        if not user:
-            return _error_redirect(
-                "Your account has not been provisioned in Evexia. Contact your administrator."
-            )
-        # First-time Azure login: link OID to the existing user record
-        user.link_azure_identity(claims.oid)
-        await user_repo.save(user)
-
-    if user.status in (UserStatus.BANNED, UserStatus.TERMINATED, UserStatus.SUSPENDED):
-        return _error_redirect(
-            f"User account is {user.status.value.lower()}. Access denied."
-        )
-
-    # Refresh display name from Azure on every SSO login (picks up profile renames)
-    user.update_display_name(claims.name)
-    user.record_successful_login()
-    await user_repo.save(user)
-
-    # Issue internal JWT — identical claims to password login
-    refresh_jti = None
-    if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_repo:
-        refresh_jti = generate_cuid()
-    token = create_token_response(
-        user_id=user.id.value,
-        tenant_id=tenant.id.value,
-        email=user.email.value,
-        refresh_jti=refresh_jti,
-        role=user.role.value if user.role else None,
-    )
-    if refresh_jti:
-        await refresh_token_repo.save(refresh_jti, user.id.value, tenant.id.value)
-
-    # Redirect to frontend; set cookies if cookie-mode is on
-    secure = not settings.is_development
-    response = RedirectResponse(
-        settings.AZURE_FRONTEND_REDIRECT_URI,
-        status_code=status.HTTP_302_FOUND,
-    )
-    if getattr(settings, "AUTH_USE_HTTPONLY_COOKIES", False):
-        access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
-        response.set_cookie(
-            key=COOKIE_ACCESS_TOKEN,
-            value=token.access_token,
-            max_age=access_max_age,
-            path="/",
-            secure=secure,
-            httponly=True,
-            samesite="lax",
-        )
-        response.set_cookie(
-            key=COOKIE_REFRESH_TOKEN,
-            value=token.refresh_token,
-            max_age=refresh_max_age,
-            path="/",
-            secure=secure,
-            httponly=True,
-            samesite="lax",
-        )
-    else:
-        # Bearer-token mode: embed tokens in the URL fragment so they never
-        # appear in server logs or the Referer header.
-        fe_url = (
-            f"{settings.AZURE_FRONTEND_REDIRECT_URI}"
-            f"#access_token={token.access_token}"
-            f"&refresh_token={token.refresh_token}"
-            f"&token_type=bearer"
-            f"&expires_in={token.expires_in}"
-        )
-        response = RedirectResponse(fe_url, status_code=status.HTTP_302_FOUND)
-
-    return response

@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 # Private IP ranges and localhost (for SSRF prevention)
 _PRIVATE_IP_PATTERN = re.compile(
     r"^localhost$|^127\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\.|^192\.168\.|^169\.254\.|^::1$|^\[::1\]$|^0\.0\.0\.0$",
@@ -41,8 +40,10 @@ def validate_document_file_path(value: str | None, upload_root: str) -> str | No
     try:
         resolved = (root / value).resolve()
         return str(resolved.relative_to(root))
-    except (ValueError, OSError):
-        raise ValueError("Invalid file path: path must be relative and cannot escape upload directory")
+    except (ValueError, OSError) as err:
+        raise ValueError(
+            "Invalid file path: path must be relative and cannot escape upload directory"
+        ) from err
 
 
 def validate_document_file_url(value: str | None, allowed_schemes: list[str]) -> str | None:

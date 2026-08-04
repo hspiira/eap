@@ -8,6 +8,7 @@ This is a data container only - no business logic.
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, Enum, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
@@ -50,9 +51,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
 
     # Authentication
-    email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False, index=True
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     email_verified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -91,23 +90,16 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     )
 
     # Security
-    is_two_factor_enabled: Mapped[bool] = mapped_column(
-        default=False, nullable=False
-    )
-    last_login_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    is_two_factor_enabled: Mapped[bool] = mapped_column(default=False, nullable=False)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    failed_login_count: Mapped[int] = mapped_column(
-        default=0, nullable=False, server_default="0"
-    )
-    locked_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    failed_login_count: Mapped[int] = mapped_column(default=0, nullable=False, server_default="0")
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
     azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    access_scopes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")
     auth_provider: Mapped[AuthProvider] = mapped_column(
         EnumValueType(AuthProvider),
         nullable=False,

@@ -13,7 +13,9 @@ from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
 
-class ClientTagRepositoryImpl(TenantScopedRepositoryImpl[ClientTagEntity, ClientTagModel, ClientTagId], ClientTagRepository):
+class ClientTagRepositoryImpl(
+    TenantScopedRepositoryImpl[ClientTagEntity, ClientTagModel, ClientTagId], ClientTagRepository
+):
     """
     SQLAlchemy implementation of ClientTagRepository.
 

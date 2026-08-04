@@ -5,7 +5,7 @@ Converts between UserEntity (domain) and UserModel (persistence).
 """
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import AuthProvider, Language, TenantRole, UserStatus
+from app.domain.enums import AccessScope, AuthProvider, Language, TenantRole, UserStatus
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.infrastructure.models.user_model import UserModel
 from app.shared.utils.datetime import ensure_utc
@@ -35,8 +35,14 @@ class UserMapper:
         preferred_language = (
             Language(model.preferred_language) if model.preferred_language else None
         )
-        role = TenantRole(model.role) if getattr(model, "role", None) is not None else TenantRole.USER
-        auth_provider = AuthProvider(model.auth_provider) if getattr(model, "auth_provider", None) else AuthProvider.PASSWORD
+        role = (
+            TenantRole(model.role) if getattr(model, "role", None) is not None else TenantRole.USER
+        )
+        auth_provider = (
+            AuthProvider(model.auth_provider)
+            if getattr(model, "auth_provider", None)
+            else AuthProvider.PASSWORD
+        )
 
         # Create entity
         return UserEntity(
@@ -57,6 +63,7 @@ class UserMapper:
             azure_oid=model.azure_oid,
             display_name=getattr(model, "display_name", None),
             auth_provider=auth_provider,
+            access_scopes=[AccessScope(s) for s in (getattr(model, "access_scopes", None) or [])],
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
             deleted_at=ensure_utc(model.deleted_at),
@@ -83,9 +90,7 @@ class UserMapper:
             email_verified_at=entity.email_verified_at,
             status=entity.status,
             status_changed_at=entity.status_changed_at,
-            preferred_language=entity.preferred_language
-            if entity.preferred_language
-            else None,
+            preferred_language=entity.preferred_language if entity.preferred_language else None,
             timezone=entity.timezone,
             is_two_factor_enabled=entity.is_two_factor_enabled,
             last_login_at=entity.last_login_at,
@@ -95,6 +100,7 @@ class UserMapper:
             azure_oid=entity.azure_oid,
             display_name=entity.display_name,
             auth_provider=entity.auth_provider,
+            access_scopes=[s.value for s in entity.access_scopes],
             deleted_at=entity.deleted_at,
         )
 

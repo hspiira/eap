@@ -8,8 +8,8 @@ Note: Tenant is a root aggregate, so it uses BaseRepositoryImpl instead of
 TenantScopedRepositoryImpl (tenants don't have a tenant_id on themselves).
 """
 
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import func, or_, select
 
@@ -22,7 +22,9 @@ from app.infrastructure.models.tenant_model import TenantModel
 from app.infrastructure.repositories.base import BaseRepositoryImpl
 
 
-class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantId], TenantRepository):
+class TenantRepositoryImpl(
+    BaseRepositoryImpl[TenantEntity, TenantModel, TenantId], TenantRepository
+):
     """
     SQLAlchemy implementation of TenantRepository.
 
@@ -61,10 +63,7 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
 
     async def get_by_code(self, code: str) -> TenantEntity | None:
         """Get tenant by code, excluding soft-deleted tenants."""
-        stmt = select(TenantModel).where(
-            TenantModel.code == code,
-            TenantModel.deleted_at.is_(None)
-        )
+        stmt = select(TenantModel).where(TenantModel.code == code, TenantModel.deleted_at.is_(None))
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
 
@@ -84,9 +83,7 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
         sort_desc: bool = True,
     ) -> Sequence[TenantEntity]:
         """List tenants with filtering, searching, and pagination."""
-        stmt = select(TenantModel).where(
-            TenantModel.deleted_at.is_(None)
-        )
+        stmt = select(TenantModel).where(TenantModel.deleted_at.is_(None))
 
         # Apply filters
         if status:
@@ -104,7 +101,9 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
 
         ALLOWED_SORT_COLUMNS = {"created_at", "updated_at", "name", "code", "status"}
         if sort_by not in ALLOWED_SORT_COLUMNS:
-            raise ValueError(f"Invalid sort_by value: {sort_by}. Allowed values: {ALLOWED_SORT_COLUMNS}")
+            raise ValueError(
+                f"Invalid sort_by value: {sort_by}. Allowed values: {ALLOWED_SORT_COLUMNS}"
+            )
         if sort_desc:
             stmt = stmt.order_by(getattr(TenantModel, sort_by).desc())
         else:
@@ -125,9 +124,7 @@ class TenantRepositoryImpl(BaseRepositoryImpl[TenantEntity, TenantModel, TenantI
         search: str | None = None,
     ) -> int:
         """Count tenants matching filters."""
-        stmt = select(func.count(TenantModel.id)).where(
-            TenantModel.deleted_at.is_(None)
-        )
+        stmt = select(func.count(TenantModel.id)).where(TenantModel.deleted_at.is_(None))
 
         # Apply filters
         if status:

@@ -110,9 +110,7 @@ class AuthorizeCaseUseCase:
             raise DomainError("Programme is not currently effective")
         cap = programme.cap_for(service_category)
         if cap is None:
-            raise DomainError(
-                f"Programme has no cap for {service_category.value}"
-            )
+            raise DomainError(f"Programme has no cap for {service_category.value}")
         now = utc_now()
         authorization = Authorization(
             id=AuthorizationId(generate_cuid()),
@@ -190,9 +188,7 @@ class GrantAuthorizationExtensionUseCase:
         admin_signoff: UserId,
     ) -> Authorization:
         if clinician_signoff == admin_signoff:
-            raise DomainError(
-                "Clinician and admin sign-offs must come from different users"
-            )
+            raise DomainError("Clinician and admin sign-offs must come from different users")
         auth = await self._repo.get_by_id(authorization_id)
         if auth is None:
             raise NotFoundError(

@@ -8,13 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import require_same_tenant
-from app.core.security import TokenData, get_current_user
-
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_kpi_assignment_repository,
     get_kpi_repository,
+    pagination,
 )
 from app.api.schemas.kpi_schemas import (
     KPIAssignmentCreate,
@@ -27,29 +26,31 @@ from app.api.schemas.kpi_schemas import (
     KPIUpdate,
 )
 from app.application.use_cases.kpi_use_cases import (
-    CreateKPIUseCase,
     CreateKPIAssignmentUseCase,
-    GetKPIUseCase,
+    CreateKPIUseCase,
     GetKPIAssignmentUseCase,
-    UpdateKPIUseCase,
+    GetKPIUseCase,
     UpdateKPIAssignmentUseCase,
+    UpdateKPIUseCase,
 )
 from app.application.use_cases.transitions import (
     KPIAssignmentTransition,
     KPITransition,
     TransitionUseCase,
 )
+from app.core.authorization import require_same_tenant
 from app.core.database import get_db
+from app.core.security import TokenData, get_current_user
+from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory
-from app.domain.entities.kpi import KPIEntity, KPIAssignmentEntity
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
 )
-from app.domain.value_objects.core import KPIId, KPIAssignmentId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/kpis", tags=["kpis"])
 
@@ -122,13 +123,7 @@ async def create_kpi(
         threshold_max=data.threshold_max,
         formula=data.formula,
     )
-    await audit_entity_operation(
-        entity=kpi,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(kpi, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_kpi_response(kpi)
 
 
@@ -157,13 +152,7 @@ async def update_kpi(
         threshold_max=data.threshold_max,
         formula=data.formula,
     )
-    await audit_entity_operation(
-        entity=kpi,
-        audit_handler=audit_handler,
-        tenant_id=kpi.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
 
@@ -182,16 +171,9 @@ async def activate_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI."""
-    use_case: TransitionUseCase = TransitionUseCase(kpi_repo)
-    use_case.entity_name = "KPI"
+    use_case = TransitionUseCase(kpi_repo, "KPI")
     kpi = await use_case.execute(KPIId(kpi_id), KPITransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=kpi,
-        audit_handler=audit_handler,
-        tenant_id=kpi.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
 
@@ -210,16 +192,9 @@ async def deactivate_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI."""
-    use_case: TransitionUseCase = TransitionUseCase(kpi_repo)
-    use_case.entity_name = "KPI"
+    use_case = TransitionUseCase(kpi_repo, "KPI")
     kpi = await use_case.execute(KPIId(kpi_id), KPITransition.DEACTIVATE)
-    await audit_entity_operation(
-        entity=kpi,
-        audit_handler=audit_handler,
-        tenant_id=kpi.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
 
@@ -238,23 +213,21 @@ async def list_kpis(
     category: KPICategory | None = Query(None, description="Filter by KPI category"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in KPI name or description"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List KPIs with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     kpis = await kpi_repo.list_all(
         tenant_id=TenantId(tenant_id),
         category=category,
         is_active=is_active,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -269,9 +242,9 @@ async def list_kpis(
     return KPIListResponse(
         items=[_to_kpi_response(kpi) for kpi in kpis],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -291,7 +264,7 @@ async def check_kpi_name_availability(
     kpi = await kpi_repo.get_by_name(name, TenantId(tenant_id))
     return {"available": kpi is None, "name": name, "tenant_id": tenant_id}
 
-    
+
 @router.get(
     "/{kpi_id}",
     response_model=KPIResponse,
@@ -339,13 +312,7 @@ async def create_kpi_assignment(
         contract_id=data.contract_id,
         target_value=data.target_value,
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_kpi_assignment_response(assignment)
 
 
@@ -368,13 +335,7 @@ async def update_kpi_assignment(
     assignment = await UpdateKPIAssignmentUseCase(assignment_repo).execute(
         KPIAssignmentId(assignment_id), data.target_value
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
 
 
@@ -393,18 +354,11 @@ async def activate_kpi_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a KPI assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         KPIAssignmentId(assignment_id), KPIAssignmentTransition.ACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
 
 
@@ -423,18 +377,11 @@ async def deactivate_kpi_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a KPI assignment."""
-    use_case: TransitionUseCase = TransitionUseCase(assignment_repo)
-    use_case.entity_name = "Assignment"
+    use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
         KPIAssignmentId(assignment_id), KPIAssignmentTransition.DEACTIVATE
     )
-    await audit_entity_operation(
-        entity=assignment,
-        audit_handler=audit_handler,
-        tenant_id=assignment.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
 
 
@@ -454,15 +401,13 @@ async def list_kpi_assignments(
     client_id: str | None = Query(None, description="Filter by client"),
     contract_id: str | None = Query(None, description="Filter by contract"),
     is_active: bool | None = Query(None, description="Filter by active status"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List KPI assignments with filtering and pagination."""
-    offset = (page - 1) * limit
 
     assignments = await assignment_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -470,8 +415,8 @@ async def list_kpi_assignments(
         client_id=client_id,
         contract_id=contract_id,
         is_active=is_active,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -487,9 +432,9 @@ async def list_kpi_assignments(
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -527,9 +472,7 @@ async def get_kpi_assignments_by_kpi(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific KPI."""
-    assignments = await assignment_repo.get_by_kpi_id(
-        KPIId(kpi_id), TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_kpi_id(KPIId(kpi_id), TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),
@@ -553,9 +496,7 @@ async def get_kpi_assignments_by_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific client."""
-    assignments = await assignment_repo.get_by_client_id(
-        client_id, TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_client_id(client_id, TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),
@@ -579,9 +520,7 @@ async def get_kpi_assignments_by_contract(
     db: AsyncSession = Depends(get_db),
 ):
     """Get all assignments for a specific contract."""
-    assignments = await assignment_repo.get_by_contract_id(
-        contract_id, TenantId(tenant_id)
-    )
+    assignments = await assignment_repo.get_by_contract_id(contract_id, TenantId(tenant_id))
     return KPIAssignmentListResponse(
         items=[_to_kpi_assignment_response(a) for a in assignments],
         total=len(assignments),

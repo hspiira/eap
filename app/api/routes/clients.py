@@ -10,13 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_client_for_current_tenant,
-    require_same_tenant,
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_client_repository,
+    get_contract_repository,
+    get_tenant_repository,
+    pagination,
 )
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_client_repository, get_contract_repository, get_tenant_repository
 from app.api.schemas.client_schemas import (
     AddressSchema,
     ClientCreate,
@@ -40,9 +41,14 @@ from app.application.use_cases.transitions import (
     ClientTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_client_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import BaseStatus, ClientTier
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
+from app.domain.enums import BaseStatus, ClientTier
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -58,9 +64,9 @@ from app.domain.value_objects.core import (
 )
 from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_model import ClientModel
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -147,15 +153,9 @@ async def create_client(
             parent_client_id=ClientId(data.parent_client_id) if data.parent_client_id else None,
         )
     except EvexiaException as e:
-        raise HTTPException(status_code=e.http_status, detail=e.message)
+        raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_client_response(client)
 
 
@@ -175,18 +175,11 @@ async def verify_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.VERIFY, verified_by=UserId(verified_by)
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -205,16 +198,9 @@ async def activate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -234,16 +220,9 @@ async def deactivate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.DEACTIVATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -263,16 +242,9 @@ async def suspend_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Suspend a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.SUSPEND, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -292,16 +264,9 @@ async def terminate_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.TERMINATE, reason=body.reason)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -320,16 +285,9 @@ async def archive_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -348,16 +306,9 @@ async def restore_client(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted client."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(client.id, ClientTransition.RESTORE)
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -383,13 +334,7 @@ async def update_client(
         preferred_contact_method=data.preferred_contact_method,
         tier=data.tier,
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -415,18 +360,11 @@ async def update_client_contact_info(
         address=data.contact_info.address,
     )
 
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.UPDATE_CONTACT_INFO, contact_info=contact_info
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -455,18 +393,11 @@ async def update_client_billing_address(
             postal_code=data.billing_address.postal_code,
         )
 
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
+    use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.UPDATE_BILLING_ADDRESS, billing_address=billing_address
     )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -486,18 +417,9 @@ async def update_client_tier(
     db: AsyncSession = Depends(get_db),
 ):
     """Set the client's engagement tier."""
-    use_case: TransitionUseCase = TransitionUseCase(client_repo)
-    use_case.entity_name = "Client"
-    client = await use_case.execute(
-        client.id, ClientTransition.UPDATE_TIER, tier=data.tier
-    )
-    await audit_entity_operation(
-        entity=client,
-        audit_handler=audit_handler,
-        tenant_id=client.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    use_case = TransitionUseCase(client_repo, "Client")
+    client = await use_case.execute(client.id, ClientTransition.UPDATE_TIER, tier=data.tier)
+    await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
 
@@ -516,8 +438,7 @@ async def list_clients(
     is_verified: bool | None = Query(None, description="Filter by verification status"),
     tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
     search: str | None = Query(None, description="Search in client name"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     current_user: TokenData = Depends(require_same_tenant),
@@ -525,7 +446,6 @@ async def list_clients(
     db: AsyncSession = Depends(get_db),
 ):
     """List clients with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     clients = await client_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -533,8 +453,8 @@ async def list_clients(
         is_verified=is_verified,
         tier=tier,
         search=search,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -550,9 +470,9 @@ async def list_clients(
     return ClientListResponse(
         items=[_to_client_response(client) for client in clients],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 
@@ -633,15 +553,11 @@ async def get_client_stats(
     child_clients_count = int(child_result.scalar() or 0)
 
     # Count total contracts
-    contracts = await contract_repo.get_by_client_id(
-        client.tenant_id, client.id
-    )
+    contracts = await contract_repo.get_by_client_id(client.tenant_id, client.id)
     total_contracts_count = len(contracts)
 
     # Count active contracts
-    active_contract = await contract_repo.get_active_by_client_id(
-        client.tenant_id, client.id
-    )
+    active_contract = await contract_repo.get_active_by_client_id(client.tenant_id, client.id)
     active_contracts_count = 1 if active_contract else 0
 
     return ClientStatsResponse(
@@ -662,15 +578,13 @@ async def get_client_stats(
 @readonly()
 async def get_child_clients(
     parent: ClientEntity = Depends(get_client_for_current_tenant),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     client_repo: ClientRepository = Depends(get_client_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all child clients of a parent client."""
     tenant_id = parent.tenant_id.value
     client_id = parent.id.value
-    offset = (page - 1) * limit
 
     # Get child clients
     stmt = select(ClientModel).where(
@@ -678,7 +592,7 @@ async def get_child_clients(
         ClientModel.parent_client_id == client_id,
         ClientModel.deleted_at.is_(None),
     )
-    stmt = stmt.order_by(ClientModel.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(ClientModel.created_at.desc()).limit(pg.limit).offset(pg.offset)
 
     result = await db.execute(stmt)
     models = result.scalars().all()
@@ -697,7 +611,7 @@ async def get_child_clients(
     return ClientListResponse(
         items=[_to_client_response(c) for c in clients],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )

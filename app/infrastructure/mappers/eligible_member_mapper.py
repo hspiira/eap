@@ -34,19 +34,11 @@ class EligibleMemberMapper:
             coverage_start=model.coverage_start,
             coverage_end=model.coverage_end,
             work_email=Email(model.work_email) if model.work_email else None,
-            personal_email=Email(model.personal_email)
-            if model.personal_email
-            else None,
+            personal_email=Email(model.personal_email) if model.personal_email else None,
             display_label=model.display_label,
-            last_imported_at=ensure_utc(model.last_imported_at)
-            if model.last_imported_at
-            else None,
-            suspended_at=ensure_utc(model.suspended_at)
-            if model.suspended_at
-            else None,
-            terminated_at=ensure_utc(model.terminated_at)
-            if model.terminated_at
-            else None,
+            last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
+            suspended_at=ensure_utc(model.suspended_at) if model.suspended_at else None,
+            terminated_at=ensure_utc(model.terminated_at) if model.terminated_at else None,
             created_by=UserId(model.created_by) if model.created_by else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -71,19 +63,13 @@ class EligibleMemberMapper:
             coverage_start=entity.coverage_start,
             coverage_end=entity.coverage_end,
             work_email=entity.work_email.value if entity.work_email else None,
-            personal_email=entity.personal_email.value
-            if entity.personal_email
-            else None,
+            personal_email=entity.personal_email.value if entity.personal_email else None,
             display_label=entity.display_label,
             last_imported_at=ensure_utc(entity.last_imported_at)
             if entity.last_imported_at
             else None,
-            suspended_at=ensure_utc(entity.suspended_at)
-            if entity.suspended_at
-            else None,
-            terminated_at=ensure_utc(entity.terminated_at)
-            if entity.terminated_at
-            else None,
+            suspended_at=ensure_utc(entity.suspended_at) if entity.suspended_at else None,
+            terminated_at=ensure_utc(entity.terminated_at) if entity.terminated_at else None,
             created_by=entity.created_by.value if entity.created_by else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
@@ -102,9 +88,7 @@ class ClinicalSubjectMapper:
             preferred_contact_method=model.preferred_contact_method,
             notes_for_continuity=model.notes_for_continuity,
             is_active=model.is_active,
-            deactivated_at=ensure_utc(model.deactivated_at)
-            if model.deactivated_at
-            else None,
+            deactivated_at=ensure_utc(model.deactivated_at) if model.deactivated_at else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -122,9 +106,7 @@ class ClinicalSubjectMapper:
             preferred_contact_method=entity.preferred_contact_method,
             notes_for_continuity=entity.notes_for_continuity,
             is_active=entity.is_active,
-            deactivated_at=ensure_utc(entity.deactivated_at)
-            if entity.deactivated_at
-            else None,
+            deactivated_at=ensure_utc(entity.deactivated_at) if entity.deactivated_at else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )

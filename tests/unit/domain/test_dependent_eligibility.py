@@ -7,7 +7,6 @@ must track the primary employee's eligibility, not silently return truthy.
 
 from datetime import UTC, date, datetime
 
-
 from app.domain.entities.person import PersonEntity
 from app.domain.entities.user import UserEntity
 from app.domain.enums import (
@@ -25,7 +24,6 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
-
 
 # === DependentInfo VO ===
 
@@ -82,9 +80,7 @@ def _make_primary_employee(active: bool) -> PersonEntity:
     user = _make_user("usr-primary", "tenant-1")
     employment = EmploymentInfo(
         client_id=ClientId("client-1"),
-        employee_code=ClientEmployeeCode(
-            client_code="ACM", family_code="01", member_code="01"
-        ),
+        employee_code=ClientEmployeeCode(client_code="ACM", family_code="01", member_code="01"),
         role="Engineer",
         start_date=date(2024, 1, 1),
         status=WorkStatus.ACTIVE if active else WorkStatus.TERMINATED,

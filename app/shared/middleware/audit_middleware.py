@@ -6,7 +6,7 @@ FastAPI middleware for automatic audit logging of HTTP requests.
 
 import asyncio
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class AuditMiddleware(BaseHTTPMiddleware):
     """
     Middleware that automatically logs HTTP requests as audit entries.
-    
+
     This captures:
     - Request method and path
     - User ID (from request state or headers)
@@ -35,7 +35,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp, audit_repository_factory: Callable):
         """
         Initialize audit middleware.
-        
+
         Args:
             app: ASGI application
             audit_repository_factory: Factory function to create audit repository
@@ -46,7 +46,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
         Process request and log audit entry.
-        
+
         Skips audit logging for:
         - Health checks
         - Audit endpoints themselves (to avoid recursion)
@@ -170,7 +170,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
     def _extract_resource_info(self, request: Request) -> tuple[str, str | None]:
         """
         Extract resource type and ID from request path.
-        
+
         Returns:
             Tuple of (resource_type, resource_id)
         """
@@ -237,10 +237,10 @@ class AuditMiddleware(BaseHTTPMiddleware):
     ) -> None:
         """
         Background task to log audit entry.
-        
+
         This runs asynchronously and doesn't block the HTTP response.
         All exceptions are caught and logged to prevent crashes.
-        
+
         Args:
             tenant_id: Tenant identifier
             user_id: User identifier

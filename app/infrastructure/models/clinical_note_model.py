@@ -25,26 +25,16 @@ class ClinicalNoteModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    clinical_subject_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
+    clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     note_type: Mapped[ClinicalNoteType] = mapped_column(
         EnumValueType(ClinicalNoteType), nullable=False, index=True
     )
     body: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    author_id: Mapped[str] = mapped_column(
-        String(25), nullable=False, index=True
-    )
-    session_id: Mapped[str | None] = mapped_column(
-        String(25), nullable=True, index=True
-    )
-    signed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    author_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    session_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     signed_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
-    locked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     lock_window_seconds: Mapped[int] = mapped_column(
         Integer, nullable=False, default=int(timedelta(days=7).total_seconds())
     )

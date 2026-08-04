@@ -86,9 +86,7 @@ class TestEngagementCreation:
 class TestDeliverables:
     def test_add_deliverable_when_draft(self):
         e = _engagement()
-        d = e.add_deliverable(
-            deliverable_id=DeliverableId("d-1"), title="Phase 1 plan"
-        )
+        d = e.add_deliverable(deliverable_id=DeliverableId("d-1"), title="Phase 1 plan")
         assert d.status == DeliverableStatus.PENDING
         assert len(e.deliverables) == 1
 

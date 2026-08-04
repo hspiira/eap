@@ -4,22 +4,22 @@ Unit tests for UserEntity domain entity.
 Tests domain logic and invariants without database dependencies.
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import UserStatus, Language
-from app.domain.exceptions import DomainError, InvariantViolation
-from app.domain.value_objects.core import UserId, TenantId, Email
+from app.domain.enums import Language, UserStatus
 from app.domain.events import (
     UserActivated,
-    UserSuspended,
     UserBanned,
     UserDeactivated,
-    UserTerminated,
     UserEmailVerified,
+    UserSuspended,
+    UserTerminated,
 )
-
+from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.value_objects.core import Email, TenantId, UserId
 
 # =============================================================================
 # FIXTURES
@@ -114,9 +114,7 @@ class TestUserCreation:
         assert user.status == UserStatus.PENDING_VERIFICATION
         assert user.is_two_factor_enabled is False
 
-    def test_create_user_without_email_raises_invariant_violation(
-        self, user_id, tenant_id, now
-    ):
+    def test_create_user_without_email_raises_invariant_violation(self, user_id, tenant_id, now):
         """Test that creating user without email raises InvariantViolation."""
         with pytest.raises(InvariantViolation, match="User must have an email"):
             UserEntity(

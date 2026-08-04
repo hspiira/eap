@@ -46,9 +46,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
-        error_code = _STATUS_TO_ERROR_CODE.get(
-            exc.status_code, "HTTP_ERROR"
-        )
+        error_code = _STATUS_TO_ERROR_CODE.get(exc.status_code, "HTTP_ERROR")
         message = _http_exception_message(exc.detail)
         path = str(request.url.path)
         content = create_error_response(

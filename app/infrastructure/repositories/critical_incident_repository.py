@@ -18,12 +18,8 @@ class CriticalIncidentRepositoryImpl(CriticalIncidentRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: CriticalIncidentId
-    ) -> CriticalIncidentEntity | None:
-        stmt = select(CriticalIncidentModel).where(
-            CriticalIncidentModel.id == entity_id.value
-        )
+    async def get_by_id(self, entity_id: CriticalIncidentId) -> CriticalIncidentEntity | None:
+        stmt = select(CriticalIncidentModel).where(CriticalIncidentModel.id == entity_id.value)
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return CriticalIncidentMapper.to_entity(row) if row else None
 

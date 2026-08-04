@@ -35,7 +35,7 @@ def reliable_change_index(
         raise DomainError("test_retest_reliability must be in [0, 1]")
     from math import sqrt
 
-    denom = sqrt(2 * (instrument_sd ** 2) * (1 - test_retest_reliability))
+    denom = sqrt(2 * (instrument_sd**2) * (1 - test_retest_reliability))
     if denom == 0:
         return 0.0
     return (post_score - pre_score) / denom
@@ -62,13 +62,9 @@ class OutcomeMeasure:
 
     def __post_init__(self) -> None:
         if not self.intake_response_id or not self.closure_response_id:
-            raise DomainError(
-                "OutcomeMeasure requires both intake and closure response ids"
-            )
+            raise DomainError("OutcomeMeasure requires both intake and closure response ids")
         if self.intake_response_id == self.closure_response_id:
-            raise DomainError(
-                "intake and closure response ids must differ"
-            )
+            raise DomainError("intake and closure response ids must differ")
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
                 OutcomeMeasureRecorded(
@@ -78,7 +74,6 @@ class OutcomeMeasure:
                     instrument_code=self.instrument_code.value,
                     delta=self.delta,
                     reliable_change_index=self.reliable_change_index,
-                    meets_clinically_significant_change=
-                    self.meets_clinically_significant_change,
+                    meets_clinically_significant_change=self.meets_clinically_significant_change,
                 )
             )

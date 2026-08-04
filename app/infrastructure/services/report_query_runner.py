@@ -61,13 +61,9 @@ class ReportQueryRunner:
         if section.query_type == ReportQueryType.CONTRACT_UTILISATION:
             return await self._contract_utilisation(tenant_id=tenant_id, params=params)
         if section.query_type == ReportQueryType.CARE_CALLBACK_OUTCOMES:
-            return await self._care_callback_outcomes(
-                tenant_id=tenant_id, params=params
-            )
+            return await self._care_callback_outcomes(tenant_id=tenant_id, params=params)
         if section.query_type == ReportQueryType.SATISFACTION_DISTRIBUTION:
-            return await self._satisfaction_distribution(
-                tenant_id=tenant_id, params=params
-            )
+            return await self._satisfaction_distribution(tenant_id=tenant_id, params=params)
         if section.query_type == ReportQueryType.DIAGNOSIS_PREVALENCE:
             return {
                 "query_type": ReportQueryType.DIAGNOSIS_PREVALENCE.value,
@@ -82,9 +78,7 @@ class ReportQueryRunner:
             "note": "Implementation lands with the providing aggregate (see SAD §5.2.10).",
         }
 
-    async def _sessions_by_month(
-        self, *, tenant_id: str, params: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _sessions_by_month(self, *, tenant_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """Count completed sessions per ``YYYY-MM`` within an optional date window."""
         stmt = (
             select(
@@ -100,9 +94,7 @@ class ReportQueryRunner:
             statuses = [SessionStatus(s).value for s in params["status_in"]]
             stmt = stmt.where(ServiceSessionModel.status.in_(statuses))
         else:
-            stmt = stmt.where(
-                ServiceSessionModel.status == SessionStatus.COMPLETED.value
-            )
+            stmt = stmt.where(ServiceSessionModel.status == SessionStatus.COMPLETED.value)
 
         from_date = _parse_date(params.get("from"))
         to_date = _parse_date(params.get("to"))
@@ -120,7 +112,6 @@ class ReportQueryRunner:
             "total": suppress_count(total, floor=self._min_cell_size),
             "min_cell_size": self._min_cell_size,
         }
-
 
     async def _contract_utilisation(
         self, *, tenant_id: str, params: dict[str, Any]
@@ -188,9 +179,7 @@ class ReportQueryRunner:
             .group_by(OutreachRecordModel.status)
         )
         if params.get("campaign_id"):
-            stmt = stmt.where(
-                OutreachRecordModel.campaign_id == params["campaign_id"]
-            )
+            stmt = stmt.where(OutreachRecordModel.campaign_id == params["campaign_id"])
         elif params.get("client_id"):
             stmt = stmt.join(
                 CareCallbackCampaignModel,
@@ -213,20 +202,14 @@ class ReportQueryRunner:
                 CareCallbackCampaignModel,
                 CareCallbackCampaignModel.id == OutreachRecordModel.campaign_id,
             ).where(CareCallbackCampaignModel.client_id == params["client_id"])
-        crisis_flags = int(
-            (await self._session.execute(crisis_stmt)).scalar_one() or 0
-        )
+        crisis_flags = int((await self._session.execute(crisis_stmt)).scalar_one() or 0)
 
         total = sum(by_status.values())
         return {
             "query_type": ReportQueryType.CARE_CALLBACK_OUTCOMES.value,
-            "by_status": suppress_count_dict(
-                by_status, floor=self._min_cell_size
-            ),
+            "by_status": suppress_count_dict(by_status, floor=self._min_cell_size),
             "total": suppress_count(total, floor=self._min_cell_size),
-            "crisis_flags": suppress_count(
-                crisis_flags, floor=self._min_cell_size
-            ),
+            "crisis_flags": suppress_count(crisis_flags, floor=self._min_cell_size),
             "min_cell_size": self._min_cell_size,
         }
 
@@ -239,13 +222,9 @@ class ReportQueryRunner:
         the runner never returns individual response rows, only counts.
         Optional ``campaign_id`` or ``client_id`` filters scope the slice.
         """
-        stmt = select(SurveyResponseModel.payload).where(
-            SurveyResponseModel.tenant_id == tenant_id
-        )
+        stmt = select(SurveyResponseModel.payload).where(SurveyResponseModel.tenant_id == tenant_id)
         if params.get("campaign_id"):
-            stmt = stmt.where(
-                SurveyResponseModel.campaign_id == params["campaign_id"]
-            )
+            stmt = stmt.where(SurveyResponseModel.campaign_id == params["campaign_id"])
         elif params.get("client_id"):
             stmt = stmt.join(
                 SurveyCampaignModel,

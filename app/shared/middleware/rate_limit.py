@@ -7,8 +7,8 @@ For production, consider using Redis-based rate limiting.
 
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
@@ -23,15 +23,17 @@ class RateLimitConfig:
     requests_per_minute: int = 60
     requests_per_hour: int = 1000
     burst_size: int = 10  # Allow short bursts
-    
+
     # Paths to exclude from rate limiting
-    excluded_paths: list[str] = field(default_factory=lambda: [
-        "/",
-        "/health",
-        "/docs",
-        "/openapi.json",
-        "/redoc",
-    ])
+    excluded_paths: list[str] = field(
+        default_factory=lambda: [
+            "/",
+            "/health",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+        ]
+    )
 
 
 @dataclass
@@ -49,7 +51,7 @@ class RateLimitEntry:
 class RateLimiter:
     """
     In-memory rate limiter using token bucket algorithm.
-    
+
     For production deployments with multiple instances,
     use Redis or another distributed store.
     """
@@ -61,7 +63,7 @@ class RateLimiter:
     def _get_client_key(self, request: Request) -> str:
         """
         Get unique identifier for the client.
-        
+
         Uses X-Forwarded-For header if available, otherwise client IP.
         Can be extended to use API keys or user IDs.
         """
@@ -84,7 +86,7 @@ class RateLimiter:
     def is_allowed(self, request: Request) -> tuple[bool, dict[str, str]]:
         """
         Check if request is allowed under rate limits.
-        
+
         Returns:
             Tuple of (is_allowed, headers_dict)
         """
@@ -149,18 +151,16 @@ class RateLimiter:
     def cleanup_old_entries(self, max_age: float = 7200) -> int:
         """
         Remove stale entries to prevent memory growth.
-        
+
         Args:
             max_age: Maximum age in seconds before entry is removed
-            
+
         Returns:
             Number of entries removed
         """
         now = time.time()
         stale_keys = [
-            key
-            for key, entry in self._clients.items()
-            if now - entry.last_request > max_age
+            key for key, entry in self._clients.items() if now - entry.last_request > max_age
         ]
         for key in stale_keys:
             del self._clients[key]
@@ -170,7 +170,7 @@ class RateLimiter:
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     FastAPI middleware for rate limiting.
-    
+
     Usage:
         app.add_middleware(
             RateLimitMiddleware,
@@ -220,13 +220,13 @@ def create_rate_limit_middleware(
 ) -> tuple[type, dict]:
     """
     Create rate limit middleware with configuration.
-    
+
     Usage:
         middleware_class, kwargs = create_rate_limit_middleware(
             requests_per_minute=100
         )
         app.add_middleware(middleware_class, **kwargs)
-    
+
     Returns:
         Tuple of (middleware_class, config_kwargs)
     """

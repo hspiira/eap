@@ -25,12 +25,12 @@ async def audit_entity_operation(
 ) -> None:
     """
     Convenience function to audit an entity operation.
-    
+
     This handles:
     - Converting string IDs to value objects
     - Processing domain events
     - Extracting context from request
-    
+
     Usage in routes:
         await audit_entity_operation(
             entity=tenant,
@@ -41,7 +41,7 @@ async def audit_entity_operation(
             request=request,
             db=db,
         )
-    
+
     Args:
         entity: Entity that was modified
         audit_handler: Audit event handler
@@ -53,7 +53,7 @@ async def audit_entity_operation(
     """
     if isinstance(tenant_id, str):
         tenant_id = TenantId(tenant_id)
-    
+
     if user_id is not None and isinstance(user_id, str):
         user_id = UserId(user_id)
 
@@ -66,3 +66,30 @@ async def audit_entity_operation(
         request=request,
     )
 
+
+async def audit_change(
+    entity: Any,
+    audit_handler: AuditEventHandler,
+    current_user: Any,
+    request: Request | None = None,
+    *,
+    tenant_id: TenantId | str | None = None,
+    old_entity: Any | None = None,
+    db: AsyncSession | None = None,
+) -> None:
+    """
+    Audit a mutation from a route.
+
+    Thin wrapper over audit_entity_operation, which every route called with the
+    same five arguments. `tenant_id` defaults to the entity's own; pass it where
+    that isn't right (e.g. tenants, where the entity *is* the tenant).
+    """
+    await audit_entity_operation(
+        entity=entity,
+        audit_handler=audit_handler,
+        tenant_id=tenant_id if tenant_id is not None else entity.tenant_id,
+        user_id=getattr(current_user, "user_id", None) if current_user else None,
+        old_entity=old_entity,
+        request=request,
+        db=db,
+    )

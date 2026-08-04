@@ -53,9 +53,7 @@ class ClinicalNoteMapper:
             signed_by=UserId(model.signed_by) if model.signed_by else None,
             locked_at=ensure_utc(model.locked_at) if model.locked_at else None,
             lock_window=timedelta(seconds=model.lock_window_seconds),
-            amendments=tuple(
-                _amendment_from_dict(a) for a in (model.amendments or [])
-            ),
+            amendments=tuple(_amendment_from_dict(a) for a in (model.amendments or [])),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )

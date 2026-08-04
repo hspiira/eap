@@ -82,9 +82,7 @@ class TestPhaseRecording:
         assert incident.status == CriticalIncidentStatus.IN_RESPONSE
         assert len(incident.phases) == 1
         assert incident.phases[0].phase == CriticalIncidentPhase.DEFUSING
-        recorded = [
-            e for e in incident.events if isinstance(e, CriticalIncidentPhaseRecorded)
-        ]
+        recorded = [e for e in incident.events if isinstance(e, CriticalIncidentPhaseRecorded)]
         assert len(recorded) == 1
 
     def test_subsequent_phases_keep_status(self):

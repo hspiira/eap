@@ -20,7 +20,6 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
-
 # =============================================================================
 # CREATE USE CASE (special - not a lifecycle operation)
 # =============================================================================
@@ -84,7 +83,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
 
         if not code or len(code) < 3 or len(code) > 5:
             raise ValueError("Client code must be 3-5 characters")
-        
+
         existing = await self.client_repository.get_by_name(tenant_id, name)
         if existing:
             raise ValueError(f"Client with name '{name}' already exists")
@@ -161,9 +160,7 @@ class GetClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         """
         return await self.repository.get_by_id(client_id)
 
-    async def execute_by_name(
-        self, tenant_id: TenantId, name: str
-    ) -> ClientEntity | None:
+    async def execute_by_name(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
         """
         Get client by name within a tenant.
 

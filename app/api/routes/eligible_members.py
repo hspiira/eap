@@ -32,13 +32,13 @@ from app.domain.repositories.eligible_member_repository import (
 )
 from app.domain.value_objects.core import (
     ClientId,
-    Email,
     EligibleMemberId,
+    Email,
     TenantId,
     UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["eligible-members"])
 
@@ -52,9 +52,7 @@ def _to_response(m: EligibleMember) -> EligibleMemberResponse:
         relation=m.relation,
         status=m.status,
         primary_employee_member_id=(
-            m.primary_employee_member_id.value
-            if m.primary_employee_member_id
-            else None
+            m.primary_employee_member_id.value if m.primary_employee_member_id else None
         ),
         coverage_start=m.coverage_start,
         coverage_end=m.coverage_end,
@@ -68,9 +66,11 @@ def _to_response(m: EligibleMember) -> EligibleMemberResponse:
 
 
 def _tenant_pseudonym_secret(tenant_id: str) -> str:
-    base = getattr(settings, "PSEUDONYM_TENANT_SECRET", None) or getattr(
-        settings, "SECRET_KEY", None
-    ) or "evexia-default-pseudonym-key-please-rotate"
+    base = (
+        getattr(settings, "PSEUDONYM_TENANT_SECRET", None)
+        or getattr(settings, "SECRET_KEY", None)
+        or "evexia-default-pseudonym-key-please-rotate"
+    )
     return f"{base}:{tenant_id}"
 
 
@@ -86,9 +86,7 @@ async def enrol_eligible_member(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    subject_repo: ClinicalSubjectRepository = Depends(
-        get_clinical_subject_repository
-    ),
+    subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
     link_repo: EligibleMemberClinicalLinkRepository = Depends(
         get_eligible_member_clinical_link_repository
     ),
@@ -111,18 +109,10 @@ async def enrol_eligible_member(
         coverage_start=data.coverage_start,
         coverage_end=data.coverage_end,
         work_email=Email(str(data.work_email)) if data.work_email else None,
-        personal_email=(
-            Email(str(data.personal_email)) if data.personal_email else None
-        ),
+        personal_email=(Email(str(data.personal_email)) if data.personal_email else None),
         display_label=data.display_label,
     )
-    await audit_entity_operation(
-        entity=member,
-        audit_handler=audit_handler,
-        tenant_id=member.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(member, audit_handler, current_user, request)
     return _to_response(member)
 
 

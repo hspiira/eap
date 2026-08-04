@@ -2,8 +2,6 @@
 
 from datetime import UTC, date, datetime, timedelta
 
-from app.shared.utils.datetime import utc_now
-
 import pytest
 
 from app.domain.entities.authorization import Authorization
@@ -31,6 +29,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.domain.value_objects.programme import ProgrammeSessionCap
+from app.shared.utils.datetime import utc_now
 
 
 def _cap(
@@ -139,10 +138,7 @@ class TestEAPProgrammeInvariants:
 
     def test_cap_for_lookup(self):
         p = _programme(caps=(_cap(), _cap(ServiceCategory.SUBSTANCE_USE, per_issue=4)))
-        assert (
-            p.cap_for(ServiceCategory.SHORT_TERM_COUNSELLING).per_issue_per_year
-            == 6
-        )
+        assert p.cap_for(ServiceCategory.SHORT_TERM_COUNSELLING).per_issue_per_year == 6
         assert p.cap_for(ServiceCategory.WELLNESS_COACHING) is None
 
 
@@ -214,13 +210,9 @@ class TestAuthorizationExtension:
     def test_request_then_grant(self):
         a = _authorization(granted=6, used=6, status=AuthorizationStatus.EXHAUSTED)
         a.events.clear()
-        a.request_extension(
-            additional_sessions=4, requested_by=UserId("clin-1")
-        )
+        a.request_extension(additional_sessions=4, requested_by=UserId("clin-1"))
         assert a.status == AuthorizationStatus.EXTENSION_REQUESTED
-        assert any(
-            isinstance(e, AuthorizationExtensionRequested) for e in a.events
-        )
+        assert any(isinstance(e, AuthorizationExtensionRequested) for e in a.events)
         a.grant_extension(
             clinician_signoff=UserId("clin-1"),
             admin_signoff=UserId("admin-1"),
@@ -233,9 +225,7 @@ class TestAuthorizationExtension:
     def test_request_zero_sessions_rejected(self):
         a = _authorization()
         with pytest.raises(DomainError, match="positive"):
-            a.request_extension(
-                additional_sessions=0, requested_by=UserId("clin-1")
-            )
+            a.request_extension(additional_sessions=0, requested_by=UserId("clin-1"))
 
     def test_grant_without_request_blocked(self):
         a = _authorization()

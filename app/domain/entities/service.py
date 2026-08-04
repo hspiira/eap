@@ -63,7 +63,7 @@ class ServiceEntity:
 
     def restore(self) -> None:
         """Restore archived or soft-deleted service.
-        
+
         Only restores from ARCHIVED to ACTIVE. Deleted services (DELETED status)
         cannot be restored as deletion is permanent.
         """

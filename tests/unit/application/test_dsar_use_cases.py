@@ -47,8 +47,7 @@ class _FakeRepo:
         return [
             r
             for r in self.store.values()
-            if r.tenant_id == tenant_id
-            and r.subject_person_id == subject_person_id
+            if r.tenant_id == tenant_id and r.subject_person_id == subject_person_id
         ]
 
 
@@ -93,9 +92,7 @@ class TestExport:
             requested_by=UserId("u-1"),
         )
         assert req.status == DSARRequestStatus.REQUESTED
-        out = await ExecuteExportUseCase(repo, _FakeCollector()).execute(
-            DSARRequestId("r-1")
-        )
+        out = await ExecuteExportUseCase(repo, _FakeCollector()).execute(DSARRequestId("r-1"))
         assert out.status == DSARRequestStatus.COMPLETED
         assert out.output is not None
         assert out.output["subject"] == "p-1"
@@ -119,9 +116,7 @@ class TestExport:
     @pytest.mark.asyncio
     async def test_execute_unknown_request(self):
         with pytest.raises(NotFoundError):
-            await ExecuteExportUseCase(_FakeRepo(), _FakeCollector()).execute(
-                DSARRequestId("nope")
-            )
+            await ExecuteExportUseCase(_FakeRepo(), _FakeCollector()).execute(DSARRequestId("nope"))
 
     @pytest.mark.asyncio
     async def test_execute_export_rejects_erasure(self):
@@ -133,9 +128,7 @@ class TestExport:
             requested_by=UserId("u-1"),
         )
         with pytest.raises(DomainError, match="EXPORT"):
-            await ExecuteExportUseCase(repo, _FakeCollector()).execute(
-                DSARRequestId("r-1")
-            )
+            await ExecuteExportUseCase(repo, _FakeCollector()).execute(DSARRequestId("r-1"))
 
 
 # ---------- Erasure ----------
@@ -166,9 +159,7 @@ class TestErasure:
             reversible_window_days=14,
         )
         with pytest.raises(DomainError, match="reversible window"):
-            await ExecuteErasureUseCase(repo, _FakeTombstoner()).execute(
-                DSARRequestId("r-1")
-            )
+            await ExecuteErasureUseCase(repo, _FakeTombstoner()).execute(DSARRequestId("r-1"))
 
     @pytest.mark.asyncio
     async def test_executes_after_window(self):
@@ -184,9 +175,7 @@ class TestErasure:
         req = repo.store["r-1"]
         req.erasure_executes_at = datetime.now(UTC) - timedelta(seconds=1)
         tomb = _FakeTombstoner(token="abc123")
-        out = await ExecuteErasureUseCase(repo, tomb).execute(
-            DSARRequestId("r-1")
-        )
+        out = await ExecuteErasureUseCase(repo, tomb).execute(DSARRequestId("r-1"))
         assert out.status == DSARRequestStatus.COMPLETED
         assert out.output == {"tombstone_token": "abc123"}
         assert tomb.calls == [("t-1", "p-1")]
@@ -215,9 +204,7 @@ class TestErasure:
             requested_by=UserId("u-1"),
             reversible_window_days=14,
         )
-        repo.store["r-1"].erasure_executes_at = datetime.now(UTC) - timedelta(
-            seconds=1
-        )
+        repo.store["r-1"].erasure_executes_at = datetime.now(UTC) - timedelta(seconds=1)
         with pytest.raises(RuntimeError):
             await ExecuteErasureUseCase(repo, _FakeTombstoner(fail=True)).execute(
                 DSARRequestId("r-1")
@@ -234,6 +221,4 @@ class TestErasure:
             requested_by=UserId("u-1"),
         )
         with pytest.raises(DomainError, match="ERASURE"):
-            await ExecuteErasureUseCase(repo, _FakeTombstoner()).execute(
-                DSARRequestId("r-1")
-            )
+            await ExecuteErasureUseCase(repo, _FakeTombstoner()).execute(DSARRequestId("r-1"))

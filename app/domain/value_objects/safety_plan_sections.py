@@ -27,9 +27,7 @@ class InternalCopingStrategies:
 
     def __post_init__(self) -> None:
         if not self.items:
-            raise DomainError(
-                "internal_coping_strategies requires at least one item"
-            )
+            raise DomainError("internal_coping_strategies requires at least one item")
 
 
 @dataclass(frozen=True)
@@ -38,9 +36,7 @@ class SocialDistractions:
 
     def __post_init__(self) -> None:
         if not self.people_or_places:
-            raise DomainError(
-                "social_distractions requires at least one entry"
-            )
+            raise DomainError("social_distractions requires at least one entry")
 
 
 @dataclass(frozen=True)
@@ -60,9 +56,7 @@ class SocialContactsForHelp:
 
     def __post_init__(self) -> None:
         if not self.contacts:
-            raise DomainError(
-                "social_contacts_for_help requires at least one contact"
-            )
+            raise DomainError("social_contacts_for_help requires at least one contact")
 
 
 @dataclass(frozen=True)
@@ -82,9 +76,7 @@ class ProfessionalHelpResources:
 
     def __post_init__(self) -> None:
         if not self.contacts:
-            raise DomainError(
-                "professional_help_resources requires at least one contact"
-            )
+            raise DomainError("professional_help_resources requires at least one contact")
 
 
 @dataclass(frozen=True)

@@ -24,16 +24,12 @@ class BenchmarkConsentRepositoryImpl(BenchmarkConsentRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: BenchmarkConsentId
-    ) -> BenchmarkConsent | None:
+    async def get_by_id(self, entity_id: BenchmarkConsentId) -> BenchmarkConsent | None:
         row = await self._session.get(BenchmarkConsentModel, entity_id.value)
         return BenchmarkConsentMapper.to_entity(row) if row else None
 
     async def save(self, entity: BenchmarkConsent) -> None:
-        existing = await self._session.get(
-            BenchmarkConsentModel, entity.id.value
-        )
+        existing = await self._session.get(BenchmarkConsentModel, entity.id.value)
         new_model = BenchmarkConsentMapper.to_model(entity)
         if existing is None:
             self._session.add(new_model)
@@ -50,22 +46,16 @@ class BenchmarkConsentRepositoryImpl(BenchmarkConsentRepository):
         await self._session.flush()
 
     async def delete(self, entity_id: BenchmarkConsentId) -> None:
-        existing = await self._session.get(
-            BenchmarkConsentModel, entity_id.value
-        )
+        existing = await self._session.get(BenchmarkConsentModel, entity_id.value)
         if existing is not None:
             await self._session.delete(existing)
             await self._session.flush()
 
     async def exists(self, entity_id: BenchmarkConsentId) -> bool:
-        existing = await self._session.get(
-            BenchmarkConsentModel, entity_id.value
-        )
+        existing = await self._session.get(BenchmarkConsentModel, entity_id.value)
         return existing is not None
 
-    async def list_for_tenant(
-        self, tenant_id: TenantId
-    ) -> list[BenchmarkConsent]:
+    async def list_for_tenant(self, tenant_id: TenantId) -> list[BenchmarkConsent]:
         stmt = (
             select(BenchmarkConsentModel)
             .where(BenchmarkConsentModel.tenant_id == tenant_id.value)
@@ -74,9 +64,7 @@ class BenchmarkConsentRepositoryImpl(BenchmarkConsentRepository):
         rows = (await self._session.execute(stmt)).scalars().all()
         return [BenchmarkConsentMapper.to_entity(r) for r in rows]
 
-    async def list_active_for_scope(
-        self, scope: BenchmarkScope
-    ) -> list[BenchmarkConsent]:
+    async def list_active_for_scope(self, scope: BenchmarkScope) -> list[BenchmarkConsent]:
         stmt = select(BenchmarkConsentModel).where(
             BenchmarkConsentModel.scope == scope.value,
             BenchmarkConsentModel.status == TenantConsentStatus.ACTIVE.value,

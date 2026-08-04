@@ -6,7 +6,7 @@ Comprehensive tests for all activity endpoints covering:
 - Filtering by client, type, date range
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -50,9 +50,10 @@ class TestCreateActivity:
         assert client_resp.status_code == 201
         client_id = client_resp.json()["id"]
 
-        from datetime import datetime, timezone
-        occurred_at = datetime.now(timezone.utc).isoformat()
-        
+        from datetime import datetime
+
+        occurred_at = datetime.now(UTC).isoformat()
+
         response = await client.post(
             f"/activities/?tenant_id={tenant_id}&created_by={user_id}",
             json={
@@ -146,9 +147,7 @@ class TestGetActivitiesByClient:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/activities/client/some-client-id?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/activities/client/some-client-id?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -191,7 +190,7 @@ class TestActivityIntegration:
         client_id = client_resp.json()["id"]
 
         # Create activity
-        occurred_at = datetime.now(timezone.utc).isoformat()
+        occurred_at = datetime.now(UTC).isoformat()
         create_resp = await client.post(
             f"/activities/?tenant_id={tenant_id}&created_by={user_id}",
             json={
@@ -211,7 +210,7 @@ class TestActivityIntegration:
         assert get_resp.json()["activity_type"] == "Call"
 
         # Update activity
-        next_follow_up = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+        next_follow_up = (datetime.now(UTC) + timedelta(days=7)).isoformat()
         update_resp = await client.patch(
             f"/activities/{activity_id}",
             json={
@@ -262,11 +261,29 @@ class TestActivityIntegration:
         client_id = client_resp.json()["id"]
 
         # Create multiple activities
-        occurred_at = datetime.now(timezone.utc).isoformat()
+        occurred_at = datetime.now(UTC).isoformat()
         activities = [
-            {"activity_type": "Meeting", "subject": "Meeting 1", "description": "D1", "occurred_at": occurred_at, "is_important": True},
-            {"activity_type": "Call", "subject": "Call 1", "description": "D2", "occurred_at": occurred_at, "is_important": False},
-            {"activity_type": "Email", "subject": "Email 1", "description": "D3", "occurred_at": occurred_at, "is_important": True},
+            {
+                "activity_type": "Meeting",
+                "subject": "Meeting 1",
+                "description": "D1",
+                "occurred_at": occurred_at,
+                "is_important": True,
+            },
+            {
+                "activity_type": "Call",
+                "subject": "Call 1",
+                "description": "D2",
+                "occurred_at": occurred_at,
+                "is_important": False,
+            },
+            {
+                "activity_type": "Email",
+                "subject": "Email 1",
+                "description": "D3",
+                "occurred_at": occurred_at,
+                "is_important": True,
+            },
         ]
 
         for act_data in activities:
@@ -276,15 +293,11 @@ class TestActivityIntegration:
             )
 
         # Filter by activity type
-        type_resp = await client.get(
-            f"/activities/?tenant_id={tenant_id}&activity_type=Meeting"
-        )
+        type_resp = await client.get(f"/activities/?tenant_id={tenant_id}&activity_type=Meeting")
         assert type_resp.status_code == 200
         assert all(a["activity_type"] == "Meeting" for a in type_resp.json()["items"])
 
         # Filter by important
-        important_resp = await client.get(
-            f"/activities/?tenant_id={tenant_id}&is_important=true"
-        )
+        important_resp = await client.get(f"/activities/?tenant_id={tenant_id}&is_important=true")
         assert important_resp.status_code == 200
         assert all(a["is_important"] is True for a in important_resp.json()["items"])

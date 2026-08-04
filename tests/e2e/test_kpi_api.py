@@ -141,9 +141,7 @@ class TestCheckKPINameAvailability:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/kpis/check-name/Available KPI?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/kpis/check-name/Available KPI?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -233,9 +231,7 @@ class TestGetKPIAssignmentsByKPI:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/kpis/kpi/some-kpi-id/assignments?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/kpis/kpi/some-kpi-id/assignments?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()

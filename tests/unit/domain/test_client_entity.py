@@ -4,20 +4,20 @@ Unit tests for ClientEntity domain entity.
 Tests domain logic and invariants without database dependencies.
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ContactMethod
-from app.domain.exceptions import DomainError
-from app.domain.value_objects.core import ClientId, TenantId, UserId, ContactInfo, Address
 from app.domain.events import (
-    ClientVerified,
     ClientActivated,
     ClientSuspended,
     ClientTerminated,
+    ClientVerified,
 )
-
+from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import Address, ClientId, ContactInfo, TenantId, UserId
 
 # =============================================================================
 # FIXTURES
@@ -314,9 +314,7 @@ class TestClientArchive:
         with pytest.raises(DomainError, match="Cannot archive deleted client"):
             deleted_client.archive()
 
-    def test_archive_already_archived_raises_error(
-        self, client_id, tenant_id, contact_info, now
-    ):
+    def test_archive_already_archived_raises_error(self, client_id, tenant_id, contact_info, now):
         """Test that archiving already archived client raises DomainError."""
         archived_client = ClientEntity(
             id=client_id,

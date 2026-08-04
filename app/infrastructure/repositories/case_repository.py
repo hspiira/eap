@@ -42,12 +42,8 @@ class CaseRepositoryImpl(CaseRepository):
             existing.closed_at = new_model.closed_at
             existing.closure_reason = new_model.closure_reason
             existing.closure_summary_note_id = new_model.closure_summary_note_id
-            existing.intake_screener_admin_ids = (
-                new_model.intake_screener_admin_ids
-            )
-            existing.closure_screener_admin_ids = (
-                new_model.closure_screener_admin_ids
-            )
+            existing.intake_screener_admin_ids = new_model.intake_screener_admin_ids
+            existing.closure_screener_admin_ids = new_model.closure_screener_admin_ids
             existing.updated_at = new_model.updated_at
         await self._session.flush()
 

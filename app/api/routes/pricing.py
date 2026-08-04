@@ -51,7 +51,7 @@ from app.domain.value_objects.pricing import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["pricing"])
 
@@ -71,14 +71,11 @@ def _pricing_from_schema(s: ContractPricingSchema) -> ContractPricing:
     if s.rate_card:
         rate_card = RateCard(
             rates=tuple(
-                (entry.service_code, _money_from_schema(entry.rate))
-                for entry in s.rate_card
+                (entry.service_code, _money_from_schema(entry.rate)) for entry in s.rate_card
             ),
         )
     tiers = tuple(
-        UtilisationTier(
-            up_to_units=t.up_to_units, unit_rate=_money_from_schema(t.unit_rate)
-        )
+        UtilisationTier(up_to_units=t.up_to_units, unit_rate=_money_from_schema(t.unit_rate))
         for t in s.tiers
     )
     return ContractPricing(
@@ -87,9 +84,7 @@ def _pricing_from_schema(s: ContractPricingSchema) -> ContractPricing:
         deposit_amount=_money_from_schema(s.deposit_amount),
         admin_fee_floor=_money_from_schema(s.admin_fee_floor),
         rate_card=rate_card,
-        parent_contract_id=ContractId(s.parent_contract_id)
-        if s.parent_contract_id
-        else None,
+        parent_contract_id=ContractId(s.parent_contract_id) if s.parent_contract_id else None,
         tiers=tiers,
     )
 
@@ -113,13 +108,7 @@ async def update_contract_pricing(
         raise HTTPException(status_code=404, detail="Contract not found")
     contract.update_pricing(_pricing_from_schema(body.pricing))
     await contract_repo.save(contract)
-    await audit_entity_operation(
-        entity=contract,
-        audit_handler=audit_handler,
-        tenant_id=contract.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(contract, audit_handler, current_user, request)
     return {"contract_id": contract.id.value, "pricing_model": contract.pricing.model.value}
 
 
@@ -135,18 +124,14 @@ async def invoice_preview(
     period_to: date = Query(..., description="Period end date (inclusive)"),
     _user: TokenData = Depends(get_current_user),
     contract_repo: ContractRepository = Depends(get_contract_repository),
-    utilisation_repo: UtilisationEventRepository = Depends(
-        get_utilisation_event_repository
-    ),
+    utilisation_repo: UtilisationEventRepository = Depends(get_utilisation_event_repository),
     db: AsyncSession = Depends(get_db),
 ):
     contract = await contract_repo.get_by_id(ContractId(contract_id))
     if contract is None:
         raise HTTPException(status_code=404, detail="Contract not found")
     if contract.pricing is None:
-        raise HTTPException(
-            status_code=400, detail="Contract has no pricing configuration"
-        )
+        raise HTTPException(status_code=400, detail="Contract has no pricing configuration")
     events = await utilisation_repo.list_for_contract(
         contract.tenant_id,
         contract.id,
@@ -205,13 +190,7 @@ async def create_utilisation_event(
         updated_at=now,
     )
     await repo.save(event)
-    await audit_entity_operation(
-        entity=event,
-        audit_handler=audit_handler,
-        tenant_id=event.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(event, audit_handler, current_user, request)
     return UtilisationEventResponse(
         id=event.id.value,
         tenant_id=event.tenant_id.value,

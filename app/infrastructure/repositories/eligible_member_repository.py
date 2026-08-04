@@ -27,7 +27,7 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberClinicalLinkModel,
     EligibleMemberModel,
 )
-
+from app.shared.utils.datetime import utc_now
 
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
 
@@ -36,9 +36,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: EligibleMemberId
-    ) -> EligibleMember | None:
+    async def get_by_id(self, entity_id: EligibleMemberId) -> EligibleMember | None:
         row = await self._session.get(EligibleMemberModel, entity_id.value)
         return EligibleMemberMapper.to_entity(row) if row else None
 
@@ -114,9 +112,7 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_id(
-        self, entity_id: ClinicalSubjectId
-    ) -> ClinicalSubject | None:
+    async def get_by_id(self, entity_id: ClinicalSubjectId) -> ClinicalSubject | None:
         row = await self._session.get(ClinicalSubjectModel, entity_id.value)
         return ClinicalSubjectMapper.to_entity(row) if row else None
 
@@ -156,9 +152,7 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
         return ClinicalSubjectMapper.to_entity(row) if row else None
 
 
-class EligibleMemberClinicalLinkRepositoryImpl(
-    EligibleMemberClinicalLinkRepository
-):
+class EligibleMemberClinicalLinkRepositoryImpl(EligibleMemberClinicalLinkRepository):
     """Every read here emits a structured ``subject-identity-disclosure`` log line.
 
     The DPO uses this stream to demonstrate that re-identification accesses are
@@ -175,11 +169,14 @@ class EligibleMemberClinicalLinkRepositoryImpl(
         member_id: EligibleMemberId,
         subject_id: ClinicalSubjectId,
     ) -> None:
+        now = utc_now()
         self._session.add(
             EligibleMemberClinicalLinkModel(
                 tenant_id=tenant_id.value,
                 member_id=member_id.value,
                 subject_id=subject_id.value,
+                created_at=now,
+                updated_at=now,
             )
         )
         await self._session.flush()

@@ -33,7 +33,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/panel", tags=["panel"])
 
@@ -92,13 +92,7 @@ async def change_provider_tier(
         actor=UserId(current_user.user_id),
         reason=data.reason,
     )
-    await audit_entity_operation(
-        entity=person,
-        audit_handler=audit_handler,
-        tenant_id=person.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(person, audit_handler, current_user, request)
     return TierChangeResponse(
         provider_id=person.id.value,
         new_tier=data.new_tier,
@@ -113,14 +107,10 @@ async def change_provider_tier(
 @readonly()
 async def check_provider_eligibility(
     provider_id: str,
-    client_id: str | None = Query(
-        default=None, description="Optional client scope for the check"
-    ),
+    client_id: str | None = Query(default=None, description="Optional client scope for the check"),
     current_user: TokenData = Depends(get_current_user),
     person_repo: PersonRepository = Depends(get_person_repository),
-    clause_repo: NonCompeteClauseRepository = Depends(
-        get_non_compete_clause_repository
-    ),
+    clause_repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
     use_case = CheckProviderEligibilityUseCase(person_repo, clause_repo)

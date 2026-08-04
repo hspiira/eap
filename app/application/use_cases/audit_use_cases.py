@@ -111,13 +111,9 @@ class GetAuditLogUseCase:
         """Get audit log by ID."""
         return await self.audit_repository.get_audit_log_by_id(audit_log_id)
 
-    async def execute_entity_changes(
-        self, audit_log_id: AuditLogId
-    ) -> list[EntityChange]:
+    async def execute_entity_changes(self, audit_log_id: AuditLogId) -> list[EntityChange]:
         """Get all entity changes for an audit log."""
-        changes = await self.audit_repository.get_entity_changes_by_audit_log_id(
-            audit_log_id
-        )
+        changes = await self.audit_repository.get_entity_changes_by_audit_log_id(audit_log_id)
         return list(changes)
 
     async def execute_entity_history(

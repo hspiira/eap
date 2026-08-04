@@ -29,7 +29,6 @@ from app.api.dependencies import (
 )
 from app.core.config import settings
 from app.core.security import TokenData, get_current_user, get_current_user_optional
-from app.domain.enums import AccessScope
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.contract import ContractEntity
@@ -39,6 +38,7 @@ from app.domain.entities.person import PersonEntity
 from app.domain.entities.service import ServiceEntity
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.entities.user import UserEntity
+from app.domain.enums import AccessScope, TenantRole
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -48,7 +48,6 @@ from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
-from app.domain.enums import TenantRole
 from app.domain.value_objects.core import (
     AuditLogId,
     ClientId,
@@ -167,18 +166,13 @@ async def require_same_tenant(
     return current_user
 
 
-def _token_has_scope(token: TokenData, scope: AccessScope) -> bool:
-    return scope.value in (token.access_scopes or [])
+def require_scope(*allowed_scopes: AccessScope):
+    """Dependency factory for the clinical/employer privacy wall.
 
-
-def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = False):
-    """Dependency factory enforcing the bounded-context access-scope split.
-
-    A token is admitted when *any* of ``allowed_scopes`` appears in its
-    ``access_scopes`` claim. Legacy tokens (no scopes claim) are admitted by
-    default to keep the rollout incremental; pass ``fail_closed_on_legacy=True``
-    on clinical-only routes to refuse legacy tokens — flip the default once the
-    auth backend emits explicit scopes everywhere.
+    Admits a token only when its ``access_scopes`` claim contains one of
+    ``allowed_scopes``. Fails closed: a token with no grants is refused.
+    There is no legacy escape hatch — scopes are stamped at mint from the
+    DB user, so every valid token carries its current grants.
     """
 
     allowed = {s.value for s in allowed_scopes}
@@ -186,32 +180,24 @@ def require_scope(*allowed_scopes: AccessScope, fail_closed_on_legacy: bool = Fa
     async def _require(
         current_user: TokenData = Depends(get_current_user),
     ) -> TokenData:
-        scopes = current_user.access_scopes or []
-        if not scopes and not fail_closed_on_legacy:
-            return current_user
-        if any(s in allowed for s in scopes):
+        if any(s in allowed for s in current_user.access_scopes):
             return current_user
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Access scope insufficient for this route; "
-                f"required one of {sorted(allowed)}"
-            ),
+            detail="Access scope insufficient for this route",
         )
 
     return _require
 
 
-require_clinical_scope = require_scope(
-    AccessScope.CLINICAL, AccessScope.PLATFORM_ADMIN
-)
-"""Use as ``Depends(require_clinical_scope)`` on every clinical-only route."""
+require_clinical_scope = require_scope(AccessScope.CLINICAL)
+"""Guards PHI surfaces: cases, clinical notes, EAP programmes."""
 
 
-require_employer_scope = require_scope(
-    AccessScope.EMPLOYER_PORTAL, AccessScope.PLATFORM_ADMIN
-)
-"""Use as ``Depends(require_employer_scope)`` on employer-portal routes."""
+def is_platform_admin(current_user: TokenData) -> bool:
+    """True when the token belongs to the platform tenant (and one is configured)."""
+    platform_tenant_id = getattr(settings, "PLATFORM_TENANT_ID", "").strip()
+    return bool(platform_tenant_id) and current_user.tenant_id == platform_tenant_id
 
 
 async def require_platform_admin(
@@ -221,9 +207,7 @@ async def require_platform_admin(
     Require that the current user is a platform admin.
     When PLATFORM_TENANT_ID is set, users in that tenant are platform admins.
     """
-    platform_tenant_id = getattr(
-        settings, "PLATFORM_TENANT_ID", ""
-    ).strip()
+    platform_tenant_id = getattr(settings, "PLATFORM_TENANT_ID", "").strip()
     if not platform_tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -455,11 +439,11 @@ async def get_person_for_current_tenant(
     """
     try:
         person = await person_repo.get_by_id(PersonId(person_id))
-    except ValueError:
+    except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Person not found",
-        )
+        ) from err
     if not person:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

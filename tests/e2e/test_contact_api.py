@@ -157,9 +157,7 @@ class TestGetContactsByClient:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        response = await client.get(
-            f"/contacts/client/some-client-id?tenant_id={tenant_id}"
-        )
+        response = await client.get(f"/contacts/client/some-client-id?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -244,9 +242,7 @@ class TestContactIntegration:
         assert list_resp.json()["total"] >= 1
 
         # Get contacts by client
-        client_contacts = await client.get(
-            f"/contacts/client/{client_id}?tenant_id={tenant_id}"
-        )
+        client_contacts = await client.get(f"/contacts/client/{client_id}?tenant_id={tenant_id}")
         assert client_contacts.status_code == 200
         assert client_contacts.json()["total"] >= 1
 
@@ -301,7 +297,5 @@ class TestContactIntegration:
             assert resp.status_code == 201
 
         # List contacts for client
-        list_resp = await client.get(
-            f"/contacts/client/{client_id}?tenant_id={tenant_id}"
-        )
+        list_resp = await client.get(f"/contacts/client/{client_id}?tenant_id={tenant_id}")
         assert list_resp.json()["total"] == 3

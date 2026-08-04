@@ -1,0 +1,29 @@
+# Mirrors the CI gate so failures surface before push, not after.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      # ruff-format is deliberately not enabled: 317 of 445 files would be
+      # reformatted. That wants one dedicated commit plus a
+      # .git-blame-ignore-revs, not churn leaking into unrelated changes.
+
+  - repo: local
+    hooks:
+      - id: lint-imports
+        name: import-linter (architecture contracts)
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false
+        files: ^app/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        # A committed 1.75MB SQLite DB is what prompted this.
+        args: [--maxkb=512]
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace

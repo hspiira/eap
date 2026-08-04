@@ -25,9 +25,9 @@ from app.core.config import settings
 class AzureClaims:
     """Verified identity claims extracted from an Azure AD id_token."""
 
-    oid: str        # Object ID — immutable, unique per user per Azure directory
-    tid: str        # Tenant ID — the employer's Azure AD directory
-    email: str      # Preferred username / email
+    oid: str  # Object ID — immutable, unique per user per Azure directory
+    tid: str  # Tenant ID — the employer's Azure AD directory
+    email: str  # Preferred username / email
     name: str | None = None
 
 
@@ -118,7 +118,9 @@ class AzureSSOService:
         email = claims.get("preferred_username") or claims.get("email") or claims.get("upn")
 
         if not oid or not tid or not email:
-            raise ValueError("Azure token is missing required claims (oid, tid, preferred_username)")
+            raise ValueError(
+                "Azure token is missing required claims (oid, tid, preferred_username)"
+            )
 
         return AzureClaims(
             oid=str(oid),

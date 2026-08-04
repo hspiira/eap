@@ -8,13 +8,12 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.authorization import (
-    get_service_for_current_tenant,
-    require_same_tenant,
+from app.api.dependencies import (
+    PageParams,
+    get_audit_event_handler,
+    get_service_repository,
+    pagination,
 )
-from app.core.security import TokenData, get_current_user
-
-from app.api.dependencies import get_audit_event_handler, get_service_repository
 from app.api.schemas.service_schemas import (
     ServiceCreate,
     ServiceListResponse,
@@ -31,14 +30,19 @@ from app.application.use_cases.transitions import (
     ServiceTransition,
     TransitionUseCase,
 )
+from app.core.authorization import (
+    get_service_for_current_tenant,
+    require_same_tenant,
+)
 from app.core.database import get_db
-from app.domain.enums import BaseStatus
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.service import ServiceEntity
+from app.domain.enums import BaseStatus
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
-from app.shared.decorators import transactional, readonly
+from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_entity_operation
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -89,13 +93,7 @@ async def create_service(
         is_group_service=data.is_group_service,
         max_participants=data.max_participants,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request, tenant_id=tenant_id)
     return _to_service_response(service)
 
 
@@ -114,16 +112,9 @@ async def activate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.ACTIVATE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -143,18 +134,9 @@ async def deactivate_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Deactivate a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
-    service = await use_case.execute(
-        service.id, ServiceTransition.DEACTIVATE, reason=reason
-    )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    use_case = TransitionUseCase(service_repo, "Service")
+    service = await use_case.execute(service.id, ServiceTransition.DEACTIVATE, reason=reason)
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -173,16 +155,9 @@ async def archive_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Archive a service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.ARCHIVE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -201,16 +176,9 @@ async def restore_service(
     db: AsyncSession = Depends(get_db),
 ):
     """Restore an archived or soft-deleted service."""
-    use_case: TransitionUseCase = TransitionUseCase(service_repo)
-    use_case.entity_name = "Service"
+    use_case = TransitionUseCase(service_repo, "Service")
     service = await use_case.execute(service.id, ServiceTransition.RESTORE)
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -237,13 +205,7 @@ async def update_service(
         category=data.category,
         duration_minutes=data.duration_minutes,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -268,13 +230,7 @@ async def update_service_group_settings(
         is_group_service=settings.is_group_service,
         max_participants=settings.max_participants,
     )
-    await audit_entity_operation(
-        entity=service,
-        audit_handler=audit_handler,
-        tenant_id=service.tenant_id,
-        user_id=current_user.user_id,
-        request=request,
-    )
+    await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
 
@@ -294,15 +250,13 @@ async def list_services(
     search: str | None = Query(None, description="Search in service name"),
     category: str | None = Query(None, description="Filter by category"),
     is_group_service: bool | None = Query(None, description="Filter by group service"),
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_desc: bool = Query(True, description="Sort in descending order"),
     service_repo: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """List services with filtering, searching, and pagination."""
-    offset = (page - 1) * limit
 
     services = await service_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -310,8 +264,8 @@ async def list_services(
         search=search,
         category=category,
         is_group_service=is_group_service,
-        limit=limit,
-        offset=offset,
+        limit=pg.limit,
+        offset=pg.offset,
         sort_by=sort_by,
         sort_desc=sort_desc,
     )
@@ -327,9 +281,9 @@ async def list_services(
     return ServiceListResponse(
         items=[_to_service_response(service) for service in services],
         total=total,
-        page=page,
-        limit=limit,
-        has_more=(offset + limit) < total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

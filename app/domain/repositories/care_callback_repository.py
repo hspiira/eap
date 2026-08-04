@@ -11,13 +11,10 @@ from app.domain.value_objects.core import (
 )
 
 
-class CareCallbackCampaignRepository(
-    BaseRepository[CareCallbackCampaign, CareCallbackCampaignId]
-):
+class CareCallbackCampaignRepository(BaseRepository[CareCallbackCampaign, CareCallbackCampaignId]):
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 50, offset: int = 0
-    ) -> list[CareCallbackCampaign]:
-        ...
+    ) -> list[CareCallbackCampaign]: ...
 
 
 class OutreachRecordRepository(BaseRepository[OutreachRecord, OutreachRecordId]):
@@ -28,8 +25,7 @@ class OutreachRecordRepository(BaseRepository[OutreachRecord, OutreachRecordId])
         *,
         limit: int = 200,
         offset: int = 0,
-    ) -> list[OutreachRecord]:
-        ...
+    ) -> list[OutreachRecord]: ...
 
     async def list_for_counsellor(
         self,
@@ -37,5 +33,4 @@ class OutreachRecordRepository(BaseRepository[OutreachRecord, OutreachRecordId])
         counsellor_id: PersonId,
         *,
         limit: int = 100,
-    ) -> list[OutreachRecord]:
-        ...
+    ) -> list[OutreachRecord]: ...
