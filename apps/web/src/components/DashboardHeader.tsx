@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
+import { queryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
@@ -165,7 +166,7 @@ function UserMenu() {
   const { showSuccess } = useToast()
 
   const { data: user } = useQuery({
-    queryKey: ["user", userId],
+    queryKey: queryKeys.users.detail(userId ?? ""),
     queryFn: () => usersApi.getById(userId!),
     enabled: !!userId,
     staleTime: 5 * 60_000,
