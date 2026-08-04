@@ -27,6 +27,7 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberClinicalLinkModel,
     EligibleMemberModel,
 )
+from app.shared.utils.datetime import utc_now
 
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
 
@@ -168,11 +169,14 @@ class EligibleMemberClinicalLinkRepositoryImpl(EligibleMemberClinicalLinkReposit
         member_id: EligibleMemberId,
         subject_id: ClinicalSubjectId,
     ) -> None:
+        now = utc_now()
         self._session.add(
             EligibleMemberClinicalLinkModel(
                 tenant_id=tenant_id.value,
                 member_id=member_id.value,
                 subject_id=subject_id.value,
+                created_at=now,
+                updated_at=now,
             )
         )
         await self._session.flush()
