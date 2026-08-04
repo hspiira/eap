@@ -1,17 +1,20 @@
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Download,
   ExternalLink,
   MoreHorizontal,
   Plus,
-  RotateCw,
   Users,
 } from "lucide-react"
 
+import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
+import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -19,9 +22,10 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { PERSON_TYPE_LABELS,PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
@@ -42,12 +46,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import type { Person } from "@/types/entities"
-import { PersonType } from "@/types/enums"
+import type { Client, Person } from "@/types/entities"
+import { BaseStatus, PersonType } from "@/types/enums"
 
 function isType(value: unknown): value is PersonType {
   return (
@@ -58,6 +62,10 @@ function isType(value: unknown): value is PersonType {
   )
 }
 
+function isStatus(value: unknown): value is BaseStatus {
+  return STATUS_VALUES.includes(value as BaseStatus)
+}
+
 export const Route = createFileRoute("/persons/")({
   component: PersonsListPage,
   validateSearch: (search: Record<string, unknown>) => {
@@ -66,6 +74,7 @@ export const Route = createFileRoute("/persons/")({
       search?: string
       type?: PersonType
       client_id?: string
+      status?: BaseStatus
     } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
@@ -73,6 +82,7 @@ export const Route = createFileRoute("/persons/")({
     if (typeof search.client_id === "string" && search.client_id.trim()) {
       out.client_id = search.client_id
     }
+    if (isStatus(search.status)) out.status = search.status
     return out
   },
 })
@@ -85,11 +95,17 @@ const TYPE_OPTIONS = [
   { value: PersonType.PLATFORM_STAFF, label: PERSON_TYPE_LABELS[PersonType.PLATFORM_STAFF] },
 ] as const
 
+const STATUS_VALUES: ReadonlyArray<BaseStatus> = [
+  BaseStatus.ACTIVE,
+  BaseStatus.INACTIVE,
+  BaseStatus.ARCHIVED,
+]
+
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: "Active", label: "Active" },
-  { value: "Inactive", label: "Inactive" },
-  { value: "Archived", label: "Archived" },
+  { value: BaseStatus.ACTIVE, label: "Active" },
+  { value: BaseStatus.INACTIVE, label: "Inactive" },
+  { value: BaseStatus.ARCHIVED, label: "Archived" },
 ] as const
 
 type TypeFilter = (typeof TYPE_OPTIONS)[number]["value"]
@@ -100,47 +116,40 @@ const ROW_BORDER = "border-fg/8"
 function PersonsListPage() {
   const searchParams = useSearch({ from: "/persons/" })
   const navigate = useNavigate({ from: "/persons/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
 
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeType = searchParams.type
   const activeClientId = searchParams.client_id
-
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
+  const activeStatus = searchParams.status
 
   const handleTypeChange = (next: TypeFilter) => {
     const type = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, type }), replace: true })
-    setPage(1)
+    setFilter("type", type)
+  }
+
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : next
+    setFilter("status", status)
   }
 
   const clearClient = () => {
     navigate({ search: (prev) => ({ ...prev, client_id: undefined }), replace: true })
     setPage(1)
   }
+
+  const { data: clientsData } = useQuery({
+    queryKey: ["clients", "lookup"],
+    queryFn: () => clientsApi.list({ limit: 500 }),
+    staleTime: 5 * 60_000,
+  })
+  const clientsById = useMemo(() => {
+    const m = new Map<string, Client>()
+    for (const c of clientsData?.items ?? []) m.set(c.id, c)
+    return m
+  }, [clientsData])
 
   const query = useEntityList({
     resource: "persons",
@@ -150,16 +159,12 @@ function PersonsListPage() {
       search: activeSearch,
       person_type: activeType,
       client_id: activeClientId,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      status: activeStatus,
+      ...sortParams,
     },
     listFn: personsApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items =
-    statusFilter === "all"
-      ? allItems
-      : allItems.filter((p) => p.status === statusFilter)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -167,7 +172,7 @@ function PersonsListPage() {
     Boolean(activeSearch) ||
     Boolean(activeType) ||
     Boolean(activeClientId) ||
-    statusFilter !== "all"
+    Boolean(activeStatus)
 
   return (
     <PageShell
@@ -200,8 +205,14 @@ function PersonsListPage() {
         ) : null}
         {activeClientId ? (
           <FilterChip
-            label={`Client ${activeClientId.slice(0, 8)}`}
+            label={`Client: ${clientsById.get(activeClientId)?.name ?? activeClientId.slice(0, 8)}`}
             onRemove={clearClient}
+          />
+        ) : null}
+        {activeStatus ? (
+          <FilterChip
+            label={`Status is ${activeStatus}`}
+            onRemove={() => handleStatusChange("all")}
           />
         ) : null}
         <FilterTrigger
@@ -212,9 +223,9 @@ function PersonsListPage() {
         />
         <FilterTrigger
           label="All statuses"
-          value={statusFilter}
+          value={(activeStatus ?? "all") as StatusFilter}
           options={STATUS_OPTIONS}
-          onChange={setStatusFilter}
+          onChange={handleStatusChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -297,7 +308,11 @@ function PersonsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <PersonRow key={row.id} row={row} />
+                    <PersonRow
+                      key={row.id}
+                      row={row}
+                      clientsById={clientsById}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -314,8 +329,23 @@ function PersonsListPage() {
   )
 }
 
-function PersonRow({ row }: { row: Person }) {
-  const fullName = displayName(row)
+function PersonRow({
+  row,
+  clientsById,
+}: {
+  row: Person
+  clientsById: Map<string, Client>
+}) {
+  const { data: linkedUser = null } = useQuery({
+    queryKey: ["user", row.user_id],
+    queryFn: () => usersApi.getById(row.user_id!),
+    enabled: !!row.user_id,
+    staleTime: 10 * 60_000,
+  })
+  const linkedClient = row.employment_info?.client_id
+    ? (clientsById.get(row.employment_info.client_id) ?? null)
+    : null
+  const fullName = displayName(row, linkedUser)
 
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
@@ -332,7 +362,7 @@ function PersonRow({ row }: { row: Person }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitials(row)}
+            {personInitials(row, linkedUser)}
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
@@ -353,11 +383,19 @@ function PersonRow({ row }: { row: Person }) {
         </span>
       </TableCell>
       <TableCell>
-        {row.employment_info?.client_id ? (
+        {linkedClient ? (
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: linkedClient.id }}
+            className="text-xs text-fg/70 hover:text-primary"
+          >
+            {linkedClient.name}
+          </Link>
+        ) : row.employment_info?.client_id ? (
           <Link
             to="/clients/$clientId"
             params={{ clientId: row.employment_info.client_id }}
-            className="font-mono text-xs text-fg/70 hover:text-primary"
+            className="font-mono text-xs text-fg/40 hover:text-primary"
           >
             {row.employment_info.client_id.slice(0, 8)}
           </Link>
@@ -369,8 +407,16 @@ function PersonRow({ row }: { row: Person }) {
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell>
-        {row.user_id ? (
-          <span className="font-mono text-xs text-fg/70">{row.user_id.slice(0, 8)}</span>
+        {linkedUser ? (
+          <Link
+            to="/users/$userId"
+            params={{ userId: linkedUser.id }}
+            className="max-w-35 truncate text-xs text-fg/70 hover:text-primary"
+          >
+            {linkedUser.email}
+          </Link>
+        ) : row.user_id ? (
+          <span className="font-mono text-xs text-fg/40">{row.user_id.slice(0, 8)}</span>
         ) : (
           <span className="text-fg/40">—</span>
         )}
@@ -411,44 +457,6 @@ function PersonRow({ row }: { row: Person }) {
         </div>
       </TableCell>
     </TableRow>
-  )
-}
-
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
   )
 }
 

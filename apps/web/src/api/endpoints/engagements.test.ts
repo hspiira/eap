@@ -73,6 +73,7 @@ describe('engagementsApi (fixture mode)', () => {
     expect(dlv.status).toBe(DeliverableStatus.PENDING)
 
     const submitted = await engagementsApi.updateDeliverableStatus(
+      created.id,
       dlv.id,
       DeliverableStatus.SUBMITTED,
     )

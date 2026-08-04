@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { useQuery } from "@tanstack/react-query"
+import { useQueries, useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   AlertTriangle,
@@ -21,7 +21,7 @@ import {
 } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -33,24 +33,17 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
-import type { CallbackCase } from "@/types/entities"
-import { CallbackCaseStatus } from "@/types/enums"
+import type { OutreachRecord } from "@/types/entities"
+import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is CallbackCaseStatus {
-  return (
-    v === CallbackCaseStatus.QUEUED ||
-    v === CallbackCaseStatus.IN_PROGRESS ||
-    v === CallbackCaseStatus.COMPLETED ||
-    v === CallbackCaseStatus.NO_ANSWER ||
-    v === CallbackCaseStatus.DECLINED ||
-    v === CallbackCaseStatus.CRISIS_ESCALATED
-  )
+function isStatus(v: unknown): v is OutreachStatus {
+  return Object.values(OutreachStatus).includes(v as OutreachStatus)
 }
 
 export const Route = createFileRoute("/care-callbacks/worklist/")({
   component: WorklistPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { search?: string; status?: CallbackCaseStatus; crisis?: boolean } = {}
+    const out: { search?: string; status?: OutreachStatus; crisis?: boolean } = {}
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
     if (search.crisis === "1" || search.crisis === true) out.crisis = true
@@ -60,54 +53,77 @@ export const Route = createFileRoute("/care-callbacks/worklist/")({
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: CallbackCaseStatus.QUEUED, label: "Queued" },
-  { value: CallbackCaseStatus.IN_PROGRESS, label: "In progress" },
-  { value: CallbackCaseStatus.COMPLETED, label: "Completed" },
-  { value: CallbackCaseStatus.NO_ANSWER, label: "No answer" },
-  { value: CallbackCaseStatus.DECLINED, label: "Declined" },
-  { value: CallbackCaseStatus.CRISIS_ESCALATED, label: "Crisis escalated" },
+  { value: OutreachStatus.PENDING, label: "Pending" },
+  { value: OutreachStatus.ASSIGNED, label: "Assigned" },
+  { value: OutreachStatus.CONTACTED, label: "Contacted" },
+  { value: OutreachStatus.COMPLETED, label: "Completed" },
+  { value: OutreachStatus.UNREACHABLE, label: "Unreachable" },
+  { value: OutreachStatus.DECLINED, label: "Declined" },
+  { value: OutreachStatus.ESCALATED, label: "Escalated" },
 ] as const
 
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 
 const ROW_BORDER = "border-fg/8"
 
+/**
+ * There is no "my worklist" endpoint on the BE — outreach records are only
+ * listable nested under one campaign at a time (GET .../{campaign}/outreach-records),
+ * with no assigned/counsellor filter. This fetches every active campaign's
+ * records and filters to the current user client-side. Fine at the campaign
+ * counts this product runs; would need a real BE endpoint at real scale.
+ */
+function useMyOutreachAcrossCampaigns(counsellorId: string | null) {
+  const campaignsQuery = useQuery({
+    queryKey: ["care-callback-campaigns", "list"],
+    queryFn: () => careCallbacksApi.listCampaigns(),
+    staleTime: 30_000,
+  })
+  const activeCampaigns = (campaignsQuery.data ?? []).filter(
+    (c) => c.status === CareCallbackCampaignStatus.ACTIVE,
+  )
+
+  const recordQueries = useQueries({
+    queries: activeCampaigns.map((c) => ({
+      queryKey: ["outreach-records", "for-campaign", c.id],
+      queryFn: () => careCallbacksApi.listOutreachForCampaign(c.id, { limit: 200 }),
+      enabled: !!counsellorId,
+    })),
+  })
+
+  const isPending = campaignsQuery.isPending || (!!counsellorId && recordQueries.some((q) => q.isPending))
+  const campaignNameById = new Map(activeCampaigns.map((c) => [c.id, c.name]))
+  const records = recordQueries
+    .flatMap((q) => q.data ?? [])
+    .filter((r) => r.counsellor_id === counsellorId)
+
+  return { records, campaignNameById, isPending }
+}
+
 function WorklistPage() {
   const searchParams = useSearch({ from: "/care-callbacks/worklist/" })
   const navigate = useNavigate({ from: "/care-callbacks/worklist/" })
-  const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
+  const userId = useAuthStore((s) => s.user_id)
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [sort, setSort] = useState<SortState>({ field: "next_attempt_at", desc: false })
+  const [sort, setSort] = useState<SortState>({ field: "last_attempted_at", desc: false })
 
-  const query = useQuery({
-    queryKey: [
-      "care-callback-cases",
-      "list",
-      { assigned_user_id: userId, status: searchParams.status },
-    ],
-    queryFn: () =>
-      careCallbacksApi.listCases({
-        assigned_user_id: userId,
-        status: searchParams.status,
-      }),
-  })
-  const allItems = query.data?.items ?? []
-  const items = filterAndSort(allItems, {
+  const { records, campaignNameById, isPending } = useMyOutreachAcrossCampaigns(userId)
+  const items = filterAndSort(records, {
     search: searchInput.trim(),
+    status: searchParams.status,
     crisis: searchParams.crisis,
     sort,
   })
-  const loading = query.isPending
   const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : (next as CallbackCaseStatus)
+    const status = next === "all" ? undefined : (next as OutreachStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const hasFilters =
     Boolean(searchInput) || Boolean(searchParams.status) || Boolean(searchParams.crisis)
 
-  const queuedCount = allItems.filter((c) => c.status === CallbackCaseStatus.QUEUED).length
-  const crisisCount = allItems.filter((c) => c.crisis_flagged).length
+  const pendingCount = records.filter((c) => c.status === OutreachStatus.ASSIGNED).length
+  const crisisCount = records.filter((c) => c.crisis_flag).length
 
   return (
     <PageShell
@@ -182,13 +198,13 @@ function WorklistPage() {
         <FilterSearch
           value={searchInput}
           onChange={setSearchInput}
-          placeholder="Search by name…"
+          placeholder="Search by person or campaign…"
         />
       </FilterBar>
 
       <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-2.5">
-        <Pip label="Queued" value={queuedCount} />
-        <Pip label="Total" value={allItems.length} />
+        <Pip label="Assigned" value={pendingCount} />
+        <Pip label="Total" value={records.length} />
         {crisisCount > 0 ? (
           <span className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-danger-fg">
             <AlertTriangle className="size-3" />
@@ -198,18 +214,18 @@ function WorklistPage() {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
-        {loading ? (
+        {isPending ? (
           <div className="flex-1 overflow-auto p-5">
             <TableSkeleton cols={4} rows={6} />
           </div>
         ) : items.length === 0 ? (
           <EmptyState
             icon={Headphones}
-            title={hasFilters ? "No cases match your filters" : "Your worklist is clear"}
+            title={hasFilters ? "No records match your filters" : "Your worklist is clear"}
             description={
               hasFilters
                 ? "Try a different filter or clear the search."
-                : "New cases assigned to you will show up here."
+                : "Records you've claimed (assigned to you) across active campaigns show up here."
             }
           />
         ) : (
@@ -218,7 +234,7 @@ function WorklistPage() {
               <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                 <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                   <TableHead>
-                    <SortHeader field="person_display_name" sort={sort} onToggle={toggleSort}>
+                    <SortHeader field="person_id" sort={sort} onToggle={toggleSort}>
                       Person
                     </SortHeader>
                   </TableHead>
@@ -233,8 +249,8 @@ function WorklistPage() {
                     </SortHeader>
                   </TableHead>
                   <TableHead>
-                    <SortHeader field="next_attempt_at" sort={sort} onToggle={toggleSort}>
-                      Next attempt
+                    <SortHeader field="last_attempted_at" sort={sort} onToggle={toggleSort}>
+                      Last attempt
                     </SortHeader>
                   </TableHead>
                   <TableHead className="text-fg/65">Attempts</TableHead>
@@ -245,7 +261,7 @@ function WorklistPage() {
               </TableHeader>
               <TableBody>
                 {items.map((c) => (
-                  <CaseRow key={c.id} row={c} />
+                  <CaseRow key={c.id} row={c} campaignName={campaignNameById.get(c.campaign_id) ?? null} />
                 ))}
               </TableBody>
             </Table>
@@ -256,7 +272,7 @@ function WorklistPage() {
   )
 }
 
-function CaseRow({ row }: { row: CallbackCase }) {
+function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: string | null }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell>
@@ -269,10 +285,10 @@ function CaseRow({ row }: { row: CallbackCase }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {personInitial(row.person_display_name)}
+            <Headphones className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">
-            {row.person_display_name}
+          <span className="font-mono text-sm font-medium text-fg group-hover:text-primary">
+            {row.person_id}
           </span>
         </Link>
       </TableCell>
@@ -280,18 +296,18 @@ function CaseRow({ row }: { row: CallbackCase }) {
         <Link
           to="/care-callbacks/$campaignId"
           params={{ campaignId: row.campaign_id }}
-          className="font-mono text-xs text-fg/75 hover:text-primary"
+          className="text-xs text-fg/75 hover:text-primary"
         >
-          {row.campaign_id}
+          {campaignName ?? row.campaign_id}
         </Link>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1.5">
           <CaseStatusPill status={row.status} />
-          {row.crisis_flagged ? (
+          {row.crisis_flag ? (
             <span
               className="inline-flex items-center gap-1 rounded-sm border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-danger-fg"
-              title="Crisis protocol invoked"
+              title="Crisis flag raised"
             >
               <AlertTriangle className="size-3" />
               Crisis
@@ -300,14 +316,14 @@ function CaseRow({ row }: { row: CallbackCase }) {
         </div>
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.next_attempt_at ? new Date(row.next_attempt_at).toLocaleDateString() : "—"}
+        {row.last_attempted_at ? new Date(row.last_attempted_at).toLocaleDateString() : "—"}
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{row.attempt_count}</TableCell>
+      <TableCell className="font-mono text-xs text-fg/75">{row.contact_attempts}</TableCell>
       <TableCell className="text-right">
         <Link
           to="/care-callbacks/worklist/$caseId"
           params={{ caseId: row.id }}
-          aria-label={`Open ${row.person_display_name}`}
+          aria-label={`Open ${row.person_id}`}
           className="inline-grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg group-hover:opacity-100"
         >
           <ChevronRight className="size-3.5" />
@@ -319,13 +335,13 @@ function CaseRow({ row }: { row: CallbackCase }) {
   )
 }
 
-function CaseStatusPill({ status }: { status: CallbackCaseStatus }) {
+function CaseStatusPill({ status }: { status: OutreachStatus }) {
   const tone =
-    status === CallbackCaseStatus.CRISIS_ESCALATED
+    status === OutreachStatus.ESCALATED
       ? "border-danger/30 bg-danger-soft text-danger-fg"
-      : status === CallbackCaseStatus.COMPLETED
+      : status === OutreachStatus.COMPLETED
         ? "border-primary/30 bg-primary/10 text-primary"
-        : status === CallbackCaseStatus.IN_PROGRESS
+        : status === OutreachStatus.CONTACTED
           ? "border-fg/25 bg-bg text-fg"
           : "border-fg/15 bg-bg text-fg/75"
   return (
@@ -349,39 +365,19 @@ function Pip({ label, value }: { label: string; value: number }) {
   )
 }
 
-function personInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}
-
 function filterAndSort(
-  items: CallbackCase[],
-  opts: { search: string; crisis?: boolean; sort: SortState },
-): CallbackCase[] {
+  items: OutreachRecord[],
+  opts: { search: string; status?: OutreachStatus; crisis?: boolean; sort: SortState },
+): OutreachRecord[] {
   let out = items
-  if (opts.crisis) out = out.filter((c) => c.crisis_flagged)
+  if (opts.status) out = out.filter((c) => c.status === opts.status)
+  if (opts.crisis) out = out.filter((c) => c.crisis_flag)
   if (opts.search) {
     const q = opts.search.toLowerCase()
     out = out.filter(
       (c) =>
-        c.person_display_name.toLowerCase().includes(q) ||
-        c.campaign_id.toLowerCase().includes(q),
+        c.person_id.toLowerCase().includes(q) || c.campaign_id.toLowerCase().includes(q),
     )
   }
-  if (opts.sort.field) {
-    const dir = opts.sort.desc ? -1 : 1
-    out = [...out].sort((a, b) => {
-      const av = (a as unknown as Record<string, unknown>)[opts.sort.field as string]
-      const bv = (b as unknown as Record<string, unknown>)[opts.sort.field as string]
-      if (av == null && bv == null) return 0
-      if (av == null) return 1
-      if (bv == null) return -1
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir
-      return String(av).localeCompare(String(bv)) * dir
-    })
-  }
-  return out
+  return compareSort(out, opts.sort)
 }

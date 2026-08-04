@@ -22,9 +22,11 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -42,24 +44,24 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { cn } from "@/lib/utils"
 import type { CallbackCampaign } from "@/types/entities"
-import { CallbackCampaignStatus } from "@/types/enums"
+import { CareCallbackCampaignStatus } from "@/types/enums"
 
-function isStatus(v: unknown): v is CallbackCampaignStatus {
+function isStatus(v: unknown): v is CareCallbackCampaignStatus {
   return (
-    v === CallbackCampaignStatus.DRAFT ||
-    v === CallbackCampaignStatus.SCHEDULED ||
-    v === CallbackCampaignStatus.ACTIVE ||
-    v === CallbackCampaignStatus.COMPLETED ||
-    v === CallbackCampaignStatus.CANCELLED
+    v === CareCallbackCampaignStatus.DRAFT ||
+    v === CareCallbackCampaignStatus.ACTIVE ||
+    v === CareCallbackCampaignStatus.COMPLETED ||
+    v === CareCallbackCampaignStatus.ARCHIVED
   )
 }
 
 export const Route = createFileRoute("/care-callbacks/")({
   component: CampaignsListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: CallbackCampaignStatus } = {}
+    const out: { new?: boolean; search?: string; status?: CareCallbackCampaignStatus } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
@@ -69,11 +71,10 @@ export const Route = createFileRoute("/care-callbacks/")({
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: CallbackCampaignStatus.DRAFT, label: "Draft" },
-  { value: CallbackCampaignStatus.SCHEDULED, label: "Scheduled" },
-  { value: CallbackCampaignStatus.ACTIVE, label: "Active" },
-  { value: CallbackCampaignStatus.COMPLETED, label: "Completed" },
-  { value: CallbackCampaignStatus.CANCELLED, label: "Cancelled" },
+  { value: CareCallbackCampaignStatus.DRAFT, label: "Draft" },
+  { value: CareCallbackCampaignStatus.ACTIVE, label: "Active" },
+  { value: CareCallbackCampaignStatus.COMPLETED, label: "Completed" },
+  { value: CareCallbackCampaignStatus.ARCHIVED, label: "Archived" },
 ] as const
 
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
@@ -99,16 +100,17 @@ function CampaignsListPage() {
     queryFn: () => careCallbacksApi.listCampaigns(),
     staleTime: 30_000,
   })
-  const allItems = query.data?.items ?? []
+  const allItems = query.data ?? []
   const items = filterAndSort(allItems, {
     search: searchInput.trim(),
     status: searchParams.status,
     sort,
   })
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? "Failed to load campaigns." : null
   const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : (next as CallbackCampaignStatus)
+    const status = next === "all" ? undefined : (next as CareCallbackCampaignStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
@@ -203,13 +205,15 @@ function CampaignsListPage() {
             }
           />
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto">
-            <Table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-                <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                  <TableHead className="w-10 px-3">
-                    <Checkbox aria-label="Select all" />
-                  </TableHead>
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                    </TableHead>
                   <TableHead>
                     <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                       Campaign
@@ -234,24 +238,25 @@ function CampaignsListPage() {
               </TableHeader>
               <TableBody>
                 {items.map((c) => (
-                  <CampaignRow key={c.id} row={c} />
+                  <CampaignRow key={c.id} row={c} isSelected={selection.selectedIds.has(c.id)} onToggle={() => selection.toggleSelect(c.id)} />
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </PageShell>
   )
 }
 
-function CampaignRow({ row }: { row: CallbackCampaign }) {
-  const total = row.case_count
-  const completionPct = total ? Math.round((row.cases_completed / total) * 100) : 0
+function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isSelected: boolean; onToggle: () => void }) {
+  const total = row.target_count
+  const completionPct = total ? Math.round((row.completed_count / total) * 100) : 0
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link
@@ -270,8 +275,7 @@ function CampaignRow({ row }: { row: CallbackCampaign }) {
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg/55">
-              Sampling: {row.sampling}
-              {row.sample_size ? ` (n=${row.sample_size})` : ""}
+              Target: {row.target_count}
             </span>
           </span>
         </Link>
@@ -285,13 +289,13 @@ function CampaignRow({ row }: { row: CallbackCampaign }) {
         {new Date(row.period_end).toLocaleDateString()}
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/75">
-        {row.counsellor_user_ids.length}
+        {row.counsellor_pool.length}
       </TableCell>
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
             <span>
-              {row.cases_completed}/{total}
+              {row.completed_count}/{total}
             </span>
             <span className="font-mono">{completionPct}%</span>
           </div>
@@ -334,7 +338,7 @@ function CampaignRow({ row }: { row: CallbackCampaign }) {
   )
 }
 
-export function CampaignStatusPill({ status }: { status: CallbackCampaignStatus }) {
+export function CampaignStatusPill({ status }: { status: CareCallbackCampaignStatus }) {
   const tone = statusTone(status)
   return (
     <span
@@ -348,50 +352,24 @@ export function CampaignStatusPill({ status }: { status: CallbackCampaignStatus 
   )
 }
 
-function statusTone(status: CallbackCampaignStatus): string {
+function statusTone(status: CareCallbackCampaignStatus): string {
   switch (status) {
-    case CallbackCampaignStatus.ACTIVE:
+    case CareCallbackCampaignStatus.ACTIVE:
       return "border-primary/30 bg-primary/10 text-primary"
-    case CallbackCampaignStatus.SCHEDULED:
-      return "border-fg/20 bg-bg text-fg"
-    case CallbackCampaignStatus.COMPLETED:
+    case CareCallbackCampaignStatus.COMPLETED:
       return "border-fg/15 bg-bg text-fg/60"
-    case CallbackCampaignStatus.CANCELLED:
+    case CareCallbackCampaignStatus.ARCHIVED:
       return "border-danger/30 bg-danger-soft text-danger-fg"
     default:
       return "border-fg/15 bg-bg text-fg/65"
   }
 }
 
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
 function filterAndSort(
   items: CallbackCampaign[],
   opts: {
     search: string
-    status?: CallbackCampaignStatus
+    status?: CareCallbackCampaignStatus
     sort: SortState
   },
 ): CallbackCampaign[] {
@@ -402,21 +380,9 @@ function filterAndSort(
     out = out.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        c.description?.toLowerCase().includes(q) ||
+        c.sampling_notes?.toLowerCase().includes(q) ||
         c.client_id.toLowerCase().includes(q),
     )
   }
-  if (opts.sort.field) {
-    const dir = opts.sort.desc ? -1 : 1
-    out = [...out].sort((a, b) => {
-      const av = (a as unknown as Record<string, unknown>)[opts.sort.field as string]
-      const bv = (b as unknown as Record<string, unknown>)[opts.sort.field as string]
-      if (av == null && bv == null) return 0
-      if (av == null) return 1
-      if (bv == null) return -1
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir
-      return String(av).localeCompare(String(bv)) * dir
-    })
-  }
-  return out
+  return compareSort(out, opts.sort)
 }

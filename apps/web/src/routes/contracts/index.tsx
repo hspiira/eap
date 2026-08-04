@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Calendar,
@@ -8,11 +9,12 @@ import {
   FileSignature,
   MoreHorizontal,
   Plus,
-  RotateCw,
 } from "lucide-react"
 
-import { contractsApi } from "@/api/endpoints/contracts"
+import { clientsApi } from "@/api/endpoints/clients"
+import { type ContractListParams,contractsApi } from "@/api/endpoints/contracts"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -20,9 +22,11 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { Button } from "@/components/ui/button"
@@ -44,10 +48,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import type { Contract } from "@/types/entities"
+import type { Client, Contract } from "@/types/entities"
 import { ContractStatus } from "@/types/enums"
 
 function isStatus(value: unknown): value is ContractStatus {
@@ -61,13 +66,23 @@ function isStatus(value: unknown): value is ContractStatus {
   )
 }
 
+function isRenewal(value: unknown): value is Exclude<RenewalFilter, "all"> {
+  return value === "30d" || value === "90d" || value === "expired"
+}
+
 export const Route = createFileRoute("/contracts/")({
   component: ContractsListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: ContractStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: ContractStatus
+      renewal?: Exclude<RenewalFilter, "all">
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (isRenewal(search.renewal)) out.renewal = search.renewal
     return out
   },
 })
@@ -97,60 +112,62 @@ const ROW_BORDER = "border-fg/8"
 function ContractsListPage() {
   const searchParams = useSearch({ from: "/contracts/" })
   const navigate = useNavigate({ from: "/contracts/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [renewal, setRenewal] = useState<RenewalFilter>("all")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const canWrite = useCanWrite()
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
 
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
+  const activeRenewal: RenewalFilter = searchParams.renewal ?? "all"
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
+  // Anchored to the selected window, not to render: an inline `new Date()` would
+  // mint a fresh query key every render and refetch in a loop.
+  const renewalWindow = useMemo(
+    () => renewalParams(activeRenewal, new Date()),
+    [activeRenewal],
+  )
 
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
+    setFilter("status", status)
   }
 
-  const query = useEntityList({
+  const handleRenewalChange = (next: RenewalFilter) => {
+    const renewal = next === "all" ? undefined : next
+    setFilter("renewal", renewal)
+  }
+
+  const { data: clientsData } = useQuery({
+    queryKey: ["clients", "lookup"],
+    queryFn: () => clientsApi.list({ limit: 500 }),
+    staleTime: 5 * 60_000,
+  })
+  const clientsById = useMemo(() => {
+    const m = new Map<string, Client>()
+    for (const c of clientsData?.items ?? []) m.set(c.id, c)
+    return m
+  }, [clientsData])
+
+  const query = useEntityList<Contract, ContractListParams>({
     resource: "contracts",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...renewalWindow,
+      ...sortParams,
     },
     listFn: contractsApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterByRenewal(allItems, renewal)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || renewal !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
 
   return (
     <PageShell
@@ -192,9 +209,9 @@ function ContractsListPage() {
         <FilterTrigger
           icon={Calendar}
           label="Renewal window"
-          value={renewal}
+          value={activeRenewal}
           options={RENEWAL_OPTIONS}
-          onChange={setRenewal}
+          onChange={handleRenewalChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -233,12 +250,17 @@ function ContractsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="contract_number" sort={sort} onToggle={toggleSort}>
@@ -273,7 +295,13 @@ function ContractsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <ContractRow key={row.id} row={row} />
+                    <ContractRow
+                      key={row.id}
+                      row={row}
+                      clientsById={clientsById}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -290,14 +318,24 @@ function ContractsListPage() {
   )
 }
 
-function ContractRow({ row }: { row: Contract }) {
-  const number = row.contract_number ?? row.id.slice(0, 8)
+function ContractRow({
+  row,
+  clientsById,
+  isSelected,
+  onToggle,
+}: {
+  row: Contract
+  clientsById: Map<string, Client>
+  isSelected: boolean
+  onToggle: () => void
+}) {
+  const number = row.id.slice(0, 8)
   const billing = formatBilling(row)
-  const ending = row.renewal_date ?? row.end_date ?? null
+  const linkedClient = clientsById.get(row.client_id) ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${number}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${number}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link
@@ -322,34 +360,28 @@ function ContractRow({ row }: { row: Contract }) {
           params={{ clientId: row.client_id }}
           className="text-sm text-fg hover:text-primary"
         >
-          {row.client_id.slice(0, 8)}
+          {linkedClient?.name ?? row.client_id.slice(0, 8)}
         </Link>
       </TableCell>
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{row.start_date}</TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDate(row.period.start_date)}</TableCell>
       <TableCell>
-        {ending ? (
-          <span className="block min-w-0">
-            <span className="block truncate text-sm text-fg">{ending}</span>
-            <span className="block truncate text-xs text-fg/55">
-              {row.renewal_date ? "Renewal" : "End"}
-            </span>
+        <span className="block min-w-0">
+          <span className="block truncate text-sm text-fg">
+            {formatDate(row.period.end_date)}
           </span>
-        ) : (
-          <span className="text-fg/40">—</span>
-        )}
+          <span className="block truncate text-xs text-fg/55">
+            {row.is_auto_renew ? "Renews" : "Ends"}
+          </span>
+        </span>
       </TableCell>
       <TableCell>
-        {billing ? (
-          <span className="block min-w-0">
-            <span className="block truncate font-mono text-sm text-fg">{billing.amount}</span>
-            <span className="block truncate text-xs text-fg/55">{billing.frequency}</span>
-          </span>
-        ) : (
-          <span className="text-fg/40">—</span>
-        )}
+        <span className="block min-w-0">
+          <span className="block truncate font-mono text-sm text-fg">{billing.amount}</span>
+          <span className="block truncate text-xs text-fg/55">{billing.frequency}</span>
+        </span>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -388,69 +420,45 @@ function ContractRow({ row }: { row: Contract }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
-function filterByRenewal(items: Contract[], window: RenewalFilter): Contract[] {
-  if (window === "all") return items
-  const now = new Date()
-  if (window === "expired") {
-    return items.filter((c) => {
-      const end = c.end_date ? new Date(c.end_date) : null
-      return end ? end < now : false
-    })
-  }
+/**
+ * Maps the renewal dropdown onto server-side params.
+ *
+ * This replaces a client-side filter that could never match: it keyed on
+ * `renewal_date ?? end_date`, and the BE sends neither at the top level, so
+ * every window returned an empty list. The term now lives in `period`, and the
+ * server filters it via an indexed range on the term end.
+ *
+ * "Renews in N days" means an auto-renewing contract whose term ends inside the
+ * window — a contract ending then without auto-renew is expiring, not renewing.
+ * "Already expired" is any term that has ended, renewing or not.
+ *
+ * Bounds are computed here rather than named to the server because the window is
+ * relative to the viewer's clock.
+ */
+export function renewalParams(
+  window: RenewalFilter,
+  now: Date,
+): Pick<ContractListParams, "ends_from" | "ends_to" | "is_auto_renew"> {
+  if (window === "all") return {}
+  if (window === "expired") return { ends_to: now.toISOString() }
   const days = window === "30d" ? 30 : 90
-  const horizon = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
-  return items.filter((c) => {
-    const target = c.renewal_date ?? c.end_date
-    if (!target) return false
-    const d = new Date(target)
-    return d >= now && d <= horizon
-  })
+  return {
+    is_auto_renew: true,
+    ends_from: now.toISOString(),
+    ends_to: new Date(now.getTime() + days * 86_400_000).toISOString(),
+  }
 }
 
-function formatBilling(c: Contract): { amount: string; frequency: string } | null {
-  if (c.billing_amount == null && !c.billing_frequency) return null
-  const amount =
-    c.billing_amount != null
-      ? `${c.currency ?? ""} ${c.billing_amount.toLocaleString()}`.trim()
-      : "—"
-  const frequency = c.billing_frequency ?? "—"
-  return { amount, frequency }
+/** `billing_rate.amount` is a decimal string on the wire; parse before formatting. */
+function formatBilling(c: Contract): { amount: string; frequency: string } {
+  const parsed = Number(c.billing_rate.amount)
+  const amount = Number.isFinite(parsed)
+    ? `${c.billing_rate.currency} ${parsed.toLocaleString()}`
+    : `${c.billing_rate.currency} ${c.billing_rate.amount}`
+  return { amount, frequency: c.payment_frequency }
+}
+
+/** Wire dates are ISO datetimes; the table only shows the calendar day. */
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString()
 }

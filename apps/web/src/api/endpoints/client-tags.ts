@@ -22,7 +22,7 @@ export const clientTagsApi = {
   },
 
   async list(params?: ListParams): Promise<PaginatedResponse<ClientTag>> {
-    return apiClient.get<PaginatedResponse<ClientTag>>('/client-tags', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<ClientTag>>('/client-tags', params)
   },
 
   async update(tagId: string, data: Partial<ClientTagCreate>): Promise<ClientTag> {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
@@ -8,12 +8,12 @@ import {
   ExternalLink,
   MoreHorizontal,
   Plus,
-  RotateCw,
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -21,9 +21,11 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
@@ -44,7 +46,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Client } from "@/types/entities"
@@ -87,37 +91,16 @@ const ROW_BORDER = "border-fg/8"
 function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
   const navigate = useNavigate({ from: "/clients/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen: addModalOpen, setAddOpen: setAddModalOpen,
+    page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const [timeRange, setTimeRange] = useState<TimeRange>("12h")
-  const [addModalOpen, setAddModalOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeTier = searchParams.tier
 
-  useEffect(() => {
-    if (searchParams.new) setAddModalOpen(true)
-  }, [searchParams.new])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
-  const handleTierChange = (next: TierFilter) => {
-    const tier = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
-    setPage(1)
-  }
+  const handleTierChange = (next: TierFilter) =>
+    setFilter("tier", next === "all" ? undefined : next)
 
   const query = useEntityList({
     resource: "clients",
@@ -126,13 +109,13 @@ function ClientsListPage() {
       limit,
       search: activeSearch,
       tier: activeTier,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: clientsApi.list,
   })
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters = Boolean(activeSearch) || Boolean(activeTier)
@@ -224,12 +207,17 @@ function ClientsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
@@ -259,7 +247,12 @@ function ClientsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <ClientRow key={row.id} row={row} />
+                    <ClientRow
+                      key={row.id}
+                      row={row}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -276,7 +269,7 @@ function ClientsListPage() {
   )
 }
 
-function ClientRow({ row }: { row: Client }) {
+function ClientRow({ row, isSelected, onToggle }: { row: Client; isSelected: boolean; onToggle: () => void }) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
     row.contact_info?.email && row.contact_info?.phone ? row.contact_info?.phone : null
@@ -286,7 +279,8 @@ function ClientRow({ row }: { row: Client }) {
       <TableCell className="px-3">
         <Checkbox
           aria-label={`Select ${row.name}`}
-          onClick={(e) => e.stopPropagation()}
+          checked={isSelected}
+          onCheckedChange={onToggle}
         />
       </TableCell>
       <TableCell>
@@ -299,7 +293,7 @@ function ClientRow({ row }: { row: Client }) {
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
           >
-            {initial(row.name)}
+            {nameInitials(row.name)}
           </span>
           <span className="text-sm font-medium text-fg group-hover:text-primary">
             {row.name}
@@ -366,50 +360,3 @@ function ClientRow({ row }: { row: Client }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return trimmed.slice(0, 2).toUpperCase()
-}

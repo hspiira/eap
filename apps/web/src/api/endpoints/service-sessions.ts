@@ -19,6 +19,17 @@ export type ServiceSessionCancelRequest = Schemas['ServiceSessionCancelRequest']
 export type ServiceSessionRescheduleRequest = Schemas['ServiceSessionRescheduleRequest']
 export type ServiceSessionUpdateFeedback = Schemas['ServiceSessionUpdateFeedback']
 
+/** Mirrors the query params on `GET /service-sessions/` in the BE OpenAPI schema. */
+export interface ServiceSessionListParams extends ListParams {
+  person_id?: string
+  provider_id?: string
+  service_id?: string
+  /** ISO 8601 instant; inclusive lower bound on `scheduled_at`. */
+  scheduled_from?: string
+  /** ISO 8601 instant; inclusive upper bound on `scheduled_at`. */
+  scheduled_to?: string
+}
+
 export const serviceSessionsApi = {
   /**
    * Create a new service session
@@ -37,8 +48,10 @@ export const serviceSessionsApi = {
   /**
    * List service sessions
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<ServiceSession>> {
-    return apiClient.get<PaginatedResponse<ServiceSession>>('/service-sessions', params as Record<string, unknown>)
+  async list(
+    params?: ServiceSessionListParams,
+  ): Promise<PaginatedResponse<ServiceSession>> {
+    return apiClient.get<PaginatedResponse<ServiceSession>>('/service-sessions', params)
   },
 
   /**

@@ -16,14 +16,22 @@ import appCss from '../styles.css?url'
 import { setupGlobalErrorHandlers } from '../utils/globalErrorHandler'
 
 export const Route = createRootRoute({
-  notFoundComponent: () => <NotFound fullPage />,
+  notFoundComponent: () => <NotFound />,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Evexía' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap',
+      },
+    ],
   }),
   component: RootLayout,
   shellComponent: RootDocument,
@@ -36,7 +44,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   useThemeEffect()
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Blocking script — must run before CSS renders to prevent theme flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=JSON.parse(localStorage.getItem('evexia.ui')||'{}');var p=s.theme||'system';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');if(d)document.documentElement.classList.add('dark');}catch(e){}}())` }} />

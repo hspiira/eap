@@ -34,13 +34,17 @@ export function displayName(person: Person, user?: User | null): string {
   return person.id.slice(0, 8)
 }
 
+/** Initials for any display name, used in avatar placeholders. */
+export function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  if (parts[0]?.length >= 2) return parts[0].slice(0, 2).toUpperCase()
+  return parts[0]?.[0]?.toUpperCase() ?? '·'
+}
+
 /**
  * Initials for a Person, used in avatar placeholders.
  */
 export function personInitials(person: Person, user?: User | null): string {
-  const name = displayName(person, user)
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  if (parts[0]?.length >= 2) return parts[0].slice(0, 2).toUpperCase()
-  return parts[0]?.[0]?.toUpperCase() ?? '·'
+  return nameInitials(displayName(person, user))
 }

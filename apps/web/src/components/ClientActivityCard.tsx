@@ -52,13 +52,8 @@ export function ClientActivityCard({
   useEffect(() => {
     setLoading(true)
     activitiesApi
-      .list({ limit: 20 } as Record<string, unknown>)
-      .then((res) => {
-        const items = (res.items ?? []).filter(
-          (a: ActivityEntity) => a.client_id === clientId,
-        )
-        setActivities(items.slice(0, limit))
-      })
+      .list({ limit, client_id: clientId })
+      .then((res) => setActivities(res.items ?? []))
       .catch(() => setActivities([]))
       .finally(() => setLoading(false))
   }, [clientId, limit])

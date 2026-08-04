@@ -3,7 +3,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   ClipboardList,
-  RotateCw,
   ShieldCheck,
   XCircle,
 } from "lucide-react"
@@ -11,6 +10,13 @@ import {
 import { clientsApi } from "@/api/endpoints/clients"
 import { surveysApi } from "@/api/endpoints/surveys"
 import { SURVEY_K_FLOOR } from "@/api/endpoints/surveys-fixture"
+import {
+  DetailCard,
+  DetailGrid,
+  DetailRow,
+  RailSection,
+  Stat,
+} from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
@@ -27,9 +33,9 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
 import { useEntityMutation } from "@/lib/queries"
-import { cn } from "@/lib/utils"
 import { SurveyStatusPill } from "@/routes/surveys/index"
 import type { Client, Survey, SurveyAggregate } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
@@ -65,17 +71,6 @@ function SurveyDetailPage() {
     queryKey: ["clients", "detail", clientId ?? ""],
     queryFn: () => clientsApi.getById(clientId as string),
     enabled: !!clientId,
-  })
-
-  const rotateMutation = useEntityMutation({
-    resource: "surveys",
-    mutationFn: () => surveysApi.rotateWebhookToken(surveyId),
-    detailId: surveyId,
-    skipListInvalidation: true,
-    onSuccess: () => {
-      showSuccess("Webhook token rotated — update the survey provider")
-    },
-    onError: (err) => showError(defaultErrorMessage(err)),
   })
 
   const closeMutation = useEntityMutation({
@@ -142,21 +137,6 @@ function SurveyDetailPage() {
           >
             <ArrowLeft className="size-3.5" />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              surveyQuery.refetch()
-              aggregateQuery.refetch()
-            }}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-          >
-            <RotateCw className="size-3.5" />
-          </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {!isClosed ? (
             <Button
               type="button"
@@ -239,11 +219,6 @@ function SurveyDetailPage() {
                 <WebhookSetupHelper
                   webhookUrl={survey.webhook_url}
                   webhookToken={survey.webhook_token}
-                  onRotateToken={async () => {
-                    await rotateMutation.mutateAsync()
-                  }}
-                  rotating={rotateMutation.isPending}
-                  readOnly={isClosed}
                 />
               </TabPanel>
 
@@ -438,7 +413,7 @@ function DetailRail({
               aria-hidden
               className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
             >
-              {clientInitial(client.name)}
+              {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
@@ -459,70 +434,6 @@ function DetailRail({
   )
 }
 
-function DetailCard({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-sm border border-fg/10 bg-surface p-4">
-      <h3 className="mb-3 text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function RailSection({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <section className={cn("space-y-2", className)}>
-      <h3 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[11px] font-medium tracking-wide text-fg/55">{label}</div>
-      <div className="mt-0.5 font-mono text-base font-semibold text-fg">{value}</div>
-    </div>
-  )
-}
-
-function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
-}
-
-function DetailRow({
-  label,
-  value,
-  fullWidth,
-}: {
-  label: string
-  value: React.ReactNode
-  fullWidth?: boolean
-}) {
-  return (
-    <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-fg">
-        {value || <span className="text-fg/40">—</span>}
-      </dd>
-    </div>
-  )
-}
-
 function topHistogramEntry(h: Record<string, number>): string {
   const entries = Object.entries(h)
   if (entries.length === 0) return "—"
@@ -531,10 +442,3 @@ function topHistogramEntry(h: Record<string, number>): string {
   return `${value} (${count})`
 }
 
-function clientInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

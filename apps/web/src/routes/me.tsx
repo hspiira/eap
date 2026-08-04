@@ -1,17 +1,19 @@
 import { useMemo } from 'react'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Building2, LogOut, User as UserIcon } from 'lucide-react'
+import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { AlertCircle, ArrowLeft, Building2, Inbox, LogOut, User as UserIcon } from 'lucide-react'
 import { z } from 'zod'
 
 import { usersApi } from '@/api/endpoints/users'
 import { AppLayout } from '@/components/AppLayout'
+import { AtRiskPage } from '@/components/AtRiskPage'
 import { FormField } from '@/components/common/FormField'
 import { PageShell } from '@/components/common/PageShell'
 import { DetailSkeleton } from '@/components/common/PageSkeletons'
 import { RequireAuth } from '@/components/common/RequireAuth'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { InboxPage } from '@/components/InboxPage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,7 +31,13 @@ import { useTenantStore } from '@/store/slices/tenantSlice'
 import type { User } from '@/types/entities'
 import { Language } from '@/types/enums'
 
+type MeView = 'inbox' | 'at-risk'
+
 export const Route = createFileRoute('/me')({
+  validateSearch: (search: Record<string, unknown>): { view?: MeView } => {
+    const v = search.view
+    return v === 'inbox' || v === 'at-risk' ? { view: v } : {}
+  },
   component: MePage,
 })
 
@@ -60,8 +68,48 @@ function MePage() {
   )
 }
 
+const VIEW_META: Record<MeView, { label: string; icon: React.ElementType; component: React.ComponentType }> = {
+  'inbox': { label: 'Inbox', icon: Inbox, component: InboxPage },
+  'at-risk': { label: 'At Risk', icon: AlertCircle, component: AtRiskPage },
+}
+
 function MeBody() {
   const userId = useAuthStore((s) => s.user_id)
+  const { view } = useSearch({ from: '/me' })
+
+  if (view) {
+    const meta = VIEW_META[view]
+    const Content = meta.component
+    return (
+      <AppLayout>
+        <PageShell
+          icon={meta.icon}
+          breadcrumb={
+            <span className="flex items-center gap-1">
+              <Link to="/me" className="hover:text-fg transition-colors">Profile</Link>
+              <span className="text-fg/40">·</span>
+              {meta.label}
+            </span>
+          }
+          actions={
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs text-fg/70"
+            >
+              <Link to="/me">
+                <ArrowLeft className="size-3" />
+                Back
+              </Link>
+            </Button>
+          }
+        >
+          <Content />
+        </PageShell>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
@@ -137,6 +185,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
     <div className="space-y-8">
       <AccountSummary user={user} onLogout={handleLogout} />
       <TenantSummary />
+      <PreviewLinks />
 
       <section className="space-y-4">
         <header>
@@ -243,6 +292,49 @@ function AccountSummary({ user, onLogout }: AccountSummaryProps) {
           <LogOut className="size-4" aria-hidden="true" />
           Sign out
         </Button>
+      </div>
+    </section>
+  )
+}
+
+function PreviewLinks() {
+  const items: Array<{ view: MeView; label: string; description: string; icon: React.ElementType }> = [
+    {
+      view: 'inbox',
+      label: 'Inbox',
+      description: 'Notification inbox — placeholder, not yet wired to real data.',
+      icon: Inbox,
+    },
+    {
+      view: 'at-risk',
+      label: 'At Risk',
+      description: 'PHQ-9 / no-show driven at-risk list — placeholder, ships in Phase 3.',
+      icon: AlertCircle,
+    },
+  ]
+  return (
+    <section className="space-y-3">
+      <header>
+        <h2 className="text-sm font-semibold text-fg">Preview pages</h2>
+        <p className="text-xs text-fg-muted">
+          Work-in-progress screens — not yet linked from the main nav.
+        </p>
+      </header>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map(({ view, label, description, icon: Icon }) => (
+          <Link
+            key={view}
+            to="/me"
+            search={{ view }}
+            className="flex items-start gap-3 rounded-sm border border-border-subtle bg-surface p-4 transition-colors hover:bg-surface-hover"
+          >
+            <Icon className="mt-0.5 size-4 shrink-0 text-fg-subtle" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">{label}</p>
+              <p className="mt-0.5 text-xs text-fg-muted">{description}</p>
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   )

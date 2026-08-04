@@ -3,57 +3,65 @@ import { describe, expect, it } from 'vitest'
 import { diagnosesApi } from '@/api/endpoints/diagnoses'
 
 describe('diagnosesApi (fixture mode)', () => {
-  it('returns top-level roots when no parent_id passed', async () => {
-    const r = await diagnosesApi.list({ parent_id: null })
-    expect(r.items.length).toBeGreaterThan(0)
-    for (const d of r.items) expect(d.parent_id).toBeNull()
+  it('getTypes returns all diagnosis types', async () => {
+    const types = await diagnosesApi.getTypes()
+    expect(types.length).toBeGreaterThan(0)
+    for (const t of types) {
+      expect(t.id).toBeTruthy()
+      expect(t.code).toBeTruthy()
+      expect(t.name).toBeTruthy()
+    }
   })
 
-  it('lists children of a given node', async () => {
-    const r = await diagnosesApi.list({ parent_id: 'icd10-f3x' })
-    expect(r.items.length).toBeGreaterThan(0)
-    for (const d of r.items) expect(d.parent_id).toBe('icd10-f3x')
+  it('getTree returns types with nested diagnoses', async () => {
+    const tree = await diagnosesApi.getTree()
+    expect(tree.types.length).toBeGreaterThan(0)
+    for (const t of tree.types) {
+      expect(Array.isArray(t.diagnoses)).toBe(true)
+      for (const d of t.diagnoses) {
+        expect(d.type_id).toBe(t.id)
+      }
+    }
   })
 
-  it('search matches by code and label', async () => {
-    const byCode = await diagnosesApi.list({ search: 'F32' })
-    expect(byCode.items.some((d) => d.code === 'F32')).toBe(true)
-
-    const byLabel = await diagnosesApi.list({ search: 'anxiety' })
-    expect(byLabel.items.length).toBeGreaterThan(0)
+  it('getTree includes mood disorders with F32 codes', async () => {
+    const tree = await diagnosesApi.getTree()
+    const mood = tree.types.find((t) => t.id === 'type-mood')
+    expect(mood).toBeDefined()
+    expect(mood!.diagnoses.some((d) => d.code === 'F32')).toBe(true)
+    expect(mood!.diagnoses.some((d) => d.code === 'F32.1')).toBe(true)
   })
 
-  it('search is case-insensitive', async () => {
-    const lower = await diagnosesApi.list({ search: 'depressive' })
-    const upper = await diagnosesApi.list({ search: 'DEPRESSIVE' })
-    expect(lower.items.length).toBe(upper.items.length)
-    expect(lower.items.length).toBeGreaterThan(0)
+  it('list returns flat diagnoses across all types when no filter', async () => {
+    const all = await diagnosesApi.list()
+    expect(all.length).toBeGreaterThan(5)
+    for (const d of all) {
+      expect(d.type_id).toBeTruthy()
+      expect(d.code).toBeTruthy()
+      expect(d.name).toBeTruthy()
+    }
   })
 
-  it('respects max_level when given', async () => {
-    const r = await diagnosesApi.list({ max_level: 1 })
-    for (const d of r.items) expect(d.level).toBeLessThanOrEqual(1)
+  it('list filters by type_code', async () => {
+    const anxiety = await diagnosesApi.list({ type_code: 'ICD10-F4x' })
+    expect(anxiety.length).toBeGreaterThan(0)
+    for (const d of anxiety) expect(d.type_id).toBe('type-anxiety')
   })
 
-  it('builds hierarchical path with codes + labels', async () => {
-    const r = await diagnosesApi.list({ search: 'F32.1' })
-    const hit = r.items.find((d) => d.code === 'F32.1')
-    expect(hit?.path).toMatch(/F.*\/.*F30.F39.*\/.*F32.*\/.*F32\.1/)
+  it('list returns empty for unknown type_code', async () => {
+    const none = await diagnosesApi.list({ type_code: 'UNKNOWN' })
+    expect(none).toHaveLength(0)
   })
 
-  it('returns has_children = true on category nodes', async () => {
-    const f3x = (await diagnosesApi.list({ search: 'F30' })).items.find(
-      (d) => d.id === 'icd10-f3x',
-    )
-    expect(f3x?.has_children).toBe(true)
-  })
-
-  it('getById returns the node', async () => {
-    const node = await diagnosesApi.getById('icd10-f43-ptsd')
-    expect(node.code).toBe('F43.1')
-  })
-
-  it('getById throws for unknown id', async () => {
-    await expect(diagnosesApi.getById('does-not-exist')).rejects.toThrow()
+  it('each diagnosis has required fields', async () => {
+    const tree = await diagnosesApi.getTree()
+    const all = tree.types.flatMap((t) => t.diagnoses)
+    for (const d of all) {
+      expect(typeof d.id).toBe('string')
+      expect(typeof d.code).toBe('string')
+      expect(typeof d.name).toBe('string')
+      expect(typeof d.type_id).toBe('string')
+      expect(typeof d.sort_order).toBe('number')
+    }
   })
 })

@@ -2,8 +2,17 @@
  * Users API Endpoints
  */
 
+import type { AccessScope } from '@/types/enums'
+
 import apiClient from '../client'
 import type { CreateRequest, ListParams, PaginatedResponse, User } from '../types'
+
+/** Mirrors the query params on `GET /users/` in the BE OpenAPI schema. */
+export interface UserListParams extends ListParams {
+  is_email_verified?: boolean
+  is_two_factor_enabled?: boolean
+  access_scope?: AccessScope
+}
 
 export interface UserCreate extends CreateRequest {
   email: string
@@ -67,8 +76,8 @@ export const usersApi = {
   /**
    * List users
    */
-  async list(params?: ListParams): Promise<PaginatedResponse<User>> {
-    return apiClient.get<PaginatedResponse<User>>('/users', params as Record<string, unknown> | undefined)
+  async list(params?: UserListParams): Promise<PaginatedResponse<User>> {
+    return apiClient.get<PaginatedResponse<User>>('/users', params)
   },
 
   /**
@@ -90,6 +99,10 @@ export const usersApi = {
    */
   async updateRole(userId: string, data: UserUpdateRoleRequest): Promise<User> {
     return apiClient.patch<User>(`/users/${userId}/role`, data)
+  },
+
+  async updateAccessScopes(userId: string, access_scopes: AccessScope[]): Promise<User> {
+    return apiClient.patch<User>(`/users/${userId}/access-scopes`, { access_scopes })
   },
 
   /**

@@ -2,13 +2,13 @@
  * Webhook setup helper for the Survey detail page (Phase 3 #2).
  *
  * Renders a copy-paste-friendly summary of the webhook URL + token plus a step-by-step
- * Google Forms instruction list. Token rotation is exposed as a button so a leaked
- * token can be revoked without re-creating the survey.
+ * Google Forms instruction list. The secret is generated once on create — copy it
+ * immediately. Token rotation has been removed (P2 #0).
  */
 
 import { useState } from "react"
 
-import { Check, Copy, RefreshCcw } from "lucide-react"
+import { Check, Copy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,13 +21,11 @@ import { useToast } from "@/contexts/ToastContext"
 interface Props {
   webhookUrl: string
   webhookToken: string
-  onRotateToken: () => Promise<void> | void
-  rotating: boolean
   /** Disables interactive controls when the survey is closed. */
   readOnly?: boolean
 }
 
-export function WebhookSetupHelper({ webhookUrl, webhookToken, onRotateToken, rotating, readOnly }: Props) {
+export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
   return (
     <section className="space-y-4 rounded-sm border border-fg/10 bg-surface p-4">
       <header>
@@ -41,20 +39,6 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken, onRotateToken, ro
       <div className="space-y-3">
         <CopyRow label="Webhook URL" value={webhookUrl} />
         <CopyRow label="X-Evexia-Token" value={webhookToken} mask />
-      </div>
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={readOnly || rotating}
-          onClick={() => onRotateToken()}
-          className="gap-1.5"
-        >
-          <RefreshCcw className="size-3.5" />
-          {rotating ? "Rotating…" : "Rotate token"}
-        </Button>
       </div>
 
       <Collapsible className="border-t border-fg/10 pt-3">

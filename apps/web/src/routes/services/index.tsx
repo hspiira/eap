@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
@@ -6,12 +5,12 @@ import {
   ExternalLink,
   MoreHorizontal,
   Plus,
-  RotateCw,
   Wrench,
 } from "lucide-react"
 
-import { servicesApi } from "@/api/endpoints/services"
+import { type ServiceListParams,servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -19,9 +18,10 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
@@ -42,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { Service } from "@/types/entities"
@@ -60,10 +60,16 @@ function isStatus(value: unknown): value is BaseStatus {
 export const Route = createFileRoute("/services/")({
   component: ServicesListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: BaseStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: BaseStatus
+      group?: "individual" | "group"
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (search.group === "individual" || search.group === "group") out.group = search.group
     return out
   },
 })
@@ -89,59 +95,38 @@ const ROW_BORDER = "border-fg/8"
 function ServicesListPage() {
   const searchParams = useSearch({ from: "/services/" })
   const navigate = useNavigate({ from: "/services/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
 
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
+  const activeGroup: GroupFilter = searchParams.group ?? "all"
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
+  const handleStatusChange = (next: StatusFilter) =>
+    setFilter("status", next === "all" ? undefined : next)
 
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
+  const handleGroupChange = (next: GroupFilter) =>
+    setFilter("group", next === "all" ? undefined : next)
 
-  const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
-  }
-
-  const query = useEntityList({
+  const query = useEntityList<Service, ServiceListParams>({
     resource: "services",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      is_group_service: activeGroup === "all" ? undefined : activeGroup === "group",
+      ...sortParams,
     },
     listFn: servicesApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterByGroup(allItems, groupFilter)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || groupFilter !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeGroup !== "all"
 
   return (
     <PageShell
@@ -180,9 +165,9 @@ function ServicesListPage() {
         />
         <FilterTrigger
           label="Any size"
-          value={groupFilter}
+          value={activeGroup}
           options={GROUP_OPTIONS}
-          onChange={setGroupFilter}
+          onChange={handleGroupChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -274,7 +259,7 @@ function ServicesListPage() {
 }
 
 function ServiceRow({ row }: { row: Service }) {
-  const allowGroup = Boolean(row.group_settings?.allow_group_sessions)
+  const allowGroup = Boolean(row.is_group_service)
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
@@ -320,8 +305,7 @@ function ServiceRow({ row }: { row: Service }) {
       <TableCell>
         {allowGroup ? (
           <span className="text-xs text-fg">
-            {row.group_settings?.min_group_size ?? "?"}–
-            {row.group_settings?.max_group_size ?? "?"}
+            {row.max_participants != null ? `Up to ${row.max_participants}` : "Group"}
           </span>
         ) : (
           <span className="text-xs text-fg/55">Individual</span>
@@ -359,46 +343,3 @@ function ServiceRow({ row }: { row: Service }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
-function filterByGroup(items: Service[], filter: GroupFilter): Service[] {
-  if (filter === "all") return items
-  if (filter === "group") return items.filter((s) => s.group_settings?.allow_group_sessions)
-  return items.filter((s) => !s.group_settings?.allow_group_sessions)
-}

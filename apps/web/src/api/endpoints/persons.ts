@@ -59,7 +59,7 @@ export const personsApi = {
    * List persons
    */
   async list(params?: PersonListParams): Promise<PaginatedResponse<Person>> {
-    return apiClient.get<PaginatedResponse<Person>>('/persons', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Person>>('/persons', params)
   },
 
   /**
@@ -173,7 +173,7 @@ export const personsApi = {
   async getByType(tenantId: string, personType: PersonType): Promise<Person[]> {
     const res = await apiClient.get<Person[] | { items: Person[] }>(
       `/persons/by-type/${personType}`,
-      { tenant_id: tenantId } as Record<string, unknown>
+      { tenant_id: tenantId }
     )
     return Array.isArray(res) ? res : (res.items ?? [])
   },

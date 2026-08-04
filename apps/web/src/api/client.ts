@@ -4,11 +4,18 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
+import { parseError } from '@/api/errors'
+import {
+  buildAuthHeaders,
+  buildHeaders,
+  buildUrl,
+  type SessionContext,
+} from '@/api/request-shape'
 import { useAuthStore } from '@/store/slices/authSlice'
 import { useTenantStore } from '@/store/slices/tenantSlice'
 import type {
   ApiClientConfig,
-  FieldErrors,
+  QueryParams,
   RequestOptions,
 } from '@/types/api'
 import { ApiError } from '@/types/api'
@@ -178,284 +185,105 @@ class ApiClient {
     }
   }
 
-  /**
-   * Paths that must work WITHOUT tenant context (auth, tenant bootstrap).
-   * All other endpoints require tenant_id: we add ?tenant_id= and x-tenant-id for every
-   * GET/POST/PATCH/DELETE (list, create, update, etc.). Backend requires tenant context
-   * for all data fetch and post operations.
-   * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context.
-   */
-  private shouldSkipTenantId(endpoint: string): boolean {
-    const pathname = new URL(endpoint, 'http://x').pathname
-    if (pathname.startsWith('/auth/')) return true
-    if (pathname === '/tenants') return true
-    if (pathname.startsWith('/tenants/check-code')) return true
-    if (/^\/tenants\/[^/]+$/.test(pathname)) return true // GET /tenants/:id
-    return false
+  /** Snapshot of the session state request-shaping functions need. */
+  private session(): SessionContext {
+    return {
+      token: this.getToken(),
+      csrfToken: this.getCsrfToken(),
+      tenantId: this.getTenantId(),
+      useCookies: useCookies(),
+    }
   }
 
-  /**
-   * Build request URL with query parameters
-   */
-  private buildUrl(endpoint: string, params?: Record<string, unknown>): string {
-    const url = new URL(endpoint, this.baseUrl)
-    const tenantId = this.getTenantId()
-    const skipTenant = this.shouldSkipTenantId(endpoint)
-
-    if (tenantId && !skipTenant && !params?.tenant_id) {
-      url.searchParams.set('tenant_id', tenantId)
-    }
-
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach((v) => url.searchParams.append(key, String(v)))
-          } else {
-            url.searchParams.set(key, String(value))
-          }
-        }
-      })
-    }
-
-    return url.toString()
+  private buildUrl(endpoint: string, params?: QueryParams): string {
+    return buildUrl(this.baseUrl, endpoint, this.getTenantId(), params)
   }
 
-  /**
-   * Build request headers
-   */
   private buildHeaders(
     customHeaders?: Record<string, string>,
     endpoint?: string,
-    excludeSensitiveHeaders?: boolean
+    excludeSensitiveHeaders?: boolean,
   ): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    }
-
-    if (!excludeSensitiveHeaders) {
-      if (!useCookies()) {
-        const token = this.getToken()
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-      } else {
-        const csrf = this.getCsrfToken()
-        if (csrf) headers['X-CSRF-Token'] = csrf
-      }
-      const tenantId = this.getTenantId()
-      const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
-      if (tenantId && !skipTenant) {
-        headers['x-tenant-id'] = tenantId
-      }
-    }
-
-    return headers
+    return buildHeaders(this.session(), customHeaders, endpoint, excludeSensitiveHeaders)
   }
 
-  /**
-   * Build auth-only headers (no Content-Type) for FormData/blob requests
-   */
   private buildAuthHeaders(endpoint?: string): Record<string, string> {
-    const headers: Record<string, string> = {}
-    if (!useCookies()) {
-      const token = this.getToken()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-    } else {
-      const csrf = this.getCsrfToken()
-      if (csrf) headers['X-CSRF-Token'] = csrf
-    }
-    const tenantId = this.getTenantId()
-    const skipTenant = endpoint != null && this.shouldSkipTenantId(endpoint)
-    if (tenantId && !skipTenant) {
-      headers['x-tenant-id'] = tenantId
-    }
-    return headers
+    return buildAuthHeaders(this.session(), endpoint)
   }
 
   /**
    * POST FormData with auth headers, returns parsed JSON
    */
-  async postFormData<T>(path: string, formData: FormData): Promise<T> {
-    const url = this.buildUrl(path)
-    const headers = this.buildAuthHeaders(path)
-
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-      headers,
-      ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
-    })
-
+  /**
+   * Fetch, and on a 401 refresh once and retry. `/auth/` paths are exempt — a 401
+   * there is the answer, not a stale token.
+   */
+  private async fetchWithAuthRetry(
+    path: string,
+    doFetch: (headers: Record<string, string>) => Promise<Response>,
+  ): Promise<Response> {
+    const response = await doFetch(this.buildAuthHeaders(path))
     if (response.status === 401 && !path.includes('/auth/')) {
-      const refreshed = await this.tryRefreshToken()
-      if (refreshed) {
-        const retryHeaders = this.buildAuthHeaders(path)
-        const retryResponse = await fetch(url, {
-          method: 'POST',
-          body: formData,
-          headers: retryHeaders,
-          credentials: useCookies() ? 'include' : undefined,
-        })
-        if (retryResponse.ok) {
-          const ct = retryResponse.headers.get('content-type')
-          if (!ct || !ct.includes('application/json')) return {} as T
-          return (await retryResponse.json()) as T
-        }
+      if (await this.tryRefreshToken()) {
+        const retry = await doFetch(this.buildAuthHeaders(path))
+        if (retry.ok) return retry
       }
       this.handleAuthError(401)
     }
-
     if (response.status === 403) {
       this.handleAuthError(403)
     }
+    return response
+  }
+
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const url = this.buildUrl(path)
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers,
+        ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
+      }),
+    )
 
     if (!response.ok) {
-      const error = await this.parseError(response)
-      throw error
+      throw await parseError(response)
     }
 
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      return {} as T
-    }
-    return (await response.json()) as T
+    return this.parseBody<T>(response)
   }
+
 
   /**
    * GET with blob response (e.g. file download)
    */
   async getBlob(path: string): Promise<Blob> {
     const url = this.buildUrl(path)
-    const headers = this.buildAuthHeaders(path)
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      credentials: useCookies() ? 'include' : undefined,
-    })
-
-    if (response.status === 401) {
-      const refreshed = await this.tryRefreshToken()
-      if (refreshed) {
-        const retryHeaders = this.buildAuthHeaders(path)
-        const retryResponse = await fetch(url, {
-          method: 'GET',
-          headers: retryHeaders,
-          credentials: useCookies() ? 'include' : undefined,
-        })
-        if (retryResponse.ok) {
-          return retryResponse.blob()
-        }
-      }
-      this.handleAuthError(401)
-    }
-
-    if (response.status === 403) {
-      this.handleAuthError(403)
-    }
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: 'GET',
+        headers,
+        credentials: useCookies() ? 'include' : undefined,
+      }),
+    )
 
     if (!response.ok) {
       throw new ApiError(
         'Failed to download document',
         'DOWNLOAD_ERROR',
-        response.status
+        response.status,
       )
     }
 
     return response.blob()
   }
 
+
   /**
    * Parse error response.
    * Supports both EAP shape ({ error, message, details? }) and FastAPI HTTPException ({ detail: string | array }).
    */
-  private async parseError(response: Response): Promise<ApiError> {
-    let body: unknown
-    try {
-      body = await response.json()
-    } catch (_err) {
-      body = null
-    }
-
-    const message = this.normalizeErrorMessageBody(body, response)
-    const errorCode = this.normalizeErrorCodeBody(body, response.status)
-    const fieldErrors = this.normalizeFieldErrorsBody(body)
-    const data = this.normalizeErrorDataBody(body)
-
-    return new ApiError(message, errorCode, response.status, fieldErrors, data)
-  }
-
-  /**
-   * Pass through server-provided extra fields (e.g. `retry_after_seconds` for lockout)
-   * minus the ones we already extract into typed fields.
-   */
-  private normalizeErrorDataBody(body: unknown): Record<string, unknown> | undefined {
-    if (!body || typeof body !== 'object') return undefined
-    const b = body as Record<string, unknown>
-    const reserved = new Set(['error', 'message', 'detail', 'details', 'timestamp', 'path', 'request_id'])
-    const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(b)) {
-      if (!reserved.has(k)) out[k] = v
-    }
-    return Object.keys(out).length > 0 ? out : undefined
-  }
-
-  private normalizeErrorMessageBody(body: unknown, response: Response): string {
-    if (body && typeof body === 'object') {
-      const b = body as Record<string, unknown>
-      if (typeof b.message === 'string' && b.message) return b.message
-      const detail = b.detail
-      if (typeof detail === 'string' && detail) return detail
-      if (Array.isArray(detail) && detail.length > 0) {
-        const first = detail[0]
-        if (first && typeof first === 'object' && first !== null && 'msg' in first && typeof (first as { msg: unknown }).msg === 'string') {
-          return (first as { msg: string }).msg
-        }
-        return String(first)
-      }
-    }
-    return response.statusText || 'An unknown error occurred'
-  }
-
-  private normalizeErrorCodeBody(body: unknown, status: number): string {
-    if (body && typeof body === 'object') {
-      const b = body as Record<string, unknown>
-      if (typeof b.error === 'string' && b.error) return b.error
-    }
-    switch (status) {
-      case 401:
-        return 'AUTHENTICATION_ERROR'
-      case 403:
-        return 'AUTHORIZATION_ERROR'
-      case 404:
-        return 'NOT_FOUND'
-      default:
-        return 'HTTP_ERROR'
-    }
-  }
-
-  private normalizeFieldErrorsBody(body: unknown): FieldErrors | undefined {
-    if (!body || typeof body !== 'object') return undefined
-    const b = body as Record<string, unknown>
-    const details = b.details
-    if (!Array.isArray(details)) return undefined
-    const acc: FieldErrors = {}
-    for (const d of details) {
-      if (d && typeof d === 'object' && d !== null && 'field' in d && (d as { field: unknown }).field) {
-        const field = String((d as { field: unknown }).field)
-        const msg = typeof (d as { message?: unknown }).message === 'string'
-          ? (d as { message: string }).message
-          : String(d)
-        acc[field] = msg
-      }
-    }
-    return Object.keys(acc).length > 0 ? acc : undefined
-  }
-
   /**
    * Handle authentication errors
    */
@@ -495,6 +323,24 @@ class ApiClient {
     }
   }
 
+  /** An abort signal firing after `timeout` (or the client default), combined with any caller signal. */
+  private makeTimeoutSignal(
+    signal?: AbortSignal,
+    timeout?: number,
+  ): { signal: AbortSignal; timeoutId: ReturnType<typeof setTimeout> } {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout ?? this.timeout)
+    const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal
+    return { signal: combined, timeoutId }
+  }
+
+  /** Parsed JSON body, or an empty object for 204/non-JSON responses. */
+  private async parseBody<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) return {} as T
+    return (await response.json()) as T
+  }
+
   /**
    * Make HTTP request with timeout and retry
    */
@@ -504,16 +350,7 @@ class ApiClient {
   ): Promise<T> {
     const { signal, timeout, headers, ...fetchOptions } = options
 
-    // Create abort controller for timeout
-    const controller = new AbortController()
-    const timeoutId = timeout
-      ? setTimeout(() => controller.abort(), timeout)
-      : setTimeout(() => controller.abort(), this.timeout)
-
-    // Combine signals
-    const requestSignal = signal
-      ? AbortSignal.any([signal, controller.signal])
-      : controller.signal
+    const { signal: requestSignal, timeoutId } = this.makeTimeoutSignal(signal, timeout)
 
     // endpoint may already be a full URL or a relative path
     const isAbsoluteUrl = endpoint.startsWith('http')
@@ -534,18 +371,15 @@ class ApiClient {
           return rest
         })()
 
-    const requestHeaders = this.buildHeaders(
-      sanitizedHeaders,
-      pathForHeaders,
-      !isSameOrigin
-    )
+    const credentials =
+      useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}
 
     const requestFn = () =>
       fetch(url, {
         ...fetchOptions,
-        headers: requestHeaders,
+        headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
         signal: requestSignal,
-        ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
+        ...credentials,
       })
 
     try {
@@ -553,38 +387,21 @@ class ApiClient {
 
       clearTimeout(timeoutId)
 
-      // Handle 401 - try refresh token before giving up
+      // Handle 401 - refresh once (fresh timeout + rebuilt headers for the rotated token) and retry.
       if (response.status === 401 && !endpoint.includes('/auth/')) {
-        const refreshed = await this.tryRefreshToken()
-        if (refreshed) {
-          const retryController = new AbortController()
-          const retryTimeoutId = timeout
-            ? setTimeout(() => retryController.abort(), timeout)
-            : setTimeout(() => retryController.abort(), this.timeout)
-          const retrySignal = signal
-            ? AbortSignal.any([signal, retryController.signal])
-            : retryController.signal
-          const retryHeaders = this.buildHeaders(
-            sanitizedHeaders,
-            pathForHeaders,
-            !isSameOrigin
-          )
+        if (await this.tryRefreshToken()) {
+          const { signal: retrySignal, timeoutId: retryTimeoutId } =
+            this.makeTimeoutSignal(signal, timeout)
           try {
             const retryResponse = await fetch(url, {
               ...fetchOptions,
-              headers: retryHeaders,
+              headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
               signal: retrySignal,
-              ...(useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}),
+              ...credentials,
             })
+            if (retryResponse.ok) return this.parseBody<T>(retryResponse)
+          } finally {
             clearTimeout(retryTimeoutId)
-            if (retryResponse.ok) {
-              const ct = retryResponse.headers.get('content-type')
-              if (!ct || !ct.includes('application/json')) return {} as T
-              return (await retryResponse.json()) as T
-            }
-          } catch (retryError) {
-            clearTimeout(retryTimeoutId)
-            throw retryError
           }
         }
         this.handleAuthError(401)
@@ -594,19 +411,11 @@ class ApiClient {
         this.handleAuthError(403)
       }
 
-      // Handle errors
       if (!response.ok) {
-        const error = await this.parseError(response)
-        throw error
+        throw await parseError(response)
       }
 
-      // Handle empty responses
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        return {} as T
-      }
-
-      return (await response.json()) as T
+      return this.parseBody<T>(response)
     } catch (error) {
       clearTimeout(timeoutId)
 
@@ -641,7 +450,7 @@ class ApiClient {
    */
   async get<T>(
     endpoint: string,
-    params?: Record<string, unknown>,
+    params?: QueryParams,
     options?: RequestOptions
   ): Promise<T> {
     const fullUrl = this.buildUrl(endpoint, params)

@@ -59,6 +59,36 @@ export enum SessionStatus {
   NO_SHOW = 'No Show',
 }
 
+/** Physical or online delivery. */
+export enum SessionType {
+  PHYSICAL = 'Physical',
+  ONLINE = 'Online',
+}
+
+/** Session composition. Group requires a headcount of at least 2. */
+export enum SessionCategory {
+  INDIVIDUAL = 'Individual',
+  GROUP = 'Group',
+  FAMILY = 'Family',
+  COUPLES = 'Couples',
+}
+
+/** Whether the person is new to the service or returning. */
+export enum ClientType {
+  NEW = 'New',
+  REPEAT = 'Repeat',
+}
+
+/**
+ * Clinical continuation outcome recorded at session end.
+ * Distinct from SessionStatus (the scheduling lifecycle).
+ */
+export enum SessionClinicalStatus {
+  TO_BE_CONTINUED = 'ToBeContinued',
+  REFERRED = 'Referred',
+  COMPLETED = 'Completed',
+}
+
 /**
  * Document status
  */
@@ -77,6 +107,14 @@ export enum PersonType {
   CLIENT_EMPLOYEE = 'ClientEmployee',
   DEPENDENT = 'Dependent',
   SERVICE_PROVIDER = 'ServiceProvider',
+}
+
+/** Lifecycle of an EAP-eligible member as supplied by the employer. */
+export enum EligibilityStatus {
+  ACTIVE = 'Active',
+  SUSPENDED = 'Suspended',
+  TERMINATED = 'Terminated',
+  PENDING = 'Pending',
 }
 
 /**
@@ -207,6 +245,19 @@ export type RelationType =
   | 'Other'
 
 /**
+ * Relationship of an EligibleMember to the primary employee. Distinct from
+ * RelationType (used for DependentInfo) — similar-looking but a different
+ * enum on the wire; do not conflate the two.
+ */
+export enum MemberRelation {
+  EMPLOYEE = 'Employee',
+  SPOUSE = 'Spouse',
+  CHILD = 'Child',
+  DOMESTIC_PARTNER = 'DomesticPartner',
+  DEPENDENT_OTHER = 'DependentOther',
+}
+
+/**
  * Client tier — assigned by ops, drives reporting and SLA expectations.
  * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.
  */
@@ -308,38 +359,62 @@ export enum IncidentTimelineEventKind {
 }
 
 /**
- * Lifecycle status of a counsellor-initiated care-callback campaign (Phase 3 flagship).
+ * Lifecycle status of a counsellor-initiated care-callback campaign.
+ * Wire-true: Draft -> Active -> Completed, with Draft -> Archived also
+ * allowed (skip straight to archived without ever activating).
  */
-export enum CallbackCampaignStatus {
+export enum CareCallbackCampaignStatus {
   DRAFT = 'Draft',
-  SCHEDULED = 'Scheduled',
   ACTIVE = 'Active',
   COMPLETED = 'Completed',
-  CANCELLED = 'Cancelled',
+  ARCHIVED = 'Archived',
 }
 
 /**
- * Sampling strategy for selecting cases into a callback campaign.
- * - FULL: every eligible session in the period.
- * - RANDOM: random N from the eligible pool (`sample_size` honoured).
- * - STRATIFIED: random N stratified by diagnosis bucket / department (BE-driven).
+ * Status of a single outreach record within a campaign.
+ * Pending -> Assigned -> Contacted -> one of the four terminal statuses.
  */
-export enum CallbackSamplingStrategy {
-  FULL = 'Full',
-  RANDOM = 'Random',
-  STRATIFIED = 'Stratified',
-}
-
-/**
- * Per-case status inside an outreach worklist.
- */
-export enum CallbackCaseStatus {
-  QUEUED = 'Queued',
-  IN_PROGRESS = 'In Progress',
+export enum OutreachStatus {
+  PENDING = 'Pending',
+  ASSIGNED = 'Assigned',
+  CONTACTED = 'Contacted',
   COMPLETED = 'Completed',
-  NO_ANSWER = 'No Answer',
+  UNREACHABLE = 'Unreachable',
   DECLINED = 'Declined',
-  CRISIS_ESCALATED = 'Crisis Escalated',
+  ESCALATED = 'Escalated',
+}
+
+/** Auto-derived risk classification from a scored triage instrument. */
+export enum TriageRiskLevel {
+  LOW = 'Low',
+  MODERATE = 'Moderate',
+  HIGH = 'High',
+  CRITICAL = 'Critical',
+}
+
+/** The 12 standardised triage instruments the BE's catalogue can score. */
+export enum TriageInstrumentCode {
+  JOSEPH7 = 'JOSEPH7',
+  WOS5 = 'WOS5',
+  PHQ9 = 'PHQ9',
+  GAD7 = 'GAD7',
+  CSSRS = 'CSSRS',
+  AUDIT_C = 'AUDIT_C',
+  DAST10 = 'DAST10',
+  WHO5 = 'WHO5',
+  K10 = 'K10',
+  WSAS = 'WSAS',
+  DASS21 = 'DASS21',
+  PCL5 = 'PCL5',
+}
+
+/** Stage-of-change, derived by some instruments (e.g. JOSEPH7). */
+export enum StageOfChange {
+  PRECONTEMPLATION = 'Precontemplation',
+  CONTEMPLATION = 'Contemplation',
+  PREPARATION = 'Preparation',
+  ACTION = 'Action',
+  MAINTENANCE = 'Maintenance',
 }
 
 /**
@@ -468,4 +543,86 @@ export enum TenantRole {
   ADMIN = 'Admin',
   USER = 'User',
   VIEWER = 'Viewer',
+}
+
+/**
+ * Per-user grants gating the clinical / employer bounded contexts.
+ * Clinical guards PHI surfaces; only platform admins may grant it.
+ */
+export enum AccessScope {
+  CLINICAL = 'Clinical',
+  EMPLOYER_PORTAL = 'EmployerPortal',
+}
+
+/** Lifecycle of a clinical case. */
+export enum CaseStatus {
+  INTAKE = 'Intake',
+  ASSESSMENT = 'Assessment',
+  ACTIVE = 'Active',
+  CLOSED = 'Closed',
+  REFERRED_OUT = 'ReferredOut',
+  NO_SHOW_CLOSED = 'NoShowClosed',
+}
+
+export enum CaseReferralSource {
+  SELF = 'Self',
+  INFORMAL_MANAGER = 'InformalManager',
+  FORMAL_MANDATORY = 'FormalMandatory',
+  HR = 'HR',
+  CISM_FOLLOW_UP = 'CISMFollowUp',
+  EMPLOYER_PROACTIVE = 'EmployerProactive',
+}
+
+export enum PresentingProblem {
+  MENTAL_HEALTH = 'MentalHealth',
+  STRESS = 'Stress',
+  RELATIONSHIP = 'Relationship',
+  WORK = 'Work',
+  FINANCIAL = 'Financial',
+  SUBSTANCE = 'Substance',
+  BEREAVEMENT = 'Bereavement',
+  TRAUMA = 'Trauma',
+  FAMILY_CHILD = 'FamilyChild',
+  OTHER = 'Other',
+}
+
+export enum CaseClosureReason {
+  GOALS_MET = 'GoalsMet',
+  CLIENT_DISCONTINUED = 'ClientDiscontinued',
+  REFERRED_OUT = 'ReferredOut',
+  NO_SHOW = 'NoShow',
+  SESSION_CAP_REACHED = 'SessionCapReached',
+  INELIGIBLE = 'Ineligible',
+  OTHER = 'Other',
+}
+
+/** Note template — each shapes a different `body` on the wire (see clinical-notes API). */
+export enum ClinicalNoteType {
+  DAP = 'DAP',
+  SOAP = 'SOAP',
+  PHONE_CONTACT = 'PhoneContact',
+  CRISIS_CONTACT = 'CrisisContact',
+  CLOSURE_SUMMARY = 'ClosureSummary',
+  SUPERVISION = 'Supervision',
+}
+
+/** Session-cap authorization lifecycle. */
+export enum AuthorizationStatus {
+  ACTIVE = 'Active',
+  EXTENSION_REQUESTED = 'ExtensionRequested',
+  EXTENDED = 'Extended',
+  EXHAUSTED = 'Exhausted',
+  EXPIRED = 'Expired',
+  CLOSED = 'Closed',
+}
+
+/** Billable service category an authorization's session cap applies to. */
+export enum ServiceCategory {
+  SHORT_TERM_COUNSELLING = 'ShortTermCounselling',
+  CRISIS_INTERVENTION = 'CrisisIntervention',
+  SUBSTANCE_USE = 'SubstanceUse',
+  MANAGER_CONSULT = 'ManagerConsult',
+  WORK_LIFE_REFERRAL = 'WorkLifeReferral',
+  CISM_RESPONSE = 'CISMResponse',
+  WELLNESS_COACHING = 'WellnessCoaching',
 }

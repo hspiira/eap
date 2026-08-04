@@ -1,81 +1,52 @@
 import { useState } from "react"
 
-import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
-import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { clientsApi } from "@/api/endpoints/clients"
-import { questionnairesApi } from "@/api/endpoints/questionnaires"
 import { usersApi } from "@/api/endpoints/users"
+import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { CallbackCampaign, Client, User } from "@/types/entities"
-import {
-  CallbackSamplingStrategy,
-  QuestionnaireAdministration,
-} from "@/types/enums"
-
-const SAMPLING_VALUES = [
-  CallbackSamplingStrategy.FULL,
-  CallbackSamplingStrategy.RANDOM,
-  CallbackSamplingStrategy.STRATIFIED,
-] as const
 
 const schema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
     name: z.string().trim().min(3, "Name must be at least 3 characters"),
-    description: z.string().trim().optional(),
     period_start: z.string().min(1, "Start date is required"),
     period_end: z.string().min(1, "End date is required"),
-    sampling: z.enum(SAMPLING_VALUES as readonly [string, ...string[]]),
-    sample_size: z.string().optional(),
-    counsellor_user_ids: z.array(z.string()).min(1, "Pick at least one counsellor"),
-    questionnaire_code: z.string().min(1, "Pick a triage questionnaire"),
-    followup_questionnaire_code: z.string().optional(),
+    target_count: z
+      .string()
+      .min(1, "Target count is required")
+      .refine((v) => /^\d+$/.test(v) && Number(v) >= 0, "Must be a whole number"),
+    counsellor_pool: z.array(z.string()).min(1, "Pick at least one counsellor"),
+    sampling_notes: z.string().trim().optional(),
   })
   .refine((v) => Date.parse(v.period_end) >= Date.parse(v.period_start), {
     path: ["period_end"],
     message: "End date must be on or after start date",
   })
-  .refine(
-    (v) =>
-      v.sampling === CallbackSamplingStrategy.FULL ||
-      (Number(v.sample_size) > 0 && /^\d+$/.test(v.sample_size ?? "")),
-    {
-      path: ["sample_size"],
-      message: "Sample size required for non-Full sampling",
-    },
-  )
 
 type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   client_id: "",
   name: "",
-  description: "",
   period_start: "",
   period_end: "",
-  sampling: CallbackSamplingStrategy.FULL,
-  sample_size: "",
-  counsellor_user_ids: [],
-  questionnaire_code: "",
-  followup_questionnaire_code: "",
+  target_count: "",
+  counsellor_pool: [],
+  sampling_notes: "",
 }
 
 interface CampaignFormSheetProps {
@@ -96,20 +67,7 @@ export function CampaignFormSheet({
 }: CampaignFormSheetProps) {
   const lockedClientId = clientId
 
-  const questionnairesQuery = useQuery({
-    queryKey: ["questionnaires", "list"],
-    queryFn: () => questionnairesApi.list(),
-    staleTime: 60_000,
-  })
-  const allQuestionnaires = questionnairesQuery.data ?? []
-  const triageOptions = allQuestionnaires.filter(
-    (q) => q.administration !== QuestionnaireAdministration.POST,
-  )
-  const followupOptions = allQuestionnaires.filter(
-    (q) => q.administration === QuestionnaireAdministration.POST,
-  )
-
-  const { register, control, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
     Values,
     Parameters<typeof careCallbacksApi.createCampaign>[0],
     CallbackCampaign,
@@ -123,17 +81,11 @@ export function CampaignFormSheet({
     parsePayload: (values) => ({
       client_id: values.client_id,
       name: values.name,
-      description: values.description?.trim() || null,
       period_start: values.period_start,
       period_end: values.period_end,
-      sampling: values.sampling as CallbackSamplingStrategy,
-      sample_size:
-        values.sampling === CallbackSamplingStrategy.FULL
-          ? null
-          : Number(values.sample_size),
-      counsellor_user_ids: values.counsellor_user_ids,
-      questionnaire_code: values.questionnaire_code,
-      followup_questionnaire_code: values.followup_questionnaire_code || null,
+      target_count: Number(values.target_count),
+      counsellor_pool: values.counsellor_pool,
+      sampling_notes: values.sampling_notes?.trim() || null,
     }),
     save: ({ payload }) => careCallbacksApi.createCampaign(payload),
     successToast: { create: "Campaign created" },
@@ -141,18 +93,16 @@ export function CampaignFormSheet({
   })
 
   const watchedClient = watch("client_id")
-  const watchedSampling = watch("sampling")
-  const watchedCounsellors = watch("counsellor_user_ids")
+  const watchedCounsellors = watch("counsellor_pool")
 
   const errors = formState.errors
-  const showSampleSize = watchedSampling !== CallbackSamplingStrategy.FULL
 
   return (
     <SheetForm
       open={open}
       onOpenChange={onOpenChange}
       title="New care-callback campaign"
-      description="Define audience, sampling, and the counsellor pool. Cases are generated to each counsellor's worklist when the campaign is activated."
+      description="Define the audience size and counsellor pool. Enrol persons and activate once ready — outreach records start Pending until a counsellor claims each one."
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -185,15 +135,20 @@ export function CampaignFormSheet({
           />
         </FormField>
         <FormField
-          label="Description"
-          optional
-          error={errors.description?.message}
-          htmlFor="cf-description"
+          label="Target count"
+          required
+          description="How many outreach records this wave targets."
+          error={errors.target_count?.message}
+          htmlFor="cf-target"
         >
           <Input
-            id="cf-description"
-            placeholder="Internal notes — appears on the campaign detail."
-            {...register("description")}
+            id="cf-target"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="e.g. 60"
+            className="font-mono"
+            {...register("target_count")}
           />
         </FormField>
       </FormSection>
@@ -221,69 +176,18 @@ export function CampaignFormSheet({
       </FormSection>
 
       <FormSection
-        title="Sampling"
-        description="Full = every eligible session in the period. Random/Stratified take a sample of N from the eligible pool."
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Strategy"
-            required
-            error={errors.sampling?.message}
-            htmlFor="cf-sampling"
-          >
-            <Controller
-              control={control}
-              name="sampling"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger id="cf-sampling">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SAMPLING_VALUES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-          {showSampleSize ? (
-            <FormField
-              label="Sample size"
-              required
-              error={errors.sample_size?.message}
-              htmlFor="cf-sample-size"
-            >
-              <Input
-                id="cf-sample-size"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                placeholder="e.g. 50"
-                className="font-mono"
-                {...register("sample_size")}
-              />
-            </FormField>
-          ) : null}
-        </div>
-      </FormSection>
-
-      <FormSection
         title="Counsellor pool"
-        description="Cases are round-robined across these users' worklists when the campaign is activated."
+        description="Counsellors who can claim outreach records once the campaign is active. Required to activate — a campaign can't go live with an empty pool."
       >
         <FormField
           label="Counsellors"
           required
-          error={errors.counsellor_user_ids?.message}
+          error={errors.counsellor_pool?.message}
         >
           <CounsellorMultiPicker
             value={watchedCounsellors ?? []}
             onChange={(ids) =>
-              setValue("counsellor_user_ids", ids, {
+              setValue("counsellor_pool", ids, {
                 shouldValidate: true,
                 shouldDirty: true,
               })
@@ -292,58 +196,15 @@ export function CampaignFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection title="Questionnaires">
+      <FormSection title="Notes">
         <FormField
-          label="Triage questionnaire"
-          required
-          description="Pre-call form that fires the crisis rules."
-          error={errors.questionnaire_code?.message}
-          htmlFor="cf-triage"
-        >
-          <Controller
-            control={control}
-            name="questionnaire_code"
-            render={({ field }) => (
-              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                <SelectTrigger id="cf-triage">
-                  <SelectValue placeholder="— Select —" />
-                </SelectTrigger>
-                <SelectContent>
-                  {triageOptions.map((q) => (
-                    <SelectItem key={q.code} value={q.code}>
-                      {q.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </FormField>
-        <FormField
-          label="Follow-up questionnaire"
+          label="Sampling notes"
           optional
-          description="Optional post-call form (e.g. WOS-5)."
-          error={errors.followup_questionnaire_code?.message}
-          htmlFor="cf-followup"
+          description="Internal notes on how the audience was selected — appears on the campaign detail."
+          error={errors.sampling_notes?.message}
+          htmlFor="cf-sampling-notes"
         >
-          <Controller
-            control={control}
-            name="followup_questionnaire_code"
-            render={({ field }) => (
-              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                <SelectTrigger id="cf-followup">
-                  <SelectValue placeholder="— None —" />
-                </SelectTrigger>
-                <SelectContent>
-                  {followupOptions.map((q) => (
-                    <SelectItem key={q.code} value={q.code}>
-                      {q.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <Textarea id="cf-sampling-notes" rows={3} {...register("sampling_notes")} />
         </FormField>
       </FormSection>
     </SheetForm>
@@ -372,7 +233,7 @@ function LockedClientSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? clientInitial(resolved.name) : "··"}
+        {resolved ? nameInitials(resolved.name) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
@@ -385,96 +246,6 @@ function LockedClientSummary({
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked
       </span>
-    </div>
-  )
-}
-
-function ClientPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Client>({
-    resource: "clients",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: clientsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((c) => c.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          {clientInitial(selected.name)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange("")}
-          className="shrink-0 text-xs text-fg/65"
-        >
-          Change
-        </Button>
-      </div>
-    )
-  }
-  return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder="Search clients by name or code…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? "No clients match." : "Start typing to search clients."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((c) => (
-              <li key={c.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(c.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-                  >
-                    {clientInitial(c.name)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-fg">
-                      {c.name}
-                    </span>
-                    <span className="block truncate font-mono text-[11px] text-fg/55">
-                      {c.code}
-                    </span>
-                  </span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   )
 }
@@ -569,10 +340,3 @@ function CounsellorMultiPicker({
   )
 }
 
-function clientInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

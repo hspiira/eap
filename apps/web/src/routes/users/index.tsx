@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react"
-
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   BadgeCheck,
@@ -8,14 +6,14 @@ import {
   KeyRound,
   MoreHorizontal,
   Plus,
-  RotateCw,
   ShieldCheck,
   ShieldOff,
   UserCog,
 } from "lucide-react"
 
-import { usersApi } from "@/api/endpoints/users"
+import { type UserListParams,usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -23,9 +21,11 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -47,11 +47,21 @@ import {
 } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { AuthProvider, UserStatus } from "@/types/enums"
+
+function isSecurity(value: unknown): value is Exclude<SecurityFilter, "all"> {
+  return (
+    value === "verified" ||
+    value === "unverified" ||
+    value === "2fa-on" ||
+    value === "2fa-off"
+  )
+}
 
 function isStatus(value: unknown): value is UserStatus {
   return (
@@ -67,10 +77,16 @@ function isStatus(value: unknown): value is UserStatus {
 export const Route = createFileRoute("/users/")({
   component: UsersListPage,
   validateSearch: (search: Record<string, unknown>) => {
-    const out: { new?: boolean; search?: string; status?: UserStatus } = {}
+    const out: {
+      new?: boolean
+      search?: string
+      status?: UserStatus
+      security?: Exclude<SecurityFilter, "all">
+    } = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
     if (isStatus(search.status)) out.status = search.status
+    if (isSecurity(search.security)) out.security = search.security
     return out
   },
 })
@@ -101,60 +117,44 @@ const ROW_BORDER = "border-fg/8"
 function UsersListPage() {
   const searchParams = useSearch({ from: "/users/" })
   const navigate = useNavigate({ from: "/users/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [security, setSecurity] = useState<SecurityFilter>("all")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const canWrite = useCanWrite()
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
 
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
   const activeStatus = searchParams.status
-
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
-
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
+  const activeSecurity: SecurityFilter = searchParams.security ?? "all"
 
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
+    setFilter("status", status)
   }
 
-  const query = useEntityList({
+  const handleSecurityChange = (next: SecurityFilter) => {
+    const security = next === "all" ? undefined : next
+    setFilter("security", security)
+  }
+
+  const query = useEntityList<User, UserListParams>({
     resource: "users",
     params: {
       page,
       limit,
       search: activeSearch,
       status: activeStatus,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...securityParams(activeSecurity),
+      ...sortParams,
     },
     listFn: usersApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterBySecurity(allItems, security)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || security !== "all"
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeSecurity !== "all"
 
   return (
     <PageShell
@@ -195,9 +195,9 @@ function UsersListPage() {
         <FilterTrigger
           icon={ShieldCheck}
           label="Security"
-          value={security}
+          value={activeSecurity}
           options={SECURITY_OPTIONS}
-          onChange={setSecurity}
+          onChange={handleSecurityChange}
         />
         <div className="ml-auto" />
         <FilterSearch
@@ -236,12 +236,13 @@ function UsersListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="email" sort={sort} onToggle={toggleSort}>
@@ -268,7 +269,7 @@ function UsersListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <UserRow key={row.id} row={row} />
+                    <UserRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
                   ))}
                 </TableBody>
               </Table>
@@ -285,11 +286,11 @@ function UsersListPage() {
   )
 }
 
-function UserRow({ row }: { row: User }) {
+function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean; onToggle: () => void }) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.email}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.email}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Link
@@ -377,55 +378,24 @@ function UserRow({ row }: { row: User }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
-function filterBySecurity(items: User[], filter: SecurityFilter): User[] {
+/**
+ * Maps the security dropdown onto server-side params. This used to filter the
+ * fetched page in memory, which contradicted the server's `total` and hid
+ * matching users on later pages.
+ */
+function securityParams(
+  filter: SecurityFilter,
+): Pick<UserListParams, "is_email_verified" | "is_two_factor_enabled"> {
   switch (filter) {
     case "verified":
-      return items.filter((u) => u.is_email_verified)
+      return { is_email_verified: true }
     case "unverified":
-      return items.filter((u) => !u.is_email_verified)
+      return { is_email_verified: false }
     case "2fa-on":
-      return items.filter((u) => u.is_two_factor_enabled)
+      return { is_two_factor_enabled: true }
     case "2fa-off":
-      return items.filter((u) => !u.is_two_factor_enabled)
+      return { is_two_factor_enabled: false }
     default:
-      return items
+      return {}
   }
 }

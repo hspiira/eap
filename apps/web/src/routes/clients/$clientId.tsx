@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
-  BadgeCheck,
   Building2,
-  ChevronRight,
   Pencil,
   Plus,
-  RotateCw,
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -19,41 +17,29 @@ import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
+import {
+  ContractsPanel,
+  DetailRail,
+  Hero,
+} from "@/components/clients/ClientDetailWidgets"
 import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/ClientUpcomingCard"
 import { ClientUpcomingCard } from "@/components/ClientUpcomingCard"
-import { EmptyState } from "@/components/common/EmptyState"
-import { LifecycleActions } from "@/components/common/LifecycleActions"
+import { renderDetailState } from "@/components/common/DetailStates"
 import { PageShell } from "@/components/common/PageShell"
-import { DetailSkeleton } from "@/components/common/PageSkeletons"
-import {
-  compareSort,
-  nextSort,
-  SortHeader,
-  type SortState,
-} from "@/components/common/SortHeader"
-import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { TierBadge } from "@/components/common/TierBadge"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { cn } from "@/lib/utils"
-import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
+import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
+import type { Client } from "@/types/entities"
+import type { ClientTier} from "@/types/enums";
 import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -61,85 +47,59 @@ export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetailPage,
 })
 
-const ROW_BORDER = "border-fg/8"
-
 type TabValue = "overview" | "activity" | "contracts" | "staff"
 const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts", "staff"]
 
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
   const navigate = useNavigate()
-  const [client, setClient] = useState<Client | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
-  const [stats, setStats] = useState<ClientStats | null>(null)
-  const [statsLoading, setStatsLoading] = useState(false)
-  const [children, setChildren] = useState<Client[]>([])
-  const [childrenLoading, setChildrenLoading] = useState(false)
-  const [contracts, setContracts] = useState<Contract[]>([])
-  const [contractsLoading, setContractsLoading] = useState(false)
-  const [tags, setTags] = useState<ClientTag[]>([])
-  const [tagsLoading, setTagsLoading] = useState(false)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
+  const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addPersonOpen, setAddPersonOpen] = useState(false)
 
-  const fetchClient = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await clientsApi.getById(clientId)
-      setClient(data)
-    } catch (_err) {
-      setClient(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [clientId])
+  const clientQuery = useEntityDetail<Client>({
+    resource: "clients",
+    id: clientId,
+    detailFn: clientsApi.getById,
+  })
+  const client = clientQuery.data ?? null
 
-  useEffect(() => {
-    fetchClient()
-  }, [fetchClient])
+  // The related panels only make sense once the client itself resolves; gating
+  // on it also stops them firing for an id that turns out not to exist.
+  const enabled = !!client
 
-  const fetchContracts = useCallback(() => {
-    setContractsLoading(true)
-    return contractsApi
-      .list({ limit: 20, ...({ client_id: clientId } as Record<string, unknown>) })
-      .then((res) => {
-        const items = (res.items ?? []).filter((c: Contract) => c.client_id === clientId)
-        setContracts(items.slice(0, 10))
-      })
-      .catch(() => setContracts([]))
-      .finally(() => setContractsLoading(false))
-  }, [clientId])
+  const statsQuery = useQuery({
+    queryKey: ["clients", "stats", clientId],
+    queryFn: () => clientsApi.getStats(clientId),
+    enabled,
+  })
+  const stats = statsQuery.data ?? null
 
-  useEffect(() => {
-    if (!client) return
-    setStatsLoading(true)
-    setChildrenLoading(true)
-    setTagsLoading(true)
+  const childrenQuery = useQuery({
+    queryKey: entityListKey("clients", { parent: clientId, limit: 10 }),
+    queryFn: () => clientsApi.getChildren(clientId, { limit: 10 }),
+    enabled,
+  })
+  const children = childrenQuery.data?.items ?? []
 
-    clientsApi
-      .getStats(clientId)
-      .then(setStats)
-      .catch(() => setStats(null))
-      .finally(() => setStatsLoading(false))
+  const contractsQuery = useQuery({
+    queryKey: entityListKey("contracts", { client_id: clientId, limit: 10 }),
+    queryFn: () => contractsApi.list({ limit: 10, client_id: clientId }),
+    enabled,
+  })
+  const contracts = contractsQuery.data?.items ?? []
 
-    clientsApi
-      .getChildren(clientId, { limit: 10 })
-      .then((res) => setChildren(res.items ?? []))
-      .catch(() => setChildren([]))
-      .finally(() => setChildrenLoading(false))
-
-    fetchContracts()
-
-    clientsApi
-      .getTags(clientId)
-      .then(setTags)
-      .catch(() => setTags([]))
-      .finally(() => setTagsLoading(false))
-  }, [client, clientId, fetchContracts])
+  const tagsQuery = useQuery({
+    queryKey: ["client-tags", "for-client", clientId],
+    queryFn: () => clientsApi.getTags(clientId),
+    enabled,
+  })
+  const tags = tagsQuery.data ?? []
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -150,7 +110,7 @@ function ClientDetailPage() {
         else if (action === "archive") await clientsApi.archive(id)
         else if (action === "restore") await clientsApi.restore(id)
         else if (action === "terminate") await clientsApi.terminate(id, "Terminated from UI")
-        await fetchClient()
+        await queryClient.invalidateQueries({ queryKey: ["clients"] })
         toast.showSuccess("Status updated")
       } catch (err) {
         toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
@@ -158,7 +118,23 @@ function ClientDetailPage() {
         setActionLoading(false)
       }
     },
-    [fetchClient, toast],
+    [queryClient, toast],
+  )
+
+  const handleTierChange = useCallback(
+    async (tier: ClientTier | null) => {
+      setTierLoading(true)
+      try {
+        const updated = await clientsApi.setTier(clientId, tier)
+        queryClient.setQueryData(entityDetailKey("clients", clientId), updated)
+        toast.showSuccess("Tier updated")
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Tier update failed"))
+      } finally {
+        setTierLoading(false)
+      }
+    },
+    [clientId, queryClient, toast],
   )
 
   const hasBilling = client
@@ -195,12 +171,12 @@ function ClientDetailPage() {
     const now = new Date()
     const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
     contracts.forEach((c) => {
-      const end = c.end_date ? new Date(c.end_date) : null
-      if (end && end <= in30Days && end >= now) {
+      const end = new Date(c.period.end_date)
+      if (end <= in30Days && end >= now) {
         list.push({
           id: `contract-expiring-${c.id}`,
-          title: `Contract ending soon: ${c.contract_number ?? c.id}`,
-          description: `End date: ${c.end_date}`,
+          title: `Contract ending soon: ${c.id.slice(0, 8)}`,
+          description: `End date: ${end.toLocaleDateString()}`,
           severity: "high",
           link: `/contracts/${c.id}`,
           linkLabel: "View contract",
@@ -215,27 +191,17 @@ function ClientDetailPage() {
     const now = new Date()
     const in90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
     contracts.forEach((c) => {
-      if (c.renewal_date) {
-        const d = new Date(c.renewal_date)
+      // One item per contract: the term end is either a renewal or an ending,
+      // decided by is_auto_renew. This used to branch on a renewal_date field the
+      // BE has never sent, so neither branch ever fired.
+      {
+        const d = new Date(c.period.end_date)
         if (d >= now && d <= in90Days) {
           list.push({
-            id: `renewal-${c.id}`,
-            title: `Contract renewal: ${c.contract_number ?? c.id}`,
-            date: c.renewal_date,
-            context: "Renewal",
-            link: `/contracts/${c.id}`,
-            linkLabel: "View",
-          })
-        }
-      }
-      if (c.end_date) {
-        const d = new Date(c.end_date)
-        if (d >= now && d <= in90Days) {
-          list.push({
-            id: `end-${c.id}`,
-            title: `Contract ends: ${c.contract_number ?? c.id}`,
-            date: c.end_date,
-            context: "End date",
+            id: `${c.is_auto_renew ? "renewal" : "end"}-${c.id}`,
+            title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${c.id.slice(0, 8)}`,
+            date: c.period.end_date,
+            context: c.is_auto_renew ? "Renewal" : "End date",
             link: `/contracts/${c.id}`,
             linkLabel: "View",
           })
@@ -270,33 +236,14 @@ function ClientDetailPage() {
       }))
   }, [upcomingItems])
 
-  if (loading) {
-    return (
-      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · …">
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <DetailSkeleton railPanels={6} />
-        </div>
-      </PageShell>
-    )
-  }
-
-  if (!client) {
-    return (
-      <PageShell icon={Building2} breadcrumb="Organization & Clients · Clients · Not found">
-        <EmptyState
-          icon={Building2}
-          title="Client not found"
-          description="The client you're looking for may have been archived or doesn't exist."
-          action={
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate({ to: "/clients" })}>
-              <ArrowLeft className="size-4" />
-              Back to clients
-            </Button>
-          }
-        />
-      </PageShell>
-    )
-  }
+  const state = renderDetailState(clientQuery, {
+    icon: Building2,
+    breadcrumb: "Organization & Clients · Clients",
+    entity: "client",
+    backTo: () => navigate({ to: "/clients" }),
+    backLabel: "Back to clients",
+  })
+  if (state || !client) return state
 
   return (
     <PageShell
@@ -316,18 +263,6 @@ function ClientDetailPage() {
             <ArrowLeft className="size-3.5" />
           </Button>
           <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={fetchClient}
-            aria-label="Refresh"
-            title="Refresh"
-            className="size-7 p-0 text-fg/70"
-            >
-            <RotateCw className="size-3.5" />
-            </Button>
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
             size="sm"
             variant="outline"
             className="h-7 gap-1.5 px-2.5"
@@ -345,7 +280,9 @@ function ClientDetailPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         client={client}
-        onSaved={(updated) => setClient(updated)}
+        onSaved={(updated) =>
+          queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
+        }
       />
 
       <ContractFormSheet
@@ -354,7 +291,7 @@ function ClientDetailPage() {
         clientId={clientId}
         client={client}
         onSaved={() => {
-          fetchContracts()
+          void queryClient.invalidateQueries({ queryKey: ["contracts"] })
           setTab("contracts")
         }}
       />
@@ -402,7 +339,7 @@ function ClientDetailPage() {
               <TabPanel value="contracts">
                 <ContractsPanel
                   contracts={contracts}
-                  loading={contractsLoading}
+                  loading={contractsQuery.isPending}
                   onAdd={() => setAddContractOpen(true)}
                 />
               </TabPanel>
@@ -433,13 +370,15 @@ function ClientDetailPage() {
             <DetailRail
               client={client}
               stats={stats}
-              statsLoading={statsLoading}
+              statsLoading={statsQuery.isPending}
               tags={tags}
-              tagsLoading={tagsLoading}
+              tagsLoading={tagsQuery.isPending}
               children={children}
-              childrenLoading={childrenLoading}
+              childrenLoading={childrenQuery.isPending}
               onAction={handleAction}
               actionLoading={actionLoading}
+              onTierChange={handleTierChange}
+              tierLoading={tierLoading}
             />
           </aside>
         </div>
@@ -448,337 +387,3 @@ function ClientDetailPage() {
   )
 }
 
-function Hero({ client, verified }: { client: Client; verified: boolean }) {
-  return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
-      <span
-        aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
-      >
-        {initial(client.name)}
-      </span>
-      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
-        {client.name}
-      </h1>
-      <span className="font-mono text-xs text-fg/55">{client.code}</span>
-      <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
-      <StatusBadge status={client.status} />
-      <TierBadge tier={client.tier} />
-      {verified ? (
-        <span className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
-          <BadgeCheck className="size-3" />
-          Verified
-        </span>
-      ) : null}
-    </div>
-  )
-}
-
-function ContractsPanel({
-  contracts,
-  loading,
-  onAdd,
-}: {
-  contracts: Contract[]
-  loading: boolean
-  onAdd: () => void
-}) {
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
-  const sorted = compareSort(contracts, sort, (row, field) => {
-    if (field === "number") return row.contract_number ?? row.id
-    return (row as unknown as Record<string, unknown>)[field]
-  })
-
-  if (loading) {
-    return <p className="text-sm text-fg/65">Loading contracts…</p>
-  }
-  if (contracts.length === 0) {
-    return (
-      <EmptyState
-        title="No contracts yet"
-        description="Add a contract once it's signed."
-        action={
-          <Button size="sm" className="gap-1.5" onClick={onAdd}>
-            <Plus className="size-4" />
-            Add contract
-          </Button>
-        }
-      />
-    )
-  }
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">
-          {contracts.length} contract{contracts.length === 1 ? "" : "s"}
-        </p>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
-          <Plus className="size-3.5" />
-          Add contract
-        </Button>
-      </div>
-      <div className="overflow-hidden border border-fg/10 bg-surface">
-      <Table className="w-full caption-bottom text-sm">
-        <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-          <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-            <TableHead>
-              <SortHeader field="number" sort={sort} onToggle={toggleSort}>
-                Number
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                Status
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
-                Start
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                End
-              </SortHeader>
-            </TableHead>
-            <TableHead className="w-10 text-right text-fg/65">
-              <span className="sr-only">Open</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.map((c) => (
-            <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
-              <TableCell>
-                <Link
-                  to="/contracts/$contractId"
-                  params={{ contractId: c.id }}
-                  className="font-medium text-fg group-hover:text-primary"
-                >
-                  {c.contract_number ?? c.id}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={c.status} />
-              </TableCell>
-              <TableCell className="text-sm text-fg/75">{c.start_date}</TableCell>
-              <TableCell className="text-sm text-fg/75">{c.end_date ?? "—"}</TableCell>
-              <TableCell className="text-right">
-                <Link
-                  to="/contracts/$contractId"
-                  params={{ contractId: c.id }}
-                  aria-label="Open contract"
-                  className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
-                >
-                  <ChevronRight className="size-3.5" />
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
-    </div>
-  )
-}
-
-interface DetailRailProps {
-  client: Client
-  stats: ClientStats | null
-  statsLoading: boolean
-  tags: ClientTag[]
-  tagsLoading: boolean
-  children: Client[]
-  childrenLoading: boolean
-  onAction: (id: string, action: LifecycleAction) => Promise<void>
-  actionLoading: boolean
-}
-
-function DetailRail({
-  client,
-  stats,
-  statsLoading,
-  tags,
-  tagsLoading,
-  children,
-  childrenLoading,
-  onAction,
-  actionLoading,
-}: DetailRailProps) {
-  const ba = client.billing_address
-  const hasBilling = !!(ba?.street || ba?.city || ba?.postal_code || ba?.country)
-  return (
-    <div className="space-y-5">
-      <RailSection title="At a glance">
-        <div className="grid grid-cols-2 gap-3">
-          <Stat label="Child clients" value={statsLoading ? "…" : fmtCount(stats?.child_count)} />
-          <Stat label="Contracts" value={statsLoading ? "…" : fmtCount(stats?.contract_count)} />
-        </div>
-      </RailSection>
-
-      <RailSection title="Contact">
-        <DetailGrid>
-          <DetailRow label="Email" value={client.contact_info?.email} />
-          <DetailRow label="Phone" value={client.contact_info?.phone} />
-          <DetailRow label="Address" value={client.contact_info?.address} fullWidth />
-          {client.preferred_contact_method ? (
-            <DetailRow
-              label="Preferred"
-              value={client.preferred_contact_method}
-            />
-          ) : null}
-        </DetailGrid>
-      </RailSection>
-
-      <RailSection title="Billing address">
-        {hasBilling ? (
-          <DetailGrid>
-            {ba?.street ? <DetailRow label="Street" value={ba.street} fullWidth /> : null}
-            {ba?.city ? <DetailRow label="City" value={ba.city} /> : null}
-            {ba?.postal_code ? <DetailRow label="Postal" value={ba.postal_code} /> : null}
-            {ba?.country ? <DetailRow label="Country" value={ba.country} /> : null}
-          </DetailGrid>
-        ) : (
-          <p className="text-xs text-fg/55">No billing address on file.</p>
-        )}
-      </RailSection>
-
-      {client.parent_client_id || children.length > 0 ? (
-        <RailSection title="Hierarchy">
-          {client.parent_client_id ? (
-            <Link
-              to="/clients/$clientId"
-              params={{ clientId: client.parent_client_id }}
-              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-            >
-              <ArrowLeft className="size-3.5" />
-              Parent client
-            </Link>
-          ) : null}
-          {childrenLoading ? (
-            <p className="mt-2 text-xs text-fg/55">Loading children…</p>
-          ) : children.length > 0 ? (
-            <ul className="mt-2 space-y-1">
-              {children.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    to="/clients/$clientId"
-                    params={{ clientId: c.id }}
-                    className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary"
-                  >
-                    <ChevronRight className="size-3.5 text-fg/45" />
-                    <span className="truncate">{c.name}</span>
-                    <span className="font-mono text-[11px] text-fg/55">{c.code}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </RailSection>
-      ) : null}
-
-      <RailSection title="Tags">
-        {tagsLoading ? (
-          <p className="text-xs text-fg/55">Loading…</p>
-        ) : tags.length === 0 ? (
-          <p className="text-xs text-fg/55">No tags assigned.</p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((t) => (
-              <span
-                key={t.id}
-                className="inline-flex items-center gap-1.5 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-xs text-fg"
-              >
-                <span
-                  aria-hidden
-                  className="block size-2 border border-fg/15"
-                  style={t.color ? { backgroundColor: t.color } : undefined}
-                />
-                {t.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </RailSection>
-
-      <RailSection title="Lifecycle">
-        <LifecycleActions
-          entityId={client.id}
-          currentStatus={client.status}
-          kind="client"
-          onAction={onAction}
-          loading={actionLoading}
-        />
-      </RailSection>
-    </div>
-  )
-}
-
-function RailSection({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <section className={cn("space-y-2", className)}>
-      <h3 className="text-xs font-semibold tracking-wide text-fg/55">
-        {title}
-      </h3>
-      {children}
-    </section>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-sm border border-fg/10 bg-surface px-3 py-2">
-      <div className="text-[11px] font-medium tracking-wide text-fg/55">
-        {label}
-      </div>
-      <div className="mt-0.5 font-mono text-base font-semibold text-fg">{value}</div>
-    </div>
-  )
-}
-
-function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
-}
-
-function DetailRow({
-  label,
-  value,
-  fullWidth,
-}: {
-  label: string
-  value: React.ReactNode
-  fullWidth?: boolean
-}) {
-  return (
-    <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">
-        {label}
-      </dt>
-      <dd className="mt-0.5 truncate text-sm text-fg">
-        {value || <span className="text-fg/40">—</span>}
-      </dd>
-    </div>
-  )
-}
-
-function fmtCount(n: number | null | undefined): string {
-  if (n == null) return "—"
-  return n.toLocaleString()
-}
-
-function initial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

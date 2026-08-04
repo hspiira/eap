@@ -23,7 +23,7 @@ export const industriesApi = {
   },
 
   async list(params?: ListParams & { parent_id?: string | null }): Promise<PaginatedResponse<Industry>> {
-    return apiClient.get<PaginatedResponse<Industry>>('/industries', params as Record<string, unknown>)
+    return apiClient.get<PaginatedResponse<Industry>>('/industries', params)
   },
 
   async update(industryId: string, data: Partial<IndustryCreate>): Promise<Industry> {

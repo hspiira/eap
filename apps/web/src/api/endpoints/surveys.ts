@@ -1,17 +1,15 @@
 /**
- * Survey API (Phase 3 #2). Fixture-driven until BE wire-up lands.
- * Toggle with `VITE_SURVEYS_USE_FIXTURE=false`.
+ * Survey campaign API (Phase 3 #3).
  *
- * **Live-mode path drift (BE confirmed via openapi.json):**
- * - BE base path is `/survey-campaigns` (not `/v1/surveys`).
- * - BE `webhook_secret` is generated server-side; do not POST it from FE.
- * - BE has no `rotate-token` route — webhook secret rotation flow TBD.
- * - Live shape is `SurveyCampaignCreate` from `@/api/generated`, not the
- *   fixture `SurveyCreateInput` (which is FE-form-shaped).
+ * BE base path is `/survey-campaigns` (confirmed via openapi.json).
+ * Fixture is DEV-only.
  *
- * When real BE is wired, replace the live branches below and adapt the form
- * to consume the BE-returned `webhook_secret`.
+ * Note: `rotateWebhookToken` has been removed — BE has no such route.
+ * The webhook secret is returned once on create; display it immediately.
  */
+
+import { useFixtures } from '@/lib/fixtures'
+import { SurveyStatus } from '@/types/enums'
 
 import apiClient from '../client'
 import type { PaginatedResponse, Survey, SurveyAggregate } from '../types'
@@ -20,15 +18,9 @@ import {
   fixtureCreateSurvey,
   fixtureGetSurvey,
   fixtureListSurveys,
-  fixtureRotateWebhookToken,
   fixtureSurveyAggregate,
   type SurveyCreateInput,
 } from './surveys-fixture'
-
-function useFixture(): boolean {
-  if (typeof import.meta === 'undefined') return true
-  return import.meta.env?.VITE_SURVEYS_USE_FIXTURE !== 'false'
-}
 
 function paginate<T>(items: T[]): PaginatedResponse<T> {
   return { items, total: items.length, page: 1, limit: items.length, has_more: false }
@@ -36,37 +28,41 @@ function paginate<T>(items: T[]): PaginatedResponse<T> {
 
 export const surveysApi = {
   async list(): Promise<PaginatedResponse<Survey>> {
-    if (useFixture()) return Promise.resolve(paginate(fixtureListSurveys()))
-    return apiClient.get<PaginatedResponse<Survey>>('/v1/surveys')
+    if (useFixtures()) return Promise.resolve(paginate(fixtureListSurveys()))
+    return apiClient.get<PaginatedResponse<Survey>>('/survey-campaigns')
   },
 
   async getById(id: string): Promise<Survey> {
-    if (useFixture()) {
+    if (useFixtures()) {
       const found = fixtureGetSurvey(id)
       if (!found) throw new Error(`Survey ${id} not found`)
       return Promise.resolve(found)
     }
-    return apiClient.get<Survey>(`/v1/surveys/${id}`)
+    return apiClient.get<Survey>(`/survey-campaigns/${id}`)
   },
 
   async create(input: SurveyCreateInput): Promise<Survey> {
-    if (useFixture()) return Promise.resolve(fixtureCreateSurvey(input))
-    return apiClient.post<Survey>('/v1/surveys', input)
+    if (useFixtures()) return Promise.resolve(fixtureCreateSurvey(input))
+    return apiClient.post<Survey>('/survey-campaigns', input)
+  },
+
+  async activate(id: string): Promise<Survey> {
+    if (useFixtures()) {
+      const found = fixtureGetSurvey(id)
+      if (!found) throw new Error(`Survey ${id} not found`)
+      return Promise.resolve({ ...found, status: SurveyStatus.COLLECTING })
+    }
+    return apiClient.post<Survey>(`/survey-campaigns/${id}/activate`, {})
   },
 
   async close(id: string): Promise<Survey> {
-    if (useFixture()) return Promise.resolve(fixtureCloseSurvey(id))
-    return apiClient.post<Survey>(`/v1/surveys/${id}/close`, {})
-  },
-
-  async rotateWebhookToken(id: string): Promise<Survey> {
-    if (useFixture()) return Promise.resolve(fixtureRotateWebhookToken(id))
-    return apiClient.post<Survey>(`/v1/surveys/${id}/rotate-token`, {})
+    if (useFixtures()) return Promise.resolve(fixtureCloseSurvey(id))
+    return apiClient.post<Survey>(`/survey-campaigns/${id}/close`, {})
   },
 
   async getAggregate(id: string): Promise<SurveyAggregate> {
-    if (useFixture()) return Promise.resolve(fixtureSurveyAggregate(id))
-    return apiClient.get<SurveyAggregate>(`/v1/surveys/${id}/aggregate`)
+    if (useFixtures()) return Promise.resolve(fixtureSurveyAggregate(id))
+    return apiClient.get<SurveyAggregate>(`/survey-campaigns/${id}/aggregate`)
   },
 }
 

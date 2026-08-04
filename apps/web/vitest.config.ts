@@ -19,5 +19,12 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     css: false,
+    env: {
+      // The fixture-mode endpoint tests assert fixture behaviour, so they must
+      // not depend on a developer's .env. Without this, setting
+      // VITE_USE_FIXTURES=false to work against the real API makes them attempt
+      // real network calls and fail.
+      VITE_USE_FIXTURES: 'true',
+    },
   },
 })

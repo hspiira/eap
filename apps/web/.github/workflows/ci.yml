@@ -1,0 +1,43 @@
+# CI: Lint, type-check, test and build on push and pull_request.
+# Mirrors evexia_bk/.github/workflows/ci.yml so both halves of the stack are gated.
+#
+# Not included yet: `pnpm contracts:check` (OpenAPI drift) — it shells into the
+# backend's Python venv, so it needs a cross-repo job. Tracked as Phase 4 work.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

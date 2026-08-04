@@ -1,42 +1,52 @@
-import { useState } from "react"
 
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { personsApi } from "@/api/endpoints/persons"
-import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
+import { PersonPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
-import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { displayName, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
-import type { Person, Provider, Service, ServiceSession } from "@/types/entities"
-
-const FREETEXT_FALLBACK_ENABLED =
-  typeof import.meta !== "undefined" &&
-  import.meta.env?.VITE_DIAGNOSIS_FREETEXT_FALLBACK === "true"
+import type { Person, Service, ServiceSession } from "@/types/entities"
+import { ClientType, SessionCategory, SessionType } from "@/types/enums"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
     person_id: z.string().trim().min(1, "Person is required"),
     service_provider_id: z.string().optional(),
-    contract_id: z.string().optional(),
     scheduled_at: z
       .string()
       .min(1, "Scheduled time is required")
       .refine((s) => !Number.isNaN(Date.parse(s)), "Must be a valid date/time"),
     location: z.string().optional(),
     notes: z.string().optional(),
+    category: z.nativeEnum(SessionCategory).optional(),
+    session_type: z.nativeEnum(SessionType).optional(),
+    client_type: z.nativeEnum(ClientType).optional(),
+    headcount: z.string().optional(),
+    issue_topic: z.string().optional(),
+    partner_name: z.string().optional(),
+    partner_relationship: z.string().optional(),
+    rate_ugx: z.string().optional(),
+    session_number: z.string().optional(),
     diagnosis_id: z.string().nullable().optional(),
-    diagnosis_text: z.string().optional(),
+    diagnosis_type_id: z.string().nullable().optional(),
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
@@ -51,6 +61,15 @@ const schema = z
     path: ["backfill_reason"],
     message: "Reason is required when logging a past session",
   })
+  .refine(
+    (d) =>
+      d.category !== SessionCategory.GROUP ||
+      (Number.isFinite(Number(d.headcount)) && Number(d.headcount) >= 2),
+    {
+      path: ["headcount"],
+      message: "Group sessions need a headcount of at least 2",
+    },
+  )
 
 type Values = z.infer<typeof schema>
 
@@ -58,12 +77,20 @@ const EMPTY: Values = {
   service_id: "",
   person_id: "",
   service_provider_id: "",
-  contract_id: "",
   scheduled_at: "",
   location: "",
   notes: "",
+  category: undefined,
+  session_type: undefined,
+  client_type: undefined,
+  headcount: "",
+  issue_topic: "",
+  partner_name: "",
+  partner_relationship: "",
+  rate_ugx: "",
+  session_number: "",
   diagnosis_id: null,
-  diagnosis_text: "",
+  diagnosis_type_id: null,
   is_backfill: false,
   backfill_reason: "",
 }
@@ -103,6 +130,7 @@ export function ServiceSessionFormSheet({
       Parameters<typeof serviceSessionsApi.create>[0] & {
         __isBackfill?: boolean
         __backfillReason?: string | null
+        __notes?: string
       },
       ServiceSession,
       ServiceSession
@@ -114,39 +142,59 @@ export function ServiceSessionFormSheet({
       onOpenChange,
       entity: session,
       toFormValues,
-      // BE `ServiceSessionCreate` only accepts `{service_id, provider_id,
-      // person_id, scheduled_at, location?}`. `notes`, `diagnosis_*`, and
-      // `metadata` are NOT accepted at create time — `notes` belongs on the
-      // complete-request, diagnosis is set via a separate flow, backfill
-      // intent is communicated by the FE via `__isBackfill` and translated
-      // into a `complete()` call after create.
+      // Backfill intent is FE-only: `__isBackfill` translates into a
+      // `complete()` call after create; the typed reason becomes the
+      // completion note. `notes` is edit-only (create has nowhere to put it).
       parsePayload: (values) => {
         const isBackfill = !session && Boolean(values.is_backfill)
+        const num = (v: string | undefined) => {
+          const n = Number(v)
+          return v?.trim() && Number.isFinite(n) ? n : undefined
+        }
         return {
           service_id: values.service_id,
           person_id: values.person_id,
           provider_id: values.service_provider_id || "",
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
+          category: values.category ?? undefined,
+          session_type: values.session_type ?? undefined,
+          client_type: values.client_type ?? undefined,
+          headcount: num(values.headcount),
+          issue_topic: values.issue_topic?.trim() || undefined,
+          partner_name: values.partner_name?.trim() || undefined,
+          partner_relationship: values.partner_relationship?.trim() || undefined,
+          rate_ugx: num(values.rate_ugx),
+          session_number: num(values.session_number),
+          diagnosis_id: values.diagnosis_id ?? undefined,
+          diagnosis_type_id: values.diagnosis_type_id ?? undefined,
           __isBackfill: isBackfill,
           __backfillReason: isBackfill ? (values.backfill_reason?.trim() || null) : null,
+          __notes: values.notes?.trim() || undefined,
         }
       },
       save: async ({ payload, entity, isEdit }) => {
-        const { __isBackfill, __backfillReason, ...body } = payload
-        // BE `ServiceSessionUpdate` (PATCH) shape may differ from create —
-        // for now we send the same body and the BE silently ignores extras
-        // on update. Once openapi.json exposes ServiceSessionUpdate we can
-        // tighten this.
-        let result = isEdit && entity
-          ? await serviceSessionsApi.update(entity.id, body)
-          : await serviceSessionsApi.create(body)
+        const { __isBackfill, __backfillReason, __notes, ...body } = payload
+        if (isEdit && entity) {
+          // PATCH takes the clinical/admin fields (+ notes); scheduling is
+          // immutable here — reschedule is its own transition on the detail page.
+          const {
+            service_id: _s,
+            person_id: _p,
+            provider_id: _pr,
+            scheduled_at: _at,
+            session_number: _sn,
+            ...updatable
+          } = body
+          return serviceSessionsApi.update(entity.id, { ...updatable, notes: __notes })
+        }
+        let result = await serviceSessionsApi.create(body)
         if (__isBackfill && result?.id) {
-          // BE `ServiceSessionCompleteRequest` requires `{duration, notes}`.
-          // Backfill defaults to the service's scheduled duration; the user-
-          // typed reason becomes the completion note.
+          // A backfilled session is complete by definition. Duration comes
+          // from the service's configured length; the reason becomes the note.
+          const svc = await servicesApi.getById(body.service_id).catch(() => null)
           result = await serviceSessionsApi.complete(result.id, {
-            duration: 60, // TODO: read from selected Service.duration_minutes
+            duration: svc?.duration_minutes ?? 60,
             notes: __backfillReason ?? "Backfilled from manual entry",
           })
         }
@@ -160,6 +208,11 @@ export function ServiceSessionFormSheet({
   const watchedPerson = watch("person_id")
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
+  const watchedCategory = watch("category")
+  const isGroup = watchedCategory === SessionCategory.GROUP
+  const isPartnered =
+    watchedCategory === SessionCategory.COUPLES ||
+    watchedCategory === SessionCategory.FAMILY
 
   const errors = formState.errors
 
@@ -208,6 +261,45 @@ export function ServiceSessionFormSheet({
           )}
         </FormField>
         <Input type="hidden" {...register("service_id")} />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Category" optional error={errors.category?.message}>
+            <Controller
+              control={control}
+              name="category"
+              render={({ field }) => (
+                <EnumSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={Object.values(SessionCategory)}
+                />
+              )}
+            />
+          </FormField>
+          <FormField label="Delivery" optional error={errors.session_type?.message}>
+            <Controller
+              control={control}
+              name="session_type"
+              render={({ field }) => (
+                <EnumSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={Object.values(SessionType)}
+                />
+              )}
+            />
+          </FormField>
+        </div>
+        {isGroup ? (
+          <FormField
+            label="Headcount"
+            required
+            description="Number of participants — group sessions need at least 2."
+            error={errors.headcount?.message}
+            htmlFor="ss-headcount"
+          >
+            <Input id="ss-headcount" type="number" min={2} {...register("headcount")} />
+          </FormField>
+        ) : null}
       </FormSection>
 
       <FormSection title="Subject">
@@ -224,6 +316,44 @@ export function ServiceSessionFormSheet({
           )}
         </FormField>
         <Input type="hidden" {...register("person_id")} />
+        <FormField label="Client type" optional error={errors.client_type?.message}>
+          <Controller
+            control={control}
+            name="client_type"
+            render={({ field }) => (
+              <EnumSelect
+                value={field.value}
+                onChange={field.onChange}
+                options={Object.values(ClientType)}
+                placeholder="New or returning?"
+              />
+            )}
+          />
+        </FormField>
+        {isPartnered ? (
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              label="Partner name"
+              optional
+              error={errors.partner_name?.message}
+              htmlFor="ss-partner-name"
+            >
+              <Input id="ss-partner-name" {...register("partner_name")} />
+            </FormField>
+            <FormField
+              label="Relationship"
+              optional
+              error={errors.partner_relationship?.message}
+              htmlFor="ss-partner-rel"
+            >
+              <Input
+                id="ss-partner-rel"
+                placeholder="e.g. Spouse"
+                {...register("partner_relationship")}
+              />
+            </FormField>
+          </div>
+        ) : null}
       </FormSection>
 
       <FormSection
@@ -242,6 +372,25 @@ export function ServiceSessionFormSheet({
           />
         </FormField>
         <Input type="hidden" {...register("service_provider_id")} />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            label="Rate (UGX)"
+            optional
+            error={errors.rate_ugx?.message}
+            htmlFor="ss-rate"
+          >
+            <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
+          </FormField>
+          <FormField
+            label="Session number"
+            optional
+            description="Position in the person's episode, e.g. 3 of 6."
+            error={errors.session_number?.message}
+            htmlFor="ss-session-no"
+          >
+            <Input id="ss-session-no" type="number" min={1} {...register("session_number")} />
+          </FormField>
+        </div>
       </FormSection>
 
       <FormSection title={watchedBackfill ? "When it happened" : "Schedule"}>
@@ -309,6 +458,15 @@ export function ServiceSessionFormSheet({
       </FormSection>
 
       <FormSection title="Clinical">
+        <FormField
+          label="Issue / topic"
+          optional
+          description="Presenting issue, in the taxonomy's terms."
+          error={errors.issue_topic?.message}
+          htmlFor="ss-issue"
+        >
+          <Input id="ss-issue" {...register("issue_topic")} />
+        </FormField>
         <FormField label="Diagnosis" optional error={errors.diagnosis_id?.message}>
           <Controller
             control={control}
@@ -316,33 +474,56 @@ export function ServiceSessionFormSheet({
             render={({ field }) => (
               <DiagnosisSelector
                 value={field.value ?? null}
-                onChange={(id) => field.onChange(id ?? null)}
+                onChange={(id, diagnosis) => {
+                  field.onChange(id ?? null)
+                  setValue("diagnosis_type_id", diagnosis?.type_id ?? null, {
+                    shouldDirty: true,
+                  })
+                }}
               />
             )}
           />
         </FormField>
-        {FREETEXT_FALLBACK_ENABLED ? (
+        {isEdit ? (
           <FormField
-            label="Diagnosis (free text — legacy)"
+            label="Notes"
             optional
-            description="Only use if no taxonomy match exists."
-            error={errors.diagnosis_text?.message}
-            htmlFor="ss-diag-text"
+            description="Internal notes — not shared with the subject."
+            error={errors.notes?.message}
+            htmlFor="ss-notes"
           >
-            <Input id="ss-diag-text" {...register("diagnosis_text")} />
+            <Input id="ss-notes" {...register("notes")} />
           </FormField>
         ) : null}
-        <FormField
-          label="Notes"
-          optional
-          description="Internal notes — not shared with the subject."
-          error={errors.notes?.message}
-          htmlFor="ss-notes"
-        >
-          <Input id="ss-notes" {...register("notes")} />
-        </FormField>
       </FormSection>
     </SheetForm>
+  )
+}
+
+function EnumSelect<T extends string>({
+  value,
+  onChange,
+  options,
+  placeholder = "Select…",
+}: {
+  value: T | undefined
+  onChange: (v: T) => void
+  options: readonly T[] | T[]
+  placeholder?: string
+}) {
+  return (
+    <Select value={value ?? ""} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
@@ -350,13 +531,23 @@ function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
     person_id: s.person_id,
-    service_provider_id: s.service_provider_id ?? "",
-    contract_id: s.contract_id ?? "",
+    service_provider_id: s.provider_id ?? "",
     scheduled_at: toLocalDatetime(s.scheduled_at),
     location: s.location ?? "",
     notes: s.notes ?? "",
+    category: s.category ?? undefined,
+    session_type: s.session_type ?? undefined,
+    client_type: s.client_type ?? undefined,
+    headcount: s.headcount != null ? String(s.headcount) : "",
+    issue_topic: s.issue_topic ?? "",
+    partner_name: s.partner_name ?? "",
+    partner_relationship: s.partner_relationship ?? "",
+    rate_ugx: s.rate_ugx != null ? String(s.rate_ugx) : "",
+    session_number: s.session_number != null ? String(s.session_number) : "",
     diagnosis_id: s.diagnosis_id ?? null,
-    diagnosis_text: s.diagnosis_text ?? "",
+    diagnosis_type_id: s.diagnosis_type_id ?? null,
+    is_backfill: false,
+    backfill_reason: "",
   }
 }
 
@@ -429,13 +620,11 @@ function LockedPersonSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? personInitial(resolved) : "··"}
+        {resolved ? personInitials(resolved) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
-          {resolved
-            ? `${resolved.first_name} ${resolved.last_name}`
-            : "Selected person"}
+          {resolved ? displayName(resolved) : "Selected person"}
         </p>
         <p className="truncate text-[11px] text-fg/55">
           {resolved?.person_type ?? personId.slice(0, 8)}
@@ -448,270 +637,5 @@ function LockedPersonSummary({
   )
 }
 
-function ServicePicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Service>({
-    resource: "services",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: servicesApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((s) => s.id === value)
 
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          SV
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate text-[11px] text-fg/55">
-            {selected.service_type ?? "—"}
-          </p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
-  return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
-      placeholder="Search services…"
-      empty={debounced ? "No services match." : "Start typing to search services."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(s) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(s.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            SV
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-fg">{s.name}</span>
-            <span className="block truncate text-[11px] text-fg/55">
-              {s.service_type ?? "—"}
-            </span>
-          </span>
-        </Button>
-      )}
-    />
-  )
-}
 
-function PersonPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Person>({
-    resource: "persons",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: personsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((p) => p.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          {personInitial(selected)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">
-            {selected.first_name} {selected.last_name}
-          </p>
-          <p className="truncate text-[11px] text-fg/55">{selected.person_type}</p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
-  return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
-      placeholder="Search persons…"
-      empty={debounced ? "No persons match." : "Start typing to search persons."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(p) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(p.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            {personInitial(p)}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-fg">
-              {p.first_name} {p.last_name}
-            </span>
-            <span className="block truncate text-[11px] text-fg/55">{p.person_type}</span>
-          </span>
-        </Button>
-      )}
-    />
-  )
-}
-
-function ProviderPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Provider>({
-    resource: "providers",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: providersApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((p) => p.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          PR
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-sm font-medium text-fg">{selected.id}</p>
-          <p className="truncate text-[11px] text-fg/55">
-            {selected.provider_profile.tier} · {selected.provider_profile.region}
-          </p>
-        </div>
-        <ChangeButton onClick={() => onChange("")} />
-      </div>
-    )
-  }
-  return (
-    <PickerShell
-      query={query}
-      onQueryChange={setQuery}
-      placeholder="Search providers…"
-      empty={debounced ? "No providers match." : "Start typing to search providers."}
-      loading={list.isPending}
-      items={items}
-      renderItem={(p) => (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onChange(p.id)}
-          className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-          >
-            PR
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-mono text-sm font-medium text-fg">{p.id}</span>
-            <span className="block truncate text-[11px] text-fg/55">
-              {p.provider_profile.tier} · {p.provider_profile.region}
-            </span>
-          </span>
-        </Button>
-      )}
-    />
-  )
-}
-
-function PickerShell<T extends { id: string }>({
-  query,
-  onQueryChange,
-  placeholder,
-  empty,
-  loading,
-  items,
-  renderItem,
-}: {
-  query: string
-  onQueryChange: (v: string) => void
-  placeholder: string
-  empty: string
-  loading: boolean
-  items: T[]
-  renderItem: (item: T) => React.ReactNode
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {loading ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">{empty}</p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((it) => (
-              <li key={it.id}>{renderItem(it)}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function ChangeButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      className="shrink-0 text-xs text-fg/65"
-    >
-      Change
-    </Button>
-  )
-}
-
-function personInitial(p: Person): string {
-  const f = p.first_name?.[0] ?? ""
-  const l = p.last_name?.[0] ?? ""
-  return (f + l).toUpperCase() || "·"
-}

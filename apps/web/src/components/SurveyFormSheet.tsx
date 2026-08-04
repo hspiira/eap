@@ -1,14 +1,13 @@
-import { useState } from "react"
 
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { surveysApi } from "@/api/endpoints/surveys"
+import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -17,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Survey } from "@/types/entities"
 import { SurveySource } from "@/types/enums"
@@ -223,7 +222,7 @@ function LockedClientSummary({
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
       >
-        {resolved ? clientInitial(resolved.name) : "··"}
+        {resolved ? nameInitials(resolved.name) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
@@ -240,100 +239,3 @@ function LockedClientSummary({
   )
 }
 
-function ClientPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (id: string) => void
-}) {
-  const [query, setQuery] = useState("")
-  const debounced = useDebouncedValue(query.trim(), 250)
-  const list = useEntityList<Client>({
-    resource: "clients",
-    params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: clientsApi.list,
-  })
-  const items = list.data?.items ?? []
-  const selected = items.find((c) => c.id === value)
-
-  if (selected) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-        >
-          {clientInitial(selected.name)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{selected.name}</p>
-          <p className="truncate font-mono text-[11px] text-fg/55">{selected.code}</p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange("")}
-          className="shrink-0 text-xs text-fg/65"
-        >
-          Change
-        </Button>
-      </div>
-    )
-  }
-  return (
-    <div className="space-y-1.5">
-      <Input
-        placeholder="Search clients by name or code…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? "No clients match." : "Start typing to search clients."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((c) => (
-              <li key={c.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(c.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
-                  >
-                    {clientInitial(c.name)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-fg">
-                      {c.name}
-                    </span>
-                    <span className="block truncate font-mono text-[11px] text-fg/55">
-                      {c.code}
-                    </span>
-                  </span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function clientInitial(name: string): string {
-  const trimmed = name.trim()
-  if (!trimmed) return "·"
-  const parts = trimmed.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
-  return trimmed.slice(0, 2).toUpperCase()
-}

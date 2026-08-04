@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
@@ -7,11 +6,11 @@ import {
   FileCheck,
   MoreHorizontal,
   Plus,
-  RotateCw,
 } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
@@ -19,9 +18,10 @@ import {
   FilterSearch,
   FilterTrigger,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
@@ -42,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ServiceAssignment } from "@/types/entities"
@@ -91,45 +91,17 @@ const ROW_BORDER = "border-fg/8"
 function ServiceAssignmentsListPage() {
   const searchParams = useSearch({ from: "/service-assignments/" })
   const navigate = useNavigate({ from: "/service-assignments/" })
-  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
-  const [addOpen, setAddOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const limit = 20
-  const toggleSort = (field: string) => {
-    setSort((prev) => nextSort(prev, field))
-    setPage(1)
-  }
-
-  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300)
-  const activeSearch = debouncedSearch || undefined
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
   const activeStatus = searchParams.status
   const activeContractId = searchParams.contract_id
 
-  useEffect(() => {
-    if (searchParams.new) {
-      setAddOpen(true)
-      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
-    }
-  }, [searchParams.new, navigate])
+  const handleStatusChange = (next: StatusFilter) =>
+    setFilter("status", next === "all" ? undefined : next)
 
-  useEffect(() => {
-    if (activeSearch !== searchParams.search) {
-      navigate({ search: (prev) => ({ ...prev, search: activeSearch }), replace: true })
-      setPage(1)
-    }
-  }, [activeSearch, navigate, searchParams.search])
-
-  const handleStatusChange = (next: StatusFilter) => {
-    const status = next === "all" ? undefined : next
-    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
-    setPage(1)
-  }
-
-  const clearContract = () => {
-    navigate({ search: (prev) => ({ ...prev, contract_id: undefined }), replace: true })
-    setPage(1)
-  }
+  const clearContract = () => setFilter("contract_id", undefined)
 
   const query = useEntityList({
     resource: "service-assignments",
@@ -139,8 +111,7 @@ function ServiceAssignmentsListPage() {
       search: activeSearch,
       contract_id: activeContractId,
       status: activeStatus,
-      sort_by: sort.field,
-      sort_desc: sort.field ? sort.desc : undefined,
+      ...sortParams,
     },
     listFn: serviceAssignmentsApi.list,
   })
@@ -358,40 +329,3 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}

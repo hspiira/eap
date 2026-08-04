@@ -7,18 +7,20 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
-  RotateCw,
   Tag,
 } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import {
   FilterBar,
   FilterButton,
   FilterSearch,
 } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import {
   nextSort,
   SortHeader,
@@ -44,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
@@ -85,6 +88,7 @@ function TagsListPage() {
     listFn: clientTagsApi.list,
   })
   const items = query.data?.items ?? []
+  const selection = useTableSelection(items)
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -161,12 +165,13 @@ function TagsListPage() {
           />
         ) : (
           <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" />
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
@@ -186,7 +191,7 @@ function TagsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} />
+                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
                   ))}
                 </TableBody>
               </Table>
@@ -203,36 +208,12 @@ function TagsListPage() {
   )
 }
 
-function IconButton({
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="size-7 p-0 text-fg/70"
-    >
-      <Icon className="size-3.5" />
-    </Button>
-  )
-}
-
-function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
+function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit: () => void; isSelected: boolean; onToggle: () => void }) {
   const swatch = row.color ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} onClick={(e) => e.stopPropagation()} />
+        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell>
         <Button
@@ -309,16 +290,3 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-6 py-10">
-      <div className="flex max-w-sm flex-col items-center text-center">
-        <p className="text-sm text-danger-fg">{message}</p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
-          <RotateCw className="size-4" />
-          Try again
-        </Button>
-      </div>
-    </div>
-  )
-}

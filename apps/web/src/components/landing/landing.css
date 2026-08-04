@@ -1,0 +1,180 @@
+/*
+ * Scoped presentation layer for the public landing page.
+ *
+ * Everything lives under `.landing` so the marketing typography, palette and
+ * motion never leak into the signed-in app. Consumers reference the tokens
+ * through Tailwind arbitrary values, e.g. `text-[var(--lp-fg-muted)]`.
+ */
+
+.landing {
+  --lp-font-display: "Bricolage Grotesque", "Inter Tight", system-ui, sans-serif;
+  --lp-font-body: "Inter Tight", system-ui, sans-serif;
+  --lp-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --lp-page: #fafaf8;
+  --lp-card: #ffffff;
+  --lp-fg: #0a1a13;
+  --lp-fg-muted: #576b61;
+  --lp-line: rgb(10 26 19 / 0.1);
+  --lp-line-soft: rgb(10 26 19 / 0.06);
+  --lp-wash: #edf1ee;
+  --lp-brand: #0f5132;
+  --lp-accent: #2c36d9;
+
+  --lp-panel: #0a1a13;
+  --lp-panel-fg: #f1f5f2;
+  --lp-panel-muted: #8fa79a;
+  --lp-panel-line: rgb(255 255 255 / 0.1);
+  --lp-panel-session: #4ade80;
+  --lp-panel-case: #cbd8d0;
+  --lp-panel-incident: #fb7185;
+  --lp-panel-now: #8f97ff;
+
+  font-family: var(--lp-font-body);
+  background-color: var(--lp-page);
+  color: var(--lp-fg);
+  letter-spacing: -0.005em;
+}
+
+.dark .landing {
+  --lp-page: #080c0a;
+  --lp-card: #141d19;
+  --lp-fg: #edf2ef;
+  --lp-fg-muted: #93a29a;
+  --lp-line: rgb(255 255 255 / 0.11);
+  --lp-line-soft: rgb(255 255 255 / 0.06);
+  --lp-wash: #101815;
+  --lp-brand: #34d399;
+  --lp-accent: #8f97ff;
+
+  --lp-panel: #0f1a16;
+}
+
+.landing ::selection {
+  background-color: var(--lp-brand);
+  color: #fff;
+}
+
+.landing a:focus-visible,
+.landing button:focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.lp-display {
+  font-family: var(--lp-font-display);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.lp-mono {
+  font-family: var(--lp-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.lp-sky {
+  background:
+    radial-gradient(55% 90% at 50% -15%, rgb(250 204 21 / 0.13), transparent 70%),
+    radial-gradient(30% 55% at 9.2% 0%, rgb(143 151 255 / 0.14), transparent 75%),
+    linear-gradient(
+      90deg,
+      #050f0c 0%,
+      #071711 21%,
+      #113329 34%,
+      #17493c 50%,
+      #113329 66%,
+      #071711 79%,
+      #050f0c 100%
+    );
+}
+
+.lp-chip {
+  padding: 0.375rem 0.625rem;
+  border-radius: 4px;
+  color: rgb(255 255 255 / 0.92);
+  background: rgb(255 255 255 / 0.09);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.lp-lede {
+  text-wrap: pretty;
+}
+
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lp-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes lp-mark {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lp-beacon {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgb(74 222 128 / 0.5);
+  }
+  70% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 6px rgb(74 222 128 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-rise {
+    animation: lp-rise 0.75s cubic-bezier(0.2, 0.75, 0.2, 1) both;
+    animation-delay: var(--lp-delay, 0s);
+  }
+
+  .lp-sweep {
+    transform-origin: left center;
+    animation: lp-sweep 1.1s cubic-bezier(0.3, 0.8, 0.2, 1) both;
+    animation-delay: var(--lp-delay, 0s);
+  }
+
+  .lp-mark {
+    animation: lp-mark 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: var(--lp-delay, 0s);
+  }
+
+  .lp-beacon {
+    animation: lp-beacon 2.4s ease-in-out infinite;
+  }
+}
+
+.lp-mark {
+  left: var(--lp-at);
+}
+
+.lp-now {
+  left: var(--lp-at);
+}
