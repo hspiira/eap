@@ -73,7 +73,10 @@ export function DetailRow({
   return (
     <div className={cn(fullWidth && "col-span-2")}>
       <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-fg">
+      <dd
+        className={cn("mt-0.5 text-sm text-fg", fullWidth ? "whitespace-pre-wrap" : "truncate")}
+        title={!fullWidth && typeof value === "string" ? value : undefined}
+      >
         {value || <span className="text-fg/40">—</span>}
       </dd>
     </div>

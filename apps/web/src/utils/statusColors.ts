@@ -92,7 +92,7 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
   ) {
     return {
       bg: 'bg-muted',
-      text: 'text-white',
+      text: 'text-safe-dark',
       border: 'border-safe-dark',
     }
   }
@@ -113,7 +113,7 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
   // Default - Safe/Grey
   return {
     bg: 'bg-muted',
-    text: 'text-white',
+    text: 'text-safe-dark',
     border: 'border-safe',
   }
 }

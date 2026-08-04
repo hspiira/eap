@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Case, ClinicalNote, ClinicalNoteBody } from "@/types/entities"
-import { CaseClosureReason, CaseStatus, ClinicalNoteType } from "@/types/enums"
+import { AccessScope, CaseClosureReason, CaseStatus, ClinicalNoteType } from "@/types/enums"
 import {
   CaseClosureReasonLabel,
   CasePresentingProblemLabel,
@@ -206,7 +206,7 @@ export function AssignCounsellorDialog({
   const [submitting, setSubmitting] = useState(false)
   const { data } = useQuery({
     queryKey: ["users", "list", "for-counsellor-assign"],
-    queryFn: () => usersApi.list({ limit: 100 }),
+    queryFn: () => usersApi.list({ limit: 100, access_scope: AccessScope.CLINICAL }),
     enabled: open,
   })
   const users = data?.items ?? []
@@ -229,7 +229,8 @@ export function AssignCounsellorDialog({
         <DialogHeader>
           <DialogTitle>Assign counsellor</DialogTitle>
           <DialogDescription>
-            Advancing this case to Active requires a counsellor to already be assigned.
+            Advancing this case to Active requires a counsellor to already be assigned. Only
+            users with Clinical access are shown.
           </DialogDescription>
         </DialogHeader>
         <FormField label="Counsellor" required>
@@ -394,19 +395,27 @@ export function CloseCaseDialog({
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(CaseClosureReason).map((r) => (
-                <SelectItem
-                  key={r}
-                  value={r}
-                  disabled={r === CaseClosureReason.GOALS_MET && goalsMetBlocked}
-                >
-                  {CaseClosureReasonLabel[r]}
-                </SelectItem>
-              ))}
+              {Object.values(CaseClosureReason).map((r) => {
+                const isGoalsMetBlocked = r === CaseClosureReason.GOALS_MET && goalsMetBlocked
+                return (
+                  <SelectItem
+                    key={r}
+                    value={r}
+                    disabled={isGoalsMetBlocked}
+                    title={
+                      isGoalsMetBlocked
+                        ? "Requires a closure screener to be recorded first"
+                        : undefined
+                    }
+                  >
+                    {CaseClosureReasonLabel[r]}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </FormField>
-        {reason === CaseClosureReason.GOALS_MET && goalsMetBlocked ? (
+        {goalsMetBlocked ? (
           <p className="text-xs text-danger">
             Goals-met closure needs a closure screener recorded first.
           </p>
@@ -603,13 +612,37 @@ export function CreateNoteDialog({
   )
 }
 
-function bodyText(body: ClinicalNoteBody): string {
+const NOTE_BODY_FIELD_LABELS: [key: string, label: string][] = [
+  ["data", "Data"],
+  ["subjective", "Subjective"],
+  ["objective", "Objective"],
+  ["assessment", "Assessment"],
+  ["plan", "Plan"],
+  ["summary", "Summary"],
+]
+
+export function noteBodyEntries(body: ClinicalNoteBody): [label: string, text: string][] {
   const b = body as Record<string, string>
-  if (b.summary) return b.summary
-  const dap = [b.data, b.assessment, b.plan].filter(Boolean).join(" — ")
-  if (dap) return dap
-  const soap = [b.subjective, b.objective].filter(Boolean).join(" — ")
-  return soap || "—"
+  return NOTE_BODY_FIELD_LABELS.filter(([key]) => (b[key] ?? "").trim().length > 0).map(
+    ([key, label]) => [label, b[key]],
+  )
+}
+
+function NoteBody({ body }: { body: ClinicalNoteBody }) {
+  const entries = noteBodyEntries(body)
+  if (entries.length === 0) {
+    return <p className="text-sm text-fg/85">—</p>
+  }
+  return (
+    <dl className="space-y-2">
+      {entries.map(([label, text]) => (
+        <div key={label}>
+          <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
+          <dd className="mt-0.5 whitespace-pre-wrap text-sm text-fg/85">{text}</dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 export function NotesPanel({
@@ -645,7 +678,7 @@ export function NotesPanel({
         <div className="space-y-2">
           {notes.map((n) => (
             <DetailCard key={n.id} title={ClinicalNoteTypeLabel[n.note_type]} phiLabel="PHI · access logged">
-              <p className="whitespace-pre-wrap text-sm text-fg/85">{bodyText(n.body)}</p>
+              <NoteBody body={n.body} />
               <div className="mt-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 text-xs text-fg/55">
                   {n.signed_at ? (

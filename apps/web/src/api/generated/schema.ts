@@ -19161,6 +19161,8 @@ export interface operations {
                 is_two_factor_enabled?: boolean | null;
                 /** @description Search in user email */
                 search?: string | null;
+                /** @description Filter to users holding this access scope (e.g. Clinical, for counsellor pickers) */
+                access_scope?: components["schemas"]["AccessScope"] | null;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */

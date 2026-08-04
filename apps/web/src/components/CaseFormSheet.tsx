@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 import { useQuery } from "@tanstack/react-query"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
@@ -8,6 +10,8 @@ import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -176,7 +180,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
   )
 }
 
-function EligibleMemberPicker({
+export function EligibleMemberPicker({
   clientId,
   value,
   onChange,
@@ -185,6 +189,7 @@ function EligibleMemberPicker({
   value: string
   onChange: (id: string) => void
 }) {
+  const [query, setQuery] = useState("")
   const { data: members = [], isPending } = useQuery({
     queryKey: ["eligible-members", "for-client", clientId],
     queryFn: () => eligibleMembersApi.listForClient(clientId),
@@ -193,30 +198,71 @@ function EligibleMemberPicker({
 
   if (!clientId) {
     return (
-      <Select disabled>
-        <SelectTrigger>
-          <SelectValue placeholder="Pick a client first" />
-        </SelectTrigger>
-        <SelectContent />
-      </Select>
+      <div className="rounded-sm border border-fg/15 bg-surface px-3 py-2 text-sm text-fg/55">
+        Pick a client first
+      </div>
     )
   }
 
+  const selected = members.find((m) => m.id === value)
+
+  if (selected) {
+    return (
+      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
+        <span className="min-w-0 flex-1 truncate text-sm text-fg">{memberLabel(selected)}</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange("")}
+          className="shrink-0 text-xs text-fg/65"
+        >
+          Change
+        </Button>
+      </div>
+    )
+  }
+
+  const filtered = query.trim()
+    ? members.filter((m) => memberLabel(m).toLowerCase().includes(query.trim().toLowerCase()))
+    : members
+
   return (
-    <Select value={value} onValueChange={onChange} disabled={isPending}>
-      <SelectTrigger>
-        <SelectValue placeholder={isPending ? "Loading members…" : "Select a member"} />
-      </SelectTrigger>
-      <SelectContent>
-        {members.map((m) => (
-          <SelectItem key={m.id} value={m.id}>
-            {m.display_label} · {m.employer_member_id}
-          </SelectItem>
-        ))}
-        {!isPending && members.length === 0 ? (
-          <div className="px-2 py-1.5 text-xs text-fg/55">No eligible members for this client.</div>
-        ) : null}
-      </SelectContent>
-    </Select>
+    <div className="space-y-1.5">
+      <Input
+        placeholder={isPending ? "Loading members…" : "Search by name or member number…"}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        disabled={isPending}
+      />
+      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
+        {isPending ? (
+          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
+        ) : filtered.length === 0 ? (
+          <p className="px-3 py-2 text-xs text-fg/55">
+            {members.length === 0 ? "No eligible members for this client." : "No members match."}
+          </p>
+        ) : (
+          <ul className="divide-y divide-fg/8">
+            {filtered.map((m) => (
+              <li key={m.id}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onChange(m.id)}
+                  className="h-auto w-full justify-start px-3 py-2 text-left text-sm"
+                >
+                  {memberLabel(m)}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   )
+}
+
+function memberLabel(m: { display_label?: string | null; employer_member_id: string }): string {
+  return m.display_label ? `${m.display_label} · ${m.employer_member_id}` : m.employer_member_id
 }
