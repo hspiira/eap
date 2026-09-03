@@ -28,7 +28,7 @@ class ClientTagEntity:
     color: str | None = None  # Hex color code for UI display
     _is_active: bool = True
     deleted_at: datetime | None = None
-    _events: list[DomainEvent] = field(default_factory=list[DomainEvent])
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

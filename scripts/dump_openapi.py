@@ -1,8 +1,8 @@
 """
 Dump the FastAPI app's OpenAPI schema to schema/openapi.json.
 
-Run from the evexia_bk repo root:
-    .venv/bin/python scripts/dump_openapi.py
+Run from the backend repo root:
+    uv run python scripts/dump_openapi.py
 
 Used by the FE codegen pipeline (openapi-typescript) to keep types in sync
 with the BE wire contract.
@@ -12,7 +12,16 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
+
+# Running as a script puts scripts/ on sys.path, not the repo root, so `app` would
+# not import. Add the root so this works without the caller setting PYTHONPATH.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# The published contract's identity. Deliberately not read from settings — see main().
+CONTRACT_TITLE = "Evexía"
+CONTRACT_VERSION = "0.1.0"
 
 
 def main() -> None:
@@ -29,6 +38,16 @@ def main() -> None:
     from app.main import app
 
     schema = app.openapi()
+
+    # app.openapi() takes title/version from settings, which read .env, so the
+    # output otherwise varies with whatever APP_NAME the developer running this
+    # happens to have set ("Evexia" vs "Evexía"). The frontend gates on an exact
+    # diff of this file, so pin the identity to constants and keep the dump a
+    # pure function of the routes.
+    schema["info"] = dict(schema.get("info", {})) | {
+        "title": CONTRACT_TITLE,
+        "version": CONTRACT_VERSION,
+    }
     out = Path(__file__).resolve().parent.parent / "schema" / "openapi.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n")

@@ -11705,7 +11705,7 @@
   },
   "info": {
     "description": "Evex\u00eda API - Employee Assistance Program Management",
-    "title": "Evexia",
+    "title": "Evex\u00eda",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -12557,7 +12557,7 @@
     },
     "/auth/azure/callback": {
       "get": {
-        "description": "Azure redirects here after the user signs in.\n\nFlow:\n1. Verify CSRF state (HMAC-signed, self-contained)\n2. Exchange code for Azure id_token\n3. Extract oid + tid + email from token claims\n4. Resolve Evexia tenant via tenants.azure_tenant_id == tid\n5. Find user by azure_oid (returning SSO user) or email (first-time link)\n6. Issue internal JWT (same claims as password login)\n7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI",
+        "description": "Azure redirects here after the user signs in.\n\nFlow:\n1. Verify CSRF state (HMAC-signed + bound to this browser's nonce cookie)\n2. Exchange code for Azure id_token\n3. Extract oid + tid + email from token claims\n4. Resolve Evexia tenant via tenants.azure_tenant_id == tid\n5. Find user by azure_oid (returning SSO user) or email (first-time link)\n6. Issue internal JWT (same claims as password login)\n7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI\n\nEvery failure path returns a redirect carrying a user-facing ?error=\nmessage \u2014 never a raw 5xx, which would surface as a blank page.",
         "operationId": "azure_callback_auth_azure_callback_get",
         "parameters": [
           {
@@ -12580,6 +12580,22 @@
               "description": "CSRF state from the login redirect",
               "title": "State",
               "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "evexia_sso_state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evexia Sso State"
             }
           }
         ],
@@ -12611,7 +12627,7 @@
     },
     "/auth/azure/login": {
       "get": {
-        "description": "Start the Azure AD OAuth2 flow.  No credentials required from the user.\nThe browser is redirected to Microsoft's login page; after authentication\nAzure redirects back to /auth/azure/callback.\n\nRedirects to the frontend error page when SSO is not configured.",
+        "description": "Start the Azure AD OAuth2 flow.  No credentials required from the user.\nThe browser is redirected to Microsoft's login page; after authentication\nAzure redirects back to /auth/azure/callback.\n\nSets a short-lived HttpOnly nonce cookie; the callback requires it to match\nthe nonce inside the signed state, proving the same browser started the flow.\n\nRedirects to the frontend error page when SSO is not configured.",
         "operationId": "azure_login_auth_azure_login_get",
         "responses": {
           "302": {

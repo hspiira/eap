@@ -56,7 +56,8 @@ createdb evexia_db
 uv run alembic upgrade head
 ```
 
-Replace `USER` and `PASSWORD` with your PostgreSQL user. Tests still use in-memory SQLite by default.
+Replace `USER` and `PASSWORD` with your PostgreSQL user. Tests run against PostgreSQL too — set
+`TEST_DATABASE_URL` (see `.env.test`); CI provisions a `postgres:16` service for this.
 
 ### Seed data (testing)
 

@@ -87,10 +87,6 @@ def set_key_provider(provider: KeyProvider) -> None:
         _derive_dek.cache_clear()
 
 
-def get_key_provider() -> KeyProvider:
-    return _provider
-
-
 @lru_cache(maxsize=256)
 def _derive_dek(tenant_id: str, kek_fingerprint: bytes) -> bytes:
     kek = _provider.get_kek()
