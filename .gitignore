@@ -1,18 +1,25 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+# Repo-wide ignores. Each app keeps its own .gitignore for tooling specific to it.
 
-# Virtual environments
-.venv
-docs/
+# Secrets — never commit, at any depth
 .env
-allevia.db
-*.db
+.env.*
+!.env.sample
+!.env.test
 
-# pytest-cov writes this on every local run; it was tracked, so it dirtied
-# the working tree after each test invocation.
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+.import_linter_cache/
+__pycache__/
 .coverage
+coverage.xml
+
+# Dependencies and build output
+.venv/
+node_modules/
