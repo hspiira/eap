@@ -242,12 +242,31 @@ class UserEntity:
         self.updated_at = utc_now()
 
     def link_azure_identity(self, azure_oid: str) -> None:
-        """Link this user to an Azure AD identity (called on first SSO login)."""
+        """
+        Link this user to an Azure AD identity (called on first SSO login).
+
+        Refuses to re-point an account that is already linked to a DIFFERENT
+        Azure identity. The SSO callback resolves users by OID first and falls
+        back to email; without this guard, an email address recycled by the
+        customer's IT department (offboard A, later assign the same address to
+        new hire B — routine in most organisations) would silently hand B
+        control of A's account: A's role, access scopes, case history and audit
+        identity. Re-linking is a deliberate admin action, not something a
+        login should perform.
+
+        Re-linking the SAME oid is a no-op and stays allowed, so retried or
+        concurrent logins do not fail.
+        """
         if not azure_oid or not azure_oid.strip():
             raise DomainError("Azure OID cannot be empty")
         if self.deleted_at:
             raise DomainError("Cannot link Azure identity to deleted user")
-        self.azure_oid = azure_oid.strip()
+        cleaned = azure_oid.strip()
+        if self.azure_oid and self.azure_oid != cleaned:
+            raise DomainError(
+                "User is already linked to a different Azure identity; an administrator must unlink it before re-linking"
+            )
+        self.azure_oid = cleaned
         self.auth_provider = AuthProvider.AZURE_AD
         self.updated_at = utc_now()
 

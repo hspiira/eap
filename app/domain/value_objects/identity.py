@@ -50,13 +50,31 @@ class Email:
     Attributes:
     - <255 characters
     - email address format
+    - normalised to lowercase, surrounding whitespace stripped
     - immutable once activated
+
+    Normalisation is the single choke point that keeps provisioning and login
+    agreeing on identity. Addresses are case-insensitive in the local part for
+    every mail system we care about, but `users.email` is compared with `=` in
+    SQL, which is case-SENSITIVE on PostgreSQL. Without normalising here, a user
+    provisioned as `Fred.H@corp.com` could never be found by an Azure SSO login,
+    which lowercases the UPN claim — they would hit "account has not been
+    provisioned" forever, with the two addresses looking identical to a human.
+
+    `#` is permitted in the local part for Azure AD B2B guest UPNs, which take
+    the form `fred_gmail.com#EXT#@tenant.onmicrosoft.com`.
     """
 
     value: str
 
     def __post_init__(self):
-        if not self.value or len(self.value) > 255:
+        if not self.value or not self.value.strip():
+            raise ValueError("Email must be a non-empty string")
+        normalised = self.value.strip().lower()
+        if len(normalised) > 255:
             raise ValueError("Email must be less than 255 characters")
-        if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", self.value):
+        if not re.match(r"^[a-z0-9._%+#-]+@[a-z0-9.-]+\.[a-z]{2,}$", normalised):
             raise ValueError("Invalid email address format")
+        # frozen dataclass — bypass the immutability guard to store the
+        # normalised form, so every consumer sees one canonical value.
+        object.__setattr__(self, "value", normalised)

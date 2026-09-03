@@ -500,19 +500,17 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-]
 redis = [
     { name = "redis" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "httpx" },
     { name = "import-linter" },
     { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
@@ -526,22 +524,22 @@ requires-dist = [
     { name = "cuid2", specifier = ">=2.0.1" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.128.0" },
     { name = "greenlet", specifier = ">=3.3.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "msal", specifier = ">=1.36.0" },
     { name = "nh3", specifier = ">=0.3.2" },
     { name = "pyjwt", specifier = ">=2.13.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5.0.0" },
     { name = "scalar-fastapi", specifier = ">=1.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
 ]
-provides-extras = ["dev", "redis"]
+provides-extras = ["redis"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "import-linter", specifier = ">=2.0" },
     { name = "pyright", specifier = ">=1.1.409" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "ruff", specifier = ">=0.14.13" },
 ]
