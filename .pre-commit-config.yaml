@@ -1,0 +1,76 @@
+# Mirrors the CI gates so failures surface before push, not after. One config
+# for both apps: it used to live in apps/api and so only ever saw the backend.
+#
+#   uv run --project apps/api pre-commit install      # enable (once)
+#   pnpm verify                                       # the full CI-equivalent
+#
+# Generated files are excluded everywhere below. They are byte-compared in CI
+# (`pnpm contracts:check` and the route-tree gate), so a whitespace hook
+# "tidying" one would break the build it is meant to protect.
+exclude: |
+  (?x)^(
+    apps/web/src/routeTree\.gen\.ts|
+    apps/web/src/api/generated/.*|
+    apps/api/schema/openapi\.json|
+    apps/api/alembic/versions/.*|
+    pnpm-lock\.yaml|
+    apps/api/uv\.lock
+  )$
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      # `ruff-check` is the current id; the old `ruff` alias still resolves but
+      # pre-commit labels it "legacy alias" in its output.
+      - id: ruff-check
+        args: [--fix]
+        files: ^apps/api/
+      # Enabled now that the tree is clean: `ruff format --check` reports 472
+      # of 472 files already formatted. It was off while a bulk reformat was
+      # still pending, so that it would not leak churn into unrelated commits.
+      - id: ruff-format
+        files: ^apps/api/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        # A committed 1.75MB SQLite DB is what prompted this.
+        args: [--maxkb=512]
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+      # The repo-root .env is gitignored; this is the backstop if that ever slips.
+      - id: check-case-conflict
+
+  - repo: local
+    hooks:
+      - id: lint-imports
+        name: import-linter (architecture contracts)
+        entry: uv run --project apps/api --directory apps/api lint-imports
+        language: system
+        pass_filenames: false
+        files: ^apps/api/app/
+
+      # These two run over the whole package rather than the staged files:
+      # pre-commit hands paths relative to the repo root, but --filter runs the
+      # command inside apps/web, so per-file paths do not resolve. `files:`
+      # still decides whether the hook runs at all, so a backend-only commit
+      # skips both. They invoke the same scripts CI does.
+      - id: web-format
+        name: prettier (apps/web)
+        entry: pnpm format:web
+        language: system
+        pass_filenames: false
+        files: ^apps/web/
+
+      - id: web-lint
+        name: eslint (apps/web)
+        entry: pnpm lint:web
+        language: system
+        pass_filenames: false
+        files: ^apps/web/

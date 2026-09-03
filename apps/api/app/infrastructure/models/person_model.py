@@ -93,7 +93,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     employment_info: Mapped[EmploymentInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Employment information for CLIENT_EMPLOYEE person types.
-    
+
     Schema: {
         "client_id": str,
         "employee_code": str (format: CLIENT-FAMILY-MEMBER, e.g., "MNT-00-00"),
@@ -123,7 +123,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     staff_info: Mapped[StaffInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Staff information for PLATFORM_STAFF person types.
-    
+
     Schema: {
         "role": str (StaffRole enum value),
         "client_id": str,
@@ -137,7 +137,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     dependent_info: Mapped[DependentInfoDict | None] = mapped_column(JSON, nullable=True)
     """
     Dependent information for DEPENDENT person types.
-    
+
     Schema: {
         "primary_employee_id": str,
         "relationship": str (RelationType enum value),
@@ -160,7 +160,7 @@ class PersonModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     emergency_contact: Mapped[EmergencyContactDict | None] = mapped_column(JSON, nullable=True)
     """
     Emergency contact information (shared across person types).
-    
+
     Schema: {
         "name": str,
         "phone": str | None,
