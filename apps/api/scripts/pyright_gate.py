@@ -6,11 +6,17 @@ Useful while ratcheting strict mode out of ``app/domain`` into the rest of
 the codebase one package at a time.
 
 Usage:
+    pyright_gate.py --run <gated_root> [<gated_root> ...]
     pyright_gate.py <pyright_json_path> <gated_root> [<gated_root> ...]
     pyright_gate.py <pyright_json_path> --report-only
 
-The first form fails (exit 1) when *any* error's file path starts with one of
-the gated roots. The second form prints a per-package error count without
+``--run`` invokes pyright itself and then gates plus reports in one pass, so
+the same command works locally and in CI without a shell redirect to a
+platform-specific temp path. The other two forms read a JSON file pyright has
+already written.
+
+The gated forms fail (exit 1) when *any* error's file path starts with one of
+the gated roots. ``--report-only`` prints a per-package error count without
 failing - useful for keeping the rest of the project visible without forcing
 a gate yet.
 """
@@ -18,6 +24,7 @@ a gate yet.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -26,6 +33,26 @@ from pathlib import Path
 def _load(path: Path) -> dict[str, object]:
     with path.open("r", encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def _run_pyright() -> dict[str, object]:
+    """Invoke pyright and return its parsed JSON report.
+
+    pyright exits non-zero whenever it finds any error, including errors
+    outside the gated roots, so the return code is deliberately ignored: this
+    script decides what counts as a failure.
+    """
+    proc = subprocess.run(
+        [sys.executable, "-m", "pyright", "--outputjson"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if not proc.stdout.strip():
+        sys.stderr.write(proc.stderr)
+        raise SystemExit("pyright produced no JSON output")
+    return json.loads(proc.stdout)
 
 
 def _file_to_package(file_path: str, repo_root: Path) -> str:
@@ -54,13 +81,19 @@ def main(argv: list[str]) -> int:
     if len(argv) < 2:
         print(__doc__, file=sys.stderr)
         return 2
-    payload = _load(Path(argv[0]))
+    run_mode = argv[0] == "--run"
+    if run_mode:
+        payload = _run_pyright()
+        argv = argv[1:]
+    else:
+        payload = _load(Path(argv[0]))
+        argv = argv[1:]
     diagnostics = payload.get("generalDiagnostics", [])
     if not isinstance(diagnostics, list):
         print("Unexpected pyright JSON shape", file=sys.stderr)
         return 2
     errors = [d for d in diagnostics if isinstance(d, dict) and d.get("severity") == "error"]
-    report_only = argv[1] == "--report-only"
+    report_only = argv[0] == "--report-only"
     repo_root = Path.cwd().resolve()
 
     by_package: Counter[str] = Counter()
@@ -74,7 +107,7 @@ def main(argv: list[str]) -> int:
             print(f"  {pkg:40s} {count:6d}")
         return 0
 
-    gated_roots = [(Path.cwd() / arg).resolve() for arg in argv[1:]]
+    gated_roots = [(Path.cwd() / arg).resolve() for arg in argv]
     gated_errors = [d for d in errors if _is_under_root(str(d.get("file", "")), gated_roots)]
     if gated_errors:
         print(
@@ -93,6 +126,12 @@ def main(argv: list[str]) -> int:
             print(f"  ... {len(gated_errors) - 50} more", file=sys.stderr)
         return 1
     print("Pyright gate OK for " + ", ".join(str(r.relative_to(repo_root)) for r in gated_roots))
+    if run_mode:
+        # The advisory ratchet: everything outside the gate, visible but not fatal.
+        print()
+        print(f"Pyright total errors (advisory): {len(errors)}")
+        for pkg, count in by_package.most_common():
+            print(f"  {pkg:40s} {count:6d}")
     return 0
 
 
