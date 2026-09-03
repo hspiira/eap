@@ -1,0 +1,18 @@
+{
+  "name": "evexia",
+  "private": true,
+  "packageManager": "pnpm@10.9.0",
+  "scripts": {
+    "build": "pnpm build:api && pnpm build:web",
+    "build:api": "cd apps/api && uv sync --frozen",
+    "build:web": "cd apps/web && pnpm install --frozen-lockfile && pnpm build",
+    "contracts": "cd apps/web && pnpm contracts:sync",
+    "contracts:check": "cd apps/web && pnpm contracts:check",
+    "test": "pnpm test:api && pnpm test:web",
+    "test:api": "cd apps/api && uv run pytest tests/unit",
+    "test:web": "cd apps/web && pnpm test",
+    "lint": "pnpm lint:api && pnpm lint:web",
+    "lint:api": "cd apps/api && uv run ruff check app tests scripts && uv run lint-imports",
+    "lint:web": "cd apps/web && pnpm lint && pnpm typecheck"
+  }
+}
