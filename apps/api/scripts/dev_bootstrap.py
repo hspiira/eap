@@ -3,7 +3,7 @@ Take a fresh clone to a working dev environment.
 
     uv run python scripts/dev_bootstrap.py
 
-Idempotent: safe to re-run. Creates the .env files if missing, creates the
+Idempotent: safe to re-run. Creates the repo-root .env if missing, creates the
 database if missing, applies migrations, and seeds a tenant with an admin user
 so there is something to log in with.
 
@@ -19,7 +19,12 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 API_DIR = Path(__file__).resolve().parent.parent
-WEB_DIR = API_DIR.parent / "web"
+REPO_ROOT = API_DIR.parents[1]
+
+# Ports `pnpm dev` uses. Kept here so the consistency check below has something
+# to compare the .env against.
+API_PORT = 8000
+WEB_PORT = 3000
 
 DEV_TENANT_NAME = "Dev Tenant"
 DEV_TENANT_CODE = "dev"
@@ -43,18 +48,45 @@ def copy_if_missing(target: Path, source: Path) -> bool:
         warn(f"{source} is missing, cannot create {target.name}")
         return False
     target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-    print(f"    created {target.relative_to(target.parent.parent)} from {source.name}", flush=True)
+    try:
+        shown = target.relative_to(REPO_ROOT)
+    except ValueError:
+        shown = target
+    print(f"    created {shown} from {source.name}", flush=True)
     return False
 
 
-def read_database_url() -> str | None:
-    env = API_DIR / ".env"
-    if not env.exists():
-        return None
-    for line in env.read_text(encoding="utf-8").splitlines():
-        if line.startswith("DATABASE_URL="):
-            return line.split("=", 1)[1].strip()
-    return None
+def read_env(name: str) -> str | None:
+    """Read a key from the root .env, letting apps/api/.env override it.
+
+    Mirrors the precedence in app.core.config: root first, app-local last.
+    """
+    value = None
+    for env in (REPO_ROOT / ".env", API_DIR / ".env"):
+        if not env.exists():
+            continue
+        for line in env.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith(f"{name}="):
+                value = line.split("=", 1)[1].strip()
+    return value
+
+
+def check_paired_origins() -> None:
+    """Warn when CORS_ORIGINS does not admit the frontend's own origin.
+
+    A mismatch is invisible until the browser blocks the first request, and the
+    error it prints then points at CORS rather than at this file.
+    """
+    api_base = read_env("VITE_API_BASE_URL") or ""
+    cors = read_env("CORS_ORIGINS") or ""
+    origins = [o.strip() for o in cors.split(",") if o.strip()]
+    web_origin = f"http://localhost:{WEB_PORT}"
+    if web_origin not in origins:
+        warn(f"CORS_ORIGINS does not list {web_origin}; the browser will block the frontend")
+        warn(f"    add it to CORS_ORIGINS in {REPO_ROOT / '.env'}")
+    if api_base and api_base.rstrip("/") != f"http://localhost:{API_PORT}":
+        warn(f"VITE_API_BASE_URL is {api_base}, but `pnpm dev` serves the API on :{API_PORT}")
 
 
 def ensure_database(url: str) -> bool:
@@ -80,7 +112,7 @@ def ensure_database(url: str) -> bool:
             conn = await asyncpg.connect(admin_dsn)
         except Exception as exc:
             warn(f"cannot reach PostgreSQL at {parts.hostname}:{parts.port or 5432} - {exc}")
-            warn("start PostgreSQL, or point DATABASE_URL in apps/api/.env at a reachable one")
+            warn("start PostgreSQL, or point DATABASE_URL in the repo-root .env at a reachable one")
             return False
         try:
             exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = $1", dbname)
@@ -124,13 +156,13 @@ def tenant_exists(url: str, code: str) -> bool:
 
 
 def main() -> int:
-    step("Environment files")
-    copy_if_missing(API_DIR / ".env", API_DIR / ".env.sample")
-    copy_if_missing(WEB_DIR / ".env", WEB_DIR / ".env.example")
+    step("Environment file")
+    copy_if_missing(REPO_ROOT / ".env", REPO_ROOT / ".env.example")
+    check_paired_origins()
 
-    url = read_database_url()
+    url = read_env("DATABASE_URL")
     if not url:
-        warn("no DATABASE_URL found in apps/api/.env")
+        warn(f"no DATABASE_URL found in {REPO_ROOT / '.env'}")
         return 1
 
     step(f"Database ({urlsplit(url).path.lstrip('/') or '?'})")
@@ -163,9 +195,8 @@ def main() -> int:
         warn("seeding failed; see the output above")
         return 1
 
-    print("\nReady. Start the two dev servers in separate terminals:")
-    print("    pnpm dev:api    # http://localhost:8000  (docs at /scalar)")
-    print("    pnpm dev:web    # http://localhost:3000")
+    print("\nReady. Start both dev servers with one command:")
+    print("    pnpm dev        # api on :8000 (docs at /docs), web on :3000")
     if already_seeded:
         print(f"\nSign in with tenant code {DEV_TENANT_CODE!r} and {DEV_ADMIN_EMAIL}.")
         print("To reset the password: uv run python scripts/seed_user.py --help")

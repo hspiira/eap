@@ -8,11 +8,27 @@ No defaults are provided - missing values will raise validation errors.
 
 import os
 import warnings
+from pathlib import Path
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_env_file = ".env.test" if os.environ.get("ENVIRONMENT") == "test" else ".env"
+# Resolved from this file rather than the process working directory. A relative
+# env_file is read from wherever the process happened to start, so running
+# uvicorn from the repo root used to pick up a different .env than running it
+# from apps/api.
+_API_ROOT = Path(__file__).resolve().parents[2]  # apps/api
+_REPO_ROOT = _API_ROOT.parents[1]  # repo root
+
+# Tests are self-contained: apps/api/.env.test only, so a developer's local
+# .env can never change what the suite sees.
+if os.environ.get("ENVIRONMENT") == "test":
+    _env_file: tuple[Path, ...] = (_API_ROOT / ".env.test",)
+else:
+    # The repo-root .env is the shared source of truth for both apps; an
+    # optional apps/api/.env overrides it for backend-only tweaks. Later files
+    # win, and a missing file is skipped.
+    _env_file = (_REPO_ROOT / ".env", _API_ROOT / ".env")
 
 
 class Settings(BaseSettings):
