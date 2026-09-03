@@ -11,7 +11,7 @@ Usage:
 
 The first form fails (exit 1) when *any* error's file path starts with one of
 the gated roots. The second form prints a per-package error count without
-failing — useful for keeping the rest of the project visible without forcing
+failing - useful for keeping the rest of the project visible without forcing
 a gate yet.
 """
 
@@ -90,7 +90,7 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
         if len(gated_errors) > 50:
-            print(f"  … {len(gated_errors) - 50} more", file=sys.stderr)
+            print(f"  ... {len(gated_errors) - 50} more", file=sys.stderr)
         return 1
     print("Pyright gate OK for " + ", ".join(str(r.relative_to(repo_root)) for r in gated_roots))
     return 0

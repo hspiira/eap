@@ -7,17 +7,46 @@ Monorepo for the Evexía platform.
 | [`apps/api`](apps/api) | Employee Assistance Program API | FastAPI, SQLAlchemy, PostgreSQL, uv |
 | [`apps/web`](apps/web) | Web frontend | TanStack Start, React, Tailwind, pnpm |
 
-## Prerequisites
+## Getting started
 
-- Python 3.12 and [uv](https://docs.astral.sh/uv/)
-- Node 22+ and pnpm 10
-- PostgreSQL 16
+Install [uv](https://docs.astral.sh/uv/) (Python 3.12), Node 22+ with pnpm 10,
+and PostgreSQL 16+. Make sure PostgreSQL is running, then:
+
+```bash
+git clone https://github.com/hspiira/eap.git evexia
+cd evexia
+pnpm setup
+```
+
+`pnpm setup` installs both apps' dependencies, then bootstraps the backend:
+creates `apps/api/.env` and `apps/web/.env` from the committed samples, creates
+the database, applies migrations, and seeds a `dev` tenant with an admin user.
+It prints a one-time password for that user at the end.
+
+It is safe to re-run: existing `.env` files, databases and tenants are left
+alone.
+
+If your PostgreSQL uses credentials other than `postgres:postgres`, edit
+`DATABASE_URL` in `apps/api/.env` and run `pnpm setup` again.
+
+Then start the two dev servers in separate terminals:
+
+```bash
+pnpm dev:api    # http://localhost:8000, API docs at /scalar
+pnpm dev:web    # http://localhost:3000
+```
+
+Sign in at `http://localhost:3000` with tenant code `dev`, the seeded admin
+email, and the one-time password.
 
 ## Commands
 
 Run from the repository root:
 
 ```bash
+pnpm setup            # first-run bootstrap; safe to re-run
+pnpm bootstrap        # just the env/database/migrate/seed part, no installs
+
 pnpm dev:api          # uvicorn with reload, port 8000
 pnpm dev:web          # vite dev, port 3000
 

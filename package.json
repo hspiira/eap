@@ -3,6 +3,10 @@
   "private": true,
   "packageManager": "pnpm@10.9.0",
   "scripts": {
+    "setup": "pnpm setup:api && pnpm setup:web && pnpm bootstrap",
+    "setup:api": "cd apps/api && uv sync --group dev",
+    "setup:web": "cd apps/web && pnpm install",
+    "bootstrap": "cd apps/api && uv run python scripts/dev_bootstrap.py",
     "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
     "dev:web": "cd apps/web && pnpm dev",
     "build": "pnpm build:api && pnpm build:web",

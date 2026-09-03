@@ -1,13 +1,13 @@
 """
 Add a user to an existing tenant. Use until the Phase 2 user-management UI ships.
 
-For Azure SSO users you do NOT need a password — the BE links the Azure OID on
+For Azure SSO users you do NOT need a password - the BE links the Azure OID on
 first sign-in by matching the email. Pass --password only if you also want them
 to be able to sign in with the password form.
 
 Examples:
 
-    # SSO-only user (no password — they sign in via Microsoft)
+    # SSO-only user (no password - they sign in via Microsoft)
     uv run python scripts/seed_user.py \
         --tenant-code minet \
         --email noreply@minet.co.ug \
@@ -121,7 +121,7 @@ async def run(args: argparse.Namespace) -> None:
     if args.password:
         print(f"  password: {args.password}   (one-time)")
     else:
-        print("  password: (not set — SSO-only; OID will link on first Microsoft sign-in)")
+        print("  password: (not set - SSO-only; OID will link on first Microsoft sign-in)")
     print()
 
 

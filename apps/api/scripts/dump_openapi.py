@@ -28,7 +28,7 @@ def main() -> None:
     # contract.
     if os.environ.get("ENVIRONMENT") == "test":
         raise SystemExit(
-            "Refusing to dump the schema with ENVIRONMENT=test — it would write "
+            "Refusing to dump the schema with ENVIRONMENT=test - it would write "
             "test app metadata into schema/openapi.json. Unset ENVIRONMENT."
         )
 

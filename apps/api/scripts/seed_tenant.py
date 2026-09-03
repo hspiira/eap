@@ -144,6 +144,7 @@ async def run(args: argparse.Namespace) -> None:
                     tenant_id=TenantId(generate_cuid()),
                     name=args.name,
                     code=args.code,
+                    admin_email=args.admin_email,
                     subscription_tier=SubscriptionTier(args.tier),
                     max_users=args.max_users,
                     max_clients=args.max_clients,
@@ -197,7 +198,7 @@ async def run(args: argparse.Namespace) -> None:
     if args.azure_tenant_id and not args.no_sso:
         print("Sign-in: visit /auth/login and click 'Continue with Microsoft'.")
     else:
-        print("Sign-in: visit /auth/login → use 'tenant code + email + password' form.")
+        print("Sign-in: visit /auth/login -> use 'tenant code + email + password' form.")
     print()
 
 
