@@ -1,0 +1,24 @@
+# Normalise line endings. Generated files (routeTree.gen.ts, the OpenAPI schema
+# and its TS client) are compared with `git diff --exit-code` in CI, so a
+# Windows checkout writing CRLF would fail the staleness gates. Everything
+# text is stored and checked out as LF regardless of platform.
+* text=auto eol=lf
+
+# Binary: never touch, never diff.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.db binary
+
+# Generated. Collapse in diffs and exclude from language stats.
+apps/web/src/routeTree.gen.ts linguist-generated=true
+apps/web/src/api/generated/** linguist-generated=true
+apps/api/schema/openapi.json linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
+apps/api/uv.lock linguist-generated=true
