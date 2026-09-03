@@ -30,7 +30,7 @@ cd eap
 uv sync
 
 # Configure environment
-cp .env.sample .env
+cp ../../.env.example ../../.env   # one file at the repo root feeds both apps
 # Edit .env with your settings
 
 # Initialize database (see "Database and migrations" below)
@@ -75,7 +75,7 @@ Data lives in `data/seed_data.json`. See `data/README.md` for details.
 Once running, the API is available at:
 
 - **API**: <http://localhost:8000>
-- **Landing**: <http://localhost:8000> · **API docs (Scalar)**: <http://localhost:8000/docs>  
+- **Landing**: <http://localhost:8000> · **API docs (Scalar)**: <http://localhost:8000/docs>
 
 ## API Overview
 

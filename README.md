@@ -19,22 +19,27 @@ pnpm setup
 ```
 
 `pnpm setup` installs both apps' dependencies, then bootstraps the backend:
-creates `apps/api/.env` and `apps/web/.env` from the committed samples, creates
-the database, applies migrations, and seeds a `dev` tenant with an admin user.
+creates `.env` at the repo root from the committed `.env.example`, creates the
+database, applies migrations, and seeds a `dev` tenant with an admin user.
 It prints a one-time password for that user at the end.
 
 It is safe to re-run: existing `.env` files, databases and tenants are left
 alone.
 
 If your PostgreSQL uses credentials other than `postgres:postgres`, edit
-`DATABASE_URL` in `apps/api/.env` and run `pnpm setup` again.
+`DATABASE_URL` in `.env` and run `pnpm setup` again.
 
-Then start the two dev servers in separate terminals:
+Then start both dev servers:
 
 ```bash
-pnpm dev:api    # http://localhost:8000, API docs at /scalar
-pnpm dev:web    # http://localhost:3000
+pnpm dev
 ```
+
+That runs the API on `http://localhost:8000` (Scalar API reference at `/docs`) and the
+frontend on `http://localhost:3000` in one terminal, with each line prefixed by
+which side it came from. If one crashes the other is stopped too, so you never
+end up with half the stack running. `pnpm dev:api` and `pnpm dev:web` still
+start them individually.
 
 Sign in at `http://localhost:3000` with tenant code `dev`, the seeded admin
 email, and the one-time password.
@@ -47,22 +52,107 @@ Run from the repository root:
 pnpm setup            # first-run bootstrap; safe to re-run
 pnpm bootstrap        # just the env/database/migrate/seed part, no installs
 
+pnpm dev              # both dev servers, one terminal
 pnpm dev:api          # uvicorn with reload, port 8000
 pnpm dev:web          # vite dev, port 3000
 
+pnpm verify           # everything CI runs, in CI's order
+pnpm lint             # ruff + format check + layering, eslint + prettier check
+pnpm typecheck        # pyright gate on app/domain, tsc on the frontend
+pnpm test             # unit tests with the coverage gate, both apps
 pnpm build            # both apps
-pnpm test             # unit tests, both apps
-pnpm lint             # lint + typecheck, both apps
+pnpm format           # apply ruff format and prettier
+
 pnpm contracts        # regenerate the OpenAPI schema and the TS client from it
 pnpm contracts:check  # fail if the committed contract or client is stale
 ```
 
-The two dev servers are separate long-running processes, so they get their own
-commands and two terminals. `build`, `test` and `lint` cover both apps and take
+`lint`, `typecheck`, `test`, `build` and `format` cover both apps and take
 `:api` / `:web` variants for one side only.
+
+**`pnpm verify` is the same set of gates CI runs, in the same order.** That is
+deliberate: if it passes locally it passes in CI. It is slower than `pnpm lint`
+because it includes pyright and the coverage gate, so `lint` and `test` stay
+the fast inner loop and `verify` is the pre-push check.
+
+### Pre-commit hooks
+
+Optional, and worth it. `.pre-commit-config.yaml` at the root covers both apps
+and runs the same formatters and linters:
+
+```bash
+uv run --project apps/api pre-commit install     # once, per clone
+uv run --project apps/api pre-commit run --all-files
+```
+
+A backend-only commit skips the frontend hooks and vice versa. Generated files
+are excluded globally: CI compares them byte for byte, so a whitespace hook
+"tidying" one would break the build it is there to protect.
 
 Per-app commands still work from inside `apps/api` or `apps/web`; see their own
 READMEs.
+
+## Configuration
+
+One file, `.env` at the repo root, configures both apps. `pnpm setup` creates it
+from the committed `.env.example`; it is gitignored.
+
+- **`apps/api`** reads it through pydantic-settings, then `apps/api/.env` if
+  that exists, so a backend-only override is still possible. Later file wins.
+- **`apps/web`** reads it because vite's `envDir` points at the repo root.
+  Vite only exposes `VITE_`-prefixed variables to the browser bundle, so the
+  backend's `SECRET_KEY` and `DATABASE_URL` sharing the file are not shipped to
+  clients. Never rename a secret to start with `VITE_`.
+
+It was two files before. These values appear on both sides and have to agree,
+which is the reason for merging them:
+
+| Backend | Frontend | Must agree because |
+| --- | --- | --- |
+| `CORS_ORIGINS` | the port `pnpm dev:web` serves on | the browser blocks the frontend if its origin is not in the allowlist |
+| the port `pnpm dev:api` serves on | `VITE_API_BASE_URL` | the frontend has to call the API where it actually is |
+| `PLATFORM_TENANT_ID` | `VITE_PLATFORM_TENANT_ID` | the backend enforces the platform-admin gate, the frontend only shows or hides the UI |
+| `AZURE_CLIENT_ID` and friends | `VITE_AZURE_SSO_ENABLED` | the button appears whether or not the backend can complete the flow |
+
+`pnpm bootstrap` warns when the first two disagree, since otherwise the symptom
+is a CORS error in the browser console that does not name the file to fix.
+
+Tests ignore all of this: `ENVIRONMENT=test` reads `apps/api/.env.test` and
+nothing else, so a local `.env` cannot change what the suite sees.
+
+## Repository layout
+
+`apps/web` is a pnpm workspace package (`@evexia/web`), declared in
+`pnpm-workspace.yaml`. There is one lockfile, `pnpm-lock.yaml` at the root, and
+`pnpm install` from the root installs everything Node. `apps/api` is a uv
+project and is deliberately outside the workspace, since pnpm has nothing to
+say about Python.
+
+Everything is stored with LF line endings, enforced by `.gitattributes`. Three
+generated files are committed and checked for staleness in CI, so a checkout
+that rewrote them with CRLF would fail those gates:
+
+| File | Generated by | Gate |
+| --- | --- | --- |
+| `apps/api/schema/openapi.json` | `pnpm contracts` | `contract` job |
+| `apps/web/src/api/generated/schema.ts` | `pnpm contracts` | `contract` job |
+| `apps/web/src/routeTree.gen.ts` | `pnpm build:web` | `web` job |
+
+## Known gaps
+
+- The integration and E2E suite (`pytest tests --ignore=tests/unit`) is
+  currently red and runs with `continue-on-error: true` in CI. It does not gate
+  merges until that is fixed.
+- Backend type coverage is ratcheting. `app/domain` is a strict zero-error
+  pyright gate; the rest of the project is reported but not enforced.
+- Backend test coverage sits just above the 60% floor (63%), so a moderately
+  sized untested addition can fail the gate.
+- `apps/web/eslint.config.js` points developers at `docs/CODING_GUIDELINES.md`
+  and `docs/IMPLEMENTATION_PLAN.md` in two of its error messages. Neither file
+  exists anywhere in the repository.
+- `apps/web` depends on `nitro-nightly@latest`, which is unpinned and can change
+  under you between installs. The lockfile holds it steady until something
+  forces a re-resolve.
 
 ## The API contract
 
