@@ -49,19 +49,6 @@ from app.domain.events.crisis import (
     SafetyPlanSuperseded,
 )
 from app.domain.events.document import DocumentArchived, DocumentPublished, DocumentVersionCreated
-from app.domain.events.manager import (
-    FitnessForDutyRequested,
-    FitnessForDutyResolved,
-    ManagerConsultLogged,
-    ManagerConsultReferralFiled,
-    OutcomeMeasureRecorded,
-    ReturnToWorkPlanActivated,
-    ReturnToWorkPlanCompleted,
-    TrainingEnrolmentCompleted,
-    TrainingEnrolmentCreated,
-    WorkLifeReferralRequested,
-    WorkLifeReferralResolved,
-)
 from app.domain.events.outreach import (
     CareCallbackCampaignActivated,
     CareCallbackCampaignCompleted,
@@ -156,13 +143,8 @@ __all__ = [
     "EngagementCreated",
     "EngagementDelivered",
     "EngagementInvoiced",
-    "FitnessForDutyRequested",
-    "FitnessForDutyResolved",
     "HoursLogged",
-    "ManagerConsultLogged",
-    "ManagerConsultReferralFiled",
     "MandatoryReportSubmitted",
-    "OutcomeMeasureRecorded",
     "OutreachAssigned",
     "OutreachCompleted",
     "PersonActivated",
@@ -173,8 +155,6 @@ __all__ = [
     "ProviderAssignmentBlocked",
     "ProviderPanelStatusChanged",
     "ProviderTierChanged",
-    "ReturnToWorkPlanActivated",
-    "ReturnToWorkPlanCompleted",
     "RiskAssessmentRecorded",
     "SafetyPlanActivated",
     "SafetyPlanCreated",
@@ -190,8 +170,6 @@ __all__ = [
     "TenantActivated",
     "TenantSuspended",
     "TenantTerminated",
-    "TrainingEnrolmentCompleted",
-    "TrainingEnrolmentCreated",
     "UserActivated",
     "UserBanned",
     "UserDeactivated",
@@ -201,6 +179,4 @@ __all__ = [
     "UserLoginFailed",
     "UserSuspended",
     "UserTerminated",
-    "WorkLifeReferralRequested",
-    "WorkLifeReferralResolved",
 ]

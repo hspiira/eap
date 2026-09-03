@@ -115,19 +115,3 @@ class UpdateServiceGroupSettingsUseCase(BaseUseCase[ServiceEntity, ServiceId]):
 # =============================================================================
 # QUERY USE CASE
 # =============================================================================
-
-
-class GetServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
-    """Use case for retrieving a service."""
-
-    def __init__(self, service_repository: ServiceRepository):
-        super().__init__(service_repository)
-        self.service_repository = service_repository
-
-    async def execute(self, service_id: ServiceId) -> ServiceEntity | None:
-        """Get service by ID."""
-        return await self.repository.get_by_id(service_id)
-
-    async def execute_by_name(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
-        """Get service by name within a tenant."""
-        return await self.service_repository.get_by_name(tenant_id, name)

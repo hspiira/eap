@@ -35,7 +35,7 @@ class KPIEntity:
     formula: str | None = None  # Calculation formula (optional)
     _is_active: bool = True
     deleted_at: datetime | None = None
-    _events: list[DomainEvent] = field(default_factory=list[DomainEvent])  # Domain events
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])  # Domain events
 
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""
@@ -138,7 +138,7 @@ class KPIAssignmentEntity:
     target_value: Decimal | None = None  # Override KPI target for this assignment
     _is_active: bool = True
     deleted_at: datetime | None = None
-    _events: list[DomainEvent] = field(default_factory=list[DomainEvent])
+    events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
         """Validate invariants immediately after construction."""

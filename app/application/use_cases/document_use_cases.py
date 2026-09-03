@@ -181,14 +181,3 @@ class SetDocumentExpiryUseCase(BaseUseCase[DocumentEntity, DocumentId]):
 # =============================================================================
 # QUERY USE CASE
 # =============================================================================
-
-
-class GetDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
-    """Use case for retrieving a document."""
-
-    def __init__(self, document_repository: DocumentRepository):
-        super().__init__(document_repository)
-
-    async def execute(self, document_id: DocumentId) -> DocumentEntity | None:
-        """Get document by ID."""
-        return await self.repository.get_by_id(document_id)

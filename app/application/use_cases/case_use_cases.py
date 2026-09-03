@@ -35,7 +35,6 @@ from app.domain.value_objects.core import (
     CaseId,
     ClientId,
     ClinicalNoteId,
-    ClinicalSubjectId,
     EligibleMemberId,
     PersonId,
     TenantId,
@@ -77,46 +76,6 @@ class OpenCaseUseCase(BaseUseCase[Case, CaseId]):
             id=case_id,
             tenant_id=tenant_id,
             clinical_subject_id=subject_id,
-            client_id=client_id,
-            presenting_problem=presenting_problem,
-            referral_source=referral_source,
-            status=CaseStatus.INTAKE,
-            opened_at=now,
-            referred_by_user_id=opened_by,
-            referral_notes=referral_notes,
-            created_at=now,
-            updated_at=now,
-        )
-        return await self._save_and_publish_events(case)
-
-
-class OpenCaseForSubjectUseCase(BaseUseCase[Case, CaseId]):
-    """Open a case directly against a known ``ClinicalSubjectId``.
-
-    Used by clinical-side flows that already hold the pseudonym (e.g. a follow-
-    up case spawned from a CrisisContact) and don't need a fresh resolution.
-    """
-
-    def __init__(self, repository: CaseRepository):
-        super().__init__(repository)
-
-    async def execute(
-        self,
-        *,
-        case_id: CaseId,
-        tenant_id: TenantId,
-        client_id: ClientId,
-        clinical_subject_id: ClinicalSubjectId,
-        presenting_problem: PresentingProblem,
-        referral_source: CaseReferralSource,
-        opened_by: UserId,
-        referral_notes: str | None = None,
-    ) -> Case:
-        now = utc_now()
-        case = Case(
-            id=case_id,
-            tenant_id=tenant_id,
-            clinical_subject_id=clinical_subject_id,
             client_id=client_id,
             presenting_problem=presenting_problem,
             referral_source=referral_source,

@@ -113,14 +113,3 @@ class UpdateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
 # =============================================================================
 # QUERY USE CASE
 # =============================================================================
-
-
-class GetIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
-    """Use case for retrieving an industry."""
-
-    def __init__(self, industry_repository: IndustryRepository):
-        super().__init__(industry_repository)
-
-    async def execute(self, industry_id: IndustryId) -> IndustryEntity | None:
-        """Get industry by ID."""
-        return await self.repository.get_by_id(industry_id)
