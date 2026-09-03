@@ -1,8 +1,8 @@
 """
 Dump the FastAPI app's OpenAPI schema to schema/openapi.json.
 
-Run from the evexia_bk repo root:
-    .venv/bin/python scripts/dump_openapi.py
+Run from the backend repo root:
+    uv run python scripts/dump_openapi.py
 
 Used by the FE codegen pipeline (openapi-typescript) to keep types in sync
 with the BE wire contract.
@@ -12,7 +12,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
+
+# Running as a script puts scripts/ on sys.path, not the repo root, so `app` would
+# not import. Add the root so this works without the caller setting PYTHONPATH.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def main() -> None:
