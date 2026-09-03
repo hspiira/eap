@@ -1,0 +1,43 @@
+/**
+ * Diagnoses (D-Tax v2) API.
+ *
+ * BE shape is a flat two-level taxonomy: types → diagnoses.
+ * Three routes (confirmed via openapi.json):
+ *   GET /diagnoses/types   — list all diagnosis types
+ *   GET /diagnoses/tree    — types with nested diagnoses (preferred for UI)
+ *   GET /diagnoses         — flat list, optionally filtered by type_code
+ *
+ * Fixture is DEV-only.
+ */
+
+import { useFixtures } from '@/lib/fixtures'
+import type { Diagnosis, DiagnosisTree, DiagnosisType } from '@/types/entities'
+
+import apiClient from '../client'
+import {
+  fixtureGetTree,
+  fixtureGetTypes,
+  fixtureListDiagnoses,
+} from './diagnoses-fixture'
+
+export interface DiagnosisListParams {
+  type_code?: string
+  active_only?: boolean
+}
+
+export const diagnosesApi = {
+  async getTypes(): Promise<DiagnosisType[]> {
+    if (useFixtures()) return Promise.resolve(fixtureGetTypes())
+    return apiClient.get<DiagnosisType[]>('/diagnoses/types')
+  },
+
+  async getTree(): Promise<DiagnosisTree> {
+    if (useFixtures()) return Promise.resolve(fixtureGetTree())
+    return apiClient.get<DiagnosisTree>('/diagnoses/tree')
+  },
+
+  async list(params: DiagnosisListParams = {}): Promise<Diagnosis[]> {
+    if (useFixtures()) return Promise.resolve(fixtureListDiagnoses(params.type_code))
+    return apiClient.get<Diagnosis[]>('/diagnoses', params)
+  },
+}

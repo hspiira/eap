@@ -1,0 +1,377 @@
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import {
+  BadgeCheck,
+  Download,
+  ExternalLink,
+  KeyRound,
+  MoreHorizontal,
+  Plus,
+  ShieldCheck,
+  ShieldOff,
+  UserCog,
+} from "lucide-react"
+
+import { type UserListParams,usersApi } from "@/api/endpoints/users"
+import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
+import {
+  FilterBar,
+  FilterButton,
+  FilterChip,
+  FilterSearch,
+  FilterTrigger,
+} from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
+import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { SortHeader } from "@/components/common/SortHeader"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Pagination } from "@/components/ui/pagination"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { UserFormSheet } from "@/components/UserFormSheet"
+import { useCanWrite } from "@/hooks/useCanWrite"
+import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
+import { useEntityList } from "@/lib/queries"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
+import type { User } from "@/types/entities"
+import { AuthProvider, UserStatus } from "@/types/enums"
+
+export const Route = createFileRoute("/users/")({
+  component: UsersListPage,
+  validateSearch: listSearchSchema({
+    status: enumParam(UserStatus),
+    security: (v): Exclude<SecurityFilter, "all"> | undefined =>
+      v === "verified" || v === "unverified" || v === "2fa-on" || v === "2fa-off"
+        ? v
+        : undefined,
+  }),
+})
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: UserStatus.ACTIVE, label: "Active" },
+  { value: UserStatus.PENDING_VERIFICATION, label: "Pending verification" },
+  { value: UserStatus.SUSPENDED, label: "Suspended" },
+  { value: UserStatus.INACTIVE, label: "Inactive" },
+  { value: UserStatus.BANNED, label: "Banned" },
+  { value: UserStatus.TERMINATED, label: "Terminated" },
+] as const
+
+const SECURITY_OPTIONS = [
+  { value: "all", label: "Any security" },
+  { value: "verified", label: "Email verified" },
+  { value: "unverified", label: "Unverified email" },
+  { value: "2fa-on", label: "2FA enabled" },
+  { value: "2fa-off", label: "2FA disabled" },
+] as const
+
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+type SecurityFilter = (typeof SECURITY_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
+
+function UsersListPage() {
+  const searchParams = useSearch({ from: "/users/" })
+  const navigate = useNavigate({ from: "/users/" })
+  const {
+    searchInput, setSearchInput, activeSearch,
+    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+  } = useListPage({ searchParams, navigate })
+  const canWrite = useCanWrite()
+
+  const activeStatus = searchParams.status
+  const activeSecurity: SecurityFilter = searchParams.security ?? "all"
+
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : next
+    setFilter("status", status)
+  }
+
+  const handleSecurityChange = (next: SecurityFilter) => {
+    const security = next === "all" ? undefined : next
+    setFilter("security", security)
+  }
+
+  const query = useEntityList<User, UserListParams>({
+    resource: "users",
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      status: activeStatus,
+      ...securityParams(activeSecurity),
+      ...sortParams,
+    },
+    listFn: usersApi.list,
+  })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const selection = useTableSelection(items)
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeStatus) || activeSecurity !== "all"
+
+  return (
+    <PageShell
+      icon={UserCog}
+      breadcrumb="People · Platform Users"
+      actions={
+        <>
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          {canWrite && (
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+              <Plus className="size-3.5" />
+              Add user
+            </Button>
+          )}
+        </>
+      }
+    >
+      <FilterBar>
+        <FilterButton
+          options={[
+            { id: "status", label: "Status" },
+            { id: "security", label: "Security" },
+          ]}
+        />
+        {activeStatus ? (
+          <FilterChip
+            label={`Status is ${activeStatus}`}
+            onRemove={() => handleStatusChange("all")}
+          />
+        ) : null}
+        <FilterTrigger
+          label="All statuses"
+          value={(activeStatus ?? "all") as StatusFilter}
+          options={STATUS_OPTIONS}
+          onChange={handleStatusChange}
+        />
+        <FilterTrigger
+          icon={ShieldCheck}
+          label="Security"
+          value={activeSecurity}
+          options={SECURITY_OPTIONS}
+          onChange={handleSecurityChange}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search users…"
+        />
+      </FilterBar>
+
+      <UserFormSheet open={addOpen} onOpenChange={setAddOpen} />
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
+        {loading ? (
+          <div className="flex-1 overflow-auto p-5">
+            <TableSkeleton cols={5} />
+          </div>
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={UserCog}
+            title={hasFilters ? "No users match your filters" : "No users yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear filters."
+                : "Add the first platform user to get started."
+            }
+            action={
+              hasFilters || !canWrite ? null : (
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  Add user
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="email" sort={sort} onToggle={toggleSort}>
+                        Email
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Email verified</TableHead>
+                    <TableHead className="text-fg/65">2FA</TableHead>
+                    <TableHead className="text-fg/65">Sign-in</TableHead>
+                    <TableHead>
+                      <SortHeader field="last_login_at" sort={sort} onToggle={toggleSort}>
+                        Last login
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => (
+                    <UserRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {total > 0 && (
+              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
+                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </PageShell>
+  )
+}
+
+function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean; onToggle: () => void }) {
+  return (
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
+        <Checkbox aria-label={`Select ${row.email}`} checked={isSelected} onCheckedChange={onToggle} />
+      </TableCell>
+      <TableCell>
+        <Link
+          to="/users/$userId"
+          params={{ userId: row.id }}
+          className="flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <UserCog className="size-3" />
+          </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">
+            {row.email}
+          </span>
+        </Link>
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={row.status} />
+      </TableCell>
+      <TableCell>
+        {row.is_email_verified ? (
+          <span className="inline-flex items-center gap-1 text-xs text-fg">
+            <BadgeCheck className="size-3 text-primary" /> Verified
+          </span>
+        ) : (
+          <span className="text-xs text-fg/55">Unverified</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {row.is_two_factor_enabled ? (
+          <span className="inline-flex items-center gap-1 text-xs text-fg">
+            <ShieldCheck className="size-3 text-primary" /> On
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+            <ShieldOff className="size-3" /> Off
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        {row.auth_provider === AuthProvider.AZURE_AD ? (
+          <span className="inline-flex items-center gap-1 text-xs text-fg">
+            <KeyRound className="size-3 text-primary" /> Microsoft
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+            <KeyRound className="size-3" /> Password
+          </span>
+        )}
+      </TableCell>
+      <TableCell className="text-sm text-fg/75">
+        {formatDate(row.last_login_at)}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/users/$userId"
+            params={{ userId: row.id }}
+            aria-label={`Open ${row.email}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.email}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/users/$userId" params={{ userId: row.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                Suspend
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+/**
+ * Maps the security dropdown onto server-side params. This used to filter the
+ * fetched page in memory, which contradicted the server's `total` and hid
+ * matching users on later pages.
+ */
+function securityParams(
+  filter: SecurityFilter,
+): Pick<UserListParams, "is_email_verified" | "is_two_factor_enabled"> {
+  switch (filter) {
+    case "verified":
+      return { is_email_verified: true }
+    case "unverified":
+      return { is_email_verified: false }
+    case "2fa-on":
+      return { is_two_factor_enabled: true }
+    case "2fa-off":
+      return { is_two_factor_enabled: false }
+    default:
+      return {}
+  }
+}
