@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.9.0",
   "scripts": {
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "dev:web": "cd apps/web && pnpm dev",
     "build": "pnpm build:api && pnpm build:web",
     "build:api": "cd apps/api && uv sync --frozen",
     "build:web": "cd apps/web && pnpm install --frozen-lockfile && pnpm build",

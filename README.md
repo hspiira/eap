@@ -18,6 +18,9 @@ Monorepo for the Evexía platform.
 Run from the repository root:
 
 ```bash
+pnpm dev:api          # uvicorn with reload, port 8000
+pnpm dev:web          # vite dev, port 3000
+
 pnpm build            # both apps
 pnpm test             # unit tests, both apps
 pnpm lint             # lint + typecheck, both apps
@@ -25,7 +28,9 @@ pnpm contracts        # regenerate the OpenAPI schema and the TS client from it
 pnpm contracts:check  # fail if the committed contract or client is stale
 ```
 
-Each has `:api` and `:web` variants (`pnpm build:web`, `pnpm test:api`, and so on).
+The two dev servers are separate long-running processes, so they get their own
+commands and two terminals. `build`, `test` and `lint` cover both apps and take
+`:api` / `:web` variants for one side only.
 
 Per-app commands still work from inside `apps/api` or `apps/web`; see their own
 READMEs.
@@ -41,17 +46,28 @@ Run it whenever you change a route, a request model, or a response model.
 
 ## Deployment
 
-Two Vercel projects share this repository, distinguished by **Root Directory**:
+`pnpm build` produces two plain artifacts, neither tied to a host:
 
-| Project | Root Directory |
+- `apps/web/.output` — a Nitro **node-server** bundle, started with
+  `node .output/server/index.mjs`. Nitro can retarget other platforms with a
+  preset, but nothing here sets one.
+- `apps/api` — an ASGI app, served by `uvicorn app.main:app` (see `Dockerfile`
+  for the container form).
+
+So either half can run on a VM, in a container, or on a platform. Today both
+happen to be wired to Vercel through its GitHub integration, as separate
+projects on this one repository, distinguished by **Root Directory**:
+
+| Vercel project | Root Directory |
 | --- | --- |
 | web | `apps/web` |
 | api | `apps/api` |
 
-One push deploys both from the same commit, so the frontend and the API can
-never be out of step. Point your primary domain at the **web** project; the
-frontend serves the landing page at `/`, and the API stays reachable on its own
-domain.
+Only the API keeps a `vercel.json`; the frontend is auto-detected.
+
+One push deploys both from the same commit, so the frontend and the API cannot
+drift apart. Point the primary domain at the **web** project: the frontend
+serves the landing page at `/`, and the API stays reachable on its own domain.
 
 ### Optional: serve the API under the web domain
 
