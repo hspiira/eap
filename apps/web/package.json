@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "openapi:dump": "PYTHONPATH=../evexia_bk ../evexia_bk/.venv/bin/python ../evexia_bk/scripts/dump_openapi.py",
-    "openapi:gen": "openapi-typescript ../evexia_bk/schema/openapi.json -o src/api/generated/schema.ts",
-    "openapi:sync": "pnpm openapi:dump && pnpm openapi:gen",
-    "contracts:check": "pnpm openapi:sync && git diff --exit-code -- src/api/generated/ ../evexia_bk/schema/openapi.json"
+    "openapi:dump": "cd ../api && uv run python scripts/dump_openapi.py",
+    "openapi:gen": "openapi-typescript ../api/schema/openapi.json -o src/api/generated/schema.ts",
+    "contracts:sync": "pnpm openapi:dump && pnpm openapi:gen",
+    "contracts:check": "pnpm contracts:sync && git diff --exit-code -- src/api/generated/ ../api/schema/openapi.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

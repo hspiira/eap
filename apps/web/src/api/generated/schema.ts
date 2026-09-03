@@ -192,13 +192,16 @@ export interface paths {
          * @description Azure redirects here after the user signs in.
          *
          *     Flow:
-         *     1. Verify CSRF state (HMAC-signed, self-contained)
+         *     1. Verify CSRF state (HMAC-signed + bound to this browser's nonce cookie)
          *     2. Exchange code for Azure id_token
          *     3. Extract oid + tid + email from token claims
          *     4. Resolve Evexia tenant via tenants.azure_tenant_id == tid
          *     5. Find user by azure_oid (returning SSO user) or email (first-time link)
          *     6. Issue internal JWT (same claims as password login)
          *     7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
+         *
+         *     Every failure path returns a redirect carrying a user-facing ?error=
+         *     message — never a raw 5xx, which would surface as a blank page.
          */
         get: operations["azure_callback_auth_azure_callback_get"];
         put?: never;
@@ -221,6 +224,9 @@ export interface paths {
          * @description Start the Azure AD OAuth2 flow.  No credentials required from the user.
          *     The browser is redirected to Microsoft's login page; after authentication
          *     Azure redirects back to /auth/azure/callback.
+         *
+         *     Sets a short-lived HttpOnly nonce cookie; the callback requires it to match
+         *     the nonce inside the signed state, proving the same browser started the flow.
          *
          *     Redirects to the frontend error page when SSO is not configured.
          */
@@ -10758,7 +10764,9 @@ export interface operations {
             };
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                evexia_sso_state?: string | null;
+            };
         };
         requestBody?: never;
         responses: {

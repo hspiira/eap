@@ -15,11 +15,9 @@ import os
 import sys
 from pathlib import Path
 
-# Running as a script puts scripts/ on sys.path, not the repo root, so `app` would
-# not import. Add the root so this works without the caller setting PYTHONPATH.
+# Running as a script puts scripts/ on sys.path, not the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# The published contract's identity. Deliberately not read from settings — see main().
 CONTRACT_TITLE = "Evexía"
 CONTRACT_VERSION = "0.1.0"
 
@@ -39,11 +37,8 @@ def main() -> None:
 
     schema = app.openapi()
 
-    # app.openapi() takes title/version from settings, which read .env, so the
-    # output otherwise varies with whatever APP_NAME the developer running this
-    # happens to have set ("Evexia" vs "Evexía"). The frontend gates on an exact
-    # diff of this file, so pin the identity to constants and keep the dump a
-    # pure function of the routes.
+    # Pinned, not read from settings: otherwise the dump varies with the
+    # developer's APP_NAME and the frontend's exact-diff check fails.
     schema["info"] = dict(schema.get("info", {})) | {
         "title": CONTRACT_TITLE,
         "version": CONTRACT_VERSION,
