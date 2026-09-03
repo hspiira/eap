@@ -110,7 +110,7 @@ export interface RequestOptions {
 export interface AuthResponse {
   access_token: string
   refresh_token: string
-  token_type: 'bearer'
+  token_type: "bearer"
   expires_in: number // seconds
   user_id: string
   email: string
@@ -142,9 +142,9 @@ export class ApiError extends Error {
     public code: string,
     public status: number,
     public fieldErrors?: FieldErrors,
-    public data?: Record<string, unknown>
+    public data?: Record<string, unknown>,
   ) {
     super(message)
-    this.name = 'ApiError'
+    this.name = "ApiError"
   }
 }

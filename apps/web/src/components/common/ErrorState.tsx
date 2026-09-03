@@ -3,13 +3,7 @@ import { RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 /** A failed list fetch, with a retry. Counterpart to EmptyState. */
-export function ErrorState({
-  message,
-  onRetry,
-}: {
-  message: string
-  onRetry: () => void
-}) {
+export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-10">
       <div className="flex max-w-sm flex-col items-center text-center">

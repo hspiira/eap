@@ -3,11 +3,7 @@
  * Use this and src/types/enums in UI; no ad-hoc status strings.
  */
 
-import {
-  getStatusColors,
-  getStatusLabel,
-  type StatusColorConfig,
-} from '@/utils/statusColors'
+import { getStatusColors, getStatusLabel, type StatusColorConfig } from "@/utils/statusColors"
 
 export type StatusDisplay = StatusColorConfig & { label: string }
 

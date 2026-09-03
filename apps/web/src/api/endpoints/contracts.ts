@@ -16,10 +16,10 @@ import type {
   ContractRenewRequest,
   ContractTerminateRequest,
   ContractUpdate,
-} from '@/api/generated'
+} from "@/api/generated"
 
-import apiClient from '../client'
-import type { Contract, ListParams, PaginatedResponse } from '../types'
+import apiClient from "../client"
+import type { Contract, ListParams, PaginatedResponse } from "../types"
 
 export type { ContractCreate, ContractRenewRequest, ContractTerminateRequest, ContractUpdate }
 
@@ -36,7 +36,7 @@ export interface ContractListParams extends ListParams {
 
 export const contractsApi = {
   async create(contractData: ContractCreate): Promise<Contract> {
-    return apiClient.post<Contract>('/contracts', contractData)
+    return apiClient.post<Contract>("/contracts", contractData)
   },
 
   async getById(contractId: string): Promise<Contract> {
@@ -44,7 +44,7 @@ export const contractsApi = {
   },
 
   async list(params?: ContractListParams): Promise<PaginatedResponse<Contract>> {
-    return apiClient.get<PaginatedResponse<Contract>>('/contracts', params)
+    return apiClient.get<PaginatedResponse<Contract>>("/contracts", params)
   },
 
   /** BE `ContractUpdate` accepts only `{billing_rate?, payment_frequency?, is_auto_renew?}`. */

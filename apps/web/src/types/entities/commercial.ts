@@ -1,10 +1,5 @@
-import type {
-  ContractStatus,
-  PaymentFrequency,
-  PaymentStatus,
-  PricingModel,
-} from '../enums'
-import type { BaseEntity } from './base'
+import type { ContractStatus, PaymentFrequency, PaymentStatus, PricingModel } from "../enums"
+import type { BaseEntity } from "./base"
 
 /** Contract term. Mirrors BE `DateRangeSchema`; both bounds are ISO datetimes. */
 export interface ContractPeriod {
@@ -55,11 +50,7 @@ export interface Contract extends BaseEntity {
  * Contract pricing config (D-Pricing v1). Discriminated by `model`.
  */
 export type ContractPricing =
-  | RetainerPricing
-  | FrameworkPricing
-  | FFSPricing
-  | AdminUtilisationPricing
-  | ValueAddPricing
+  RetainerPricing | FrameworkPricing | FFSPricing | AdminUtilisationPricing | ValueAddPricing
 
 export interface RetainerPricing {
   model: PricingModel.RETAINER

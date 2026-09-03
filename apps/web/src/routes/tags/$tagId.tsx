@@ -32,7 +32,9 @@ function TagEditPage() {
   const { tagId } = Route.useParams()
   const navigate = useNavigate()
 
-  const { register, watch, reset, formState, submit, serverError } = useApiForm<z.infer<typeof tagEditSchema>>({
+  const { register, watch, reset, formState, submit, serverError } = useApiForm<
+    z.infer<typeof tagEditSchema>
+  >({
     schema: tagEditSchema,
     defaultValues: { name: "", color: "", description: "" },
     successToast: "Tag updated",
@@ -93,19 +95,10 @@ function TagEditPage() {
                 {serverError ?? loadError}
               </p>
             )}
-            <FormField
-              label="Name"
-              required
-              error={formState.errors.name?.message}
-              htmlFor="name"
-            >
+            <FormField label="Name" required error={formState.errors.name?.message} htmlFor="name">
               <Input id="name" className="rounded-none" {...register("name")} />
             </FormField>
-            <FormField
-              label="Color (hex)"
-              error={formState.errors.color?.message}
-              htmlFor="color"
-            >
+            <FormField label="Color (hex)" error={formState.errors.color?.message} htmlFor="color">
               <div className="flex gap-2 items-center">
                 <Input
                   id="color"

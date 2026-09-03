@@ -1,4 +1,3 @@
-
 import { z } from "zod"
 
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -49,39 +48,38 @@ export function ServiceAssignmentFormSheet({
 }: ServiceAssignmentFormSheetProps) {
   const lockedContractId = contractId ?? assignment?.contract_id
 
-  const { register, formState, submit, serverError, setValue, watch, isEdit } =
-    useEntityFormSheet<
-      Values,
-      Parameters<typeof serviceAssignmentsApi.create>[0],
-      ServiceAssignment,
-      ServiceAssignment
-    >({
-      resource: "service-assignments",
-      schema,
-      defaultValues: { ...EMPTY, contract_id: contractId ?? "" },
-      open,
-      onOpenChange,
-      entity: assignment,
-      toFormValues: (a) => ({
-        contract_id: a.contract_id,
-        service_id: a.service_id,
-        notes: a.notes ?? "",
-      }),
-      parsePayload: (values): ServiceAssignmentCreate => ({
-        contract_id: values.contract_id,
-        service_id: values.service_id,
-        notes: values.notes?.trim() || null,
-      }),
-      save: ({ payload, entity, isEdit }) =>
-        isEdit && entity
-          ? serviceAssignmentsApi.update(entity.id, payload)
-          : serviceAssignmentsApi.create(payload),
-      successToast: { create: "Assignment created", update: "Assignment updated" },
-      extraInvalidations: lockedContractId
-        ? [{ queryKey: ["contracts", "detail", lockedContractId] }]
-        : undefined,
-      onSaved,
-    })
+  const { register, formState, submit, serverError, setValue, watch, isEdit } = useEntityFormSheet<
+    Values,
+    Parameters<typeof serviceAssignmentsApi.create>[0],
+    ServiceAssignment,
+    ServiceAssignment
+  >({
+    resource: "service-assignments",
+    schema,
+    defaultValues: { ...EMPTY, contract_id: contractId ?? "" },
+    open,
+    onOpenChange,
+    entity: assignment,
+    toFormValues: (a) => ({
+      contract_id: a.contract_id,
+      service_id: a.service_id,
+      notes: a.notes ?? "",
+    }),
+    parsePayload: (values): ServiceAssignmentCreate => ({
+      contract_id: values.contract_id,
+      service_id: values.service_id,
+      notes: values.notes?.trim() || null,
+    }),
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity
+        ? serviceAssignmentsApi.update(entity.id, payload)
+        : serviceAssignmentsApi.create(payload),
+    successToast: { create: "Assignment created", update: "Assignment updated" },
+    extraInvalidations: lockedContractId
+      ? [{ queryKey: ["contracts", "detail", lockedContractId] }]
+      : undefined,
+    onSaved,
+  })
 
   const watchedContract = watch("contract_id")
   const watchedService = watch("service_id")
@@ -107,10 +105,7 @@ export function ServiceAssignmentFormSheet({
     >
       <FormSection title="Contract">
         {lockedContractId ? (
-          <LockedContractSummary
-            contractId={lockedContractId}
-            contract={contract ?? null}
-          />
+          <LockedContractSummary contractId={lockedContractId} contract={contract ?? null} />
         ) : (
           <FormField
             label="Contract"
@@ -150,12 +145,7 @@ export function ServiceAssignmentFormSheet({
         title="Notes"
         description="Optional. Active-period dates derive from the parent contract."
       >
-        <FormField
-          label="Notes"
-          optional
-          error={errors.notes?.message}
-          htmlFor="sa-notes"
-        >
+        <FormField label="Notes" optional error={errors.notes?.message} htmlFor="sa-notes">
           <Textarea
             id="sa-notes"
             rows={3}
@@ -182,8 +172,7 @@ function LockedContractSummary({
     listFn: contractsApi.list,
     enabled,
   })
-  const resolved =
-    contract ?? (detail.data?.items ?? []).find((c) => c.id === contractId) ?? null
+  const resolved = contract ?? (detail.data?.items ?? []).find((c) => c.id === contractId) ?? null
   const label = resolved?.id ?? contractId
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
@@ -208,7 +197,11 @@ function LockedContractSummary({
 
 function ContractPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const row = (c: Contract) => (
-    <PickerRow initials="SA" primary={c.id.slice(0, 8)} secondary={`Client ${c.client_id.slice(0, 8)}`} />
+    <PickerRow
+      initials="SA"
+      primary={c.id.slice(0, 8)}
+      secondary={`Client ${c.client_id.slice(0, 8)}`}
+    />
   )
   return (
     <EntityPicker<Contract>

@@ -17,19 +17,9 @@ interface DetailRailProps {
 import { useEffect, useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import {
-  CalendarClock,
-  CalendarRange,
-  Lock,
-  Users,
-  Wrench,
-} from "lucide-react"
+import { CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
 
-import {
-  DetailCard,
-  RailSection,
-  Stat,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -46,11 +36,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { displayName } from "@/lib/display"
 import { formatDateTime } from "@/lib/format"
-import type {
-  Person,
-  Service,
-  ServiceSession,
-} from "@/types/entities"
+import type { Person, Service, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export function Hero({
@@ -104,13 +90,7 @@ export function Hero({
   )
 }
 
-export function DetailRail({
-  session,
-  service,
-  person,
-  onAction,
-  actionLoading,
-}: DetailRailProps) {
+export function DetailRail({ session, service, person, onAction, actionLoading }: DetailRailProps) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
@@ -139,9 +119,7 @@ export function DetailRail({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg/55">
-                  {service.service_type ?? "—"}
-                </p>
+                <p className="truncate text-[11px] text-fg/55">{service.service_type ?? "—"}</p>
               </div>
             </Link>
           ) : null}
@@ -158,9 +136,7 @@ export function DetailRail({
                 <Users className="size-3.5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">
-                  {displayName(person)}
-                </p>
+                <p className="truncate text-sm font-medium text-fg">{displayName(person)}</p>
                 <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
               </div>
             </Link>
@@ -341,9 +317,7 @@ export function CancelDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cancel session</DialogTitle>
-          <DialogDescription>
-            The reason is recorded on the session.
-          </DialogDescription>
+          <DialogDescription>The reason is recorded on the session.</DialogDescription>
         </DialogHeader>
         <FormField label="Reason" required htmlFor="cancel-reason">
           <Textarea
@@ -447,11 +421,7 @@ export function RescheduleDialog({
           >
             Cancel
           </Button>
-          <Button
-            size="sm"
-            onClick={handleConfirm}
-            disabled={!scheduled || submitting}
-          >
+          <Button size="sm" onClick={handleConfirm} disabled={!scheduled || submitting}>
             {submitting ? "Saving…" : "Reschedule"}
           </Button>
         </DialogFooter>

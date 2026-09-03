@@ -2,13 +2,7 @@ import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-  Users,
-} from "lucide-react"
+import { Download, ExternalLink, MoreHorizontal, Plus, Users } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
@@ -27,7 +21,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { PERSON_TYPE_LABELS,PersonFormSheet } from "@/components/PersonFormSheet"
+import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -94,8 +88,18 @@ function PersonsListPage() {
   const searchParams = useSearch({ from: "/persons/" })
   const navigate = useNavigate({ from: "/persons/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
 
   const activeType = searchParams.type
@@ -146,10 +150,7 @@ function PersonsListPage() {
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters =
-    Boolean(activeSearch) ||
-    Boolean(activeType) ||
-    Boolean(activeClientId) ||
-    Boolean(activeStatus)
+    Boolean(activeSearch) || Boolean(activeType) || Boolean(activeClientId) || Boolean(activeStatus)
 
   return (
     <PageShell
@@ -205,11 +206,7 @@ function PersonsListPage() {
           onChange={handleStatusChange}
         />
         <div className="ml-auto" />
-        <FilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Search persons…"
-        />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search persons…" />
       </FilterBar>
 
       <PersonFormSheet
@@ -285,11 +282,7 @@ function PersonsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <PersonRow
-                      key={row.id}
-                      row={row}
-                      clientsById={clientsById}
-                    />
+                    <PersonRow key={row.id} row={row} clientsById={clientsById} />
                   ))}
                 </TableBody>
               </Table>
@@ -306,13 +299,7 @@ function PersonsListPage() {
   )
 }
 
-function PersonRow({
-  row,
-  clientsById,
-}: {
-  row: Person
-  clientsById: Map<string, Client>
-}) {
+function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string, Client> }) {
   const { data: linkedUser = null } = useQuery({
     queryKey: queryKeys.users.detail(row.user_id ?? ""),
     queryFn: () => usersApi.getById(row.user_id!),
@@ -410,7 +397,15 @@ function PersonRow({
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${fullName}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${fullName}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
@@ -420,7 +415,10 @@ function PersonRow({
               </DropdownMenuItem>
               {row.employment_info?.client_id ? (
                 <DropdownMenuItem asChild>
-                  <Link to="/clients/$clientId" params={{ clientId: row.employment_info.client_id }}>
+                  <Link
+                    to="/clients/$clientId"
+                    params={{ clientId: row.employment_info.client_id }}
+                  >
                     View client
                   </Link>
                 </DropdownMenuItem>
@@ -436,4 +434,3 @@ function PersonRow({
     </TableRow>
   )
 }
-

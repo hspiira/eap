@@ -11,7 +11,7 @@ import {
   UserCog,
 } from "lucide-react"
 
-import { type UserListParams,usersApi } from "@/api/endpoints/users"
+import { type UserListParams, usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import {
@@ -61,9 +61,7 @@ export const Route = createFileRoute("/users/")({
   validateSearch: listSearchSchema({
     status: enumParam(UserStatus),
     security: (v): Exclude<SecurityFilter, "all"> | undefined =>
-      v === "verified" || v === "unverified" || v === "2fa-on" || v === "2fa-off"
-        ? v
-        : undefined,
+      v === "verified" || v === "unverified" || v === "2fa-on" || v === "2fa-off" ? v : undefined,
   }),
 })
 
@@ -94,8 +92,18 @@ function UsersListPage() {
   const searchParams = useSearch({ from: "/users/" })
   const navigate = useNavigate({ from: "/users/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
   const canWrite = useCanWrite()
 
@@ -129,8 +137,7 @@ function UsersListPage() {
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters =
-    Boolean(activeSearch) || Boolean(activeStatus) || activeSecurity !== "all"
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || activeSecurity !== "all"
 
   return (
     <PageShell
@@ -176,11 +183,7 @@ function UsersListPage() {
           onChange={handleSecurityChange}
         />
         <div className="ml-auto" />
-        <FilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Search users…"
-        />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search users…" />
       </FilterBar>
 
       <UserFormSheet open={addOpen} onOpenChange={setAddOpen} />
@@ -218,7 +221,11 @@ function UsersListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="email" sort={sort} onToggle={toggleSort}>
@@ -245,7 +252,12 @@ function UsersListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <UserRow key={row.id} row={row} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
+                    <UserRow
+                      key={row.id}
+                      row={row}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -262,27 +274,33 @@ function UsersListPage() {
   )
 }
 
-function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean; onToggle: () => void }) {
+function UserRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: User
+  isSelected: boolean
+  onToggle: () => void
+}) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.email}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select ${row.email}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
-        <Link
-          to="/users/$userId"
-          params={{ userId: row.id }}
-          className="flex items-center gap-2.5"
-        >
+        <Link to="/users/$userId" params={{ userId: row.id }} className="flex items-center gap-2.5">
           <span
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
           >
             <UserCog className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">
-            {row.email}
-          </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.email}</span>
         </Link>
       </TableCell>
       <TableCell>
@@ -319,9 +337,7 @@ function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean
           </span>
         )}
       </TableCell>
-      <TableCell className="text-sm text-fg/75">
-        {formatDate(row.last_login_at)}
-      </TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDate(row.last_login_at)}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link
@@ -334,7 +350,15 @@ function UserRow({ row, isSelected, onToggle }: { row: User; isSelected: boolean
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.email}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.email}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>

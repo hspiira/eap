@@ -48,7 +48,9 @@ function IncidentCreatePage() {
     mutationFn: incidentsApi.create,
   })
 
-  const { register, control, formState, submit, serverError } = useApiForm<z.infer<typeof incidentCreateSchema>>({
+  const { register, control, formState, submit, serverError } = useApiForm<
+    z.infer<typeof incidentCreateSchema>
+  >({
     schema: incidentCreateSchema,
     defaultValues: {
       client_id: "",
@@ -90,12 +92,7 @@ function IncidentCreatePage() {
           >
             <Input id="client_id" className="rounded-none" {...register("client_id")} />
           </FormField>
-          <FormField
-            label="Title"
-            required
-            error={formState.errors.title?.message}
-            htmlFor="title"
-          >
+          <FormField label="Title" required error={formState.errors.title?.message} htmlFor="title">
             <Input id="title" className="rounded-none" {...register("title")} />
           </FormField>
           <FormField

@@ -55,8 +55,7 @@ const TEMPLATES: ReportTemplate[] = [
   {
     slug: "anchor-cohort-benchmark",
     title: "Anchor-cohort benchmark",
-    description:
-      "Cross-tenant aggregate (k-floor 10) for benchmarking against the anchor cohort.",
+    description: "Cross-tenant aggregate (k-floor 10) for benchmarking against the anchor cohort.",
     cadence: "Quarterly",
     icon: Sparkles,
     ready: false,
@@ -120,13 +119,7 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
   )
 }
 
-function CardHeader({
-  template,
-  icon: Icon,
-}: {
-  template: ReportTemplate
-  icon: LucideIcon
-}) {
+function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: LucideIcon }) {
   return (
     <div className="flex items-start gap-3">
       <span

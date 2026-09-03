@@ -24,9 +24,7 @@ export function EmptyState({
       <div className="flex max-w-sm flex-col items-center text-center">
         {illustration ?? <DefaultIllustration icon={Icon} />}
         <h2 className="mt-5 text-base font-semibold text-fg">{title}</h2>
-        {description ? (
-          <p className="mt-1 text-sm text-fg/60">{description}</p>
-        ) : null}
+        {description ? <p className="mt-1 text-sm text-fg/60">{description}</p> : null}
         {action ? <div className="mt-5">{action}</div> : null}
       </div>
     </div>
@@ -35,10 +33,7 @@ export function EmptyState({
 
 function DefaultIllustration({ icon: Icon }: { icon?: React.ElementType }) {
   return (
-    <div
-      className="relative flex h-24 w-64 items-end justify-center"
-      aria-hidden
-    >
+    <div className="relative flex h-24 w-64 items-end justify-center" aria-hidden>
       <SkeletonRow icon={Icon} className="absolute left-3 top-0 w-52 opacity-55" />
       <SkeletonRow icon={Icon} className="absolute right-3 bottom-0 w-52 opacity-55" />
       <SkeletonRow
@@ -49,13 +44,7 @@ function DefaultIllustration({ icon: Icon }: { icon?: React.ElementType }) {
   )
 }
 
-function SkeletonRow({
-  icon: Icon,
-  className,
-}: {
-  icon?: React.ElementType
-  className?: string
-}) {
+function SkeletonRow({ icon: Icon, className }: { icon?: React.ElementType; className?: string }) {
   return (
     <div
       className={cn(

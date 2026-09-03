@@ -1,6 +1,25 @@
 import { useMemo, useState } from "react"
 
-import { ArrowLeftRight, ArrowUpDown, BellPlus, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Eye, Filter, Heart, Infinity as InfinityIcon, Info, Monitor, Plus, Search, Share2, User, Users } from "lucide-react"
+import {
+  ArrowLeftRight,
+  ArrowUpDown,
+  BellPlus,
+  CalendarClock,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Filter,
+  Heart,
+  Infinity as InfinityIcon,
+  Info,
+  Monitor,
+  Plus,
+  Search,
+  Share2,
+  User,
+  Users,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,7 +42,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-
 
 type RuleStatus = "closed" | "running" | "online" | "abnormal"
 
@@ -149,7 +167,7 @@ function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium",
-            "bg-green-100 text-green-700"
+            "bg-green-100 text-green-700",
           )}
         >
           {row.change1} {row.change1Direction === "up" ? "→" : "←"}
@@ -158,7 +176,7 @@ function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium",
-            "bg-green-100 text-green-700"
+            "bg-green-100 text-green-700",
           )}
         >
           {row.change2Direction === "down" ? "←" : "→"} {row.change2}
@@ -170,7 +188,7 @@ function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
               key={i}
               className={cn(
                 "w-1.5 h-5 rounded-sm",
-                i < row.outlierScore ? "bg-purple-300" : "bg-gray-200"
+                i < row.outlierScore ? "bg-purple-300" : "bg-gray-200",
               )}
             />
           ))}
@@ -223,7 +241,9 @@ function TrainingCard({
           <div
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
-              program.iconVariant === "green" ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
+              program.iconVariant === "green"
+                ? "bg-green-100 text-green-600"
+                : "bg-blue-100 text-blue-600",
             )}
           >
             <Monitor className="h-5 w-5" />
@@ -254,7 +274,9 @@ function TrainingCard({
       <div className="mt-auto pt-3 border-t border-green-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-700">{program.status === "completed" ? "Completed" : "In progress"}</span>
+            <span className="text-sm text-gray-700">
+              {program.status === "completed" ? "Completed" : "In progress"}
+            </span>
             <div className="flex -space-x-2">
               {[1, 2, 3].map((i) => (
                 <div
@@ -348,7 +370,7 @@ function InboxPagination({
           >
             {p}
           </Button>
-        )
+        ),
       )}
       <Button
         type="button"
@@ -365,7 +387,6 @@ function InboxPagination({
   )
 }
 
-
 export function InboxPage() {
   const [view, setView] = useState<"inbox" | "training" | "details">("inbox")
   const [mainTab, setMainTab] = useState<MainTab>("training")
@@ -375,10 +396,10 @@ export function InboxPage() {
   const [statusFilter, setStatusFilter] = useState<RuleStatus | "">("")
   const [page, setPage] = useState(2)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(["rule-0", "rule-2", "rule-4", "rule-5"])
+    new Set(["rule-0", "rule-2", "rule-4", "rule-5"]),
   )
   const [trainingEnabled, setTrainingEnabled] = useState<Record<string, boolean>>(
-    Object.fromEntries(MOCK_TRAINING.map((t) => [t.id, t.enabled]))
+    Object.fromEntries(MOCK_TRAINING.map((t) => [t.id, t.enabled])),
   )
 
   const filteredRows = useMemo(() => {
@@ -393,7 +414,7 @@ export function InboxPage() {
   const selectedCount = selectedIds.size
   const selectedTotalCalls = MOCK_RULES.filter((r) => selectedIds.has(r.id)).reduce(
     (sum, r) => sum + r.serviceCallCount,
-    0
+    0,
   ) // sum in 万
 
   const toggleSelect = (id: string) => {
@@ -412,8 +433,7 @@ export function InboxPage() {
 
   const clearSelection = () => setSelectedIds(new Set())
 
-  const isAllSelected =
-    filteredRows.length > 0 && selectedIds.size === filteredRows.length
+  const isAllSelected = filteredRows.length > 0 && selectedIds.size === filteredRows.length
   const isSomeSelected = selectedIds.size > 0
   const selectAllChecked: boolean | "indeterminate" = isAllSelected
     ? true
@@ -435,7 +455,7 @@ export function InboxPage() {
               "h-auto rounded-none border-b-2 px-0 pb-3 -mb-px text-sm font-medium hover:bg-transparent",
               view === id
                 ? "border-blue-500 text-blue-500"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-gray-500 hover:text-gray-700",
             )}
           >
             {id === "inbox" ? "Inbox" : id === "training" ? "Training list" : "Details"}
@@ -465,7 +485,7 @@ export function InboxPage() {
                   "h-auto rounded-none border-b-2 px-1 py-2 -mb-0.5 text-sm font-medium hover:bg-transparent",
                   mainTab === tab.id
                     ? "border-blue-500 text-blue-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700",
                 )}
               >
                 {tab.label}
@@ -484,7 +504,7 @@ export function InboxPage() {
                   "h-auto rounded-full px-3 py-1 text-sm",
                   deptFilter === d.id
                     ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-50"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200",
                 )}
               >
                 {d.label} {d.count}
@@ -513,9 +533,7 @@ export function InboxPage() {
               <TrainingCard
                 key={program.id}
                 program={{ ...program, enabled: trainingEnabled[program.id] ?? program.enabled }}
-                onToggle={(id) =>
-                  setTrainingEnabled((prev) => ({ ...prev, [id]: !prev[id] }))
-                }
+                onToggle={(id) => setTrainingEnabled((prev) => ({ ...prev, [id]: !prev[id] }))}
               />
             ))}
           </div>
@@ -524,218 +542,228 @@ export function InboxPage() {
 
       {view === "inbox" ? (
         <>
-      <div className="flex flex-wrap items-end gap-3 border-b border-gray-200 pb-4">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="rule-id" className="text-gray-700 whitespace-nowrap">
-            Rule ID:
-          </Label>
-          <Input
-            id="rule-id"
-            placeholder="Enter"
-            value={ruleIdFilter}
-            onChange={(e) => setRuleIdFilter(e.target.value)}
-            className="w-40 rounded-md border-gray-300 bg-white"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="status" className="text-gray-700 whitespace-nowrap">
-            Status:
-          </Label>
-          <Select
-            value={statusFilter || "all"}
-            onValueChange={(v) => setStatusFilter(v === "all" ? "" : (v as RuleStatus))}
-          >
-            <SelectTrigger id="status" className="w-40 rounded-md border-gray-300 bg-white">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent className="rounded-md border-gray-200 bg-white">
-              <SelectItem value="all" className="rounded-sm">
-                All
-              </SelectItem>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="rounded-sm">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            className="h-9 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
-          >
-            Query
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setRuleIdFilter("")
-              setStatusFilter("")
-            }}
-            className="h-9 px-4 text-sm font-medium"
-          >
-            Reset
-          </Button>
-          <Button type="button" variant="outline" className="h-9 gap-1 px-4 text-sm font-medium">
-            Expand
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            className="h-9 gap-1 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
-          >
-            <Plus className="h-4 w-4" />
-            New
-          </Button>
-          <Button type="button" variant="outline" className="h-9 px-4 text-sm font-medium">
-            Batch operations
-          </Button>
-          <Button type="button" variant="outline" className="h-9 gap-1 px-4 text-sm font-medium">
-            More
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </div>
-        {selectedCount > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-md text-gray-700 text-sm">
-            <Info className="h-4 w-4 shrink-0 text-blue-500" />
-            <span>
-              Selected {selectedCount} item{selectedCount !== 1 ? "s" : ""}. Service calls total:{" "}
-              {selectedTotalCalls % 1 === 0
-                ? selectedTotalCalls
-                : selectedTotalCalls.toFixed(1)}{" "}
-              万
-            </span>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              onClick={clearSelection}
-              className="ml-1 h-auto p-0 text-blue-500"
-            >
-              Clear
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="border border-gray-200 rounded-md overflow-hidden shadow-sm">
-        <Table className="text-sm table-fixed">
-          <TableHeader>
-            <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-transparent">
-              <TableHead className="w-9 h-8 px-2 rounded-none border-gray-200 bg-gray-50">
-                <Checkbox
-                  checked={selectAllChecked}
-                  onCheckedChange={toggleSelectAll}
-                  aria-label="Select all rows"
-                />
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-28">
-                Rule ID
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap min-w-0" style={{ width: "35%" }}>
-                Description
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-32">
-                <span className="inline-flex items-center gap-1 truncate">
-                  Service call count
-                  <ArrowUpDown className="h-3 w-3 shrink-0 text-gray-500" />
-                </span>
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-24">
-                <span className="inline-flex items-center gap-1">
-                  Status
-                  <Filter className="h-3 w-3 shrink-0 text-gray-500" />
-                </span>
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-40">
-                <span className="inline-flex items-center gap-1">
-                  Update time
-                  <ArrowUpDown className="h-3 w-3 shrink-0 text-gray-500" />
-                </span>
-              </TableHead>
-              <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-20">
-                Operation
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRows.map((row, index) => (
-              <TableRow
-                key={row.id}
-                className={cn(
-                  "border-b border-gray-100",
-                  index % 2 === 1 ? "bg-gray-50/60" : "bg-white"
-                )}
+          <div className="flex flex-wrap items-end gap-3 border-b border-gray-200 pb-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="rule-id" className="text-gray-700 whitespace-nowrap">
+                Rule ID:
+              </Label>
+              <Input
+                id="rule-id"
+                placeholder="Enter"
+                value={ruleIdFilter}
+                onChange={(e) => setRuleIdFilter(e.target.value)}
+                className="w-40 rounded-md border-gray-300 bg-white"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="status" className="text-gray-700 whitespace-nowrap">
+                Status:
+              </Label>
+              <Select
+                value={statusFilter || "all"}
+                onValueChange={(v) => setStatusFilter(v === "all" ? "" : (v as RuleStatus))}
               >
-                <TableCell className="px-2 py-1.5 rounded-none w-9">
-                  <Checkbox
-                    checked={selectedIds.has(row.id)}
-                    onCheckedChange={() => toggleSelect(row.id)}
-                    aria-label={`Select rule ${row.ruleId}`}
-                  />
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none text-gray-800 overflow-hidden">
-                  <span className="block truncate" title={row.ruleId}>
-                    {row.ruleId}
-                  </span>
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none text-gray-700 overflow-hidden">
-                  <span className="block truncate" title={row.description}>
-                    {row.description}
-                  </span>
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none text-gray-700 whitespace-nowrap overflow-hidden">
-                  {row.serviceCallCount % 1 === 0
-                    ? row.serviceCallCount
-                    : row.serviceCallCount.toFixed(1)}{" "}
-                  万
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none overflow-hidden">
-                  <span className="inline-flex items-center gap-1.5 min-w-0">
-                    <span
-                      className={cn("h-1.5 w-1.5 rounded-full shrink-0", STATUS_DOT_COLORS[row.status])}
-                    />
-                    <span className="text-gray-700 truncate">{STATUS_LABELS[row.status]}</span>
-                  </span>
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none text-gray-700 overflow-hidden">
-                  <span className="block truncate" title={row.updateTime}>
-                    {row.updateTime}
-                  </span>
-                </TableCell>
-                <TableCell className="px-2 py-1.5 rounded-none whitespace-nowrap">
-                  <span className="flex items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      title="Subscribe alert"
-                      aria-label="Subscribe alert"
-                      className="size-7 text-blue-500 hover:bg-blue-50 hover:text-blue-500"
-                    >
-                      <BellPlus className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                <SelectTrigger id="status" className="w-40 rounded-md border-gray-300 bg-white">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent className="rounded-md border-gray-200 bg-white">
+                  <SelectItem value="all" className="rounded-sm">
+                    All
+                  </SelectItem>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="rounded-sm">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                className="h-9 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
+              >
+                Query
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRuleIdFilter("")
+                  setStatusFilter("")
+                }}
+                className="h-9 px-4 text-sm font-medium"
+              >
+                Reset
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 gap-1 px-4 text-sm font-medium"
+              >
+                Expand
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
-      <InboxPagination
-        page={page}
-        total={total}
-        limit={LIMIT}
-        onPageChange={setPage}
-      />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                className="h-9 gap-1 bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+              <Button type="button" variant="outline" className="h-9 px-4 text-sm font-medium">
+                Batch operations
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 gap-1 px-4 text-sm font-medium"
+              >
+                More
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+            {selectedCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-md text-gray-700 text-sm">
+                <Info className="h-4 w-4 shrink-0 text-blue-500" />
+                <span>
+                  Selected {selectedCount} item{selectedCount !== 1 ? "s" : ""}. Service calls
+                  total:{" "}
+                  {selectedTotalCalls % 1 === 0
+                    ? selectedTotalCalls
+                    : selectedTotalCalls.toFixed(1)}{" "}
+                  万
+                </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="ml-1 h-auto p-0 text-blue-500"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="border border-gray-200 rounded-md overflow-hidden shadow-sm">
+            <Table className="text-sm table-fixed">
+              <TableHeader>
+                <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-transparent">
+                  <TableHead className="w-9 h-8 px-2 rounded-none border-gray-200 bg-gray-50">
+                    <Checkbox
+                      checked={selectAllChecked}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all rows"
+                    />
+                  </TableHead>
+                  <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-28">
+                    Rule ID
+                  </TableHead>
+                  <TableHead
+                    className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap min-w-0"
+                    style={{ width: "35%" }}
+                  >
+                    Description
+                  </TableHead>
+                  <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-32">
+                    <span className="inline-flex items-center gap-1 truncate">
+                      Service call count
+                      <ArrowUpDown className="h-3 w-3 shrink-0 text-gray-500" />
+                    </span>
+                  </TableHead>
+                  <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-24">
+                    <span className="inline-flex items-center gap-1">
+                      Status
+                      <Filter className="h-3 w-3 shrink-0 text-gray-500" />
+                    </span>
+                  </TableHead>
+                  <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-40">
+                    <span className="inline-flex items-center gap-1">
+                      Update time
+                      <ArrowUpDown className="h-3 w-3 shrink-0 text-gray-500" />
+                    </span>
+                  </TableHead>
+                  <TableHead className="h-8 px-2 py-1.5 rounded-none border-gray-200 bg-gray-50 text-gray-700 font-medium whitespace-nowrap w-20">
+                    Operation
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRows.map((row, index) => (
+                  <TableRow
+                    key={row.id}
+                    className={cn(
+                      "border-b border-gray-100",
+                      index % 2 === 1 ? "bg-gray-50/60" : "bg-white",
+                    )}
+                  >
+                    <TableCell className="px-2 py-1.5 rounded-none w-9">
+                      <Checkbox
+                        checked={selectedIds.has(row.id)}
+                        onCheckedChange={() => toggleSelect(row.id)}
+                        aria-label={`Select rule ${row.ruleId}`}
+                      />
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none text-gray-800 overflow-hidden">
+                      <span className="block truncate" title={row.ruleId}>
+                        {row.ruleId}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none text-gray-700 overflow-hidden">
+                      <span className="block truncate" title={row.description}>
+                        {row.description}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none text-gray-700 whitespace-nowrap overflow-hidden">
+                      {row.serviceCallCount % 1 === 0
+                        ? row.serviceCallCount
+                        : row.serviceCallCount.toFixed(1)}{" "}
+                      万
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none overflow-hidden">
+                      <span className="inline-flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full shrink-0",
+                            STATUS_DOT_COLORS[row.status],
+                          )}
+                        />
+                        <span className="text-gray-700 truncate">{STATUS_LABELS[row.status]}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none text-gray-700 overflow-hidden">
+                      <span className="block truncate" title={row.updateTime}>
+                        {row.updateTime}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-2 py-1.5 rounded-none whitespace-nowrap">
+                      <span className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="Subscribe alert"
+                          aria-label="Subscribe alert"
+                          className="size-7 text-blue-500 hover:bg-blue-50 hover:text-blue-500"
+                        >
+                          <BellPlus className="h-4 w-4" />
+                        </Button>
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <InboxPagination page={page} total={total} limit={LIMIT} onPageChange={setPage} />
         </>
       ) : null}
     </div>

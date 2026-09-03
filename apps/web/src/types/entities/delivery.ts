@@ -9,8 +9,8 @@ import type {
   SessionClinicalStatus,
   SessionStatus,
   SessionType,
-} from '../enums'
-import type { BaseEntity } from './base'
+} from "../enums"
+import type { BaseEntity } from "./base"
 
 /**
  * Service
@@ -124,7 +124,7 @@ export interface KPI extends BaseEntity {
  */
 export interface KPIAssignment extends BaseEntity {
   kpi_id: string
-  assignable_type: 'Client' | 'Contract'
+  assignable_type: "Client" | "Contract"
   assignable_id: string
   target_value?: number | null
   start_date?: string | null

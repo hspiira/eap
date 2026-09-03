@@ -1,31 +1,16 @@
 import { useEffect, useState } from "react"
 
 import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Tag,
-} from "lucide-react"
+import { Download, ExternalLink, MoreHorizontal, Pencil, Plus, Tag } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterSearch,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterButton, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import {
-  nextSort,
-  SortHeader,
-  type SortState,
-} from "@/components/common/SortHeader"
+import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { TagFormSheet } from "@/components/TagFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -108,11 +93,7 @@ function TagsListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setCreatingTag(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setCreatingTag(true)}>
             <Plus className="size-3.5" />
             New tag
           </Button>
@@ -127,18 +108,10 @@ function TagsListPage() {
           ]}
         />
         <div className="ml-auto" />
-        <FilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Search tags…"
-        />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search tags…" />
       </FilterBar>
 
-      <TagFormSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        tag={editingTag}
-      />
+      <TagFormSheet open={sheetOpen} onOpenChange={handleSheetOpenChange} tag={editingTag} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -150,9 +123,7 @@ function TagsListPage() {
             icon={Tag}
             title={activeSearch ? "No tags match your search" : "No tags yet"}
             description={
-              activeSearch
-                ? "Try a different name."
-                : "Create a tag to start organising clients."
+              activeSearch ? "Try a different name." : "Create a tag to start organising clients."
             }
             action={
               activeSearch ? null : (
@@ -171,7 +142,11 @@ function TagsListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
@@ -191,7 +166,13 @@ function TagsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} isSelected={selection.selectedIds.has(row.id)} onToggle={() => selection.toggleSelect(row.id)} />
+                    <TagRow
+                      key={row.id}
+                      row={row}
+                      onEdit={() => setEditingTag(row)}
+                      isSelected={selection.selectedIds.has(row.id)}
+                      onToggle={() => selection.toggleSelect(row.id)}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -208,12 +189,26 @@ function TagsListPage() {
   )
 }
 
-function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit: () => void; isSelected: boolean; onToggle: () => void }) {
+function TagRow({
+  row,
+  onEdit,
+  isSelected,
+  onToggle,
+}: {
+  row: ClientTag
+  onEdit: () => void
+  isSelected: boolean
+  onToggle: () => void
+}) {
   const swatch = row.color ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select ${row.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
         <Button
@@ -227,9 +222,7 @@ function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit:
             className="block size-2.5 shrink-0 border border-fg/20"
             style={swatch ? { backgroundColor: swatch } : undefined}
           />
-          <span className="text-sm font-medium text-fg group-hover:text-primary">
-            {row.name}
-          </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
         </Button>
       </TableCell>
       <TableCell>
@@ -265,7 +258,15 @@ function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit:
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onEdit} className="gap-2">
@@ -289,4 +290,3 @@ function TagRow({ row, onEdit, isSelected, onToggle }: { row: ClientTag; onEdit:
     </TableRow>
   )
 }
-

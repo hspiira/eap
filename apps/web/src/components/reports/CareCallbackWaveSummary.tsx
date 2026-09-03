@@ -1,7 +1,4 @@
-
-import {
-  ShieldCheck,
-} from "lucide-react"
+import { ShieldCheck } from "lucide-react"
 
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import {
@@ -17,7 +14,6 @@ import { cn } from "@/lib/utils"
 import type { CallbackCampaign, CallbackCampaignAggregate } from "@/types/entities"
 import { CareCallbackCampaignStatus } from "@/types/enums"
 
-
 function topHistogramEntry(h: Record<string, number>): string {
   const entries = Object.entries(h)
   if (entries.length === 0) return "—"
@@ -26,9 +22,7 @@ function topHistogramEntry(h: Record<string, number>): string {
   return `${value} (${count})`
 }
 
-
 import { Field, ReportSection, SummaryStat } from "@/components/reports/ReportShared"
-
 
 export function WaveSummaryBody({
   campaign,
@@ -44,9 +38,7 @@ export function WaveSummaryBody({
   return (
     <>
       <section>
-        <p className="text-[11px] font-semibold tracking-wide text-fg/55">
-          Wave summary
-        </p>
+        <p className="text-[11px] font-semibold tracking-wide text-fg/55">Wave summary</p>
         <div className="mt-1 flex flex-wrap items-baseline gap-3">
           <h2 className="text-2xl font-semibold text-fg">{campaign.name}</h2>
           <CampaignStatusPill status={campaign.status} />
@@ -73,7 +65,11 @@ export function WaveSummaryBody({
       <ReportSection title="Headline counts">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
           <SummaryStat label="Cases" value={aggregate.cases_total} />
-          <SummaryStat label="Completed" value={aggregate.cases_completed} hint={`${completionPct}%`} />
+          <SummaryStat
+            label="Completed"
+            value={aggregate.cases_completed}
+            hint={`${completionPct}%`}
+          />
           <SummaryStat label="No answer" value={aggregate.cases_no_answer} />
           <SummaryStat label="Declined" value={aggregate.cases_declined} />
           <SummaryStat
@@ -91,8 +87,8 @@ export function WaveSummaryBody({
             <div className="text-sm">
               <p className="font-medium text-fg">Insufficient data — k-anon floor not met</p>
               <p className="mt-0.5 text-fg/65">
-                Per-question metrics are suppressed until at least {K_ANON_FLOOR} cases
-                are completed. Currently {aggregate.cases_completed} completed.
+                Per-question metrics are suppressed until at least {K_ANON_FLOOR} cases are
+                completed. Currently {aggregate.cases_completed} completed.
               </p>
             </div>
           </div>
@@ -108,8 +104,12 @@ export function WaveSummaryBody({
             <Table className="w-full border-collapse text-sm">
               <TableHeader className="bg-bg print:bg-white">
                 <TableRow className="text-left hover:bg-transparent">
-                  <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Question</TableHead>
-                  <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">n</TableHead>
+                  <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">
+                    Question
+                  </TableHead>
+                  <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
+                    n
+                  </TableHead>
                   <TableHead className="w-32 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
                     Mean / Top
                   </TableHead>

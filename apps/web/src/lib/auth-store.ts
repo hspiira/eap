@@ -3,16 +3,16 @@
  * Single place for login, logout, initAuth; state lives in authSlice.
  */
 
-import apiClient from '@/api/client'
-import { authApi } from '@/api/endpoints/auth'
-import { tenantsApi } from '@/api/endpoints/tenants'
-import type { LoginRequest } from '@/api/types'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { useTenantStore } from '@/store/slices/tenantSlice'
-import type { Tenant } from '@/types/entities'
+import apiClient from "@/api/client"
+import { authApi } from "@/api/endpoints/auth"
+import { tenantsApi } from "@/api/endpoints/tenants"
+import type { LoginRequest } from "@/api/types"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
+import type { Tenant } from "@/types/entities"
 
 function useAuthCookies(): boolean {
-  return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
+  return import.meta.env.VITE_AUTH_USE_COOKIES === "true"
 }
 
 export const authActions = {
@@ -33,12 +33,16 @@ export const authActions = {
         try {
           const { items } = await tenantsApi.list()
           const tenant = items.find(
-            (t: Tenant) => t.code?.toLowerCase() === credentials.tenant_code?.toLowerCase()
+            (t: Tenant) => t.code?.toLowerCase() === credentials.tenant_code?.toLowerCase(),
           )
           if (tenant) tenantId = tenant.id
         } catch (e) {
-          console.error('[auth] Could not resolve tenant by code after login:', e)
-          useAuthStore.getState().setError('Tenant lookup failed — your workspace context may be incomplete. Please refresh.')
+          console.error("[auth] Could not resolve tenant by code after login:", e)
+          useAuthStore
+            .getState()
+            .setError(
+              "Tenant lookup failed — your workspace context may be incomplete. Please refresh.",
+            )
         }
       }
       if (tenantId) {
@@ -47,15 +51,16 @@ export const authActions = {
           const tenant = await tenantsApi.getById(tenantId)
           useTenantStore.getState().setCurrentTenant(tenant as Tenant)
         } catch (e) {
-          console.error('[auth] Could not load tenant details after login:', e)
-          useAuthStore.getState().setError('Could not load workspace details — please refresh the page.')
+          console.error("[auth] Could not load tenant details after login:", e)
+          useAuthStore
+            .getState()
+            .setError("Could not load workspace details — please refresh the page.")
         }
       }
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
-      const message =
-        error instanceof Error ? error.message : 'Login failed'
+      const message = error instanceof Error ? error.message : "Login failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
       throw error
@@ -69,17 +74,17 @@ export const authActions = {
    * The hash is scrubbed from the URL immediately after extraction.
    */
   async bootstrapFromHash(): Promise<void> {
-    const hash = typeof window !== 'undefined' ? window.location.hash : ''
-    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : '')
-    const access_token = params.get('access_token')
-    const refresh_token = params.get('refresh_token')
-    const expires_in = params.get('expires_in')
+    const hash = typeof window !== "undefined" ? window.location.hash : ""
+    const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : "")
+    const access_token = params.get("access_token")
+    const refresh_token = params.get("refresh_token")
+    const expires_in = params.get("expires_in")
 
-    if (!access_token) throw new Error('Missing access_token in SSO redirect')
+    if (!access_token) throw new Error("Missing access_token in SSO redirect")
 
     apiClient.setToken(access_token, expires_in ? parseInt(expires_in, 10) : undefined)
     if (refresh_token) apiClient.setRefreshToken(refresh_token)
-    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    window.history.replaceState(null, "", window.location.pathname + window.location.search)
 
     const { setAuth, setLoading, setError, clearAuth } = useAuthStore.getState()
     setLoading(true)
@@ -92,13 +97,13 @@ export const authActions = {
         const tenant = await tenantsApi.getById(me.tenant_id)
         useTenantStore.getState().setCurrentTenant(tenant as Tenant)
       } catch (e) {
-        console.error('[auth] Could not load tenant after Azure SSO:', e)
-        setError('Signed in, but workspace details failed to load. Please refresh.')
+        console.error("[auth] Could not load tenant after Azure SSO:", e)
+        setError("Signed in, but workspace details failed to load. Please refresh.")
       }
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
-      const message = error instanceof Error ? error.message : 'Sign-in failed'
+      const message = error instanceof Error ? error.message : "Sign-in failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
       throw error
@@ -122,13 +127,13 @@ export const authActions = {
         const tenant = await tenantsApi.getById(me.tenant_id)
         useTenantStore.getState().setCurrentTenant(tenant as Tenant)
       } catch (e) {
-        console.error('[auth] Could not load tenant after Azure SSO:', e)
-        setError('Signed in, but workspace details failed to load. Please refresh.')
+        console.error("[auth] Could not load tenant after Azure SSO:", e)
+        setError("Signed in, but workspace details failed to load. Please refresh.")
       }
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
-      const message = error instanceof Error ? error.message : 'Sign-in failed'
+      const message = error instanceof Error ? error.message : "Sign-in failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
       throw error

@@ -2,11 +2,7 @@ import { useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  FileBarChart,
-  Phone,
-} from "lucide-react"
+import { ArrowLeft, FileBarChart, Phone } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { clientsApi } from "@/api/endpoints/clients"
@@ -18,11 +14,7 @@ import {
   EnrolDialog,
   Hero,
 } from "@/components/care-callbacks/CampaignDetailWidgets"
-import {
-  DetailCard,
-  DetailGrid,
-  DetailRow,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
@@ -79,7 +71,9 @@ function CampaignDetailPage() {
   })
 
   const refreshCampaign = () =>
-    queryClient.invalidateQueries({ queryKey: entityDetailKey("care-callback-campaigns", campaignId) })
+    queryClient.invalidateQueries({
+      queryKey: entityDetailKey("care-callback-campaigns", campaignId),
+    })
   const refreshCases = () =>
     queryClient.invalidateQueries({ queryKey: ["outreach-records", "for-campaign", campaignId] })
 
@@ -278,11 +272,7 @@ function CampaignDetail({
                   <DetailCard title="Identity">
                     <DetailGrid>
                       <DetailRow label="Name" value={campaign.name} fullWidth />
-                      <DetailRow
-                        label="Sampling notes"
-                        value={campaign.sampling_notes}
-                        fullWidth
-                      />
+                      <DetailRow label="Sampling notes" value={campaign.sampling_notes} fullWidth />
                       <DetailRow
                         label="Status"
                         value={<CampaignStatusPill status={campaign.status} />}
@@ -293,14 +283,8 @@ function CampaignDetail({
 
                   <DetailCard title="Window">
                     <DetailGrid>
-                      <DetailRow
-                        label="Start"
-                        value={formatDate(campaign.period_start)}
-                      />
-                      <DetailRow
-                        label="End"
-                        value={formatDate(campaign.period_end)}
-                      />
+                      <DetailRow label="Start" value={formatDate(campaign.period_start)} />
+                      <DetailRow label="End" value={formatDate(campaign.period_end)} />
                       <DetailRow
                         label="Activated"
                         value={campaign.activated_at ? formatDate(campaign.activated_at) : null}
@@ -317,7 +301,12 @@ function CampaignDetail({
                     action={
                       campaign.status === CareCallbackCampaignStatus.COMPLETED ||
                       campaign.status === CareCallbackCampaignStatus.ARCHIVED ? undefined : (
-                        <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={onEditPool}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={onEditPool}
+                        >
                           Edit
                         </Button>
                       )

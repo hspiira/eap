@@ -88,11 +88,7 @@ export function OverviewPanel({ caseData }: { caseData: Case }) {
           />
           <DetailRow
             label="Closure reason"
-            value={
-              caseData.closure_reason
-                ? CaseClosureReasonLabel[caseData.closure_reason]
-                : null
-            }
+            value={caseData.closure_reason ? CaseClosureReasonLabel[caseData.closure_reason] : null}
           />
         </DetailGrid>
       </DetailCard>
@@ -231,8 +227,8 @@ export function AssignCounsellorDialog({
         <DialogHeader>
           <DialogTitle>Assign counsellor</DialogTitle>
           <DialogDescription>
-            Advancing this case to Active requires a counsellor to already be assigned. Only
-            users with Clinical access are shown.
+            Advancing this case to Active requires a counsellor to already be assigned. Only users
+            with Clinical access are shown.
           </DialogDescription>
         </DialogHeader>
         <FormField label="Counsellor" required>
@@ -250,7 +246,12 @@ export function AssignCounsellorDialog({
           </Select>
         </FormField>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={!counsellorId || submitting}>
@@ -342,10 +343,19 @@ export function AdvanceDialog({
           </p>
         ) : null}
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!target || needsCounsellor || submitting}>
+          <Button
+            size="sm"
+            onClick={handleConfirm}
+            disabled={!target || needsCounsellor || submitting}
+          >
             {submitting ? "Advancing…" : "Advance"}
           </Button>
         </DialogFooter>
@@ -423,7 +433,12 @@ export function CloseCaseDialog({
           </p>
         ) : null}
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={!reason || submitting}>
@@ -472,7 +487,12 @@ export function ReferOutDialog({
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
         </FormField>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={!notes.trim() || submitting}>
@@ -537,7 +557,10 @@ export function NoteBodyFields({
   )
 }
 
-export function noteBodyIsComplete(noteType: ClinicalNoteType, body: Record<string, string>): boolean {
+export function noteBodyIsComplete(
+  noteType: ClinicalNoteType,
+  body: Record<string, string>,
+): boolean {
   const required =
     noteType === ClinicalNoteType.DAP
       ? ["data", "assessment", "plan"]
@@ -602,7 +625,12 @@ export function CreateNoteDialog({
         </FormField>
         <NoteBodyFields noteType={noteType} body={body} onChange={setBody} />
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={!complete || submitting}>
@@ -679,7 +707,11 @@ export function NotesPanel({
       ) : (
         <div className="space-y-2">
           {notes.map((n) => (
-            <DetailCard key={n.id} title={ClinicalNoteTypeLabel[n.note_type]} phiLabel="PHI · access logged">
+            <DetailCard
+              key={n.id}
+              title={ClinicalNoteTypeLabel[n.note_type]}
+              phiLabel="PHI · access logged"
+            >
               <NoteBody body={n.body} />
               <div className="mt-3 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 text-xs text-fg/55">

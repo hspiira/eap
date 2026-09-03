@@ -6,8 +6,8 @@
  * effective range. Lifecycle: Draft → Active (via sign) → Revoked / Expired.
  */
 
-import apiClient from '../client'
-import type { NonCompeteClause } from '../types'
+import apiClient from "../client"
+import type { NonCompeteClause } from "../types"
 
 export interface NonCompeteCreate {
   provider_id: string
@@ -32,7 +32,7 @@ export interface NonCompeteRevoke {
 export const nonCompeteClausesApi = {
   /** Draft a new non-compete (status starts as Draft; needs `sign` to become Active). */
   async draft(data: NonCompeteCreate): Promise<NonCompeteClause> {
-    return apiClient.post<NonCompeteClause>('/non-compete-clauses', data)
+    return apiClient.post<NonCompeteClause>("/non-compete-clauses", data)
   },
 
   /** Sign a draft → moves to Active. */

@@ -6,22 +6,18 @@
  *  - tenant restore-on-auth and clear-on-logout side effects
  */
 
-import { useEffect } from 'react'
+import { useEffect } from "react"
 
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from "@tanstack/react-router"
 
-import apiClient from '@/api/client'
-import { useSilentRefresh } from '@/hooks/useSilentRefresh'
-import { authActions } from '@/lib/auth-store'
-import { tenantActions } from '@/lib/tenant-actions'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { useTenantStore } from '@/store/slices/tenantSlice'
+import apiClient from "@/api/client"
+import { useSilentRefresh } from "@/hooks/useSilentRefresh"
+import { authActions } from "@/lib/auth-store"
+import { tenantActions } from "@/lib/tenant-actions"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 
-const AUTH_PAGES = new Set([
-  '/auth/login',
-  '/auth/set-password',
-  '/auth/azure/callback',
-])
+const AUTH_PAGES = new Set(["/auth/login", "/auth/set-password", "/auth/azure/callback"])
 
 export function AppBootstrap() {
   const navigate = useNavigate()
@@ -39,13 +35,13 @@ export function AppBootstrap() {
   // directly. Without this, a stale dev session shows a permanent black page
   // because the inline style overrides every CSS rule.
   useEffect(() => {
-    if (typeof document === 'undefined') return
-    document.documentElement.style.removeProperty('background')
-    document.documentElement.style.removeProperty('background-color')
-    document.documentElement.style.removeProperty('overflow')
-    document.body.style.removeProperty('background')
-    document.body.style.removeProperty('background-color')
-    document.body.style.removeProperty('overflow')
+    if (typeof document === "undefined") return
+    document.documentElement.style.removeProperty("background")
+    document.documentElement.style.removeProperty("background-color")
+    document.documentElement.style.removeProperty("overflow")
+    document.body.style.removeProperty("background")
+    document.body.style.removeProperty("background-color")
+    document.body.style.removeProperty("overflow")
   }, [])
 
   useSilentRefresh()
@@ -53,10 +49,10 @@ export function AppBootstrap() {
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {
       useAuthStore.getState().clearAuth()
-      const path = typeof window !== 'undefined' ? window.location.pathname : '/'
+      const path = typeof window !== "undefined" ? window.location.pathname : "/"
       const redirect = path && !AUTH_PAGES.has(path) ? path : undefined
       navigate({
-        to: '/auth/login',
+        to: "/auth/login",
         search: { tenant_code: undefined, email: undefined, redirect },
         replace: true,
       })

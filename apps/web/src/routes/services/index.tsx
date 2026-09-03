@@ -1,14 +1,7 @@
-
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-  Wrench,
-} from "lucide-react"
+import { Download, ExternalLink, MoreHorizontal, Plus, Wrench } from "lucide-react"
 
-import { type ServiceListParams,servicesApi } from "@/api/endpoints/services"
+import { type ServiceListParams, servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import {
@@ -87,8 +80,18 @@ function ServicesListPage() {
   const searchParams = useSearch({ from: "/services/" })
   const navigate = useNavigate({ from: "/services/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
 
   const activeStatus = searchParams.status
@@ -116,8 +119,7 @@ function ServicesListPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters =
-    Boolean(activeSearch) || Boolean(activeStatus) || activeGroup !== "all"
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || activeGroup !== "all"
 
   return (
     <PageShell
@@ -314,7 +316,15 @@ function ServiceRow({ row }: { row: Service }) {
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
@@ -333,4 +343,3 @@ function ServiceRow({ row }: { row: Service }) {
     </TableRow>
   )
 }
-

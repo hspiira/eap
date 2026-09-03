@@ -10,10 +10,10 @@
  * eligibility) and `non-compete-clauses.ts`.
  */
 
-import { PersonType } from '@/types/enums'
+import { PersonType } from "@/types/enums"
 
-import type { ListParams, PaginatedResponse, Person, Provider } from '../types'
-import { personsApi } from './persons'
+import type { ListParams, PaginatedResponse, Person, Provider } from "../types"
+import { personsApi } from "./persons"
 
 export interface ProviderListParams extends ListParams {
   status?: string
@@ -22,10 +22,7 @@ export interface ProviderListParams extends ListParams {
 }
 
 function isProvider(p: Person): p is Provider {
-  return (
-    p.person_type === PersonType.SERVICE_PROVIDER &&
-    p.provider_profile != null
-  )
+  return p.person_type === PersonType.SERVICE_PROVIDER && p.provider_profile != null
 }
 
 export const providersApi = {
@@ -55,7 +52,7 @@ export const providersApi = {
     if (!isProvider(person)) {
       throw new Error(
         `Person ${id} is not a service provider (type=${person.person_type}, profile=${
-          person.provider_profile == null ? 'missing' : 'present'
+          person.provider_profile == null ? "missing" : "present"
         })`,
       )
     }

@@ -11,9 +11,9 @@
  *   sub    → ['<resource>', '<name>', id]   (nested/related caches)
  */
 
-import type { QueryKey } from '@tanstack/react-query'
+import type { QueryKey } from "@tanstack/react-query"
 
-import { entityDetailKey, entityListKey } from '@/lib/queries'
+import { entityDetailKey, entityListKey } from "@/lib/queries"
 
 export interface ResourceKeys {
   all: QueryKey
@@ -37,20 +37,20 @@ export function resourceKeys(resource: string): ResourceKeys {
  * `useEntityMutation({ resource })` uses, so keys and invalidations line up.
  */
 export const queryKeys = {
-  users: resourceKeys('users'),
-  clients: resourceKeys('clients'),
-  persons: resourceKeys('persons'),
-  contracts: resourceKeys('contracts'),
-  engagements: resourceKeys('engagements'),
-  services: resourceKeys('services'),
-  serviceAssignments: resourceKeys('service-assignments'),
-  serviceSessions: resourceKeys('service-sessions'),
-  tenants: resourceKeys('tenants'),
-  providers: resourceKeys('providers'),
-  incidents: resourceKeys('incidents'),
-  surveys: resourceKeys('surveys'),
-  questionnaires: resourceKeys('questionnaires'),
-  nonCompete: resourceKeys('non-compete'),
-  careCallbackCampaigns: resourceKeys('care-callback-campaigns'),
-  careCallbackCases: resourceKeys('care-callback-cases'),
+  users: resourceKeys("users"),
+  clients: resourceKeys("clients"),
+  persons: resourceKeys("persons"),
+  contracts: resourceKeys("contracts"),
+  engagements: resourceKeys("engagements"),
+  services: resourceKeys("services"),
+  serviceAssignments: resourceKeys("service-assignments"),
+  serviceSessions: resourceKeys("service-sessions"),
+  tenants: resourceKeys("tenants"),
+  providers: resourceKeys("providers"),
+  incidents: resourceKeys("incidents"),
+  surveys: resourceKeys("surveys"),
+  questionnaires: resourceKeys("questionnaires"),
+  nonCompete: resourceKeys("non-compete"),
+  careCallbackCampaigns: resourceKeys("care-callback-campaigns"),
+  careCallbackCases: resourceKeys("care-callback-cases"),
 } as const

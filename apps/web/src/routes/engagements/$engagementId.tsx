@@ -1,21 +1,11 @@
-
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Briefcase,
-  Users,
-} from "lucide-react"
+import { AlertTriangle, ArrowLeft, Briefcase, Users } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { engagementsApi } from "@/api/endpoints/engagements"
 import { usersApi } from "@/api/endpoints/users"
-import {
-  DetailCard,
-  DetailGrid,
-  DetailRow,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
@@ -34,25 +24,15 @@ import { defaultErrorMessage } from "@/lib/errors"
 import { formatDate, formatMoney } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { cn } from "@/lib/utils"
-import {
-  EngagementStatusPill,
-  isOverdue,
-} from "@/routes/engagements/index"
-import {
-  type EngagementStatus
-} from "@/types/enums"
+import { EngagementStatusPill, isOverdue } from "@/routes/engagements/index"
+import { type EngagementStatus } from "@/types/enums"
 
 export const Route = createFileRoute("/engagements/$engagementId")({
   component: EngagementDetailPage,
 })
 
 type TabValue = "overview" | "deliverables" | "hours" | "timeline"
-const TAB_VALUES: ReadonlyArray<TabValue> = [
-  "overview",
-  "deliverables",
-  "hours",
-  "timeline",
-]
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "deliverables", "hours", "timeline"]
 
 function EngagementDetailPage() {
   const { engagementId } = Route.useParams()
@@ -186,11 +166,7 @@ function EngagementDetailPage() {
                   <DetailCard title="Identity">
                     <DetailGrid>
                       <DetailRow label="Name" value={engagement.name} fullWidth />
-                      <DetailRow
-                        label="Description"
-                        value={engagement.description}
-                        fullWidth
-                      />
+                      <DetailRow label="Description" value={engagement.description} fullWidth />
                       <DetailRow label="Type" value={engagement.engagement_type} />
                       <DetailRow
                         label="Status"
@@ -201,10 +177,7 @@ function EngagementDetailPage() {
 
                   <DetailCard title="Schedule">
                     <DetailGrid>
-                      <DetailRow
-                        label="Start"
-                        value={formatDate(engagement.start_date)}
-                      />
+                      <DetailRow label="Start" value={formatDate(engagement.start_date)} />
                       <DetailRow
                         label="Due"
                         value={engagement.due_date ? formatDate(engagement.due_date) : null}
@@ -235,24 +208,15 @@ function EngagementDetailPage() {
                       <DetailRow
                         label="Budget"
                         value={
-                          engagement.budget_hours
-                            ? `${engagement.budget_hours}h`
-                            : "Open-ended"
+                          engagement.budget_hours ? `${engagement.budget_hours}h` : "Open-ended"
                         }
                       />
-                      <DetailRow
-                        label="Logged"
-                        value={`${engagement.hours_logged.toFixed(1)}h`}
-                      />
+                      <DetailRow label="Logged" value={`${engagement.hours_logged.toFixed(1)}h`} />
                       <DetailRow
                         label="Utilisation"
                         value={
                           budgetPct !== null ? (
-                            <span
-                              className={cn(
-                                budgetExceeded ? "text-amber-600" : "text-fg",
-                              )}
-                            >
+                            <span className={cn(budgetExceeded ? "text-amber-600" : "text-fg")}>
                               {budgetPct}%
                             </span>
                           ) : null
@@ -265,10 +229,7 @@ function EngagementDetailPage() {
                         aria-hidden
                       >
                         <div
-                          className={cn(
-                            "h-full",
-                            budgetExceeded ? "bg-amber-500" : "bg-primary",
-                          )}
+                          className={cn("h-full", budgetExceeded ? "bg-amber-500" : "bg-primary")}
                           style={{ width: `${Math.min(100, budgetPct)}%` }}
                         />
                       </div>
@@ -289,9 +250,7 @@ function EngagementDetailPage() {
                           <Users className="size-3.5" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {lead.email}
-                          </p>
+                          <p className="truncate text-sm font-medium text-fg">{lead.email}</p>
                         </div>
                       </Link>
                     ) : (
@@ -339,4 +298,3 @@ function EngagementDetailPage() {
     </PageShell>
   )
 }
-

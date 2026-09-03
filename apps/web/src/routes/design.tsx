@@ -1,28 +1,25 @@
-import { useState } from 'react'
+import { useState } from "react"
 
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
 import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
   FileSignature,
   MessageSquare,
-} from 'lucide-react'
+} from "lucide-react"
 
-import {
-  type Activity,
-  ActivityFeedCard,
-} from '@/components/ActivityFeedCard'
-import { type ClientAlert,ClientAlertsCard } from '@/components/ClientAlertsCard'
-import { ProviderTierBadge } from '@/components/common/ProviderTierBadge'
-import { SeverityBadge } from '@/components/common/SeverityBadge'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { TierBadge } from '@/components/common/TierBadge'
-import { GalleryControls } from '@/components/gallery/GalleryControls'
-import { GallerySection, GallerySpecimen } from '@/components/gallery/GallerySection'
-import { OnboardingProgressCard } from '@/components/OnboardingProgressCard'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { type Activity, ActivityFeedCard } from "@/components/ActivityFeedCard"
+import { type ClientAlert, ClientAlertsCard } from "@/components/ClientAlertsCard"
+import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { SeverityBadge } from "@/components/common/SeverityBadge"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { TierBadge } from "@/components/common/TierBadge"
+import { GalleryControls } from "@/components/gallery/GalleryControls"
+import { GallerySection, GallerySpecimen } from "@/components/gallery/GallerySection"
+import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -30,21 +27,21 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ClientTier, IncidentSeverity, ProviderTier } from '@/types/enums'
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ClientTier, IncidentSeverity, ProviderTier } from "@/types/enums"
 
-export const Route = createFileRoute('/design')({
+export const Route = createFileRoute("/design")({
   component: GalleryRoute,
 })
 
-type Density = 'compact' | 'comfortable'
+type Density = "compact" | "comfortable"
 
 function GalleryRoute() {
-  const [density, setDensity] = useState<Density>('compact')
+  const [density, setDensity] = useState<Density>("compact")
 
   return (
     <div data-density={density} className="min-h-svh bg-bg text-fg">
@@ -80,40 +77,35 @@ function GalleryRoute() {
 }
 
 const SECTIONS = [
-  { id: 'colors', label: 'Colors' },
-  { id: 'typography', label: 'Typography' },
-  { id: 'spacing', label: 'Spacing & Radius' },
-  { id: 'buttons', label: 'Buttons' },
-  { id: 'badges', label: 'Badges' },
-  { id: 'domain-badges', label: 'Domain Badges' },
-  { id: 'cards', label: 'Cards' },
-  { id: 'migrated-cards', label: 'Migrated Cards' },
-  { id: 'forms', label: 'Forms' },
-  { id: 'feedback', label: 'Feedback' },
-  { id: 'registry', label: 'Registry' },
+  { id: "colors", label: "Colors" },
+  { id: "typography", label: "Typography" },
+  { id: "spacing", label: "Spacing & Radius" },
+  { id: "buttons", label: "Buttons" },
+  { id: "badges", label: "Badges" },
+  { id: "domain-badges", label: "Domain Badges" },
+  { id: "cards", label: "Cards" },
+  { id: "migrated-cards", label: "Migrated Cards" },
+  { id: "forms", label: "Forms" },
+  { id: "feedback", label: "Feedback" },
+  { id: "registry", label: "Registry" },
 ] as const
 
 function ColorTokens() {
-  const surfaces = [
-    'bg',
-    'surface',
-    'surface-hover',
-    'surface-elevated',
-  ] as const
-  const fgs = ['fg', 'fg-muted', 'fg-subtle'] as const
-  const borders = ['border', 'border-subtle', 'border-strong'] as const
+  const surfaces = ["bg", "surface", "surface-hover", "surface-elevated"] as const
+  const fgs = ["fg", "fg-muted", "fg-subtle"] as const
+  const borders = ["border", "border-subtle", "border-strong"] as const
   const semantic = [
-    'brand',
-    'brand-hover',
-    'brand-soft',
-    'success',
-    'success-soft',
-    'warning',
-    'warning-soft',
-    'danger',
-    'danger-soft',
-    'info',
-    'info-soft',
+    "brand",
+    "brand-hover",
+    "brand-soft",
+    "success",
+    "success-soft",
+    "warning",
+    "warning-soft",
+    "danger",
+    "danger-soft",
+    "info",
+    "info-soft",
   ] as const
 
   return (
@@ -129,13 +121,13 @@ function ColorTokens() {
           ))}
         </div>
       </GallerySpecimen>
-      <GallerySpecimen label="Foreground" source="--color-fg / --color-fg-muted / --color-fg-subtle">
+      <GallerySpecimen
+        label="Foreground"
+        source="--color-fg / --color-fg-muted / --color-fg-subtle"
+      >
         <div className="grid grid-cols-3 gap-3">
           {fgs.map((name) => (
-            <div
-              key={name}
-              className="rounded-sm border border-border bg-surface p-3"
-            >
+            <div key={name} className="rounded-sm border border-border bg-surface p-3">
               <p className={`text-${name}`}>The quick brown fox</p>
               <p className="mt-1 font-mono text-xs text-fg-subtle">--color-{name}</p>
             </div>
@@ -145,10 +137,7 @@ function ColorTokens() {
       <GallerySpecimen label="Borders">
         <div className="grid grid-cols-3 gap-3">
           {borders.map((name) => (
-            <div
-              key={name}
-              className={`rounded-sm border-2 border-${name} bg-surface p-3`}
-            >
+            <div key={name} className={`rounded-sm border-2 border-${name} bg-surface p-3`}>
               <p className="text-sm text-fg">--color-{name}</p>
             </div>
           ))}
@@ -172,7 +161,7 @@ function Swatch({
 }: {
   name: string
   className: string
-  kind: 'surface' | 'semantic'
+  kind: "surface" | "semantic"
 }) {
   return (
     <div className="overflow-hidden rounded-sm border border-border">
@@ -181,7 +170,7 @@ function Swatch({
         <p className="text-xs font-medium text-fg">{name}</p>
         <p className="font-mono text-[10px] text-fg-subtle">
           --color-{name}
-          {kind === 'semantic' ? '' : ''}
+          {kind === "semantic" ? "" : ""}
         </p>
       </div>
     </div>
@@ -190,13 +179,13 @@ function Swatch({
 
 function TypographyTokens() {
   const sizes = [
-    { name: 'xs', cls: 'text-xs', label: '11px' },
-    { name: 'sm', cls: 'text-sm', label: '12px' },
-    { name: 'base', cls: 'text-base', label: '13px' },
-    { name: 'md', cls: 'text-[14px]', label: '14px' },
-    { name: 'lg', cls: 'text-lg', label: '16px' },
-    { name: 'xl', cls: 'text-xl', label: '18px' },
-    { name: '2xl', cls: 'text-2xl', label: '22px' },
+    { name: "xs", cls: "text-xs", label: "11px" },
+    { name: "sm", cls: "text-sm", label: "12px" },
+    { name: "base", cls: "text-base", label: "13px" },
+    { name: "md", cls: "text-[14px]", label: "14px" },
+    { name: "lg", cls: "text-lg", label: "16px" },
+    { name: "xl", cls: "text-xl", label: "18px" },
+    { name: "2xl", cls: "text-2xl", label: "22px" },
   ] as const
 
   return (
@@ -247,11 +236,7 @@ function SpacingAndRadius() {
         <div className="flex items-end gap-2">
           {[1, 2, 3, 4, 6, 8].map((n) => (
             <div key={n} className="grid place-items-center gap-1">
-              <div
-                className="bg-brand"
-                style={{ width: n * 4, height: n * 4 }}
-                aria-hidden
-              />
+              <div className="bg-brand" style={{ width: n * 4, height: n * 4 }} aria-hidden />
               <code className="font-mono text-[10px] text-fg-subtle">space-{n}</code>
               <code className="font-mono text-[10px] text-fg-subtle">{n * 4}px</code>
             </div>
@@ -369,7 +354,11 @@ function DomainBadgesSpecimen() {
 
 function CardsSpecimen() {
   return (
-    <GallerySection id="cards" title="Cards" description="shadcn Card primitive — base for all card-shaped surfaces.">
+    <GallerySection
+      id="cards"
+      title="Cards"
+      description="shadcn Card primitive — base for all card-shaped surfaces."
+    >
       <GallerySpecimen label="Card">
         <Card>
           <CardHeader>
@@ -378,8 +367,8 @@ function CardsSpecimen() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-fg-muted">
-              Card body content. Use this primitive for every card-shaped surface;
-              do not roll your own div + border.
+              Card body content. Use this primitive for every card-shaped surface; do not roll your
+              own div + border.
             </p>
           </CardContent>
           <CardFooter>
@@ -398,10 +387,7 @@ function MigratedCardsSpecimen() {
       title="Migrated Cards"
       description="Cards rebuilt against shadcn primitives + new tokens. Reference for the rest of the migration."
     >
-      <GallerySpecimen
-        label="ActivityFeedCard"
-        source="components/ActivityFeedCard.tsx"
-      >
+      <GallerySpecimen label="ActivityFeedCard" source="components/ActivityFeedCard.tsx">
         <div className="max-w-md">
           <ActivityFeedCard activities={GALLERY_ACTIVITIES} />
         </div>
@@ -411,16 +397,10 @@ function MigratedCardsSpecimen() {
         source="components/OnboardingProgressCard.tsx"
       >
         <div className="max-w-md">
-          <OnboardingProgressCard
-            onDismiss={() => {}}
-            onStartStep={() => {}}
-          />
+          <OnboardingProgressCard onDismiss={() => {}} onStartStep={() => {}} />
         </div>
       </GallerySpecimen>
-      <GallerySpecimen
-        label="ClientAlertsCard"
-        source="components/ClientAlertsCard.tsx"
-      >
+      <GallerySpecimen label="ClientAlertsCard" source="components/ClientAlertsCard.tsx">
         <div className="grid max-w-md gap-3">
           <ClientAlertsCard alerts={GALLERY_ALERTS} />
           <ClientAlertsCard alerts={[]} />
@@ -489,8 +469,7 @@ const GALLERY_ALERTS: ClientAlert[] = [
     id: "a2",
     title: "Critical incident pending review",
     severity: "critical",
-    description:
-      "Severity High incident reported 2025-05-08. Awaiting case-manager assignment.",
+    description: "Severity High incident reported 2025-05-08. Awaiting case-manager assignment.",
   },
   {
     id: "a3",
@@ -506,7 +485,11 @@ const GALLERY_ALERTS: ClientAlert[] = [
 
 function FormsSpecimen() {
   return (
-    <GallerySection id="forms" title="Forms" description="Inputs and labels — pair with react-hook-form + zod (Phase 4).">
+    <GallerySection
+      id="forms"
+      title="Forms"
+      description="Inputs and labels — pair with react-hook-form + zod (Phase 4)."
+    >
       <GallerySpecimen label="Input + Label">
         <div className="grid max-w-sm gap-3">
           <div className="grid gap-1.5">
@@ -550,90 +533,140 @@ function FeedbackSpecimen() {
 
 const REGISTRY: ReadonlyArray<{
   group: string
-  items: ReadonlyArray<{ name: string; path: string; status: 'review' | 'migrate' | 'rebuild' | 'audit' }>
+  items: ReadonlyArray<{
+    name: string
+    path: string
+    status: "review" | "migrate" | "rebuild" | "audit"
+  }>
 }> = [
   {
-    group: 'Layout',
+    group: "Layout",
     items: [
-      { name: 'AppLayout', path: 'components/AppLayout.tsx', status: 'rebuild' },
-      { name: 'AppSidebar', path: 'components/AppSidebar.tsx', status: 'rebuild' },
-      { name: 'DashboardHeader', path: 'components/DashboardHeader.tsx', status: 'rebuild' },
-      { name: 'DashboardMain', path: 'components/DashboardMain.tsx', status: 'audit' },
+      { name: "AppLayout", path: "components/AppLayout.tsx", status: "rebuild" },
+      { name: "AppSidebar", path: "components/AppSidebar.tsx", status: "rebuild" },
+      { name: "DashboardHeader", path: "components/DashboardHeader.tsx", status: "rebuild" },
+      { name: "DashboardMain", path: "components/DashboardMain.tsx", status: "audit" },
     ],
   },
   {
-    group: 'Dashboard cards (review for EAP fit)',
+    group: "Dashboard cards (review for EAP fit)",
     items: [
-      { name: 'ApexIntroCard', path: 'components/ApexIntroCard.tsx', status: 'review' },
-      { name: 'ActivityFeedCard', path: 'components/ActivityFeedCard.tsx', status: 'audit' },
-      { name: 'EmailCampaignCard', path: 'components/EmailCampaignCard.tsx', status: 'review' },
-      { name: 'InviteToProjectCard', path: 'components/InviteToProjectCard.tsx', status: 'audit' },
-      { name: 'LoggedInDevicesCard', path: 'components/LoggedInDevicesCard.tsx', status: 'review' },
-      { name: 'OnboardingProgressCard', path: 'components/OnboardingProgressCard.tsx', status: 'audit' },
+      { name: "ApexIntroCard", path: "components/ApexIntroCard.tsx", status: "review" },
+      { name: "ActivityFeedCard", path: "components/ActivityFeedCard.tsx", status: "audit" },
+      { name: "EmailCampaignCard", path: "components/EmailCampaignCard.tsx", status: "review" },
+      { name: "InviteToProjectCard", path: "components/InviteToProjectCard.tsx", status: "audit" },
+      { name: "LoggedInDevicesCard", path: "components/LoggedInDevicesCard.tsx", status: "review" },
+      {
+        name: "OnboardingProgressCard",
+        path: "components/OnboardingProgressCard.tsx",
+        status: "audit",
+      },
     ],
   },
   {
-    group: 'Client cards',
+    group: "Client cards",
     items: [
-      { name: 'ClientActivityCard', path: 'components/ClientActivityCard.tsx', status: 'audit' },
-      { name: 'ClientAlertsCard', path: 'components/ClientAlertsCard.tsx', status: 'audit' },
-      { name: 'ClientOnboardingCard', path: 'components/ClientOnboardingCard.tsx', status: 'audit' },
-      { name: 'ClientStaffSummaryCard', path: 'components/ClientStaffSummaryCard.tsx', status: 'audit' },
-      { name: 'ClientTodaysTodoCard', path: 'components/ClientTodaysTodoCard.tsx', status: 'audit' },
-      { name: 'ClientUpcomingCard', path: 'components/ClientUpcomingCard.tsx', status: 'audit' },
-      { name: 'IndustryDetailsCard', path: 'components/IndustryDetailsCard.tsx', status: 'migrate' },
+      { name: "ClientActivityCard", path: "components/ClientActivityCard.tsx", status: "audit" },
+      { name: "ClientAlertsCard", path: "components/ClientAlertsCard.tsx", status: "audit" },
+      {
+        name: "ClientOnboardingCard",
+        path: "components/ClientOnboardingCard.tsx",
+        status: "audit",
+      },
+      {
+        name: "ClientStaffSummaryCard",
+        path: "components/ClientStaffSummaryCard.tsx",
+        status: "audit",
+      },
+      {
+        name: "ClientTodaysTodoCard",
+        path: "components/ClientTodaysTodoCard.tsx",
+        status: "audit",
+      },
+      { name: "ClientUpcomingCard", path: "components/ClientUpcomingCard.tsx", status: "audit" },
+      {
+        name: "IndustryDetailsCard",
+        path: "components/IndustryDetailsCard.tsx",
+        status: "migrate",
+      },
     ],
   },
   {
-    group: 'Page headers & skeletons',
+    group: "Page headers & skeletons",
     items: [
-      { name: 'ClientsPageHeader', path: 'components/ClientsPageHeader.tsx', status: 'rebuild' },
-      { name: 'ClientsPageSkeletons', path: 'components/ClientsPageSkeletons.tsx', status: 'rebuild' },
-      { name: 'IndustriesPageHeader', path: 'components/IndustriesPageHeader.tsx', status: 'rebuild' },
-      { name: 'IndustriesPageSkeletons', path: 'components/IndustriesPageSkeletons.tsx', status: 'rebuild' },
-      { name: 'TagsPageHeader', path: 'components/TagsPageHeader.tsx', status: 'rebuild' },
+      { name: "ClientsPageHeader", path: "components/ClientsPageHeader.tsx", status: "rebuild" },
+      {
+        name: "ClientsPageSkeletons",
+        path: "components/ClientsPageSkeletons.tsx",
+        status: "rebuild",
+      },
+      {
+        name: "IndustriesPageHeader",
+        path: "components/IndustriesPageHeader.tsx",
+        status: "rebuild",
+      },
+      {
+        name: "IndustriesPageSkeletons",
+        path: "components/IndustriesPageSkeletons.tsx",
+        status: "rebuild",
+      },
+      { name: "TagsPageHeader", path: "components/TagsPageHeader.tsx", status: "rebuild" },
     ],
   },
   {
-    group: 'Forms',
+    group: "Forms",
+    items: [{ name: "ClientForm", path: "components/ClientForm.tsx", status: "rebuild" }],
+  },
+  {
+    group: "Common (keep & migrate to tokens)",
     items: [
-      { name: 'ClientForm', path: 'components/ClientForm.tsx', status: 'rebuild' },
+      { name: "ConfirmDialog", path: "components/common/ConfirmDialog.tsx", status: "migrate" },
+      { name: "DataTable", path: "components/common/DataTable.tsx", status: "rebuild" },
+      {
+        name: "DiagnosisSelector",
+        path: "components/common/DiagnosisSelector.tsx",
+        status: "migrate",
+      },
+      { name: "FormField", path: "components/common/FormField.tsx", status: "rebuild" },
+      {
+        name: "LifecycleActions",
+        path: "components/common/LifecycleActions.tsx",
+        status: "migrate",
+      },
+      { name: "PricingConfig", path: "components/common/PricingConfig.tsx", status: "migrate" },
+      { name: "QueryTable", path: "components/common/QueryTable.tsx", status: "rebuild" },
     ],
   },
   {
-    group: 'Common (keep & migrate to tokens)',
+    group: "Care callbacks & surveys",
     items: [
-      { name: 'ConfirmDialog', path: 'components/common/ConfirmDialog.tsx', status: 'migrate' },
-      { name: 'DataTable', path: 'components/common/DataTable.tsx', status: 'rebuild' },
-      { name: 'DiagnosisSelector', path: 'components/common/DiagnosisSelector.tsx', status: 'migrate' },
-      { name: 'FormField', path: 'components/common/FormField.tsx', status: 'rebuild' },
-      { name: 'LifecycleActions', path: 'components/common/LifecycleActions.tsx', status: 'migrate' },
-      { name: 'PricingConfig', path: 'components/common/PricingConfig.tsx', status: 'migrate' },
-      { name: 'QueryTable', path: 'components/common/QueryTable.tsx', status: 'rebuild' },
-    ],
-  },
-  {
-    group: 'Care callbacks & surveys',
-    items: [
-      { name: 'CrisisAlert', path: 'components/care-callbacks/CrisisAlert.tsx', status: 'migrate' },
-      { name: 'QuestionnaireRenderer', path: 'components/care-callbacks/QuestionnaireRenderer.tsx', status: 'migrate' },
-      { name: 'WebhookSetupHelper', path: 'components/surveys/WebhookSetupHelper.tsx', status: 'migrate' },
+      { name: "CrisisAlert", path: "components/care-callbacks/CrisisAlert.tsx", status: "migrate" },
+      {
+        name: "QuestionnaireRenderer",
+        path: "components/care-callbacks/QuestionnaireRenderer.tsx",
+        status: "migrate",
+      },
+      {
+        name: "WebhookSetupHelper",
+        path: "components/surveys/WebhookSetupHelper.tsx",
+        status: "migrate",
+      },
     ],
   },
 ]
 
-const STATUS_TONE: Record<'review' | 'migrate' | 'rebuild' | 'audit', string> = {
-  review: 'border-warning/40 bg-warning-soft text-warning-fg',
-  migrate: 'border-info/40 bg-info-soft text-info-fg',
-  rebuild: 'border-danger/40 bg-danger-soft text-danger-fg',
-  audit: 'border-fg-subtle/40 bg-surface-hover text-fg-muted',
+const STATUS_TONE: Record<"review" | "migrate" | "rebuild" | "audit", string> = {
+  review: "border-warning/40 bg-warning-soft text-warning-fg",
+  migrate: "border-info/40 bg-info-soft text-info-fg",
+  rebuild: "border-danger/40 bg-danger-soft text-danger-fg",
+  audit: "border-fg-subtle/40 bg-surface-hover text-fg-muted",
 }
 
-const STATUS_COPY: Record<'review' | 'migrate' | 'rebuild' | 'audit', string> = {
-  review: 'Review (template residue suspected)',
-  migrate: 'Migrate to new tokens',
-  rebuild: 'Rebuild against shadcn',
-  audit: 'Audit hardcoded content',
+const STATUS_COPY: Record<"review" | "migrate" | "rebuild" | "audit", string> = {
+  review: "Review (template residue suspected)",
+  migrate: "Migrate to new tokens",
+  rebuild: "Rebuild against shadcn",
+  audit: "Audit hardcoded content",
 }
 
 function ComponentRegistry() {
@@ -645,7 +678,7 @@ function ComponentRegistry() {
     >
       <div className="grid gap-1.5 text-xs">
         <div className="flex flex-wrap gap-2">
-          {(['review', 'migrate', 'rebuild', 'audit'] as const).map((s) => (
+          {(["review", "migrate", "rebuild", "audit"] as const).map((s) => (
             <span
               key={s}
               className={`inline-flex items-center rounded-sm border px-2 py-0.5 ${STATUS_TONE[s]}`}

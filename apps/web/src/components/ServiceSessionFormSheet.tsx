@@ -1,4 +1,3 @@
-
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
@@ -50,13 +49,10 @@ const schema = z
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
-  .refine(
-    (d) => !d.is_backfill || new Date(d.scheduled_at).getTime() <= Date.now(),
-    {
-      path: ["scheduled_at"],
-      message: "Backfilled sessions must be in the past",
-    },
-  )
+  .refine((d) => !d.is_backfill || new Date(d.scheduled_at).getTime() <= Date.now(), {
+    path: ["scheduled_at"],
+    message: "Backfilled sessions must be in the past",
+  })
   .refine((d) => !d.is_backfill || (d.backfill_reason?.trim().length ?? 0) > 0, {
     path: ["backfill_reason"],
     message: "Reason is required when logging a past session",
@@ -169,7 +165,7 @@ export function ServiceSessionFormSheet({
           diagnosis_id: values.diagnosis_id ?? undefined,
           diagnosis_type_id: values.diagnosis_type_id ?? undefined,
           __isBackfill: isBackfill,
-          __backfillReason: isBackfill ? (values.backfill_reason?.trim() || null) : null,
+          __backfillReason: isBackfill ? values.backfill_reason?.trim() || null : null,
           __notes: values.notes?.trim() || undefined,
         }
       },
@@ -211,8 +207,7 @@ export function ServiceSessionFormSheet({
   const watchedCategory = watch("category")
   const isGroup = watchedCategory === SessionCategory.GROUP
   const isPartnered =
-    watchedCategory === SessionCategory.COUPLES ||
-    watchedCategory === SessionCategory.FAMILY
+    watchedCategory === SessionCategory.COUPLES || watchedCategory === SessionCategory.FAMILY
 
   const errors = formState.errors
 
@@ -220,13 +215,7 @@ export function ServiceSessionFormSheet({
     <SheetForm
       open={open}
       onOpenChange={onOpenChange}
-      title={
-        isEdit
-          ? "Edit session"
-          : watchedBackfill
-            ? "Log past session"
-            : "Schedule session"
-      }
+      title={isEdit ? "Edit session" : watchedBackfill ? "Log past session" : "Schedule session"}
       description={
         isEdit
           ? "Update the time, location, or notes for this session."
@@ -238,13 +227,7 @@ export function ServiceSessionFormSheet({
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
       serverError={serverError}
-      submitLabel={
-        isEdit
-          ? "Save changes"
-          : watchedBackfill
-            ? "Log session"
-            : "Create session"
-      }
+      submitLabel={isEdit ? "Save changes" : watchedBackfill ? "Log session" : "Create session"}
       submittingLabel={isEdit ? "Saving…" : watchedBackfill ? "Logging…" : "Creating…"}
     >
       <FormSection title="Service">
@@ -373,12 +356,7 @@ export function ServiceSessionFormSheet({
         </FormField>
         <Input type="hidden" {...register("service_provider_id")} />
         <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Rate (UGX)"
-            optional
-            error={errors.rate_ugx?.message}
-            htmlFor="ss-rate"
-          >
+          <FormField label="Rate (UGX)" optional error={errors.rate_ugx?.message} htmlFor="ss-rate">
             <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
           </FormField>
           <FormField
@@ -413,8 +391,8 @@ export function ServiceSessionFormSheet({
                 This session already happened
               </span>
               <span className="block text-xs text-fg/55">
-                Backfill a past session. It will be marked Completed and tagged with
-                a logged-at timestamp + reason in the audit trail.
+                Backfill a past session. It will be marked Completed and tagged with a logged-at
+                timestamp + reason in the audit trail.
               </span>
             </label>
           </div>
@@ -573,8 +551,7 @@ function LockedServiceSummary({
     listFn: servicesApi.list,
     enabled,
   })
-  const resolved =
-    service ?? (detail.data?.items ?? []).find((s) => s.id === serviceId) ?? null
+  const resolved = service ?? (detail.data?.items ?? []).find((s) => s.id === serviceId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -598,13 +575,7 @@ function LockedServiceSummary({
   )
 }
 
-function LockedPersonSummary({
-  personId,
-  person,
-}: {
-  personId: string
-  person: Person | null
-}) {
+function LockedPersonSummary({ personId, person }: { personId: string; person: Person | null }) {
   const enabled = !person && Boolean(personId)
   const detail = useEntityList<Person>({
     resource: "persons",
@@ -612,8 +583,7 @@ function LockedPersonSummary({
     listFn: personsApi.list,
     enabled,
   })
-  const resolved =
-    person ?? (detail.data?.items ?? []).find((p) => p.id === personId) ?? null
+  const resolved = person ?? (detail.data?.items ?? []).find((p) => p.id === personId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -636,6 +606,3 @@ function LockedPersonSummary({
     </div>
   )
 }
-
-
-

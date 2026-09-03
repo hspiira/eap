@@ -2,13 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  FileCheck,
-  FileSignature,
-  Pencil,
-  Wrench,
-} from "lucide-react"
+import { ArrowLeft, FileCheck, FileSignature, Pencil, Wrench } from "lucide-react"
 
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
@@ -141,10 +135,7 @@ function ServiceAssignmentDetailPage() {
         assignment={assignment}
         contract={contract}
         onSaved={(updated) =>
-          queryClient.setQueryData(
-            entityDetailKey("service-assignments", updated.id),
-            updated,
-          )
+          queryClient.setQueryData(entityDetailKey("service-assignments", updated.id), updated)
         }
       />
 
@@ -168,9 +159,7 @@ function ServiceAssignmentDetailPage() {
                       <DetailRow label="Notes" value={assignment.notes ?? "—"} fullWidth />
                       <DetailRow
                         label="Assignment ID"
-                        value={
-                          <span className="font-mono text-xs">{assignment.id}</span>
-                        }
+                        value={<span className="font-mono text-xs">{assignment.id}</span>}
                         fullWidth
                       />
                     </DetailGrid>
@@ -213,9 +202,7 @@ function ServiceAssignmentDetailPage() {
                           <Wrench className="size-3.5" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {service.name}
-                          </p>
+                          <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg/55">
                             {service.service_type ?? service.category ?? "—"}
                           </p>
@@ -326,9 +313,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
               <p className="truncate font-mono text-sm font-medium text-fg">
                 {contract.id.slice(0, 8)}
               </p>
-              <p className="truncate text-[11px] text-fg/55">
-                {contract.status}
-              </p>
+              <p className="truncate text-[11px] text-fg/55">{contract.status}</p>
             </div>
           </Link>
         </RailSection>
@@ -346,4 +331,3 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
     </div>
   )
 }
-

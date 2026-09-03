@@ -22,7 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { CaseReferralSource, PresentingProblem } from "@/types/enums"
-import { CasePresentingProblemLabel,CaseReferralSourceLabel } from "@/utils/caseLabels"
+import { CasePresentingProblemLabel, CaseReferralSourceLabel } from "@/utils/caseLabels"
 
 const schema = z.object({
   client_id: z.string().trim().min(1, "Client is required"),
@@ -122,11 +122,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
       </FormSection>
 
       <FormSection title="Referral">
-        <FormField
-          label="Presenting problem"
-          required
-          error={errors.presenting_problem?.message}
-        >
+        <FormField label="Presenting problem" required error={errors.presenting_problem?.message}>
           <Controller
             control={control}
             name="presenting_problem"

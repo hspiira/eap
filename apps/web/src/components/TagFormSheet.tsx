@@ -31,29 +31,33 @@ interface TagFormSheetProps {
 }
 
 export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetProps) {
-  const { register, watch, setValue, formState, submit, serverError, isEdit } =
-    useEntityFormSheet<TagFormValues, Parameters<typeof clientTagsApi.create>[0], ClientTag, ClientTag>({
-      resource: "client-tags",
-      schema: tagSchema,
-      defaultValues: DEFAULTS,
-      open,
-      onOpenChange,
-      entity: tag,
-      toFormValues: (t) => ({
-        name: t.name,
-        color: t.color ?? "",
-        description: t.description ?? "",
-      }),
-      parsePayload: (values) => ({
-        name: values.name,
-        color: values.color || undefined,
-        description: values.description || undefined,
-      }),
-      save: ({ payload, entity, isEdit }) =>
-        isEdit && entity ? clientTagsApi.update(entity.id, payload) : clientTagsApi.create(payload),
-      successToast: { create: "Tag created", update: "Tag updated" },
-      onSaved: () => onSaved?.(),
-    })
+  const { register, watch, setValue, formState, submit, serverError, isEdit } = useEntityFormSheet<
+    TagFormValues,
+    Parameters<typeof clientTagsApi.create>[0],
+    ClientTag,
+    ClientTag
+  >({
+    resource: "client-tags",
+    schema: tagSchema,
+    defaultValues: DEFAULTS,
+    open,
+    onOpenChange,
+    entity: tag,
+    toFormValues: (t) => ({
+      name: t.name,
+      color: t.color ?? "",
+      description: t.description ?? "",
+    }),
+    parsePayload: (values) => ({
+      name: values.name,
+      color: values.color || undefined,
+      description: values.description || undefined,
+    }),
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity ? clientTagsApi.update(entity.id, payload) : clientTagsApi.create(payload),
+    successToast: { create: "Tag created", update: "Tag updated" },
+    onSaved: () => onSaved?.(),
+  })
 
   const errors = formState.errors
   const color = watch("color")

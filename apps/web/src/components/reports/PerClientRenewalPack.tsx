@@ -1,9 +1,6 @@
 import { useState } from "react"
 
-import {
-  FileText,
-  Printer,
-} from "lucide-react"
+import { FileText, Printer } from "lucide-react"
 
 import { PageShell } from "@/components/common/PageShell"
 import { BackLink, Field, ReportSection } from "@/components/reports/ReportShared"
@@ -18,7 +15,6 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { type RenewalPackData, renewalPackFixture } from "@/routes/reports/renewal-pack-fixture"
-
 
 export function PerClientRenewalPack() {
   const [data] = useState<RenewalPackData>(renewalPackFixture)
@@ -70,17 +66,12 @@ export function PerClientRenewalPack() {
 export function RenewalPackHeader({ data }: { data: RenewalPackData }) {
   return (
     <section>
-      <p className="text-[11px] font-semibold tracking-wide text-fg/55">
-        Renewal pack
-      </p>
+      <p className="text-[11px] font-semibold tracking-wide text-fg/55">Renewal pack</p>
       <h2 className="mt-1 text-2xl font-semibold text-fg">{data.client.name}</h2>
       <dl className="mt-4 grid gap-4 sm:grid-cols-3">
         <Field label="Period" value={data.period} />
         <Field label="Tier" value={`Tier ${data.client.tier}`} />
-        <Field
-          label="Active employees"
-          value={data.activeEmployees.toLocaleString()}
-        />
+        <Field label="Active employees" value={data.activeEmployees.toLocaleString()} />
       </dl>
     </section>
   )
@@ -92,10 +83,7 @@ export function SessionsByMonth({ data }: { data: RenewalPackData }) {
     <ReportSection title="Sessions delivered by month">
       <ul className="mt-3 space-y-2">
         {data.sessionsByMonth.map((m) => (
-          <li
-            key={m.month}
-            className="grid grid-cols-[6rem_1fr_3rem] items-center gap-3"
-          >
+          <li key={m.month} className="grid grid-cols-[6rem_1fr_3rem] items-center gap-3">
             <span className="text-xs text-fg/65">{m.month}</span>
             <span className="block h-2 rounded-sm bg-fg/8" aria-hidden>
               <span
@@ -119,16 +107,10 @@ export function DiagnosisPrevalence({ data }: { data: RenewalPackData }) {
         {data.diagnosisPrevalence.map((d) => {
           const pct = Math.round((d.count / total) * 100)
           return (
-            <li
-              key={d.label}
-              className="grid grid-cols-[12rem_1fr_3rem] items-center gap-3"
-            >
+            <li key={d.label} className="grid grid-cols-[12rem_1fr_3rem] items-center gap-3">
               <span className="text-xs text-fg/80">{d.label}</span>
               <span className="block h-2 rounded-sm bg-fg/8" aria-hidden>
-                <span
-                  className="block h-full bg-danger"
-                  style={{ width: `${pct}%` }}
-                />
+                <span className="block h-full bg-danger" style={{ width: `${pct}%` }} />
               </span>
               <span className="text-right font-mono text-xs text-fg">{pct}%</span>
             </li>
@@ -145,8 +127,12 @@ export function CareCallbackOutcomes({ data }: { data: RenewalPackData }) {
       <Table className="mt-3 w-full border-collapse text-sm">
         <TableHeader>
           <TableRow className="border-fg/15 text-left hover:bg-transparent">
-            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">Outcome</TableHead>
-            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">Count</TableHead>
+            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">
+              Outcome
+            </TableHead>
+            <TableHead className="py-2 pr-3 text-[11px] font-semibold tracking-wide">
+              Count
+            </TableHead>
             <TableHead className="py-2 text-[11px] font-semibold tracking-wide">Share</TableHead>
           </TableRow>
         </TableHeader>
@@ -169,13 +155,8 @@ export function SatisfactionDistribution({ data }: { data: RenewalPackData }) {
     <ReportSection title="Satisfaction distribution">
       <ul className="mt-3 grid grid-cols-5 gap-2 text-center">
         {data.satisfaction.map((s) => (
-          <li
-            key={s.bucket}
-            className="rounded-sm border border-fg/15 bg-bg p-2 print:bg-white"
-          >
-            <div className="text-[10px] font-semibold tracking-wide text-fg/55">
-              {s.bucket}
-            </div>
+          <li key={s.bucket} className="rounded-sm border border-fg/15 bg-bg p-2 print:bg-white">
+            <div className="text-[10px] font-semibold tracking-wide text-fg/55">{s.bucket}</div>
             <div className="mt-1 font-mono text-lg font-semibold text-fg">{s.count}</div>
           </li>
         ))}

@@ -14,11 +14,7 @@ import {
 
 import { personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
-import {
-  DetailCard,
-  DetailGrid,
-  DetailRow,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
@@ -36,12 +32,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { UserFormSheet } from "@/components/UserFormSheet"
-import {
-  AccessScopesCard,
-  DetailRail,
-  Hero,
-  RoleCard,
-} from "@/components/users/UserDetailWidgets"
+import { AccessScopesCard, DetailRail, Hero, RoleCard } from "@/components/users/UserDetailWidgets"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
@@ -92,7 +83,12 @@ function UserDetailPage() {
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
-      if (action === "suspend" || action === "ban" || action === "terminate" || action === "deactivate") {
+      if (
+        action === "suspend" ||
+        action === "ban" ||
+        action === "terminate" ||
+        action === "deactivate"
+      ) {
         setReasonPrompt({ action, id })
         setReasonValue("")
         return
@@ -134,8 +130,7 @@ function UserDetailPage() {
       if (action === "suspend") await usersApi.suspend(id, reason)
       else if (action === "ban") await usersApi.ban(id, reason)
       else if (action === "terminate") await usersApi.terminate(id, reason)
-      else if (action === "deactivate")
-        await usersApi.deactivate(id, reason || undefined)
+      else if (action === "deactivate") await usersApi.deactivate(id, reason || undefined)
       await queryClient.invalidateQueries({ queryKey: ["users"] })
       setReasonPrompt(null)
       setReasonValue("")
@@ -215,10 +210,7 @@ function UserDetailPage() {
                     <DetailGrid>
                       <DetailRow label="Email" value={user.email} fullWidth />
                       <DetailRow label="Status" value={<StatusBadge status={user.status} />} />
-                      <DetailRow
-                        label="Active"
-                        value={user.is_active ? "Yes" : "No"}
-                      />
+                      <DetailRow label="Active" value={user.is_active ? "Yes" : "No"} />
                       <DetailRow
                         label="Last login"
                         value={user.last_login_at ? formatDateTime(user.last_login_at) : null}
@@ -249,9 +241,7 @@ function UserDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(person, user)}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">
-                            {person.person_type}
-                          </p>
+                          <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
                         </div>
                       </Link>
                     ) : (
@@ -265,10 +255,7 @@ function UserDetailPage() {
                     <RoleCard
                       user={user}
                       onChanged={(updated) =>
-                        queryClient.setQueryData(
-                          entityDetailKey("users", updated.id),
-                          updated,
-                        )
+                        queryClient.setQueryData(entityDetailKey("users", updated.id), updated)
                       }
                     />
                   </div>
@@ -354,10 +341,7 @@ function UserDetailPage() {
                     <AccessScopesCard
                       user={user}
                       onChanged={(updated) =>
-                        queryClient.setQueryData(
-                          entityDetailKey("users", updated.id),
-                          updated,
-                        )
+                        queryClient.setQueryData(entityDetailKey("users", updated.id), updated)
                       }
                     />
                   </div>
@@ -388,10 +372,7 @@ function UserDetailPage() {
                         label="Session reminders"
                         value={user.session_reminders ? "On" : "Off"}
                       />
-                      <DetailRow
-                        label="Weekly digest"
-                        value={user.weekly_digest ? "On" : "Off"}
-                      />
+                      <DetailRow label="Weekly digest" value={user.weekly_digest ? "On" : "Off"} />
                     </DetailGrid>
                   </DetailCard>
                 </div>
@@ -478,8 +459,7 @@ function UserDetailPage() {
               type="button"
               onClick={confirmReasonAction}
               disabled={
-                actionLoading ||
-                (reasonPrompt?.action !== "deactivate" && !reasonValue.trim())
+                actionLoading || (reasonPrompt?.action !== "deactivate" && !reasonValue.trim())
               }
             >
               {actionLoading ? "Submitting…" : "Confirm"}
@@ -490,4 +470,3 @@ function UserDetailPage() {
     </PageShell>
   )
 }
-

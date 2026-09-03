@@ -73,18 +73,12 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
 
   return (
     <div className="space-y-1.5">
-      <Input
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <Input placeholder={placeholder} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
         {list.isPending ? (
           <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
-            {debounced ? emptyNoMatch : emptyPrompt}
-          </p>
+          <p className="px-3 py-2 text-xs text-fg/55">{debounced ? emptyNoMatch : emptyPrompt}</p>
         ) : (
           <ul className="divide-y divide-fg/8">
             {items.map((item) => (
@@ -129,9 +123,7 @@ export function PickerRow({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-fg">{primary}</span>
         {secondary ? (
-          <span className="block truncate font-mono text-[11px] text-fg/55">
-            {secondary}
-          </span>
+          <span className="block truncate font-mono text-[11px] text-fg/55">{secondary}</span>
         ) : null}
       </span>
     </>
@@ -223,7 +215,11 @@ export function PersonPicker({
         />
       )}
       renderRow={(p) => (
-        <PickerRow initials={personInitials(p)} primary={displayName(p)} secondary={p.person_type} />
+        <PickerRow
+          initials={personInitials(p)}
+          primary={displayName(p)}
+          secondary={p.person_type}
+        />
       )}
     />
   )

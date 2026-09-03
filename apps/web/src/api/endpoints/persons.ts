@@ -14,20 +14,12 @@
  * or from `employment_info.role` / `department`; the BE does not store names.
  */
 
-import type {
-  EmploymentInfoCreateSchema,
-  PersonCreate,
-} from '@/api/generated'
-import type {
-  DependentInfo,
-  EmergencyContact,
-  LicenseInfo,
-  StaffInfo,
-} from '@/types/entities'
-import type { PersonType } from '@/types/enums'
+import type { EmploymentInfoCreateSchema, PersonCreate } from "@/api/generated"
+import type { DependentInfo, EmergencyContact, LicenseInfo, StaffInfo } from "@/types/entities"
+import type { PersonType } from "@/types/enums"
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse, Person } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, Person } from "../types"
 
 export type { EmploymentInfoCreateSchema, PersonCreate }
 
@@ -45,7 +37,7 @@ export const personsApi = {
    * Create a new person
    */
   async create(personData: PersonCreate): Promise<Person> {
-    return apiClient.post<Person>('/persons', personData)
+    return apiClient.post<Person>("/persons", personData)
   },
 
   /**
@@ -59,7 +51,7 @@ export const personsApi = {
    * List persons
    */
   async list(params?: PersonListParams): Promise<PaginatedResponse<Person>> {
-    return apiClient.get<PaginatedResponse<Person>>('/persons', params)
+    return apiClient.get<PaginatedResponse<Person>>("/persons", params)
   },
 
   /**
@@ -138,7 +130,10 @@ export const personsApi = {
   /**
    * Update emergency contact. BE wraps as `{emergency_contact: {...}}`.
    */
-  async updateEmergencyContact(personId: string, emergency_contact: EmergencyContact): Promise<Person> {
+  async updateEmergencyContact(
+    personId: string,
+    emergency_contact: EmergencyContact,
+  ): Promise<Person> {
     return apiClient.patch<Person>(`/persons/${personId}/emergency-contact`, {
       emergency_contact,
     })
@@ -173,7 +168,7 @@ export const personsApi = {
   async getByType(tenantId: string, personType: PersonType): Promise<Person[]> {
     const res = await apiClient.get<Person[] | { items: Person[] }>(
       `/persons/by-type/${personType}`,
-      { tenant_id: tenantId }
+      { tenant_id: tenantId },
     )
     return Array.isArray(res) ? res : (res.items ?? [])
   },

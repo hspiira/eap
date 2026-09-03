@@ -114,9 +114,7 @@ export function SessionHistory({
           <TableBody>
             {sessions.slice(0, limit).map((s) => (
               <TableRow key={s.id} className="group border-fg/8">
-                <TableCell className="text-sm text-fg">
-                  {formatDateTime(s.scheduled_at)}
-                </TableCell>
+                <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell className="text-sm text-fg/75">
                   {servicesById.get(s.service_id)?.name ?? "—"}
                 </TableCell>

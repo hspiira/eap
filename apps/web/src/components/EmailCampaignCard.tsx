@@ -101,9 +101,7 @@ function SectionBlock({
         !isFirstColumn && totalCols > 1 && "sm:border-l sm:border-l-fg/8",
       )}
     >
-      <div className="text-xs font-semibold tracking-wide text-fg/55">
-        {section.title}
-      </div>
+      <div className="text-xs font-semibold tracking-wide text-fg/55">{section.title}</div>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
           {section.primaryMetric}
@@ -114,24 +112,16 @@ function SectionBlock({
       </div>
       <ul className="mt-3 grid gap-1.5">
         {section.rows.map((r) => (
-          <li
-            key={r.label}
-            className="flex items-center justify-between text-xs"
-          >
+          <li key={r.label} className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-2 text-fg/65">
               {r.dot ? (
-                <span
-                  className={cn("size-1.5 rounded-full", DOT_TONE[r.dot])}
-                  aria-hidden
-                />
+                <span className={cn("size-1.5 rounded-full", DOT_TONE[r.dot])} aria-hidden />
               ) : (
                 <span className="size-1.5" aria-hidden />
               )}
               {r.label}
             </span>
-            <span className="font-mono font-medium tabular-nums text-fg">
-              {r.value}
-            </span>
+            <span className="font-mono font-medium tabular-nums text-fg">{r.value}</span>
           </li>
         ))}
       </ul>

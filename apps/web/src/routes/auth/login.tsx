@@ -1,62 +1,61 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { z } from "zod"
 
-import { authApi } from '@/api/endpoints/auth'
-import { FormField } from '@/components/common/FormField'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useApiForm } from '@/hooks/useApiForm'
-import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
-import { authActions } from '@/lib/auth-store'
-import { getLockoutSecondsRemaining, isAccountLocked } from '@/lib/errors'
+import { authApi } from "@/api/endpoints/auth"
+import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
+import { useRedirectIfAuthenticated } from "@/hooks/useRedirectIfAuthenticated"
+import { authActions } from "@/lib/auth-store"
+import { getLockoutSecondsRemaining, isAccountLocked } from "@/lib/errors"
 
 function safeRedirectPath(raw: unknown): string | undefined {
-  const s = typeof raw === 'string' ? raw.trim() : ''
-  if (!s || !s.startsWith('/') || s.startsWith('//')) return undefined
-  if (s === '/auth/login' || s === '/auth/set-password' || s.startsWith('/auth/azure')) return undefined
+  const s = typeof raw === "string" ? raw.trim() : ""
+  if (!s || !s.startsWith("/") || s.startsWith("//")) return undefined
+  if (s === "/auth/login" || s === "/auth/set-password" || s.startsWith("/auth/azure"))
+    return undefined
   return s
 }
 
-export const Route = createFileRoute('/auth/login')({
+export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    tenant_code: typeof search.tenant_code === 'string' ? search.tenant_code : undefined,
-    email: typeof search.email === 'string' ? search.email : undefined,
+    tenant_code: typeof search.tenant_code === "string" ? search.tenant_code : undefined,
+    email: typeof search.email === "string" ? search.email : undefined,
     redirect: safeRedirectPath(search.redirect),
   }),
 })
 
 const loginSchema = z.object({
-  tenant_code: z.string().trim().min(1, 'Tenant code is required'),
-  email: z.email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  tenant_code: z.string().trim().min(1, "Tenant code is required"),
+  email: z.email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 })
 
 const DEFAULT_LOCKOUT_SECONDS = 60
 
 function formatLockoutCountdown(seconds: number): string {
-  if (seconds <= 0) return ''
+  if (seconds <= 0) return ""
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
-  if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`
+  if (m > 0) return `${m}m ${s.toString().padStart(2, "0")}s`
   return `${s}s`
 }
 
 function LoginPage() {
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const redirectTo = search.redirect ?? '/'
+  const redirectTo = search.redirect ?? "/"
   const isAuthenticated = useRedirectIfAuthenticated(redirectTo)
   const azureEnabled = authApi.isAzureSsoEnabled()
 
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
 
-  const lockoutSecondsLeft = lockoutUntil
-    ? Math.max(0, Math.ceil((lockoutUntil - now) / 1000))
-    : 0
+  const lockoutSecondsLeft = lockoutUntil ? Math.max(0, Math.ceil((lockoutUntil - now) / 1000)) : 0
   const isLocked = lockoutSecondsLeft > 0
 
   useEffect(() => {
@@ -72,9 +71,9 @@ function LoginPage() {
   const { register, formState, submit, serverError } = useApiForm<z.infer<typeof loginSchema>>({
     schema: loginSchema,
     defaultValues: {
-      tenant_code: search.tenant_code ?? '',
-      email: search.email ?? '',
-      password: '',
+      tenant_code: search.tenant_code ?? "",
+      email: search.email ?? "",
+      password: "",
     },
     errorToast: false,
     onSubmit: async (values) => {
@@ -117,13 +116,7 @@ function LoginPage() {
             disabled={isLocked}
             className="w-full h-11 gap-3"
           >
-            <img
-              src="/microsoft-logo.svg"
-              alt=""
-              aria-hidden="true"
-              width={18}
-              height={18}
-            />
+            <img src="/microsoft-logo.svg" alt="" aria-hidden="true" width={18} height={18} />
             Continue with Microsoft
           </Button>
 
@@ -138,7 +131,7 @@ function LoginPage() {
         </div>
       ) : null}
 
-      <form onSubmit={submit} className={`space-y-4 ${azureEnabled ? 'mt-5' : ''}`} noValidate>
+      <form onSubmit={submit} className={`space-y-4 ${azureEnabled ? "mt-5" : ""}`} noValidate>
         {isLocked ? (
           <div
             className="p-3 bg-danger-soft border border-danger/30 text-danger-fg text-sm rounded-sm"
@@ -168,25 +161,20 @@ function LoginPage() {
             placeholder="Enter tenant code"
             autoComplete="organization"
             disabled={isLocked}
-            {...register('tenant_code', {
-              setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
+            {...register("tenant_code", {
+              setValueAs: (v) => (typeof v === "string" ? v.toLowerCase() : v),
             })}
           />
         </FormField>
 
-        <FormField
-          label="Email"
-          required
-          error={formState.errors.email?.message}
-          htmlFor="email"
-        >
+        <FormField label="Email" required error={formState.errors.email?.message} htmlFor="email">
           <Input
             id="email"
             type="email"
             placeholder="you@company.com"
             autoComplete="email"
             disabled={isLocked}
-            {...register('email')}
+            {...register("email")}
           />
         </FormField>
 
@@ -202,7 +190,7 @@ function LoginPage() {
             placeholder="••••••••"
             autoComplete="current-password"
             disabled={isLocked}
-            {...register('password')}
+            {...register("password")}
           />
         </FormField>
 
@@ -210,14 +198,14 @@ function LoginPage() {
           {isLocked
             ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
             : formState.isSubmitting
-              ? 'Signing in…'
-              : 'Sign in'}
+              ? "Signing in…"
+              : "Sign in"}
         </Button>
       </form>
 
       <div className="mt-5 text-center text-sm text-fg-muted space-y-2">
         <p>
-          Forgot your password?{' '}
+          Forgot your password?{" "}
           <span className="text-fg-subtle">
             Contact your administrator — they can issue a new sign-in link.
           </span>

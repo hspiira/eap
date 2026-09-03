@@ -7,17 +7,17 @@
  * have dedicated request schemas; see ServiceSessionCompleteRequest etc.
  */
 
-import type { Schemas, ServiceSessionCreate } from '@/api/generated'
+import type { Schemas, ServiceSessionCreate } from "@/api/generated"
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse, ServiceSession } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, ServiceSession } from "../types"
 
 export type { ServiceSessionCreate }
-export type ServiceSessionUpdate = Schemas['ServiceSessionUpdate']
-export type ServiceSessionCompleteRequest = Schemas['ServiceSessionCompleteRequest']
-export type ServiceSessionCancelRequest = Schemas['ServiceSessionCancelRequest']
-export type ServiceSessionRescheduleRequest = Schemas['ServiceSessionRescheduleRequest']
-export type ServiceSessionUpdateFeedback = Schemas['ServiceSessionUpdateFeedback']
+export type ServiceSessionUpdate = Schemas["ServiceSessionUpdate"]
+export type ServiceSessionCompleteRequest = Schemas["ServiceSessionCompleteRequest"]
+export type ServiceSessionCancelRequest = Schemas["ServiceSessionCancelRequest"]
+export type ServiceSessionRescheduleRequest = Schemas["ServiceSessionRescheduleRequest"]
+export type ServiceSessionUpdateFeedback = Schemas["ServiceSessionUpdateFeedback"]
 
 /** Mirrors the query params on `GET /service-sessions/` in the BE OpenAPI schema. */
 export interface ServiceSessionListParams extends ListParams {
@@ -35,7 +35,7 @@ export const serviceSessionsApi = {
    * Create a new service session
    */
   async create(sessionData: ServiceSessionCreate): Promise<ServiceSession> {
-    return apiClient.post<ServiceSession>('/service-sessions', sessionData)
+    return apiClient.post<ServiceSession>("/service-sessions", sessionData)
   },
 
   /**
@@ -48,10 +48,8 @@ export const serviceSessionsApi = {
   /**
    * List service sessions
    */
-  async list(
-    params?: ServiceSessionListParams,
-  ): Promise<PaginatedResponse<ServiceSession>> {
-    return apiClient.get<PaginatedResponse<ServiceSession>>('/service-sessions', params)
+  async list(params?: ServiceSessionListParams): Promise<PaginatedResponse<ServiceSession>> {
+    return apiClient.get<PaginatedResponse<ServiceSession>>("/service-sessions", params)
   },
 
   /**
@@ -64,7 +62,10 @@ export const serviceSessionsApi = {
   /**
    * Reschedule service session. BE field is `new_scheduled_at` (ISO datetime).
    */
-  async reschedule(sessionId: string, data: ServiceSessionRescheduleRequest): Promise<ServiceSession> {
+  async reschedule(
+    sessionId: string,
+    data: ServiceSessionRescheduleRequest,
+  ): Promise<ServiceSession> {
     return apiClient.post<ServiceSession>(`/service-sessions/${sessionId}/reschedule`, data)
   },
 
@@ -92,7 +93,10 @@ export const serviceSessionsApi = {
   /**
    * Update session feedback. BE accepts `{feedback: str≥1}` (single field).
    */
-  async updateFeedback(sessionId: string, data: ServiceSessionUpdateFeedback): Promise<ServiceSession> {
+  async updateFeedback(
+    sessionId: string,
+    data: ServiceSessionUpdateFeedback,
+  ): Promise<ServiceSession> {
     return apiClient.patch<ServiceSession>(`/service-sessions/${sessionId}/feedback`, data)
   },
 

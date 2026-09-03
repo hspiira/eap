@@ -7,24 +7,24 @@
  * care-callbacks/engagements/surveys.
  */
 
-import type { Schemas } from '@/api/generated'
+import type { Schemas } from "@/api/generated"
 
-import apiClient from '../client'
-import type { Case } from '../types'
+import apiClient from "../client"
+import type { Case } from "../types"
 
-export type OpenCaseRequest = Schemas['OpenCaseRequest']
-export type AssignCounsellorRequest = Schemas['AssignCounsellorRequest']
-export type AdvanceCaseRequest = Schemas['AdvanceCaseRequest']
-export type CloseCaseRequest = Schemas['CloseCaseRequest']
-export type ReferOutCaseRequest = Schemas['ReferOutCaseRequest']
+export type OpenCaseRequest = Schemas["OpenCaseRequest"]
+export type AssignCounsellorRequest = Schemas["AssignCounsellorRequest"]
+export type AdvanceCaseRequest = Schemas["AdvanceCaseRequest"]
+export type CloseCaseRequest = Schemas["CloseCaseRequest"]
+export type ReferOutCaseRequest = Schemas["ReferOutCaseRequest"]
 
 export const casesApi = {
   async create(data: OpenCaseRequest): Promise<Case> {
-    return apiClient.post<Case>('/cases', data)
+    return apiClient.post<Case>("/cases", data)
   },
 
   async list(): Promise<Case[]> {
-    return apiClient.get<Case[]>('/cases')
+    return apiClient.get<Case[]>("/cases")
   },
 
   async getById(caseId: string): Promise<Case> {

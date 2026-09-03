@@ -20,17 +20,22 @@
  * (Phase 10).
  */
 
-import { useFixtures } from '@/lib/fixtures'
-import type { TriageInstrumentCode, TriageRiskLevel } from '@/types/enums'
+import { useFixtures } from "@/lib/fixtures"
+import type { TriageInstrumentCode, TriageRiskLevel } from "@/types/enums"
 
-import apiClient from '../client'
-import type { CallbackCampaign, CallbackCampaignAggregate, CallbackCampaignSummary, OutreachRecord } from '../types'
+import apiClient from "../client"
+import type {
+  CallbackCampaign,
+  CallbackCampaignAggregate,
+  CallbackCampaignSummary,
+  OutreachRecord,
+} from "../types"
 import {
   fixtureAggregateCampaign,
   fixtureCreateCampaign,
   fixtureGetCampaign,
   fixtureListCampaigns,
-} from './care-callbacks-fixture'
+} from "./care-callbacks-fixture"
 
 export interface CampaignCreateInput {
   client_id: string
@@ -90,7 +95,7 @@ export const careCallbacksApi = {
   /** Bare array on the wire — not a PaginatedResponse envelope. */
   async listCampaigns(): Promise<CallbackCampaign[]> {
     if (useFixtures()) return Promise.resolve(fixtureListCampaigns())
-    return apiClient.get<CallbackCampaign[]>('/care-callback-campaigns')
+    return apiClient.get<CallbackCampaign[]>("/care-callback-campaigns")
   },
 
   async getCampaign(id: string): Promise<CallbackCampaign> {
@@ -104,7 +109,7 @@ export const careCallbacksApi = {
 
   async createCampaign(input: CampaignCreateInput): Promise<CallbackCampaign> {
     if (useFixtures()) return Promise.resolve(fixtureCreateCampaign(input))
-    return apiClient.post<CallbackCampaign>('/care-callback-campaigns', input)
+    return apiClient.post<CallbackCampaign>("/care-callback-campaigns", input)
   },
 
   /** Fixture-only k-anon rollup — no matching BE shape. See file header. */
@@ -114,9 +119,7 @@ export const careCallbacksApi = {
 
   /** The real per-campaign summary (`GET .../summary`). */
   async getSummary(campaignId: string): Promise<CallbackCampaignSummary> {
-    return apiClient.get<CallbackCampaignSummary>(
-      `/care-callback-campaigns/${campaignId}/summary`,
-    )
+    return apiClient.get<CallbackCampaignSummary>(`/care-callback-campaigns/${campaignId}/summary`)
   },
 
   /** Only valid from Draft; requires a non-empty counsellor_pool (BE domain rule). */
@@ -203,7 +206,7 @@ export const careCallbacksApi = {
 
   // ── Triage (catalogue + scoring; no FE form wired yet — Phase 10) ────────
   async listTriageInstruments(): Promise<TriageInstrument[]> {
-    return apiClient.get<TriageInstrument[]>('/triage/instruments')
+    return apiClient.get<TriageInstrument[]>("/triage/instruments")
   },
 
   async getTriageInstrument(code: TriageInstrumentCode): Promise<TriageInstrument> {
@@ -212,11 +215,8 @@ export const careCallbacksApi = {
 
   /** Validates responses against the instrument, scores server-side, and persists. */
   async scoreTriage(outreachId: string, input: TriageScoreInput): Promise<TriageScoreResult> {
-    return apiClient.post<TriageScoreResult>(
-      `/outreach-records/${outreachId}/triage/score`,
-      input,
-    )
+    return apiClient.post<TriageScoreResult>(`/outreach-records/${outreachId}/triage/score`, input)
   },
 }
 
-export type { CampaignCreateInput as FixtureCampaignCreateInput } from './care-callbacks-fixture'
+export type { CampaignCreateInput as FixtureCampaignCreateInput } from "./care-callbacks-fixture"

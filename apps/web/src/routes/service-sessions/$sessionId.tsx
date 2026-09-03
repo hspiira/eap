@@ -2,23 +2,14 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  CalendarClock,
-  Pencil,
-  Wrench,
-} from "lucide-react"
+import { ArrowLeft, CalendarClock, Pencil, Wrench } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
-import {
-  DetailCard,
-  DetailGrid,
-  DetailRow,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
@@ -40,9 +31,7 @@ import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
-import type {
-  ServiceSession,
-} from "@/types/entities"
+import type { ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/service-sessions/$sessionId")({
@@ -215,10 +204,7 @@ function ServiceSessionDetailPage() {
         service={service}
         person={person}
         onSaved={(updated) =>
-          queryClient.setQueryData(
-            entityDetailKey("service-sessions", updated.id),
-            updated,
-          )
+          queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
         }
       />
 
@@ -228,11 +214,7 @@ function ServiceSessionDetailPage() {
         defaultDuration={service?.duration_minutes ?? 60}
         onConfirm={confirmComplete}
       />
-      <CancelDialog
-        open={cancelOpen}
-        onOpenChange={setCancelOpen}
-        onConfirm={confirmCancel}
-      />
+      <CancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
       <RescheduleDialog
         open={rescheduleOpen}
         onOpenChange={setRescheduleOpen}
@@ -246,10 +228,7 @@ function ServiceSessionDetailPage() {
           if (notes?.trim()) {
             await serviceSessionsApi.update(session.id, { notes: notes.trim() })
           }
-          queryClient.setQueryData(
-            entityDetailKey("service-sessions", updated.id),
-            updated,
-          )
+          queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
           await queryClient.invalidateQueries({
             queryKey: ["service-sessions", "list"],
           })
@@ -311,9 +290,7 @@ function ServiceSessionDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(person)}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">
-                            {person.person_type}
-                          </p>
+                          <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
                         </div>
                       </Link>
                     ) : (
@@ -335,9 +312,7 @@ function ServiceSessionDetailPage() {
                           <Wrench className="size-3.5" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {service.name}
-                          </p>
+                          <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg/55">
                             {service.service_type ?? "—"}
                           </p>
@@ -357,8 +332,7 @@ function ServiceSessionDetailPage() {
                             {provider.id}
                           </p>
                           <p className="truncate text-[11px] text-fg/55">
-                            {provider.provider_profile.tier} ·{" "}
-                            {provider.provider_profile.region}
+                            {provider.provider_profile.tier} · {provider.provider_profile.region}
                           </p>
                         </div>
                       </div>
@@ -376,12 +350,14 @@ function ServiceSessionDetailPage() {
                         value={
                           session.diagnosis_id
                             ? (() => {
-                                const all = (diagnosisTreeQuery.data?.types ?? []).flatMap((t) => t.diagnoses)
+                                const all = (diagnosisTreeQuery.data?.types ?? []).flatMap(
+                                  (t) => t.diagnoses,
+                                )
                                 const dx = all.find((d) => d.id === session.diagnosis_id)
                                 return dx
                                   ? `${dx.code} — ${dx.name}`
                                   : diagnosisTreeQuery.isPending
-                                    ? 'Loading…'
+                                    ? "Loading…"
                                     : session.diagnosis_id
                               })()
                             : null
@@ -420,4 +396,3 @@ function ServiceSessionDetailPage() {
     </PageShell>
   )
 }
-

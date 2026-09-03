@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  ChevronRight,
-  Phone,
-  ShieldCheck,
-  X,
-} from "lucide-react"
+import { AlertTriangle, ChevronRight, Phone, ShieldCheck, X } from "lucide-react"
 
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
 import { personsApi } from "@/api/endpoints/persons"
@@ -53,13 +47,7 @@ import type {
 } from "@/types/entities"
 import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
 
-export function Hero({
-  campaign,
-  client,
-}: {
-  campaign: CallbackCampaign
-  client: Client | null
-}) {
+export function Hero({ campaign, client }: { campaign: CallbackCampaign; client: Client | null }) {
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
@@ -87,13 +75,7 @@ export function Hero({
   )
 }
 
-export function CasesPanel({
-  cases,
-  loading,
-}: {
-  cases: OutreachRecord[]
-  loading: boolean
-}) {
+export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loading: boolean }) {
   if (loading) return <p className="text-sm text-fg/65">Loading outreach records…</p>
   if (cases.length === 0) {
     return (
@@ -156,9 +138,7 @@ export function CasesPanel({
                   ) : null}
                 </div>
               </TableCell>
-              <TableCell className="font-mono text-xs text-fg/75">
-                {c.contact_attempts}
-              </TableCell>
+              <TableCell className="font-mono text-xs text-fg/75">{c.contact_attempts}</TableCell>
               <TableCell className="text-right">
                 <Link
                   to="/care-callbacks/worklist/$caseId"
@@ -201,8 +181,8 @@ export function AggregatePanel({
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-medium text-fg">Insufficient data</p>
             <p className="mt-0.5 text-fg/60">
-              Aggregate metrics are suppressed until at least {K_ANON_FLOOR} cases are
-              completed (k-anon floor). Currently {aggregate.cases_completed} completed.
+              Aggregate metrics are suppressed until at least {K_ANON_FLOOR} cases are completed
+              (k-anon floor). Currently {aggregate.cases_completed} completed.
             </p>
           </div>
         </div>
@@ -219,10 +199,7 @@ export function AggregatePanel({
           <DetailRow label="Declined" value={aggregate.cases_declined} />
           <DetailRow label="Crisis" value={aggregate.cases_crisis} />
           {aggregate.wos5_delta_mean != null ? (
-            <DetailRow
-              label="WOS-5 post mean"
-              value={aggregate.wos5_delta_mean.toFixed(2)}
-            />
+            <DetailRow label="WOS-5 post mean" value={aggregate.wos5_delta_mean.toFixed(2)} />
           ) : null}
         </DetailGrid>
       </DetailCard>
@@ -246,9 +223,7 @@ export function AggregatePanel({
             {aggregate.question_summaries.map((s) => (
               <TableRow key={s.question_key} className="border-fg/8">
                 <TableCell className="px-2 py-1.5">{s.prompt}</TableCell>
-                <TableCell className="px-2 py-1.5 text-right font-mono">
-                  {s.n}
-                </TableCell>
+                <TableCell className="px-2 py-1.5 text-right font-mono">{s.n}</TableCell>
                 <TableCell className="px-2 py-1.5 text-right font-mono">
                   {s.mean !== null && s.mean !== undefined
                     ? s.mean.toFixed(2)
@@ -296,20 +271,11 @@ export function DetailRail({
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
           <Stat label="Target" value={campaign.target_count} />
-          <Stat
-            label="Done"
-            value={`${completionPct}%`}
-          />
+          <Stat label="Done" value={`${completionPct}%`} />
           <Stat label="In progress" value={inProgressCount} />
           <Stat
             label="Crisis"
-            value={
-              crisisCount > 0 ? (
-                <span className="text-danger-fg">{crisisCount}</span>
-              ) : (
-                "0"
-              )
-            }
+            value={crisisCount > 0 ? <span className="text-danger-fg">{crisisCount}</span> : "0"}
           />
         </div>
       </RailSection>
@@ -390,8 +356,8 @@ export function DetailRail({
       <RailSection title="Privacy">
         <p className="rounded-sm border border-fg/10 bg-surface px-3 py-2 text-xs text-fg/65">
           <ShieldCheck className="mr-1 inline size-3 text-primary" />
-          Aggregate report suppresses metrics until at least {K_ANON_FLOOR} cases
-          complete (k-anon floor).
+          Aggregate report suppresses metrics until at least {K_ANON_FLOOR} cases complete (k-anon
+          floor).
         </p>
       </RailSection>
     </div>
@@ -471,8 +437,8 @@ export function CounsellorPoolDialog({
         <DialogHeader>
           <DialogTitle>Counsellor pool</DialogTitle>
           <DialogDescription>
-            Who can claim outreach records for this campaign. Requires at least one
-            counsellor before the campaign can be activated.
+            Who can claim outreach records for this campaign. Requires at least one counsellor
+            before the campaign can be activated.
           </DialogDescription>
         </DialogHeader>
         {pool.length > 0 ? (
@@ -500,7 +466,11 @@ export function CounsellorPoolDialog({
             })}
           </div>
         ) : null}
-        <Input placeholder="Search users by email…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input
+          placeholder="Search users by email…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <div className="max-h-44 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
           {items.length === 0 ? (
             <p className="px-3 py-2 text-xs text-fg/55">
@@ -529,7 +499,12 @@ export function CounsellorPoolDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleSave} disabled={pool.length === 0 || submitting}>
@@ -588,7 +563,11 @@ export function EnrolDialog({
             Each person becomes a new Pending outreach record in this campaign.
           </DialogDescription>
         </DialogHeader>
-        <Input placeholder="Search persons…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input
+          placeholder="Search persons…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <div className="max-h-52 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
           {items.length === 0 ? (
             <p className="px-3 py-2 text-xs text-fg/55">
@@ -625,7 +604,12 @@ export function EnrolDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleEnrol} disabled={personIds.length === 0 || submitting}>

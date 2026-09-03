@@ -8,11 +8,11 @@
  * this module with a proper contract-scoped pricing surface.
  */
 
-import { useFixtures } from '@/lib/fixtures'
-import { PricingModel } from '@/types/enums'
+import { useFixtures } from "@/lib/fixtures"
+import { PricingModel } from "@/types/enums"
 
-import apiClient from '../client'
-import type { ContractPricing, InvoiceLinePreview } from '../types'
+import apiClient from "../client"
+import type { ContractPricing, InvoiceLinePreview } from "../types"
 
 export interface PricingPreviewParams {
   /** Optional projected sessions / utilisation per month for preview math. */
@@ -29,9 +29,9 @@ function previewLocally(
     case PricingModel.RETAINER: {
       const lines: InvoiceLinePreview[] = [
         {
-          label: 'Monthly retainer',
+          label: "Monthly retainer",
           quantity: 1,
-          unit: 'month',
+          unit: "month",
           unit_rate: pricing.monthly_fee,
           subtotal: pricing.monthly_fee,
         },
@@ -41,7 +41,7 @@ function previewLocally(
         lines.push({
           label: `Overflow sessions (above cap of ${pricing.session_cap})`,
           quantity: overflow,
-          unit: 'session',
+          unit: "session",
           unit_rate: pricing.overflow_rate,
           subtotal: overflow * pricing.overflow_rate,
         })
@@ -53,9 +53,9 @@ function previewLocally(
       const remaining = pricing.drawdown_balance - drawdown
       return [
         {
-          label: 'Framework drawdown',
+          label: "Framework drawdown",
           quantity: sessions,
-          unit: 'session',
+          unit: "session",
           unit_rate: pricing.unit_rate,
           subtotal: drawdown,
           note:
@@ -68,9 +68,9 @@ function previewLocally(
     case PricingModel.FFS: {
       return [
         {
-          label: 'Sessions delivered',
+          label: "Sessions delivered",
           quantity: sessions,
-          unit: 'session',
+          unit: "session",
           unit_rate: pricing.unit_rate,
           subtotal: sessions * pricing.unit_rate,
         },
@@ -81,9 +81,9 @@ function previewLocally(
       const adminBelowFloor = pricing.monthly_admin_fee < pricing.admin_floor
       return [
         {
-          label: 'Monthly admin fee',
+          label: "Monthly admin fee",
           quantity: 1,
-          unit: 'month',
+          unit: "month",
           unit_rate: pricing.monthly_admin_fee,
           subtotal: pricing.monthly_admin_fee,
           note: adminBelowFloor
@@ -91,9 +91,9 @@ function previewLocally(
             : null,
         },
         {
-          label: 'Utilisation charge',
+          label: "Utilisation charge",
           quantity: sessions,
-          unit: 'session',
+          unit: "session",
           unit_rate: pricing.utilisation_rate,
           subtotal: utilCharge,
         },
@@ -104,7 +104,7 @@ function previewLocally(
         {
           label: `Value-add bundle (${pricing.bundled_services.length} services)`,
           quantity: 1,
-          unit: 'month',
+          unit: "month",
           unit_rate: pricing.monthly_fee,
           subtotal: pricing.monthly_fee,
         },
@@ -128,7 +128,7 @@ export const pricingApi = {
     if (useFixtures()) return Promise.resolve(previewLocally(pricing, params))
     // TODO(P2 #4): replace contractId placeholder once contract context is wired
     return apiClient.get<InvoiceLinePreview[]>(
-      `/contracts/${(pricing as unknown as { contract_id?: string }).contract_id ?? 'unknown'}/invoice-preview`,
+      `/contracts/${(pricing as unknown as { contract_id?: string }).contract_id ?? "unknown"}/invoice-preview`,
       params,
     )
   },

@@ -179,11 +179,7 @@ export function CampaignFormSheet({
         title="Counsellor pool"
         description="Counsellors who can claim outreach records once the campaign is active. Required to activate — a campaign can't go live with an empty pool."
       >
-        <FormField
-          label="Counsellors"
-          required
-          error={errors.counsellor_pool?.message}
-        >
+        <FormField label="Counsellors" required error={errors.counsellor_pool?.message}>
           <CounsellorMultiPicker
             value={watchedCounsellors ?? []}
             onChange={(ids) =>
@@ -211,13 +207,7 @@ export function CampaignFormSheet({
   )
 }
 
-function LockedClientSummary({
-  clientId,
-  client,
-}: {
-  clientId: string
-  client: Client | null
-}) {
+function LockedClientSummary({ clientId, client }: { clientId: string; client: Client | null }) {
   const enabled = !client && Boolean(clientId)
   const detail = useEntityList<Client>({
     resource: "clients",
@@ -225,8 +215,7 @@ function LockedClientSummary({
     listFn: clientsApi.list,
     enabled,
   })
-  const resolved =
-    client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
+  const resolved = client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -239,9 +228,7 @@ function LockedClientSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">
-          {resolved?.code ?? clientId}
-        </p>
+        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked
@@ -339,4 +326,3 @@ function CounsellorMultiPicker({
     </div>
   )
 }
-

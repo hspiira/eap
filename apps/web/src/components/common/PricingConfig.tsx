@@ -201,17 +201,17 @@ function FrameworkInputs({
           />
         </FormField>
       </div>
-      <div className="border border-fg/20 bg-surface/30 p-3" aria-label="Framework deposit drawdown">
+      <div
+        className="border border-fg/20 bg-surface/30 p-3"
+        aria-label="Framework deposit drawdown"
+      >
         <p className="text-xs tracking-wide text-fg/60">Deposit drawdown</p>
         <div className="mt-2 h-3 w-full bg-white border border-fg/15">
-          <div
-            className="h-full bg-primary"
-            style={{ width: `${drawdownPct}%` }}
-            aria-hidden
-          />
+          <div className="h-full bg-primary" style={{ width: `${drawdownPct}%` }} aria-hidden />
         </div>
         <p className="mt-2 text-xs text-fg/70">
-          {value.drawdown_balance.toFixed(2)} of {value.deposit.toFixed(2)} remaining ({drawdownPct}%)
+          {value.drawdown_balance.toFixed(2)} of {value.deposit.toFixed(2)} remaining ({drawdownPct}
+          %)
         </p>
       </div>
     </div>
@@ -274,7 +274,8 @@ function AdminUtilisationInputs({
           role="alert"
           className="border border-danger/40 bg-danger-soft/30 px-3 py-2 text-sm text-danger"
         >
-          Admin fee is below the floor of {value.admin_floor.toFixed(2)} — pricing requires approval before activation.
+          Admin fee is below the floor of {value.admin_floor.toFixed(2)} — pricing requires approval
+          before activation.
         </p>
       )}
     </div>
@@ -385,14 +386,9 @@ function InvoicePreview({
   }, [stable])
 
   return (
-    <section
-      aria-label="Invoice preview"
-      className="border border-fg/20 bg-white p-4"
-    >
+    <section aria-label="Invoice preview" className="border border-fg/20 bg-white p-4">
       <h3 className="text-sm font-semibold text-fg">Invoice preview</h3>
-      <p className="mt-1 text-xs text-fg/60">
-        Projected at {projectedSessions} sessions/month.
-      </p>
+      <p className="mt-1 text-xs text-fg/60">Projected at {projectedSessions} sessions/month.</p>
       {!debouncedReady || query.isPending ? (
         <p className="mt-3 text-sm text-fg/60">Calculating…</p>
       ) : (

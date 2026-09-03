@@ -1,38 +1,38 @@
-import { useState } from 'react'
+import { useState } from "react"
 
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Check } from 'lucide-react'
-import { z } from 'zod'
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { ArrowLeft, Check } from "lucide-react"
+import { z } from "zod"
 
-import { authApi } from '@/api/endpoints/auth'
-import { FormField } from '@/components/common/FormField'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useApiForm } from '@/hooks/useApiForm'
-import { isApiError, isValidationError } from '@/lib/errors'
-import { ApiError } from '@/types/api'
+import { authApi } from "@/api/endpoints/auth"
+import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
+import { isApiError, isValidationError } from "@/lib/errors"
+import { ApiError } from "@/types/api"
 
-export const Route = createFileRoute('/auth/set-password')({
+export const Route = createFileRoute("/auth/set-password")({
   component: SetPasswordPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    token: typeof search.token === 'string' ? search.token : '',
-    tenant_code: typeof search.tenant_code === 'string' ? search.tenant_code : '',
+    token: typeof search.token === "string" ? search.token : "",
+    tenant_code: typeof search.tenant_code === "string" ? search.tenant_code : "",
   }),
 })
 
 const SET_PASSWORD_GENERIC_ERROR =
-  'Please check your password and try again. Use at least 8 characters and make sure both fields match.'
+  "Please check your password and try again. Use at least 8 characters and make sure both fields match."
 const SET_PASSWORD_LINK_ERROR =
-  'Invalid or expired link. Request a new link from your administrator.'
+  "Invalid or expired link. Request a new link from your administrator."
 
 const setPasswordSchema = z
   .object({
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     password_confirm: z.string(),
   })
   .refine((d) => d.password === d.password_confirm, {
-    path: ['password_confirm'],
-    message: 'Passwords do not match',
+    path: ["password_confirm"],
+    message: "Passwords do not match",
   })
 
 function SetPasswordPage() {
@@ -41,13 +41,15 @@ function SetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const { register, formState, submit, serverError } = useApiForm<z.infer<typeof setPasswordSchema>>({
+  const { register, formState, submit, serverError } = useApiForm<
+    z.infer<typeof setPasswordSchema>
+  >({
     schema: setPasswordSchema,
-    defaultValues: { password: '', password_confirm: '' },
+    defaultValues: { password: "", password_confirm: "" },
     errorToast: false,
     onSubmit: async (values) => {
       if (!token) {
-        throw new ApiError(SET_PASSWORD_LINK_ERROR, 'INVALID_TOKEN', 400)
+        throw new ApiError(SET_PASSWORD_LINK_ERROR, "INVALID_TOKEN", 400)
       }
       try {
         await authApi.setInitialPassword({
@@ -64,7 +66,7 @@ function SetPasswordPage() {
         }
         throw new ApiError(
           SET_PASSWORD_LINK_ERROR,
-          isApiError(err) ? err.code : 'INVALID_TOKEN',
+          isApiError(err) ? err.code : "INVALID_TOKEN",
           isApiError(err) ? err.status : 400,
         )
       }
@@ -73,7 +75,7 @@ function SetPasswordPage() {
 
   const goToLogin = () => {
     navigate({
-      to: '/auth/login',
+      to: "/auth/login",
       search: { tenant_code: tenant_code || undefined, email: undefined, redirect: undefined },
     })
   }
@@ -91,14 +93,19 @@ function SetPasswordPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-fg">You can now log in</h2>
-            <p className="text-fg-muted text-sm">Use your admin email and your new password to sign in.</p>
+            <p className="text-fg-muted text-sm">
+              Use your admin email and your new password to sign in.
+            </p>
           </div>
         </div>
         <Button type="button" onClick={goToLogin} className="w-full">
           Go to Sign in
         </Button>
         <div className="mt-6 text-center">
-          <Link to="/" className="text-fg-muted hover:text-fg text-sm inline-flex items-center gap-2">
+          <Link
+            to="/"
+            className="text-fg-muted hover:text-fg text-sm inline-flex items-center gap-2"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
@@ -151,9 +158,9 @@ function SetPasswordPage() {
         >
           <Input
             id="password"
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
-            {...register('password')}
+            {...register("password")}
           />
         </FormField>
         <Button
@@ -163,7 +170,7 @@ function SetPasswordPage() {
           onClick={() => setShowPassword(!showPassword)}
           className="h-auto p-0 text-fg-muted hover:text-primary text-sm"
         >
-          {showPassword ? 'Hide' : 'Show'} password
+          {showPassword ? "Hide" : "Show"} password
         </Button>
         <FormField
           label="Confirm password"
@@ -175,16 +182,12 @@ function SetPasswordPage() {
             id="password_confirm"
             type="password"
             placeholder="••••••••"
-            {...register('password_confirm')}
+            {...register("password_confirm")}
           />
         </FormField>
 
-        <Button
-          type="submit"
-          disabled={formState.isSubmitting}
-          className="w-full"
-        >
-          {formState.isSubmitting ? 'Setting password...' : 'Set password'}
+        <Button type="submit" disabled={formState.isSubmitting} className="w-full">
+          {formState.isSubmitting ? "Setting password..." : "Set password"}
         </Button>
       </form>
 

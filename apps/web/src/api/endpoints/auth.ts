@@ -6,19 +6,19 @@
  *  - Azure AD: GET /auth/azure/login → 302 to Microsoft → callback sets cookies on FE domain
  */
 
-import apiClient from '../client'
-import type { AuthResponse, LoginRequest } from '../types'
+import apiClient from "../client"
+import type { AuthResponse, LoginRequest } from "../types"
 
 function useAuthCookies(): boolean {
-  return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
+  return import.meta.env.VITE_AUTH_USE_COOKIES === "true"
 }
 
 function azureSsoEnabled(): boolean {
-  return import.meta.env.VITE_AZURE_SSO_ENABLED === 'true'
+  return import.meta.env.VITE_AZURE_SSO_ENABLED === "true"
 }
 
 function apiBaseUrl(): string {
-  return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '')
+  return (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "")
 }
 
 export interface MeResponse {
@@ -35,14 +35,14 @@ export const authApi = {
    * Cookie mode: tokens set by Set-Cookie. Bearer mode: tokens stored client-side.
    */
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
+    const response = await apiClient.post<AuthResponse>("/auth/login", credentials)
 
     if (!useAuthCookies()) {
       if (response.access_token) apiClient.setToken(response.access_token, response.expires_in)
       if (response.refresh_token) apiClient.setRefreshToken(response.refresh_token)
     } else {
       const csrf = (response as AuthResponse & { csrf_token?: string }).csrf_token
-      if (typeof csrf === 'string') apiClient.setCsrfToken(csrf)
+      if (typeof csrf === "string") apiClient.setCsrfToken(csrf)
     }
 
     return response
@@ -54,7 +54,7 @@ export const authApi = {
   async logout(): Promise<void> {
     if (useAuthCookies()) {
       try {
-        await apiClient.post<unknown>('/auth/logout', undefined)
+        await apiClient.post<unknown>("/auth/logout", undefined)
       } catch (_err) {
         // ignore — client clears state below
       }
@@ -62,7 +62,7 @@ export const authApi = {
       const refreshToken = apiClient.getRefreshToken()
       if (refreshToken) {
         try {
-          await apiClient.post<unknown>('/auth/logout', { refresh_token: refreshToken })
+          await apiClient.post<unknown>("/auth/logout", { refresh_token: refreshToken })
         } catch (_err) {
           // ignore
         }
@@ -88,7 +88,7 @@ export const authApi = {
     password: string
     password_confirm: string
   }): Promise<void> {
-    await apiClient.post<unknown>('/auth/set-initial-password', data)
+    await apiClient.post<unknown>("/auth/set-initial-password", data)
   },
 
   /**
@@ -97,7 +97,7 @@ export const authApi = {
    * are pre-set by the BE but the FE has no in-memory state yet).
    */
   async me(): Promise<MeResponse> {
-    return apiClient.get<MeResponse>('/auth/me')
+    return apiClient.get<MeResponse>("/auth/me")
   },
 
   /**

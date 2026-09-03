@@ -117,12 +117,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
     >
       <FormSection title="Account">
         <FormField label="Email" required error={errors.email?.message} htmlFor="us-email">
-          <Input
-            id="us-email"
-            type="email"
-            placeholder="ada@minet.com"
-            {...register("email")}
-          />
+          <Input id="us-email" type="email" placeholder="ada@minet.com" {...register("email")} />
         </FormField>
         <FormField
           label="Initial password"
@@ -160,10 +155,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
           />
         </FormField>
       </FormSection>
-      <FormSection
-        title="Preferences"
-        description="Optional. The user can change these later."
-      >
+      <FormSection title="Preferences" description="Optional. The user can change these later.">
         <FormField
           label="Preferred language"
           optional
@@ -203,12 +195,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
   )
 }
 
-function UserEditSheet({
-  open,
-  onOpenChange,
-  user,
-  onSaved,
-}: UserFormSheetProps & { user: User }) {
+function UserEditSheet({ open, onOpenChange, user, onSaved }: UserFormSheetProps & { user: User }) {
   const { register, control, formState, submit, serverError } = useEntityFormSheet<
     EditValues,
     Parameters<typeof usersApi.updatePreferences>[1],
@@ -256,13 +243,7 @@ function UserEditSheet({
     >
       <FormSection title="Account">
         <FormField label="Email" htmlFor="us-email-readonly">
-          <Input
-            id="us-email-readonly"
-            type="email"
-            value={user.email}
-            disabled
-            readOnly
-          />
+          <Input id="us-email-readonly" type="email" value={user.email} disabled readOnly />
         </FormField>
         <Input type="hidden" {...register("email")} />
       </FormSection>

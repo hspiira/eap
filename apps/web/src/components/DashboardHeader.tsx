@@ -26,12 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
 import { queryKeys } from "@/lib/query-keys"
@@ -46,15 +41,12 @@ const ROUTE_TITLES: Record<string, string> = {
   "/design": "Design gallery",
 }
 
-const ICON_BUTTON =
-  "size-8 shrink-0 text-fg-muted hover:bg-surface-hover hover:text-fg"
+const ICON_BUTTON = "size-8 shrink-0 text-fg-muted hover:bg-surface-hover hover:text-fg"
 
 function PageTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const title = ROUTE_TITLES[pathname] ?? humaniseRoute(pathname)
-  return (
-    <span className="truncate text-sm font-medium text-fg">{title}</span>
-  )
+  return <span className="truncate text-sm font-medium text-fg">{title}</span>
 }
 
 function humaniseRoute(pathname: string): string {
@@ -118,27 +110,21 @@ function NotificationsDropdown() {
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="text-fg">Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <div className="px-2 py-3 text-center text-xs text-fg-muted">
-          You're all caught up.
-        </div>
+        <div className="px-2 py-3 text-center text-xs text-fg-muted">You're all caught up.</div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
 function ThemeToggle() {
-  const preference = useUIStore((s) => s.theme); const setPreference = useUIStore((s) => s.setTheme)
+  const preference = useUIStore((s) => s.theme)
+  const setPreference = useUIStore((s) => s.setTheme)
   const cycle = () => {
     const next: Array<"light" | "dark" | "system"> = ["light", "dark", "system"]
     const i = next.indexOf(preference)
     setPreference(next[(i + 1) % next.length])
   }
-  const label =
-    preference === "light"
-      ? "Light"
-      : preference === "dark"
-        ? "Dark"
-        : "System"
+  const label = preference === "light" ? "Light" : preference === "dark" ? "Dark" : "System"
   const Icon = preference === "light" ? Sun : preference === "dark" ? Moon : Monitor
   return (
     <Tooltip>
@@ -200,9 +186,7 @@ function UserMenu() {
           >
             {initial}
           </span>
-          <span className="hidden max-w-32 truncate text-sm md:inline">
-            {displayEmail}
-          </span>
+          <span className="hidden max-w-32 truncate text-sm md:inline">{displayEmail}</span>
           <ChevronDown className="size-3.5 shrink-0" />
         </Button>
       </DropdownMenuTrigger>

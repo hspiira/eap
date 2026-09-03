@@ -222,10 +222,7 @@ function EngagementsListPage() {
         />
       </FilterBar>
 
-      <EngagementFormSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-      />
+      <EngagementFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -258,40 +255,49 @@ function EngagementsListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
-                  <TableHead>
-                    <SortHeader field="name" sort={sort} onToggle={toggleSort}>
-                      Engagement
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                      Status
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="engagement_type" sort={sort} onToggle={toggleSort}>
-                      Type
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="due_date" sort={sort} onToggle={toggleSort}>
-                      Due
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead className="text-fg/65">Hours</TableHead>
-                  <TableHead className="w-16 text-right text-fg/65">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((e) => (
-                  <EngagementRow key={e.id} row={e} isSelected={selection.selectedIds.has(e.id)} onToggle={() => selection.toggleSelect(e.id)} />
-                ))}
-              </TableBody>
-            </Table>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Engagement
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="engagement_type" sort={sort} onToggle={toggleSort}>
+                        Type
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="due_date" sort={sort} onToggle={toggleSort}>
+                        Due
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Hours</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((e) => (
+                    <EngagementRow
+                      key={e.id}
+                      row={e}
+                      isSelected={selection.selectedIds.has(e.id)}
+                      onToggle={() => selection.toggleSelect(e.id)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </>
         )}
@@ -300,7 +306,15 @@ function EngagementsListPage() {
   )
 }
 
-function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelected: boolean; onToggle: () => void }) {
+function EngagementRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: Engagement
+  isSelected: boolean
+  onToggle: () => void
+}) {
   const overdue = isOverdue(row.due_date, row.status)
   const budgetPct = row.budget_hours
     ? Math.round((row.hours_logged / row.budget_hours) * 100)
@@ -308,7 +322,11 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select ${row.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
         <Link
@@ -347,9 +365,7 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
         </div>
       </TableCell>
       <TableCell className="text-xs text-fg/75">{row.engagement_type}</TableCell>
-      <TableCell className="text-sm text-fg/75">
-        {formatDate(row.due_date)}
-      </TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDate(row.due_date)}</TableCell>
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
@@ -358,26 +374,15 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
               {row.budget_hours ? `/${row.budget_hours}` : ""}
             </span>
             {budgetPct !== null ? (
-              <span
-                className={cn(
-                  "font-mono",
-                  budgetPct > 100 ? "text-amber-600" : "text-fg/55",
-                )}
-              >
+              <span className={cn("font-mono", budgetPct > 100 ? "text-amber-600" : "text-fg/55")}>
                 {budgetPct}%
               </span>
             ) : null}
           </div>
           {budgetPct !== null ? (
-            <div
-              className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10"
-              aria-hidden
-            >
+            <div className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10" aria-hidden>
               <div
-                className={cn(
-                  "h-full",
-                  budgetPct > 100 ? "bg-amber-500" : "bg-primary",
-                )}
+                className={cn("h-full", budgetPct > 100 ? "bg-amber-500" : "bg-primary")}
                 style={{ width: `${Math.min(100, budgetPct)}%` }}
               />
             </div>
@@ -396,14 +401,19 @@ function EngagementRow({ row, isSelected, onToggle }: { row: Engagement; isSelec
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link
-                  to="/engagements/$engagementId"
-                  params={{ engagementId: row.id }}
-                >
+                <Link to="/engagements/$engagementId" params={{ engagementId: row.id }}>
                   View details
                 </Link>
               </DropdownMenuItem>
@@ -446,10 +456,7 @@ function statusTone(status: EngagementStatus): string {
   }
 }
 
-export function isOverdue(
-  due: string | null | undefined,
-  status: EngagementStatus,
-): boolean {
+export function isOverdue(due: string | null | undefined, status: EngagementStatus): boolean {
   if (!due) return false
   if (status === EngagementStatus.DELIVERED || status === EngagementStatus.CLOSED) return false
   if (status === EngagementStatus.CANCELLED) return false

@@ -13,12 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
-import {
-  AccreditationStatus,
-  PanelStatus,
-  ProviderRegion,
-  ProviderTier,
-} from "@/types/enums"
+import { AccreditationStatus, PanelStatus, ProviderRegion, ProviderTier } from "@/types/enums"
 
 const REGIONS = Object.values(ProviderRegion)
 const TIERS = Object.values(ProviderTier)
@@ -115,7 +110,8 @@ function ProvidersListPage() {
             {items.map((p) => {
               const profile = p.provider_profile
               const off = profile.panel_status !== PanelStatus.ACTIVE
-              const accreditationOK = profile.accreditation_status === AccreditationStatus.ACCREDITED
+              const accreditationOK =
+                profile.accreditation_status === AccreditationStatus.ACCREDITED
               return (
                 <li key={p.id}>
                   <Link
@@ -125,12 +121,8 @@ function ProvidersListPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="truncate text-sm font-semibold text-fg">
-                          {p.id}
-                        </h2>
-                        <p className="mt-0.5 text-xs text-fg/60">
-                          {profile.region}
-                        </p>
+                        <h2 className="truncate text-sm font-semibold text-fg">{p.id}</h2>
+                        <p className="mt-0.5 text-xs text-fg/60">{profile.region}</p>
                       </div>
                       <ProviderTierBadge tier={profile.tier} />
                     </div>

@@ -1,14 +1,7 @@
 import { useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  Building2,
-  Calendar,
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react"
+import { Building2, Calendar, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
@@ -83,9 +76,18 @@ function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
   const navigate = useNavigate({ from: "/clients/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen: addModalOpen, setAddOpen: setAddModalOpen,
-    page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen: addModalOpen,
+    setAddOpen: setAddModalOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
   const [timeRange, setTimeRange] = useState<TimeRange>("12h")
   const activeTier = searchParams.tier
@@ -119,11 +121,7 @@ function ClientsListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setAddModalOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
             <Plus className="size-3.5" />
             Add client
           </Button>
@@ -140,10 +138,7 @@ function ClientsListPage() {
           ]}
         />
         {activeTier ? (
-          <FilterChip
-            label={`Tier is ${activeTier}`}
-            onRemove={() => handleTierChange("all")}
-          />
+          <FilterChip label={`Tier is ${activeTier}`} onRemove={() => handleTierChange("all")} />
         ) : null}
         <FilterTrigger
           label="All tiers"
@@ -159,22 +154,20 @@ function ClientsListPage() {
           onChange={setTimeRange}
         />
         <div className="ml-auto" />
-        <FilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Search clients…"
-        />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search clients…" />
       </FilterBar>
 
-      <ClientFormSheet
-        open={addModalOpen}
-        onOpenChange={setAddModalOpen}
-      />
+      <ClientFormSheet open={addModalOpen} onOpenChange={setAddModalOpen} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <TableSkeleton cols={5} headers={["Name","Code","Status","Contact","Operation"]} withFilters withPagination />
+            <TableSkeleton
+              cols={5}
+              headers={["Name", "Code", "Status", "Contact", "Operation"]}
+              withFilters
+              withPagination
+            />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={() => void query.refetch()} />
@@ -260,7 +253,15 @@ function ClientsListPage() {
   )
 }
 
-function ClientRow({ row, isSelected, onToggle }: { row: Client; isSelected: boolean; onToggle: () => void }) {
+function ClientRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: Client
+  isSelected: boolean
+  onToggle: () => void
+}) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
     row.contact_info?.email && row.contact_info?.phone ? row.contact_info?.phone : null
@@ -286,9 +287,7 @@ function ClientRow({ row, isSelected, onToggle }: { row: Client; isSelected: boo
           >
             {nameInitials(row.name)}
           </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">
-            {row.name}
-          </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
         </Link>
       </TableCell>
       <TableCell className="font-mono text-xs text-fg/70">{row.code}</TableCell>
@@ -350,4 +349,3 @@ function ClientRow({ row, isSelected, onToggle }: { row: Client; isSelected: boo
     </TableRow>
   )
 }
-

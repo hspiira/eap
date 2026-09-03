@@ -2,14 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  ChevronRight,
-  FileCheck,
-  FileSignature,
-  Pencil,
-  Plus,
-} from "lucide-react"
+import { ArrowLeft, ChevronRight, FileCheck, FileSignature, Pencil, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -190,12 +183,12 @@ function ContractDetailPage() {
                   <DetailCard title="Lifecycle">
                     <DetailGrid>
                       <DetailRow label="Status" value={<StatusBadge status={contract.status} />} />
-                      <DetailRow label="Start date" value={formatDate(contract.period.start_date)} />
-                      <DetailRow label="End date" value={formatDate(contract.period.end_date)} />
                       <DetailRow
-                        label="Auto-renew"
-                        value={contract.is_auto_renew ? "Yes" : "No"}
+                        label="Start date"
+                        value={formatDate(contract.period.start_date)}
                       />
+                      <DetailRow label="End date" value={formatDate(contract.period.end_date)} />
+                      <DetailRow label="Auto-renew" value={contract.is_auto_renew ? "Yes" : "No"} />
                     </DetailGrid>
                     {lifecycleSummary ? (
                       <p className="mt-3 text-xs text-fg/60">{lifecycleSummary}</p>
@@ -332,9 +325,7 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
 
       <RailSection title="Billing snapshot">
         <DetailGrid>
-          <DetailRow label="Amount" value={
-            formatMoney(contract)
-          } />
+          <DetailRow label="Amount" value={formatMoney(contract)} />
           <DetailRow label="Frequency" value={contract.payment_frequency} />
           <DetailRow label="Payment" value={contract.payment_status} fullWidth />
         </DetailGrid>

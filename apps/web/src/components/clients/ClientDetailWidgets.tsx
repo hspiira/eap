@@ -22,19 +22,9 @@ const ROW_BORDER = "border-fg/8"
 import { useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  BadgeCheck,
-  ChevronRight,
-  Plus,
-} from "lucide-react"
+import { ArrowLeft, BadgeCheck, ChevronRight, Plus } from "lucide-react"
 
-import {
-  DetailGrid,
-  DetailRow,
-  RailSection,
-  Stat,
-} from "@/components/common/DetailPrimitives"
+import { DetailGrid, DetailRow, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import {
@@ -142,69 +132,69 @@ export function ContractsPanel({
         </Button>
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
-      <Table className="w-full caption-bottom text-sm">
-        <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
-          <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-            <TableHead>
-              <SortHeader field="number" sort={sort} onToggle={toggleSort}>
-                Number
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                Status
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
-                Start
-              </SortHeader>
-            </TableHead>
-            <TableHead>
-              <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                End
-              </SortHeader>
-            </TableHead>
-            <TableHead className="w-10 text-right text-fg/65">
-              <span className="sr-only">Open</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.map((c) => (
-            <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
-              <TableCell>
-                <Link
-                  to="/contracts/$contractId"
-                  params={{ contractId: c.id }}
-                  className="font-medium text-fg group-hover:text-primary"
-                >
-                  {c.id.slice(0, 8)}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={c.status} />
-              </TableCell>
-              <TableCell className="text-sm text-fg/75">
-                {formatDate(c.period.start_date)}
-              </TableCell>
-              <TableCell className="text-sm text-fg/75">
-                {formatDate(c.period.end_date)}
-              </TableCell>
-              <TableCell className="text-right">
-                <Link
-                  to="/contracts/$contractId"
-                  params={{ contractId: c.id }}
-                  aria-label="Open contract"
-                  className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
-                >
-                  <ChevronRight className="size-3.5" />
-                </Link>
-              </TableCell>
+        <Table className="w-full caption-bottom text-sm">
+          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+            <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+              <TableHead>
+                <SortHeader field="number" sort={sort} onToggle={toggleSort}>
+                  Number
+                </SortHeader>
+              </TableHead>
+              <TableHead>
+                <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                  Status
+                </SortHeader>
+              </TableHead>
+              <TableHead>
+                <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
+                  Start
+                </SortHeader>
+              </TableHead>
+              <TableHead>
+                <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
+                  End
+                </SortHeader>
+              </TableHead>
+              <TableHead className="w-10 text-right text-fg/65">
+                <span className="sr-only">Open</span>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {sorted.map((c) => (
+              <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
+                <TableCell>
+                  <Link
+                    to="/contracts/$contractId"
+                    params={{ contractId: c.id }}
+                    className="font-medium text-fg group-hover:text-primary"
+                  >
+                    {c.id.slice(0, 8)}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={c.status} />
+                </TableCell>
+                <TableCell className="text-sm text-fg/75">
+                  {formatDate(c.period.start_date)}
+                </TableCell>
+                <TableCell className="text-sm text-fg/75">
+                  {formatDate(c.period.end_date)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    to="/contracts/$contractId"
+                    params={{ contractId: c.id }}
+                    aria-label="Open contract"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   )
@@ -240,10 +230,7 @@ export function DetailRail({
           <DetailRow label="Phone" value={client.contact_info?.phone} />
           <DetailRow label="Address" value={client.contact_info?.address} fullWidth />
           {client.preferred_contact_method ? (
-            <DetailRow
-              label="Preferred"
-              value={client.preferred_contact_method}
-            />
+            <DetailRow label="Preferred" value={client.preferred_contact_method} />
           ) : null}
         </DetailGrid>
       </RailSection>

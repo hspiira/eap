@@ -38,14 +38,10 @@ export function FormField({
           ) : null}
         </Label>
         {optional ? (
-          <span className="text-[10px] font-medium tracking-wide text-fg/45">
-            Optional
-          </span>
+          <span className="text-[10px] font-medium tracking-wide text-fg/45">Optional</span>
         ) : null}
       </div>
-      {description ? (
-        <p className="text-xs leading-relaxed text-fg/55">{description}</p>
-      ) : null}
+      {description ? <p className="text-xs leading-relaxed text-fg/55">{description}</p> : null}
       {children}
       {error ? (
         <p className="text-xs font-medium text-danger" role="alert">

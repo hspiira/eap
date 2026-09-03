@@ -1,11 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  ClipboardList,
-  ShieldCheck,
-  XCircle,
-} from "lucide-react"
+import { ArrowLeft, ClipboardList, ShieldCheck, XCircle } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { surveysApi } from "@/api/endpoints/surveys"
@@ -46,12 +41,7 @@ export const Route = createFileRoute("/surveys/$surveyId")({
 })
 
 type TabValue = "overview" | "webhook" | "aggregate" | "history"
-const TAB_VALUES: ReadonlyArray<TabValue> = [
-  "overview",
-  "webhook",
-  "aggregate",
-  "history",
-]
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "webhook", "aggregate", "history"]
 
 function SurveyDetailPage() {
   const { surveyId } = Route.useParams()
@@ -172,11 +162,7 @@ function SurveyDetailPage() {
                   <DetailCard title="Identity">
                     <DetailGrid>
                       <DetailRow label="Name" value={survey.name} fullWidth />
-                      <DetailRow
-                        label="Description"
-                        value={survey.description}
-                        fullWidth
-                      />
+                      <DetailRow label="Description" value={survey.description} fullWidth />
                       <DetailRow
                         label="Status"
                         value={<SurveyStatusPill status={survey.status} />}
@@ -192,9 +178,7 @@ function SurveyDetailPage() {
                       <DetailRow
                         label="First response"
                         value={
-                          survey.first_response_at
-                            ? formatDateTime(survey.first_response_at)
-                            : null
+                          survey.first_response_at ? formatDateTime(survey.first_response_at) : null
                         }
                       />
                       <DetailRow
@@ -214,10 +198,7 @@ function SurveyDetailPage() {
               </TabPanel>
 
               <TabPanel value="aggregate">
-                <AggregatePanel
-                  aggregate={aggregate}
-                  loading={aggregateQuery.isPending}
-                />
+                <AggregatePanel aggregate={aggregate} loading={aggregateQuery.isPending} />
               </TabPanel>
 
               <TabPanel value="history">
@@ -301,8 +282,8 @@ function AggregatePanel({
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-medium text-fg">Insufficient data</p>
             <p className="mt-0.5 text-fg/60">
-              Aggregate metrics suppressed until at least {SURVEY_K_FLOOR} responses arrive
-              (k-anon floor). Currently {aggregate.response_count}.
+              Aggregate metrics suppressed until at least {SURVEY_K_FLOOR} responses arrive (k-anon
+              floor). Currently {aggregate.response_count}.
             </p>
           </div>
         </div>
@@ -315,14 +296,9 @@ function AggregatePanel({
         <DetailGrid>
           <DetailRow label="Responses" value={aggregate.response_count} />
           {aggregate.satisfaction_mean != null ? (
-            <DetailRow
-              label="Satisfaction (mean)"
-              value={aggregate.satisfaction_mean.toFixed(2)}
-            />
+            <DetailRow label="Satisfaction (mean)" value={aggregate.satisfaction_mean.toFixed(2)} />
           ) : null}
-          {aggregate.nps != null ? (
-            <DetailRow label="NPS" value={aggregate.nps} />
-          ) : null}
+          {aggregate.nps != null ? <DetailRow label="NPS" value={aggregate.nps} /> : null}
         </DetailGrid>
       </DetailCard>
       <DetailCard title="Per-question outcomes">
@@ -330,8 +306,12 @@ function AggregatePanel({
           <Table className="w-full text-sm">
             <TableHeader className="bg-bg">
               <TableRow className="text-left hover:bg-transparent">
-                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Question</TableHead>
-                <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">n</TableHead>
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">
+                  Question
+                </TableHead>
+                <TableHead className="w-16 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
+                  n
+                </TableHead>
                 <TableHead className="w-32 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
                   Mean / Top
                 </TableHead>
@@ -377,19 +357,11 @@ function DetailRail({
           <Stat
             label="Satisfaction"
             value={
-              aggregate?.satisfaction_mean != null
-                ? aggregate.satisfaction_mean.toFixed(2)
-                : "—"
+              aggregate?.satisfaction_mean != null ? aggregate.satisfaction_mean.toFixed(2) : "—"
             }
           />
-          <Stat
-            label="NPS"
-            value={aggregate?.nps != null ? String(aggregate.nps) : "—"}
-          />
-          <Stat
-            label="K-floor"
-            value={aggregate?.k_floor_met ? "Met" : `${SURVEY_K_FLOOR}+`}
-          />
+          <Stat label="NPS" value={aggregate?.nps != null ? String(aggregate.nps) : "—"} />
+          <Stat label="K-floor" value={aggregate?.k_floor_met ? "Met" : `${SURVEY_K_FLOOR}+`} />
         </div>
       </RailSection>
 
@@ -417,8 +389,8 @@ function DetailRail({
       <RailSection title="Privacy">
         <p className="rounded-sm border border-fg/10 bg-surface px-3 py-2 text-xs text-fg/65">
           <ShieldCheck className="mr-1 inline size-3 text-primary" />
-          Aggregate metrics are suppressed until at least {SURVEY_K_FLOOR} responses
-          arrive. Free-text answers never appear in reports.
+          Aggregate metrics are suppressed until at least {SURVEY_K_FLOOR} responses arrive.
+          Free-text answers never appear in reports.
         </p>
       </RailSection>
     </div>
@@ -432,4 +404,3 @@ function topHistogramEntry(h: Record<string, number>): string {
   const [value, count] = entries[0]
   return `${value} (${count})`
 }
-

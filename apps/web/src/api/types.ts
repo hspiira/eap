@@ -15,7 +15,7 @@ export type {
   PaginatedResponse,
   PaginationParams,
   UpdateRequest,
-} from '@/types/api'
+} from "@/types/api"
 export type {
   Activity,
   Address,
@@ -69,5 +69,5 @@ export type {
   SurveyQuestionSummary,
   Tenant,
   User,
-} from '@/types/entities'
-export * from '@/types/enums'
+} from "@/types/entities"
+export * from "@/types/enums"

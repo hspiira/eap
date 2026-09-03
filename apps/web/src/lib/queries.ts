@@ -15,16 +15,16 @@ import {
   useQuery,
   useQueryClient,
   type UseQueryOptions,
-} from '@tanstack/react-query'
+} from "@tanstack/react-query"
 
-import type { ListParams, PaginatedResponse } from '@/types/api'
+import type { ListParams, PaginatedResponse } from "@/types/api"
 
 export function entityListKey(resource: string, params?: object): QueryKey {
-  return params ? [resource, 'list', params] : [resource, 'list']
+  return params ? [resource, "list", params] : [resource, "list"]
 }
 
 export function entityDetailKey(resource: string, id: string): QueryKey {
-  return [resource, 'detail', id]
+  return [resource, "detail", id]
 }
 
 export interface UseEntityListOptions<T, P extends ListParams = ListParams> {
@@ -67,15 +67,17 @@ export function useEntityDetail<T>({
   staleTime,
 }: UseEntityDetailOptions<T>) {
   return useQuery({
-    queryKey: entityDetailKey(resource, id ?? ''),
+    queryKey: entityDetailKey(resource, id ?? ""),
     queryFn: () => detailFn(id as string),
     enabled: enabled !== undefined ? enabled : !!id,
     staleTime,
   } as UseQueryOptions<T>)
 }
 
-export interface UseEntityMutationOptions<TVariables = void, TResult = unknown>
-  extends Omit<UseMutationOptions<TResult, unknown, TVariables>, 'mutationFn'> {
+export interface UseEntityMutationOptions<TVariables = void, TResult = unknown> extends Omit<
+  UseMutationOptions<TResult, unknown, TVariables>,
+  "mutationFn"
+> {
   resource: string
   mutationFn: (vars: TVariables) => Promise<TResult>
   /** Detail id to invalidate after success (for update/delete). */
@@ -108,19 +110,16 @@ export function useEntityMutation<TVariables = void, TResult = unknown>(
     mutationFn,
     onSuccess: async (result, vars, ...rest_args) => {
       if (!skipListInvalidation) {
-        await qc.invalidateQueries({ queryKey: [resource, 'list'] })
+        await qc.invalidateQueries({ queryKey: [resource, "list"] })
       }
-      const id =
-        typeof detailId === 'function' ? detailId(result, vars) : detailId
+      const id = typeof detailId === "function" ? detailId(result, vars) : detailId
       if (id) {
         await qc.invalidateQueries({ queryKey: entityDetailKey(resource, id) })
       }
       const extras =
-        typeof invalidateKeys === 'function' ? invalidateKeys(result, vars) : invalidateKeys
+        typeof invalidateKeys === "function" ? invalidateKeys(result, vars) : invalidateKeys
       if (extras && extras.length > 0) {
-        await Promise.all(
-          extras.map((key) => qc.invalidateQueries({ queryKey: key })),
-        )
+        await Promise.all(extras.map((key) => qc.invalidateQueries({ queryKey: key })))
       }
       onSuccess?.(result, vars, ...rest_args)
     },

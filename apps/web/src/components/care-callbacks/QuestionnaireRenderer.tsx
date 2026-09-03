@@ -68,9 +68,7 @@ function QuestionField({ question, value, onChange, readOnly }: QuestionFieldPro
         {question.prompt}
         {question.required && <span className="ml-1 text-danger-soft">*</span>}
       </label>
-      {question.help_text ? (
-        <p className="text-xs text-fg/60">{question.help_text}</p>
-      ) : null}
+      {question.help_text ? <p className="text-xs text-fg/60">{question.help_text}</p> : null}
       {renderInput(question, value, onChange, readOnly, labelId)}
     </div>
   )
@@ -136,9 +134,7 @@ function renderInput(
                   disabled={readOnly}
                   checked={checked}
                   onCheckedChange={(v) => {
-                    const next = v
-                      ? [...arr, opt.value]
-                      : arr.filter((x) => x !== opt.value)
+                    const next = v ? [...arr, opt.value] : arr.filter((x) => x !== opt.value)
                     onChange(next.length ? next : null)
                   }}
                 />
@@ -173,7 +169,16 @@ interface ScaleInputProps {
   readOnly?: boolean
 }
 
-function ScaleInput({ inputId, min, max, minLabel, maxLabel, value, onChange, readOnly }: ScaleInputProps) {
+function ScaleInput({
+  inputId,
+  min,
+  max,
+  minLabel,
+  maxLabel,
+  value,
+  onChange,
+  readOnly,
+}: ScaleInputProps) {
   const ticks = []
   for (let i = min; i <= max; i++) ticks.push(i)
   return (

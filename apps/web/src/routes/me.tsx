@@ -1,64 +1,64 @@
-import { useMemo } from 'react'
+import { useMemo } from "react"
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { AlertCircle, ArrowLeft, Building2, Inbox, LogOut, User as UserIcon } from 'lucide-react'
-import { z } from 'zod'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { AlertCircle, ArrowLeft, Building2, Inbox, LogOut, User as UserIcon } from "lucide-react"
+import { z } from "zod"
 
-import { usersApi } from '@/api/endpoints/users'
-import { AppLayout } from '@/components/AppLayout'
-import { AtRiskPage } from '@/components/AtRiskPage'
-import { FormField } from '@/components/common/FormField'
-import { PageShell } from '@/components/common/PageShell'
-import { DetailSkeleton } from '@/components/common/PageSkeletons'
-import { RequireAuth } from '@/components/common/RequireAuth'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { InboxPage } from '@/components/InboxPage'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { usersApi } from "@/api/endpoints/users"
+import { AppLayout } from "@/components/AppLayout"
+import { AtRiskPage } from "@/components/AtRiskPage"
+import { FormField } from "@/components/common/FormField"
+import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
+import { RequireAuth } from "@/components/common/RequireAuth"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { InboxPage } from "@/components/InboxPage"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/contexts/ToastContext'
-import { useApiForm } from '@/hooks/useApiForm'
-import { authActions } from '@/lib/auth-store'
-import { queryKeys } from '@/lib/query-keys'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { useTenantStore } from '@/store/slices/tenantSlice'
-import type { User } from '@/types/entities'
-import { Language } from '@/types/enums'
+} from "@/components/ui/select"
+import { useToast } from "@/contexts/ToastContext"
+import { useApiForm } from "@/hooks/useApiForm"
+import { authActions } from "@/lib/auth-store"
+import { queryKeys } from "@/lib/query-keys"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
+import type { User } from "@/types/entities"
+import { Language } from "@/types/enums"
 
-type MeView = 'inbox' | 'at-risk'
+type MeView = "inbox" | "at-risk"
 
-export const Route = createFileRoute('/me')({
+export const Route = createFileRoute("/me")({
   validateSearch: (search: Record<string, unknown>): { view?: MeView } => {
     const v = search.view
-    return v === 'inbox' || v === 'at-risk' ? { view: v } : {}
+    return v === "inbox" || v === "at-risk" ? { view: v } : {}
   },
   component: MePage,
 })
 
 const preferencesSchema = z.object({
   preferred_language: z.nativeEnum(Language),
-  timezone: z.string().trim().min(1, 'Timezone is required'),
+  timezone: z.string().trim().min(1, "Timezone is required"),
 })
 
 type PreferencesValues = z.infer<typeof preferencesSchema>
 
 const LANGUAGES: ReadonlyArray<{ value: Language; label: string }> = [
-  { value: Language.EN, label: 'English' },
-  { value: Language.ES, label: 'Español' },
-  { value: Language.FR, label: 'Français' },
-  { value: Language.DE, label: 'Deutsch' },
-  { value: Language.IT, label: 'Italiano' },
-  { value: Language.PT, label: 'Português' },
-  { value: Language.ZH, label: '中文' },
-  { value: Language.JA, label: '日本語' },
-  { value: Language.KO, label: '한국어' },
+  { value: Language.EN, label: "English" },
+  { value: Language.ES, label: "Español" },
+  { value: Language.FR, label: "Français" },
+  { value: Language.DE, label: "Deutsch" },
+  { value: Language.IT, label: "Italiano" },
+  { value: Language.PT, label: "Português" },
+  { value: Language.ZH, label: "中文" },
+  { value: Language.JA, label: "日本語" },
+  { value: Language.KO, label: "한국어" },
 ]
 
 function MePage() {
@@ -69,14 +69,17 @@ function MePage() {
   )
 }
 
-const VIEW_META: Record<MeView, { label: string; icon: React.ElementType; component: React.ComponentType }> = {
-  'inbox': { label: 'Inbox', icon: Inbox, component: InboxPage },
-  'at-risk': { label: 'At Risk', icon: AlertCircle, component: AtRiskPage },
+const VIEW_META: Record<
+  MeView,
+  { label: string; icon: React.ElementType; component: React.ComponentType }
+> = {
+  inbox: { label: "Inbox", icon: Inbox, component: InboxPage },
+  "at-risk": { label: "At Risk", icon: AlertCircle, component: AtRiskPage },
 }
 
 function MeBody() {
   const userId = useAuthStore((s) => s.user_id)
-  const { view } = useSearch({ from: '/me' })
+  const { view } = useSearch({ from: "/me" })
 
   if (view) {
     const meta = VIEW_META[view]
@@ -87,18 +90,15 @@ function MeBody() {
           icon={meta.icon}
           breadcrumb={
             <span className="flex items-center gap-1">
-              <Link to="/me" className="hover:text-fg transition-colors">Profile</Link>
+              <Link to="/me" className="hover:text-fg transition-colors">
+                Profile
+              </Link>
               <span className="text-fg/40">·</span>
               {meta.label}
             </span>
           }
           actions={
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs text-fg/70"
-            >
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-fg/70">
               <Link to="/me">
                 <ArrowLeft className="size-3" />
                 Back
@@ -146,15 +146,14 @@ function ProfileBody({ userId }: ProfileBodyProps) {
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.users.detail(userId), updated)
-      toast.showSuccess('Preferences saved')
+      toast.showSuccess("Preferences saved")
     },
   })
 
   const defaults = useMemo<PreferencesValues>(
     () => ({
-      preferred_language:
-        (user?.preferred_language as Language | undefined) ?? Language.EN,
-      timezone: user?.timezone ?? 'UTC',
+      preferred_language: (user?.preferred_language as Language | undefined) ?? Language.EN,
+      timezone: user?.timezone ?? "UTC",
     }),
     [user?.preferred_language, user?.timezone],
   )
@@ -172,7 +171,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
   async function handleLogout() {
     await authActions.logout()
     navigate({
-      to: '/auth/login',
+      to: "/auth/login",
       search: { tenant_code: undefined, email: undefined, redirect: undefined },
       replace: true,
     })
@@ -180,7 +179,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
 
   if (isLoading || !user) return <DetailSkeleton />
 
-  const currentLanguage = watch('preferred_language')
+  const currentLanguage = watch("preferred_language")
 
   return (
     <div className="space-y-8">
@@ -211,7 +210,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
             <Select
               value={currentLanguage}
               onValueChange={(value) =>
-                setValue('preferred_language', value as Language, {
+                setValue("preferred_language", value as Language, {
                   shouldDirty: true,
                   shouldValidate: true,
                 })
@@ -230,26 +229,19 @@ function ProfileBody({ userId }: ProfileBodyProps) {
             </Select>
           </FormField>
 
-          <FormField
-            label="Timezone"
-            error={formState.errors.timezone?.message}
-            htmlFor="timezone"
-          >
+          <FormField label="Timezone" error={formState.errors.timezone?.message} htmlFor="timezone">
             <Input
               id="timezone"
               type="text"
               placeholder="e.g. Africa/Kampala"
               autoComplete="off"
-              {...register('timezone')}
+              {...register("timezone")}
             />
           </FormField>
 
           <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={formState.isSubmitting || !formState.isDirty}
-            >
-              {formState.isSubmitting ? 'Saving…' : 'Save preferences'}
+            <Button type="submit" disabled={formState.isSubmitting || !formState.isDirty}>
+              {formState.isSubmitting ? "Saving…" : "Save preferences"}
             </Button>
           </div>
         </form>
@@ -299,17 +291,22 @@ function AccountSummary({ user, onLogout }: AccountSummaryProps) {
 }
 
 function PreviewLinks() {
-  const items: Array<{ view: MeView; label: string; description: string; icon: React.ElementType }> = [
+  const items: Array<{
+    view: MeView
+    label: string
+    description: string
+    icon: React.ElementType
+  }> = [
     {
-      view: 'inbox',
-      label: 'Inbox',
-      description: 'Notification inbox — placeholder, not yet wired to real data.',
+      view: "inbox",
+      label: "Inbox",
+      description: "Notification inbox — placeholder, not yet wired to real data.",
       icon: Inbox,
     },
     {
-      view: 'at-risk',
-      label: 'At Risk',
-      description: 'PHQ-9 / no-show driven at-risk list — placeholder, ships in Phase 3.',
+      view: "at-risk",
+      label: "At Risk",
+      description: "PHQ-9 / no-show driven at-risk list — placeholder, ships in Phase 3.",
       icon: AlertCircle,
     },
   ]
@@ -369,7 +366,9 @@ function TenantSummary() {
         ) : null}
         <div>
           <dt className="text-xs font-medium text-fg-subtle">Status</dt>
-          <dd className="mt-0.5"><StatusBadge status={tenant.status} /></dd>
+          <dd className="mt-0.5">
+            <StatusBadge status={tenant.status} />
+          </dd>
         </div>
       </dl>
     </section>

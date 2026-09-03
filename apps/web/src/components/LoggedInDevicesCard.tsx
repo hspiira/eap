@@ -2,12 +2,7 @@ import { Globe, Laptop, Smartphone } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 type DeviceType = "desktop" | "mobile" | "browser"
@@ -64,9 +59,7 @@ export function LoggedInDevicesCard({
   return (
     <Card className={cn("rounded-md", className)}>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
-        <CardTitle className="text-sm font-semibold text-fg">
-          Active sessions
-        </CardTitle>
+        <CardTitle className="text-sm font-semibold text-fg">Active sessions</CardTitle>
         <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
           {sessions.length}
         </Badge>
@@ -85,9 +78,7 @@ export function LoggedInDevicesCard({
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-fg">
-                      {s.label}
-                    </span>
+                    <span className="text-sm font-medium text-fg">{s.label}</span>
                     {s.current ? (
                       <Badge variant="secondary" size="sm" className="text-success">
                         Current
@@ -96,9 +87,7 @@ export function LoggedInDevicesCard({
                   </div>
                   <div className="text-xs text-fg-muted">
                     {s.location ? `${s.location} · ` : ""}
-                    <span className="font-mono tabular-nums">
-                      {s.lastActive}
-                    </span>
+                    <span className="font-mono tabular-nums">{s.lastActive}</span>
                   </div>
                 </div>
                 {!s.current ? (

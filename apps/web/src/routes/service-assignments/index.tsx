@@ -1,12 +1,5 @@
-
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  Download,
-  ExternalLink,
-  FileCheck,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react"
+import { Download, ExternalLink, FileCheck, MoreHorizontal, Plus } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -80,8 +73,18 @@ function ServiceAssignmentsListPage() {
   const searchParams = useSearch({ from: "/service-assignments/" })
   const navigate = useNavigate({ from: "/service-assignments/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
   const activeStatus = searchParams.status
   const activeContractId = searchParams.contract_id
@@ -106,11 +109,8 @@ function ServiceAssignmentsListPage() {
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
-  const error = query.isError
-    ? normalizeErrorMessage(query.error, "Failed to load data")
-    : null
-  const hasFilters =
-    Boolean(activeSearch) || Boolean(activeStatus) || Boolean(activeContractId)
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || Boolean(activeContractId)
 
   return (
     <PageShell
@@ -142,10 +142,7 @@ function ServiceAssignmentsListPage() {
           />
         ) : null}
         {activeContractId ? (
-          <FilterChip
-            label={`Contract ${activeContractId.slice(0, 8)}`}
-            onRemove={clearContract}
-          />
+          <FilterChip label={`Contract ${activeContractId.slice(0, 8)}`} onRemove={clearContract} />
         ) : null}
         <FilterTrigger
           label="All statuses"
@@ -177,9 +174,7 @@ function ServiceAssignmentsListPage() {
         ) : items.length === 0 ? (
           <EmptyState
             icon={FileCheck}
-            title={
-              hasFilters ? "No assignments match your filters" : "No service assignments yet"
-            }
+            title={hasFilters ? "No assignments match your filters" : "No service assignments yet"}
             description={
               hasFilters
                 ? "Try a different search or clear filters."
@@ -289,14 +284,19 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for assignment ${row.id.slice(0, 8)}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for assignment ${row.id.slice(0, 8)}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link
-                  to="/service-assignments/$assignmentId"
-                  params={{ assignmentId: row.id }}
-                >
+                <Link to="/service-assignments/$assignmentId" params={{ assignmentId: row.id }}>
                   View details
                 </Link>
               </DropdownMenuItem>
@@ -316,4 +316,3 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
     </TableRow>
   )
 }
-

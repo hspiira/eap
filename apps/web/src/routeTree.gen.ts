@@ -9,203 +9,88 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as TagsRouteImport } from './routes/tags'
-import { Route as SurveysRouteImport } from './routes/surveys'
-import { Route as ServicesRouteImport } from './routes/services'
-import { Route as ServiceSessionsRouteImport } from './routes/service-sessions'
-import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as ProvidersRouteImport } from './routes/providers'
-import { Route as PersonsRouteImport } from './routes/persons'
-import { Route as MeRouteImport } from './routes/me'
-import { Route as KpisRouteImport } from './routes/kpis'
-import { Route as IndustriesRouteImport } from './routes/industries'
-import { Route as IncidentsRouteImport } from './routes/incidents'
-import { Route as InboxRouteImport } from './routes/inbox'
-import { Route as EngagementsRouteImport } from './routes/engagements'
-import { Route as DocumentsRouteImport } from './routes/documents'
-import { Route as DesignRouteImport } from './routes/design'
-import { Route as ContractsRouteImport } from './routes/contracts'
-import { Route as ContactsRouteImport } from './routes/contacts'
-import { Route as ClientsRouteImport } from './routes/clients'
-import { Route as CareCallbacksRouteImport } from './routes/care-callbacks'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuditRouteImport } from './routes/audit'
-import { Route as AtRiskRouteImport } from './routes/at-risk'
-import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UsersIndexRouteImport } from './routes/users/index'
-import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
-import { Route as TagsIndexRouteImport } from './routes/tags/index'
-import { Route as SurveysIndexRouteImport } from './routes/surveys/index'
-import { Route as ServicesIndexRouteImport } from './routes/services/index'
-import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
-import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
-import { Route as ReportsIndexRouteImport } from './routes/reports/index'
-import { Route as ProvidersIndexRouteImport } from './routes/providers/index'
-import { Route as PersonsIndexRouteImport } from './routes/persons/index'
-import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
-import { Route as EngagementsIndexRouteImport } from './routes/engagements/index'
-import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
-import { Route as ClientsIndexRouteImport } from './routes/clients/index'
-import { Route as CasesIndexRouteImport } from './routes/cases/index'
-import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
-import { Route as UsersNewRouteImport } from './routes/users/new'
-import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
-import { Route as TenantsNewRouteImport } from './routes/tenants/new'
-import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
-import { Route as TagsNewRouteImport } from './routes/tags/new'
-import { Route as TagsTagIdRouteImport } from './routes/tags/$tagId'
-import { Route as SurveysNewRouteImport } from './routes/surveys/new'
-import { Route as SurveysSurveyIdRouteImport } from './routes/surveys/$surveyId'
-import { Route as ServicesNewRouteImport } from './routes/services/new'
-import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
-import { Route as ServiceSessionsNewRouteImport } from './routes/service-sessions/new'
-import { Route as ServiceSessionsSessionIdRouteImport } from './routes/service-sessions/$sessionId'
-import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
-import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
-import { Route as ReportsTemplateSlugRouteImport } from './routes/reports/$templateSlug'
-import { Route as ProvidersProviderIdRouteImport } from './routes/providers/$providerId'
-import { Route as PersonsNewRouteImport } from './routes/persons/new'
-import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
-import { Route as IncidentsNewRouteImport } from './routes/incidents/new'
-import { Route as IncidentsIncidentIdRouteImport } from './routes/incidents/$incidentId'
-import { Route as EngagementsNewRouteImport } from './routes/engagements/new'
-import { Route as EngagementsEngagementIdRouteImport } from './routes/engagements/$engagementId'
-import { Route as ContractsNewRouteImport } from './routes/contracts/new'
-import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
-import { Route as ClientsNewRouteImport } from './routes/clients/new'
-import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
-import { Route as CasesCaseIdRouteImport } from './routes/cases/$caseId'
-import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
-import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
-import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
-import { Route as AuthSsoRouteImport } from './routes/auth/sso'
-import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
+import { Route as ActivitiesRouteImport } from './routes/activities'
+import { Route as AtRiskRouteImport } from './routes/at-risk'
+import { Route as AuditRouteImport } from './routes/audit'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CareCallbacksRouteImport } from './routes/care-callbacks'
+import { Route as ClientsRouteImport } from './routes/clients'
+import { Route as ContactsRouteImport } from './routes/contacts'
+import { Route as ContractsRouteImport } from './routes/contracts'
+import { Route as DesignRouteImport } from './routes/design'
+import { Route as DocumentsRouteImport } from './routes/documents'
+import { Route as EngagementsRouteImport } from './routes/engagements'
+import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as IncidentsRouteImport } from './routes/incidents'
+import { Route as IndustriesRouteImport } from './routes/industries'
+import { Route as KpisRouteImport } from './routes/kpis'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as PersonsRouteImport } from './routes/persons'
+import { Route as ProvidersRouteImport } from './routes/providers'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
+import { Route as ServiceSessionsRouteImport } from './routes/service-sessions'
+import { Route as ServicesRouteImport } from './routes/services'
+import { Route as SurveysRouteImport } from './routes/surveys'
+import { Route as TagsRouteImport } from './routes/tags'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
+import { Route as AuthSsoRouteImport } from './routes/auth/sso'
+import { Route as CareCallbacksIndexRouteImport } from './routes/care-callbacks/index'
+import { Route as CareCallbacksCampaignIdRouteImport } from './routes/care-callbacks/$campaignId'
+import { Route as CareCallbacksNewRouteImport } from './routes/care-callbacks/new'
+import { Route as CareCallbacksWorklistRouteImport } from './routes/care-callbacks/worklist'
+import { Route as CasesIndexRouteImport } from './routes/cases/index'
+import { Route as CasesCaseIdRouteImport } from './routes/cases/$caseId'
+import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
+import { Route as ClientsNewRouteImport } from './routes/clients/new'
+import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
+import { Route as ContractsContractIdRouteImport } from './routes/contracts/$contractId'
+import { Route as ContractsNewRouteImport } from './routes/contracts/new'
+import { Route as EngagementsIndexRouteImport } from './routes/engagements/index'
+import { Route as EngagementsEngagementIdRouteImport } from './routes/engagements/$engagementId'
+import { Route as EngagementsNewRouteImport } from './routes/engagements/new'
+import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
+import { Route as IncidentsIncidentIdRouteImport } from './routes/incidents/$incidentId'
+import { Route as IncidentsNewRouteImport } from './routes/incidents/new'
+import { Route as PersonsIndexRouteImport } from './routes/persons/index'
+import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
+import { Route as PersonsNewRouteImport } from './routes/persons/new'
+import { Route as ProvidersIndexRouteImport } from './routes/providers/index'
+import { Route as ProvidersProviderIdRouteImport } from './routes/providers/$providerId'
+import { Route as ReportsIndexRouteImport } from './routes/reports/index'
+import { Route as ReportsTemplateSlugRouteImport } from './routes/reports/$templateSlug'
+import { Route as ServiceAssignmentsIndexRouteImport } from './routes/service-assignments/index'
+import { Route as ServiceAssignmentsAssignmentIdRouteImport } from './routes/service-assignments/$assignmentId'
+import { Route as ServiceAssignmentsNewRouteImport } from './routes/service-assignments/new'
+import { Route as ServiceSessionsIndexRouteImport } from './routes/service-sessions/index'
+import { Route as ServiceSessionsSessionIdRouteImport } from './routes/service-sessions/$sessionId'
+import { Route as ServiceSessionsNewRouteImport } from './routes/service-sessions/new'
+import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServicesServiceIdRouteImport } from './routes/services/$serviceId'
+import { Route as ServicesNewRouteImport } from './routes/services/new'
+import { Route as SurveysIndexRouteImport } from './routes/surveys/index'
+import { Route as SurveysSurveyIdRouteImport } from './routes/surveys/$surveyId'
+import { Route as SurveysNewRouteImport } from './routes/surveys/new'
+import { Route as TagsIndexRouteImport } from './routes/tags/index'
+import { Route as TagsTagIdRouteImport } from './routes/tags/$tagId'
+import { Route as TagsNewRouteImport } from './routes/tags/new'
+import { Route as TenantsIndexRouteImport } from './routes/tenants/index'
+import { Route as TenantsTenantIdRouteImport } from './routes/tenants/$tenantId'
+import { Route as TenantsNewRouteImport } from './routes/tenants/new'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as UsersUserIdRouteImport } from './routes/users/$userId'
+import { Route as UsersNewRouteImport } from './routes/users/new'
+import { Route as AuthAzureCallbackRouteImport } from './routes/auth/azure/callback'
 import { Route as CareCallbacksWorklistIndexRouteImport } from './routes/care-callbacks/worklist/index'
 import { Route as CareCallbacksWorklistCaseIdRouteImport } from './routes/care-callbacks/worklist/$caseId'
-import { Route as AuthAzureCallbackRouteImport } from './routes/auth/azure/callback'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TagsRoute = TagsRouteImport.update({
-  id: '/tags',
-  path: '/tags',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SurveysRoute = SurveysRouteImport.update({
-  id: '/surveys',
-  path: '/surveys',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServicesRoute = ServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServiceSessionsRoute = ServiceSessionsRouteImport.update({
-  id: '/service-sessions',
-  path: '/service-sessions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServiceAssignmentsRoute = ServiceAssignmentsRouteImport.update({
-  id: '/service-assignments',
-  path: '/service-assignments',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProvidersRoute = ProvidersRouteImport.update({
-  id: '/providers',
-  path: '/providers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PersonsRoute = PersonsRouteImport.update({
-  id: '/persons',
-  path: '/persons',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeRoute = MeRouteImport.update({
-  id: '/me',
-  path: '/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KpisRoute = KpisRouteImport.update({
-  id: '/kpis',
-  path: '/kpis',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndustriesRoute = IndustriesRouteImport.update({
-  id: '/industries',
-  path: '/industries',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IncidentsRoute = IncidentsRouteImport.update({
-  id: '/incidents',
-  path: '/incidents',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InboxRoute = InboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EngagementsRoute = EngagementsRouteImport.update({
-  id: '/engagements',
-  path: '/engagements',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocumentsRoute = DocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DesignRoute = DesignRouteImport.update({
-  id: '/design',
-  path: '/design',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContractsRoute = ContractsRouteImport.update({
-  id: '/contracts',
-  path: '/contracts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactsRoute = ContactsRouteImport.update({
-  id: '/contacts',
-  path: '/contacts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClientsRoute = ClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CareCallbacksRoute = CareCallbacksRouteImport.update({
-  id: '/care-callbacks',
-  path: '/care-callbacks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuditRoute = AuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AtRiskRoute = AtRiskRouteImport.update({
-  id: '/at-risk',
-  path: '/at-risk',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesRoute = ActivitiesRouteImport.update({
@@ -213,155 +98,269 @@ const ActivitiesRoute = ActivitiesRouteImport.update({
   path: '/activities',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AtRiskRoute = AtRiskRouteImport.update({
+  id: '/at-risk',
+  path: '/at-risk',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersIndexRoute = UsersIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => UsersRoute,
-} as any)
-const TenantsIndexRoute = TenantsIndexRouteImport.update({
-  id: '/tenants/',
-  path: '/tenants/',
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TagsIndexRoute = TagsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TagsRoute,
-} as any)
-const SurveysIndexRoute = SurveysIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SurveysRoute,
-} as any)
-const ServicesIndexRoute = ServicesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ServicesRoute,
-} as any)
-const ServiceSessionsIndexRoute = ServiceSessionsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ServiceSessionsRoute,
-} as any)
-const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ServiceAssignmentsRoute,
-} as any)
-const ReportsIndexRoute = ReportsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ReportsRoute,
-} as any)
-const ProvidersIndexRoute = ProvidersIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProvidersRoute,
-} as any)
-const PersonsIndexRoute = PersonsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PersonsRoute,
-} as any)
-const IncidentsIndexRoute = IncidentsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => IncidentsRoute,
-} as any)
-const EngagementsIndexRoute = EngagementsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => EngagementsRoute,
-} as any)
-const ContractsIndexRoute = ContractsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ContractsRoute,
-} as any)
-const ClientsIndexRoute = ClientsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ClientsRoute,
-} as any)
-const CasesIndexRoute = CasesIndexRouteImport.update({
-  id: '/cases/',
-  path: '/cases/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CareCallbacksRoute = CareCallbacksRouteImport.update({
+  id: '/care-callbacks',
+  path: '/care-callbacks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsRoute = ClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactsRoute = ContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsRoute = ContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EngagementsRoute = EngagementsRouteImport.update({
+  id: '/engagements',
+  path: '/engagements',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IncidentsRoute = IncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriesRoute = IndustriesRouteImport.update({
+  id: '/industries',
+  path: '/industries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KpisRoute = KpisRouteImport.update({
+  id: '/kpis',
+  path: '/kpis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonsRoute = PersonsRouteImport.update({
+  id: '/persons',
+  path: '/persons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProvidersRoute = ProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceAssignmentsRoute = ServiceAssignmentsRouteImport.update({
+  id: '/service-assignments',
+  path: '/service-assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceSessionsRoute = ServiceSessionsRouteImport.update({
+  id: '/service-sessions',
+  path: '/service-sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesRoute = ServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SurveysRoute = SurveysRouteImport.update({
+  id: '/surveys',
+  path: '/surveys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagsRoute = TagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSsoRoute = AuthSsoRouteImport.update({
+  id: '/sso',
+  path: '/sso',
+  getParentRoute: () => AuthRoute,
 } as any)
 const CareCallbacksIndexRoute = CareCallbacksIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => CareCallbacksRoute,
 } as any)
-const UsersNewRoute = UsersNewRouteImport.update({
+const CareCallbacksCampaignIdRoute = CareCallbacksCampaignIdRouteImport.update({
+  id: '/$campaignId',
+  path: '/$campaignId',
+  getParentRoute: () => CareCallbacksRoute,
+} as any)
+const CareCallbacksNewRoute = CareCallbacksNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => UsersRoute,
+  getParentRoute: () => CareCallbacksRoute,
 } as any)
-const UsersUserIdRoute = UsersUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => UsersRoute,
+const CareCallbacksWorklistRoute = CareCallbacksWorklistRouteImport.update({
+  id: '/worklist',
+  path: '/worklist',
+  getParentRoute: () => CareCallbacksRoute,
 } as any)
-const TenantsNewRoute = TenantsNewRouteImport.update({
-  id: '/tenants/new',
-  path: '/tenants/new',
+const CasesIndexRoute = CasesIndexRouteImport.update({
+  id: '/cases/',
+  path: '/cases/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
-  id: '/tenants/$tenantId',
-  path: '/tenants/$tenantId',
+const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
+  id: '/cases/$caseId',
+  path: '/cases/$caseId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TagsNewRoute = TagsNewRouteImport.update({
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
+  id: '/$clientId',
+  path: '/$clientId',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const ClientsNewRoute = ClientsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => TagsRoute,
+  getParentRoute: () => ClientsRoute,
 } as any)
-const TagsTagIdRoute = TagsTagIdRouteImport.update({
-  id: '/$tagId',
-  path: '/$tagId',
-  getParentRoute: () => TagsRoute,
+const ContractsIndexRoute = ContractsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ContractsRoute,
 } as any)
-const SurveysNewRoute = SurveysNewRouteImport.update({
+const ContractsContractIdRoute = ContractsContractIdRouteImport.update({
+  id: '/$contractId',
+  path: '/$contractId',
+  getParentRoute: () => ContractsRoute,
+} as any)
+const ContractsNewRoute = ContractsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => SurveysRoute,
+  getParentRoute: () => ContractsRoute,
 } as any)
-const SurveysSurveyIdRoute = SurveysSurveyIdRouteImport.update({
-  id: '/$surveyId',
-  path: '/$surveyId',
-  getParentRoute: () => SurveysRoute,
+const EngagementsIndexRoute = EngagementsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EngagementsRoute,
 } as any)
-const ServicesNewRoute = ServicesNewRouteImport.update({
+const EngagementsEngagementIdRoute = EngagementsEngagementIdRouteImport.update({
+  id: '/$engagementId',
+  path: '/$engagementId',
+  getParentRoute: () => EngagementsRoute,
+} as any)
+const EngagementsNewRoute = EngagementsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => ServicesRoute,
+  getParentRoute: () => EngagementsRoute,
 } as any)
-const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
-  id: '/$serviceId',
-  path: '/$serviceId',
-  getParentRoute: () => ServicesRoute,
+const IncidentsIndexRoute = IncidentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IncidentsRoute,
 } as any)
-const ServiceSessionsNewRoute = ServiceSessionsNewRouteImport.update({
+const IncidentsIncidentIdRoute = IncidentsIncidentIdRouteImport.update({
+  id: '/$incidentId',
+  path: '/$incidentId',
+  getParentRoute: () => IncidentsRoute,
+} as any)
+const IncidentsNewRoute = IncidentsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => ServiceSessionsRoute,
+  getParentRoute: () => IncidentsRoute,
 } as any)
-const ServiceSessionsSessionIdRoute =
-  ServiceSessionsSessionIdRouteImport.update({
-    id: '/$sessionId',
-    path: '/$sessionId',
-    getParentRoute: () => ServiceSessionsRoute,
-  } as any)
-const ServiceAssignmentsNewRoute = ServiceAssignmentsNewRouteImport.update({
+const PersonsIndexRoute = PersonsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const PersonsPersonIdRoute = PersonsPersonIdRouteImport.update({
+  id: '/$personId',
+  path: '/$personId',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const PersonsNewRoute = PersonsNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => PersonsRoute,
+} as any)
+const ProvidersIndexRoute = ProvidersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProvidersRoute,
+} as any)
+const ProvidersProviderIdRoute = ProvidersProviderIdRouteImport.update({
+  id: '/$providerId',
+  path: '/$providerId',
+  getParentRoute: () => ProvidersRoute,
+} as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ReportsTemplateSlugRoute = ReportsTemplateSlugRouteImport.update({
+  id: '/$templateSlug',
+  path: '/$templateSlug',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ServiceAssignmentsIndexRoute = ServiceAssignmentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => ServiceAssignmentsRoute,
 } as any)
 const ServiceAssignmentsAssignmentIdRoute =
@@ -370,99 +369,105 @@ const ServiceAssignmentsAssignmentIdRoute =
     path: '/$assignmentId',
     getParentRoute: () => ServiceAssignmentsRoute,
   } as any)
-const ReportsTemplateSlugRoute = ReportsTemplateSlugRouteImport.update({
-  id: '/$templateSlug',
-  path: '/$templateSlug',
-  getParentRoute: () => ReportsRoute,
-} as any)
-const ProvidersProviderIdRoute = ProvidersProviderIdRouteImport.update({
-  id: '/$providerId',
-  path: '/$providerId',
-  getParentRoute: () => ProvidersRoute,
-} as any)
-const PersonsNewRoute = PersonsNewRouteImport.update({
+const ServiceAssignmentsNewRoute = ServiceAssignmentsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => PersonsRoute,
+  getParentRoute: () => ServiceAssignmentsRoute,
 } as any)
-const PersonsPersonIdRoute = PersonsPersonIdRouteImport.update({
-  id: '/$personId',
-  path: '/$personId',
-  getParentRoute: () => PersonsRoute,
+const ServiceSessionsIndexRoute = ServiceSessionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServiceSessionsRoute,
 } as any)
-const IncidentsNewRoute = IncidentsNewRouteImport.update({
+const ServiceSessionsSessionIdRoute =
+  ServiceSessionsSessionIdRouteImport.update({
+    id: '/$sessionId',
+    path: '/$sessionId',
+    getParentRoute: () => ServiceSessionsRoute,
+  } as any)
+const ServiceSessionsNewRoute = ServiceSessionsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => IncidentsRoute,
+  getParentRoute: () => ServiceSessionsRoute,
 } as any)
-const IncidentsIncidentIdRoute = IncidentsIncidentIdRouteImport.update({
-  id: '/$incidentId',
-  path: '/$incidentId',
-  getParentRoute: () => IncidentsRoute,
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServicesRoute,
 } as any)
-const EngagementsNewRoute = EngagementsNewRouteImport.update({
+const ServicesServiceIdRoute = ServicesServiceIdRouteImport.update({
+  id: '/$serviceId',
+  path: '/$serviceId',
+  getParentRoute: () => ServicesRoute,
+} as any)
+const ServicesNewRoute = ServicesNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => EngagementsRoute,
+  getParentRoute: () => ServicesRoute,
 } as any)
-const EngagementsEngagementIdRoute = EngagementsEngagementIdRouteImport.update({
-  id: '/$engagementId',
-  path: '/$engagementId',
-  getParentRoute: () => EngagementsRoute,
+const SurveysIndexRoute = SurveysIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SurveysRoute,
 } as any)
-const ContractsNewRoute = ContractsNewRouteImport.update({
+const SurveysSurveyIdRoute = SurveysSurveyIdRouteImport.update({
+  id: '/$surveyId',
+  path: '/$surveyId',
+  getParentRoute: () => SurveysRoute,
+} as any)
+const SurveysNewRoute = SurveysNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => ContractsRoute,
+  getParentRoute: () => SurveysRoute,
 } as any)
-const ContractsContractIdRoute = ContractsContractIdRouteImport.update({
-  id: '/$contractId',
-  path: '/$contractId',
-  getParentRoute: () => ContractsRoute,
+const TagsIndexRoute = TagsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TagsRoute,
 } as any)
-const ClientsNewRoute = ClientsNewRouteImport.update({
+const TagsTagIdRoute = TagsTagIdRouteImport.update({
+  id: '/$tagId',
+  path: '/$tagId',
+  getParentRoute: () => TagsRoute,
+} as any)
+const TagsNewRoute = TagsNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => ClientsRoute,
+  getParentRoute: () => TagsRoute,
 } as any)
-const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
-  id: '/$clientId',
-  path: '/$clientId',
-  getParentRoute: () => ClientsRoute,
-} as any)
-const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
-  id: '/cases/$caseId',
-  path: '/cases/$caseId',
+const TenantsIndexRoute = TenantsIndexRouteImport.update({
+  id: '/tenants/',
+  path: '/tenants/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CareCallbacksWorklistRoute = CareCallbacksWorklistRouteImport.update({
-  id: '/worklist',
-  path: '/worklist',
-  getParentRoute: () => CareCallbacksRoute,
+const TenantsTenantIdRoute = TenantsTenantIdRouteImport.update({
+  id: '/tenants/$tenantId',
+  path: '/tenants/$tenantId',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const CareCallbacksNewRoute = CareCallbacksNewRouteImport.update({
+const TenantsNewRoute = TenantsNewRouteImport.update({
+  id: '/tenants/new',
+  path: '/tenants/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UsersRoute,
+} as any)
+const UsersUserIdRoute = UsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => UsersRoute,
+} as any)
+const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
   path: '/new',
-  getParentRoute: () => CareCallbacksRoute,
+  getParentRoute: () => UsersRoute,
 } as any)
-const CareCallbacksCampaignIdRoute = CareCallbacksCampaignIdRouteImport.update({
-  id: '/$campaignId',
-  path: '/$campaignId',
-  getParentRoute: () => CareCallbacksRoute,
-} as any)
-const AuthSsoRoute = AuthSsoRouteImport.update({
-  id: '/sso',
-  path: '/sso',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
-  id: '/set-password',
-  path: '/set-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AuthAzureCallbackRoute = AuthAzureCallbackRouteImport.update({
+  id: '/azure/callback',
+  path: '/azure/callback',
   getParentRoute: () => AuthRoute,
 } as any)
 const CareCallbacksWorklistIndexRoute =
@@ -477,11 +482,6 @@ const CareCallbacksWorklistCaseIdRoute =
     path: '/$caseId',
     getParentRoute: () => CareCallbacksWorklistRoute,
   } as any)
-const AuthAzureCallbackRoute = AuthAzureCallbackRouteImport.update({
-  id: '/azure/callback',
-  path: '/azure/callback',
-  getParentRoute: () => AuthRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -973,172 +973,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tags': {
-      id: '/tags'
-      path: '/tags'
-      fullPath: '/tags'
-      preLoaderRoute: typeof TagsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/surveys': {
-      id: '/surveys'
-      path: '/surveys'
-      fullPath: '/surveys'
-      preLoaderRoute: typeof SurveysRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/services': {
-      id: '/services'
-      path: '/services'
-      fullPath: '/services'
-      preLoaderRoute: typeof ServicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/service-sessions': {
-      id: '/service-sessions'
-      path: '/service-sessions'
-      fullPath: '/service-sessions'
-      preLoaderRoute: typeof ServiceSessionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/service-assignments': {
-      id: '/service-assignments'
-      path: '/service-assignments'
-      fullPath: '/service-assignments'
-      preLoaderRoute: typeof ServiceAssignmentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/providers': {
-      id: '/providers'
-      path: '/providers'
-      fullPath: '/providers'
-      preLoaderRoute: typeof ProvidersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/persons': {
-      id: '/persons'
-      path: '/persons'
-      fullPath: '/persons'
-      preLoaderRoute: typeof PersonsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me': {
-      id: '/me'
-      path: '/me'
-      fullPath: '/me'
-      preLoaderRoute: typeof MeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kpis': {
-      id: '/kpis'
-      path: '/kpis'
-      fullPath: '/kpis'
-      preLoaderRoute: typeof KpisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industries': {
-      id: '/industries'
-      path: '/industries'
-      fullPath: '/industries'
-      preLoaderRoute: typeof IndustriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/incidents': {
-      id: '/incidents'
-      path: '/incidents'
-      fullPath: '/incidents'
-      preLoaderRoute: typeof IncidentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/inbox': {
-      id: '/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof InboxRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/engagements': {
-      id: '/engagements'
-      path: '/engagements'
-      fullPath: '/engagements'
-      preLoaderRoute: typeof EngagementsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/documents': {
-      id: '/documents'
-      path: '/documents'
-      fullPath: '/documents'
-      preLoaderRoute: typeof DocumentsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/design': {
-      id: '/design'
-      path: '/design'
-      fullPath: '/design'
-      preLoaderRoute: typeof DesignRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contracts': {
-      id: '/contracts'
-      path: '/contracts'
-      fullPath: '/contracts'
-      preLoaderRoute: typeof ContractsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contacts': {
-      id: '/contacts'
-      path: '/contacts'
-      fullPath: '/contacts'
-      preLoaderRoute: typeof ContactsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/clients': {
-      id: '/clients'
-      path: '/clients'
-      fullPath: '/clients'
-      preLoaderRoute: typeof ClientsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/care-callbacks': {
-      id: '/care-callbacks'
-      path: '/care-callbacks'
-      fullPath: '/care-callbacks'
-      preLoaderRoute: typeof CareCallbacksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/audit': {
-      id: '/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AuditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/at-risk': {
-      id: '/at-risk'
-      path: '/at-risk'
-      fullPath: '/at-risk'
-      preLoaderRoute: typeof AtRiskRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activities': {
@@ -1148,340 +987,179 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/at-risk': {
+      id: '/at-risk'
+      path: '/at-risk'
+      fullPath: '/at-risk'
+      preLoaderRoute: typeof AtRiskRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users/': {
-      id: '/users/'
-      path: '/'
-      fullPath: '/users/'
-      preLoaderRoute: typeof UsersIndexRouteImport
-      parentRoute: typeof UsersRoute
-    }
-    '/tenants/': {
-      id: '/tenants/'
-      path: '/tenants'
-      fullPath: '/tenants/'
-      preLoaderRoute: typeof TenantsIndexRouteImport
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tags/': {
-      id: '/tags/'
-      path: '/'
-      fullPath: '/tags/'
-      preLoaderRoute: typeof TagsIndexRouteImport
-      parentRoute: typeof TagsRoute
-    }
-    '/surveys/': {
-      id: '/surveys/'
-      path: '/'
-      fullPath: '/surveys/'
-      preLoaderRoute: typeof SurveysIndexRouteImport
-      parentRoute: typeof SurveysRoute
-    }
-    '/services/': {
-      id: '/services/'
-      path: '/'
-      fullPath: '/services/'
-      preLoaderRoute: typeof ServicesIndexRouteImport
-      parentRoute: typeof ServicesRoute
-    }
-    '/service-sessions/': {
-      id: '/service-sessions/'
-      path: '/'
-      fullPath: '/service-sessions/'
-      preLoaderRoute: typeof ServiceSessionsIndexRouteImport
-      parentRoute: typeof ServiceSessionsRoute
-    }
-    '/service-assignments/': {
-      id: '/service-assignments/'
-      path: '/'
-      fullPath: '/service-assignments/'
-      preLoaderRoute: typeof ServiceAssignmentsIndexRouteImport
-      parentRoute: typeof ServiceAssignmentsRoute
-    }
-    '/reports/': {
-      id: '/reports/'
-      path: '/'
-      fullPath: '/reports/'
-      preLoaderRoute: typeof ReportsIndexRouteImport
-      parentRoute: typeof ReportsRoute
-    }
-    '/providers/': {
-      id: '/providers/'
-      path: '/'
-      fullPath: '/providers/'
-      preLoaderRoute: typeof ProvidersIndexRouteImport
-      parentRoute: typeof ProvidersRoute
-    }
-    '/persons/': {
-      id: '/persons/'
-      path: '/'
-      fullPath: '/persons/'
-      preLoaderRoute: typeof PersonsIndexRouteImport
-      parentRoute: typeof PersonsRoute
-    }
-    '/incidents/': {
-      id: '/incidents/'
-      path: '/'
-      fullPath: '/incidents/'
-      preLoaderRoute: typeof IncidentsIndexRouteImport
-      parentRoute: typeof IncidentsRoute
-    }
-    '/engagements/': {
-      id: '/engagements/'
-      path: '/'
-      fullPath: '/engagements/'
-      preLoaderRoute: typeof EngagementsIndexRouteImport
-      parentRoute: typeof EngagementsRoute
-    }
-    '/contracts/': {
-      id: '/contracts/'
-      path: '/'
-      fullPath: '/contracts/'
-      preLoaderRoute: typeof ContractsIndexRouteImport
-      parentRoute: typeof ContractsRoute
-    }
-    '/clients/': {
-      id: '/clients/'
-      path: '/'
-      fullPath: '/clients/'
-      preLoaderRoute: typeof ClientsIndexRouteImport
-      parentRoute: typeof ClientsRoute
-    }
-    '/cases/': {
-      id: '/cases/'
-      path: '/cases'
-      fullPath: '/cases/'
-      preLoaderRoute: typeof CasesIndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/care-callbacks/': {
-      id: '/care-callbacks/'
-      path: '/'
-      fullPath: '/care-callbacks/'
-      preLoaderRoute: typeof CareCallbacksIndexRouteImport
-      parentRoute: typeof CareCallbacksRoute
-    }
-    '/users/new': {
-      id: '/users/new'
-      path: '/new'
-      fullPath: '/users/new'
-      preLoaderRoute: typeof UsersNewRouteImport
-      parentRoute: typeof UsersRoute
-    }
-    '/users/$userId': {
-      id: '/users/$userId'
-      path: '/$userId'
-      fullPath: '/users/$userId'
-      preLoaderRoute: typeof UsersUserIdRouteImport
-      parentRoute: typeof UsersRoute
-    }
-    '/tenants/new': {
-      id: '/tenants/new'
-      path: '/tenants/new'
-      fullPath: '/tenants/new'
-      preLoaderRoute: typeof TenantsNewRouteImport
+    '/care-callbacks': {
+      id: '/care-callbacks'
+      path: '/care-callbacks'
+      fullPath: '/care-callbacks'
+      preLoaderRoute: typeof CareCallbacksRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tenants/$tenantId': {
-      id: '/tenants/$tenantId'
-      path: '/tenants/$tenantId'
-      fullPath: '/tenants/$tenantId'
-      preLoaderRoute: typeof TenantsTenantIdRouteImport
+    '/clients': {
+      id: '/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof ClientsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tags/new': {
-      id: '/tags/new'
-      path: '/new'
-      fullPath: '/tags/new'
-      preLoaderRoute: typeof TagsNewRouteImport
-      parentRoute: typeof TagsRoute
-    }
-    '/tags/$tagId': {
-      id: '/tags/$tagId'
-      path: '/$tagId'
-      fullPath: '/tags/$tagId'
-      preLoaderRoute: typeof TagsTagIdRouteImport
-      parentRoute: typeof TagsRoute
-    }
-    '/surveys/new': {
-      id: '/surveys/new'
-      path: '/new'
-      fullPath: '/surveys/new'
-      preLoaderRoute: typeof SurveysNewRouteImport
-      parentRoute: typeof SurveysRoute
-    }
-    '/surveys/$surveyId': {
-      id: '/surveys/$surveyId'
-      path: '/$surveyId'
-      fullPath: '/surveys/$surveyId'
-      preLoaderRoute: typeof SurveysSurveyIdRouteImport
-      parentRoute: typeof SurveysRoute
-    }
-    '/services/new': {
-      id: '/services/new'
-      path: '/new'
-      fullPath: '/services/new'
-      preLoaderRoute: typeof ServicesNewRouteImport
-      parentRoute: typeof ServicesRoute
-    }
-    '/services/$serviceId': {
-      id: '/services/$serviceId'
-      path: '/$serviceId'
-      fullPath: '/services/$serviceId'
-      preLoaderRoute: typeof ServicesServiceIdRouteImport
-      parentRoute: typeof ServicesRoute
-    }
-    '/service-sessions/new': {
-      id: '/service-sessions/new'
-      path: '/new'
-      fullPath: '/service-sessions/new'
-      preLoaderRoute: typeof ServiceSessionsNewRouteImport
-      parentRoute: typeof ServiceSessionsRoute
-    }
-    '/service-sessions/$sessionId': {
-      id: '/service-sessions/$sessionId'
-      path: '/$sessionId'
-      fullPath: '/service-sessions/$sessionId'
-      preLoaderRoute: typeof ServiceSessionsSessionIdRouteImport
-      parentRoute: typeof ServiceSessionsRoute
-    }
-    '/service-assignments/new': {
-      id: '/service-assignments/new'
-      path: '/new'
-      fullPath: '/service-assignments/new'
-      preLoaderRoute: typeof ServiceAssignmentsNewRouteImport
-      parentRoute: typeof ServiceAssignmentsRoute
-    }
-    '/service-assignments/$assignmentId': {
-      id: '/service-assignments/$assignmentId'
-      path: '/$assignmentId'
-      fullPath: '/service-assignments/$assignmentId'
-      preLoaderRoute: typeof ServiceAssignmentsAssignmentIdRouteImport
-      parentRoute: typeof ServiceAssignmentsRoute
-    }
-    '/reports/$templateSlug': {
-      id: '/reports/$templateSlug'
-      path: '/$templateSlug'
-      fullPath: '/reports/$templateSlug'
-      preLoaderRoute: typeof ReportsTemplateSlugRouteImport
-      parentRoute: typeof ReportsRoute
-    }
-    '/providers/$providerId': {
-      id: '/providers/$providerId'
-      path: '/$providerId'
-      fullPath: '/providers/$providerId'
-      preLoaderRoute: typeof ProvidersProviderIdRouteImport
-      parentRoute: typeof ProvidersRoute
-    }
-    '/persons/new': {
-      id: '/persons/new'
-      path: '/new'
-      fullPath: '/persons/new'
-      preLoaderRoute: typeof PersonsNewRouteImport
-      parentRoute: typeof PersonsRoute
-    }
-    '/persons/$personId': {
-      id: '/persons/$personId'
-      path: '/$personId'
-      fullPath: '/persons/$personId'
-      preLoaderRoute: typeof PersonsPersonIdRouteImport
-      parentRoute: typeof PersonsRoute
-    }
-    '/incidents/new': {
-      id: '/incidents/new'
-      path: '/new'
-      fullPath: '/incidents/new'
-      preLoaderRoute: typeof IncidentsNewRouteImport
-      parentRoute: typeof IncidentsRoute
-    }
-    '/incidents/$incidentId': {
-      id: '/incidents/$incidentId'
-      path: '/$incidentId'
-      fullPath: '/incidents/$incidentId'
-      preLoaderRoute: typeof IncidentsIncidentIdRouteImport
-      parentRoute: typeof IncidentsRoute
-    }
-    '/engagements/new': {
-      id: '/engagements/new'
-      path: '/new'
-      fullPath: '/engagements/new'
-      preLoaderRoute: typeof EngagementsNewRouteImport
-      parentRoute: typeof EngagementsRoute
-    }
-    '/engagements/$engagementId': {
-      id: '/engagements/$engagementId'
-      path: '/$engagementId'
-      fullPath: '/engagements/$engagementId'
-      preLoaderRoute: typeof EngagementsEngagementIdRouteImport
-      parentRoute: typeof EngagementsRoute
-    }
-    '/contracts/new': {
-      id: '/contracts/new'
-      path: '/new'
-      fullPath: '/contracts/new'
-      preLoaderRoute: typeof ContractsNewRouteImport
-      parentRoute: typeof ContractsRoute
-    }
-    '/contracts/$contractId': {
-      id: '/contracts/$contractId'
-      path: '/$contractId'
-      fullPath: '/contracts/$contractId'
-      preLoaderRoute: typeof ContractsContractIdRouteImport
-      parentRoute: typeof ContractsRoute
-    }
-    '/clients/new': {
-      id: '/clients/new'
-      path: '/new'
-      fullPath: '/clients/new'
-      preLoaderRoute: typeof ClientsNewRouteImport
-      parentRoute: typeof ClientsRoute
-    }
-    '/clients/$clientId': {
-      id: '/clients/$clientId'
-      path: '/$clientId'
-      fullPath: '/clients/$clientId'
-      preLoaderRoute: typeof ClientsClientIdRouteImport
-      parentRoute: typeof ClientsRoute
-    }
-    '/cases/$caseId': {
-      id: '/cases/$caseId'
-      path: '/cases/$caseId'
-      fullPath: '/cases/$caseId'
-      preLoaderRoute: typeof CasesCaseIdRouteImport
+    '/contacts': {
+      id: '/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ContactsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/care-callbacks/worklist': {
-      id: '/care-callbacks/worklist'
-      path: '/worklist'
-      fullPath: '/care-callbacks/worklist'
-      preLoaderRoute: typeof CareCallbacksWorklistRouteImport
-      parentRoute: typeof CareCallbacksRoute
+    '/contracts': {
+      id: '/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof ContractsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/care-callbacks/new': {
-      id: '/care-callbacks/new'
-      path: '/new'
-      fullPath: '/care-callbacks/new'
-      preLoaderRoute: typeof CareCallbacksNewRouteImport
-      parentRoute: typeof CareCallbacksRoute
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/care-callbacks/$campaignId': {
-      id: '/care-callbacks/$campaignId'
-      path: '/$campaignId'
-      fullPath: '/care-callbacks/$campaignId'
-      preLoaderRoute: typeof CareCallbacksCampaignIdRouteImport
-      parentRoute: typeof CareCallbacksRoute
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/auth/sso': {
-      id: '/auth/sso'
-      path: '/sso'
-      fullPath: '/auth/sso'
-      preLoaderRoute: typeof AuthSsoRouteImport
+    '/engagements': {
+      id: '/engagements'
+      path: '/engagements'
+      fullPath: '/engagements'
+      preLoaderRoute: typeof EngagementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/incidents': {
+      id: '/incidents'
+      path: '/incidents'
+      fullPath: '/incidents'
+      preLoaderRoute: typeof IncidentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industries': {
+      id: '/industries'
+      path: '/industries'
+      fullPath: '/industries'
+      preLoaderRoute: typeof IndustriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpis': {
+      id: '/kpis'
+      path: '/kpis'
+      fullPath: '/kpis'
+      preLoaderRoute: typeof KpisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/persons': {
+      id: '/persons'
+      path: '/persons'
+      fullPath: '/persons'
+      preLoaderRoute: typeof PersonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/providers': {
+      id: '/providers'
+      path: '/providers'
+      fullPath: '/providers'
+      preLoaderRoute: typeof ProvidersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-assignments': {
+      id: '/service-assignments'
+      path: '/service-assignments'
+      fullPath: '/service-assignments'
+      preLoaderRoute: typeof ServiceAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service-sessions': {
+      id: '/service-sessions'
+      path: '/service-sessions'
+      fullPath: '/service-sessions'
+      preLoaderRoute: typeof ServiceSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services': {
+      id: '/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/surveys': {
+      id: '/surveys'
+      path: '/surveys'
+      fullPath: '/surveys'
+      preLoaderRoute: typeof SurveysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tags': {
+      id: '/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
     '/auth/set-password': {
@@ -1491,11 +1169,340 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSetPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
+    '/auth/sso': {
+      id: '/auth/sso'
+      path: '/sso'
+      fullPath: '/auth/sso'
+      preLoaderRoute: typeof AuthSsoRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/care-callbacks/': {
+      id: '/care-callbacks/'
+      path: '/'
+      fullPath: '/care-callbacks/'
+      preLoaderRoute: typeof CareCallbacksIndexRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/care-callbacks/$campaignId': {
+      id: '/care-callbacks/$campaignId'
+      path: '/$campaignId'
+      fullPath: '/care-callbacks/$campaignId'
+      preLoaderRoute: typeof CareCallbacksCampaignIdRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/care-callbacks/new': {
+      id: '/care-callbacks/new'
+      path: '/new'
+      fullPath: '/care-callbacks/new'
+      preLoaderRoute: typeof CareCallbacksNewRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/care-callbacks/worklist': {
+      id: '/care-callbacks/worklist'
+      path: '/worklist'
+      fullPath: '/care-callbacks/worklist'
+      preLoaderRoute: typeof CareCallbacksWorklistRouteImport
+      parentRoute: typeof CareCallbacksRoute
+    }
+    '/cases/': {
+      id: '/cases/'
+      path: '/cases'
+      fullPath: '/cases/'
+      preLoaderRoute: typeof CasesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases/$caseId': {
+      id: '/cases/$caseId'
+      path: '/cases/$caseId'
+      fullPath: '/cases/$caseId'
+      preLoaderRoute: typeof CasesCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients/': {
+      id: '/clients/'
+      path: '/'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/clients/$clientId': {
+      id: '/clients/$clientId'
+      path: '/$clientId'
+      fullPath: '/clients/$clientId'
+      preLoaderRoute: typeof ClientsClientIdRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/clients/new': {
+      id: '/clients/new'
+      path: '/new'
+      fullPath: '/clients/new'
+      preLoaderRoute: typeof ClientsNewRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/contracts/': {
+      id: '/contracts/'
+      path: '/'
+      fullPath: '/contracts/'
+      preLoaderRoute: typeof ContractsIndexRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/contracts/$contractId': {
+      id: '/contracts/$contractId'
+      path: '/$contractId'
+      fullPath: '/contracts/$contractId'
+      preLoaderRoute: typeof ContractsContractIdRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/contracts/new': {
+      id: '/contracts/new'
+      path: '/new'
+      fullPath: '/contracts/new'
+      preLoaderRoute: typeof ContractsNewRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/engagements/': {
+      id: '/engagements/'
+      path: '/'
+      fullPath: '/engagements/'
+      preLoaderRoute: typeof EngagementsIndexRouteImport
+      parentRoute: typeof EngagementsRoute
+    }
+    '/engagements/$engagementId': {
+      id: '/engagements/$engagementId'
+      path: '/$engagementId'
+      fullPath: '/engagements/$engagementId'
+      preLoaderRoute: typeof EngagementsEngagementIdRouteImport
+      parentRoute: typeof EngagementsRoute
+    }
+    '/engagements/new': {
+      id: '/engagements/new'
+      path: '/new'
+      fullPath: '/engagements/new'
+      preLoaderRoute: typeof EngagementsNewRouteImport
+      parentRoute: typeof EngagementsRoute
+    }
+    '/incidents/': {
+      id: '/incidents/'
+      path: '/'
+      fullPath: '/incidents/'
+      preLoaderRoute: typeof IncidentsIndexRouteImport
+      parentRoute: typeof IncidentsRoute
+    }
+    '/incidents/$incidentId': {
+      id: '/incidents/$incidentId'
+      path: '/$incidentId'
+      fullPath: '/incidents/$incidentId'
+      preLoaderRoute: typeof IncidentsIncidentIdRouteImport
+      parentRoute: typeof IncidentsRoute
+    }
+    '/incidents/new': {
+      id: '/incidents/new'
+      path: '/new'
+      fullPath: '/incidents/new'
+      preLoaderRoute: typeof IncidentsNewRouteImport
+      parentRoute: typeof IncidentsRoute
+    }
+    '/persons/': {
+      id: '/persons/'
+      path: '/'
+      fullPath: '/persons/'
+      preLoaderRoute: typeof PersonsIndexRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/persons/$personId': {
+      id: '/persons/$personId'
+      path: '/$personId'
+      fullPath: '/persons/$personId'
+      preLoaderRoute: typeof PersonsPersonIdRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/persons/new': {
+      id: '/persons/new'
+      path: '/new'
+      fullPath: '/persons/new'
+      preLoaderRoute: typeof PersonsNewRouteImport
+      parentRoute: typeof PersonsRoute
+    }
+    '/providers/': {
+      id: '/providers/'
+      path: '/'
+      fullPath: '/providers/'
+      preLoaderRoute: typeof ProvidersIndexRouteImport
+      parentRoute: typeof ProvidersRoute
+    }
+    '/providers/$providerId': {
+      id: '/providers/$providerId'
+      path: '/$providerId'
+      fullPath: '/providers/$providerId'
+      preLoaderRoute: typeof ProvidersProviderIdRouteImport
+      parentRoute: typeof ProvidersRoute
+    }
+    '/reports/': {
+      id: '/reports/'
+      path: '/'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof ReportsIndexRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/reports/$templateSlug': {
+      id: '/reports/$templateSlug'
+      path: '/$templateSlug'
+      fullPath: '/reports/$templateSlug'
+      preLoaderRoute: typeof ReportsTemplateSlugRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/service-assignments/': {
+      id: '/service-assignments/'
+      path: '/'
+      fullPath: '/service-assignments/'
+      preLoaderRoute: typeof ServiceAssignmentsIndexRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/service-assignments/$assignmentId': {
+      id: '/service-assignments/$assignmentId'
+      path: '/$assignmentId'
+      fullPath: '/service-assignments/$assignmentId'
+      preLoaderRoute: typeof ServiceAssignmentsAssignmentIdRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/service-assignments/new': {
+      id: '/service-assignments/new'
+      path: '/new'
+      fullPath: '/service-assignments/new'
+      preLoaderRoute: typeof ServiceAssignmentsNewRouteImport
+      parentRoute: typeof ServiceAssignmentsRoute
+    }
+    '/service-sessions/': {
+      id: '/service-sessions/'
+      path: '/'
+      fullPath: '/service-sessions/'
+      preLoaderRoute: typeof ServiceSessionsIndexRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/service-sessions/$sessionId': {
+      id: '/service-sessions/$sessionId'
+      path: '/$sessionId'
+      fullPath: '/service-sessions/$sessionId'
+      preLoaderRoute: typeof ServiceSessionsSessionIdRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/service-sessions/new': {
+      id: '/service-sessions/new'
+      path: '/new'
+      fullPath: '/service-sessions/new'
+      preLoaderRoute: typeof ServiceSessionsNewRouteImport
+      parentRoute: typeof ServiceSessionsRoute
+    }
+    '/services/': {
+      id: '/services/'
+      path: '/'
+      fullPath: '/services/'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/services/$serviceId': {
+      id: '/services/$serviceId'
+      path: '/$serviceId'
+      fullPath: '/services/$serviceId'
+      preLoaderRoute: typeof ServicesServiceIdRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/services/new': {
+      id: '/services/new'
+      path: '/new'
+      fullPath: '/services/new'
+      preLoaderRoute: typeof ServicesNewRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/surveys/': {
+      id: '/surveys/'
+      path: '/'
+      fullPath: '/surveys/'
+      preLoaderRoute: typeof SurveysIndexRouteImport
+      parentRoute: typeof SurveysRoute
+    }
+    '/surveys/$surveyId': {
+      id: '/surveys/$surveyId'
+      path: '/$surveyId'
+      fullPath: '/surveys/$surveyId'
+      preLoaderRoute: typeof SurveysSurveyIdRouteImport
+      parentRoute: typeof SurveysRoute
+    }
+    '/surveys/new': {
+      id: '/surveys/new'
+      path: '/new'
+      fullPath: '/surveys/new'
+      preLoaderRoute: typeof SurveysNewRouteImport
+      parentRoute: typeof SurveysRoute
+    }
+    '/tags/': {
+      id: '/tags/'
+      path: '/'
+      fullPath: '/tags/'
+      preLoaderRoute: typeof TagsIndexRouteImport
+      parentRoute: typeof TagsRoute
+    }
+    '/tags/$tagId': {
+      id: '/tags/$tagId'
+      path: '/$tagId'
+      fullPath: '/tags/$tagId'
+      preLoaderRoute: typeof TagsTagIdRouteImport
+      parentRoute: typeof TagsRoute
+    }
+    '/tags/new': {
+      id: '/tags/new'
+      path: '/new'
+      fullPath: '/tags/new'
+      preLoaderRoute: typeof TagsNewRouteImport
+      parentRoute: typeof TagsRoute
+    }
+    '/tenants/': {
+      id: '/tenants/'
+      path: '/tenants'
+      fullPath: '/tenants/'
+      preLoaderRoute: typeof TenantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/$tenantId': {
+      id: '/tenants/$tenantId'
+      path: '/tenants/$tenantId'
+      fullPath: '/tenants/$tenantId'
+      preLoaderRoute: typeof TenantsTenantIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tenants/new': {
+      id: '/tenants/new'
+      path: '/tenants/new'
+      fullPath: '/tenants/new'
+      preLoaderRoute: typeof TenantsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/users/$userId': {
+      id: '/users/$userId'
+      path: '/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof UsersUserIdRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/users/new': {
+      id: '/users/new'
+      path: '/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof UsersNewRouteImport
+      parentRoute: typeof UsersRoute
+    }
+    '/auth/azure/callback': {
+      id: '/auth/azure/callback'
+      path: '/azure/callback'
+      fullPath: '/auth/azure/callback'
+      preLoaderRoute: typeof AuthAzureCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
     '/care-callbacks/worklist/': {
@@ -1511,13 +1518,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/care-callbacks/worklist/$caseId'
       preLoaderRoute: typeof CareCallbacksWorklistCaseIdRouteImport
       parentRoute: typeof CareCallbacksWorklistRoute
-    }
-    '/auth/azure/callback': {
-      id: '/auth/azure/callback'
-      path: '/azure/callback'
-      fullPath: '/auth/azure/callback'
-      preLoaderRoute: typeof AuthAzureCallbackRouteImport
-      parentRoute: typeof AuthRoute
     }
   }
 }

@@ -2,8 +2,8 @@
  * Client Tags API Endpoints
  */
 
-import apiClient from '../client'
-import type { Client, ClientTag, ListParams, PaginatedResponse } from '../types'
+import apiClient from "../client"
+import type { Client, ClientTag, ListParams, PaginatedResponse } from "../types"
 
 export interface ClientTagCreate {
   name: string
@@ -14,7 +14,7 @@ export interface ClientTagCreate {
 
 export const clientTagsApi = {
   async create(data: ClientTagCreate): Promise<ClientTag> {
-    return apiClient.post<ClientTag>('/client-tags', data)
+    return apiClient.post<ClientTag>("/client-tags", data)
   },
 
   async getById(tagId: string): Promise<ClientTag> {
@@ -22,7 +22,7 @@ export const clientTagsApi = {
   },
 
   async list(params?: ListParams): Promise<PaginatedResponse<ClientTag>> {
-    return apiClient.get<PaginatedResponse<ClientTag>>('/client-tags', params)
+    return apiClient.get<PaginatedResponse<ClientTag>>("/client-tags", params)
   },
 
   async update(tagId: string, data: Partial<ClientTagCreate>): Promise<ClientTag> {

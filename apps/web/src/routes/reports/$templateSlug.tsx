@@ -1,11 +1,6 @@
-
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  PieChart,
-  Printer,
-} from "lucide-react"
+import { ArrowLeft, PieChart, Printer } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -15,7 +10,6 @@ import { PerClientRenewalPack } from "@/components/reports/PerClientRenewalPack"
 import { BackLink, UnknownTemplate } from "@/components/reports/ReportShared"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
 
 export const Route = createFileRoute("/reports/$templateSlug")({
   component: ReportTemplatePage,
@@ -30,7 +24,6 @@ export const Route = createFileRoute("/reports/$templateSlug")({
     return out
   },
 })
-
 
 function CareCallbackWaveSummary() {
   const search = Route.useSearch()

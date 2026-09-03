@@ -3,41 +3,39 @@
  * axe-core issues. Pairs with the keyboard-walkthrough manual QA in Phase 1 #5.
  */
 
-import type * as TanstackRouter from '@tanstack/react-router'
-import { describe, expect, it, vi } from 'vitest'
-import { configureAxe } from 'vitest-axe'
+import type * as TanstackRouter from "@tanstack/react-router"
+import { describe, expect, it, vi } from "vitest"
+import { configureAxe } from "vitest-axe"
 
-import { ClientFormSheet } from '@/components/ClientFormSheet'
-import { PersonFormSheet } from '@/components/PersonFormSheet'
-import { ServiceSessionFormSheet } from '@/components/ServiceSessionFormSheet'
-import { renderWithProviders } from '@/test/utils'
+import { ClientFormSheet } from "@/components/ClientFormSheet"
+import { PersonFormSheet } from "@/components/PersonFormSheet"
+import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { renderWithProviders } from "@/test/utils"
 
 const axe = configureAxe({
   rules: {
-    'color-contrast': { enabled: false },
+    "color-contrast": { enabled: false },
     region: { enabled: false },
   },
 })
 
-vi.mock('@/api/endpoints/clients', () => ({
+vi.mock("@/api/endpoints/clients", () => ({
   clientsApi: { create: vi.fn() },
 }))
-vi.mock('@/api/endpoints/persons', () => ({
+vi.mock("@/api/endpoints/persons", () => ({
   personsApi: { create: vi.fn(), list: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
 }))
-vi.mock('@/api/endpoints/service-sessions', () => ({
+vi.mock("@/api/endpoints/service-sessions", () => ({
   serviceSessionsApi: { create: vi.fn() },
 }))
-vi.mock('@/api/endpoints/services', () => ({
+vi.mock("@/api/endpoints/services", () => ({
   servicesApi: { list: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
 }))
-vi.mock('@/api/endpoints/providers', () => ({
+vi.mock("@/api/endpoints/providers", () => ({
   providersApi: { list: vi.fn().mockResolvedValue({ items: [], total: 0 }) },
 }))
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof TanstackRouter>(
-    '@tanstack/react-router',
-  )
+vi.mock("@tanstack/react-router", async () => {
+  const actual = await vi.importActual<typeof TanstackRouter>("@tanstack/react-router")
   return {
     ...actual,
     useNavigate: () => vi.fn(),
@@ -45,22 +43,18 @@ vi.mock('@tanstack/react-router', async () => {
   }
 })
 
-describe('a11y — gated routes (zero serious/critical issues)', () => {
-  it('client-create form is accessible', async () => {
-    const { container } = renderWithProviders(
-      <ClientFormSheet open onOpenChange={() => {}} />,
-    )
+describe("a11y — gated routes (zero serious/critical issues)", () => {
+  it("client-create form is accessible", async () => {
+    const { container } = renderWithProviders(<ClientFormSheet open onOpenChange={() => {}} />)
     await expect(await axe(container)).toHaveNoViolations()
   })
 
-  it('person form sheet is accessible', async () => {
-    const { container } = renderWithProviders(
-      <PersonFormSheet open onOpenChange={() => {}} />,
-    )
+  it("person form sheet is accessible", async () => {
+    const { container } = renderWithProviders(<PersonFormSheet open onOpenChange={() => {}} />)
     await expect(await axe(container)).toHaveNoViolations()
   })
 
-  it('service session form sheet is accessible', async () => {
+  it("service session form sheet is accessible", async () => {
     const { container } = renderWithProviders(
       <ServiceSessionFormSheet open onOpenChange={() => {}} />,
     )

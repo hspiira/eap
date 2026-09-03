@@ -1,12 +1,7 @@
 import { Check, ChevronRight, Rocket, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface OnboardingStep {
@@ -42,9 +37,7 @@ export function OnboardingProgressCard({
   return (
     <Card className="rounded-md">
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 p-3 pb-2">
-        <CardTitle className="text-sm font-semibold text-fg">
-          Get started
-        </CardTitle>
+        <CardTitle className="text-sm font-semibold text-fg">Get started</CardTitle>
         {onDismiss ? (
           <Button
             variant="ghost"
@@ -81,9 +74,7 @@ export function OnboardingProgressCard({
               />
             </div>
           </div>
-          <span className="font-mono text-xs font-medium tabular-nums text-fg">
-            {percent}%
-          </span>
+          <span className="font-mono text-xs font-medium tabular-nums text-fg">{percent}%</span>
         </div>
 
         <ol className="grid gap-1.5">

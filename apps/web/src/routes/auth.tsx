@@ -3,9 +3,9 @@
  * Shared layout for authentication pages (login, signup)
  */
 
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/auth')({
+export const Route = createFileRoute("/auth")({
   component: AuthLayout,
 })
 

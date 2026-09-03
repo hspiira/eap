@@ -23,12 +23,7 @@ import {
 } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { cn } from "@/lib/utils"
 import type { Client } from "@/types/entities"
@@ -65,8 +60,7 @@ const clientSchema = z
     industry_id: z.string().optional(),
   })
   .superRefine((d, ctx) => {
-    const anyBilling =
-      d.billing_street || d.billing_city || d.billing_postal || d.billing_country
+    const anyBilling = d.billing_street || d.billing_city || d.billing_postal || d.billing_country
     if (!anyBilling) return
     for (const f of ["billing_street", "billing_city", "billing_country"] as const) {
       if (!d[f]?.trim()) {
@@ -102,12 +96,7 @@ interface ClientFormSheetProps {
   onSaved?: (client: Client) => void
 }
 
-export function ClientFormSheet({
-  open,
-  onOpenChange,
-  client,
-  onSaved,
-}: ClientFormSheetProps) {
+export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientFormSheetProps) {
   const [industryOpen, setIndustryOpen] = useState(false)
 
   const { data: industriesPage } = useQuery({
@@ -204,12 +193,7 @@ export function ClientFormSheet({
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
       <FormSection title="Identity">
-        <FormField
-          label="Name"
-          required
-          error={errors.name?.message}
-          htmlFor="cs-name"
-        >
+        <FormField label="Name" required error={errors.name?.message} htmlFor="cs-name">
           <Input id="cs-name" placeholder="e.g. Acme Corp" {...register("name")} />
         </FormField>
         <FormField
@@ -253,7 +237,9 @@ export function ClientFormSheet({
                       </span>
                       <div className="flex flex-col">
                         <SelectPrimitive.ItemText>{label}</SelectPrimitive.ItemText>
-                        <span className="text-xs text-muted-foreground leading-tight mt-0.5">{desc}</span>
+                        <span className="text-xs text-muted-foreground leading-tight mt-0.5">
+                          {desc}
+                        </span>
                       </div>
                     </SelectPrimitive.Item>
                   ))}
@@ -357,28 +343,13 @@ export function ClientFormSheet({
         title="Primary contact"
         description="Used for billing and account notifications."
       >
-        <FormField
-          label="Email"
-          optional
-          error={errors.email?.message}
-          htmlFor="cs-email"
-        >
+        <FormField label="Email" optional error={errors.email?.message} htmlFor="cs-email">
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
         </FormField>
-        <FormField
-          label="Phone"
-          optional
-          error={errors.phone?.message}
-          htmlFor="cs-phone"
-        >
+        <FormField label="Phone" optional error={errors.phone?.message} htmlFor="cs-phone">
           <Input id="cs-phone" type="tel" placeholder="+256 …" {...register("phone")} />
         </FormField>
-        <FormField
-          label="Address"
-          optional
-          error={errors.address?.message}
-          htmlFor="cs-address"
-        >
+        <FormField label="Address" optional error={errors.address?.message} htmlFor="cs-address">
           <Input id="cs-address" placeholder="Street, city" {...register("address")} />
         </FormField>
       </FormSection>

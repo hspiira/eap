@@ -2,10 +2,10 @@
  * Activities API Endpoints
  */
 
-import type { ActivityType } from '@/types/enums'
+import type { ActivityType } from "@/types/enums"
 
-import apiClient from '../client'
-import type { Activity, ListParams, PaginatedResponse } from '../types'
+import apiClient from "../client"
+import type { Activity, ListParams, PaginatedResponse } from "../types"
 
 export interface ActivityCreate {
   client_id: string
@@ -27,7 +27,7 @@ export interface ActivityListParams extends ListParams {
 
 export const activitiesApi = {
   async create(data: ActivityCreate): Promise<Activity> {
-    return apiClient.post<Activity>('/activities', data)
+    return apiClient.post<Activity>("/activities", data)
   },
 
   async getById(activityId: string): Promise<Activity> {
@@ -35,7 +35,7 @@ export const activitiesApi = {
   },
 
   async list(params?: ActivityListParams): Promise<PaginatedResponse<Activity>> {
-    return apiClient.get<PaginatedResponse<Activity>>('/activities', params)
+    return apiClient.get<PaginatedResponse<Activity>>("/activities", params)
   },
 
   async update(activityId: string, data: Partial<ActivityCreate>): Promise<Activity> {

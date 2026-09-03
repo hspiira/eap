@@ -9,8 +9,8 @@ import type {
   SurveySource,
   SurveyStatus,
   TriageRiskLevel,
-} from '../enums'
-import type { BaseEntity } from './base'
+} from "../enums"
+import type { BaseEntity } from "./base"
 
 /**
  * Critical Incident (CISM v1).

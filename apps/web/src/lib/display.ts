@@ -4,7 +4,7 @@
  * components, so display drift between routes is eliminated.
  */
 
-import type { Person, User } from '@/types/entities'
+import type { Person, User } from "@/types/entities"
 
 /**
  * Display name for a Person.
@@ -21,14 +21,14 @@ import type { Person, User } from '@/types/entities'
 export function displayName(person: Person, user?: User | null): string {
   const legacy =
     person.first_name || person.last_name
-      ? `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim()
-      : ''
+      ? `${person.first_name ?? ""} ${person.last_name ?? ""}`.trim()
+      : ""
   if (legacy) return legacy
   if (user?.display_name) return user.display_name
   if (user?.email) {
-    const localPart = user.email.split('@')[0]
+    const localPart = user.email.split("@")[0]
     return localPart
-      ? localPart.replace(/[._-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      ? localPart.replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
       : user.email
   }
   return person.id.slice(0, 8)
@@ -39,7 +39,7 @@ export function nameInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
   if (parts[0]?.length >= 2) return parts[0].slice(0, 2).toUpperCase()
-  return parts[0]?.[0]?.toUpperCase() ?? '·'
+  return parts[0]?.[0]?.toUpperCase() ?? "·"
 }
 
 /**

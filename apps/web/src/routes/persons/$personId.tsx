@@ -2,12 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  Pencil,
-  UserCog,
-  Users,
-} from "lucide-react"
+import { ArrowLeft, Pencil, UserCog, Users } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
@@ -41,13 +36,7 @@ export const Route = createFileRoute("/persons/$personId")({
   component: PersonDetailPage,
 })
 
-type TabValue =
-  | "overview"
-  | "employment"
-  | "family"
-  | "emergency"
-  | "sessions"
-  | "history"
+type TabValue = "overview" | "employment" | "family" | "emergency" | "sessions" | "history"
 const TAB_VALUES: ReadonlyArray<TabValue> = [
   "overview",
   "employment",
@@ -221,10 +210,7 @@ function PersonDetailPage() {
                         label="Eligible for services"
                         value={person.is_eligible_for_services ? "Yes" : "No"}
                       />
-                      <DetailRow
-                        label="Last service"
-                        value={person.last_service_date}
-                      />
+                      <DetailRow label="Last service" value={person.last_service_date} />
                       <DetailRow
                         label="Dual role"
                         value={
@@ -252,23 +238,11 @@ function PersonDetailPage() {
                           ) : null
                         }
                       />
-                      <DetailRow
-                        label="Department"
-                        value={person.employment_info.department}
-                      />
+                      <DetailRow label="Department" value={person.employment_info.department} />
                       <DetailRow label="Role" value={person.employment_info.role} />
-                      <DetailRow
-                        label="Start date"
-                        value={person.employment_info.start_date}
-                      />
-                      <DetailRow
-                        label="End date"
-                        value={person.employment_info.end_date}
-                      />
-                      <DetailRow
-                        label="Work status"
-                        value={person.employment_info.status}
-                      />
+                      <DetailRow label="Start date" value={person.employment_info.start_date} />
+                      <DetailRow label="End date" value={person.employment_info.end_date} />
+                      <DetailRow label="Work status" value={person.employment_info.status} />
                     </DetailGrid>
                   </DetailCard>
                 ) : (
@@ -314,14 +288,8 @@ function PersonDetailPage() {
                       <p className="text-xs text-fg/55">Loading employee…</p>
                     )}
                     <DetailGrid>
-                      <DetailRow
-                        label="Relationship"
-                        value={person.dependent_info.relationship}
-                      />
-                      <DetailRow
-                        label="Family ID"
-                        value={person.family_id}
-                      />
+                      <DetailRow label="Relationship" value={person.dependent_info.relationship} />
+                      <DetailRow label="Family ID" value={person.family_id} />
                     </DetailGrid>
                   </DetailCard>
                 ) : (
@@ -386,7 +354,15 @@ function PersonDetailPage() {
   )
 }
 
-function Hero({ person, client, user }: { person: Person; client: Client | null; user: User | null }) {
+function Hero({
+  person,
+  client,
+  user,
+}: {
+  person: Person
+  client: Client | null
+  user: User | null
+}) {
   const fullName = displayName(person, user)
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
@@ -396,13 +372,9 @@ function Hero({ person, client, user }: { person: Person; client: Client | null;
       >
         {personInitials(person, user)}
       </span>
-      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
-        {fullName}
-      </h1>
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">{fullName}</h1>
       {person.employment_info?.employee_code ? (
-        <span className="font-mono text-xs text-fg/55">
-          {person.employment_info.employee_code}
-        </span>
+        <span className="font-mono text-xs text-fg/55">{person.employment_info.employee_code}</span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
@@ -435,14 +407,8 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
     <div className="space-y-5">
       <RailSection title="At a glance">
         <DetailGrid>
-          <DetailRow
-            label="Eligible"
-            value={person.is_eligible_for_services ? "Yes" : "No"}
-          />
-          <DetailRow
-            label="Last service"
-            value={person.last_service_date ?? "—"}
-          />
+          <DetailRow label="Eligible" value={person.is_eligible_for_services ? "Yes" : "No"} />
+          <DetailRow label="Last service" value={person.last_service_date ?? "—"} />
         </DetailGrid>
       </RailSection>
 
@@ -507,4 +473,3 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
     </div>
   )
 }
-

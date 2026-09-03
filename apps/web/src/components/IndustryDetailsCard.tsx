@@ -30,19 +30,13 @@ export function IndustryDetailsCard({
     <div className="flex min-h-0 flex-col border border-fg/10 bg-surface">
       <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold leading-tight text-fg">
-            {industry.name}
-          </h3>
+          <h3 className="truncate text-sm font-semibold leading-tight text-fg">{industry.name}</h3>
           <div className="mt-1 flex items-center gap-2">
-            <span className="font-mono text-[11px] text-fg/55">
-              {industry.code ?? "no code"}
-            </span>
+            <span className="font-mono text-[11px] text-fg/55">{industry.code ?? "no code"}</span>
             {industry.level != null ? (
               <>
                 <span className="h-3 w-px bg-fg/20" aria-hidden />
-                <span className="font-mono text-[11px] text-fg/55">
-                  L{industry.level}
-                </span>
+                <span className="font-mono text-[11px] text-fg/55">L{industry.level}</span>
               </>
             ) : null}
           </div>
@@ -88,7 +82,11 @@ export function IndustryDetailsCard({
               {industry.code ?? <span className="text-fg/40">—</span>}
             </Field>
             <Field label="Level" mono>
-              {industry.level != null ? `L${industry.level}` : <span className="text-fg/40">—</span>}
+              {industry.level != null ? (
+                `L${industry.level}`
+              ) : (
+                <span className="text-fg/40">—</span>
+              )}
             </Field>
             <Field label="Children" mono>
               {children.length}
@@ -110,18 +108,10 @@ export function IndustryDetailsCard({
   )
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h4 className="text-xs font-semibold tracking-wide text-fg/55">
-        {title}
-      </h4>
+      <h4 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h4>
       {children}
     </section>
   )
@@ -140,9 +130,7 @@ function Field({
 }) {
   return (
     <div className={cn(fullWidth && "col-span-3")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">
-        {label}
-      </dt>
+      <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
       <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "font-mono text-xs")}>
         {children}
       </dd>
@@ -199,10 +187,7 @@ function TreeNode({ industry, kind, onSelect }: TreeNodeProps) {
       )}
     >
       <Icon
-        className={cn(
-          "size-3.5 shrink-0",
-          kind === "current" ? "text-primary" : "text-fg/40",
-        )}
+        className={cn("size-3.5 shrink-0", kind === "current" ? "text-primary" : "text-fg/40")}
       />
       <span className="truncate">{industry.name}</span>
       {industry.code ? (

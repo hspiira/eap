@@ -2,14 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  CalendarClock,
-  ChevronRight,
-  Pencil,
-  Plus,
-  Wrench,
-} from "lucide-react"
+import { ArrowLeft, CalendarClock, ChevronRight, Pencil, Plus, Wrench } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
@@ -172,9 +165,7 @@ function ServiceDetailPage() {
                       <DetailRow
                         label="Type"
                         value={
-                          service.service_type
-                            ? humanizeServiceType(service.service_type)
-                            : null
+                          service.service_type ? humanizeServiceType(service.service_type) : null
                         }
                       />
                       <DetailRow label="Category" value={service.category} />
@@ -270,9 +261,7 @@ function Hero({ service }: { service: Service }) {
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={service.status} />
       {service.duration_minutes != null ? (
-        <span className="font-mono text-xs text-fg/55">
-          {service.duration_minutes}m
-        </span>
+        <span className="font-mono text-xs text-fg/55">{service.duration_minutes}m</span>
       ) : null}
     </div>
   )
@@ -398,9 +387,7 @@ function SessionsPanel({
           <TableBody>
             {sessions.slice(0, 10).map((s) => (
               <TableRow key={s.id} className="group border-fg/8">
-                <TableCell className="text-sm text-fg">
-                  {formatDateTime(s.scheduled_at)}
-                </TableCell>
+                <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell>
                   <Link
                     to="/persons/$personId"
@@ -460,11 +447,7 @@ function DetailRail({
         <DetailGrid>
           <DetailRow
             label="Duration"
-            value={
-              service.duration_minutes != null
-                ? `${service.duration_minutes}m`
-                : null
-            }
+            value={service.duration_minutes != null ? `${service.duration_minutes}m` : null}
           />
           <DetailRow
             label="Group"
@@ -496,4 +479,3 @@ function DetailRail({
     </div>
   )
 }
-

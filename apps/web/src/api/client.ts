@@ -4,28 +4,19 @@
  * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
  */
 
-import { parseError } from '@/api/errors'
-import {
-  buildAuthHeaders,
-  buildHeaders,
-  buildUrl,
-  type SessionContext,
-} from '@/api/request-shape'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { useTenantStore } from '@/store/slices/tenantSlice'
-import type {
-  ApiClientConfig,
-  QueryParams,
-  RequestOptions,
-} from '@/types/api'
-import { ApiError } from '@/types/api'
+import { parseError } from "@/api/errors"
+import { buildAuthHeaders, buildHeaders, buildUrl, type SessionContext } from "@/api/request-shape"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
+import type { ApiClientConfig, QueryParams, RequestOptions } from "@/types/api"
+import { ApiError } from "@/types/api"
 
 const DEFAULT_TIMEOUT = 30000 // 30 seconds
 const DEFAULT_RETRY_ATTEMPTS = 3
 const DEFAULT_RETRY_DELAY = 1000 // 1 second
 
 function useCookies(): boolean {
-  return import.meta.env.VITE_AUTH_USE_COOKIES === 'true'
+  return import.meta.env.VITE_AUTH_USE_COOKIES === "true"
 }
 
 type AuthErrorCallback = () => void
@@ -39,7 +30,7 @@ class ApiClient {
   private refreshPromise: Promise<boolean> | null = null
 
   constructor(config: ApiClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '') // Remove trailing slash
+    this.baseUrl = config.baseUrl.replace(/\/$/, "") // Remove trailing slash
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT
     this.retryAttempts = config.retryAttempts ?? DEFAULT_RETRY_ATTEMPTS
     this.retryDelay = config.retryDelay ?? DEFAULT_RETRY_DELAY
@@ -101,16 +92,16 @@ class ApiClient {
       if (useCookies()) {
         try {
           const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({}),
-            credentials: 'include',
+            credentials: "include",
           })
           if (!response.ok) return false
           // BE may rotate the CSRF token on refresh; honor it if returned.
           try {
             const data = await response.clone().json()
-            if (data && typeof data.csrf_token === 'string') this.setCsrfToken(data.csrf_token)
+            if (data && typeof data.csrf_token === "string") this.setCsrfToken(data.csrf_token)
           } catch (_err) {
             // body may be empty — fine
           }
@@ -127,16 +118,15 @@ class ApiClient {
 
       try {
         const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refreshToken }),
         })
 
         if (!response.ok) return false
 
         const data = await response.json()
-        const expiresIn =
-          typeof data.expires_in === 'number' ? data.expires_in : undefined
+        const expiresIn = typeof data.expires_in === "number" ? data.expires_in : undefined
         this.setToken(data.access_token, expiresIn)
         this.setRefreshToken(data.refresh_token)
         return true
@@ -174,10 +164,10 @@ class ApiClient {
     if (!useCookies()) return !!this.getToken()
     try {
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-        credentials: 'include',
+        credentials: "include",
       })
       return response.ok
     } catch (_err) {
@@ -223,7 +213,7 @@ class ApiClient {
     doFetch: (headers: Record<string, string>) => Promise<Response>,
   ): Promise<Response> {
     const response = await doFetch(this.buildAuthHeaders(path))
-    if (response.status === 401 && !path.includes('/auth/')) {
+    if (response.status === 401 && !path.includes("/auth/")) {
       if (await this.tryRefreshToken()) {
         const retry = await doFetch(this.buildAuthHeaders(path))
         if (retry.ok) return retry
@@ -240,10 +230,10 @@ class ApiClient {
     const url = this.buildUrl(path)
     const response = await this.fetchWithAuthRetry(path, (headers) =>
       fetch(url, {
-        method: 'POST',
+        method: "POST",
         body: formData,
         headers,
-        ...(useCookies() ? { credentials: 'include' as RequestCredentials } : {}),
+        ...(useCookies() ? { credentials: "include" as RequestCredentials } : {}),
       }),
     )
 
@@ -254,7 +244,6 @@ class ApiClient {
     return this.parseBody<T>(response)
   }
 
-
   /**
    * GET with blob response (e.g. file download)
    */
@@ -262,23 +251,18 @@ class ApiClient {
     const url = this.buildUrl(path)
     const response = await this.fetchWithAuthRetry(path, (headers) =>
       fetch(url, {
-        method: 'GET',
+        method: "GET",
         headers,
-        credentials: useCookies() ? 'include' : undefined,
+        credentials: useCookies() ? "include" : undefined,
       }),
     )
 
     if (!response.ok) {
-      throw new ApiError(
-        'Failed to download document',
-        'DOWNLOAD_ERROR',
-        response.status,
-      )
+      throw new ApiError("Failed to download document", "DOWNLOAD_ERROR", response.status)
     }
 
     return response.blob()
   }
-
 
   /**
    * Parse error response.
@@ -298,10 +282,7 @@ class ApiClient {
   /**
    * Retry logic with exponential backoff
    */
-  private async retryRequest(
-    requestFn: () => Promise<Response>,
-    attempt = 1
-  ): Promise<Response> {
+  private async retryRequest(requestFn: () => Promise<Response>, attempt = 1): Promise<Response> {
     try {
       return await requestFn()
     } catch (error) {
@@ -310,10 +291,7 @@ class ApiClient {
       }
 
       // Only retry on network errors or 5xx errors
-      if (
-        error instanceof TypeError ||
-        (error instanceof ApiError && error.status >= 500)
-      ) {
+      if (error instanceof TypeError || (error instanceof ApiError && error.status >= 500)) {
         const delay = this.retryDelay * Math.pow(2, attempt - 1)
         await new Promise((resolve) => setTimeout(resolve, delay))
         return this.retryRequest(requestFn, attempt + 1)
@@ -336,8 +314,8 @@ class ApiClient {
 
   /** Parsed JSON body, or an empty object for 204/non-JSON responses. */
   private async parseBody<T>(response: Response): Promise<T> {
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) return {} as T
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) return {} as T
     return (await response.json()) as T
   }
 
@@ -346,17 +324,15 @@ class ApiClient {
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit & RequestOptions = {}
+    options: RequestInit & RequestOptions = {},
   ): Promise<T> {
     const { signal, timeout, headers, ...fetchOptions } = options
 
     const { signal: requestSignal, timeoutId } = this.makeTimeoutSignal(signal, timeout)
 
     // endpoint may already be a full URL or a relative path
-    const isAbsoluteUrl = endpoint.startsWith('http')
-    const isSameOrigin =
-      !isAbsoluteUrl ||
-      new URL(endpoint).origin === new URL(this.baseUrl).origin
+    const isAbsoluteUrl = endpoint.startsWith("http")
+    const isSameOrigin = !isAbsoluteUrl || new URL(endpoint).origin === new URL(this.baseUrl).origin
 
     const url = isAbsoluteUrl ? endpoint : this.buildUrl(endpoint)
     const pathForHeaders = isAbsoluteUrl
@@ -366,13 +342,16 @@ class ApiClient {
     const sanitizedHeaders = isSameOrigin
       ? (headers as Record<string, string>)
       : (() => {
-          const { Authorization: _auth, 'x-tenant-id': _tenant, ...rest } =
-            (headers as Record<string, string>) || {}
+          const {
+            Authorization: _auth,
+            "x-tenant-id": _tenant,
+            ...rest
+          } = (headers as Record<string, string>) || {}
           return rest
         })()
 
     const credentials =
-      useCookies() && isSameOrigin ? { credentials: 'include' as RequestCredentials } : {}
+      useCookies() && isSameOrigin ? { credentials: "include" as RequestCredentials } : {}
 
     const requestFn = () =>
       fetch(url, {
@@ -388,10 +367,12 @@ class ApiClient {
       clearTimeout(timeoutId)
 
       // Handle 401 - refresh once (fresh timeout + rebuilt headers for the rotated token) and retry.
-      if (response.status === 401 && !endpoint.includes('/auth/')) {
+      if (response.status === 401 && !endpoint.includes("/auth/")) {
         if (await this.tryRefreshToken()) {
-          const { signal: retrySignal, timeoutId: retryTimeoutId } =
-            this.makeTimeoutSignal(signal, timeout)
+          const { signal: retrySignal, timeoutId: retryTimeoutId } = this.makeTimeoutSignal(
+            signal,
+            timeout,
+          )
           try {
             const retryResponse = await fetch(url, {
               ...fetchOptions,
@@ -425,20 +406,12 @@ class ApiClient {
 
       // Handle network errors
       if (error instanceof TypeError) {
-        throw new ApiError(
-          'Network error: Unable to connect to the server',
-          'NETWORK_ERROR',
-          0
-        )
+        throw new ApiError("Network error: Unable to connect to the server", "NETWORK_ERROR", 0)
       }
 
       // Handle abort errors
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new ApiError(
-          'Request timeout: The request took too long',
-          'TIMEOUT_ERROR',
-          0
-        )
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new ApiError("Request timeout: The request took too long", "TIMEOUT_ERROR", 0)
       }
 
       throw error
@@ -448,14 +421,10 @@ class ApiClient {
   /**
    * GET request
    */
-  async get<T>(
-    endpoint: string,
-    params?: QueryParams,
-    options?: RequestOptions
-  ): Promise<T> {
+  async get<T>(endpoint: string, params?: QueryParams, options?: RequestOptions): Promise<T> {
     const fullUrl = this.buildUrl(endpoint, params)
     return this.request<T>(fullUrl, {
-      method: 'GET',
+      method: "GET",
       ...options,
     })
   }
@@ -463,13 +432,9 @@ class ApiClient {
   /**
    * POST request
    */
-  async post<T>(
-    endpoint: string,
-    data?: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
@@ -478,13 +443,9 @@ class ApiClient {
   /**
    * PATCH request
    */
-  async patch<T>(
-    endpoint: string,
-    data?: unknown,
-    options?: RequestOptions
-  ): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'PATCH',
+      method: "PATCH",
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
@@ -493,19 +454,16 @@ class ApiClient {
   /**
    * DELETE request
    */
-  async delete<T>(
-    endpoint: string,
-    options?: RequestOptions
-  ): Promise<T> {
+  async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'DELETE',
+      method: "DELETE",
       ...options,
     })
   }
 }
 
 const apiClient = new ApiClient({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
   timeout: DEFAULT_TIMEOUT,
   retryAttempts: DEFAULT_RETRY_ATTEMPTS,
   retryDelay: DEFAULT_RETRY_DELAY,

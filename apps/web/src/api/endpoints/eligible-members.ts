@@ -5,12 +5,12 @@
  * BE only filters by client_id — no free-text search.
  */
 
-import apiClient from '../client'
-import type { EligibleMember } from '../types'
+import apiClient from "../client"
+import type { EligibleMember } from "../types"
 
 export const eligibleMembersApi = {
   async listForClient(clientId: string): Promise<EligibleMember[]> {
-    return apiClient.get<EligibleMember[]>('/eligible-members', { client_id: clientId })
+    return apiClient.get<EligibleMember[]>("/eligible-members", { client_id: clientId })
   },
 
   async getById(memberId: string): Promise<EligibleMember> {

@@ -4,10 +4,10 @@
  * the BE rotates server-side and `expires_in` isn't surfaced to the FE).
  */
 
-import { useEffect } from 'react'
+import { useEffect } from "react"
 
-import apiClient from '@/api/client'
-import { useAuthStore } from '@/store/slices/authSlice'
+import apiClient from "@/api/client"
+import { useAuthStore } from "@/store/slices/authSlice"
 
 const REFRESH_BEFORE_EXPIRY_MS = 60_000 // refresh 1 min before expiry
 const MIN_DELAY_MS = 5_000

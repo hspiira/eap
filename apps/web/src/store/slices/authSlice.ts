@@ -7,15 +7,12 @@
  * rather than touching storage directly.
  */
 
-import { create } from 'zustand'
+import { create } from "zustand"
 
-import { authStorage } from '@/lib/storage'
+import { authStorage } from "@/lib/storage"
 
 function useCookies(): boolean {
-  return (
-    typeof import.meta !== 'undefined' &&
-    import.meta.env?.VITE_AUTH_USE_COOKIES === 'true'
-  )
+  return typeof import.meta !== "undefined" && import.meta.env?.VITE_AUTH_USE_COOKIES === "true"
 }
 
 export interface AuthState {
@@ -66,7 +63,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setAuth: (token, user_id, email) => {
     const cookieMode = useCookies()
     authStorage.patch({
-      token: cookieMode ? null : token ?? null,
+      token: cookieMode ? null : (token ?? null),
       user_id: user_id ?? null,
       email: email ?? null,
     })
@@ -82,9 +79,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setToken: (token, expiresInSeconds) => {
     const cookieMode = useCookies()
     const tokenExpiresAt =
-      token && typeof expiresInSeconds === 'number'
-        ? Date.now() + expiresInSeconds * 1000
-        : null
+      token && typeof expiresInSeconds === "number" ? Date.now() + expiresInSeconds * 1000 : null
     if (!cookieMode) authStorage.patch({ token, token_expires_at: tokenExpiresAt })
     set({ token, tokenExpiresAt })
   },

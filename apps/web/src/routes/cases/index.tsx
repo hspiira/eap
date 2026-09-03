@@ -96,7 +96,8 @@ function CasesListPage() {
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
-  const hasFilters = Boolean(searchInput) || Boolean(searchParams.status) || Boolean(searchParams.presenting_problem)
+  const hasFilters =
+    Boolean(searchInput) || Boolean(searchParams.status) || Boolean(searchParams.presenting_problem)
 
   return (
     <PageShell
@@ -190,9 +191,7 @@ function CasesListPage() {
                     <TableCell className="text-sm text-fg/75">
                       {CaseReferralSourceLabel[c.referral_source]}
                     </TableCell>
-                    <TableCell className="text-sm text-fg/75">
-                      {formatDate(c.opened_at)}
-                    </TableCell>
+                    <TableCell className="text-sm text-fg/75">{formatDate(c.opened_at)}</TableCell>
                     <TableCell>
                       <StatusBadge status={c.status} />
                     </TableCell>
@@ -218,7 +217,8 @@ function filterAndSort(
 ): Case[] {
   let out = items
   if (opts.status) out = out.filter((c) => c.status === opts.status)
-  if (opts.presentingProblem) out = out.filter((c) => c.presenting_problem === opts.presentingProblem)
+  if (opts.presentingProblem)
+    out = out.filter((c) => c.presenting_problem === opts.presentingProblem)
   if (opts.search) {
     const q = opts.search.toLowerCase()
     out = out.filter(

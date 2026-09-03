@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState } from "react"
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
   AlertTriangle,
   Archive,
@@ -11,14 +11,14 @@ import {
   Power,
   RotateCcw,
   Trash2,
-} from 'lucide-react'
-import { z } from 'zod'
+} from "lucide-react"
+import { z } from "zod"
 
-import { tenantsApi } from '@/api/endpoints/tenants'
-import { FormField } from '@/components/common/FormField'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { tenantsApi } from "@/api/endpoints/tenants"
+import { FormField } from "@/components/common/FormField"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -26,29 +26,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useToast } from '@/contexts/ToastContext'
-import { normalizeErrorMessage } from '@/lib/errors'
-import { formatDateTime } from '@/lib/format'
-import type { Tenant } from '@/types/entities'
-import { TenantStatus } from '@/types/enums'
+} from "@/components/ui/select"
+import { useToast } from "@/contexts/ToastContext"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime } from "@/lib/format"
+import type { Tenant } from "@/types/entities"
+import { TenantStatus } from "@/types/enums"
 
-const SUBSCRIPTION_TIERS = ['Free', 'Basic', 'Professional', 'Enterprise'] as const
+const SUBSCRIPTION_TIERS = ["Free", "Basic", "Professional", "Enterprise"] as const
 
 const ssoSchema = z.object({
-  azure_tenant_id: z
-    .string()
-    .trim()
-    .min(8, 'Looks too short to be an Azure tenant ID')
-    .max(64),
+  azure_tenant_id: z.string().trim().min(8, "Looks too short to be an Azure tenant ID").max(64),
   enabled: z.boolean(),
 })
 
@@ -78,14 +74,14 @@ export function OverviewCard({ tenant }: { tenant: Tenant }) {
       </header>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         <Field label="ID" value={<span className="font-mono text-xs">{tenant.id}</span>} />
-        <Field label="Subscription" value={tenant.subscription_tier ?? '—'} />
-        <Field label="Max users" value={String(tenant.settings?.max_users ?? '—')} />
-        <Field label="Max clients" value={String(tenant.settings?.max_clients ?? '—')} />
-        <Field label="Custom branding" value={tenant.settings?.custom_branding ? 'Enabled' : 'Disabled'} />
+        <Field label="Subscription" value={tenant.subscription_tier ?? "—"} />
+        <Field label="Max users" value={String(tenant.settings?.max_users ?? "—")} />
+        <Field label="Max clients" value={String(tenant.settings?.max_clients ?? "—")} />
         <Field
-          label="Created"
-          value={formatDateTime(tenant.created_at)}
+          label="Custom branding"
+          value={tenant.settings?.custom_branding ? "Enabled" : "Disabled"}
         />
+        <Field label="Created" value={formatDateTime(tenant.created_at)} />
       </dl>
     </section>
   )
@@ -103,7 +99,7 @@ export function Field({ label, value }: { label: string; value: React.ReactNode 
 export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
   const queryClient = useQueryClient()
   const toast = useToast()
-  const [tier, setTier] = useState<string>(tenant.subscription_tier ?? 'Free')
+  const [tier, setTier] = useState<string>(tenant.subscription_tier ?? "Free")
   const [maxUsers, setMaxUsers] = useState<string>(String(tenant.settings?.max_users ?? 10))
   const [maxClients, setMaxClients] = useState<string>(String(tenant.settings?.max_clients ?? 5))
   const [customBranding, setCustomBranding] = useState<boolean>(
@@ -112,19 +108,19 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   function refresh(updated: Tenant) {
-    queryClient.setQueryData(['tenants', 'detail', tenant.id], updated)
-    queryClient.invalidateQueries({ queryKey: ['tenants'] })
+    queryClient.setQueryData(["tenants", "detail", tenant.id], updated)
+    queryClient.invalidateQueries({ queryKey: ["tenants"] })
   }
 
   const tierMutation = useMutation({
     mutationFn: () => tenantsApi.updateSubscription(tenant.id, tier),
     onSuccess: (t) => {
       refresh(t)
-      toast.showSuccess('Subscription tier updated')
+      toast.showSuccess("Subscription tier updated")
       setErrorMsg(null)
     },
     onError: (e) => {
-      const msg = normalizeErrorMessage(e, 'Could not update subscription tier')
+      const msg = normalizeErrorMessage(e, "Could not update subscription tier")
       setErrorMsg(msg)
       toast.showError(msg)
     },
@@ -139,17 +135,17 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
       }),
     onSuccess: (t) => {
       refresh(t)
-      toast.showSuccess('Settings saved')
+      toast.showSuccess("Settings saved")
       setErrorMsg(null)
     },
     onError: (e) => {
-      const msg = normalizeErrorMessage(e, 'Could not save settings')
+      const msg = normalizeErrorMessage(e, "Could not save settings")
       setErrorMsg(msg)
       toast.showError(msg)
     },
   })
 
-  const tierDirty = tier !== (tenant.subscription_tier ?? 'Free')
+  const tierDirty = tier !== (tenant.subscription_tier ?? "Free")
   const settingsDirty =
     Number.parseInt(maxUsers, 10) !== (tenant.settings?.max_users ?? 10) ||
     Number.parseInt(maxClients, 10) !== (tenant.settings?.max_clients ?? 5) ||
@@ -168,8 +164,8 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
           Change the subscription tier or adjust user/client quotas.
         </p>
         <p className="mt-2 inline-block rounded-sm border border-fg/15 bg-bg px-2 py-1 text-xs text-fg-muted">
-          Advisory only — pricing tiers and quota enforcement are not yet wired
-          up. Values save but do not block creation.
+          Advisory only — pricing tiers and quota enforcement are not yet wired up. Values save but
+          do not block creation.
         </p>
       </header>
 
@@ -201,7 +197,7 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
             onClick={() => tierMutation.mutate()}
             disabled={!tierDirty || tierMutation.isPending}
           >
-            {tierMutation.isPending ? 'Saving…' : 'Save tier'}
+            {tierMutation.isPending ? "Saving…" : "Save tier"}
           </Button>
         </div>
 
@@ -242,7 +238,7 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
             onClick={() => settingsMutation.mutate()}
             disabled={!settingsDirty || !validQuotas || settingsMutation.isPending}
           >
-            {settingsMutation.isPending ? 'Saving…' : 'Save quotas'}
+            {settingsMutation.isPending ? "Saving…" : "Save quotas"}
           </Button>
         </div>
       </div>
@@ -253,7 +249,7 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
 export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
   const queryClient = useQueryClient()
   const toast = useToast()
-  const [tid, setTid] = useState(tenant.azure_tenant_id ?? '')
+  const [tid, setTid] = useState(tenant.azure_tenant_id ?? "")
   const [enabled, setEnabled] = useState(tenant.azure_sso_enabled ?? false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -264,13 +260,13 @@ export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
         enabled: values.enabled,
       }),
     onSuccess: (updated) => {
-      queryClient.setQueryData(['tenants', 'detail', tenant.id], updated)
-      queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      toast.showSuccess('Azure SSO config saved')
+      queryClient.setQueryData(["tenants", "detail", tenant.id], updated)
+      queryClient.invalidateQueries({ queryKey: ["tenants"] })
+      toast.showSuccess("Azure SSO config saved")
       setErrorMsg(null)
     },
     onError: (err) => {
-      const msg = normalizeErrorMessage(err, 'Could not save Azure SSO config')
+      const msg = normalizeErrorMessage(err, "Could not save Azure SSO config")
       setErrorMsg(msg)
       toast.showError(msg)
     },
@@ -280,14 +276,15 @@ export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
     e.preventDefault()
     const result = ssoSchema.safeParse({ azure_tenant_id: tid.trim(), enabled })
     if (!result.success) {
-      setErrorMsg(result.error.issues[0]?.message ?? 'Invalid input')
+      setErrorMsg(result.error.issues[0]?.message ?? "Invalid input")
       return
     }
     setErrorMsg(null)
     mutation.mutate(result.data)
   }
 
-  const dirty = tid.trim() !== (tenant.azure_tenant_id ?? '') || enabled !== (tenant.azure_sso_enabled ?? false)
+  const dirty =
+    tid.trim() !== (tenant.azure_tenant_id ?? "") || enabled !== (tenant.azure_sso_enabled ?? false)
 
   return (
     <section className="rounded-sm border border-border-subtle bg-surface p-6">
@@ -298,8 +295,8 @@ export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
             Azure AD SSO
           </h2>
           <p className="mt-1 text-sm text-fg-muted">
-            Wire this tenant to a Microsoft Entra ID directory. Users with matching emails
-            can then sign in via "Continue with Microsoft".
+            Wire this tenant to a Microsoft Entra ID directory. Users with matching emails can then
+            sign in via "Continue with Microsoft".
           </p>
         </div>
       </header>
@@ -339,7 +336,7 @@ export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={!dirty || mutation.isPending}>
-            {mutation.isPending ? 'Saving…' : 'Save SSO config'}
+            {mutation.isPending ? "Saving…" : "Save SSO config"}
           </Button>
         </div>
       </form>
@@ -351,59 +348,59 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
   const queryClient = useQueryClient()
   const toast = useToast()
   const navigate = useNavigate()
-  const [reasonDialog, setReasonDialog] = useState<null | 'suspend' | 'terminate'>(null)
-  const [reason, setReason] = useState('')
+  const [reasonDialog, setReasonDialog] = useState<null | "suspend" | "terminate">(null)
+  const [reason, setReason] = useState("")
 
   function refresh(updated: Tenant) {
-    queryClient.setQueryData(['tenants', 'detail', tenant.id], updated)
-    queryClient.invalidateQueries({ queryKey: ['tenants'] })
+    queryClient.setQueryData(["tenants", "detail", tenant.id], updated)
+    queryClient.invalidateQueries({ queryKey: ["tenants"] })
   }
 
   const activate = useMutation({
     mutationFn: () => tenantsApi.activate(tenant.id),
     onSuccess: (t) => {
       refresh(t)
-      toast.showSuccess('Tenant activated')
+      toast.showSuccess("Tenant activated")
     },
-    onError: (e) => toast.showError(normalizeErrorMessage(e, 'Action failed')),
+    onError: (e) => toast.showError(normalizeErrorMessage(e, "Action failed")),
   })
 
   const archive = useMutation({
     mutationFn: () => tenantsApi.archive(tenant.id),
     onSuccess: (t) => {
       refresh(t)
-      toast.showSuccess('Tenant archived')
+      toast.showSuccess("Tenant archived")
     },
-    onError: (e) => toast.showError(normalizeErrorMessage(e, 'Action failed')),
+    onError: (e) => toast.showError(normalizeErrorMessage(e, "Action failed")),
   })
 
   const restore = useMutation({
     mutationFn: () => tenantsApi.restore(tenant.id),
     onSuccess: (t) => {
       refresh(t)
-      toast.showSuccess('Tenant restored')
+      toast.showSuccess("Tenant restored")
     },
-    onError: (e) => toast.showError(normalizeErrorMessage(e, 'Action failed')),
+    onError: (e) => toast.showError(normalizeErrorMessage(e, "Action failed")),
   })
 
   const suspendOrTerminate = useMutation({
-    mutationFn: ({ kind, reason }: { kind: 'suspend' | 'terminate'; reason: string }) =>
-      kind === 'suspend'
+    mutationFn: ({ kind, reason }: { kind: "suspend" | "terminate"; reason: string }) =>
+      kind === "suspend"
         ? tenantsApi.suspend(tenant.id, reason)
         : tenantsApi.terminate(tenant.id, reason),
     onSuccess: (t, vars) => {
       refresh(t)
-      toast.showSuccess(`Tenant ${vars.kind === 'suspend' ? 'suspended' : 'terminated'}`)
+      toast.showSuccess(`Tenant ${vars.kind === "suspend" ? "suspended" : "terminated"}`)
       setReasonDialog(null)
-      setReason('')
-      if (vars.kind === 'terminate') {
+      setReason("")
+      if (vars.kind === "terminate") {
         navigate({
-          to: '/tenants',
+          to: "/tenants",
           search: { new: undefined, search: undefined, status: undefined },
         })
       }
     },
-    onError: (e) => toast.showError(normalizeErrorMessage(e, 'Action failed')),
+    onError: (e) => toast.showError(normalizeErrorMessage(e, "Action failed")),
   })
 
   const isTerminated = tenant.status === TenantStatus.TERMINATED
@@ -438,7 +435,7 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setReasonDialog('suspend')}
+            onClick={() => setReasonDialog("suspend")}
           >
             <Power className="size-3.5" /> Suspend
           </Button>
@@ -473,7 +470,7 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setReasonDialog('terminate')}
+            onClick={() => setReasonDialog("terminate")}
             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <Trash2 className="size-3.5" /> Terminate
@@ -492,19 +489,19 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
         onOpenChange={(open) => {
           if (!open) {
             setReasonDialog(null)
-            setReason('')
+            setReason("")
           }
         }}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {reasonDialog === 'suspend' ? 'Suspend tenant' : 'Terminate tenant'}
+              {reasonDialog === "suspend" ? "Suspend tenant" : "Terminate tenant"}
             </DialogTitle>
             <DialogDescription>
-              {reasonDialog === 'suspend'
-                ? 'Suspending pauses the tenant — users cannot sign in until reactivated.'
-                : 'Terminating is permanent. The tenant cannot be restored after termination.'}
+              {reasonDialog === "suspend"
+                ? "Suspending pauses the tenant — users cannot sign in until reactivated."
+                : "Terminating is permanent. The tenant cannot be restored after termination."}
             </DialogDescription>
           </DialogHeader>
           <FormField label="Reason" htmlFor="reason" required>
@@ -522,7 +519,7 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
               variant="outline"
               onClick={() => {
                 setReasonDialog(null)
-                setReason('')
+                setReason("")
               }}
             >
               Cancel
@@ -535,7 +532,7 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
               }}
               disabled={!reason.trim() || suspendOrTerminate.isPending}
             >
-              {suspendOrTerminate.isPending ? 'Submitting…' : 'Confirm'}
+              {suspendOrTerminate.isPending ? "Submitting…" : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -77,27 +77,21 @@ const STATUS_COLUMNS: Array<{
     label: "Due soon",
     badgeClass: "bg-primary/80 text-fg",
     checkboxClass: "border-primary",
-    tasks: [
-      { title: "Create backend API for sending workspace invitation" },
-    ],
+    tasks: [{ title: "Create backend API for sending workspace invitation" }],
   },
   {
     id: "blocked",
     label: "Blocked",
     badgeClass: "bg-fg text-surface",
     checkboxClass: "border-fg",
-    tasks: [
-      { title: "Create backend API for sending workspace invitation" },
-    ],
+    tasks: [{ title: "Create backend API for sending workspace invitation" }],
   },
   {
     id: "needs-review",
     label: "Needs review",
     badgeClass: "bg-primary text-surface",
     checkboxClass: "border-primary",
-    tasks: [
-      { title: "Create backend API for sending workspace invitation" },
-    ],
+    tasks: [{ title: "Create backend API for sending workspace invitation" }],
   },
 ]
 
@@ -117,10 +111,7 @@ function FilterBar() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-55 p-0">
           <div className="border-b border-fg/20 p-2">
-            <Input
-              placeholder="Filter..."
-              className="h-8 border-fg/20 bg-surface/50"
-            />
+            <Input placeholder="Filter..." className="h-8 border-fg/20 bg-surface/50" />
           </div>
           <div className="max-h-70 overflow-y-auto py-1">
             {FILTER_OPTIONS.map((opt) => (
@@ -146,7 +137,7 @@ function FilterBar() {
             key={c.initials}
             className={cn(
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-surface",
-              c.bg
+              c.bg,
             )}
           >
             {c.initials}
@@ -230,7 +221,7 @@ function TaskRow({
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center border-2 rounded-none",
           checkboxClass,
-          isDone && "bg-primary border-primary"
+          isDone && "bg-primary border-primary",
         )}
       >
         {isDone ? <Check className="h-2.5 w-2.5 text-surface" /> : null}
@@ -239,9 +230,7 @@ function TaskRow({
       {subIssue != null && (
         <span className="shrink-0 text-xs text-fg/80">Sub-Issue {subIssue}</span>
       )}
-      {blocked && (
-        <span className="shrink-0 text-xs text-fg/80">Blocked by</span>
-      )}
+      {blocked && <span className="shrink-0 text-xs text-fg/80">Blocked by</span>}
       {blocking && (
         <span className="shrink-0 border border-danger-soft bg-danger-soft/20 px-1.5 py-0.5 text-xs text-fg">
           Blocking issues
@@ -255,9 +244,7 @@ export function AtRiskPage() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-neutral-50">
       <div
-        className={cn(
-          "h-10 flex items-center rounded-none bg-neutral-50 border-b border-fg/20",
-        )}
+        className={cn("h-10 flex items-center rounded-none bg-neutral-50 border-b border-fg/20")}
       >
         <div className="flex w-full items-center gap-1.5 px-2 py-0">
           <Button
@@ -320,7 +307,7 @@ export function AtRiskPage() {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-none",
-                    col.badgeClass
+                    col.badgeClass,
                   )}
                 >
                   {col.id === "needs-review" && <Check className="h-3 w-3" />}

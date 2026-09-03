@@ -10,7 +10,7 @@
  * Default tab is omitted from the URL to keep clean shareable links.
  */
 
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useSearch } from "@tanstack/react-router"
 
 interface SearchWithTab {
   tab?: string

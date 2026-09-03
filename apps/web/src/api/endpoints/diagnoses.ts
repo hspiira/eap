@@ -10,15 +10,11 @@
  * Fixture is DEV-only.
  */
 
-import { useFixtures } from '@/lib/fixtures'
-import type { Diagnosis, DiagnosisTree, DiagnosisType } from '@/types/entities'
+import { useFixtures } from "@/lib/fixtures"
+import type { Diagnosis, DiagnosisTree, DiagnosisType } from "@/types/entities"
 
-import apiClient from '../client'
-import {
-  fixtureGetTree,
-  fixtureGetTypes,
-  fixtureListDiagnoses,
-} from './diagnoses-fixture'
+import apiClient from "../client"
+import { fixtureGetTree, fixtureGetTypes, fixtureListDiagnoses } from "./diagnoses-fixture"
 
 export interface DiagnosisListParams {
   type_code?: string
@@ -28,16 +24,16 @@ export interface DiagnosisListParams {
 export const diagnosesApi = {
   async getTypes(): Promise<DiagnosisType[]> {
     if (useFixtures()) return Promise.resolve(fixtureGetTypes())
-    return apiClient.get<DiagnosisType[]>('/diagnoses/types')
+    return apiClient.get<DiagnosisType[]>("/diagnoses/types")
   },
 
   async getTree(): Promise<DiagnosisTree> {
     if (useFixtures()) return Promise.resolve(fixtureGetTree())
-    return apiClient.get<DiagnosisTree>('/diagnoses/tree')
+    return apiClient.get<DiagnosisTree>("/diagnoses/tree")
   },
 
   async list(params: DiagnosisListParams = {}): Promise<Diagnosis[]> {
     if (useFixtures()) return Promise.resolve(fixtureListDiagnoses(params.type_code))
-    return apiClient.get<Diagnosis[]>('/diagnoses', params)
+    return apiClient.get<Diagnosis[]>("/diagnoses", params)
   },
 }

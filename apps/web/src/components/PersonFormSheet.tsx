@@ -26,12 +26,11 @@
  * `displayName(person, user)` from the linked User's email.
  */
 
-
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { type PersonListParams,personsApi } from "@/api/endpoints/persons"
+import { type PersonListParams, personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import type { EmploymentInfoCreateSchema } from "@/api/generated"
 import { ClientPicker, EntityPicker, PickerRow } from "@/components/common/EntityPicker"
@@ -155,17 +154,13 @@ const personSchema = z
     emergency_email: z
       .string()
       .optional()
-      .refine(
-        (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-        "Invalid email",
-      ),
+      .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Invalid email"),
   })
   .superRefine((d, ctx) => {
     if (d.person_type === PersonType.CLIENT_EMPLOYEE) {
       if (!d.client_id?.trim())
         ctx.addIssue({ code: "custom", path: ["client_id"], message: "Required" })
-      if (!d.role?.trim())
-        ctx.addIssue({ code: "custom", path: ["role"], message: "Required" })
+      if (!d.role?.trim()) ctx.addIssue({ code: "custom", path: ["role"], message: "Required" })
     }
     if (d.person_type === PersonType.DEPENDENT) {
       if (!d.primary_employee_id?.trim())
@@ -242,9 +237,10 @@ export function PersonFormSheet({
     : {
         ...EMPTY,
         client_id: clientId ?? "",
-        person_type: lockType && lockType !== PersonType.CLIENT_EMPLOYEE && lockType !== PersonType.DEPENDENT
-          ? PersonType.CLIENT_EMPLOYEE
-          : (lockType ?? EMPTY.person_type),
+        person_type:
+          lockType && lockType !== PersonType.CLIENT_EMPLOYEE && lockType !== PersonType.DEPENDENT
+            ? PersonType.CLIENT_EMPLOYEE
+            : (lockType ?? EMPTY.person_type),
       }
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
@@ -389,7 +385,12 @@ export function PersonFormSheet({
           </FormField>
           {!isEdit ? (
             <FormField label="Email" required error={errors.email?.message} htmlFor="ps-email">
-              <Input id="ps-email" type="email" placeholder="henry.ssekibo@minet.co.ug" {...register("email")} />
+              <Input
+                id="ps-email"
+                type="email"
+                placeholder="henry.ssekibo@minet.co.ug"
+                {...register("email")}
+              />
             </FormField>
           ) : null}
         </div>
@@ -427,12 +428,22 @@ export function PersonFormSheet({
                 ))}
               </datalist>
             </FormField>
-            <FormField label="Department" optional error={errors.department?.message} htmlFor="ps-dept">
+            <FormField
+              label="Department"
+              optional
+              error={errors.department?.message}
+              htmlFor="ps-dept"
+            >
               <Input id="ps-dept" placeholder="People Ops" {...register("department")} />
             </FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Employee ID" optional error={errors.employee_id?.message} htmlFor="ps-empid">
+            <FormField
+              label="Employee ID"
+              optional
+              error={errors.employee_id?.message}
+              htmlFor="ps-empid"
+            >
               <Input
                 id="ps-empid"
                 placeholder="MNT-014"
@@ -440,15 +451,30 @@ export function PersonFormSheet({
                 {...register("employee_id")}
               />
             </FormField>
-            <FormField label="Family ID" optional error={errors.family_id?.message} htmlFor="ps-family">
+            <FormField
+              label="Family ID"
+              optional
+              error={errors.family_id?.message}
+              htmlFor="ps-family"
+            >
               <Input id="ps-family" className="font-mono" {...register("family_id")} />
             </FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Start date" optional error={errors.employment_start?.message} htmlFor="ps-empstart">
+            <FormField
+              label="Start date"
+              optional
+              error={errors.employment_start?.message}
+              htmlFor="ps-empstart"
+            >
               <Input id="ps-empstart" type="date" {...register("employment_start")} />
             </FormField>
-            <FormField label="End date" optional error={errors.employment_end?.message} htmlFor="ps-empend">
+            <FormField
+              label="End date"
+              optional
+              error={errors.employment_end?.message}
+              htmlFor="ps-empend"
+            >
               <Input id="ps-empend" type="date" {...register("employment_end")} />
             </FormField>
           </div>
@@ -462,10 +488,7 @@ export function PersonFormSheet({
               control={control}
               name="work_status"
               render={({ field }) => (
-                <Select
-                  value={field.value || WorkStatus.ACTIVE}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value || WorkStatus.ACTIVE} onValueChange={field.onChange}>
                   <SelectTrigger id="ps-workstatus">
                     <SelectValue />
                   </SelectTrigger>
@@ -495,7 +518,12 @@ export function PersonFormSheet({
           </FormField>
           <Input type="hidden" {...register("primary_employee_id")} />
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Relationship" required error={errors.relationship?.message} htmlFor="ps-relationship">
+            <FormField
+              label="Relationship"
+              required
+              error={errors.relationship?.message}
+              htmlFor="ps-relationship"
+            >
               <Controller
                 control={control}
                 name="relationship"
@@ -515,7 +543,12 @@ export function PersonFormSheet({
                 )}
               />
             </FormField>
-            <FormField label="Guardian user ID" optional error={errors.guardian_id?.message} htmlFor="ps-guardian">
+            <FormField
+              label="Guardian user ID"
+              optional
+              error={errors.guardian_id?.message}
+              htmlFor="ps-guardian"
+            >
               <Input id="ps-guardian" className="font-mono" {...register("guardian_id")} />
             </FormField>
           </div>
@@ -525,15 +558,40 @@ export function PersonFormSheet({
       {/* 3. Safety net — emergency contact next, before admin trivia. */}
       <FormSection title="Emergency contact">
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Name" optional error={errors.emergency_name?.message} htmlFor="ps-ename">
+          <FormField
+            label="Name"
+            optional
+            error={errors.emergency_name?.message}
+            htmlFor="ps-ename"
+          >
             <Input id="ps-ename" placeholder="Jane Doe" {...register("emergency_name")} />
           </FormField>
-          <FormField label="Phone" optional error={errors.emergency_phone?.message} htmlFor="ps-ephone">
-            <Input id="ps-ephone" type="tel" placeholder="+256 …" {...register("emergency_phone")} />
+          <FormField
+            label="Phone"
+            optional
+            error={errors.emergency_phone?.message}
+            htmlFor="ps-ephone"
+          >
+            <Input
+              id="ps-ephone"
+              type="tel"
+              placeholder="+256 …"
+              {...register("emergency_phone")}
+            />
           </FormField>
         </div>
-        <FormField label="Email" optional error={errors.emergency_email?.message} htmlFor="ps-eemail">
-          <Input id="ps-eemail" type="email" placeholder="jane@example.com" {...register("emergency_email")} />
+        <FormField
+          label="Email"
+          optional
+          error={errors.emergency_email?.message}
+          htmlFor="ps-eemail"
+        >
+          <Input
+            id="ps-eemail"
+            type="email"
+            placeholder="jane@example.com"
+            {...register("emergency_email")}
+          />
         </FormField>
       </FormSection>
 
@@ -542,7 +600,12 @@ export function PersonFormSheet({
       {!isEdit ? (
         <FormSection title="Account preferences">
           <div className="grid grid-cols-3 gap-3">
-            <FormField label="Password" optional error={errors.password?.message} htmlFor="ps-password">
+            <FormField
+              label="Password"
+              optional
+              error={errors.password?.message}
+              htmlFor="ps-password"
+            >
               <Input
                 id="ps-password"
                 type="password"
@@ -551,7 +614,12 @@ export function PersonFormSheet({
                 {...register("password")}
               />
             </FormField>
-            <FormField label="Language" optional error={errors.preferred_language?.message} htmlFor="ps-lang">
+            <FormField
+              label="Language"
+              optional
+              error={errors.preferred_language?.message}
+              htmlFor="ps-lang"
+            >
               <Controller
                 control={control}
                 name="preferred_language"
@@ -635,13 +703,7 @@ function personToValues(person: Person): PersonFormValues {
   }
 }
 
-function LockedClientSummary({
-  clientId,
-  client,
-}: {
-  clientId: string
-  client: Client | null
-}) {
+function LockedClientSummary({ clientId, client }: { clientId: string; client: Client | null }) {
   const enabled = !client && Boolean(clientId)
   const detail = useEntityList<Client>({
     resource: "clients",
@@ -649,8 +711,7 @@ function LockedClientSummary({
     listFn: clientsApi.list,
     enabled,
   })
-  const resolved =
-    client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
+  const resolved = client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -663,9 +724,7 @@ function LockedClientSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">
-          {resolved?.code ?? clientId}
-        </p>
+        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked

@@ -1,7 +1,7 @@
-import { Component, type ReactNode } from 'react'
+import { Component, type ReactNode } from "react"
 
-import { Link } from '@tanstack/react-router'
-import { AlertCircle, Home } from 'lucide-react'
+import { Link } from "@tanstack/react-router"
+import { AlertCircle, Home } from "lucide-react"
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught:', error, errorInfo)
+      console.error("ErrorBoundary caught:", error, errorInfo)
     }
   }
 
@@ -51,7 +51,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
               {this.state.error && import.meta.env.DEV && (
                 <div className="mb-6 p-3 bg-muted/10 border border-safe rounded-none text-left">
-                  <p className="text-fg-muted text-xs font-mono break-all">{this.state.error.message}</p>
+                  <p className="text-fg-muted text-xs font-mono break-all">
+                    {this.state.error.message}
+                  </p>
                 </div>
               )}
 

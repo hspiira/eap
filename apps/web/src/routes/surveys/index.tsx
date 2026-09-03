@@ -2,13 +2,7 @@ import { useEffect, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  ClipboardList,
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react"
+import { ClipboardList, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { surveysApi } from "@/api/endpoints/surveys"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -133,11 +127,7 @@ function SurveysListPage() {
           onChange={handleStatusChange}
         />
         <div className="ml-auto" />
-        <FilterSearch
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Search surveys…"
-        />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search surveys…" />
       </FilterBar>
 
       <SurveyFormSheet open={addOpen} onOpenChange={setAddOpen} />
@@ -173,36 +163,45 @@ function SurveysListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
-                  <TableHead>
-                    <SortHeader field="name" sort={sort} onToggle={toggleSort}>
-                      Survey
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                      Status
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="period_start" sort={sort} onToggle={toggleSort}>
-                      Window
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead className="text-fg/65">Source</TableHead>
-                  <TableHead className="text-fg/65">Responses</TableHead>
-                  <TableHead className="w-16 text-right text-fg/65">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((s) => (
-                  <SurveyRow key={s.id} row={s} isSelected={selection.selectedIds.has(s.id)} onToggle={() => selection.toggleSelect(s.id)} />
-                ))}
-              </TableBody>
-            </Table>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Survey
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="period_start" sort={sort} onToggle={toggleSort}>
+                        Window
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Source</TableHead>
+                    <TableHead className="text-fg/65">Responses</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((s) => (
+                    <SurveyRow
+                      key={s.id}
+                      row={s}
+                      isSelected={selection.selectedIds.has(s.id)}
+                      onToggle={() => selection.toggleSelect(s.id)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </>
         )}
@@ -211,11 +210,23 @@ function SurveysListPage() {
   )
 }
 
-function SurveyRow({ row, isSelected, onToggle }: { row: Survey; isSelected: boolean; onToggle: () => void }) {
+function SurveyRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: Survey
+  isSelected: boolean
+  onToggle: () => void
+}) {
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select ${row.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
         <Link
@@ -261,7 +272,15 @@ function SurveyRow({ row, isSelected, onToggle }: { row: Survey; isSelected: boo
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>

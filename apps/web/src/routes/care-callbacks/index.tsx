@@ -156,10 +156,7 @@ function CampaignsListPage() {
         />
       </FilterBar>
 
-      <CampaignFormSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-      />
+      <CampaignFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -168,7 +165,12 @@ function CampaignsListPage() {
           </div>
         ) : error ? (
           <div className="flex flex-1 items-center justify-center">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void query.refetch()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => void query.refetch()}
+            >
               <RotateCw className="size-4" />
               {error} Try again
             </Button>
@@ -199,36 +201,45 @@ function CampaignsListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
-                  <TableHead>
-                    <SortHeader field="name" sort={sort} onToggle={toggleSort}>
-                      Campaign
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                      Status
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader field="period_start" sort={sort} onToggle={toggleSort}>
-                      Window
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead className="text-fg/65">Pool</TableHead>
-                  <TableHead className="text-fg/65">Cases</TableHead>
-                  <TableHead className="w-16 text-right text-fg/65">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((c) => (
-                  <CampaignRow key={c.id} row={c} isSelected={selection.selectedIds.has(c.id)} onToggle={() => selection.toggleSelect(c.id)} />
-                ))}
-              </TableBody>
-            </Table>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Campaign
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="period_start" sort={sort} onToggle={toggleSort}>
+                        Window
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Pool</TableHead>
+                    <TableHead className="text-fg/65">Cases</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((c) => (
+                    <CampaignRow
+                      key={c.id}
+                      row={c}
+                      isSelected={selection.selectedIds.has(c.id)}
+                      onToggle={() => selection.toggleSelect(c.id)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </>
         )}
@@ -237,13 +248,25 @@ function CampaignsListPage() {
   )
 }
 
-function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isSelected: boolean; onToggle: () => void }) {
+function CampaignRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: CallbackCampaign
+  isSelected: boolean
+  onToggle: () => void
+}) {
   const total = row.target_count
   const completionPct = total ? Math.round((row.completed_count / total) * 100) : 0
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${row.name}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select ${row.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
         <Link
@@ -261,9 +284,7 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {row.name}
             </span>
-            <span className="block truncate text-xs text-fg/55">
-              Target: {row.target_count}
-            </span>
+            <span className="block truncate text-xs text-fg/55">Target: {row.target_count}</span>
           </span>
         </Link>
       </TableCell>
@@ -275,9 +296,7 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
         <span className="text-fg/40"> – </span>
         {formatDate(row.period_end)}
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">
-        {row.counsellor_pool.length}
-      </TableCell>
+      <TableCell className="font-mono text-xs text-fg/75">{row.counsellor_pool.length}</TableCell>
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
@@ -286,10 +305,7 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
             </span>
             <span className="font-mono">{completionPct}%</span>
           </div>
-          <div
-            className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10"
-            aria-hidden
-          >
+          <div className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10" aria-hidden>
             <div
               className="h-full bg-primary"
               style={{ width: `${Math.min(100, completionPct)}%` }}
@@ -309,7 +325,15 @@ function CampaignRow({ row, isSelected, onToggle }: { row: CallbackCampaign; isS
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${row.name}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>

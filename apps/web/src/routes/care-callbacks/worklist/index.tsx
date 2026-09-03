@@ -2,13 +2,7 @@ import { useState } from "react"
 
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  ChevronRight,
-  ExternalLink,
-  Headphones,
-  Phone,
-} from "lucide-react"
+import { AlertTriangle, ChevronRight, ExternalLink, Headphones, Phone } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -86,7 +80,8 @@ function useMyOutreachAcrossCampaigns(counsellorId: string | null) {
     })),
   })
 
-  const isPending = campaignsQuery.isPending || (!!counsellorId && recordQueries.some((q) => q.isPending))
+  const isPending =
+    campaignsQuery.isPending || (!!counsellorId && recordQueries.some((q) => q.isPending))
   const campaignNameById = new Map(activeCampaigns.map((c) => [c.id, c.name]))
   const records = recordQueries
     .flatMap((q) => q.data ?? [])
@@ -256,7 +251,11 @@ function WorklistPage() {
               </TableHeader>
               <TableBody>
                 {items.map((c) => (
-                  <CaseRow key={c.id} row={c} campaignName={campaignNameById.get(c.campaign_id) ?? null} />
+                  <CaseRow
+                    key={c.id}
+                    row={c}
+                    campaignName={campaignNameById.get(c.campaign_id) ?? null}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -310,9 +309,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="text-sm text-fg/75">
-        {formatDate(row.last_attempted_at)}
-      </TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDate(row.last_attempted_at)}</TableCell>
       <TableCell className="font-mono text-xs text-fg/75">{row.contact_attempts}</TableCell>
       <TableCell className="text-right">
         <Link
@@ -370,8 +367,7 @@ function filterAndSort(
   if (opts.search) {
     const q = opts.search.toLowerCase()
     out = out.filter(
-      (c) =>
-        c.person_id.toLowerCase().includes(q) || c.campaign_id.toLowerCase().includes(q),
+      (c) => c.person_id.toLowerCase().includes(q) || c.campaign_id.toLowerCase().includes(q),
     )
   }
   return compareSort(out, opts.sort)

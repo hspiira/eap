@@ -4,12 +4,7 @@ import { Copy, MoreHorizontal, UserPlus } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,9 +78,7 @@ export function InviteToProjectCard({
           <UserPlus className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <CardTitle className="text-sm font-semibold text-fg">
-            Invite to tenant
-          </CardTitle>
+          <CardTitle className="text-sm font-semibold text-fg">Invite to tenant</CardTitle>
           <p className="mt-0.5 text-xs text-fg-muted">
             Add team members to collaborate on this tenant.
           </p>

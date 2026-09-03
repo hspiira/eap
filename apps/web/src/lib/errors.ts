@@ -5,7 +5,7 @@
  * `code` strings are stable; messages are not.
  */
 
-import { ApiError } from '@/types/api'
+import { ApiError } from "@/types/api"
 
 export function isApiError(err: unknown): err is ApiError {
   return err instanceof ApiError
@@ -36,15 +36,15 @@ export function isServerError(err: unknown): err is ApiError {
 }
 
 export function isNetworkError(err: unknown): err is ApiError {
-  return isApiError(err) && err.code === 'NETWORK_ERROR'
+  return isApiError(err) && err.code === "NETWORK_ERROR"
 }
 
 export function isTimeoutError(err: unknown): err is ApiError {
-  return isApiError(err) && err.code === 'TIMEOUT_ERROR'
+  return isApiError(err) && err.code === "TIMEOUT_ERROR"
 }
 
 export function isAccountLocked(err: unknown): err is ApiError {
-  return isApiError(err) && err.code === 'ACCOUNT_LOCKED'
+  return isApiError(err) && err.code === "ACCOUNT_LOCKED"
 }
 
 /**
@@ -54,9 +54,9 @@ export function isAccountLocked(err: unknown): err is ApiError {
 export function getLockoutSecondsRemaining(err: unknown): number | null {
   if (!isAccountLocked(err) || !err.data) return null
   const retry = err.data.retry_after_seconds
-  if (typeof retry === 'number' && retry > 0) return Math.ceil(retry)
+  if (typeof retry === "number" && retry > 0) return Math.ceil(retry)
   const lockedUntil = err.data.locked_until
-  if (typeof lockedUntil === 'string') {
+  if (typeof lockedUntil === "string") {
     const ms = Date.parse(lockedUntil) - Date.now()
     if (Number.isFinite(ms) && ms > 0) return Math.ceil(ms / 1000)
   }
@@ -67,13 +67,17 @@ export function getLockoutSecondsRemaining(err: unknown): number | null {
  * User-facing default message for an API error, picked by status/code rather than the
  * raw server message. Caller can still pass a `fallback` for unknown shapes.
  */
-export function defaultErrorMessage(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
-  if (isNetworkError(err)) return "We can't reach the server right now. Check your connection and try again."
-  if (isTimeoutError(err)) return 'The request took too long. Try again.'
-  if (isAuthError(err)) return 'Your session has expired. Please sign in again.'
-  if (isForbidden(err)) return 'You do not have permission to do that.'
-  if (isNotFound(err)) return 'That item could not be found.'
-  if (isServerError(err)) return 'Server error. Try again in a moment.'
+export function defaultErrorMessage(
+  err: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
+  if (isNetworkError(err))
+    return "We can't reach the server right now. Check your connection and try again."
+  if (isTimeoutError(err)) return "The request took too long. Try again."
+  if (isAuthError(err)) return "Your session has expired. Please sign in again."
+  if (isForbidden(err)) return "You do not have permission to do that."
+  if (isNotFound(err)) return "That item could not be found."
+  if (isServerError(err)) return "Server error. Try again in a moment."
   if (isApiError(err) && err.message) return err.message
   if (err instanceof Error && err.message) return err.message
   return fallback
@@ -85,6 +89,6 @@ export function defaultErrorMessage(err: unknown, fallback = 'Something went wro
  */
 export function normalizeErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) return err.message
-  if (typeof err === 'string') return err
+  if (typeof err === "string") return err
   return fallback
 }

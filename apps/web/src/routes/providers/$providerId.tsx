@@ -14,11 +14,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { NonCompeteClause, Provider } from "@/types/entities"
-import {
-  AccreditationStatus,
-  NonCompeteStatus,
-  PanelStatus,
-} from "@/types/enums"
+import { AccreditationStatus, NonCompeteStatus, PanelStatus } from "@/types/enums"
 
 export const Route = createFileRoute("/providers/$providerId")({
   component: ProviderDetailPage,
@@ -85,9 +81,7 @@ function ProviderDetailPage() {
               Panel: {profile.panel_status}
             </span>
           </div>
-          {profile.bio ? (
-            <p className="text-sm text-fg/70">{profile.bio}</p>
-          ) : null}
+          {profile.bio ? <p className="text-sm text-fg/70">{profile.bio}</p> : null}
         </header>
 
         <nav className="flex gap-1 border-b border-fg/15">
@@ -135,7 +129,9 @@ function TabButton({
       onClick={() => onClick(value)}
       className={cn(
         "h-auto rounded-none border-b-2 px-3 py-2 text-sm hover:bg-transparent -mb-px",
-        active ? "border-primary text-fg font-medium" : "border-transparent text-fg/70 hover:text-fg",
+        active
+          ? "border-primary text-fg font-medium"
+          : "border-transparent text-fg/70 hover:text-fg",
       )}
     >
       {children}
@@ -166,9 +162,7 @@ function OverviewPanel({ provider }: { provider: Provider }) {
       <div>
         <dt className="text-xs text-fg/60">Specialties</dt>
         <dd className="mt-1 text-sm text-fg">
-          {profile.specialties.length === 0
-            ? "—"
-            : profile.specialties.join(", ")}
+          {profile.specialties.length === 0 ? "—" : profile.specialties.join(", ")}
         </dd>
       </div>
       <div>
@@ -193,9 +187,7 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
     <dl className="grid gap-4 sm:grid-cols-2">
       <div>
         <dt className="text-xs text-fg/60">Authority</dt>
-        <dd className="mt-1 text-sm text-fg">
-          {profile.accreditation_authority ?? "—"}
-        </dd>
+        <dd className="mt-1 text-sm text-fg">{profile.accreditation_authority ?? "—"}</dd>
       </div>
       <div>
         <dt className="text-xs text-fg/60">Status</dt>
@@ -205,9 +197,7 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
       </div>
       <div>
         <dt className="text-xs text-fg/60">Expiry</dt>
-        <dd className="mt-1 text-sm text-fg">
-          {profile.accreditation_expiry ?? "—"}
-        </dd>
+        <dd className="mt-1 text-sm text-fg">{profile.accreditation_expiry ?? "—"}</dd>
       </div>
       {provider.license_info ? (
         <>
@@ -225,9 +215,7 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
           </div>
           <div>
             <dt className="text-xs text-fg/60">License expires</dt>
-            <dd className="mt-1 text-sm text-fg">
-              {provider.license_info.expiry_date ?? "—"}
-            </dd>
+            <dd className="mt-1 text-sm text-fg">{provider.license_info.expiry_date ?? "—"}</dd>
           </div>
         </>
       ) : null}
@@ -272,7 +260,13 @@ function NonCompetePanel({ provider }: { provider: Provider }) {
   return (
     <ul className="space-y-3">
       {clauses.map((nc) => (
-        <NonCompeteRow key={nc.id} clause={nc} onChanged={refetch} toastError={(m) => toast.showError(m)} toastSuccess={(m) => toast.showSuccess(m)} />
+        <NonCompeteRow
+          key={nc.id}
+          clause={nc}
+          onChanged={refetch}
+          toastError={(m) => toast.showError(m)}
+          toastSuccess={(m) => toast.showSuccess(m)}
+        />
       ))}
     </ul>
   )
@@ -321,7 +315,8 @@ function NonCompeteRow({
             "inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-none",
             clause.status === NonCompeteStatus.ACTIVE
               ? "border border-primary/30 bg-primary/10 text-primary"
-              : clause.status === NonCompeteStatus.REVOKED || clause.status === NonCompeteStatus.EXPIRED
+              : clause.status === NonCompeteStatus.REVOKED ||
+                  clause.status === NonCompeteStatus.EXPIRED
                 ? "border border-fg/20 bg-bg text-fg/70"
                 : "border border-fg/20 bg-bg text-fg",
           )}
@@ -338,22 +333,12 @@ function NonCompeteRow({
 
       <div className="mt-3 flex flex-wrap gap-2">
         {clause.status === NonCompeteStatus.DRAFT ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => sign.mutate()}
-            disabled={sign.isPending}
-          >
+          <Button type="button" size="sm" onClick={() => sign.mutate()} disabled={sign.isPending}>
             {sign.isPending ? "Signing…" : "Sign"}
           </Button>
         ) : null}
         {clause.status === NonCompeteStatus.ACTIVE && !revokeOpen ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setRevokeOpen(true)}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => setRevokeOpen(true)}>
             Revoke
           </Button>
         ) : null}
@@ -397,4 +382,3 @@ function NonCompeteRow({
     </li>
   )
 }
-

@@ -6,7 +6,7 @@
  * - success toast on resolution if `successToast` is provided
  */
 
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from "@hookform/resolvers/zod"
 import {
   type DefaultValues,
   type FieldValues,
@@ -15,11 +15,11 @@ import {
   useForm,
   type UseFormProps,
   type UseFormReturn,
-} from 'react-hook-form'
-import type { ZodType } from 'zod'
+} from "react-hook-form"
+import type { ZodType } from "zod"
 
-import { useToast } from '@/contexts/ToastContext'
-import { defaultErrorMessage, isApiError } from '@/lib/errors'
+import { useToast } from "@/contexts/ToastContext"
+import { defaultErrorMessage, isApiError } from "@/lib/errors"
 
 export interface UseApiFormOptions<TValues extends FieldValues> {
   schema: ZodType<TValues>
@@ -27,7 +27,7 @@ export interface UseApiFormOptions<TValues extends FieldValues> {
   onSubmit: (values: TValues) => Promise<void> | void
   successToast?: string
   errorToast?: boolean
-  formOptions?: Omit<UseFormProps<TValues>, 'resolver' | 'defaultValues'>
+  formOptions?: Omit<UseFormProps<TValues>, "resolver" | "defaultValues">
 }
 
 export interface UseApiFormReturn<TValues extends FieldValues> extends UseFormReturn<TValues> {
@@ -42,24 +42,26 @@ export function useApiForm<TValues extends FieldValues>(
 
   const form = useForm<TValues>({
     ...opts.formOptions,
-    resolver: zodResolver(opts.schema as unknown as Parameters<typeof zodResolver>[0]) as Resolver<TValues>,
+    resolver: zodResolver(
+      opts.schema as unknown as Parameters<typeof zodResolver>[0],
+    ) as Resolver<TValues>,
     defaultValues: opts.defaultValues,
   })
 
   const submit = form.handleSubmit(async (values) => {
-    form.clearErrors('root.serverError' as Path<TValues>)
+    form.clearErrors("root.serverError" as Path<TValues>)
     try {
       await opts.onSubmit(values as TValues)
       if (opts.successToast) showSuccess(opts.successToast)
     } catch (err) {
       if (isApiError(err) && err.fieldErrors) {
         for (const [field, message] of Object.entries(err.fieldErrors)) {
-          form.setError(field as Path<TValues>, { type: 'server', message })
+          form.setError(field as Path<TValues>, { type: "server", message })
         }
         return
       }
       const message = defaultErrorMessage(err)
-      form.setError('root.serverError' as Path<TValues>, { type: 'server', message })
+      form.setError("root.serverError" as Path<TValues>, { type: "server", message })
       if (opts.errorToast !== false) showError(message)
     }
   })

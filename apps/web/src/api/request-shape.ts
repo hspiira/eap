@@ -4,7 +4,7 @@
  * rather than these functions reaching into a store themselves.
  */
 
-import type { QueryParams } from '@/types/api'
+import type { QueryParams } from "@/types/api"
 
 /**
  * Paths that must work WITHOUT tenant context (auth, tenant bootstrap).
@@ -14,10 +14,10 @@ import type { QueryParams } from '@/types/api'
  * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context.
  */
 export function shouldSkipTenantId(endpoint: string): boolean {
-  const pathname = new URL(endpoint, 'http://x').pathname
-  if (pathname.startsWith('/auth/')) return true
-  if (pathname === '/tenants') return true
-  if (pathname.startsWith('/tenants/check-code')) return true
+  const pathname = new URL(endpoint, "http://x").pathname
+  if (pathname.startsWith("/auth/")) return true
+  if (pathname === "/tenants") return true
+  if (pathname.startsWith("/tenants/check-code")) return true
   if (/^\/tenants\/[^/]+$/.test(pathname)) return true // GET /tenants/:id
   return false
 }
@@ -33,11 +33,11 @@ export function buildUrl(
   const skipTenant = shouldSkipTenantId(endpoint)
   const entries = params ? Object.entries(params) : []
   const hasExplicitTenant = entries.some(
-    ([key, value]) => key === 'tenant_id' && value !== undefined && value !== null,
+    ([key, value]) => key === "tenant_id" && value !== undefined && value !== null,
   )
 
   if (tenantId && !skipTenant && !hasExplicitTenant) {
-    url.searchParams.set('tenant_id', tenantId)
+    url.searchParams.set("tenant_id", tenantId)
   }
 
   entries.forEach(([key, value]) => {
@@ -68,21 +68,21 @@ export function buildHeaders(
   excludeSensitiveHeaders?: boolean,
 ): HeadersInit {
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...customHeaders,
   }
 
   if (!excludeSensitiveHeaders) {
     if (!session.useCookies) {
       if (session.token) {
-        headers['Authorization'] = `Bearer ${session.token}`
+        headers["Authorization"] = `Bearer ${session.token}`
       }
     } else if (session.csrfToken) {
-      headers['X-CSRF-Token'] = session.csrfToken
+      headers["X-CSRF-Token"] = session.csrfToken
     }
     const skipTenant = endpoint != null && shouldSkipTenantId(endpoint)
     if (session.tenantId && !skipTenant) {
-      headers['x-tenant-id'] = session.tenantId
+      headers["x-tenant-id"] = session.tenantId
     }
   }
 
@@ -97,14 +97,14 @@ export function buildAuthHeaders(
   const headers: Record<string, string> = {}
   if (!session.useCookies) {
     if (session.token) {
-      headers['Authorization'] = `Bearer ${session.token}`
+      headers["Authorization"] = `Bearer ${session.token}`
     }
   } else if (session.csrfToken) {
-    headers['X-CSRF-Token'] = session.csrfToken
+    headers["X-CSRF-Token"] = session.csrfToken
   }
   const skipTenant = endpoint != null && shouldSkipTenantId(endpoint)
   if (session.tenantId && !skipTenant) {
-    headers['x-tenant-id'] = session.tenantId
+    headers["x-tenant-id"] = session.tenantId
   }
   return headers
 }

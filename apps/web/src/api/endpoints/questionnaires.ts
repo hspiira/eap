@@ -5,19 +5,19 @@
  * Fixture is DEV-only — flip to live by running production build.
  */
 
-import { useFixtures } from '@/lib/fixtures'
+import { useFixtures } from "@/lib/fixtures"
 
-import apiClient from '../client'
-import type { Questionnaire } from '../types'
+import apiClient from "../client"
+import type { Questionnaire } from "../types"
 import {
   fixtureGetAllQuestionnaires,
   fixtureGetQuestionnaireByCode,
-} from './questionnaires-fixture'
+} from "./questionnaires-fixture"
 
 export const questionnairesApi = {
   async list(): Promise<Questionnaire[]> {
     if (useFixtures()) return Promise.resolve(fixtureGetAllQuestionnaires())
-    return apiClient.get<Questionnaire[]>('/triage/instruments')
+    return apiClient.get<Questionnaire[]>("/triage/instruments")
   },
 
   async getByCode(code: string): Promise<Questionnaire> {

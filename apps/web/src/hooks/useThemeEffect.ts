@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
-import { type EffectiveTheme,useUIStore } from '@/store/slices/uiSlice'
+import { type EffectiveTheme, useUIStore } from "@/store/slices/uiSlice"
 
 function getSystemTheme(): EffectiveTheme {
-  if (typeof window === 'undefined') return 'light'
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  if (typeof window === "undefined") return "light"
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
 /**
@@ -15,21 +15,21 @@ function getSystemTheme(): EffectiveTheme {
 export function useThemeEffect(): EffectiveTheme {
   const preference = useUIStore((s) => s.theme)
   const [systemTheme, setSystemTheme] = useState<EffectiveTheme>(getSystemTheme)
-  const effective: EffectiveTheme = preference === 'system' ? systemTheme : preference
+  const effective: EffectiveTheme = preference === "system" ? systemTheme : preference
 
   useEffect(() => {
     const root = document.documentElement
-    root.setAttribute('data-theme', effective)
-    root.classList.toggle('dark', effective === 'dark')
+    root.setAttribute("data-theme", effective)
+    root.classList.toggle("dark", effective === "dark")
   }, [effective])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    if (typeof window === "undefined") return
+    const mq = window.matchMedia("(prefers-color-scheme: dark)")
     if (!mq) return
-    const handler = () => setSystemTheme(mq.matches ? 'dark' : 'light')
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    const handler = () => setSystemTheme(mq.matches ? "dark" : "light")
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
   }, [])
 
   return effective

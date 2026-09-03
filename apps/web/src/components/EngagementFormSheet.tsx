@@ -1,4 +1,3 @@
-
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
@@ -51,13 +50,10 @@ const schema = z
       .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
     lead_user_id: z.string().optional(),
   })
-  .refine(
-    (v) => !v.due_date || Date.parse(v.due_date) >= Date.parse(v.start_date),
-    {
-      path: ["due_date"],
-      message: "Due date must be on or after the start date",
-    },
-  )
+  .refine((v) => !v.due_date || Date.parse(v.due_date) >= Date.parse(v.start_date), {
+    path: ["due_date"],
+    message: "Due date must be on or after the start date",
+  })
 
 type Values = z.infer<typeof schema>
 
@@ -92,34 +88,33 @@ export function EngagementFormSheet({
 }: EngagementFormSheetProps) {
   const lockedClientId = clientId
 
-  const { register, control, formState, submit, serverError, setValue, watch } =
-    useEntityFormSheet<
-      Values,
-      Parameters<typeof engagementsApi.create>[0],
-      Engagement,
-      Engagement
-    >({
-      resource: "engagements",
-      schema,
-      defaultValues: { ...EMPTY, client_id: clientId ?? "" },
-      open,
-      onOpenChange,
-      parsePayload: (values) => ({
-        client_id: values.client_id,
-        name: values.name,
-        description: values.description?.trim() || null,
-        engagement_type: values.engagement_type as EngagementType,
-        start_date: values.start_date,
-        due_date: values.due_date || null,
-        hourly_rate: values.hourly_rate ? Number(values.hourly_rate) : null,
-        currency: values.currency?.trim() || null,
-        budget_hours: values.budget_hours ? Number(values.budget_hours) : null,
-        lead_user_id: values.lead_user_id || null,
-      }),
-      save: ({ payload }) => engagementsApi.create(payload),
-      successToast: { create: "Engagement created" },
-      onSaved,
-    })
+  const { register, control, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+    Values,
+    Parameters<typeof engagementsApi.create>[0],
+    Engagement,
+    Engagement
+  >({
+    resource: "engagements",
+    schema,
+    defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+    open,
+    onOpenChange,
+    parsePayload: (values) => ({
+      client_id: values.client_id,
+      name: values.name,
+      description: values.description?.trim() || null,
+      engagement_type: values.engagement_type as EngagementType,
+      start_date: values.start_date,
+      due_date: values.due_date || null,
+      hourly_rate: values.hourly_rate ? Number(values.hourly_rate) : null,
+      currency: values.currency?.trim() || null,
+      budget_hours: values.budget_hours ? Number(values.budget_hours) : null,
+      lead_user_id: values.lead_user_id || null,
+    }),
+    save: ({ payload }) => engagementsApi.create(payload),
+    successToast: { create: "Engagement created" },
+    onSaved,
+  })
 
   const watchedClient = watch("client_id")
   const watchedLead = watch("lead_user_id")
@@ -178,12 +173,7 @@ export function EngagementFormSheet({
       </FormSection>
 
       <FormSection title="Type & schedule">
-        <FormField
-          label="Type"
-          required
-          error={errors.engagement_type?.message}
-          htmlFor="ef-type"
-        >
+        <FormField label="Type" required error={errors.engagement_type?.message} htmlFor="ef-type">
           <Controller
             control={control}
             name="engagement_type"
@@ -252,12 +242,7 @@ export function EngagementFormSheet({
             error={errors.currency?.message}
             htmlFor="ef-currency"
           >
-            <Input
-              id="ef-currency"
-              maxLength={3}
-              className="font-mono"
-              {...register("currency")}
-            />
+            <Input id="ef-currency" maxLength={3} className="font-mono" {...register("currency")} />
           </FormField>
         </div>
         <FormField
@@ -279,10 +264,7 @@ export function EngagementFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection
-        title="Lead consultant"
-        description="Optional. Owner accountable for delivery."
-      >
+      <FormSection title="Lead consultant" description="Optional. Owner accountable for delivery.">
         <FormField label="Lead" optional error={errors.lead_user_id?.message}>
           <UserPicker
             value={watchedLead ?? ""}
@@ -297,13 +279,7 @@ export function EngagementFormSheet({
   )
 }
 
-function LockedClientSummary({
-  clientId,
-  client,
-}: {
-  clientId: string
-  client: Client | null
-}) {
+function LockedClientSummary({ clientId, client }: { clientId: string; client: Client | null }) {
   const enabled = !client && Boolean(clientId)
   const detail = useEntityList<Client>({
     resource: "clients",
@@ -311,8 +287,7 @@ function LockedClientSummary({
     listFn: clientsApi.list,
     enabled,
   })
-  const resolved =
-    client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
+  const resolved = client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -325,9 +300,7 @@ function LockedClientSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">
-          {resolved?.code ?? clientId}
-        </p>
+        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked
@@ -352,4 +325,3 @@ function UserPicker({ value, onChange }: { value: string; onChange: (id: string)
     />
   )
 }
-

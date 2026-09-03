@@ -2,19 +2,10 @@ import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  CalendarClock,
-  Download,
-  ExternalLink,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react"
+import { CalendarClock, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { personsApi } from "@/api/endpoints/persons"
-import {
-  type ServiceSessionListParams,
-  serviceSessionsApi,
-} from "@/api/endpoints/service-sessions"
+import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -100,8 +91,18 @@ function ServiceSessionsListPage() {
   const searchParams = useSearch({ from: "/service-sessions/" })
   const navigate = useNavigate({ from: "/service-sessions/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({
     searchParams,
     navigate,
@@ -174,7 +175,9 @@ function ServiceSessionsListPage() {
     ? (servicesById.get(activeServiceId)?.name ?? activeServiceId.slice(0, 8))
     : null
   const activePersonLabel = activePersonId
-    ? (activePersonForChip ? displayName(activePersonForChip, null) : activePersonId.slice(0, 8))
+    ? activePersonForChip
+      ? displayName(activePersonForChip, null)
+      : activePersonId.slice(0, 8)
     : null
 
   return (
@@ -210,16 +213,10 @@ function ServiceSessionsListPage() {
           />
         ) : null}
         {activeServiceLabel ? (
-          <FilterChip
-            label={`Service: ${activeServiceLabel}`}
-            onRemove={clearService}
-          />
+          <FilterChip label={`Service: ${activeServiceLabel}`} onRemove={clearService} />
         ) : null}
         {activePersonLabel ? (
-          <FilterChip
-            label={`Person: ${activePersonLabel}`}
-            onRemove={clearPerson}
-          />
+          <FilterChip label={`Person: ${activePersonLabel}`} onRemove={clearPerson} />
         ) : null}
         <FilterTrigger
           label="All statuses"
@@ -282,7 +279,11 @@ function ServiceSessionsListPage() {
                 <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
-                      <Checkbox aria-label="Select all" checked={selection.selectAllState} onCheckedChange={selection.toggleSelectAll} />
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
                     </TableHead>
                     <TableHead>
                       <SortHeader field="scheduled_at" sort={sort} onToggle={toggleSort}>
@@ -367,7 +368,11 @@ function SessionRow({
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
-        <Checkbox aria-label={`Select session ${row.id}`} checked={isSelected} onCheckedChange={onToggle} />
+        <Checkbox
+          aria-label={`Select session ${row.id}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
       </TableCell>
       <TableCell>
         <Link
@@ -492,4 +497,3 @@ function rangeBounds(
     scheduled_to: new Date(now.getTime() + days * 86_400_000).toISOString(),
   }
 }
-

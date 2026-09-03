@@ -2,10 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import {
-  getAllowedLifecycleActions,
-  type LifecycleAction,
-} from "@/utils/lifecycleConfig"
+import { getAllowedLifecycleActions, type LifecycleAction } from "@/utils/lifecycleConfig"
 
 import { ConfirmDialog } from "./ConfirmDialog"
 
@@ -26,12 +23,7 @@ const ACTION_LABELS: Record<LifecycleAction, string> = {
   publish: "Publish",
 }
 
-const DESTRUCTIVE_ACTIONS: LifecycleAction[] = [
-  "terminate",
-  "archive",
-  "ban",
-  "cancel",
-]
+const DESTRUCTIVE_ACTIONS: LifecycleAction[] = ["terminate", "archive", "ban", "cancel"]
 
 export interface LifecycleActionsProps {
   entityId: string

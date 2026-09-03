@@ -128,11 +128,7 @@ export function FilterTrigger<T extends string>({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-44">
         {options.map((opt) => (
-          <DropdownMenuItem
-            key={opt.value}
-            className="gap-2"
-            onSelect={() => onChange(opt.value)}
-          >
+          <DropdownMenuItem key={opt.value} className="gap-2" onSelect={() => onChange(opt.value)}>
             {opt.label}
           </DropdownMenuItem>
         ))}
@@ -161,10 +157,7 @@ export function FilterSearch({
         className,
       )}
     >
-      <Search
-        aria-hidden
-        className="pointer-events-none absolute left-2 size-3.5 text-fg/55"
-      />
+      <Search aria-hidden className="pointer-events-none absolute left-2 size-3.5 text-fg/55" />
       <Input
         type="search"
         value={value}

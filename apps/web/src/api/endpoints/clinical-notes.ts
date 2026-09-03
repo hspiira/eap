@@ -8,18 +8,18 @@
  * validation before submit matters.
  */
 
-import type { Schemas } from '@/api/generated'
+import type { Schemas } from "@/api/generated"
 
-import apiClient from '../client'
-import type { ClinicalNote } from '../types'
+import apiClient from "../client"
+import type { ClinicalNote } from "../types"
 
-export type CreateClinicalNoteRequest = Schemas['CreateClinicalNoteRequest']
-export type UpdateClinicalNoteBodyRequest = Schemas['UpdateClinicalNoteBodyRequest']
-export type AmendClinicalNoteRequest = Schemas['AmendClinicalNoteRequest']
+export type CreateClinicalNoteRequest = Schemas["CreateClinicalNoteRequest"]
+export type UpdateClinicalNoteBodyRequest = Schemas["UpdateClinicalNoteBodyRequest"]
+export type AmendClinicalNoteRequest = Schemas["AmendClinicalNoteRequest"]
 
 export const clinicalNotesApi = {
   async create(data: CreateClinicalNoteRequest): Promise<ClinicalNote> {
-    return apiClient.post<ClinicalNote>('/clinical-notes', data)
+    return apiClient.post<ClinicalNote>("/clinical-notes", data)
   },
 
   async listForCase(caseId: string): Promise<ClinicalNote[]> {

@@ -15,10 +15,7 @@ interface ClientStaffSummaryCardProps {
   className?: string
 }
 
-export function ClientStaffSummaryCard({
-  clientId,
-  className,
-}: ClientStaffSummaryCardProps) {
+export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSummaryCardProps) {
   const [persons, setPersons] = useState<Person[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -31,16 +28,10 @@ export function ClientStaffSummaryCard({
       .finally(() => setLoading(false))
   }, [clientId])
 
-  const staff = persons.filter(
-    (p) => p.person_type === PersonType.CLIENT_EMPLOYEE,
-  )
-  const dependents = persons.filter(
-    (p) => p.person_type === PersonType.DEPENDENT,
-  )
+  const staff = persons.filter((p) => p.person_type === PersonType.CLIENT_EMPLOYEE)
+  const dependents = persons.filter((p) => p.person_type === PersonType.DEPENDENT)
   const other = persons.filter(
-    (p) =>
-      p.person_type !== PersonType.CLIENT_EMPLOYEE &&
-      p.person_type !== PersonType.DEPENDENT,
+    (p) => p.person_type !== PersonType.CLIENT_EMPLOYEE && p.person_type !== PersonType.DEPENDENT,
   )
   const total = persons.length
 
@@ -70,12 +61,8 @@ export function ClientStaffSummaryCard({
       ) : (
         <div className="grid gap-3">
           <div>
-            <div className="font-mono text-2xl font-semibold tabular-nums text-fg">
-              {total}
-            </div>
-            <p className="text-xs text-fg/60">
-              Total people linked to this client
-            </p>
+            <div className="font-mono text-2xl font-semibold tabular-nums text-fg">{total}</div>
+            <p className="text-xs text-fg/60">Total people linked to this client</p>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-fg/8 pt-2 text-xs">
             <Row label="Employees" value={staff.length} />
@@ -90,15 +77,7 @@ export function ClientStaffSummaryCard({
   )
 }
 
-function Row({
-  label,
-  value,
-  className,
-}: {
-  label: string
-  value: number
-  className?: string
-}) {
+function Row({ label, value, className }: { label: string; value: number; className?: string }) {
   return (
     <div className={cn("flex justify-between py-1", className)}>
       <span className="text-fg/60">{label}</span>

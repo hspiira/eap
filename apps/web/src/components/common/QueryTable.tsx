@@ -105,12 +105,7 @@ function StatusCell({ status }: { status: AtRiskStatus }) {
         ? "bg-amber-100 text-gray-800"
         : "bg-gray-100 text-gray-700"
   return (
-    <span
-      className={cn(
-        "inline-flex px-2 py-0.5 text-xs font-medium rounded-none",
-        bg
-      )}
-    >
+    <span className={cn("inline-flex px-2 py-0.5 text-xs font-medium rounded-none", bg)}>
       {STATUS_LABELS[status]}
     </span>
   )
@@ -175,9 +170,15 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent className="rounded-none border-fg/30 bg-surface">
-                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
-                <SelectItem value="manual" className="rounded-none focus:bg-surface focus:text-fg">Manual</SelectItem>
-                <SelectItem value="auto" className="rounded-none focus:bg-surface focus:text-fg">Auto</SelectItem>
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">
+                  All
+                </SelectItem>
+                <SelectItem value="manual" className="rounded-none focus:bg-surface focus:text-fg">
+                  Manual
+                </SelectItem>
+                <SelectItem value="auto" className="rounded-none focus:bg-surface focus:text-fg">
+                  Auto
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -188,10 +189,24 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent className="rounded-none border-fg/30 bg-surface">
-                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
-                <SelectItem value="document" className="rounded-none focus:bg-surface focus:text-fg">Document</SelectItem>
-                <SelectItem value="report" className="rounded-none focus:bg-surface focus:text-fg">Report</SelectItem>
-                <SelectItem value="checklist" className="rounded-none focus:bg-surface focus:text-fg">Checklist</SelectItem>
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">
+                  All
+                </SelectItem>
+                <SelectItem
+                  value="document"
+                  className="rounded-none focus:bg-surface focus:text-fg"
+                >
+                  Document
+                </SelectItem>
+                <SelectItem value="report" className="rounded-none focus:bg-surface focus:text-fg">
+                  Report
+                </SelectItem>
+                <SelectItem
+                  value="checklist"
+                  className="rounded-none focus:bg-surface focus:text-fg"
+                >
+                  Checklist
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -204,10 +219,21 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent className="rounded-none border-fg/30 bg-surface">
-                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">All</SelectItem>
-                <SelectItem value="at-risk" className="rounded-none focus:bg-surface focus:text-fg">At Risk</SelectItem>
-                <SelectItem value="critical" className="rounded-none focus:bg-surface focus:text-fg">Critical</SelectItem>
-                <SelectItem value="safe" className="rounded-none focus:bg-surface focus:text-fg">Safe</SelectItem>
+                <SelectItem value="all" className="rounded-none focus:bg-surface focus:text-fg">
+                  All
+                </SelectItem>
+                <SelectItem value="at-risk" className="rounded-none focus:bg-surface focus:text-fg">
+                  At Risk
+                </SelectItem>
+                <SelectItem
+                  value="critical"
+                  className="rounded-none focus:bg-surface focus:text-fg"
+                >
+                  Critical
+                </SelectItem>
+                <SelectItem value="safe" className="rounded-none focus:bg-surface focus:text-fg">
+                  Safe
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -294,7 +320,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
                 key={row.id}
                 className={cn(
                   "border-gray-100 hover:bg-gray-50/80 [&>td]:py-1.5 [&>td]:px-3 [&>td]:text-sm",
-                  idx % 2 === 1 && "bg-gray-50/50"
+                  idx % 2 === 1 && "bg-gray-50/50",
                 )}
               >
                 <TableCell className="text-gray-900">{row.itemId}</TableCell>
@@ -322,12 +348,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
         </Table>
       </div>
 
-      <Pagination
-        page={page}
-        total={TOTAL_MOCK}
-        limit={LIMIT}
-        onPageChange={setPage}
-      />
+      <Pagination page={page} total={TOTAL_MOCK} limit={LIMIT} onPageChange={setPage} />
     </div>
   )
 }

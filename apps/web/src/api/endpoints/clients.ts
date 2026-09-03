@@ -6,10 +6,10 @@
  * Use `setTier()` after `create()` to set initial tier.
  */
 
-import type { ClientCreate, ClientUpdate, Schemas } from '@/api/generated'
-import type { ClientTier } from '@/types/enums'
+import type { ClientCreate, ClientUpdate, Schemas } from "@/api/generated"
+import type { ClientTier } from "@/types/enums"
 
-import apiClient from '../client'
+import apiClient from "../client"
 import type {
   Client,
   ClientBillingAddress,
@@ -18,10 +18,10 @@ import type {
   ClientTag,
   ListParams,
   PaginatedResponse,
-} from '../types'
+} from "../types"
 
 export type { ClientCreate, ClientUpdate }
-export type ClientUpdateTier = Schemas['ClientUpdateTier']
+export type ClientUpdateTier = Schemas["ClientUpdateTier"]
 
 export interface ClientListParams extends ListParams {
   tier?: ClientTier
@@ -32,7 +32,7 @@ export const clientsApi = {
    * Create a new client
    */
   async create(clientData: ClientCreate): Promise<Client> {
-    return apiClient.post<Client>('/clients', clientData)
+    return apiClient.post<Client>("/clients", clientData)
   },
 
   /**
@@ -46,7 +46,7 @@ export const clientsApi = {
    * List clients
    */
   async list(params?: ClientListParams): Promise<PaginatedResponse<Client>> {
-    return apiClient.get<PaginatedResponse<Client>>('/clients', params)
+    return apiClient.get<PaginatedResponse<Client>>("/clients", params)
   },
 
   /**
@@ -83,7 +83,7 @@ export const clientsApi = {
    */
   async verify(clientId: string, verifiedBy: string): Promise<Client> {
     return apiClient.post<Client>(
-      `/clients/${clientId}/verify?verified_by=${encodeURIComponent(verifiedBy)}`
+      `/clients/${clientId}/verify?verified_by=${encodeURIComponent(verifiedBy)}`,
     )
   },
 
@@ -98,7 +98,10 @@ export const clientsApi = {
    * Deactivate client
    */
   async deactivate(clientId: string, reason?: string): Promise<Client> {
-    return apiClient.post<Client>(`/clients/${clientId}/deactivate`, reason != null ? { reason } : undefined)
+    return apiClient.post<Client>(
+      `/clients/${clientId}/deactivate`,
+      reason != null ? { reason } : undefined,
+    )
   },
 
   /**
@@ -139,10 +142,7 @@ export const clientsApi = {
   /**
    * Get paginated child clients
    */
-  async getChildren(
-    clientId: string,
-    params?: ListParams
-  ): Promise<PaginatedResponse<Client>> {
+  async getChildren(clientId: string, params?: ListParams): Promise<PaginatedResponse<Client>> {
     return apiClient.get<PaginatedResponse<Client>>(`/clients/${clientId}/children`, params)
   },
 
@@ -157,7 +157,9 @@ export const clientsApi = {
    * Get tags assigned to a client
    */
   async getTags(clientId: string): Promise<ClientTag[]> {
-    const res = await apiClient.get<{ items: ClientTag[] } | ClientTag[]>(`/clients/${clientId}/tags`)
+    const res = await apiClient.get<{ items: ClientTag[] } | ClientTag[]>(
+      `/clients/${clientId}/tags`,
+    )
     return Array.isArray(res) ? res : (res.items ?? [])
   },
 }

@@ -2,10 +2,10 @@
  * Users API Endpoints
  */
 
-import type { AccessScope } from '@/types/enums'
+import type { AccessScope } from "@/types/enums"
 
-import apiClient from '../client'
-import type { CreateRequest, ListParams, PaginatedResponse, User } from '../types'
+import apiClient from "../client"
+import type { CreateRequest, ListParams, PaginatedResponse, User } from "../types"
 
 /** Mirrors the query params on `GET /users/` in the BE OpenAPI schema. */
 export interface UserListParams extends ListParams {
@@ -19,7 +19,7 @@ export interface UserCreate extends CreateRequest {
   password?: string
   preferred_language?: string
   timezone?: string
-  role?: 'Admin' | 'User' | 'Viewer'
+  role?: "Admin" | "User" | "Viewer"
 }
 
 export interface UserUpdatePasswordRequest {
@@ -29,7 +29,7 @@ export interface UserUpdatePasswordRequest {
 }
 
 export interface UserUpdateRoleRequest {
-  role: 'Admin' | 'User' | 'Viewer'
+  role: "Admin" | "User" | "Viewer"
 }
 
 export interface UserUpdatePreferencesRequest {
@@ -63,7 +63,7 @@ export const usersApi = {
    * Create a new user
    */
   async create(userData: UserCreate): Promise<User> {
-    return apiClient.post<User>('/users', userData)
+    return apiClient.post<User>("/users", userData)
   },
 
   /**
@@ -77,7 +77,7 @@ export const usersApi = {
    * List users
    */
   async list(params?: UserListParams): Promise<PaginatedResponse<User>> {
-    return apiClient.get<PaginatedResponse<User>>('/users', params)
+    return apiClient.get<PaginatedResponse<User>>("/users", params)
   },
 
   /**
@@ -150,7 +150,10 @@ export const usersApi = {
   },
 
   async deactivate(userId: string, reason?: string): Promise<User> {
-    return apiClient.post<User>(`/users/${userId}/deactivate`, reason != null ? { reason } : undefined)
+    return apiClient.post<User>(
+      `/users/${userId}/deactivate`,
+      reason != null ? { reason } : undefined,
+    )
   },
 
   async verifyEmail(userId: string): Promise<User> {

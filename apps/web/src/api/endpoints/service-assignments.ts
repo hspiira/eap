@@ -7,10 +7,10 @@
  * `pnpm openapi:sync`.
  */
 
-import type { ServiceAssignmentCreate, ServiceAssignmentUpdate } from '@/api/generated'
+import type { ServiceAssignmentCreate, ServiceAssignmentUpdate } from "@/api/generated"
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse, ServiceAssignment } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, ServiceAssignment } from "../types"
 
 export type { ServiceAssignmentCreate, ServiceAssignmentUpdate }
 
@@ -25,7 +25,7 @@ export const serviceAssignmentsApi = {
    * Create a new service assignment
    */
   async create(assignmentData: ServiceAssignmentCreate): Promise<ServiceAssignment> {
-    return apiClient.post<ServiceAssignment>('/service-assignments', assignmentData)
+    return apiClient.post<ServiceAssignment>("/service-assignments", assignmentData)
   },
 
   /**
@@ -38,10 +38,8 @@ export const serviceAssignmentsApi = {
   /**
    * List service assignments
    */
-  async list(
-    params?: ServiceAssignmentListParams,
-  ): Promise<PaginatedResponse<ServiceAssignment>> {
-    return apiClient.get<PaginatedResponse<ServiceAssignment>>('/service-assignments', params)
+  async list(params?: ServiceAssignmentListParams): Promise<PaginatedResponse<ServiceAssignment>> {
+    return apiClient.get<PaginatedResponse<ServiceAssignment>>("/service-assignments", params)
   },
 
   /**

@@ -25,10 +25,7 @@ function formatTodayLabel() {
   return `${y}-${m}-${day} · ${days[d.getDay()]}`
 }
 
-export function ClientTodaysTodoCard({
-  items,
-  className,
-}: ClientTodaysTodoCardProps) {
+export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardProps) {
   return (
     <Panel
       icon={CalendarCheck}
@@ -52,9 +49,7 @@ export function ClientTodaysTodoCard({
           >
             <ChevronLeft className="size-3.5" />
           </Button>
-          <span className="font-mono text-xs tabular-nums text-fg/65">
-            {formatTodayLabel()}
-          </span>
+          <span className="font-mono text-xs tabular-nums text-fg/65">{formatTodayLabel()}</span>
           <Button
             type="button"
             variant="ghost"
@@ -72,14 +67,9 @@ export function ClientTodaysTodoCard({
             {items.map((item) => (
               <li key={item.id} className="flex items-baseline gap-3 text-sm text-fg">
                 {item.time ? (
-                  <span className="shrink-0 font-mono tabular-nums text-fg/45">
-                    {item.time}
-                  </span>
+                  <span className="shrink-0 font-mono tabular-nums text-fg/45">{item.time}</span>
                 ) : (
-                  <span
-                    className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg/40"
-                    aria-hidden
-                  />
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg/40" aria-hidden />
                 )}
                 <span className="min-w-0 flex-1">
                   {item.link ? (
@@ -91,10 +81,7 @@ export function ClientTodaysTodoCard({
                   )}
                 </span>
                 {item.link && item.linkLabel ? (
-                  <a
-                    href={item.link}
-                    className="shrink-0 text-xs text-fg/55 hover:text-primary"
-                  >
+                  <a href={item.link} className="shrink-0 text-xs text-fg/55 hover:text-primary">
                     {item.linkLabel}
                   </a>
                 ) : null}

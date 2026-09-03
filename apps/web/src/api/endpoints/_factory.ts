@@ -15,8 +15,8 @@
  * match this convention exactly, so request payloads are unchanged.
  */
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse } from "../types"
 
 export function makeCrudEndpoints<T, TCreate, TUpdate, P extends ListParams = ListParams>(
   base: string,
@@ -25,7 +25,10 @@ export function makeCrudEndpoints<T, TCreate, TUpdate, P extends ListParams = Li
     create: (data: TCreate): Promise<T> => apiClient.post<T>(`/${base}`, data),
     getById: (id: string): Promise<T> => apiClient.get<T>(`/${base}/${id}`),
     list: (params?: P): Promise<PaginatedResponse<T>> =>
-      apiClient.get<PaginatedResponse<T>>(`/${base}`, params as Record<string, unknown> | undefined),
+      apiClient.get<PaginatedResponse<T>>(
+        `/${base}`,
+        params as Record<string, unknown> | undefined,
+      ),
     update: (id: string, data: TUpdate): Promise<T> => apiClient.patch<T>(`/${base}/${id}`, data),
   }
 }

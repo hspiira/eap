@@ -1,14 +1,14 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { type ThemePreference, useUIStore } from '@/store/slices/uiSlice'
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { type ThemePreference, useUIStore } from "@/store/slices/uiSlice"
 
 const THEME_OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string }> = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System" },
 ]
 
-const DENSITY_OPTIONS = ['compact', 'comfortable'] as const
+const DENSITY_OPTIONS = ["compact", "comfortable"] as const
 type Density = (typeof DENSITY_OPTIONS)[number]
 
 interface GalleryControlsProps {
@@ -17,7 +17,8 @@ interface GalleryControlsProps {
 }
 
 export function GalleryControls({ density, onDensityChange }: GalleryControlsProps) {
-  const preference = useUIStore((s) => s.theme); const setPreference = useUIStore((s) => s.setTheme)
+  const preference = useUIStore((s) => s.theme)
+  const setPreference = useUIStore((s) => s.setTheme)
 
   return (
     <div className="sticky top-0 z-10 -mx-6 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-bg/95 px-6 py-3 backdrop-blur">
@@ -58,9 +59,7 @@ function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-medium tracking-wide text-fg-muted">
-        {label}
-      </span>
+      <span className="text-xs font-medium tracking-wide text-fg-muted">{label}</span>
       <div
         role="radiogroup"
         aria-label={label}
@@ -78,10 +77,10 @@ function SegmentedControl<T extends string>({
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
               className={cn(
-                'h-auto rounded-sm px-2.5 py-1 text-xs font-medium',
+                "h-auto rounded-sm px-2.5 py-1 text-xs font-medium",
                 selected
-                  ? 'bg-brand text-fg-on-brand hover:bg-brand hover:text-fg-on-brand'
-                  : 'text-fg-muted hover:bg-transparent hover:text-fg',
+                  ? "bg-brand text-fg-on-brand hover:bg-brand hover:text-fg-on-brand"
+                  : "text-fg-muted hover:bg-transparent hover:text-fg",
               )}
             >
               {opt.label}

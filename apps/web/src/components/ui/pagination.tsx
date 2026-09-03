@@ -11,36 +11,30 @@ export interface PaginationProps {
   className?: string
 }
 
-function getPageNumbers(current: number, totalPages: number): (number | 'ellipsis')[] {
+function getPageNumbers(current: number, totalPages: number): (number | "ellipsis")[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
   }
-  const pages: (number | 'ellipsis')[] = []
+  const pages: (number | "ellipsis")[] = []
   if (current <= 4) {
     for (let i = 1; i <= 5; i++) pages.push(i)
-    pages.push('ellipsis')
+    pages.push("ellipsis")
     pages.push(totalPages)
   } else if (current >= totalPages - 3) {
     pages.push(1)
-    pages.push('ellipsis')
+    pages.push("ellipsis")
     for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
   } else {
     pages.push(1)
-    pages.push('ellipsis')
+    pages.push("ellipsis")
     for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-    pages.push('ellipsis')
+    pages.push("ellipsis")
     pages.push(totalPages)
   }
   return pages
 }
 
-export function Pagination({
-  page,
-  total,
-  limit,
-  onPageChange,
-  className,
-}: PaginationProps) {
+export function Pagination({ page, total, limit, onPageChange, className }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(total / limit))
   const pages = getPageNumbers(page, totalPages)
   const from = total === 0 ? 0 : (page - 1) * limit + 1
@@ -48,14 +42,9 @@ export function Pagination({
 
   return (
     <div
-      className={cn(
-        "flex flex-col sm:flex-row items-center justify-between gap-1.5",
-        className
-      )}
+      className={cn("flex flex-col sm:flex-row items-center justify-between gap-1.5", className)}
     >
-      <p className="text-xs text-fg">
-        {total === 0 ? "0 items" : `${from}–${to} of ${total}`}
-      </p>
+      <p className="text-xs text-fg">{total === 0 ? "0 items" : `${from}–${to} of ${total}`}</p>
       <nav className="flex items-center gap-1" aria-label="Pagination">
         <Button
           variant="secondary"
@@ -69,7 +58,7 @@ export function Pagination({
         </Button>
         <div className="flex items-center gap-1">
           {pages.map((p, i) =>
-            p === 'ellipsis' ? (
+            p === "ellipsis" ? (
               <span key={`e-${i}`} className="px-2 text-fg">
                 …
               </span>
@@ -85,7 +74,7 @@ export function Pagination({
               >
                 {p}
               </Button>
-            )
+            ),
           )}
         </div>
         <Button

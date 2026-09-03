@@ -41,11 +41,7 @@ interface ClientActivityCardProps {
   className?: string
 }
 
-export function ClientActivityCard({
-  clientId,
-  limit = 10,
-  className,
-}: ClientActivityCardProps) {
+export function ClientActivityCard({ clientId, limit = 10, className }: ClientActivityCardProps) {
   const [activities, setActivities] = useState<ActivityEntity[]>([])
   const [loading, setLoading] = useState(true)
 

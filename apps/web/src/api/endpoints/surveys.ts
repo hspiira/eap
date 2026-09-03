@@ -8,11 +8,11 @@
  * The webhook secret is returned once on create; display it immediately.
  */
 
-import { useFixtures } from '@/lib/fixtures'
-import { SurveyStatus } from '@/types/enums'
+import { useFixtures } from "@/lib/fixtures"
+import { SurveyStatus } from "@/types/enums"
 
-import apiClient from '../client'
-import type { PaginatedResponse, Survey, SurveyAggregate } from '../types'
+import apiClient from "../client"
+import type { PaginatedResponse, Survey, SurveyAggregate } from "../types"
 import {
   fixtureCloseSurvey,
   fixtureCreateSurvey,
@@ -20,7 +20,7 @@ import {
   fixtureListSurveys,
   fixtureSurveyAggregate,
   type SurveyCreateInput,
-} from './surveys-fixture'
+} from "./surveys-fixture"
 
 function paginate<T>(items: T[]): PaginatedResponse<T> {
   return { items, total: items.length, page: 1, limit: items.length, has_more: false }
@@ -29,7 +29,7 @@ function paginate<T>(items: T[]): PaginatedResponse<T> {
 export const surveysApi = {
   async list(): Promise<PaginatedResponse<Survey>> {
     if (useFixtures()) return Promise.resolve(paginate(fixtureListSurveys()))
-    return apiClient.get<PaginatedResponse<Survey>>('/survey-campaigns')
+    return apiClient.get<PaginatedResponse<Survey>>("/survey-campaigns")
   },
 
   async getById(id: string): Promise<Survey> {
@@ -43,7 +43,7 @@ export const surveysApi = {
 
   async create(input: SurveyCreateInput): Promise<Survey> {
     if (useFixtures()) return Promise.resolve(fixtureCreateSurvey(input))
-    return apiClient.post<Survey>('/survey-campaigns', input)
+    return apiClient.post<Survey>("/survey-campaigns", input)
   },
 
   async activate(id: string): Promise<Survey> {
@@ -66,4 +66,4 @@ export const surveysApi = {
   },
 }
 
-export type { SurveyCreateInput } from './surveys-fixture'
+export type { SurveyCreateInput } from "./surveys-fixture"

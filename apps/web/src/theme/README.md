@@ -12,15 +12,15 @@ Tailwind `@theme` in `styles.css` maps both palette and tokens to utilities (`bg
 
 ## Switching themes
 
-1. **Default (Evexía)**  
+1. **Default (Evexía)**
    `theme/index.css` imports `themes/evexia.css`. No change needed.
 
-2. **Dark**  
+2. **Dark**
    - Add `@import "./themes/evexia-dark.css";` to `theme/index.css` (or conditionally load it).
-   - Use `data-theme="dark"` on `<html>` when dark mode is active.  
+   - Use `data-theme="dark"` on `<html>` when dark mode is active.
    `evexia-dark.css` overrides `--palette-*` (and optionally `--token-*`) for `[data-theme="dark"]`.
 
-3. **New theme (e.g. Acme)**  
+3. **New theme (e.g. Acme)**
    - Add `themes/acme.css` that sets `--palette-*` (and optionally `--token-*`) for `:root` or `[data-theme="acme"]`.
    - Import it from `theme/index.css` or load it when Acme theme is selected.
    - Optionally switch via `data-theme="acme"` on `<html>`.

@@ -21,18 +21,10 @@ interface DetailRailProps {
 import { useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import {
-  BadgeCheck,
-  ShieldCheck,
-  UserCog,
-} from "lucide-react"
+import { BadgeCheck, ShieldCheck, UserCog } from "lucide-react"
 
 import { usersApi } from "@/api/endpoints/users"
-import {
-  DetailCard,
-  RailSection,
-  Stat,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
@@ -82,25 +74,23 @@ export function Hero({ user }: { user: User }) {
   )
 }
 
-export function DetailRail({ user, person, onAction, actionLoading, onVerifyEmail, verifyLoading }: DetailRailProps) {
+export function DetailRail({
+  user,
+  person,
+  onAction,
+  actionLoading,
+  onVerifyEmail,
+  verifyLoading,
+}: DetailRailProps) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
           <Stat
             label="2FA"
-            value={
-              user.is_two_factor_enabled ? (
-                <span className="text-primary">On</span>
-              ) : (
-                "Off"
-              )
-            }
+            value={user.is_two_factor_enabled ? <span className="text-primary">On</span> : "Off"}
           />
-          <Stat
-            label="Email"
-            value={user.is_email_verified ? "Verified" : "Unverified"}
-          />
+          <Stat label="Email" value={user.is_email_verified ? "Verified" : "Unverified"} />
         </div>
       </RailSection>
 
@@ -118,9 +108,7 @@ export function DetailRail({ user, person, onAction, actionLoading, onVerifyEmai
               {personInitials(person)}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-fg">
-                {displayName(person, user)}
-              </p>
+              <p className="truncate text-sm font-medium text-fg">{displayName(person, user)}</p>
               <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
             </div>
           </Link>
@@ -217,13 +205,7 @@ export function AccessScopesCard({
   )
 }
 
-export function RoleCard({
-  user,
-  onChanged,
-}: {
-  user: User
-  onChanged: (updated: User) => void
-}) {
+export function RoleCard({ user, onChanged }: { user: User; onChanged: (updated: User) => void }) {
   const toast = useToast()
   const currentRole = (user.role ?? TenantRole.USER) as TenantRole
   const [editing, setEditing] = useState(false)

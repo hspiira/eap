@@ -57,8 +57,8 @@ function IncidentsListPage() {
                     </Link>
                     <p className="mt-1 text-sm text-fg/70 line-clamp-2">{inc.description}</p>
                     <p className="mt-1 text-xs text-fg/60">
-                      {formatDateTime(inc.occurred_at)} · {inc.affected_population}{" "}
-                      affected · {inc.linked_session_ids?.length ?? 0} session(s) linked
+                      {formatDateTime(inc.occurred_at)} · {inc.affected_population} affected ·{" "}
+                      {inc.linked_session_ids?.length ?? 0} session(s) linked
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">

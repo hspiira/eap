@@ -9,24 +9,24 @@
  * fires with (id, diagnosis). Pass null to clear.
  */
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from "react"
 
-import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronDown, ChevronRight, Clock, Search } from 'lucide-react'
+import { useQuery } from "@tanstack/react-query"
+import { Check, ChevronDown, ChevronRight, Clock, Search } from "lucide-react"
 
-import { diagnosesApi } from '@/api/endpoints/diagnoses'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
-import { cn } from '@/lib/utils'
-import type { Diagnosis } from '@/types/entities'
+import { diagnosesApi } from "@/api/endpoints/diagnoses"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { cn } from "@/lib/utils"
+import type { Diagnosis } from "@/types/entities"
 
-const RECENTS_KEY = 'evexia:diagnosis_recents'
+const RECENTS_KEY = "evexia:diagnosis_recents"
 const RECENTS_MAX = 5
 
 function readRecents(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as string[]
+    return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]") as string[]
   } catch {
     return []
   }
@@ -49,10 +49,10 @@ export function DiagnosisSelector({
   value,
   onChange,
   disabled,
-  placeholder = 'Select diagnosis',
+  placeholder = "Select diagnosis",
 }: DiagnosisSelectorProps) {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("")
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const debouncedSearch = useDebouncedValue(search.trim(), 200)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -63,12 +63,12 @@ export function DiagnosisSelector({
     function onOutside(e: MouseEvent) {
       if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
     }
-    document.addEventListener('mousedown', onOutside)
-    return () => document.removeEventListener('mousedown', onOutside)
+    document.addEventListener("mousedown", onOutside)
+    return () => document.removeEventListener("mousedown", onOutside)
   }, [open])
 
   const treeQuery = useQuery({
-    queryKey: ['diagnoses', 'tree'],
+    queryKey: ["diagnoses", "tree"],
     queryFn: () => diagnosesApi.getTree(),
     staleTime: 5 * 60_000,
   })
@@ -79,7 +79,7 @@ export function DiagnosisSelector({
   )
 
   const selectedDiagnosis = useMemo(
-    () => (value ? allDiagnoses.find((d) => d.id === value) ?? null : null),
+    () => (value ? (allDiagnoses.find((d) => d.id === value) ?? null) : null),
     [allDiagnoses, value],
   )
 
@@ -103,12 +103,12 @@ export function DiagnosisSelector({
     pushRecent(d.id)
     onChange(d.id, d)
     setOpen(false)
-    setSearch('')
+    setSearch("")
   }
 
   const triggerLabel = useMemo(() => {
-    if (selectedDiagnosis) return selectedDiagnosis.code + ' — ' + selectedDiagnosis.name
-    if (value && treeQuery.isPending) return 'Loading…'
+    if (selectedDiagnosis) return selectedDiagnosis.code + " — " + selectedDiagnosis.name
+    if (value && treeQuery.isPending) return "Loading…"
     return placeholder
   }, [selectedDiagnosis, treeQuery.isPending, value, placeholder])
 
@@ -123,8 +123,8 @@ export function DiagnosisSelector({
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          'h-9 w-full justify-between gap-2 rounded-sm border-fg/20 bg-bg px-3 text-left text-sm shadow-sm',
-          !value && 'text-fg/60',
+          "h-9 w-full justify-between gap-2 rounded-sm border-fg/20 bg-bg px-3 text-left text-sm shadow-sm",
+          !value && "text-fg/60",
         )}
       >
         <span className="min-w-0 truncate">{triggerLabel}</span>
@@ -216,8 +216,8 @@ function DiagnosisList({
             variant="ghost"
             onClick={() => onSelect(d)}
             className={cn(
-              'h-auto w-full items-start justify-start gap-2 rounded-none px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover',
-              d.id === selectedId && 'bg-primary/10',
+              "h-auto w-full items-start justify-start gap-2 rounded-none px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover",
+              d.id === selectedId && "bg-primary/10",
             )}
           >
             <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
@@ -281,8 +281,8 @@ function TypeGroupList({
                       variant="ghost"
                       onClick={() => onSelect(d)}
                       className={cn(
-                        'h-auto w-full items-start justify-start gap-2 rounded-none px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover',
-                        d.id === selectedId && 'bg-primary/10',
+                        "h-auto w-full items-start justify-start gap-2 rounded-none px-2 py-1.5 text-left text-sm text-fg hover:bg-surface-hover",
+                        d.id === selectedId && "bg-primary/10",
                       )}
                     >
                       <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">

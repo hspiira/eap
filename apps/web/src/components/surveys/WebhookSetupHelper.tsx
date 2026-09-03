@@ -11,11 +11,7 @@ import { useState } from "react"
 import { Check, Copy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useToast } from "@/contexts/ToastContext"
 
 interface Props {
@@ -31,8 +27,8 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
       <header>
         <h2 className="text-sm font-semibold text-fg">Webhook setup</h2>
         <p className="mt-1 text-xs text-fg/60">
-          Configure your survey provider to POST each response to this endpoint with the
-          shared secret in the <code className="font-mono">X-Evexia-Token</code> header.
+          Configure your survey provider to POST each response to this endpoint with the shared
+          secret in the <code className="font-mono">X-Evexia-Token</code> header.
         </p>
       </header>
 
@@ -55,8 +51,9 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
         <CollapsibleContent>
           <ol className="mt-2 list-decimal pl-5 text-sm text-fg/80 space-y-1">
             <li>
-              Open the form, click <strong>Responses → ⋮ → Get email notifications for new responses</strong>{" "}
-              and confirm the form is collecting responses.
+              Open the form, click{" "}
+              <strong>Responses → ⋮ → Get email notifications for new responses</strong> and confirm
+              the form is collecting responses.
             </li>
             <li>
               Add the <strong>Email Notifications for Forms</strong> add-on (or your preferred
@@ -66,8 +63,8 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
               Configure the bridge to <strong>POST</strong> each response as JSON to the URL above.
             </li>
             <li>
-              Add a header <strong>X-Evexia-Token</strong> with the secret above. The BE rejects
-              any request missing or mismatching this token.
+              Add a header <strong>X-Evexia-Token</strong> with the secret above. The BE rejects any
+              request missing or mismatching this token.
             </li>
             <li>
               Submit a test response. The survey status flips from <em>Draft</em> to{" "}
@@ -100,13 +97,9 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
 
   return (
     <div>
-      <p className="text-[11px] font-semibold tracking-wide text-fg/55">
-        {label}
-      </p>
+      <p className="text-[11px] font-semibold tracking-wide text-fg/55">{label}</p>
       <div className="mt-1 flex items-stretch overflow-hidden rounded-sm border border-fg/15">
-        <code className="flex-1 truncate bg-bg px-3 py-2 font-mono text-xs text-fg">
-          {display}
-        </code>
+        <code className="flex-1 truncate bg-bg px-3 py-2 font-mono text-xs text-fg">{display}</code>
         {mask && (
           <Button
             type="button"

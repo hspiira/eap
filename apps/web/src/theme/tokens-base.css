@@ -50,7 +50,8 @@
   --font-weight-semibold: 600;
 
   /* Font stacks. Mono is reserved for tabular numerics, IDs, codes, timestamps. */
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Menlo", "Consolas", monospace;
 
   /* Motion — fast and direct. Reduced motion overrides below. */

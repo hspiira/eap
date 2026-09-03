@@ -1,8 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, type RenderOptions } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { render, type RenderOptions } from "@testing-library/react"
+import type { ReactNode } from "react"
 
-import { ToastProvider } from '@/contexts/ToastContext'
+import { ToastProvider } from "@/contexts/ToastContext"
 
 export function makeTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -29,13 +29,11 @@ export function TestProviders({ children, queryClient }: TestProvidersProps) {
 
 export function renderWithProviders(
   ui: ReactNode,
-  options: { queryClient?: QueryClient } & Omit<RenderOptions, 'wrapper'> = {},
+  options: { queryClient?: QueryClient } & Omit<RenderOptions, "wrapper"> = {},
 ) {
   const { queryClient, ...rest } = options
   return render(ui, {
-    wrapper: ({ children }) => (
-      <TestProviders queryClient={queryClient}>{children}</TestProviders>
-    ),
+    wrapper: ({ children }) => <TestProviders queryClient={queryClient}>{children}</TestProviders>,
     ...rest,
   })
 }

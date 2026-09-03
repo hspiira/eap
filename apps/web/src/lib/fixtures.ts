@@ -5,10 +5,10 @@
  */
 export function useFixtures(): boolean {
   // No import.meta under plain Node (unit tests import endpoints directly).
-  if (typeof import.meta === 'undefined') return true
+  if (typeof import.meta === "undefined") return true
 
   const flag = import.meta.env.VITE_USE_FIXTURES
-  if (flag === 'true') return true
-  if (flag === 'false') return false
+  if (flag === "true") return true
+  if (flag === "false") return false
   return import.meta.env.DEV
 }

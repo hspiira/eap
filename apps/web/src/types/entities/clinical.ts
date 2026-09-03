@@ -9,8 +9,8 @@ import type {
   PresentingProblem,
   RelationType,
   ServiceCategory,
-} from '../enums'
-import type { BaseEntity } from './base'
+} from "../enums"
+import type { BaseEntity } from "./base"
 
 /**
  * The employer-known side of a person eligible for EAP services. Deliberately
@@ -77,7 +77,8 @@ export interface SOAPNoteBody {
 export interface NarrativeNoteBody {
   summary: string
 }
-export type ClinicalNoteBody = DAPNoteBody | SOAPNoteBody | NarrativeNoteBody | Record<string, unknown>
+export type ClinicalNoteBody =
+  DAPNoteBody | SOAPNoteBody | NarrativeNoteBody | Record<string, unknown>
 
 export interface NoteAmendment {
   id: string
@@ -148,4 +149,3 @@ export interface EAPProgramme {
   created_at: string
   updated_at: string
 }
-

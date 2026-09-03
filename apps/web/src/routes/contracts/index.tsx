@@ -2,17 +2,10 @@ import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  Calendar,
-  Download,
-  ExternalLink,
-  FileSignature,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react"
+import { Calendar, Download, ExternalLink, FileSignature, MoreHorizontal, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { type ContractListParams,contractsApi } from "@/api/endpoints/contracts"
+import { type ContractListParams, contractsApi } from "@/api/endpoints/contracts"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import {
@@ -91,8 +84,18 @@ function ContractsListPage() {
   const searchParams = useSearch({ from: "/contracts/" })
   const navigate = useNavigate({ from: "/contracts/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, sort, toggleSort, setFilter, sortParams,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
   } = useListPage({ searchParams, navigate })
   const canWrite = useCanWrite()
 
@@ -101,10 +104,7 @@ function ContractsListPage() {
 
   // Anchored to the selected window, not to render: an inline `new Date()` would
   // mint a fresh query key every render and refetch in a loop.
-  const renewalWindow = useMemo(
-    () => renewalParams(activeRenewal, new Date()),
-    [activeRenewal],
-  )
+  const renewalWindow = useMemo(() => renewalParams(activeRenewal, new Date()), [activeRenewal])
 
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : next
@@ -144,8 +144,7 @@ function ContractsListPage() {
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters =
-    Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
 
   return (
     <PageShell
@@ -347,9 +346,7 @@ function ContractRow({
       <TableCell className="text-sm text-fg/75">{formatDate(row.period.start_date)}</TableCell>
       <TableCell>
         <span className="block min-w-0">
-          <span className="block truncate text-sm text-fg">
-            {formatDate(row.period.end_date)}
-          </span>
+          <span className="block truncate text-sm text-fg">{formatDate(row.period.end_date)}</span>
           <span className="block truncate text-xs text-fg/55">
             {row.is_auto_renew ? "Renews" : "Ends"}
           </span>
@@ -373,7 +370,15 @@ function ContractRow({
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" aria-label={`More actions for ${number}`} className="size-7 p-0 text-fg/65"><MoreHorizontal className="size-4" /></Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${number}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>

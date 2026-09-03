@@ -6,10 +6,10 @@
  * Setters write through to storage; apiClient should not touch storage directly.
  */
 
-import { create } from 'zustand'
+import { create } from "zustand"
 
-import { tenantStorage } from '@/lib/storage'
-import type { Tenant } from '@/types/entities'
+import { tenantStorage } from "@/lib/storage"
+import type { Tenant } from "@/types/entities"
 
 export interface TenantState {
   currentTenant: Tenant | null

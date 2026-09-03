@@ -3,8 +3,8 @@ import type {
   EngagementStatus,
   EngagementTimelineEventKind,
   EngagementType,
-} from '../enums'
-import type { BaseEntity } from './base'
+} from "../enums"
+import type { BaseEntity } from "./base"
 
 /**
  * Consultancy engagement (Phase 4 #1). Tracks scope, deliverables, hours-logged, and a

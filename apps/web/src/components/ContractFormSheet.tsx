@@ -1,4 +1,3 @@
-
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
@@ -41,10 +40,7 @@ const contractSchema = z
       .trim()
       .min(1, "Billing amount is required")
       .refine((v) => /^\d+(\.\d+)?$/.test(v) && Number(v) > 0, "Must be a positive number"),
-    currency: z
-      .string()
-      .trim()
-      .length(3, "Use the ISO 3-letter currency code (e.g. KES, USD)"),
+    currency: z.string().trim().length(3, "Use the ISO 3-letter currency code (e.g. KES, USD)"),
     payment_frequency: z.enum(FREQUENCY_VALUES as readonly [string, ...string[]], {
       message: "Payment frequency is required",
     }),
@@ -205,12 +201,7 @@ export function ContractFormSheet({
           >
             <Input id="cf-start" type="date" {...register("start_date")} />
           </FormField>
-          <FormField
-            label="End date"
-            required
-            error={errors.end_date?.message}
-            htmlFor="cf-end"
-          >
+          <FormField label="End date" required error={errors.end_date?.message} htmlFor="cf-end">
             <Input id="cf-end" type="date" {...register("end_date")} />
           </FormField>
         </div>
@@ -226,10 +217,7 @@ export function ContractFormSheet({
               />
             )}
           />
-          <label
-            htmlFor="cf-auto-renew"
-            className="cursor-pointer text-sm text-fg"
-          >
+          <label htmlFor="cf-auto-renew" className="cursor-pointer text-sm text-fg">
             Auto-renew at end of term
           </label>
         </div>
@@ -302,13 +290,7 @@ export function ContractFormSheet({
   )
 }
 
-function LockedClientSummary({
-  clientId,
-  client,
-}: {
-  clientId: string
-  client: Client | null
-}) {
+function LockedClientSummary({ clientId, client }: { clientId: string; client: Client | null }) {
   const enabled = !client && Boolean(clientId)
   const detail = useEntityList<Client>({
     resource: "clients",
@@ -316,8 +298,7 @@ function LockedClientSummary({
     listFn: clientsApi.list,
     enabled,
   })
-  const resolved =
-    client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
+  const resolved = client ?? (detail.data?.items ?? []).find((c) => c.id === clientId) ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -330,9 +311,7 @@ function LockedClientSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">
-          {resolved?.code ?? clientId}
-        </p>
+        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
         Locked
@@ -340,4 +319,3 @@ function LockedClientSummary({
     </div>
   )
 }
-

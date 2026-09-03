@@ -1,9 +1,9 @@
-import { type ReactNode,useEffect } from 'react'
+import { type ReactNode, useEffect } from "react"
 
-import { useNavigate } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
+import { useNavigate } from "@tanstack/react-router"
+import { Loader2 } from "lucide-react"
 
-import { useAuthStore } from '@/store/slices/authSlice'
+import { useAuthStore } from "@/store/slices/authSlice"
 
 interface RequireAuthProps {
   /** Where to send unauthenticated users. Defaults to /auth/login. */
@@ -22,7 +22,7 @@ interface RequireAuthProps {
  * instead of flashing the children or redirecting prematurely.
  */
 export function RequireAuth({
-  loginPath = '/auth/login',
+  loginPath = "/auth/login",
   redirectAfterLogin,
   children,
 }: RequireAuthProps) {
@@ -34,8 +34,7 @@ export function RequireAuth({
     if (isLoading) return
     if (isAuthenticated) return
     const redirect =
-      redirectAfterLogin ??
-      (typeof window !== 'undefined' ? window.location.pathname : undefined)
+      redirectAfterLogin ?? (typeof window !== "undefined" ? window.location.pathname : undefined)
     navigate({
       to: loginPath,
       search: { tenant_code: undefined, email: undefined, redirect },

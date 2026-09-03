@@ -3,10 +3,10 @@
  * Provides toast notification functionality throughout the application
  */
 
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useState } from "react"
 
-import type { ReactNode } from 'react';
-export type ToastType = 'success' | 'error' | 'info'
+import type { ReactNode } from "react"
+export type ToastType = "success" | "error" | "info"
 
 export interface Toast {
   id: string
@@ -33,40 +33,37 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
-  const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration?: number) => {
-      const id = `toast-${Date.now()}-${Math.random()}`
-      const newToast: Toast = {
-        id,
-        message,
-        type,
-        duration,
-      }
+  const showToast = useCallback((message: string, type: ToastType = "info", duration?: number) => {
+    const id = `toast-${Date.now()}-${Math.random()}`
+    const newToast: Toast = {
+      id,
+      message,
+      type,
+      duration,
+    }
 
-      setToasts((prev) => [...prev, newToast])
-    },
-    []
-  )
+    setToasts((prev) => [...prev, newToast])
+  }, [])
 
   const showSuccess = useCallback(
     (message: string, duration?: number) => {
-      showToast(message, 'success', duration)
+      showToast(message, "success", duration)
     },
-    [showToast]
+    [showToast],
   )
 
   const showError = useCallback(
     (message: string, duration?: number) => {
-      showToast(message, 'error', duration)
+      showToast(message, "error", duration)
     },
-    [showToast]
+    [showToast],
   )
 
   const showInfo = useCallback(
     (message: string, duration?: number) => {
-      showToast(message, 'info', duration)
+      showToast(message, "info", duration)
     },
-    [showToast]
+    [showToast],
   )
 
   return (
@@ -88,7 +85,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast() {
   const context = useContext(ToastContext)
   if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider')
+    throw new Error("useToast must be used within a ToastProvider")
   }
   return context
 }

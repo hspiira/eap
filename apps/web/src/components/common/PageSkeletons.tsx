@@ -57,7 +57,9 @@ export function TableSkeleton({
             <TableHeader>
               <TableRow className="border-fg/20 hover:bg-transparent">
                 {headers.map((h) => (
-                  <TableHead key={h} className="text-fg">{h}</TableHead>
+                  <TableHead key={h} className="text-fg">
+                    {h}
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>

@@ -47,7 +47,8 @@ function CaseDetailPage() {
   })
   const campaign = campaignQuery.data
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: entityDetailKey("outreach-records", caseId) })
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: entityDetailKey("outreach-records", caseId) })
 
   const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
     setActionLoading(true)
@@ -141,7 +142,11 @@ function CaseDetailPage() {
         onOpenChange={setTerminateOpen}
         onConfirm={handleTerminate}
       />
-      <EscalateDialog open={escalateOpen} onOpenChange={setEscalateOpen} onConfirm={handleEscalate} />
+      <EscalateDialog
+        open={escalateOpen}
+        onOpenChange={setEscalateOpen}
+        onConfirm={handleEscalate}
+      />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">

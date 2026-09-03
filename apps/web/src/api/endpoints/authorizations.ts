@@ -7,23 +7,23 @@
  * grant-extension is a two-person sign-off (clinician + admin).
  */
 
-import type { Schemas } from '@/api/generated'
+import type { Schemas } from "@/api/generated"
 
-import apiClient from '../client'
-import type { Authorization, EAPProgramme } from '../types'
+import apiClient from "../client"
+import type { Authorization, EAPProgramme } from "../types"
 
-export type CreateEAPProgrammeRequest = Schemas['CreateEAPProgrammeRequest']
-export type AuthorizeCaseRequest = Schemas['AuthorizeCaseRequest']
-export type RequestExtensionRequest = Schemas['RequestExtensionRequest']
-export type GrantExtensionRequest = Schemas['GrantExtensionRequest']
+export type CreateEAPProgrammeRequest = Schemas["CreateEAPProgrammeRequest"]
+export type AuthorizeCaseRequest = Schemas["AuthorizeCaseRequest"]
+export type RequestExtensionRequest = Schemas["RequestExtensionRequest"]
+export type GrantExtensionRequest = Schemas["GrantExtensionRequest"]
 
 export const eapProgrammesApi = {
   async create(data: CreateEAPProgrammeRequest): Promise<EAPProgramme> {
-    return apiClient.post<EAPProgramme>('/eap-programmes', data)
+    return apiClient.post<EAPProgramme>("/eap-programmes", data)
   },
 
   async list(): Promise<EAPProgramme[]> {
-    return apiClient.get<EAPProgramme[]>('/eap-programmes')
+    return apiClient.get<EAPProgramme[]>("/eap-programmes")
   },
 
   async getById(programmeId: string): Promise<EAPProgramme> {
@@ -54,9 +54,6 @@ export const authorizationsApi = {
     authorizationId: string,
     data: GrantExtensionRequest,
   ): Promise<Authorization> {
-    return apiClient.post<Authorization>(
-      `/authorizations/${authorizationId}/grant-extension`,
-      data,
-    )
+    return apiClient.post<Authorization>(`/authorizations/${authorizationId}/grant-extension`, data)
   },
 }

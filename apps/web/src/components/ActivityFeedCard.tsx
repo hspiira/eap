@@ -11,12 +11,7 @@ import {
 import { auditApi } from "@/api/endpoints/audit"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatRelativeTime } from "@/lib/dashboard"
 import { entityListKey } from "@/lib/queries"
@@ -52,10 +47,7 @@ const TONE_RING: Record<ActivityTone, string> = {
   danger: "bg-danger-soft text-danger ring-danger/20",
 }
 
-export function ActivityFeedCard({
-  activities,
-  limit = 6,
-}: ActivityFeedCardProps = {}) {
+export function ActivityFeedCard({ activities, limit = 6 }: ActivityFeedCardProps = {}) {
   const params = { page: 1, limit }
   const { data, isLoading, isError } = useQuery({
     queryKey: entityListKey("audit", params),
@@ -71,28 +63,17 @@ export function ActivityFeedCard({
     <Card className="rounded-md">
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border p-3">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-sm font-semibold text-fg">
-            Activity feed
-          </CardTitle>
+          <CardTitle className="text-sm font-semibold text-fg">Activity feed</CardTitle>
           <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
             {activities === undefined && isLoading ? "…" : items.length}
           </Badge>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Activity feed settings"
-          className="size-8"
-        >
+        <Button variant="ghost" size="icon" aria-label="Activity feed settings" className="size-8">
           <Settings className="size-4" />
         </Button>
       </CardHeader>
 
-      <div
-        role="tablist"
-        aria-label="Activity filters"
-        className="flex border-b border-border"
-      >
+      <div role="tablist" aria-label="Activity filters" className="flex border-b border-border">
         {TABS.map((tab, i) => {
           const active = i === 0
           return (
@@ -191,11 +172,7 @@ function ActivityErrorState() {
 }
 
 function ActivityEmptyState() {
-  return (
-    <div className="px-3 py-6 text-center text-sm text-fg-muted">
-      No activity yet.
-    </div>
-  )
+  return <div className="px-3 py-6 text-center text-sm text-fg-muted">No activity yet.</div>
 }
 
 const ACTION_TONE: Record<string, ActivityTone> = {
@@ -229,9 +206,7 @@ const ACTION_ICON: Record<string, React.ElementType> = {
 }
 
 function humanise(s: string): string {
-  return s
-    .replace(/[_-]+/g, " ")
-    .replace(/^./, (c) => c.toUpperCase())
+  return s.replace(/[_-]+/g, " ").replace(/^./, (c) => c.toUpperCase())
 }
 
 export function auditLogToActivity(log: AuditLog): Activity {

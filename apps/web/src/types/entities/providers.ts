@@ -4,8 +4,8 @@ import type {
   PanelStatus,
   ProviderRegion,
   ProviderTier,
-} from '../enums'
-import type { Person } from './identity'
+} from "../enums"
+import type { Person } from "./identity"
 
 /**
  * Service provider (counsellor / agency / clinic) — D-Provider v1.

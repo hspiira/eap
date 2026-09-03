@@ -67,8 +67,10 @@ function CaseDetailPage() {
   })
   const notes = notesQuery.data ?? []
 
-  const refreshCase = () => queryClient.invalidateQueries({ queryKey: entityDetailKey("cases", caseId) })
-  const refreshNotes = () => queryClient.invalidateQueries({ queryKey: ["clinical-notes", "for-case", caseId] })
+  const refreshCase = () =>
+    queryClient.invalidateQueries({ queryKey: entityDetailKey("cases", caseId) })
+  const refreshNotes = () =>
+    queryClient.invalidateQueries({ queryKey: ["clinical-notes", "for-case", caseId] })
 
   const runAction = async (action: () => Promise<unknown>, successMessage: string) => {
     setActionLoading(true)
@@ -166,7 +168,11 @@ function CaseDetailPage() {
         caseData={caseData}
         onConfirm={handleClose}
       />
-      <ReferOutDialog open={referOutOpen} onOpenChange={setReferOutOpen} onConfirm={handleReferOut} />
+      <ReferOutDialog
+        open={referOutOpen}
+        onOpenChange={setReferOutOpen}
+        onConfirm={handleReferOut}
+      />
       <CreateNoteDialog open={noteOpen} onOpenChange={setNoteOpen} onConfirm={handleCreateNote} />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">

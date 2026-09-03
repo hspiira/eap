@@ -11,16 +11,11 @@ import {
 } from "lucide-react"
 
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { type ClientAlert,ClientAlertsCard } from "@/components/ClientAlertsCard"
+import { type ClientAlert, ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatKpi, useDashboardKpis } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
@@ -85,8 +80,7 @@ const SAMPLE_ALERTS: ClientAlert[] = [
     id: "demo-a1",
     title: "Wire alerts feed",
     severity: "low",
-    description:
-      "Hook this card up to the audit-log API once query factories land in lib/queries.",
+    description: "Hook this card up to the audit-log API once query factories land in lib/queries.",
   },
 ]
 
@@ -157,9 +151,7 @@ function DashboardHeader() {
     <div className="flex flex-wrap items-end justify-between gap-2">
       <div className="grid gap-0.5">
         <h1 className="text-xl font-semibold text-fg">Welcome back</h1>
-        <p className="text-sm text-fg-muted">
-          Here's what's happening across your tenant today.
-        </p>
+        <p className="text-sm text-fg-muted">Here's what's happening across your tenant today.</p>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" asChild>
@@ -200,9 +192,7 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
             >
               <kpi.icon className="size-4" />
             </span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
-              {kpi.label}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{kpi.label}</span>
             {kpi.loading ? (
               <Skeleton className="h-6 w-10" />
             ) : kpi.error ? (
@@ -239,17 +229,11 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
   )
 }
 
-function QuickActionsCard({
-  actions,
-}: {
-  actions: ReadonlyArray<QuickAction>
-}) {
+function QuickActionsCard({ actions }: { actions: ReadonlyArray<QuickAction> }) {
   return (
     <Card className="rounded-md">
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border p-3">
-        <CardTitle className="text-sm font-semibold text-fg">
-          Quick actions
-        </CardTitle>
+        <CardTitle className="text-sm font-semibold text-fg">Quick actions</CardTitle>
         <Badge variant="outline" size="sm">
           <ClipboardCheck className="size-3" />
           {actions.length}

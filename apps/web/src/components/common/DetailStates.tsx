@@ -28,13 +28,7 @@ export function DetailLoading({ icon, breadcrumb }: Pick<DetailStateProps, "icon
   )
 }
 
-export function DetailNotFound({
-  icon,
-  breadcrumb,
-  entity,
-  backTo,
-  backLabel,
-}: DetailStateProps) {
+export function DetailNotFound({ icon, breadcrumb, entity, backTo, backLabel }: DetailStateProps) {
   return (
     <PageShell icon={icon} breadcrumb={`${breadcrumb} · Not found`}>
       <EmptyState

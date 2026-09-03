@@ -2,20 +2,10 @@ import { useState } from "react"
 
 import { type QueryKey } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import {
-  AlertTriangle,
-  ArrowRight,
-  Briefcase,
-  Clock,
-  Plus,
-} from "lucide-react"
+import { AlertTriangle, ArrowRight, Briefcase, Clock, Plus } from "lucide-react"
 
 import { engagementsApi } from "@/api/endpoints/engagements"
-import {
-  DetailCard,
-  RailSection,
-  Stat,
-} from "@/components/common/DetailPrimitives"
+import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
@@ -40,9 +30,7 @@ import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
 import { formatDate, formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
-import {
-  EngagementStatusPill,
-} from "@/routes/engagements/index"
+import { EngagementStatusPill } from "@/routes/engagements/index"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type {
   Client,
@@ -51,12 +39,8 @@ import type {
   EngagementTimeEntry,
   EngagementTimelineEvent,
 } from "@/types/entities"
-import type {
-  EngagementTimelineEventKind} from "@/types/enums";
-import {
-  DeliverableStatus,
-  type EngagementStatus
-} from "@/types/enums"
+import type { EngagementTimelineEventKind } from "@/types/enums"
+import { DeliverableStatus, type EngagementStatus } from "@/types/enums"
 
 export function Hero({
   engagement,
@@ -216,10 +200,7 @@ export function DeliverablesPanel({
       ) : (
         <ul className="divide-y divide-fg/8">
           {deliverables.map((d) => (
-            <li
-              key={d.id}
-              className="flex items-center justify-between gap-3 py-2.5"
-            >
+            <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{d.title}</p>
                 <p className="truncate text-xs text-fg/55">
@@ -270,9 +251,7 @@ export function HoursPanel({
   const { showError } = useToast()
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
 
-  const [occurredOn, setOccurredOn] = useState(
-    new Date().toISOString().slice(0, 10),
-  )
+  const [occurredOn, setOccurredOn] = useState(new Date().toISOString().slice(0, 10))
   const [hours, setHours] = useState("")
   const [description, setDescription] = useState("")
   const [deliverableId, setDeliverableId] = useState("")
@@ -307,16 +286,12 @@ export function HoursPanel({
   return (
     <DetailCard title="Hours log">
       <p className="mb-3 text-xs text-fg/55">
-        Hours roll up into the engagement totals. Tag a deliverable to keep
-        utilisation per artefact.
+        Hours roll up into the engagement totals. Tag a deliverable to keep utilisation per
+        artefact.
       </p>
 
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[8rem_5rem_1fr_10rem_auto]">
-        <Input
-          type="date"
-          value={occurredOn}
-          onChange={(e) => setOccurredOn(e.target.value)}
-        />
+        <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
         <Input
           type="number"
           inputMode="decimal"
@@ -368,18 +343,24 @@ export function HoursPanel({
           <Table className="w-full text-sm">
             <TableHeader className="bg-bg">
               <TableRow className="text-left hover:bg-transparent">
-                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Date</TableHead>
-                <TableHead className="w-20 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">Hours</TableHead>
-                <TableHead className="w-40 px-3 py-2 text-[11px] font-semibold tracking-wide">By</TableHead>
-                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">Note</TableHead>
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">
+                  Date
+                </TableHead>
+                <TableHead className="w-20 px-3 py-2 text-right text-[11px] font-semibold tracking-wide">
+                  Hours
+                </TableHead>
+                <TableHead className="w-40 px-3 py-2 text-[11px] font-semibold tracking-wide">
+                  By
+                </TableHead>
+                <TableHead className="px-3 py-2 text-[11px] font-semibold tracking-wide">
+                  Note
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {entries.map((e) => (
                 <TableRow key={e.id} className="border-fg/8 last:border-0">
-                  <TableCell className="px-3 py-2">
-                    {formatDate(e.occurred_on)}
-                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatDate(e.occurred_on)}</TableCell>
                   <TableCell className="px-3 py-2 text-right font-mono">
                     {e.hours.toFixed(2)}
                   </TableCell>
@@ -417,18 +398,14 @@ export function TimelinePanel({
     <DetailCard title="Timeline">
       <ul className="space-y-3">
         {timeline.map((e) => (
-          <li
-            key={e.id}
-            className="flex gap-2.5 border-l-2 border-primary/40 pl-3"
-          >
+          <li key={e.id} className="flex gap-2.5 border-l-2 border-primary/40 pl-3">
             <span
               aria-hidden
               className="mt-1.5 inline-block size-1.5 -translate-x-[7.5px] rounded-full bg-primary"
             />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-medium text-fg/55">
-                {formatDateTime(e.at)} ·{" "}
-                <span className="font-mono">{e.actor}</span> ·{" "}
+                {formatDateTime(e.at)} · <span className="font-mono">{e.actor}</span> ·{" "}
                 <TimelineKindPill kind={e.kind} />
               </p>
               <p className="mt-0.5 text-sm text-fg">{e.message}</p>
@@ -467,27 +444,19 @@ export function DetailRail({
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat truncate
-            label="Hours"
-            value={engagement.hours_logged.toFixed(1)}
-          />
-          <Stat truncate
+          <Stat truncate label="Hours" value={engagement.hours_logged.toFixed(1)} />
+          <Stat
+            truncate
             label="Budget"
-            value={
-              engagement.budget_hours ? `${engagement.budget_hours}h` : "Open"
-            }
+            value={engagement.budget_hours ? `${engagement.budget_hours}h` : "Open"}
           />
-          <Stat truncate
-            label="Util"
-            value={budgetPct !== null ? `${budgetPct}%` : "—"}
-          />
-          <Stat truncate
+          <Stat truncate label="Util" value={budgetPct !== null ? `${budgetPct}%` : "—"} />
+          <Stat
+            truncate
             label="Rate"
             value={
               engagement.hourly_rate != null
-                ? `${engagement.hourly_rate}${
-                    engagement.currency ? ` ${engagement.currency}` : ""
-                  }`
+                ? `${engagement.hourly_rate}${engagement.currency ? ` ${engagement.currency}` : ""}`
                 : "—"
             }
           />

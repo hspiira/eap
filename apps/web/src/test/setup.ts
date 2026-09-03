@@ -1,12 +1,12 @@
-import '@testing-library/jest-dom/vitest'
+import "@testing-library/jest-dom/vitest"
 
-import { cleanup } from '@testing-library/react'
-import { afterEach, beforeEach, expect, vi } from 'vitest'
-import * as axeMatchers from 'vitest-axe/matchers'
+import { cleanup } from "@testing-library/react"
+import { afterEach, beforeEach, expect, vi } from "vitest"
+import * as axeMatchers from "vitest-axe/matchers"
 
 expect.extend(axeMatchers)
 
-declare module 'vitest' {
+declare module "vitest" {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Assertion<T = any> {
     toHaveNoViolations(): T
@@ -14,7 +14,7 @@ declare module 'vitest' {
 }
 
 beforeEach(() => {
-  vi.stubEnv('VITE_AUTH_USE_COOKIES', 'false')
+  vi.stubEnv("VITE_AUTH_USE_COOKIES", "false")
 })
 
 class InMemoryStorage implements Storage {
@@ -40,18 +40,18 @@ class InMemoryStorage implements Storage {
   }
 }
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   configurable: true,
   writable: true,
   value: new InMemoryStorage(),
 })
-Object.defineProperty(window, 'sessionStorage', {
+Object.defineProperty(window, "sessionStorage", {
   configurable: true,
   writable: true,
   value: new InMemoryStorage(),
 })
 
-if (typeof globalThis.ResizeObserver === 'undefined') {
+if (typeof globalThis.ResizeObserver === "undefined") {
   class ResizeObserverPolyfill {
     observe(): void {}
     unobserve(): void {}
@@ -61,7 +61,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 if (!window.matchMedia) {
-  Object.defineProperty(window, 'matchMedia', {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
       matches: false,

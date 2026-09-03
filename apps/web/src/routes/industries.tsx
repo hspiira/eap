@@ -16,11 +16,7 @@ import {
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import {
-  nextSort,
-  SortHeader,
-  type SortState,
-} from "@/components/common/SortHeader"
+import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { IndustryDetailsCard } from "@/components/IndustryDetailsCard"
 import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
@@ -119,44 +115,41 @@ function IndustriesPage() {
     [query.data?.items, selectIndustry],
   )
 
-  const loadDetails = useCallback(
-    async (id: string, rowHint?: Industry | null) => {
-      setDetailsLoading(true)
-      // Render immediately from the row payload while the network catches up.
-      if (rowHint) setSelectedIndustry(rowHint)
-      try {
-        const [industry, children] = await Promise.all([
-          industriesApi.getById(id),
-          industriesApi.getChildren(id),
-        ])
-        // Some endpoints drop parent_id from /industries/:id even when it
-        // exists on the list payload; fall back to the row hint.
-        const merged: Industry = {
-          ...industry,
-          parent_id: industry.parent_id ?? rowHint?.parent_id ?? null,
-        }
-        setSelectedIndustry(merged)
-        setChildIndustries(children)
-        if (merged.parent_id) {
-          try {
-            const parent = await industriesApi.getById(merged.parent_id)
-            setParentIndustry(parent)
-          } catch (_err) {
-            setParentIndustry(null)
-          }
-        } else {
+  const loadDetails = useCallback(async (id: string, rowHint?: Industry | null) => {
+    setDetailsLoading(true)
+    // Render immediately from the row payload while the network catches up.
+    if (rowHint) setSelectedIndustry(rowHint)
+    try {
+      const [industry, children] = await Promise.all([
+        industriesApi.getById(id),
+        industriesApi.getChildren(id),
+      ])
+      // Some endpoints drop parent_id from /industries/:id even when it
+      // exists on the list payload; fall back to the row hint.
+      const merged: Industry = {
+        ...industry,
+        parent_id: industry.parent_id ?? rowHint?.parent_id ?? null,
+      }
+      setSelectedIndustry(merged)
+      setChildIndustries(children)
+      if (merged.parent_id) {
+        try {
+          const parent = await industriesApi.getById(merged.parent_id)
+          setParentIndustry(parent)
+        } catch (_err) {
           setParentIndustry(null)
         }
-      } catch (_err) {
-        if (!rowHint) setSelectedIndustry(null)
+      } else {
         setParentIndustry(null)
-        setChildIndustries([])
-      } finally {
-        setDetailsLoading(false)
       }
-    },
-    [],
-  )
+    } catch (_err) {
+      if (!rowHint) setSelectedIndustry(null)
+      setParentIndustry(null)
+      setChildIndustries([])
+    } finally {
+      setDetailsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!selected) {
@@ -179,12 +172,9 @@ function IndustriesPage() {
     return () => window.cancelAnimationFrame(id)
   }, [selectedId, items])
 
-  const handleIndustryUpdated = useCallback(
-    (updated: Industry) => {
-      setSelectedIndustry(updated)
-    },
-    [],
-  )
+  const handleIndustryUpdated = useCallback((updated: Industry) => {
+    setSelectedIndustry(updated)
+  }, [])
 
   if (isLoading) return <div className="p-8 text-fg">Loading…</div>
   if (!isAuthenticated) return null
@@ -201,11 +191,7 @@ function IndustriesPage() {
           <>
             <IconButton label="Export" icon={Download} />
             <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-            <Button
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => setCreateOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setCreateOpen(true)}>
               <Plus className="size-3.5" />
               Add industry
             </Button>
@@ -221,10 +207,7 @@ function IndustriesPage() {
             ]}
           />
           {levelFilter !== "all" && levelChip ? (
-            <FilterChip
-              label={levelChip.label}
-              onRemove={() => setLevelFilter("all")}
-            />
+            <FilterChip label={levelChip.label} onRemove={() => setLevelFilter("all")} />
           ) : null}
           <FilterTrigger
             label="All levels"
@@ -240,15 +223,12 @@ function IndustriesPage() {
           />
         </FilterBar>
 
-        <IndustryFormSheet
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-        />
+        <IndustryFormSheet open={createOpen} onOpenChange={setCreateOpen} />
 
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
           <div className="col-span-12 flex min-w-0 flex-col overflow-hidden lg:col-span-8">
             {loading ? (
-              <TableSkeleton cols={3} headers={["Name","Code","Level"]} withPagination />
+              <TableSkeleton cols={3} headers={["Name", "Code", "Level"]} withPagination />
             ) : error ? (
               <ErrorBlock message={error} onRetry={() => void query.refetch()} />
             ) : items.length === 0 ? (
@@ -327,12 +307,7 @@ function IndustriesPage() {
                 </div>
                 {total > 0 && (
                   <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                    <Pagination
-                      page={page}
-                      total={total}
-                      limit={limit}
-                      onPageChange={setPage}
-                    />
+                    <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
                   </div>
                 )}
               </>
@@ -341,9 +316,7 @@ function IndustriesPage() {
 
           <div className="col-span-12 flex min-w-0 flex-col lg:col-span-4">
             {selectedId && detailsLoading ? (
-              <div className="border border-fg/10 bg-surface p-4 text-sm text-fg/70">
-                Loading…
-              </div>
+              <div className="border border-fg/10 bg-surface p-4 text-sm text-fg/70">Loading…</div>
             ) : selectedIndustry ? (
               <IndustryDetailsCard
                 industry={selectedIndustry}
@@ -398,12 +371,7 @@ function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void
     <div className="flex flex-1 items-center justify-center px-6 py-10">
       <div className="flex max-w-sm flex-col items-center text-center">
         <p className="text-sm text-danger-fg">{message}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4 gap-1.5"
-          onClick={onRetry}
-        >
+        <Button variant="outline" size="sm" className="mt-4 gap-1.5" onClick={onRetry}>
           <RotateCw className="size-4" />
           Try again
         </Button>

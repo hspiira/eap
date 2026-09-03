@@ -1,36 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
 
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { z } from "zod"
 
-import { authApi } from '@/api/endpoints/auth'
-import { FormField } from '@/components/common/FormField'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useApiForm } from '@/hooks/useApiForm'
-import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated'
+import { authApi } from "@/api/endpoints/auth"
+import { FormField } from "@/components/common/FormField"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useApiForm } from "@/hooks/useApiForm"
+import { useRedirectIfAuthenticated } from "@/hooks/useRedirectIfAuthenticated"
 
-export const Route = createFileRoute('/auth/sso')({
+export const Route = createFileRoute("/auth/sso")({
   component: SsoPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    tenant_code: typeof search.tenant_code === 'string' ? search.tenant_code : undefined,
-    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+    tenant_code: typeof search.tenant_code === "string" ? search.tenant_code : undefined,
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
 })
 
 const ssoSchema = z.object({
-  tenant_code: z.string().trim().min(1, 'Tenant code is required'),
+  tenant_code: z.string().trim().min(1, "Tenant code is required"),
 })
 
 function SsoPage() {
   const search = Route.useSearch()
-  const isAuthenticated = useRedirectIfAuthenticated(search.redirect ?? '/')
+  const isAuthenticated = useRedirectIfAuthenticated(search.redirect ?? "/")
   const azureEnabled = authApi.isAzureSsoEnabled()
   const [launched, setLaunched] = useState(false)
 
   const { register, formState, submit } = useApiForm<z.infer<typeof ssoSchema>>({
     schema: ssoSchema,
-    defaultValues: { tenant_code: search.tenant_code ?? '' },
+    defaultValues: { tenant_code: search.tenant_code ?? "" },
     errorToast: false,
     onSubmit: async (_values) => {
       const url = authApi.azureLoginUrl()
@@ -100,8 +100,8 @@ function SsoPage() {
             type="text"
             placeholder="Enter tenant code"
             autoComplete="organization"
-            {...register('tenant_code', {
-              setValueAs: (v) => (typeof v === 'string' ? v.toLowerCase() : v),
+            {...register("tenant_code", {
+              setValueAs: (v) => (typeof v === "string" ? v.toLowerCase() : v),
             })}
           />
         </FormField>

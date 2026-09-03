@@ -54,8 +54,7 @@ export function ConfirmDialog({
             }}
             disabled={loading}
             className={cn(
-              destructive &&
-                "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+              destructive && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
             )}
           >
             {loading ? "…" : confirmLabel}

@@ -3,14 +3,14 @@
  * read the `total` count, since there is no aggregate /dashboard endpoint yet.
  */
 
-import { useQueries } from '@tanstack/react-query'
+import { useQueries } from "@tanstack/react-query"
 
-import { clientsApi } from '@/api/endpoints/clients'
-import { contractsApi } from '@/api/endpoints/contracts'
-import { incidentsApi } from '@/api/endpoints/incidents'
-import { serviceSessionsApi } from '@/api/endpoints/service-sessions'
+import { clientsApi } from "@/api/endpoints/clients"
+import { contractsApi } from "@/api/endpoints/contracts"
+import { incidentsApi } from "@/api/endpoints/incidents"
+import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 
-import { entityListKey } from './queries'
+import { entityListKey } from "./queries"
 
 interface KpiResult {
   value: number | null
@@ -25,22 +25,22 @@ export function useDashboardKpis() {
   const queries = useQueries({
     queries: [
       {
-        queryKey: entityListKey('clients', KPI_PARAMS),
+        queryKey: entityListKey("clients", KPI_PARAMS),
         queryFn: () => clientsApi.list(KPI_PARAMS),
         staleTime: ONE_MINUTE,
       },
       {
-        queryKey: entityListKey('incidents', KPI_PARAMS),
+        queryKey: entityListKey("incidents", KPI_PARAMS),
         queryFn: () => incidentsApi.list(),
         staleTime: ONE_MINUTE,
       },
       {
-        queryKey: entityListKey('service-sessions', KPI_PARAMS),
+        queryKey: entityListKey("service-sessions", KPI_PARAMS),
         queryFn: () => serviceSessionsApi.list(KPI_PARAMS),
         staleTime: ONE_MINUTE,
       },
       {
-        queryKey: entityListKey('contracts', KPI_PARAMS),
+        queryKey: entityListKey("contracts", KPI_PARAMS),
         queryFn: () => contractsApi.list(KPI_PARAMS),
         staleTime: ONE_MINUTE,
       },

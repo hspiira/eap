@@ -1,6 +1,4 @@
-import type {
-  ContactMethod,
-} from '../enums'
+import type { ContactMethod } from "../enums"
 
 /**
  * Common fields present in all entities

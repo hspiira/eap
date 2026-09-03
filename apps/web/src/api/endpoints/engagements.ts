@@ -10,18 +10,18 @@
  *   CLOSED    → POST /engagements/{id}/close
  */
 
-import { useFixtures } from '@/lib/fixtures'
-import type { DeliverableStatus} from '@/types/enums';
-import { EngagementStatus } from '@/types/enums'
+import { useFixtures } from "@/lib/fixtures"
+import type { DeliverableStatus } from "@/types/enums"
+import { EngagementStatus } from "@/types/enums"
 
-import apiClient from '../client'
+import apiClient from "../client"
 import type {
   Engagement,
   EngagementDeliverable,
   EngagementTimeEntry,
   EngagementTimelineEvent,
   PaginatedResponse,
-} from '../types'
+} from "../types"
 import {
   type DeliverableCreateInput,
   type EngagementCreateInput,
@@ -37,23 +37,23 @@ import {
   fixtureTransitionEngagement,
   fixtureUpdateDeliverableStatus,
   type TimeEntryCreateInput,
-} from './engagements-fixture'
+} from "./engagements-fixture"
 
 function paginate<T>(items: T[]): PaginatedResponse<T> {
   return { items, total: items.length, page: 1, limit: items.length, has_more: false }
 }
 
 const FSM_ROUTES: Partial<Record<EngagementStatus, string>> = {
-  [EngagementStatus.ACTIVE]: 'activate',
-  [EngagementStatus.DELIVERED]: 'deliver',
-  [EngagementStatus.CLOSED]: 'close',
+  [EngagementStatus.ACTIVE]: "activate",
+  [EngagementStatus.DELIVERED]: "deliver",
+  [EngagementStatus.CLOSED]: "close",
 }
 
 export const engagementsApi = {
   // ── Engagements ──────────────────────────────────────────────────────────
   async list(): Promise<PaginatedResponse<Engagement>> {
     if (useFixtures()) return Promise.resolve(paginate(fixtureListEngagements()))
-    return apiClient.get<PaginatedResponse<Engagement>>('/engagements')
+    return apiClient.get<PaginatedResponse<Engagement>>("/engagements")
   },
 
   async getById(id: string): Promise<Engagement> {
@@ -67,7 +67,7 @@ export const engagementsApi = {
 
   async create(input: EngagementCreateInput): Promise<Engagement> {
     if (useFixtures()) return Promise.resolve(fixtureCreateEngagement(input))
-    return apiClient.post<Engagement>('/engagements', input)
+    return apiClient.post<Engagement>("/engagements", input)
   },
 
   async transition(id: string, to: EngagementStatus): Promise<Engagement> {
@@ -130,4 +130,4 @@ export type {
   DeliverableCreateInput,
   EngagementCreateInput,
   TimeEntryCreateInput,
-} from './engagements-fixture'
+} from "./engagements-fixture"

@@ -5,8 +5,8 @@
  * subscription, and Azure AD SSO config.
  */
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse, Tenant } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, Tenant } from "../types"
 
 export interface TenantSettingsInput {
   max_users?: number
@@ -56,7 +56,7 @@ export interface TenantStats {
 
 export const tenantsApi = {
   async create(data: TenantCreate): Promise<TenantCreateResponse> {
-    return apiClient.post<TenantCreateResponse>('/tenants', data)
+    return apiClient.post<TenantCreateResponse>("/tenants", data)
   },
 
   async getById(tenantId: string): Promise<Tenant> {
@@ -64,10 +64,7 @@ export const tenantsApi = {
   },
 
   async list(params?: ListParams): Promise<PaginatedResponse<Tenant>> {
-    return apiClient.get<PaginatedResponse<Tenant>>(
-      '/tenants',
-      params,
-    )
+    return apiClient.get<PaginatedResponse<Tenant>>("/tenants", params)
   },
 
   async update(tenantId: string, data: TenantUpdate): Promise<Tenant> {
@@ -84,10 +81,7 @@ export const tenantsApi = {
     })
   },
 
-  async updateAzureSso(
-    tenantId: string,
-    data: TenantAzureSsoUpdate,
-  ): Promise<Tenant> {
+  async updateAzureSso(tenantId: string, data: TenantAzureSsoUpdate): Promise<Tenant> {
     return apiClient.patch<Tenant>(`/tenants/${tenantId}/azure-sso`, data)
   },
 
@@ -116,8 +110,6 @@ export const tenantsApi = {
   },
 
   async checkCode(code: string): Promise<{ available: boolean; code: string }> {
-    return apiClient.get<{ available: boolean; code: string }>(
-      `/tenants/check-code/${code}`,
-    )
+    return apiClient.get<{ available: boolean; code: string }>(`/tenants/check-code/${code}`)
   },
 }

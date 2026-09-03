@@ -6,12 +6,12 @@
  * mounted at the route root.
  */
 
-import { create } from 'zustand'
+import { create } from "zustand"
 
-import { uiStorage } from '@/lib/storage'
+import { uiStorage } from "@/lib/storage"
 
-export type ThemePreference = 'light' | 'dark' | 'system'
-export type EffectiveTheme = 'light' | 'dark'
+export type ThemePreference = "light" | "dark" | "system"
+export type EffectiveTheme = "light" | "dark"
 
 export interface UIState {
   /** User-selected theme preference */

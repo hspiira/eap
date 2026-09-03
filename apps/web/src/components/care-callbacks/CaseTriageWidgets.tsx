@@ -95,16 +95,8 @@ export function DetailRail({
         <div className="grid grid-cols-2 gap-3">
           <Stat variant="text" label="Attempts" value={outreach.contact_attempts} />
           <Stat variant="text" label="Status" value={<CaseStatusPill status={outreach.status} />} />
-          <Stat
-            variant="text"
-            label="Assigned"
-            value={formatDate(outreach.assigned_at)}
-          />
-          <Stat
-            variant="text"
-            label="Completed"
-            value={formatDate(outreach.completed_at)}
-          />
+          <Stat variant="text" label="Assigned" value={formatDate(outreach.assigned_at)} />
+          <Stat variant="text" label="Completed" value={formatDate(outreach.completed_at)} />
         </div>
       </RailSection>
 
@@ -171,9 +163,7 @@ export function DetailRail({
             <Phone className="size-3.5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-fg">
-              {campaignName ?? campaignId}
-            </p>
+            <p className="truncate text-sm font-medium text-fg">{campaignName ?? campaignId}</p>
             <p className="truncate font-mono text-[11px] text-fg/55">{campaignId}</p>
           </div>
         </Link>
@@ -234,9 +224,7 @@ export function TerminateDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Close out this record</DialogTitle>
-          <DialogDescription>
-            Choose how this attempt closed. Notes are optional.
-          </DialogDescription>
+          <DialogDescription>Choose how this attempt closed. Notes are optional.</DialogDescription>
         </DialogHeader>
         <FormField label="Outcome" required>
           <RadioGroup value={action} onValueChange={(v) => setAction(v as TerminateAction)}>
@@ -257,10 +245,20 @@ export function TerminateDialog({
           </RadioGroup>
         </FormField>
         <FormField label="Notes" optional htmlFor="terminate-notes">
-          <Textarea id="terminate-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <Textarea
+            id="terminate-notes"
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
         </FormField>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={submitting}>
@@ -309,7 +307,12 @@ export function EscalateDialog({
           <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </FormField>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button size="sm" onClick={handleConfirm} disabled={!notes.trim() || submitting}>

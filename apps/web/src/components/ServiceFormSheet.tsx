@@ -70,12 +70,7 @@ interface ServiceFormSheetProps {
   onSaved?: (service: Service) => void
 }
 
-export function ServiceFormSheet({
-  open,
-  onOpenChange,
-  service,
-  onSaved,
-}: ServiceFormSheetProps) {
+export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: ServiceFormSheetProps) {
   const { register, control, formState, submit, serverError, watch, isEdit } = useEntityFormSheet<
     Values,
     Parameters<typeof servicesApi.create>[0],
@@ -96,9 +91,7 @@ export function ServiceFormSheet({
       duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : null,
       is_group_service: Boolean(values.is_group_service),
       max_participants:
-        values.is_group_service && values.max_participants
-          ? Number(values.max_participants)
-          : null,
+        values.is_group_service && values.max_participants ? Number(values.max_participants) : null,
     }),
     save: async ({ payload, entity, isEdit }) => {
       if (isEdit && entity) {
@@ -151,7 +144,12 @@ export function ServiceFormSheet({
           <Input id="sv-name" placeholder="Individual counselling" {...register("name")} />
         </FormField>
         <div className="grid grid-cols-[1fr_8rem] gap-3">
-          <FormField label="Category" optional error={errors.category?.message} htmlFor="sv-category">
+          <FormField
+            label="Category"
+            optional
+            error={errors.category?.message}
+            htmlFor="sv-category"
+          >
             <Controller
               control={control}
               name="category"
@@ -171,7 +169,12 @@ export function ServiceFormSheet({
               )}
             />
           </FormField>
-          <FormField label="Duration (min)" optional error={errors.duration_minutes?.message} htmlFor="sv-duration">
+          <FormField
+            label="Duration (min)"
+            optional
+            error={errors.duration_minutes?.message}
+            htmlFor="sv-duration"
+          >
             <Input
               id="sv-duration"
               type="number"
@@ -183,7 +186,12 @@ export function ServiceFormSheet({
             />
           </FormField>
         </div>
-        <FormField label="Description" optional error={errors.description?.message} htmlFor="sv-description">
+        <FormField
+          label="Description"
+          optional
+          error={errors.description?.message}
+          htmlFor="sv-description"
+        >
           <Input id="sv-description" {...register("description")} />
         </FormField>
       </FormSection>
@@ -194,11 +202,7 @@ export function ServiceFormSheet({
             control={control}
             name="is_group_service"
             render={({ field }) => (
-              <Checkbox
-                id="sv-is-group"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
+              <Checkbox id="sv-is-group" checked={field.value} onCheckedChange={field.onChange} />
             )}
           />
           <label htmlFor="sv-is-group" className="cursor-pointer text-sm text-fg">
@@ -232,11 +236,9 @@ function toFormValues(s: Service): Values {
     name: s.name,
     description: s.description ?? "",
     category: s.category ?? "",
-    duration_minutes:
-      s.duration_minutes != null ? String(s.duration_minutes) : "",
+    duration_minutes: s.duration_minutes != null ? String(s.duration_minutes) : "",
     is_group_service: Boolean(s.is_group_service),
-    max_participants:
-      s.max_participants != null ? String(s.max_participants) : "",
+    max_participants: s.max_participants != null ? String(s.max_participants) : "",
   }
 }
 

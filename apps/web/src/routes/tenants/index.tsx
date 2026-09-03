@@ -1,27 +1,18 @@
-import { useState } from 'react'
+import { useState } from "react"
 
-import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
-import {
-  ExternalLink,
-  KeyRound,
-  Plus,
-  ShieldCheck,
-} from 'lucide-react'
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { ExternalLink, KeyRound, Plus, ShieldCheck } from "lucide-react"
 
-import { type TenantCreateResponse,tenantsApi } from '@/api/endpoints/tenants'
-import { AppLayout } from '@/components/AppLayout'
-import { EmptyState } from '@/components/common/EmptyState'
-import {
-  FilterBar,
-  FilterSearch,
-  FilterTrigger,
-} from '@/components/common/FilterBar'
-import { PageShell } from '@/components/common/PageShell'
-import { TableSkeleton } from '@/components/common/PageSkeletons'
-import { RequirePlatformAdmin } from '@/components/common/RequirePlatformAdmin'
-import { StatusBadge } from '@/components/common/StatusBadge'
-import { TenantFormSheet } from '@/components/TenantFormSheet'
-import { Button } from '@/components/ui/button'
+import { type TenantCreateResponse, tenantsApi } from "@/api/endpoints/tenants"
+import { AppLayout } from "@/components/AppLayout"
+import { EmptyState } from "@/components/common/EmptyState"
+import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { RequirePlatformAdmin } from "@/components/common/RequirePlatformAdmin"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { TenantFormSheet } from "@/components/TenantFormSheet"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -29,8 +20,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Pagination } from '@/components/ui/pagination'
+} from "@/components/ui/dialog"
+import { Pagination } from "@/components/ui/pagination"
 import {
   Table,
   TableBody,
@@ -38,29 +29,29 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { useListPage } from '@/hooks/useListPage'
-import { normalizeErrorMessage } from '@/lib/errors'
-import { formatDateTime } from '@/lib/format'
-import { useEntityList } from '@/lib/queries'
-import { enumParam, listSearchSchema } from '@/lib/search-params'
-import type { Tenant } from '@/types/entities'
-import { TenantStatus } from '@/types/enums'
+} from "@/components/ui/table"
+import { useListPage } from "@/hooks/useListPage"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime } from "@/lib/format"
+import { useEntityList } from "@/lib/queries"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
+import type { Tenant } from "@/types/entities"
+import { TenantStatus } from "@/types/enums"
 
-export const Route = createFileRoute('/tenants/')({
+export const Route = createFileRoute("/tenants/")({
   component: TenantsListPage,
   validateSearch: listSearchSchema({ status: enumParam(TenantStatus) }),
 })
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'All statuses' },
-  { value: TenantStatus.ACTIVE, label: 'Active' },
-  { value: TenantStatus.SUSPENDED, label: 'Suspended' },
-  { value: TenantStatus.ARCHIVED, label: 'Archived' },
-  { value: TenantStatus.TERMINATED, label: 'Terminated' },
+  { value: "all", label: "All statuses" },
+  { value: TenantStatus.ACTIVE, label: "Active" },
+  { value: TenantStatus.SUSPENDED, label: "Suspended" },
+  { value: TenantStatus.ARCHIVED, label: "Archived" },
+  { value: TenantStatus.TERMINATED, label: "Terminated" },
 ] as const
 
-type StatusFilter = (typeof STATUS_OPTIONS)[number]['value']
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 
 function TenantsListPage() {
   return (
@@ -71,11 +62,18 @@ function TenantsListPage() {
 }
 
 function TenantsListBody() {
-  const searchParams = useSearch({ from: '/tenants/' })
-  const navigate = useNavigate({ from: '/tenants/' })
+  const searchParams = useSearch({ from: "/tenants/" })
+  const navigate = useNavigate({ from: "/tenants/" })
   const {
-    searchInput, setSearchInput, activeSearch,
-    addOpen, setAddOpen, page, setPage, limit, setFilter,
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    setFilter,
   } = useListPage({ searchParams, navigate })
   const [credentials, setCredentials] = useState<TenantCreateResponse | null>(null)
   const activeStatus = searchParams.status
@@ -88,7 +86,7 @@ function TenantsListBody() {
   }
 
   const { data, isLoading, isError, error, refetch } = useEntityList({
-    resource: 'tenants',
+    resource: "tenants",
     params,
     listFn: (p) => tenantsApi.list(p),
   })
@@ -98,11 +96,11 @@ function TenantsListBody() {
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   function setStatus(next: StatusFilter) {
-    setFilter('status', next === 'all' ? undefined : (next as TenantStatus))
+    setFilter("status", next === "all" ? undefined : (next as TenantStatus))
   }
 
   function clearAll() {
-    setSearchInput('')
+    setSearchInput("")
     navigate({
       search: () => ({ new: undefined, search: undefined, status: undefined }),
       replace: true,
@@ -132,23 +130,18 @@ function TenantsListBody() {
             />
             <FilterTrigger
               label="Status"
-              value={activeStatus ?? 'all'}
+              value={activeStatus ?? "all"}
               options={STATUS_OPTIONS}
               onChange={(v) => setStatus(v as StatusFilter)}
             />
             {filtersActive ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={clearAll}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={clearAll}>
                 Clear
               </Button>
             ) : null}
             <div className="ml-auto flex items-center gap-1.5">
               <span className="text-xs text-fg/65">
-                {total} {total === 1 ? 'tenant' : 'tenants'}
+                {total} {total === 1 ? "tenant" : "tenants"}
               </span>
             </div>
           </FilterBar>
@@ -156,7 +149,7 @@ function TenantsListBody() {
           {isError ? (
             <EmptyState
               title="Could not load tenants"
-              description={normalizeErrorMessage(error, 'Unknown error')}
+              description={normalizeErrorMessage(error, "Unknown error")}
               action={<Button onClick={() => refetch()}>Retry</Button>}
             />
           ) : isLoading ? (
@@ -164,11 +157,11 @@ function TenantsListBody() {
           ) : rows.length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
-              title={filtersActive ? 'No tenants match those filters' : 'No tenants yet'}
+              title={filtersActive ? "No tenants match those filters" : "No tenants yet"}
               description={
                 filtersActive
-                  ? 'Try clearing filters or adjusting your search.'
-                  : 'Create the first tenant to onboard an employer.'
+                  ? "Try clearing filters or adjusting your search."
+                  : "Create the first tenant to onboard an employer."
               }
               action={
                 <Button onClick={() => setAddOpen(true)}>
@@ -199,12 +192,7 @@ function TenantsListBody() {
               </div>
 
               {totalPages > 1 ? (
-                <Pagination
-                  page={page}
-                  total={total}
-                  limit={limit}
-                  onPageChange={setPage}
-                />
+                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
               ) : null}
             </>
           )}
@@ -220,7 +208,7 @@ function TenantsListBody() {
           if (resp.admin_password || resp.set_password_url) {
             setCredentials(resp)
           } else {
-            navigate({ to: '/tenants/$tenantId', params: { tenantId: t.id } })
+            navigate({ to: "/tenants/$tenantId", params: { tenantId: t.id } })
           }
         }}
       />
@@ -230,7 +218,7 @@ function TenantsListBody() {
         onClose={() => {
           const id = credentials?.id
           setCredentials(null)
-          if (id) navigate({ to: '/tenants/$tenantId', params: { tenantId: id } })
+          if (id) navigate({ to: "/tenants/$tenantId", params: { tenantId: id } })
         }}
       />
     </AppLayout>
@@ -245,7 +233,12 @@ function AdminCredentialsDialog({
   onClose: () => void
 }) {
   return (
-    <Dialog open={!!creds} onOpenChange={(o) => { if (!o) onClose() }}>
+    <Dialog
+      open={!!creds}
+      onOpenChange={(o) => {
+        if (!o) onClose()
+      }}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Tenant created — save these credentials</DialogTitle>
@@ -261,7 +254,7 @@ function AdminCredentialsDialog({
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wider text-fg-subtle">Admin email</dt>
-              <dd className="text-sm text-fg">{creds.admin_email ?? '—'}</dd>
+              <dd className="text-sm text-fg">{creds.admin_email ?? "—"}</dd>
             </div>
             {creds.admin_password ? (
               <div>
@@ -271,7 +264,9 @@ function AdminCredentialsDialog({
             ) : null}
             {creds.set_password_url ? (
               <div>
-                <dt className="text-xs uppercase tracking-wider text-fg-subtle">Set-password link</dt>
+                <dt className="text-xs uppercase tracking-wider text-fg-subtle">
+                  Set-password link
+                </dt>
                 <dd className="text-sm text-fg break-all">
                   <a href={creds.set_password_url} className="text-primary underline">
                     {creds.set_password_url}
@@ -300,23 +295,15 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
   return (
     <TableRow className="group">
       <TableCell className="font-medium text-fg">
-        <Link
-          to="/tenants/$tenantId"
-          params={{ tenantId: tenant.id }}
-          className="hover:underline"
-        >
+        <Link to="/tenants/$tenantId" params={{ tenantId: tenant.id }} className="hover:underline">
           {tenant.name}
         </Link>
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">
-        {tenant.code ?? '—'}
-      </TableCell>
+      <TableCell className="font-mono text-xs text-fg/75">{tenant.code ?? "—"}</TableCell>
       <TableCell>
         <StatusBadge status={tenant.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">
-        {tenant.subscription_tier ?? '—'}
-      </TableCell>
+      <TableCell className="text-sm text-fg/75">{tenant.subscription_tier ?? "—"}</TableCell>
       <TableCell>
         {tenant.azure_sso_enabled ? (
           <span className="inline-flex items-center gap-1 text-xs text-fg">

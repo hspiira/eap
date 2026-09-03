@@ -1,9 +1,5 @@
-import type {
-  ActivityType,
-  BaseStatus,
-  ClientTier,
-} from '../enums'
-import type { BaseEntity, ContactInfo } from './base'
+import type { ActivityType, BaseStatus, ClientTier } from "../enums"
+import type { BaseEntity, ContactInfo } from "./base"
 
 /**
  * Client contact info (phone, email, address line)

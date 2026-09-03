@@ -34,12 +34,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useHasClinicalScope } from "@/hooks/useCanWrite"
 import { type FeatureFlag, featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
@@ -63,9 +58,7 @@ function platformTenantId(): string {
 }
 
 /** Quick-access items — always visible at the top, no label. */
-const TOP_ITEMS: ReadonlyArray<NavItem> = [
-  { to: "/", label: "Home", icon: Home },
-]
+const TOP_ITEMS: ReadonlyArray<NavItem> = [{ to: "/", label: "Home", icon: Home }]
 
 /** Day-to-day operational navigation — flat, no section label. */
 const MAIN_ITEMS: ReadonlyArray<NavItem> = [
@@ -190,7 +183,9 @@ function ExpandedSidebar() {
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
   const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
-  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const settingsItems = SETTINGS_ITEMS.filter((i) =>
+    isItemEnabled(i, currentTenantId, hasClinicalScope),
+  )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
 
@@ -255,7 +250,13 @@ interface CollapsedNavLinkProps {
   isActive: boolean
 }
 
-function CollapsedNavLink({ to, label, icon: Icon, iconClassName, isActive }: CollapsedNavLinkProps) {
+function CollapsedNavLink({
+  to,
+  label,
+  icon: Icon,
+  iconClassName,
+  isActive,
+}: CollapsedNavLinkProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -329,7 +330,9 @@ function CollapsedSidebar() {
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
   const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
-  const settingsItems = SETTINGS_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const settingsItems = SETTINGS_ITEMS.filter((i) =>
+    isItemEnabled(i, currentTenantId, hasClinicalScope),
+  )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
 

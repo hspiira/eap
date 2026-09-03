@@ -2,12 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  Building2,
-  Pencil,
-  Plus,
-} from "lucide-react"
+import { ArrowLeft, Building2, Pencil, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -17,11 +12,7 @@ import { ClientAlertsCard } from "@/components/ClientAlertsCard"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
 import type { ClientOnboardingStep } from "@/components/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/ClientOnboardingCard"
-import {
-  ContractsPanel,
-  DetailRail,
-  Hero,
-} from "@/components/clients/ClientDetailWidgets"
+import { ContractsPanel, DetailRail, Hero } from "@/components/clients/ClientDetailWidgets"
 import { ClientStaffSummaryCard } from "@/components/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/ClientTodaysTodoCard"
@@ -40,7 +31,7 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client } from "@/types/entities"
-import type { ClientTier} from "@/types/enums";
+import type { ClientTier } from "@/types/enums"
 import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -387,4 +378,3 @@ function ClientDetailPage() {
     </PageShell>
   )
 }
-

@@ -8,24 +8,24 @@
  * No other module in the codebase should touch `localStorage` directly.
  */
 
-const KEY_AUTH = 'evexia.auth'
-const KEY_TENANT = 'evexia.tenant'
-const KEY_UI = 'evexia.ui'
+const KEY_AUTH = "evexia.auth"
+const KEY_TENANT = "evexia.tenant"
+const KEY_UI = "evexia.ui"
 
 function readJson<T>(key: string): Partial<T> {
-  if (typeof window === 'undefined') return {}
+  if (typeof window === "undefined") return {}
   try {
     const raw = window.localStorage.getItem(key)
     if (!raw) return {}
     const parsed = JSON.parse(raw) as unknown
-    return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : {}
+    return parsed && typeof parsed === "object" ? (parsed as Partial<T>) : {}
   } catch (_err) {
     return {}
   }
 }
 
 function writeJson<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === "undefined") return
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
   } catch (_err) {
@@ -34,7 +34,7 @@ function writeJson<T>(key: string, value: T): void {
 }
 
 function remove(key: string): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === "undefined") return
   try {
     window.localStorage.removeItem(key)
   } catch (_err) {
@@ -94,13 +94,13 @@ export const tenantStorage = {
 }
 
 export interface UiPrefs {
-  theme: 'light' | 'dark' | 'system'
+  theme: "light" | "dark" | "system"
   session_timeout_minutes: number
   sidebar_open: boolean
 }
 
 const DEFAULT_UI: UiPrefs = {
-  theme: 'system',
+  theme: "system",
   session_timeout_minutes: 30,
   sidebar_open: false,
 }
@@ -110,18 +110,15 @@ export const uiStorage = {
     const stored = readJson<UiPrefs>(KEY_UI)
     return {
       theme:
-        stored.theme === 'light' || stored.theme === 'dark' || stored.theme === 'system'
+        stored.theme === "light" || stored.theme === "dark" || stored.theme === "system"
           ? stored.theme
           : DEFAULT_UI.theme,
       session_timeout_minutes:
-        typeof stored.session_timeout_minutes === 'number' &&
-        stored.session_timeout_minutes > 0
+        typeof stored.session_timeout_minutes === "number" && stored.session_timeout_minutes > 0
           ? stored.session_timeout_minutes
           : DEFAULT_UI.session_timeout_minutes,
       sidebar_open:
-        typeof stored.sidebar_open === 'boolean'
-          ? stored.sidebar_open
-          : DEFAULT_UI.sidebar_open,
+        typeof stored.sidebar_open === "boolean" ? stored.sidebar_open : DEFAULT_UI.sidebar_open,
     }
   },
   patch(partial: Partial<UiPrefs>): UiPrefs {

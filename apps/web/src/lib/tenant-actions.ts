@@ -3,13 +3,13 @@
  * Single place for tenant CRUD/refresh/active-selection. State lives in tenantSlice.
  */
 
-import apiClient from '@/api/client'
-import type { TenantCreate, TenantCreateResponse } from '@/api/endpoints/tenants'
-import { tenantsApi } from '@/api/endpoints/tenants'
-import { queryClient } from '@/lib/query-client'
-import { useAuthStore } from '@/store/slices/authSlice'
-import { useTenantStore } from '@/store/slices/tenantSlice'
-import type { Tenant } from '@/types/entities'
+import apiClient from "@/api/client"
+import type { TenantCreate, TenantCreateResponse } from "@/api/endpoints/tenants"
+import { tenantsApi } from "@/api/endpoints/tenants"
+import { queryClient } from "@/lib/query-client"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
+import type { Tenant } from "@/types/entities"
 
 function syncToApiAndStorage(tenant: Tenant | null) {
   apiClient.setTenantId(tenant ? tenant.id : null)
@@ -24,7 +24,7 @@ export const tenantActions = {
       setCurrentTenant(tenant as Tenant)
     } catch (error) {
       // Keep current_tenant_id in localStorage so we can retry on next load; only logout clears it.
-      console.error('Failed to load tenant:', error)
+      console.error("Failed to load tenant:", error)
       setCurrentTenant(null)
     } finally {
       setLoading(false)
@@ -46,7 +46,7 @@ export const tenantActions = {
         id: response.id,
         tenant_id: response.id,
         name: response.name,
-        status: response.status as Tenant['status'],
+        status: response.status as Tenant["status"],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -71,7 +71,7 @@ export const tenantActions = {
       const response = await tenantsApi.list()
       setAvailableTenants(response.items as Tenant[])
     } catch (error) {
-      console.error('Failed to load tenants list:', error)
+      console.error("Failed to load tenants list:", error)
     } finally {
       setLoading(false)
     }

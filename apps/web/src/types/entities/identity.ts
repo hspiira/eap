@@ -10,9 +10,9 @@ import type {
   TenantStatus,
   UserStatus,
   WorkStatus,
-} from '../enums'
-import type { Address, BaseEntity, ContactInfo, EmergencyContact } from './base'
-import type { ProviderProfile } from './providers'
+} from "../enums"
+import type { Address, BaseEntity, ContactInfo, EmergencyContact } from "./base"
+import type { ProviderProfile } from "./providers"
 
 /**
  * Dependent information

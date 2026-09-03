@@ -7,10 +7,10 @@
  * via a dedicated PATCH `/services/{id}/group-settings` route.
  */
 
-import type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings } from '@/api/generated'
+import type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings } from "@/api/generated"
 
-import apiClient from '../client'
-import type { ListParams, PaginatedResponse, Service } from '../types'
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, Service } from "../types"
 
 export type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings }
 /** @deprecated use `ServiceUpdateGroupSettings` from `@/api/generated`. */
@@ -27,7 +27,7 @@ export const servicesApi = {
    * Create a new service
    */
   async create(serviceData: ServiceCreate): Promise<Service> {
-    return apiClient.post<Service>('/services', serviceData)
+    return apiClient.post<Service>("/services", serviceData)
   },
 
   /**
@@ -41,7 +41,7 @@ export const servicesApi = {
    * List services
    */
   async list(params?: ServiceListParams): Promise<PaginatedResponse<Service>> {
-    return apiClient.get<PaginatedResponse<Service>>('/services', params)
+    return apiClient.get<PaginatedResponse<Service>>("/services", params)
   },
 
   /**

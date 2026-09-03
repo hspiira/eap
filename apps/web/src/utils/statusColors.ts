@@ -12,7 +12,7 @@ import type {
   TenantStatus,
   UserStatus,
   WorkStatus,
-} from '@/types/enums'
+} from "@/types/enums"
 
 type StatusType =
   | BaseStatus
@@ -39,82 +39,82 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
 
   // Active/Active states - Green/Natural
   if (
-    statusLower === 'active' ||
-    statusLower === 'completed' ||
-    statusLower === 'paid' ||
-    statusLower === 'verified' ||
-    statusLower === 'approved' ||
-    statusLower === 'delivered' ||
-    statusLower === 'published' ||
-    statusLower === 'renewed'
+    statusLower === "active" ||
+    statusLower === "completed" ||
+    statusLower === "paid" ||
+    statusLower === "verified" ||
+    statusLower === "approved" ||
+    statusLower === "delivered" ||
+    statusLower === "published" ||
+    statusLower === "renewed"
   ) {
     return {
-      bg: 'bg-primary',
-      text: 'text-white',
-      border: 'border-primary',
+      bg: "bg-primary",
+      text: "text-white",
+      border: "border-primary",
     }
   }
 
   // Pending/In Progress states - Yellow/Nurturing
   if (
-    statusLower === 'pending' ||
-    statusLower === 'pending verification' ||
-    statusLower === 'in_progress' ||
-    statusLower === 'processing' ||
-    statusLower === 'scheduled' ||
-    statusLower === 'rescheduled' ||
-    statusLower === 'draft' ||
-    statusLower === 'assigned'
+    statusLower === "pending" ||
+    statusLower === "pending verification" ||
+    statusLower === "in_progress" ||
+    statusLower === "processing" ||
+    statusLower === "scheduled" ||
+    statusLower === "rescheduled" ||
+    statusLower === "draft" ||
+    statusLower === "assigned"
   ) {
     return {
-      bg: 'bg-warning',
-      text: 'text-white',
-      border: 'border-nurturing-dark',
+      bg: "bg-warning",
+      text: "text-white",
+      border: "border-nurturing-dark",
     }
   }
 
   // Inactive/Inactive states - Grey/Safe
   if (
-    statusLower === 'inactive' ||
-    statusLower === 'archived' ||
-    statusLower === 'cancelled' ||
-    statusLower === 'cancelled' ||
-    statusLower === 'suspended' ||
-    statusLower === 'banned' ||
-    statusLower === 'terminated' ||
-    statusLower === 'expired' ||
-    statusLower === 'closed' ||
-    statusLower === 'deleted' ||
-    statusLower === 'no show' ||
-    statusLower === 'on leave' ||
-    statusLower === 'resigned' ||
-    statusLower === 'refunded'
+    statusLower === "inactive" ||
+    statusLower === "archived" ||
+    statusLower === "cancelled" ||
+    statusLower === "cancelled" ||
+    statusLower === "suspended" ||
+    statusLower === "banned" ||
+    statusLower === "terminated" ||
+    statusLower === "expired" ||
+    statusLower === "closed" ||
+    statusLower === "deleted" ||
+    statusLower === "no show" ||
+    statusLower === "on leave" ||
+    statusLower === "resigned" ||
+    statusLower === "refunded"
   ) {
     return {
-      bg: 'bg-muted',
-      text: 'text-safe-dark',
-      border: 'border-safe-dark',
+      bg: "bg-muted",
+      text: "text-safe-dark",
+      border: "border-safe-dark",
     }
   }
 
   if (
-    statusLower === 'failed' ||
-    statusLower === 'error' ||
-    statusLower === 'rejected' ||
-    statusLower === 'overdue'
+    statusLower === "failed" ||
+    statusLower === "error" ||
+    statusLower === "rejected" ||
+    statusLower === "overdue"
   ) {
     return {
-      bg: 'bg-danger',
-      text: 'text-white',
-      border: 'border-danger-dark',
+      bg: "bg-danger",
+      text: "text-white",
+      border: "border-danger-dark",
     }
   }
 
   // Default - Safe/Grey
   return {
-    bg: 'bg-muted',
-    text: 'text-safe-dark',
-    border: 'border-safe',
+    bg: "bg-muted",
+    text: "text-safe-dark",
+    border: "border-safe",
   }
 }
 
@@ -123,13 +123,13 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
  */
 export function getStatusLabel(status: StatusType): string {
   // If status is already in Title Case (like enum values), return as is
-  if (status.includes(' ') || (status[0] === status[0].toUpperCase() && !status.includes('_'))) {
+  if (status.includes(" ") || (status[0] === status[0].toUpperCase() && !status.includes("_"))) {
     return status
   }
-  
+
   // Convert snake_case or camelCase to Title Case
   return status
     .split(/[_\s-]/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
+    .join(" ")
 }

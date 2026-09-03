@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect } from "react"
 
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/tenants/new')({
+export const Route = createFileRoute("/tenants/new")({
   component: TenantNewRedirect,
 })
 
@@ -10,7 +10,7 @@ function TenantNewRedirect() {
   const navigate = useNavigate()
   useEffect(() => {
     navigate({
-      to: '/tenants',
+      to: "/tenants",
       search: { new: true, search: undefined, status: undefined },
       replace: true,
     })

@@ -103,9 +103,7 @@ function IncidentDetailPage() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <SeverityBadge severity={inc.severity} />
               <StatusBadge status={inc.status} />
-              <span className="text-xs text-fg/60">
-                Occurred {formatDateTime(inc.occurred_at)}
-              </span>
+              <span className="text-xs text-fg/60">Occurred {formatDateTime(inc.occurred_at)}</span>
             </div>
             <dl className="mt-4 grid gap-4 sm:grid-cols-3">
               <div>

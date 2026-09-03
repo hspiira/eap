@@ -1,14 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect } from "react"
 
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate } from "@tanstack/react-router"
 
-import { useAuthStore } from '@/store/slices/authSlice'
+import { useAuthStore } from "@/store/slices/authSlice"
 
 /**
  * Redirects authenticated users to the given path (default '/').
  * Used on login/signup pages so already-authenticated users are sent to app.
  */
-export function useRedirectIfAuthenticated(redirectTo = '/') {
+export function useRedirectIfAuthenticated(redirectTo = "/") {
   const navigate = useNavigate()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 

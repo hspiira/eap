@@ -29,10 +29,7 @@ const SEVERITY_LABEL: Record<ClientAlertSeverity, string> = {
   critical: "Critical",
 }
 
-const SEVERITY_TONE: Record<
-  ClientAlertSeverity,
-  { icon: string; pill: string }
-> = {
+const SEVERITY_TONE: Record<ClientAlertSeverity, { icon: string; pill: string }> = {
   low: {
     icon: "text-fg/45",
     pill: "border border-fg/15 text-fg/70",
@@ -54,9 +51,7 @@ const SEVERITY_TONE: Record<
 export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const hasAlerts = alerts.length > 0
-  const hasUnacked = alerts.some(
-    (a) => a.severity === "high" || a.severity === "critical",
-  )
+  const hasUnacked = alerts.some((a) => a.severity === "high" || a.severity === "critical")
 
   return (
     <Panel
@@ -87,15 +82,10 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
             return (
               <li key={a.id} className="px-3 py-2.5">
                 <div className="flex items-start gap-2">
-                  <AlertCircle
-                    className={cn("mt-0.5 size-4 shrink-0", tone.icon)}
-                    aria-hidden
-                  />
+                  <AlertCircle className={cn("mt-0.5 size-4 shrink-0", tone.icon)} aria-hidden />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="text-sm font-medium text-fg">
-                        {a.title}
-                      </span>
+                      <span className="text-sm font-medium text-fg">{a.title}</span>
                       {expandable ? (
                         <Button
                           type="button"
@@ -103,9 +93,7 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
                           size="sm"
                           aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
                           aria-expanded={isExpanded}
-                          onClick={() =>
-                            setExpandedId(isExpanded ? null : a.id)
-                          }
+                          onClick={() => setExpandedId(isExpanded ? null : a.id)}
                           className="size-6 p-0 text-fg/55"
                         >
                           {isExpanded ? (
@@ -125,9 +113,7 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
                       {SEVERITY_LABEL[severity]}
                     </span>
                     {isExpanded && a.description ? (
-                      <p className="mt-2 text-xs leading-relaxed text-fg/65">
-                        {a.description}
-                      </p>
+                      <p className="mt-2 text-xs leading-relaxed text-fg/65">{a.description}</p>
                     ) : null}
                     {isExpanded && a.link ? (
                       <a

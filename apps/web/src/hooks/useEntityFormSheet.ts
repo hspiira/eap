@@ -11,13 +11,13 @@
  *   - toFormValues (required when entity given): entity → form values
  */
 
-import { useEffect } from 'react'
+import { useEffect } from "react"
 
-import { useQueryClient } from '@tanstack/react-query'
-import type { DefaultValues, FieldValues } from 'react-hook-form'
-import type { ZodType } from 'zod'
+import { useQueryClient } from "@tanstack/react-query"
+import type { DefaultValues, FieldValues } from "react-hook-form"
+import type { ZodType } from "zod"
 
-import { useApiForm, type UseApiFormReturn } from '@/hooks/useApiForm'
+import { useApiForm, type UseApiFormReturn } from "@/hooks/useApiForm"
 
 export interface UseEntityFormSheetOptions<
   TValues extends FieldValues,
@@ -33,7 +33,11 @@ export interface UseEntityFormSheetOptions<
   entity?: TEntity | null
   toFormValues?: (entity: TEntity) => TValues
   parsePayload: (values: TValues) => TPayload
-  save: (args: { payload: TPayload; entity: TEntity | null | undefined; isEdit: boolean }) => Promise<TResult>
+  save: (args: {
+    payload: TPayload
+    entity: TEntity | null | undefined
+    isEdit: boolean
+  }) => Promise<TResult>
   successToast?: { create?: string; update?: string }
   /** Detail id to invalidate after success. Defaults to `entity.id` if `entity` has an id. */
   detailId?: string | null
@@ -42,25 +46,23 @@ export interface UseEntityFormSheetOptions<
   onSaved?: (result: TResult) => void
 }
 
-export interface UseEntityFormSheetReturn<TValues extends FieldValues>
-  extends UseApiFormReturn<TValues> {
+export interface UseEntityFormSheetReturn<
+  TValues extends FieldValues,
+> extends UseApiFormReturn<TValues> {
   isEdit: boolean
 }
 
 function entityId(entity: unknown): string | null {
-  if (entity && typeof entity === 'object' && 'id' in entity) {
+  if (entity && typeof entity === "object" && "id" in entity) {
     const id = (entity as { id: unknown }).id
-    if (typeof id === 'string') return id
+    if (typeof id === "string") return id
   }
   return null
 }
 
-export function useEntityFormSheet<
-  TValues extends FieldValues,
-  TPayload,
-  TResult,
-  TEntity,
->(opts: UseEntityFormSheetOptions<TValues, TPayload, TResult, TEntity>): UseEntityFormSheetReturn<TValues> {
+export function useEntityFormSheet<TValues extends FieldValues, TPayload, TResult, TEntity>(
+  opts: UseEntityFormSheetOptions<TValues, TPayload, TResult, TEntity>,
+): UseEntityFormSheetReturn<TValues> {
   const {
     resource,
     schema,
@@ -87,12 +89,12 @@ export function useEntityFormSheet<
     onSubmit: async (values) => {
       const payload = parsePayload(values)
       const result = await save({ payload, entity: entity ?? null, isEdit })
-      await qc.invalidateQueries({ queryKey: [resource, 'list'] })
+      await qc.invalidateQueries({ queryKey: [resource, "list"] })
       const id = detailId ?? entityId(entity)
-      if (id) await qc.invalidateQueries({ queryKey: [resource, 'detail', id] })
+      if (id) await qc.invalidateQueries({ queryKey: [resource, "detail", id] })
       if (extraInvalidations) {
         await Promise.all(
-          extraInvalidations.map((entry) => qc.invalidateQueries({ queryKey: entry.queryKey }))
+          extraInvalidations.map((entry) => qc.invalidateQueries({ queryKey: entry.queryKey })),
         )
       }
       onSaved?.(result)
