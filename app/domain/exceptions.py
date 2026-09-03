@@ -118,28 +118,6 @@ class ResourceNotFoundException(EvexiaException):
         )
 
 
-class EventChainBrokenException(EvexiaException):
-    """Raised when event chain integrity is violated."""
-
-    def __init__(self, subject_id: str, event_id: str, reason: str):
-        super().__init__(
-            f"Event chain broken for subject {subject_id}",
-            "CHAIN_INTEGRITY_ERROR",
-            {"subject_id": subject_id, "event_id": event_id, "reason": reason},
-        )
-
-
-class SchemaValidationException(EvexiaException):
-    """Raised when schema validation fails."""
-
-    def __init__(self, schema_type: str, validation_errors: list[Any]):
-        super().__init__(
-            f"Schema validation failed for {schema_type}",
-            "SCHEMA_VALIDATION_ERROR",
-            {"schema_type": schema_type, "errors": validation_errors},
-        )
-
-
 class PermissionDeniedError(EvexiaException):
     """Permission denied - user lacks required permission."""
 

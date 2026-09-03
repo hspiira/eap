@@ -38,20 +38,3 @@ class EligibleMemberResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ClinicalSubjectResponse(BaseModel):
-    """Returned only via clinical-scope routes; carries no PII by construction."""
-
-    id: str
-    tenant_id: str
-    pseudonym: str
-    preferred_language: str | None
-    preferred_pronouns: str | None
-    preferred_contact_method: str | None
-    is_active: bool
-    deactivated_at: datetime | None
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)

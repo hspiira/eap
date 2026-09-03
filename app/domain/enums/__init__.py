@@ -33,14 +33,6 @@ from app.domain.enums.crisis import (
     SafetyPlanStatus,
 )
 from app.domain.enums.documents import DocumentStatus, DocumentType
-from app.domain.enums.manager import (
-    FitnessForDutyOutcome,
-    ManagerConsultTopic,
-    ReturnToWorkPlanStatus,
-    TrainingEnrolmentStatus,
-    WorkLifeReferralOutcome,
-    WorkLifeServiceType,
-)
 from app.domain.enums.outreach import (
     CareCallbackCampaignStatus,
     CaringContactChannel,
@@ -136,11 +128,9 @@ __all__ = [
     "DocumentType",
     "EligibilityStatus",
     "EngagementStatus",
-    "FitnessForDutyOutcome",
     "KPICategory",
     "KPIMeasurementUnit",
     "Language",
-    "ManagerConsultTopic",
     "MandatoryReportType",
     "MemberRelation",
     "NonCompeteStatus",
@@ -156,7 +146,6 @@ __all__ = [
     "ReportQueryType",
     "ReportRunStatus",
     "RetentionDataClass",
-    "ReturnToWorkPlanStatus",
     "SafetyPlanStatus",
     "ServiceCategory",
     "SessionCategory",
@@ -171,13 +160,10 @@ __all__ = [
     "TenantConsentStatus",
     "TenantRole",
     "TenantStatus",
-    "TrainingEnrolmentStatus",
     "TriageInstrumentCode",
     "TriageRiskLevel",
     "UgandaRegion",
     "UserStatus",
     "UtilisationEventType",
-    "WorkLifeReferralOutcome",
-    "WorkLifeServiceType",
     "WorkStatus",
 ]
