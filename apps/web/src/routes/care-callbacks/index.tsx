@@ -14,6 +14,7 @@ import {
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { CampaignFormSheet } from "@/components/CampaignFormSheet"
+import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
@@ -184,7 +185,23 @@ function CampaignsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Archive"
+                confirmTitle="Archive campaigns"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "campaign" : "campaigns"} will be archived.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={careCallbacksApi.archiveCampaign}
+                invalidateKey={["care-callback-campaigns"]}
+                verb="archived"
+                noun="campaign"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>

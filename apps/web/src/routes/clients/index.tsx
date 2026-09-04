@@ -6,6 +6,7 @@ import { Building2, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
+import { BulkAction } from "@/components/common/BulkAction"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
@@ -208,7 +209,23 @@ function ClientsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Archive"
+                confirmTitle="Archive clients"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.archive}
+                invalidateKey={["clients"]}
+                verb="archived"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>

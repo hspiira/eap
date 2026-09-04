@@ -9,12 +9,10 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
-import { SelectionBar } from "@/components/common/SelectionBar"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { TagFormSheet } from "@/components/TagFormSheet"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
@@ -74,7 +71,6 @@ function TagsListPage() {
     listFn: clientTagsApi.list,
   })
   const items = query.data?.items ?? []
-  const selection = useTableSelection(items)
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -131,18 +127,10 @@ function TagsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                    <TableHead className="w-10 px-3">
-                      <Checkbox
-                        aria-label="Select all"
-                        checked={selection.selectAllState}
-                        onCheckedChange={selection.toggleSelectAll}
-                      />
-                    </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                         Tag
@@ -161,13 +149,7 @@ function TagsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <TagRow
-                      key={row.id}
-                      row={row}
-                      onEdit={() => setEditingTag(row)}
-                      isSelected={selection.selectedIds.has(row.id)}
-                      onToggle={() => selection.toggleSelect(row.id)}
-                    />
+                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} />
                   ))}
                 </TableBody>
               </Table>
@@ -184,27 +166,10 @@ function TagsListPage() {
   )
 }
 
-function TagRow({
-  row,
-  onEdit,
-  isSelected,
-  onToggle,
-}: {
-  row: ClientTag
-  onEdit: () => void
-  isSelected: boolean
-  onToggle: () => void
-}) {
+function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
   const swatch = row.color ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
-      <TableCell className="px-3">
-        <Checkbox
-          aria-label={`Select ${row.name}`}
-          checked={isSelected}
-          onCheckedChange={onToggle}
-        />
-      </TableCell>
       <TableCell>
         <Button
           type="button"

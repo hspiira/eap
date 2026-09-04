@@ -8,6 +8,7 @@ import { personsApi } from "@/api/endpoints/persons"
 import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
+import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -260,7 +261,22 @@ function ServiceSessionsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Archive"
+                confirmTitle="Archive sessions"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "session" : "sessions"} will be archived. You can restore them later.`
+                }
+                destructive
+                action={serviceSessionsApi.archive}
+                invalidateKey={["service-sessions"]}
+                verb="archived"
+                noun="session"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>

@@ -5,6 +5,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { ClipboardList, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { surveysApi } from "@/api/endpoints/surveys"
+import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
@@ -145,7 +146,22 @@ function SurveysListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Close"
+                confirmTitle="Close surveys"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "survey" : "surveys"} will stop accepting responses. You can reopen them later.`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={surveysApi.close}
+                invalidateKey={["surveys"]}
+                verb="closed"
+                noun="survey"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>

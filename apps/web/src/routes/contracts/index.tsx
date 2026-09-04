@@ -12,13 +12,11 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { SelectionBar } from "@/components/common/SelectionBar"
 import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +35,6 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
-import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
@@ -136,7 +133,6 @@ function ContractsListPage() {
   })
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
-  const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
@@ -215,18 +211,10 @@ function ContractsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                    <TableHead className="w-10 px-3">
-                      <Checkbox
-                        aria-label="Select all"
-                        checked={selection.selectAllState}
-                        onCheckedChange={selection.toggleSelectAll}
-                      />
-                    </TableHead>
                     <TableHead>
                       <SortHeader field="contract_number" sort={sort} onToggle={toggleSort}>
                         Number
@@ -260,13 +248,7 @@ function ContractsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((row) => (
-                    <ContractRow
-                      key={row.id}
-                      row={row}
-                      clientsById={clientsById}
-                      isSelected={selection.selectedIds.has(row.id)}
-                      onToggle={() => selection.toggleSelect(row.id)}
-                    />
+                    <ContractRow key={row.id} row={row} clientsById={clientsById} />
                   ))}
                 </TableBody>
               </Table>
@@ -283,25 +265,12 @@ function ContractsListPage() {
   )
 }
 
-function ContractRow({
-  row,
-  clientsById,
-  isSelected,
-  onToggle,
-}: {
-  row: Contract
-  clientsById: Map<string, Client>
-  isSelected: boolean
-  onToggle: () => void
-}) {
+function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<string, Client> }) {
   const number = row.id.slice(0, 8)
   const billing = formatBilling(row)
   const linkedClient = clientsById.get(row.client_id) ?? null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
-      <TableCell className="px-3">
-        <Checkbox aria-label={`Select ${number}`} checked={isSelected} onCheckedChange={onToggle} />
-      </TableCell>
       <TableCell>
         <Link
           to="/contracts/$contractId"

@@ -17,12 +17,10 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { SelectionBar } from "@/components/common/SelectionBar"
 import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { EngagementFormSheet } from "@/components/EngagementFormSheet"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +36,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useTableSelection } from "@/hooks/useTableSelection"
 import { formatDate } from "@/lib/format"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
@@ -105,7 +102,6 @@ function EngagementsListPage() {
     overdueOnly: searchParams.overdue ?? false,
     sort,
   })
-  const selection = useTableSelection(items)
   const loading = query.isPending
   const handleStatusChange = (next: StatusFilter) => {
     const status = next === "all" ? undefined : (next as EngagementStatus)
@@ -237,18 +233,10 @@ function EngagementsListPage() {
           />
         ) : (
           <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                    <TableHead className="w-10 px-3">
-                      <Checkbox
-                        aria-label="Select all"
-                        checked={selection.selectAllState}
-                        onCheckedChange={selection.toggleSelectAll}
-                      />
-                    </TableHead>
                     <TableHead>
                       <SortHeader field="name" sort={sort} onToggle={toggleSort}>
                         Engagement
@@ -277,12 +265,7 @@ function EngagementsListPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((e) => (
-                    <EngagementRow
-                      key={e.id}
-                      row={e}
-                      isSelected={selection.selectedIds.has(e.id)}
-                      onToggle={() => selection.toggleSelect(e.id)}
-                    />
+                    <EngagementRow key={e.id} row={e} />
                   ))}
                 </TableBody>
               </Table>
@@ -294,28 +277,13 @@ function EngagementsListPage() {
   )
 }
 
-function EngagementRow({
-  row,
-  isSelected,
-  onToggle,
-}: {
-  row: Engagement
-  isSelected: boolean
-  onToggle: () => void
-}) {
+function EngagementRow({ row }: { row: Engagement }) {
   const overdue = isOverdue(row.due_date, row.status)
   const budgetPct = row.budget_hours
     ? Math.round((row.hours_logged / row.budget_hours) * 100)
     : null
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
-      <TableCell className="px-3">
-        <Checkbox
-          aria-label={`Select ${row.name}`}
-          checked={isSelected}
-          onCheckedChange={onToggle}
-        />
-      </TableCell>
       <TableCell>
         <Link
           to="/engagements/$engagementId"
