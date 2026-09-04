@@ -87,10 +87,13 @@ export function Hero({ client, verified }: { client: Client; verified: boolean }
 
 export function ContractsPanel({
   contracts,
+  total,
   loading,
   onAdd,
 }: {
   contracts: Contract[]
+  /** Server-side total, which can exceed the page held in `contracts`. */
+  total?: number
   loading: boolean
   onAdd: () => void
 }) {
@@ -125,7 +128,9 @@ export function ContractsPanel({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-fg-muted">
-          {contracts.length} contract{contracts.length === 1 ? "" : "s"}
+          {total != null && total > contracts.length
+            ? `Showing ${contracts.length} of ${total} contracts`
+            : `${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
         </p>
         <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
           <Plus className="size-3.5" />

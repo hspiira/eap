@@ -41,8 +41,17 @@ export function toLocalDatetimeInput(value: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** Local calendar day as YYYY-MM-DD, for comparing a date against today. */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * Local calendar day as YYYY-MM-DD, for comparing a date against today.
+ *
+ * A date-only string is already a calendar day and is returned as given.
+ * Parsing it through Date would read it as UTC midnight and land on the
+ * previous day for anyone west of UTC.
+ */
 export function toLocalDateKey(value: string | number | Date): string {
+  if (typeof value === "string" && DATE_ONLY.test(value.trim())) return value.trim()
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return ""
   const pad = (n: number) => String(n).padStart(2, "0")

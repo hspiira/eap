@@ -108,8 +108,7 @@ function ClientDetailPage() {
       ...endWindow,
       limit: WINDOW_PAGE,
     }),
-    queryFn: () =>
-      contractsApi.list({ client_id: clientId, ...endWindow, limit: WINDOW_PAGE }),
+    queryFn: () => contractsApi.list({ client_id: clientId, ...endWindow, limit: WINDOW_PAGE }),
     enabled,
   })
   const ending = endingQuery.data?.items ?? []
@@ -371,6 +370,7 @@ function ClientDetailPage() {
               <TabPanel value="contracts">
                 <ContractsPanel
                   contracts={contracts}
+                  total={contractsTotal}
                   loading={contractsQuery.isPending}
                   onAdd={() => setAddContractOpen(true)}
                 />

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Link, useNavigate, useParams, useRouterState } from "@tanstack/react-router"
 import {
   Bell,
   ChevronDown,
@@ -41,18 +41,35 @@ const ROUTE_TITLES: Record<string, string> = {
   "/design": "Design gallery",
 }
 
+/**
+ * Page title for a path, skipping segments that are route params. Without the
+ * params a detail path fell through to its own id, so every detail page in the
+ * product was titled with a UUID.
+ */
+export function routeTitle(pathname: string, params?: Record<string, string>): string {
+  const known = ROUTE_TITLES[pathname]
+  if (known) return known
+
+  const ids = new Set(Object.values(params ?? {}))
+  const named = pathname
+    .split("/")
+    .filter(Boolean)
+    .filter((segment) => !ids.has(segment))
+    .pop()
+  if (!named) return "Home"
+
+  const words = named.replace(/-/g, " ")
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 const ICON_BUTTON = "size-8 shrink-0 text-fg-muted hover:bg-surface-hover hover:text-fg"
 
 function PageTitle() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const title = ROUTE_TITLES[pathname] ?? humaniseRoute(pathname)
-  return <span className="truncate text-sm font-medium text-fg">{title}</span>
-}
-
-function humaniseRoute(pathname: string): string {
-  if (pathname === "/") return "Home"
-  const last = pathname.split("/").filter(Boolean).pop() ?? ""
-  return last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, " ")
+  const params = useParams({ strict: false }) as Record<string, string> | undefined
+  return (
+    <span className="truncate text-sm font-medium text-fg">{routeTitle(pathname, params)}</span>
+  )
 }
 
 function HeaderSearch() {
