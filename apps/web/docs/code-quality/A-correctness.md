@@ -367,41 +367,40 @@ a name or gain a case reference number instead.
 
 ---
 
-## CQ-A13: The At Risk page shows five rows of fabricated data as if they were real
+## CQ-A13: A design sketch is reachable from the command palette without its label
 
-**Severity:** Critical - **Effort:** M - **Status:** Todo - **Owner:** - - **PR:** -
+**Severity:** Low - **Effort:** S - **Status:** Todo - **Owner:** - - **PR:** -
 
-**Problem.** `QueryTable` holds a `MOCK_DATA` array of five invented records and renders it
-directly: `const displayData = MOCK_DATA`. It is not a shared table component despite its name and
-location in `common/`, it is a prototype with hardcoded contents.
+**Correction.** This ticket previously said the At Risk page shipped fabricated compliance
+records as live data, and called it critical. That framing was wrong and is withdrawn. The page is
+a deliberate design sketch, confirmed by the product owner, and the codebase says so in two
+places: `routes/me.tsx:294-300` renders it under a "Preview pages" heading reading "Work-in-progress
+screens, not yet linked from the main nav", and its own entry at `routes/me.tsx:290` describes it as
+"PHQ-9 / no-show driven at-risk list: placeholder, ships in Phase 3." Reaching it the intended way
+tells you what it is before you arrive. I recorded the finding before reading those lines.
 
-`AtRiskPage` renders it, and that page is reachable by a user at `/me?view=at-risk`, with
-`/at-risk` redirecting there. So the product presents fabricated compliance records, with invented
-names, quantities and dates, as live data. In a system that manages client contracts and clinical
-cases this is worse than a broken page, because nothing on screen says the contents are not real.
-
-Its seven filter controls, its pagination and its Reset button are all wired to state that
-`displayData` ignores, so roughly eight further controls do nothing. It also renders its own `h1`,
-which now duplicates the one `PageShell` provides.
+**What actually remains.** One entry point bypasses that framing. `CommandPalette.tsx:46` lists
+"At Risk" in the "Quick" group alongside real destinations, so a user pressing the palette shortcut
+and selecting it lands on the sketch with nothing on the page saying it is one. The sketch's
+contents are placeholder by design, including `LoggedInDevicesCard`, whose `DEFAULT_SESSIONS` shows
+example devices and locations. That is fine on a page understood to be a sketch and misleading on a
+page that looks live.
 
 **Evidence.**
-- `src/components/common/QueryTable.tsx:44` declares `MOCK_DATA`.
-- `src/components/common/QueryTable.tsx:140` is `const displayData = MOCK_DATA`.
-- `src/components/AtRiskPage.tsx:294` renders `<QueryTable title="At Risk" />`.
-- `src/routes/me.tsx:77` exposes it as the "At Risk" view; `src/routes/at-risk.tsx` redirects in.
-- The design gallery already marks it `status: "rebuild"` at `src/routes/design.tsx:637`.
+- `src/components/CommandPalette.tsx:46` puts `/at-risk` in the "Quick" group.
+- `src/routes/me.tsx:294-300` is the labelled "Preview pages" entry point.
+- `src/routes/at-risk.tsx` redirects `/at-risk` into the view.
 
-**Recommended fix.** This needs a product decision before any code, because there is no way to
-infer what data should back "At Risk" from the codebase. Either:
-1. Define the query it should run and build it on `EntityListView`, dropping the filters that have
-   no server-side equivalent; or
-2. Remove the view and its sidebar entry until there is a data source.
+**Recommended fix.** Either drop the palette entry so the labelled route is the only way in, or
+give preview views an in-page marker. The second has an existing convention to follow rather than
+invent: `common/FixtureBanner.tsx` already renders a thin warning strip for "sample data, not from
+the API", mounted once in `AppLayout`. A preview marker gated the same way would read consistently.
 
-Do not leave it rendering `MOCK_DATA` in either case.
-
-**Acceptance criteria.**
-- No route reachable by a user renders hardcoded record data.
-- Every filter shown on the page changes the result set.
+**Not a defect.** `QueryTable` holding `MOCK_DATA`, and its filters and pagination being inert,
+are properties of a sketch and need no fix while it stays one. `design.tsx:637` already tracks it as
+`status: "rebuild"`. If the view is ever promoted to a real page, the data source it names is
+PHQ-9 scores and session no-shows, which is clinical, so see BE-B03 on the missing
+`require_clinical_scope` in `care_callbacks.py` before wiring anything.
 
 ---
 
