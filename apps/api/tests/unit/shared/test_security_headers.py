@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from app.core.exception_handlers import register_exception_handlers
+from app.shared.middleware.request_id import RequestIdMiddleware
 from app.shared.middleware.security_headers import SecurityHeadersMiddleware
 
 
@@ -25,6 +26,10 @@ def _client(**middleware_kwargs: object) -> TestClient:
     @app.get("/refused")
     async def refused() -> dict[str, bool]:
         raise HTTPException(status_code=403, detail="nope")
+
+    @app.get("/unhandled")
+    async def unhandled() -> dict[str, bool]:
+        raise RuntimeError("deliberate")
 
     return TestClient(app, raise_server_exceptions=False)
 
@@ -101,3 +106,51 @@ class TestErrorResponses:
     def test_hsts_is_present_on_an_error_when_configured(self) -> None:
         response = _client(hsts_max_age=600).get("/refused")
         assert response.headers["Strict-Transport-Security"] == "max-age=600; includeSubDomains"
+
+
+def _client_with_request_id() -> TestClient:
+    """Mirrors the real app, which mounts both middlewares in setup_middleware."""
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestIdMiddleware)
+    register_exception_handlers(app)
+
+    @app.get("/unhandled")
+    async def unhandled() -> dict[str, bool]:
+        raise RuntimeError("deliberate")
+
+    return TestClient(app, raise_server_exceptions=False)
+
+
+class TestFiveHundredBypassesTheStack:
+    """Documents the gap in BE-A07 rather than the behaviour we want.
+
+    FastAPI installs the catch-all `Exception` handler as ServerErrorMiddleware's
+    handler, and that middleware is the outermost layer, so a 500 produced there
+    never travels back out through anything added with `add_middleware`. These
+    assertions are deliberately inverted: they pin the current behaviour so the
+    gap is visible in the suite, and they will fail when BE-A07 is fixed, which
+    is the reminder to invert them.
+    """
+
+    @pytest.mark.parametrize(
+        "header",
+        ["X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy"],
+    )
+    def test_headers_are_absent_on_an_unhandled_exception(self, header: str) -> None:
+        response = _client().get("/unhandled")
+        assert response.status_code == 500
+        assert header not in response.headers
+
+    def test_the_error_envelope_is_still_correct(self) -> None:
+        """The handler itself works; only the headers are lost."""
+        response = _client().get("/unhandled")
+        body = response.json()
+        assert body["error"] == "INTERNAL_ERROR"
+        assert body["message"] == "An internal server error occurred"
+
+    def test_the_request_id_survives_in_the_body(self) -> None:
+        """Correlation is half lost: body keeps the id, the header does not."""
+        response = _client_with_request_id().get("/unhandled")
+        assert response.json()["request_id"]
+        assert "X-Request-ID" not in response.headers

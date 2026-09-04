@@ -59,7 +59,7 @@ not executed.
 | BE-A04 | Login limiter grows without bound on an attacker-controlled key | 🟠 High | S | - | ⬜ | | |
 | BE-A05 | Redis limiter extends its own window on every attempt | 🟡 Medium | XS | BE-A04 | ⬜ | | |
 | BE-A06 | `sort_by` is an unvalidated column lookup in 32 of 34 repositories | 🟡 Medium | M | - | ⬜ | | |
-| BE-A07 | No catch-all exception handler, so a 500 ships bare | 🟡 Medium | S | - | ⬜ | | |
+| BE-A07 | A 500 response bypasses the middleware stack | 🟡 Medium | S | - | ⬜ | | |
 | BE-A08 | Outbox dispatcher cannot run on more than one replica | 🟡 Medium | M | - | ⬜ | | |
 
 ### Track B: Test Coverage ([B-coverage.md](./B-coverage.md))
@@ -86,8 +86,9 @@ not executed.
 ## Suggested order
 
 **Wave 1, this week.** BE-A04 and BE-A05 together: both are in one file, both are
-brute-force controls, and BE-A04 is reachable from the internet. BE-A07 with them
-because it is a five-line change to the same layer.
+brute-force controls, and BE-A04 is reachable from the internet. BE-A07 sits in
+the same layer, though its fix is a design choice rather than a five-line
+change.
 
 **Wave 2.** BE-A06 needs a decision about where the allowlist lives before it is
 worth writing; BE-B03 closes the gap on the product's core privacy promise.

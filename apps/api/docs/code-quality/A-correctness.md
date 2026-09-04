@@ -271,40 +271,61 @@ fits better than silently sorting by something else.
 
 ---
 
-## BE-A07: No catch-all exception handler, so a 500 ships bare
+## BE-A07: A 500 response bypasses the middleware stack
 
 **Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo
 
-**Problem.** `register_exception_handlers` in `app/core/exception_handlers.py:79`
-registers handlers for `HTTPException`, `EvexiaException` and validation errors.
-There is no handler for bare `Exception`.
+**Problem.** The catch-all handler exists and works. `app/core/exception_handlers.py:154`
+registers `@app.exception_handler(Exception)` and returns the standard envelope
+with a `request_id` in the body. What does not work is everything wrapped around
+it.
 
-Found while writing `tests/unit/shared/test_security_headers.py`: a route
-raising an unexpected `ValueError` produced a 500 whose only headers were
-`content-length` and `content-type`. `X-Frame-Options`,
-`X-Content-Type-Options` and `Referrer-Policy` were all absent, because
-Starlette's `ServerErrorMiddleware` sits outside the middleware stack and the
-response never passes back through `SecurityHeadersMiddleware`.
+FastAPI installs an `Exception` handler as `ServerErrorMiddleware`'s handler, and
+`ServerErrorMiddleware` is the outermost layer of the stack. Anything added with
+`add_middleware` sits inside it, so a response produced on that path never
+travels back out through those layers.
 
-So the one response class most likely to be triggered deliberately is also the
-one that ships without the security headers and without the request id that
-`app/shared/middleware/request_id.py` adds for correlation. An unexpected
-exception is also the case where the response body is least controlled.
+Probed, with both middlewares mounted:
 
-**Recommended fix.** Register a handler for `Exception` that logs with the
-request id and returns the same error envelope as the others. That puts the
-response back inside the middleware stack, so headers and correlation id apply,
-and it stops an unexpected traceback shape from being the client's error
-contract.
+| Response | Envelope | `X-Frame-Options` | `X-Content-Type-Options` | `X-Request-ID` |
+|----------|----------|-------------------|--------------------------|----------------|
+| 200 `/ok` | n/a | `DENY` | `nosniff` | present |
+| 400 `ValueError` | yes | `DENY` | `nosniff` | present |
+| 500 unhandled | yes | absent | absent | absent |
+
+So an unhandled exception is the one response class that ships without
+`X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`. The 400 path
+keeps them, because a handler registered for a specific exception type runs
+inside `ExceptionMiddleware`, which is inside the stack.
+
+Correlation is only half lost, which is worth stating precisely: the `request_id`
+is still in the response body, because the handler reads it from the contextvar
+directly. It is the `X-Request-ID` header that is missing, so a client
+correlating by header cannot, while a log-to-body comparison still works.
+
+**Recommended fix.** Two options, and the choice is a design decision rather
+than a mechanical fix:
+
+- Set the headers inside the handler. Small and local, but now the header list
+  lives in two places and can drift from `SecurityHeadersMiddleware`.
+- Mount `SecurityHeadersMiddleware` outside `ServerErrorMiddleware`, by wrapping
+  the ASGI app rather than using `add_middleware`. Keeps one source for the
+  header list, at the cost of a less obvious mount.
 
 **Acceptance criteria**
 
-- [ ] An unhandled exception returns the standard error envelope.
-- [ ] Security headers and the request id are present on a 500.
-- [ ] The exception is logged at error level with the request id.
-- [ ] `DEBUG` still controls whether detail reaches the client.
-- [ ] `tests/unit/shared/test_security_headers.py` gains the 500 case that this
-      ticket currently makes untestable.
+- [ ] Security headers are present on a 500.
+- [ ] `X-Request-ID` is present on a 500.
+- [ ] The header list is not duplicated, or the duplication is deliberate and
+      commented.
+- [ ] `tests/unit/shared/test_security_headers.py::TestFiveHundredBypassesTheStack`
+      is inverted to assert presence once fixed.
+
+**Corrected.** An earlier version of this entry claimed there was no catch-all
+handler and that a 500 returned a bare response. Both were wrong; the handler is
+at line 154 and the envelope is correct. Caught by eap-85. The finding that
+survives is the bypass above, which is what justified the security-headers test
+in the first place.
 
 ---
 

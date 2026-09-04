@@ -44,13 +44,16 @@ notification path is visible in production logs rather than invisible.
 - `app/api/routes/users.py:380`
 
 Both use `getattr(user, "_password_hash", None)` with a default, so if the
-attribute is ever renamed both calls silently return `None`. In `auth.py` that
-path raises 401 with "Password not set for this user", so a rename would present
-as every password login failing with a misleading message rather than as an
-error anyone could trace.
+attribute is ever renamed both calls silently return `None` rather than raising.
+The mapper and the use case access the field directly, so the string form
+appears in two of four call sites and a rename would fix half of them.
 
-The mapper and the use case access the field directly rather than through
-`getattr`, so the string form appears in two of four call sites.
+The symptom is what makes this expensive: in `auth.py` the `None` path raises
+401 with "Password not set for this user", so a rename presents as every
+password login failing with a plausible business message. Someone chasing that
+would read the password flow, the hashing and the user records, and none of
+those would be wrong. It is the class of failure that surfaces as a believable
+error rather than a crash.
 
 **Recommended fix.** Put the credential check on the entity, where the field
 lives: a `verify_password(plaintext)` method, or a `has_password` property plus
