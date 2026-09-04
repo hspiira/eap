@@ -114,7 +114,7 @@ async def require_not_viewer(
     Viewers may read but must not create, update, or delete.
     Returns the caller's TokenData so the handler can use it if needed.
     """
-    if current_user.role == TenantRole.VIEWER.value:
+    if (current_user.role or "").casefold() == TenantRole.VIEWER.value.casefold():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient role: Viewers cannot perform write operations",

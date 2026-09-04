@@ -8,8 +8,14 @@ Refactored to use base use case classes to eliminate boilerplate.
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
-from app.domain.exceptions import SubscriptionLimitError
+from app.domain.exceptions import (
+    ConflictError,
+    NotFoundError,
+    SubscriptionLimitError,
+    ValidationException,
+)
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import (
     Address,
@@ -32,10 +38,12 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         self,
         client_repository: ClientRepository,
         tenant_repository: TenantRepository | None = None,
+        industry_repository: IndustryRepository | None = None,
     ):
         super().__init__(client_repository)
         self.client_repository = client_repository
         self.tenant_repository = tenant_repository
+        self.industry_repository = industry_repository
 
     async def execute(
         self,
@@ -71,7 +79,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         if self.tenant_repository:
             tenant = await self.tenant_repository.get_by_id(tenant_id)
             if not tenant:
-                raise ValueError(f"Tenant not found: {tenant_id.value}")
+                raise NotFoundError(f"Tenant not found: {tenant_id.value}", "Tenant", tenant_id.value)
             from app.core.config import settings as _settings  # local import to avoid cycle
 
             if getattr(_settings, "ENFORCE_SUBSCRIPTION_LIMITS", False):
@@ -81,12 +89,36 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
                         "Tenant client limit reached; upgrade subscription to add more clients."
                     )
 
-        if not code or len(code) < 3 or len(code) > 5:
-            raise ValueError("Client code must be 3-5 characters")
+        name = name.strip()
+        code = code.strip().upper()
+        if not code or len(code) < 3 or len(code) > 5 or not code.isalnum():
+            raise ValidationException("Client code must be 3-5 alphanumeric characters", "code")
 
         existing = await self.client_repository.get_by_name(tenant_id, name)
         if existing:
-            raise ValueError(f"Client with name '{name}' already exists")
+            raise ConflictError(f"Client with name '{name}' already exists", {"field": "name"})
+
+        existing_code = await self.client_repository.get_by_code(tenant_id, code)
+        if existing_code:
+            raise ConflictError(f"Client with code '{code}' already exists", {"field": "code"})
+
+        if parent_client_id:
+            parent = await self.client_repository.get_by_id(parent_client_id)
+            if not parent or parent.tenant_id != tenant_id:
+                raise NotFoundError(
+                    f"Parent client not found: {parent_client_id.value}",
+                    "Parent client",
+                    parent_client_id.value,
+                )
+            if parent.id == client_id:
+                raise ValidationException("A client cannot be its own parent", "parent_client_id")
+
+        if industry_id and self.industry_repository:
+            industry = await self.industry_repository.get_by_id(industry_id)
+            if not industry or industry.tenant_id != tenant_id:
+                raise NotFoundError(
+                    f"Industry not found: {industry_id.value}", "Industry", industry_id.value
+                )
 
         client = ClientEntity(
             id=client_id,

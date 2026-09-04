@@ -15,6 +15,7 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
     get_contract_repository,
+    get_industry_repository,
     get_tenant_repository,
     pagination,
 )
@@ -43,15 +44,17 @@ from app.application.use_cases.transitions import (
 )
 from app.core.authorization import (
     get_client_for_current_tenant,
+    require_not_viewer,
     require_same_tenant,
 )
 from app.core.database import get_db
-from app.core.security import TokenData, get_current_user
+from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.value_objects.core import (
     Address,
@@ -120,8 +123,10 @@ async def create_client(
     request: Request,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
+    _write_access: TokenData = Depends(require_not_viewer),
     client_repo: ClientRepository = Depends(get_client_repository),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
+    industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -142,7 +147,7 @@ async def create_client(
         )
 
     try:
-        client = await CreateClientUseCase(client_repo, tenant_repo).execute(
+        client = await CreateClientUseCase(client_repo, tenant_repo, industry_repo).execute(
             client_id=ClientId(generate_cuid()),
             tenant_id=TenantId(tenant_id),
             name=data.name,
@@ -168,7 +173,7 @@ async def create_client(
 async def verify_client(
     request: Request,
     verified_by: str = Query(..., description="User ID who verified the client"),
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -191,7 +196,7 @@ async def verify_client(
 @transactional()
 async def activate_client(
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -213,7 +218,7 @@ async def activate_client(
 async def deactivate_client(
     request: Request,
     body: ClientDeactivateRequest,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -235,7 +240,7 @@ async def deactivate_client(
 async def suspend_client(
     request: Request,
     body: ClientSuspendRequest,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -257,7 +262,7 @@ async def suspend_client(
 async def terminate_client(
     request: Request,
     body: ClientTerminateRequest,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -278,7 +283,7 @@ async def terminate_client(
 @transactional()
 async def archive_client(
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -299,7 +304,7 @@ async def archive_client(
 @transactional()
 async def restore_client(
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -321,7 +326,7 @@ async def restore_client(
 async def update_client(
     data: ClientUpdate,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -347,7 +352,7 @@ async def update_client(
 async def update_client_contact_info(
     data: ClientUpdateContactInfo,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -377,7 +382,7 @@ async def update_client_contact_info(
 async def update_client_billing_address(
     data: ClientUpdateBillingAddress,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -410,7 +415,7 @@ async def update_client_billing_address(
 async def update_client_tier(
     data: ClientUpdateTier,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),

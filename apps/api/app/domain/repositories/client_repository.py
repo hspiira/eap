@@ -36,6 +36,10 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         """
 
     @abstractmethod
+    async def get_by_code(self, tenant_id: TenantId, code: str) -> ClientEntity | None:
+        """Get a client by normalized code within a tenant."""
+
+    @abstractmethod
     async def list_all(
         self,
         tenant_id: TenantId,

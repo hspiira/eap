@@ -8,7 +8,7 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier
@@ -50,7 +50,7 @@ class ClientRepositoryImpl(
         """Get client by name within tenant, excluding soft-deleted clients."""
         stmt = select(ClientModel).where(
             ClientModel.tenant_id == tenant_id.value,
-            ClientModel.name == name,
+            func.lower(ClientModel.name) == name.strip().lower(),
             ClientModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
@@ -60,6 +60,17 @@ class ClientRepositoryImpl(
             return None
 
         return self._to_entity(model)
+
+    async def get_by_code(self, tenant_id: TenantId, code: str) -> ClientEntity | None:
+        """Get client by normalized code within tenant, excluding soft deletes."""
+        stmt = select(ClientModel).where(
+            ClientModel.tenant_id == tenant_id.value,
+            func.upper(ClientModel.code) == code.strip().upper(),
+            ClientModel.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
 
     async def list_all(
         self,

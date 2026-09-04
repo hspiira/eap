@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 _MUTATION_METHODS = frozenset({"POST", "PATCH", "PUT", "DELETE"})
 _EXEMPT_PATH_PREFIXES = ("/auth/",)
-_VIEWER_ROLE = "VIEWER"
+_VIEWER_ROLE = "viewer"
 
 
 class ViewerGuardMiddleware(BaseHTTPMiddleware):
@@ -43,7 +43,7 @@ class ViewerGuardMiddleware(BaseHTTPMiddleware):
             from app.core.security import decode_token
 
             token_data = decode_token(token)
-            if token_data.role == _VIEWER_ROLE:
+            if (token_data.role or "").casefold() == _VIEWER_ROLE:
                 return JSONResponse(
                     status_code=403,
                     content={

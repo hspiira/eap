@@ -5,7 +5,7 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, String
+from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, Index, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
@@ -82,3 +82,21 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     def __repr__(self) -> str:
         return f"<ClientModel(id={self.id}, name={self.name}, status={self.status})>"
+
+
+Index(
+    "uq_clients_tenant_name_active",
+    ClientModel.tenant_id,
+    func.lower(ClientModel.name),
+    unique=True,
+    postgresql_where=text("deleted_at IS NULL"),
+    sqlite_where=text("deleted_at IS NULL"),
+)
+Index(
+    "uq_clients_tenant_code_active",
+    ClientModel.tenant_id,
+    func.upper(ClientModel.code),
+    unique=True,
+    postgresql_where=text("deleted_at IS NULL"),
+    sqlite_where=text("deleted_at IS NULL"),
+)
