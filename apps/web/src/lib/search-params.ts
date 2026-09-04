@@ -20,11 +20,18 @@ export function enumParam<T extends string>(enumObj: Record<string, T>): SearchP
 }
 
 /**
- * Parser for a flag carried in the URL as `1`. Absent means false, so the
- * default state leaves no trace in the query string.
+ * Parser for a boolean flag. Absent means false, so the default state leaves no
+ * trace in the query string.
+ *
+ * The router JSON-decodes search values, so the accepted forms are what a
+ * writer can actually produce: a boolean `true` becomes `?flag=true` and
+ * decodes back to `true`, while the string `"1"` becomes `?flag=1` and decodes
+ * to the *number* 1. Checking only for the string silently failed the second
+ * case, so the filter read as off after a reload or on a shared link.
  */
 export function boolParam(): SearchParser<true> {
-  return (value: unknown): true | undefined => (value === "1" || value === true ? true : undefined)
+  return (value: unknown): true | undefined =>
+    value === true || value === "true" || value === 1 || value === "1" ? true : undefined
 }
 
 /**
