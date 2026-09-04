@@ -8,6 +8,7 @@ import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { TABLE_HEAD } from "@/components/common/tableStyles"
 import {
   Table,
   TableBody,
@@ -101,7 +102,7 @@ export function SessionHistory({
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
         <Table className="w-full caption-bottom text-sm">
-          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+          <TableHeader className={TABLE_HEAD}>
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Scheduled</TableHead>
               <TableHead>Service</TableHead>

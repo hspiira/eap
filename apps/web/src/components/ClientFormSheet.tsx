@@ -274,7 +274,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
                     aria-expanded={industryOpen}
                     disabled={isEdit}
                     className={cn(
-                      "w-full h-9 justify-between px-3 font-normal text-sm shadow-sm",
+                      "w-full h-9 justify-between px-3 font-normal text-sm",
                       !field.value && "text-muted-foreground",
                     )}
                   >

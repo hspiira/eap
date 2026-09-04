@@ -14,6 +14,7 @@ import {
   Stat,
 } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
+import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -88,7 +89,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
   return (
     <div className="overflow-hidden border border-fg/10 bg-surface">
       <Table className="w-full caption-bottom text-sm">
-        <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+        <TableHeader className={TABLE_HEAD}>
           <TableRow className="border-fg/8 hover:bg-transparent">
             <TableHead>Person</TableHead>
             <TableHead>Counsellor</TableHead>

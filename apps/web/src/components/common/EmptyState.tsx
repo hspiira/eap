@@ -36,10 +36,7 @@ function DefaultIllustration({ icon: Icon }: { icon?: React.ElementType }) {
     <div className="relative flex h-24 w-64 items-end justify-center" aria-hidden>
       <SkeletonRow icon={Icon} className="absolute left-3 top-0 w-52 opacity-55" />
       <SkeletonRow icon={Icon} className="absolute right-3 bottom-0 w-52 opacity-55" />
-      <SkeletonRow
-        icon={Icon}
-        className="relative z-10 w-60 border-fg/15 bg-surface shadow-[0_1px_0_rgb(0_0_0/0.04)]"
-      />
+      <SkeletonRow icon={Icon} className="relative z-10 w-60 border-fg/15 bg-surface" />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { ErrorState } from "@/components/common/ErrorState"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader, type SortState } from "@/components/common/SortHeader"
+import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Pagination } from "@/components/ui/pagination"
@@ -82,7 +83,7 @@ export function EntityListView<T>({
         <>
           <div className="relative min-h-0 flex-1 overflow-auto">
             <Table className="w-full caption-bottom text-sm">
-              <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+              <TableHeader className={STICKY_TABLE_HEAD}>
                 <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                   {selectable && (
                     <TableHead className="w-10 px-3">

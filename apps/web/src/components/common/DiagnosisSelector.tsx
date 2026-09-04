@@ -123,7 +123,7 @@ export function DiagnosisSelector({
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          "h-9 w-full justify-between gap-2 rounded-sm border-fg/20 bg-bg px-3 text-left text-sm shadow-sm",
+          "h-9 w-full justify-between gap-2 rounded-sm border-fg/20 bg-bg px-3 text-left text-sm",
           !value && "text-fg/60",
         )}
       >

@@ -87,6 +87,19 @@
   --radius-none: 0;
 }
 
+/*
+ * Elevation scale. Only overlays carry a shadow; in-flow surfaces use a
+ * border. Tailwind's defaults are reset because the values in
+ * theme/tokens-base.css sit in :root, where Tailwind does not read them.
+ */
+@theme {
+  --shadow-*: initial;
+  --shadow-none: 0 0 #0000;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.14), 0 4px 8px -4px rgb(0 0 0 / 0.08);
+}
+
 @theme inline {
   /*
    * New semantic tokens — preferred for all new code.

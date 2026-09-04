@@ -27,6 +27,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -198,7 +199,7 @@ function CampaignsListPage() {
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection} />
             <div className="relative min-h-0 flex-1 overflow-auto">
               <Table className="w-full caption-bottom text-sm">
-                <TableHeader className="sticky top-0 z-10 border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+                <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
                       <Checkbox

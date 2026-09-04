@@ -70,7 +70,7 @@ export function SheetForm({
       <SheetContent
         side="right"
         className={cn(
-          "flex h-full w-full flex-col gap-0 rounded-none border-l border-fg/15 bg-bg p-0 shadow-xl",
+          "flex h-full w-full flex-col gap-0 rounded-none border-l border-fg/15 bg-bg p-0 shadow-lg",
           SIZE_CLASS[size],
         )}
       >

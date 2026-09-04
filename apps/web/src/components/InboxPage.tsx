@@ -138,7 +138,7 @@ const MOCK_PLATFORM_DETAILS: PlatformDetailsRow[] = [
 
 function PlatformDetailsCard({ row }: { row: PlatformDetailsRow }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_1fr] gap-3 items-center text-sm">
         <div className="font-medium text-gray-700">Platform</div>
         <div className="flex items-center justify-center w-8 text-gray-500">
@@ -235,7 +235,7 @@ function TrainingCard({
   onToggle: (id: string) => void
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm flex flex-col min-h-45">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col min-h-45">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div
@@ -652,7 +652,7 @@ export function InboxPage() {
             )}
           </div>
 
-          <div className="border border-gray-200 rounded-md overflow-hidden shadow-sm">
+          <div className="border border-gray-200 rounded-md overflow-hidden">
             <Table className="text-sm table-fixed">
               <TableHeader>
                 <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-transparent">

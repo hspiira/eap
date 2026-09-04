@@ -35,6 +35,7 @@ import {
   type SortState,
 } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import {
@@ -133,7 +134,7 @@ export function ContractsPanel({
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
         <Table className="w-full caption-bottom text-sm">
-          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+          <TableHeader className={TABLE_HEAD}>
             <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
               <TableHead>
                 <SortHeader field="number" sort={sort} onToggle={toggleSort}>

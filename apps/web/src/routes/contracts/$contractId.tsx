@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
@@ -418,7 +419,7 @@ function ServicesPanel({
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
         <Table className="w-full caption-bottom text-sm">
-          <TableHeader className="border-b-0 bg-surface shadow-[inset_0_-1px_0_rgb(0_0_0/0.08)]">
+          <TableHeader className={TABLE_HEAD}>
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Service</TableHead>
               <TableHead>Status</TableHead>
