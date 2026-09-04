@@ -4,13 +4,7 @@ import { Download, ExternalLink, MoreHorizontal, Plus, Wrench } from "lucide-rea
 import { type ServiceListParams, servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -138,13 +132,6 @@ function ServicesListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "type", label: "Type" },
-            { id: "group", label: "Group size" },
-          ]}
-        />
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}
@@ -287,14 +274,14 @@ function ServiceRow({ row }: { row: Service }) {
             {humanizeServiceType(row.service_type)}
           </span>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="tabular-nums text-sm text-fg/75">
-        {row.duration_minutes != null ? `${row.duration_minutes}m` : "—"}
+        {row.duration_minutes != null ? `${row.duration_minutes}m` : "-"}
       </TableCell>
       <TableCell>
         {allowGroup ? (

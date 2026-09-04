@@ -7,13 +7,7 @@ import { HeartPulse, Plus } from "lucide-react"
 import { casesApi } from "@/api/endpoints/cases"
 import { CaseFormSheet } from "@/components/CaseFormSheet"
 import { EmptyState } from "@/components/common/EmptyState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { RequireClinicalScope } from "@/components/common/RequireClinicalScope"
@@ -74,7 +68,7 @@ function CasesListPage() {
     }
   }, [searchParams.new, navigate])
 
-  // BE GET /cases takes no query params — filtered client-side, same as
+  // BE GET /cases takes no query params, filtered client-side, same as
   // care-callbacks/engagements/surveys. There is no person/name filter: a
   // Case only carries a pseudonymous clinical_subject_id by design (the
   // privacy wall), so "search" matches the pseudonym and referral notes.
@@ -111,7 +105,6 @@ function CasesListPage() {
       }
     >
       <FilterBar>
-        <FilterButton options={[{ id: "status", label: "Status" }]} />
         {searchParams.status ? (
           <FilterChip
             label={`Status is ${searchParams.status}`}

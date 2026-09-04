@@ -14,13 +14,7 @@ import {
 import { type UserListParams, usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -158,12 +152,6 @@ function UsersListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "security", label: "Security" },
-          ]}
-        />
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}

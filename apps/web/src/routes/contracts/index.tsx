@@ -8,13 +8,7 @@ import { clientsApi } from "@/api/endpoints/clients"
 import { type ContractListParams, contractsApi } from "@/api/endpoints/contracts"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -165,13 +159,6 @@ function ContractsListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "renewal", label: "Renewal window" },
-            { id: "client", label: "Client" },
-          ]}
-        />
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}
@@ -413,7 +400,7 @@ function ContractRow({
  * server filters it via an indexed range on the term end.
  *
  * "Renews in N days" means an auto-renewing contract whose term ends inside the
- * window — a contract ending then without auto-renew is expiring, not renewing.
+ * window: a contract ending then without auto-renew is expiring, not renewing.
  * "Already expired" is any term that has ended, renewing or not.
  *
  * Bounds are computed here rather than named to the server because the window is

@@ -9,13 +9,7 @@ import { personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -169,13 +163,6 @@ function PersonsListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "type", label: "Role" },
-            { id: "status", label: "Status" },
-            { id: "client", label: "Client" },
-          ]}
-        />
         {activeType ? (
           <FilterChip
             label={`Role is ${PERSON_TYPE_LABELS[activeType]}`}
@@ -235,7 +222,7 @@ function PersonsListPage() {
             description={
               hasFilters
                 ? "Try a different name, role, or clear filters."
-                : "Add your first person — employee, dependent, provider, or staff."
+                : "Add your first person: employee, dependent, provider, or staff."
             }
             action={
               hasFilters ? null : (
@@ -365,7 +352,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
             {row.employment_info.client_id.slice(0, 8)}
           </Link>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
       <TableCell>
@@ -383,7 +370,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
         ) : row.user_id ? (
           <span className="font-mono text-xs text-fg-subtle">{row.user_id.slice(0, 8)}</span>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
       <TableCell className="text-right">

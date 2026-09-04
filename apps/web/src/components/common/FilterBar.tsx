@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { ChevronDown, Filter as FilterIcon, Search, X } from "lucide-react"
+import { ChevronDown, Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -28,43 +28,6 @@ export function FilterBar({
     >
       {children}
     </div>
-  )
-}
-
-interface FilterButtonProps {
-  options: ReadonlyArray<{
-    id: string
-    label: string
-    icon?: React.ElementType
-    onSelect?: () => void
-  }>
-}
-
-export function FilterButton({ options }: FilterButtonProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm" className="h-8 shrink-0 gap-1.5">
-          <FilterIcon className="size-3.5" />
-          Filter
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-52">
-        {options.map((opt) => (
-          <DropdownMenuItem
-            key={opt.id}
-            className="gap-2"
-            onSelect={(e) => {
-              e.preventDefault()
-              opt.onSelect?.()
-            }}
-          >
-            {opt.icon ? <opt.icon className="size-4" /> : <span className="size-4" />}
-            {opt.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
 

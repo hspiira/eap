@@ -1,20 +1,15 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Building2, Calendar, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import { Building2, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
-import { IconButton } from "@/components/common/IconButton"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -40,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useToast } from "@/contexts/ToastContext"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
@@ -61,15 +57,7 @@ const TIER_OPTIONS = [
   { value: ClientTier.C, label: "Tier C" },
 ] as const
 
-const TIME_RANGE_OPTIONS = [
-  { value: "12h", label: "Last 12 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "all", label: "All time" },
-] as const
-
 type TierFilter = (typeof TIER_OPTIONS)[number]["value"]
-type TimeRange = (typeof TIME_RANGE_OPTIONS)[number]["value"]
 
 const ROW_BORDER = "border-fg/8"
 
@@ -90,8 +78,26 @@ function ClientsListPage() {
     setFilter,
     sortParams,
   } = useListPage({ searchParams, navigate })
-  const [timeRange, setTimeRange] = useState<TimeRange>("12h")
   const activeTier = searchParams.tier
+  const queryClient = useQueryClient()
+  const toast = useToast()
+  const [editing, setEditing] = useState<Client | null>(null)
+  const [archiving, setArchiving] = useState<Client | null>(null)
+  const [archiveLoading, setArchiveLoading] = useState(false)
+
+  const handleArchive = useCallback(async () => {
+    if (!archiving) return
+    setArchiveLoading(true)
+    try {
+      await clientsApi.archive(archiving.id)
+      await queryClient.invalidateQueries({ queryKey: ["clients"] })
+      toast.showSuccess(`${archiving.name} archived`)
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Could not archive this client"))
+    } finally {
+      setArchiveLoading(false)
+    }
+  }, [archiving, queryClient, toast])
 
   const handleTierChange = (next: TierFilter) =>
     setFilter("tier", next === "all" ? undefined : next)
@@ -119,25 +125,13 @@ function ClientsListPage() {
       icon={Building2}
       breadcrumb="Organization & Clients · Clients"
       actions={
-        <>
-          <IconButton label="Export" icon={Download} />
-          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
-            <Plus className="size-3.5" />
-            Add client
-          </Button>
-        </>
+        <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
+          <Plus className="size-3.5" />
+          Add client
+        </Button>
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "tier", label: "Tier" },
-            { id: "status", label: "Status" },
-            { id: "industry", label: "Industry" },
-            { id: "tag", label: "Tag" },
-          ]}
-        />
         {activeTier ? (
           <FilterChip label={`Tier is ${activeTier}`} onRemove={() => handleTierChange("all")} />
         ) : null}
@@ -147,18 +141,40 @@ function ClientsListPage() {
           options={TIER_OPTIONS}
           onChange={handleTierChange}
         />
-        <FilterTrigger
-          icon={Calendar}
-          label="Time range"
-          value={timeRange}
-          options={TIME_RANGE_OPTIONS}
-          onChange={setTimeRange}
-        />
         <div className="ml-auto" />
         <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search clients…" />
       </FilterBar>
 
       <ClientFormSheet open={addModalOpen} onOpenChange={setAddModalOpen} />
+
+      <ClientFormSheet
+        open={editing !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null)
+        }}
+        client={editing}
+        onSaved={() => {
+          void queryClient.invalidateQueries({ queryKey: ["clients"] })
+          setEditing(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={archiving !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiving(null)
+        }}
+        title="Archive client"
+        description={
+          archiving
+            ? `${archiving.name} will be hidden from the active list. You can restore it later.`
+            : ""
+        }
+        confirmLabel="Archive"
+        destructive
+        loading={archiveLoading}
+        onConfirm={handleArchive}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
@@ -237,6 +253,8 @@ function ClientsListPage() {
                       row={row}
                       isSelected={selection.selectedIds.has(row.id)}
                       onToggle={() => selection.toggleSelect(row.id)}
+                      onEdit={() => setEditing(row)}
+                      onArchive={() => setArchiving(row)}
                     />
                   ))}
                 </TableBody>
@@ -258,10 +276,14 @@ function ClientRow({
   row,
   isSelected,
   onToggle,
+  onEdit,
+  onArchive,
 }: {
   row: Client
   isSelected: boolean
   onToggle: () => void
+  onEdit: () => void
+  onArchive: () => void
 }) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
@@ -307,7 +329,7 @@ function ClientRow({
             ) : null}
           </span>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
       <TableCell className="text-right">
@@ -338,9 +360,12 @@ function ClientRow({
                   View details
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>Edit</DropdownMenuItem>
+              <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onSelect={onArchive}
+                className="text-destructive focus:text-destructive"
+              >
                 Archive
               </DropdownMenuItem>
             </DropdownMenuContent>

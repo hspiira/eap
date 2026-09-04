@@ -4,13 +4,7 @@ import { Download, ExternalLink, FileCheck, MoreHorizontal, Plus } from "lucide-
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -129,13 +123,6 @@ function ServiceAssignmentsListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "contract", label: "Contract" },
-            { id: "service", label: "Service" },
-          ]}
-        />
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}
@@ -271,7 +258,7 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
-        {row.notes ?? <span className="text-fg-subtle">—</span>}
+        {row.notes ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

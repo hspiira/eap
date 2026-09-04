@@ -10,13 +10,7 @@ import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -199,14 +193,6 @@ function ServiceSessionsListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "range", label: "Date range" },
-            { id: "service", label: "Service" },
-            { id: "person", label: "Person" },
-          ]}
-        />
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}
@@ -417,7 +403,7 @@ function SessionRow({
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.location ?? <span className="text-fg-subtle">—</span>}
+        {row.location ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

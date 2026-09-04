@@ -6,13 +6,7 @@ import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 import { industriesApi } from "@/api/endpoints/industries"
 import { AppLayout } from "@/components/AppLayout"
 import { EmptyState } from "@/components/common/EmptyState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -200,13 +194,6 @@ function IndustriesPage() {
         }
       >
         <FilterBar>
-          <FilterButton
-            options={[
-              { id: "level", label: "Level" },
-              { id: "parent", label: "Parent" },
-              { id: "code", label: "Code" },
-            ]}
-          />
           {levelFilter !== "all" && levelChip ? (
             <FilterChip label={levelChip.label} onRemove={() => setLevelFilter("all")} />
           ) : null}
@@ -289,7 +276,7 @@ function IndustriesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-fg/65">
-                            {row.code ?? <span className="text-fg-subtle">—</span>}
+                            {row.code ?? <span className="text-fg-subtle">-</span>}
                           </TableCell>
                           <TableCell>
                             <LevelPill level={row.level ?? null} />
@@ -298,7 +285,7 @@ function IndustriesPage() {
                             {row.parent_id ? (
                               <span className="font-mono text-xs">{row.parent_id.slice(0, 8)}</span>
                             ) : (
-                              <span className="text-fg-subtle">—</span>
+                              <span className="text-fg-subtle">-</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -345,7 +332,7 @@ function filterByLevel(items: ReadonlyArray<Industry>, level: LevelFilter): Indu
 }
 
 function LevelPill({ level }: { level: number | null }) {
-  if (level == null) return <span className="text-fg-subtle">—</span>
+  if (level == null) return <span className="text-fg-subtle">-</span>
   return (
     <span className="inline-flex items-center border border-fg/15 bg-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-fg/75">
       L{level}

@@ -6,7 +6,7 @@ import { Download, ExternalLink, MoreHorizontal, Pencil, Plus, Tag } from "lucid
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
-import { FilterBar, FilterButton, FilterSearch } from "@/components/common/FilterBar"
+import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -102,12 +102,6 @@ function TagsListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "color", label: "Color" },
-            { id: "name", label: "Name" },
-          ]}
-        />
         <div className="ml-auto" />
         <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search tags…" />
       </FilterBar>
@@ -237,12 +231,12 @@ function TagRow({
             <span className="font-mono text-xs text-fg/65">{swatch}</span>
           </span>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
       <TableCell>
         <span className="block max-w-[60ch] truncate text-sm text-fg/75">
-          {row.description ?? <span className="text-fg-subtle">—</span>}
+          {row.description ?? <span className="text-fg-subtle">-</span>}
         </span>
       </TableCell>
       <TableCell className="text-right">

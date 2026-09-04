@@ -6,13 +6,7 @@ import { ClipboardList, Download, ExternalLink, MoreHorizontal, Plus } from "luc
 
 import { surveysApi } from "@/api/endpoints/surveys"
 import { EmptyState } from "@/components/common/EmptyState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -108,13 +102,6 @@ function SurveysListPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "client", label: "Client" },
-            { id: "source", label: "Source" },
-          ]}
-        />
         {searchParams.status ? (
           <FilterChip
             label={`Status is ${searchParams.status}`}

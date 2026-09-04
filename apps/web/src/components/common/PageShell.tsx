@@ -1,15 +1,5 @@
 import * as React from "react"
 
-import { MoreHorizontal } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
 interface PageShellProps {
   icon?: React.ElementType
   breadcrumb: React.ReactNode
@@ -26,32 +16,10 @@ export function PageShell({ icon: Icon, breadcrumb, actions, menu, children }: P
         <span className="min-w-0 truncate text-xs font-medium text-fg/75">{breadcrumb}</span>
         <div className="ml-auto flex items-center gap-1.5">
           {actions}
-          {menu ?? <DefaultPageMenu />}
+          {menu}
         </div>
       </div>
       {children}
     </div>
-  )
-}
-
-function DefaultPageMenu() {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-label="Page options"
-          className="size-7 p-0 text-fg/70"
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem>View settings</DropdownMenuItem>
-        <DropdownMenuItem>Export CSV</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

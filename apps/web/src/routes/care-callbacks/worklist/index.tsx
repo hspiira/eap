@@ -6,13 +6,7 @@ import { AlertTriangle, ChevronRight, ExternalLink, Headphones, Phone } from "lu
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
 import { EmptyState } from "@/components/common/EmptyState"
-import {
-  FilterBar,
-  FilterButton,
-  FilterChip,
-  FilterSearch,
-  FilterTrigger,
-} from "@/components/common/FilterBar"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
@@ -57,7 +51,7 @@ type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 const ROW_BORDER = "border-fg/8"
 
 /**
- * There is no "my worklist" endpoint on the BE — outreach records are only
+ * There is no "my worklist" endpoint on the BE; outreach records are only
  * listable nested under one campaign at a time (GET .../{campaign}/outreach-records),
  * with no assigned/counsellor filter. This fetches every active campaign's
  * records and filters to the current user client-side. Fine at the campaign
@@ -136,12 +130,6 @@ function WorklistPage() {
       }
     >
       <FilterBar>
-        <FilterButton
-          options={[
-            { id: "status", label: "Status" },
-            { id: "crisis", label: "Crisis only" },
-          ]}
-        />
         {searchParams.status ? (
           <FilterChip
             label={`Status is ${searchParams.status}`}
