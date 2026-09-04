@@ -93,10 +93,29 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
         custom_branding: v.custom_branding,
       },
     }),
-    save: ({ payload, entity, isEdit }) =>
-      isEdit && entity
-        ? tenantsApi.update(entity.id, { name: payload.name })
-        : tenantsApi.create(payload),
+    save: async ({ payload, entity, isEdit }) => {
+      if (!isEdit || !entity) return tenantsApi.create(payload)
+      // TenantUpdate only accepts the name. Settings and the subscription tier
+      // each have their own route, so send those only when they changed.
+      let saved = await tenantsApi.update(entity.id, { name: payload.name })
+      const settings = payload.settings
+      if (
+        settings &&
+        (settings.max_users !== entity.settings?.max_users ||
+          settings.max_clients !== entity.settings?.max_clients ||
+          settings.custom_branding !== entity.settings?.custom_branding)
+      ) {
+        saved = await tenantsApi.updateSettings(entity.id, {
+          max_users: settings.max_users,
+          max_clients: settings.max_clients,
+          custom_branding: settings.custom_branding,
+        })
+      }
+      if (payload.subscription_tier && payload.subscription_tier !== entity.subscription_tier) {
+        saved = await tenantsApi.updateSubscription(entity.id, payload.subscription_tier)
+      }
+      return saved
+    },
     successToast: { create: "Tenant created", update: "Tenant updated" },
     onSaved,
   })
