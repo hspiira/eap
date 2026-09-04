@@ -276,3 +276,38 @@ pagination states are uniform; align tenants on the `page` convention (or docume
 **Acceptance criteria.**
 - [ ] Every list page renders a retryable error state on query failure.
 - [ ] One pagination param convention across list pages.
+
+---
+
+## CQ-A10: Engagements cannot be closed; the Invoiced transition is missing from the client
+
+**Severity:** Critical - **Effort:** S - **Status:** Todo - **Owner:** eap-85 - **PR:** -
+
+**Problem.** The engagement lifecycle is Draft, Active, Delivered, Invoiced, Closed. The client
+can drive three of those transitions and not the fourth, and the one it cannot drive is a
+prerequisite for the last one. So from the UI an engagement reaches Delivered and can never be
+closed.
+
+`FSM_ROUTES` maps ACTIVE to `activate`, DELIVERED to `deliver` and CLOSED to `close`. There is no
+INVOICED entry, so `transition(id, EngagementStatus.INVOICED)` throws "No FSM route for status".
+The backend route it would call does exist. The domain then blocks the last step: `close()` raises
+`InvalidStateError` unless the status is already INVOICED, and `invoice()` is the only way to
+reach INVOICED.
+
+**Evidence.**
+- `src/api/endpoints/engagements.ts:46` - `FSM_ROUTES` has no `INVOICED` key.
+- `apps/api/app/api/routes/engagements.py:294` - `POST /engagements/{id}/invoice` exists,
+  summarised "Mark a delivered engagement as invoiced".
+- `apps/api/app/domain/entities/engagement.py:261` - `invoice()` requires status DELIVERED.
+- `apps/api/app/domain/entities/engagement.py:270` - `close()` requires status INVOICED.
+- Verify: `grep -n "INVOICED" src/api/endpoints/engagements.ts` returns nothing.
+
+**Recommended fix.** Add `[EngagementStatus.INVOICED]: "invoice"` to `FSM_ROUTES`, then confirm
+the engagement detail UI offers Invoice as an action between Deliver and Close. Assigned to eap-85
+because that module is mid-refactor for the enum value correction and a one-line change there
+would collide.
+
+**Acceptance criteria.**
+- An engagement can be taken Draft to Closed entirely from the UI.
+- `close` is not offered on an engagement that has not been invoiced.
+
