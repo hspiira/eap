@@ -2,10 +2,20 @@ import { useCallback, useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Building2, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import {
+  Bookmark,
+  Building2,
+  Download,
+  ExternalLink,
+  FileDown,
+  FileUp,
+  MoreHorizontal,
+  Plus,
+} from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/ClientFormSheet"
+import { ClientImportDialog } from "@/components/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -34,6 +44,7 @@ import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
+import { type ClientSavedView, clientViewsStorage } from "@/lib/storage"
 import type { Client } from "@/types/entities"
 import { ClientTier, TenantRole } from "@/types/enums"
 
@@ -98,6 +109,63 @@ function ClientsListPage() {
   const [editing, setEditing] = useState<Client | null>(null)
   const [archiving, setArchiving] = useState<Client | null>(null)
   const [archiveLoading, setArchiveLoading] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [savedViews, setSavedViews] = useState<ClientSavedView[]>(() => clientViewsStorage.read())
+
+  const saveCurrentView = () => {
+    const name = window.prompt("Name this client view")?.trim()
+    if (!name) return
+    const view: ClientSavedView = {
+      id: `${Date.now()}`,
+      name,
+      search: activeSearch,
+      tier: activeTier,
+      archived: includeArchived,
+      parent_client_id: activeParentClientId,
+    }
+    const next = [...savedViews.filter((item) => item.name !== name), view]
+    setSavedViews(next)
+    clientViewsStorage.write(next)
+    toast.showSuccess("Client view saved")
+  }
+
+  const applyView = (view: ClientSavedView) => {
+    setSearchInput(view.search ?? "")
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        search: view.search,
+        tier: view.tier as ClientTier | undefined,
+        archived: view.archived || undefined,
+        parent_client_id: view.parent_client_id,
+      }),
+      replace: true,
+    })
+    setPage(1)
+  }
+
+  const removeView = (id: string) => {
+    const next = savedViews.filter((view) => view.id !== id)
+    setSavedViews(next)
+    clientViewsStorage.write(next)
+  }
+
+  const download = useCallback(
+    async (blobPromise: Promise<Blob>, filename: string) => {
+      try {
+        const blob = await blobPromise
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement("a")
+        anchor.href = url
+        anchor.download = filename
+        anchor.click()
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        toast.showError(normalizeErrorMessage(err, "Could not download file"))
+      }
+    },
+    [toast],
+  )
 
   const handleArchive = useCallback(async () => {
     if (!archiving) return
@@ -146,12 +214,95 @@ function ClientsListPage() {
       trail={[{ label: "Organization & Clients" }]}
       title="Clients"
       actions={
-        canWrite ? (
-          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
-            <Plus className="size-3.5" />
-            Add client
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={saveCurrentView}
+          >
+            <Bookmark className="size-3.5" />
+            Save view
           </Button>
-        ) : null
+          {savedViews.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
+                  Views
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {savedViews.map((view) => (
+                  <DropdownMenuItem key={view.id} onSelect={() => applyView(view)}>
+                    {view.name}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {savedViews.map((view) => (
+                  <DropdownMenuItem key={`remove-${view.id}`} onSelect={() => removeView(view.id)}>
+                    Remove &ldquo;{view.name}&rdquo;
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={() =>
+              void download(clientsApi.getImportTemplate(), "clients-import-template.csv")
+            }
+          >
+            <FileDown className="size-3.5" />
+            Template
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={() =>
+              void download(
+                clientsApi.exportCsv({
+                  search: activeSearch,
+                  tier: activeTier,
+                  include_archived: includeArchived,
+                  sort_by: sort.field,
+                  sort_desc: sort.field ? sort.desc : undefined,
+                }),
+                "clients.csv",
+              )
+            }
+          >
+            <Download className="size-3.5" />
+            Export
+          </Button>
+          {canWrite ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-2"
+                onClick={() => setImportOpen(true)}
+              >
+                <FileUp className="size-3.5" />
+                Import
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 gap-1.5 px-2.5"
+                onClick={() => setAddModalOpen(true)}
+              >
+                <Plus className="size-3.5" />
+                Add client
+              </Button>
+            </>
+          ) : null}
+        </>
       }
     >
       <FilterBar>
@@ -179,6 +330,12 @@ function ClientsListPage() {
         <div className="ml-auto" />
         <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search clients…" />
       </FilterBar>
+
+      <ClientImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => void queryClient.invalidateQueries({ queryKey: ["clients"] })}
+      />
 
       <ClientFormSheet open={addModalOpen} onOpenChange={setAddModalOpen} />
 
