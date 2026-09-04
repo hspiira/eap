@@ -176,7 +176,7 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
             search_fields: Fields to search in
             extra_conditions: Pre-built SQLAlchemy conditions for filters that are
                 not simple column equality (e.g. nullable-timestamp flags). Pass
-                these rather than filtering the returned page in Python — post-
+                these rather than filtering the returned page in Python; post-
                 filtering a paginated result silently drops rows and desynchronises
                 the page from its count.
         """
@@ -205,12 +205,18 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
             if search_conditions:
                 stmt = stmt.where(or_(*search_conditions))
 
-        # Apply sorting
+        # Sort on the requested column, then always on the id. A non-unique sort
+        # column leaves LIMIT/OFFSET free to place one row on two pages and skip
+        # another, so the id breaks every tie and an unknown sort_by still
+        # produces a total order rather than no ORDER BY at all.
+        id_col = getattr(self.model_class, self.id_column)
+        order_by = []
         if hasattr(self.model_class, sort_by):
             sort_col = getattr(self.model_class, sort_by)
-            stmt = stmt.order_by(sort_col.desc() if sort_desc else sort_col.asc())
+            order_by.append(sort_col.desc() if sort_desc else sort_col.asc())
+        order_by.append(id_col.desc() if sort_desc else id_col.asc())
+        stmt = stmt.order_by(*order_by)
 
-        # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
 
         result = await self.session.execute(stmt)
@@ -231,7 +237,7 @@ class TenantScopedRepositoryImpl(BaseRepositoryImpl[TEntity, TModel, TId]):
 
         Subclasses should call this from their domain-specific count methods.
         Pass the same `filters`/`extra_conditions` the matching `_query_all` call
-        uses — a count built from a different filter set than its page produces
+        uses; a count built from a different filter set than its page produces
         pagination over a total the caller can never reach.
         """
         id_col = getattr(self.model_class, self.id_column)

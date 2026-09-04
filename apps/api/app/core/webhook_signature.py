@@ -22,7 +22,7 @@ def compute_signature(secret: str, body: bytes) -> str:
 def verify_signature(secret: str, body: bytes, header_value: str | None) -> bool:
     """Constant-time check of an incoming webhook signature header.
 
-    Returns False for missing / empty / malformed headers — never raises so the
+    Returns False for missing / empty / malformed headers; never raises so the
     caller can return a uniform 401 without leaking which check failed.
     """
     if not header_value:
@@ -31,4 +31,10 @@ def verify_signature(secret: str, body: bytes, header_value: str | None) -> bool
     if received.lower().startswith("sha256="):
         received = received[len("sha256=") :]
     expected = compute_signature(secret, body)
-    return hmac.compare_digest(expected, received)
+    # compare_digest rejects non-ASCII str operands with a TypeError, so compare
+    # the encoded forms. A header carrying any non-ASCII byte simply fails.
+    try:
+        received_bytes = received.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return hmac.compare_digest(expected.encode("ascii"), received_bytes)

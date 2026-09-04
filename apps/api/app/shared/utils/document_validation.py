@@ -4,15 +4,63 @@ Document path and URL validation for security (path traversal, SSRF).
 Used when accepting file_path or file_url from clients for document create/update.
 """
 
+import ipaddress
 import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-# Private IP ranges and localhost (for SSRF prevention)
-_PRIVATE_IP_PATTERN = re.compile(
-    r"^localhost$|^127\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\.|^192\.168\.|^169\.254\.|^::1$|^\[::1\]$|^0\.0\.0\.0$",
+# Textual hosts and dotted prefixes that never leave the machine or its private
+# network. Kept as a literal check because it also catches the shorthand dotted
+# forms (127.1) that ipaddress refuses to parse.
+_PRIVATE_HOST_PATTERN = re.compile(
+    r"^localhost$|^localhost\.localdomain$|^127\.|^10\.|"
+    r"^172\.(1[6-9]|2[0-9]|3[0-1])\.|^192\.168\.|^169\.254\.|"
+    r"^::1$|^\[::1\]$|^0\.0\.0\.0$",
     re.IGNORECASE,
 )
+
+
+def _parse_host_ip(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    """Parse a URL host as an IP address, accepting the encodings HTTP clients accept.
+
+    A dotted quad, an IPv6 literal, and the decimal, hexadecimal and octal forms
+    of an IPv4 address all reach the same host, so all of them must parse here.
+    """
+    if host.startswith(("0x", "0X")):
+        try:
+            return ipaddress.ip_address(int(host, 16))
+        except ValueError:
+            return None
+    if host.isdigit():
+        base = 8 if host.startswith("0") and len(host) > 1 else 10
+        try:
+            return ipaddress.ip_address(int(host, base))
+        except ValueError:
+            return None
+    try:
+        return ipaddress.ip_address(host)
+    except ValueError:
+        return None
+
+
+def _is_local_or_private_host(host: str) -> bool:
+    """True when the host points inside the network the server itself sits on."""
+    if _PRIVATE_HOST_PATTERN.search(host):
+        return True
+    ip = _parse_host_ip(host)
+    if ip is None:
+        return False
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        ip = mapped
+    return (
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_unspecified
+        or ip.is_multicast
+    )
 
 
 def validate_document_file_path(value: str | None, upload_root: str) -> str | None:
@@ -70,6 +118,6 @@ def validate_document_file_url(value: str | None, allowed_schemes: list[str]) ->
             f"Invalid document URL: only {', '.join(allowed_schemes)} schemes are allowed"
         )
     host = (parsed.hostname or "").lower()
-    if _PRIVATE_IP_PATTERN.search(host):
+    if _is_local_or_private_host(host):
         raise ValueError("Invalid document URL: localhost and private IP addresses are not allowed")
     return value
