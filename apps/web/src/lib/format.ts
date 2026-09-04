@@ -57,3 +57,53 @@ export function toLocalDateKey(value: string | number | Date): string {
   const pad = (n: number) => String(n).padStart(2, "0")
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
+
+const DAY_PREFIX = /^(\d{4})-(\d{2})-(\d{2})/
+
+function dayUtcMs(key: string): number {
+  const [y, m, d] = key.split("-").map(Number)
+  return Date.UTC(y, m - 1, d)
+}
+
+/**
+ * Calendar day a wire value denotes, as YYYY-MM-DD, with no timezone
+ * conversion. Contract term bounds are days sent as a UTC-midnight instant, so
+ * parsing them to a local Date moves them back a day west of UTC.
+ */
+export function toDayKey(value: string | null | undefined): string {
+  if (!value) return ""
+  const m = DAY_PREFIX.exec(value.trim())
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : ""
+}
+
+/** Locale date for a calendar day held on the wire. */
+export function formatDay(value: string | null | undefined): string {
+  const key = toDayKey(value)
+  if (!key) return EMPTY
+  const [y, m, d] = key.split("-").map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString()
+}
+
+/** Whole days from one calendar day to another. Null if either cannot be read. */
+export function daysBetweenDays(
+  from: string | null | undefined,
+  to: string | null | undefined,
+): number | null {
+  const a = toDayKey(from)
+  const b = toDayKey(to)
+  if (!a || !b) return null
+  return Math.round((dayUtcMs(b) - dayUtcMs(a)) / 86_400_000)
+}
+
+/** Today as a calendar day, for comparing against a wire day. */
+export function todayDayKey(): string {
+  return toLocalDateKey(new Date())
+}
+
+/** Shift a calendar day by whole years, keeping it a day. */
+export function addYearsToDay(value: string | null | undefined, years: number): string {
+  const key = toDayKey(value)
+  if (!key) return ""
+  const [y, m, d] = key.split("-").map(Number)
+  return new Date(Date.UTC(y + years, m - 1, d)).toISOString().slice(0, 10)
+}

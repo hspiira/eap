@@ -1,7 +1,6 @@
-import { CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react"
+import { CalendarCheck } from "lucide-react"
 
 import { Panel } from "@/components/common/Panel"
-import { Button } from "@/components/ui/button"
 
 export interface ClientTodaysTodoItem {
   id: string
@@ -31,34 +30,11 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
       icon={CalendarCheck}
       title="Today's to-do"
       count={items.length || null}
-      action={
-        <Button variant="ghost" size="sm" className="-mr-1 h-7 px-2 text-xs text-fg/60">
-          View all
-        </Button>
-      }
       className={className}
     >
       <div className="grid gap-3">
-        <div className="flex h-7 items-center justify-between rounded-sm border border-fg/10 bg-bg px-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Previous day"
-            className="size-5 p-0 text-fg-muted"
-          >
-            <ChevronLeft className="size-3.5" />
-          </Button>
+        <div className="flex h-7 items-center justify-center rounded-sm border border-fg/10 bg-bg">
           <span className="text-xs tabular-nums text-fg/65">{formatTodayLabel()}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Next day"
-            className="size-5 p-0 text-fg-muted"
-          >
-            <ChevronRight className="size-3.5" />
-          </Button>
         </div>
         {items.length === 0 ? (
           <p className="text-sm text-fg/60">Nothing scheduled for today.</p>

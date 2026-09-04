@@ -26,6 +26,12 @@ without being asked.
   attribution in the message or PR body.
 - Stage by path. Several agents share this tree, so commit only your own files.
 
+## Discoveries
+
+- Never leave a new discovery unattended. Fix it there and then if you can. If
+  you cannot, either record it where it will be picked up again or hand it to
+  another agent by name. Do not simply mention it and move on.
+
 ## Data and sources
 
 - Never invent data, statistics, sources, or references. Research and cite

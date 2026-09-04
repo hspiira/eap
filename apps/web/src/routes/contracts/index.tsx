@@ -36,6 +36,7 @@ import {
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client, Contract } from "@/types/entities"
@@ -300,10 +301,10 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{formatDate(row.period.start_date)}</TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDay(row.period.start_date)}</TableCell>
       <TableCell>
         <span className="block min-w-0">
-          <span className="block truncate text-sm text-fg">{formatDate(row.period.end_date)}</span>
+          <span className="block truncate text-sm text-fg">{formatDay(row.period.end_date)}</span>
           <span className="block truncate text-xs text-fg-muted">
             {row.is_auto_renew ? "Renews" : "Ends"}
           </span>
@@ -396,9 +397,4 @@ function formatBilling(c: Contract): { amount: string; frequency: string } {
     ? `${c.billing_rate.currency} ${parsed.toLocaleString()}`
     : `${c.billing_rate.currency} ${c.billing_rate.amount}`
   return { amount, frequency: c.payment_frequency }
-}
-
-/** Wire dates are ISO datetimes; the table only shows the calendar day. */
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString()
 }

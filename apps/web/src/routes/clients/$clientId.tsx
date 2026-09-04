@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { formatDate, toLocalDateKey } from "@/lib/format"
+import { daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
@@ -189,15 +189,14 @@ function ClientDetailPage() {
         severity: "medium",
       })
     }
-    const now = new Date()
-    const alertCutoff = new Date(now.getTime() + ALERT_DAYS * 24 * 60 * 60 * 1000)
+    const today = todayDayKey()
     ending.forEach((c) => {
-      const end = new Date(c.period.end_date)
-      if (end <= alertCutoff && end >= now) {
+      const untilEnd = daysBetweenDays(today, c.period.end_date)
+      if (untilEnd != null && untilEnd >= 0 && untilEnd <= ALERT_DAYS) {
         list.push({
           id: `contract-expiring-${c.id}`,
           title: `Contract ending soon: ${c.id.slice(0, 8)}`,
-          description: `End date: ${formatDate(end)}`,
+          description: `End date: ${formatDay(c.period.end_date)}`,
           severity: "high",
           link: `/contracts/${c.id}`,
           linkLabel: "View contract",
@@ -219,19 +218,18 @@ function ClientDetailPage() {
 
   const upcomingItems = useMemo((): ClientUpcomingItem[] => {
     const list: ClientUpcomingItem[] = []
-    const now = new Date()
-    const horizon = new Date(now.getTime() + UPCOMING_DAYS * 24 * 60 * 60 * 1000)
+    const today = todayDayKey()
     ending.forEach((c) => {
       // One item per contract: the term end is either a renewal or an ending,
       // decided by is_auto_renew. This used to branch on a renewal_date field the
       // BE has never sent, so neither branch ever fired.
       {
-        const d = new Date(c.period.end_date)
-        if (d >= now && d <= horizon) {
+        const untilEnd = daysBetweenDays(today, c.period.end_date)
+        if (untilEnd != null && untilEnd >= 0 && untilEnd <= UPCOMING_DAYS) {
           list.push({
             id: `${c.is_auto_renew ? "renewal" : "end"}-${c.id}`,
             title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${c.id.slice(0, 8)}`,
-            date: c.period.end_date,
+            date: toDayKey(c.period.end_date),
             context: c.is_auto_renew ? "Renewal" : "End date",
             link: `/contracts/${c.id}`,
             linkLabel: "View",
@@ -255,9 +253,9 @@ function ClientDetailPage() {
   }, [client, isVerified, contractsTotal, hasBilling])
 
   const todaysTodoItems = useMemo((): ClientTodaysTodoItem[] => {
-    const today = toLocalDateKey(new Date())
+    const today = todayDayKey()
     return upcomingItems
-      .filter((u) => toLocalDateKey(u.date) === today)
+      .filter((u) => toDayKey(u.date) === today)
       .map((u) => ({
         id: u.id,
         title: u.title,

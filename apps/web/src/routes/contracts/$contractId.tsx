@@ -36,6 +36,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { addYearsToDay, daysBetweenDays, formatDay } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -86,9 +87,8 @@ function ContractDetailPage() {
           await contractsApi.terminate(id, { reason: "Terminated from UI" })
         } else if (action === "renew") {
           if (!contract) return
-          const next = new Date(contract.period.end_date)
-          next.setFullYear(next.getFullYear() + 1)
-          await contractsApi.renew(id, { new_end_date: next.toISOString() })
+          const nextDay = addYearsToDay(contract.period.end_date, 1)
+          await contractsApi.renew(id, { new_end_date: `${nextDay}T00:00:00Z` })
         }
         await queryClient.invalidateQueries({ queryKey: ["contracts"] })
         toast.showSuccess("Status updated")
@@ -184,11 +184,8 @@ function ContractDetailPage() {
                   <DetailCard title="Lifecycle">
                     <DetailGrid>
                       <DetailRow label="Status" value={<StatusBadge status={contract.status} />} />
-                      <DetailRow
-                        label="Start date"
-                        value={formatDate(contract.period.start_date)}
-                      />
-                      <DetailRow label="End date" value={formatDate(contract.period.end_date)} />
+                      <DetailRow label="Start date" value={formatDay(contract.period.start_date)} />
+                      <DetailRow label="End date" value={formatDay(contract.period.end_date)} />
                       <DetailRow label="Auto-renew" value={contract.is_auto_renew ? "Yes" : "No"} />
                     </DetailGrid>
                     {lifecycleSummary ? (
@@ -345,11 +342,6 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
   )
 }
 
-/** Wire dates are ISO datetimes; these rows show the calendar day. */
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString()
-}
-
 /** `billing_rate.amount` is a decimal string on the wire. */
 function formatMoney(c: Contract): string {
   const parsed = Number(c.billing_rate.amount)
@@ -359,12 +351,16 @@ function formatMoney(c: Contract): string {
 }
 
 function termInDays(c: Contract): string {
-  const start = new Date(c.period.start_date).getTime()
-  const end = new Date(c.period.end_date).getTime()
-  return `${Math.max(0, Math.round((end - start) / 86_400_000)).toLocaleString()}d`
+  const days = daysBetweenDays(c.period.start_date, c.period.end_date)
+  if (days == null) return "-"
+  return `${Math.max(0, days).toLocaleString()}d`
 }
 
-/** The server computes this; it knows the term and does not depend on clock skew. */
+/**
+ * Server-computed. Reported to be off by one on the final two days of a term,
+ * raised with the team; the arithmetic is server side so it cannot be corrected
+ * here.
+ */
 function daysToRenewal(c: Contract): string {
   return `${c.days_remaining}d`
 }
@@ -373,9 +369,11 @@ function buildLifecycleSummary(c: Contract | null): string | null {
   if (!c) return null
   const label = c.is_auto_renew ? "renewal" : "end date"
   const days = c.days_remaining
-  if (days < 0) return `Past ${label} by ${Math.abs(days)} days.`
+  const magnitude = Math.abs(days)
+  const dayWord = magnitude === 1 ? "day" : "days"
+  if (days < 0) return `Past ${label} by ${magnitude} ${dayWord}.`
   if (days === 0) return `${label.charAt(0).toUpperCase() + label.slice(1)} is today.`
-  return `${days} days until ${label}.`
+  return `${days} ${dayWord} until ${label}.`
 }
 
 function ServicesPanel({
