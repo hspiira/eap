@@ -20,6 +20,14 @@ export function enumParam<T extends string>(enumObj: Record<string, T>): SearchP
 }
 
 /**
+ * Parser for a flag carried in the URL as `1`. Absent means false, so the
+ * default state leaves no trace in the query string.
+ */
+export function boolParam(): SearchParser<true> {
+  return (value: unknown): true | undefined => (value === "1" || value === true ? true : undefined)
+}
+
+/**
  * Build a `validateSearch` function that always handles the shared `new` (sheet
  * open) and `search` (query string) params, plus any entity-specific parsers.
  * The returned type is inferred so `useSearch()` stays fully typed downstream.

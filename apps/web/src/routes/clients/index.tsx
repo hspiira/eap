@@ -32,13 +32,13 @@ import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
-import { enumParam, listSearchSchema } from "@/lib/search-params"
+import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
-  validateSearch: listSearchSchema({ tier: enumParam(ClientTier) }),
+  validateSearch: listSearchSchema({ tier: enumParam(ClientTier), archived: boolParam() }),
 })
 
 const TIER_OPTIONS = [
@@ -49,6 +49,13 @@ const TIER_OPTIONS = [
 ] as const
 
 type TierFilter = (typeof TIER_OPTIONS)[number]["value"]
+
+const ARCHIVED_OPTIONS = [
+  { value: "active", label: "Active only" },
+  { value: "with-archived", label: "Include archived" },
+] as const
+
+type ArchivedFilter = (typeof ARCHIVED_OPTIONS)[number]["value"]
 
 const COLUMNS: ListColumn[] = [
   { header: "Client", sortField: "name" },
@@ -76,6 +83,7 @@ function ClientsListPage() {
     sortParams,
   } = useListPage({ searchParams, navigate })
   const activeTier = searchParams.tier
+  const includeArchived = searchParams.archived === true
   const queryClient = useQueryClient()
   const toast = useToast()
   const [editing, setEditing] = useState<Client | null>(null)
@@ -99,6 +107,9 @@ function ClientsListPage() {
   const handleTierChange = (next: TierFilter) =>
     setFilter("tier", next === "all" ? undefined : next)
 
+  const handleArchivedChange = (next: ArchivedFilter) =>
+    setFilter("archived", next === "with-archived" ? "1" : undefined)
+
   const query = useEntityList({
     resource: "clients",
     params: {
@@ -106,6 +117,7 @@ function ClientsListPage() {
       limit,
       search: activeSearch,
       tier: activeTier,
+      include_archived: includeArchived || undefined,
       ...sortParams,
     },
     listFn: clientsApi.list,
@@ -115,7 +127,7 @@ function ClientsListPage() {
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeTier)
+  const hasFilters = Boolean(activeSearch) || Boolean(activeTier) || includeArchived
 
   return (
     <PageShell
@@ -138,6 +150,12 @@ function ClientsListPage() {
           value={(activeTier ?? "all") as TierFilter}
           options={TIER_OPTIONS}
           onChange={handleTierChange}
+        />
+        <FilterTrigger
+          label="Active only"
+          value={includeArchived ? "with-archived" : "active"}
+          options={ARCHIVED_OPTIONS}
+          onChange={handleArchivedChange}
         />
         <div className="ml-auto" />
         <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search clients…" />
