@@ -39,14 +39,17 @@ describe("getStatusLabel over real enum values", () => {
   })
 
   /**
-   * Labelling must be reversible for a PascalCase value: removing the spaces
-   * gives back the wire value exactly.
+   * Two assertions over every PascalCase value in every enum, one for each
+   * failure mode this helper has shipped.
    *
-   * This covers every value of every enum, so a new member is guarded without
-   * anyone adding a case. It catches both failure modes this helper has
-   * shipped: words left glued together, and an acronym flattened by
-   * lower-casing the tail. The narrower no-case-boundary checks above miss the
-   * second, because Cismresponse has no boundary left to find.
+   * Reversibility, that removing the spaces gives back the wire value, catches
+   * an acronym flattened by lower-casing the tail: Cismresponse does not give
+   * back CISMResponse. On its own it misses words left glued together, because
+   * a helper that returns its input unchanged round-trips perfectly.
+   *
+   * The case-boundary check catches that second mode. The narrower versions
+   * above cover only PersonType and ServiceCategory, so this is what guards a
+   * new member of any other enum without anyone adding a case.
    */
   it("round-trips every PascalCase value in every enum", () => {
     const pascal = /^[A-Z][A-Za-z0-9]*$/
@@ -57,7 +60,9 @@ describe("getStatusLabel over real enum values", () => {
 
     expect(values.length).toBeGreaterThan(200)
     for (const value of values) {
-      expect(getStatusLabel(value).replace(/ /g, "")).toBe(value)
+      const label = getStatusLabel(value)
+      expect(label.replace(/ /g, ""), `${value} did not survive labelling`).toBe(value)
+      expect(label, `${value} was left glued`).not.toMatch(/[a-z][A-Z]/)
     }
   })
 })
