@@ -48,7 +48,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
       color: t.color ?? "",
       description: t.description ?? "",
     }),
-    parsePayload: (values) => ({
+    parsePayload: (values): Parameters<typeof clientTagsApi.create>[0] => ({
       name: values.name,
       color: values.color || undefined,
       description: values.description || undefined,

@@ -1,12 +1,12 @@
 /**
- * Care Callbacks API — counsellor-initiated outreach campaigns.
+ * Care Callbacks API: counsellor-initiated outreach campaigns.
  *
  * BE base paths (confirmed via openapi.json, app/api/routes/care_callbacks.py):
  *   Campaigns → `/care-callback-campaigns`
  *   Outreach  → `/outreach-records` (nested-list only: no bare GET /outreach-records)
  *   Triage    → `/triage/instruments*`, `/outreach-records/{id}/triage*`
  *
- * No `require_clinical_scope` on any of these — Care Callbacks is not behind
+ * No `require_clinical_scope` on any of these; Care Callbacks is not behind
  * the clinical privacy wall (person_id is a real reference, unlike Case's
  * pseudonymous clinical_subject_id).
  *
@@ -16,10 +16,11 @@
  * GET .../summary endpoint with the real CallbackCampaignSummary shape.
  *
  * Triage scoring endpoints are wired here for completeness but have no FE
- * consumer yet — the case-detail page defers instrument-driven scoring
+ * consumer yet: the case-detail page defers instrument-driven scoring
  * (Phase 10).
  */
 
+import type { CareCallbackCampaignCreate } from "@/api/generated"
 import { useFixtures } from "@/lib/fixtures"
 import type { TriageInstrumentCode, TriageRiskLevel } from "@/types/enums"
 
@@ -37,15 +38,7 @@ import {
   fixtureListCampaigns,
 } from "./care-callbacks-fixture"
 
-export interface CampaignCreateInput {
-  client_id: string
-  name: string
-  period_start: string
-  period_end: string
-  target_count: number
-  counsellor_pool: string[]
-  sampling_notes?: string | null
-}
+export type CampaignCreateInput = CareCallbackCampaignCreate
 
 export interface OutreachListParams {
   page?: number
@@ -92,7 +85,7 @@ export interface TriageScoreResult {
 
 export const careCallbacksApi = {
   // ── Campaigns ────────────────────────────────────────────────────────────
-  /** Bare array on the wire — not a PaginatedResponse envelope. */
+  /** Bare array on the wire, not a PaginatedResponse envelope. */
   async listCampaigns(): Promise<CallbackCampaign[]> {
     if (useFixtures()) return Promise.resolve(fixtureListCampaigns())
     return apiClient.get<CallbackCampaign[]>("/care-callback-campaigns")
@@ -112,7 +105,7 @@ export const careCallbacksApi = {
     return apiClient.post<CallbackCampaign>("/care-callback-campaigns", input)
   },
 
-  /** Fixture-only k-anon rollup — no matching BE shape. See file header. */
+  /** Fixture-only k-anon rollup: no matching BE shape. See file header. */
   async getAggregate(campaignId: string): Promise<CallbackCampaignAggregate> {
     return Promise.resolve(fixtureAggregateCampaign(campaignId))
   },
@@ -132,7 +125,7 @@ export const careCallbacksApi = {
     return apiClient.post<CallbackCampaign>(`/care-callback-campaigns/${id}/complete`, {})
   },
 
-  /** Only valid from Draft or Completed — must complete an Active campaign first. */
+  /** Only valid from Draft or Completed: must complete an Active campaign first. */
   async archiveCampaign(id: string): Promise<CallbackCampaign> {
     return apiClient.post<CallbackCampaign>(`/care-callback-campaigns/${id}/archive`, {})
   },
@@ -153,9 +146,9 @@ export const careCallbacksApi = {
 
   // ── Outreach records ─────────────────────────────────────────────────────
   /**
-   * Campaign-scoped only — the BE has no bare GET /outreach-records collection.
+   * Campaign-scoped only: the BE has no bare GET /outreach-records collection.
    * page/limit slice the result, but the response is a bare array with no
-   * total/has_more — there's no way to tell if more pages exist.
+   * total/has_more; there's no way to tell if more pages exist.
    */
   async listOutreachForCampaign(
     campaignId: string,
@@ -199,12 +192,12 @@ export const careCallbacksApi = {
     return apiClient.post<OutreachRecord>(`/outreach-records/${id}/decline`, input)
   },
 
-  /** notes is required and non-empty — enforced by both the schema and the entity. */
+  /** notes is required and non-empty, enforced by both the schema and the entity. */
   async escalate(id: string, input: OutreachEscalateInput): Promise<OutreachRecord> {
     return apiClient.post<OutreachRecord>(`/outreach-records/${id}/escalate`, input)
   },
 
-  // ── Triage (catalogue + scoring; no FE form wired yet — Phase 10) ────────
+  // ── Triage (catalogue + scoring; no FE form wired yet, Phase 10) ────────
   async listTriageInstruments(): Promise<TriageInstrument[]> {
     return apiClient.get<TriageInstrument[]>("/triage/instruments")
   },

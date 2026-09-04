@@ -22,7 +22,7 @@
  *   - EmergencyContactSchema: name (req), phone?, email?
  *
  * Demographic fields (first/last name, dob, gender, contact info, address)
- * are NOT collected — BE doesn't carry them at all. Display is derived via
+ * are NOT collected; BE doesn't carry them at all. Display is derived via
  * `displayName(person, user)` from the linked User's email.
  */
 
@@ -50,7 +50,7 @@ import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Client, Person } from "@/types/entities"
-import { Language, PersonType, type RelationType, WorkStatus } from "@/types/enums"
+import { Language, PersonType, type RelationType, TenantRole, WorkStatus } from "@/types/enums"
 
 const PERSON_TYPE_VALUES = [PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT] as const
 
@@ -132,7 +132,7 @@ const personSchema = z
     person_type: z.enum([PersonType.CLIENT_EMPLOYEE, PersonType.DEPENDENT]),
     family_id: z.string().optional(),
 
-    // Employment info (BE EmploymentInfoCreateSchema — required when employee)
+    // Employment info (BE EmploymentInfoCreateSchema: required when employee)
     client_id: z.string().optional(),
     role: z.string().optional(),
     department: z.string().optional(),
@@ -142,12 +142,12 @@ const personSchema = z
     employment_end: z.string().optional(),
     work_status: z.string().optional(),
 
-    // Dependent info (BE DependentInfoSchema — required when dependent)
+    // Dependent info (BE DependentInfoSchema: required when dependent)
     primary_employee_id: z.string().optional(),
     relationship: z.string().optional(),
     guardian_id: z.string().optional(),
 
-    // Emergency contact (BE EmergencyContactSchema — optional, posted as a
+    // Emergency contact (BE EmergencyContactSchema: optional, posted as a
     // follow-up PATCH after person create. `name` is required if any field set.)
     emergency_name: z.string().optional(),
     emergency_phone: z.string().optional(),
@@ -230,7 +230,7 @@ export function PersonFormSheet({
   const lockedClientId = clientId ?? person?.employment_info?.client_id ?? person?.client_id
 
   // For create: build a fresh form with defaults. For edit: hydrate from the
-  // existing employment_info / dependent_info — email/password aren't editable
+  // existing employment_info / dependent_info: email/password aren't editable
   // here (those go through the dedicated user routes).
   const initialValues: PersonFormValues = person
     ? personToValues(person)
@@ -287,10 +287,11 @@ export function PersonFormSheet({
 
         // 2-step (3-step with emergency contact) create.
         if (!tenantId) {
-          throw new Error("No active tenant — sign in first.")
+          throw new Error("No active tenant: sign in first.")
         }
         const user = await usersApi.create({
           email: payload.email,
+          role: TenantRole.USER,
           ...(payload.password ? { password: payload.password } : {}),
           ...(payload.preferred_language
             ? { preferred_language: payload.preferred_language as Language }
@@ -355,7 +356,7 @@ export function PersonFormSheet({
       submitLabel={isEdit ? "Save" : "Create"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
-      {/* 1. Identity — who is this person? Type first because it gates the
+      {/* 1. Identity, who is this person? Type first because it gates the
             rest, then email (the only "name" BE carries). */}
       <FormSection title="Identity">
         <div className="grid grid-cols-2 gap-3">
@@ -396,7 +397,7 @@ export function PersonFormSheet({
         </div>
       </FormSection>
 
-      {/* 2. The meat — what they do (employee) or who they're a dependent of. */}
+      {/* 2. The meat: what they do (employee) or who they're a dependent of. */}
       {showEmployment ? (
         <FormSection title="Employment">
           {lockedClientId ? (
@@ -530,7 +531,7 @@ export function PersonFormSheet({
                 render={({ field }) => (
                   <Select value={field.value ?? ""} onValueChange={field.onChange}>
                     <SelectTrigger id="ps-relationship">
-                      <SelectValue placeholder="—" />
+                      <SelectValue placeholder="-" />
                     </SelectTrigger>
                     <SelectContent>
                       {RELATION_VALUES.map((r) => (
@@ -555,7 +556,7 @@ export function PersonFormSheet({
         </FormSection>
       ) : null}
 
-      {/* 3. Safety net — emergency contact next, before admin trivia. */}
+      {/* 3. Safety net: emergency contact next, before admin trivia. */}
       <FormSection title="Emergency contact">
         <div className="grid grid-cols-2 gap-3">
           <FormField
@@ -595,7 +596,7 @@ export function PersonFormSheet({
         </FormField>
       </FormSection>
 
-      {/* 4. Admin / account preferences last. Only shown on create — these
+      {/* 4. Admin / account preferences last. Only shown on create; these
           fields configure the User entity that backs the person. */}
       {!isEdit ? (
         <FormSection title="Account preferences">
@@ -626,7 +627,7 @@ export function PersonFormSheet({
                 render={({ field }) => (
                   <Select value={field.value ?? ""} onValueChange={field.onChange}>
                     <SelectTrigger id="ps-lang">
-                      <SelectValue placeholder="—" />
+                      <SelectValue placeholder="-" />
                     </SelectTrigger>
                     <SelectContent>
                       {LANGUAGE_OPTIONS.map((l) => (

@@ -65,7 +65,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
     defaultValues: EMPTY,
     open,
     onOpenChange,
-    parsePayload: (values) => ({
+    parsePayload: (values): Parameters<typeof casesApi.create>[0] => ({
       client_id: values.client_id,
       member_id: values.member_id,
       presenting_problem: values.presenting_problem,

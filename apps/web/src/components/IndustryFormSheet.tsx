@@ -59,7 +59,7 @@ export function IndustryFormSheet({
       level: i.level != null ? String(i.level) : "",
       parent_id: i.parent_id ?? "",
     }),
-    parsePayload: (values) => ({
+    parsePayload: (values): Parameters<typeof industriesApi.create>[0] => ({
       name: values.name,
       code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
       level: values.level?.trim() ? Number.parseInt(values.level, 10) : null,

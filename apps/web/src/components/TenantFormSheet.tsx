@@ -81,7 +81,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
       max_clients: String(t.settings?.max_clients ?? 5),
       custom_branding: t.settings?.custom_branding ?? false,
     }),
-    parsePayload: (v) => ({
+    parsePayload: (v): TenantCreate => ({
       name: v.name.trim(),
       code: v.code.trim().toLowerCase(),
       admin_email: v.admin_email?.trim() || null,

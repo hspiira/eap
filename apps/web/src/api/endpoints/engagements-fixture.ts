@@ -6,6 +6,7 @@
  * timeline events. Replaced by BE Phase 4 #1 endpoints.
  */
 
+import type { DeliverableCreate } from "@/api/generated"
 import type {
   Engagement,
   EngagementDeliverable,
@@ -46,7 +47,7 @@ const ENGAGEMENT_SEED: Engagement[] = [
     id: "eng-002",
     tenant_id: TENANT,
     client_id: "fixture-absa",
-    name: "Manager mental-health training — Q2",
+    name: "Manager mental-health training: Q2",
     description: "Two cohorts × half-day workshop. Includes pre/post evaluation.",
     status: EngagementStatus.SCOPING,
     engagement_type: EngagementType.TRAINING,
@@ -65,7 +66,7 @@ const ENGAGEMENT_SEED: Engagement[] = [
     id: "eng-003",
     tenant_id: TENANT,
     client_id: "fixture-stanbic",
-    name: "Wellness audit — branch network",
+    name: "Wellness audit: branch network",
     description: "On-site assessment + report covering 12 priority branches.",
     status: EngagementStatus.DELIVERED,
     engagement_type: EngagementType.AUDIT,
@@ -131,7 +132,7 @@ const TIME_ENTRY_SEED: EngagementTimeEntry[] = [
     user_id: "user-helen",
     occurred_on: "2026-04-02",
     hours: 4,
-    description: "Stakeholder interviews — HR + ops.",
+    description: "Stakeholder interviews: HR + ops.",
     deliverable_id: "dlv-001",
     created_at: "2026-04-02T18:00:00Z",
   },
@@ -161,7 +162,7 @@ const TIME_ENTRY_SEED: EngagementTimeEntry[] = [
     user_id: "user-helen",
     occurred_on: "2026-03-10",
     hours: 24,
-    description: "On-site visits — 8 branches.",
+    description: "On-site visits: 8 branches.",
     deliverable_id: "dlv-003",
     created_at: "2026-03-10T18:00:00Z",
   },
@@ -232,12 +233,8 @@ export interface EngagementCreateInput {
   lead_user_id?: string | null
 }
 
-export interface DeliverableCreateInput {
-  engagement_id: string
-  title: string
-  description?: string | null
-  due_date?: string | null
-}
+/** `DeliverableCreate` plus the engagement id, which the route carries in its path. */
+export type DeliverableCreateInput = DeliverableCreate & { engagement_id: string }
 
 export interface TimeEntryCreateInput {
   engagement_id: string

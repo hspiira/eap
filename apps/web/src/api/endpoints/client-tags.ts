@@ -2,15 +2,12 @@
  * Client Tags API Endpoints
  */
 
+import type { Schemas } from "@/api/generated"
+
 import apiClient from "../client"
 import type { Client, ClientTag, ListParams, PaginatedResponse } from "../types"
 
-export interface ClientTagCreate {
-  name: string
-  color?: string | null
-  description?: string | null
-  metadata?: Record<string, unknown> | null
-}
+export type ClientTagCreate = Schemas["ClientTagCreate"]
 
 export const clientTagsApi = {
   async create(data: ClientTagCreate): Promise<ClientTag> {

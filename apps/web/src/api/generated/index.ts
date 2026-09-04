@@ -1,7 +1,9 @@
 /**
- * BE-canonical types, generated from `evexia_bk/schema/openapi.json`.
+ * Named re-exports of the backend types in `./schema.ts`.
  *
- * Do not edit by hand. Regenerate with `pnpm openapi:sync`.
+ * `schema.ts` is generated from `apps/api/schema/openapi.json` and must not be
+ * edited by hand; run `pnpm contracts:sync` to regenerate it. This barrel is
+ * maintained by hand, so add an export here when a form needs a new type.
  *
  * Usage:
  *   import type { ClientCreate, ContractCreate } from "@/api/generated"
@@ -69,3 +71,6 @@ export type SurveyCampaignCreate = Schemas["SurveyCampaignCreate"]
 export type EngagementCreate = Schemas["EngagementCreate"]
 export type DeliverableCreate = Schemas["DeliverableCreate"]
 export type HoursLogCreate = Schemas["HoursLogCreate"]
+
+// ----- Care callbacks --------------------------------------------------------
+export type CareCallbackCampaignCreate = Schemas["CareCallbackCampaignCreate"]

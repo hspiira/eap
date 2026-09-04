@@ -2,10 +2,11 @@
  * Users API Endpoints
  */
 
+import type { Schemas } from "@/api/generated"
 import type { AccessScope } from "@/types/enums"
 
 import apiClient from "../client"
-import type { CreateRequest, ListParams, PaginatedResponse, User } from "../types"
+import type { ListParams, PaginatedResponse, User } from "../types"
 
 /** Mirrors the query params on `GET /users/` in the BE OpenAPI schema. */
 export interface UserListParams extends ListParams {
@@ -14,13 +15,7 @@ export interface UserListParams extends ListParams {
   access_scope?: AccessScope
 }
 
-export interface UserCreate extends CreateRequest {
-  email: string
-  password?: string
-  preferred_language?: string
-  timezone?: string
-  role?: "Admin" | "User" | "Viewer"
-}
+export type UserCreate = Schemas["UserCreate"]
 
 export interface UserUpdatePasswordRequest {
   password: string

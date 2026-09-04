@@ -6,11 +6,12 @@
  * create pages in dev.
  *
  * The k-anon aggregate rollup (`fixtureAggregateCampaign`) is a separate, self-contained
- * simulation with no BE counterpart (see care-callbacks.ts header) — it keeps its own
+ * simulation with no BE counterpart (see care-callbacks.ts header); it keeps its own
  * private case/outcome shapes rather than the real `OutreachRecord`, since the real BE
  * has no equivalent aggregate-with-k-floor endpoint to model against.
  */
 
+import type { CareCallbackCampaignCreate } from "@/api/generated"
 import type {
   CallbackCampaign,
   CallbackCampaignAggregate,
@@ -23,7 +24,7 @@ import { fixtureGetQuestionnaireByCode } from "./questionnaires-fixture"
 const TENANT = "tenant-fixture"
 const NOW_ISO = "2026-05-08T08:00:00Z"
 
-/** k-anonymity floor — SAD §15 / Assumption A-19 = 10. Mirrored on the BE. */
+/** k-anonymity floor: SAD §15 / Assumption A-19 = 10. Mirrored on the BE. */
 export const K_ANON_FLOOR = 10
 
 const CAMPAIGN_SEED: CallbackCampaign[] = [
@@ -31,7 +32,7 @@ const CAMPAIGN_SEED: CallbackCampaign[] = [
     id: "cmp-001",
     tenant_id: TENANT,
     client_id: "fixture-stanbic",
-    name: "Stanbic Q1 wave — anxiety/depression cohort",
+    name: "Stanbic Q1 wave: anxiety/depression cohort",
     status: CareCallbackCampaignStatus.ACTIVE,
     period_start: "2026-05-01",
     period_end: "2026-05-22",
@@ -49,7 +50,7 @@ const CAMPAIGN_SEED: CallbackCampaign[] = [
     id: "cmp-002",
     tenant_id: TENANT,
     client_id: "fixture-absa",
-    name: "ABSA renewal pack — 30-day post-CISM check-in",
+    name: "ABSA renewal pack: 30-day post-CISM check-in",
     status: CareCallbackCampaignStatus.DRAFT,
     period_start: "2026-05-12",
     period_end: "2026-05-30",
@@ -67,15 +68,7 @@ const CAMPAIGN_SEED: CallbackCampaign[] = [
 
 const campaignStore: CallbackCampaign[] = [...CAMPAIGN_SEED]
 
-export interface CampaignCreateInput {
-  client_id: string
-  name: string
-  period_start: string
-  period_end: string
-  target_count: number
-  counsellor_pool: string[]
-  sampling_notes?: string | null
-}
+export type CampaignCreateInput = CareCallbackCampaignCreate
 
 export function fixtureListCampaigns(): CallbackCampaign[] {
   return [...campaignStore].sort((a, b) =>

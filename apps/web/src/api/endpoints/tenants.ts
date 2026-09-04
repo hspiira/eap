@@ -5,6 +5,8 @@
  * subscription, and Azure AD SSO config.
  */
 
+import type { Schemas } from "@/api/generated"
+
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse, Tenant } from "../types"
 
@@ -15,13 +17,7 @@ export interface TenantSettingsInput {
   custom_branding?: boolean
 }
 
-export interface TenantCreate {
-  name: string
-  code: string
-  admin_email?: string | null
-  subscription_tier?: string
-  settings?: TenantSettingsInput
-}
+export type TenantCreate = Schemas["TenantCreate"]
 
 export interface TenantUpdate {
   name?: string

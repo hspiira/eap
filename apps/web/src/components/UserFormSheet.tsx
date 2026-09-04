@@ -19,9 +19,9 @@ import { Language, TenantRole } from "@/types/enums"
 
 const ROLE_VALUES = [TenantRole.ADMIN, TenantRole.USER, TenantRole.VIEWER] as const
 const ROLE_LABELS: Record<TenantRole, string> = {
-  [TenantRole.ADMIN]: "Admin — full tenant management",
-  [TenantRole.USER]: "User — standard access",
-  [TenantRole.VIEWER]: "Viewer — read-only",
+  [TenantRole.ADMIN]: "Admin: full tenant management",
+  [TenantRole.USER]: "User: standard access",
+  [TenantRole.VIEWER]: "Viewer: read-only",
 }
 
 const LANGUAGE_OPTIONS = [
@@ -88,10 +88,12 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
     },
     open,
     onOpenChange,
-    parsePayload: (values) => ({
+    parsePayload: (values): Parameters<typeof usersApi.create>[0] => ({
       email: values.email,
       password: values.password || undefined,
-      preferred_language: values.preferred_language || undefined,
+      preferred_language: values.preferred_language
+        ? (values.preferred_language as Language)
+        : undefined,
       timezone: values.timezone || undefined,
       role: values.role,
     }),

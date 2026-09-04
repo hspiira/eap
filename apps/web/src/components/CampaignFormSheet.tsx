@@ -78,7 +78,7 @@ export function CampaignFormSheet({
     defaultValues: { ...EMPTY, client_id: clientId ?? "" },
     open,
     onOpenChange,
-    parsePayload: (values) => ({
+    parsePayload: (values): Parameters<typeof careCallbacksApi.createCampaign>[0] => ({
       client_id: values.client_id,
       name: values.name,
       period_start: values.period_start,
