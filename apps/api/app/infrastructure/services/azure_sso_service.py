@@ -5,7 +5,7 @@ Handles the OAuth2/OIDC Authorization Code flow with Microsoft Entra ID.
 Wraps MSAL to build the login redirect URL and exchange the callback code
 for verified identity claims.
 
-State is a self-contained HMAC-signed token (nonce + expiry) — no server-side
+State is a self-contained HMAC-signed token (nonce + expiry); no server-side
 session storage required.
 """
 
@@ -25,8 +25,8 @@ from app.core.config import settings
 class AzureClaims:
     """Verified identity claims extracted from an Azure AD id_token."""
 
-    oid: str  # Object ID — immutable, unique per user per Azure directory
-    tid: str  # Tenant ID — the employer's Azure AD directory
+    oid: str  # Object ID: immutable, unique per user per Azure directory
+    tid: str  # Tenant ID: the employer's Azure AD directory
     email: str  # Preferred username / email
     name: str | None = None
 
@@ -35,7 +35,7 @@ class AzureSSOService:
     """
     Stateless service for Azure AD SSO.
 
-    One instance per request is fine — the MSAL app object is cheap.
+    One instance per request is fine; the MSAL app object is cheap.
     Raises RuntimeError if Azure env vars are not configured.
     """
 
@@ -69,7 +69,7 @@ class AzureSSOService:
         Build the Microsoft login redirect URL.
 
         Returns:
-            (auth_url, nonce) — redirect the browser to auth_url; the state
+            (auth_url, nonce): redirect the browser to auth_url; the state
             value is already embedded in auth_url by MSAL. The caller MUST
             store `nonce` in a short-lived HttpOnly cookie and pass it back to
             `exchange_code`, which binds the OAuth round-trip to this browser
@@ -95,7 +95,7 @@ class AzureSSOService:
             code: The authorization code from Azure's callback query string
             state: The state parameter from Azure's callback query string
             expected_nonce: The nonce issued at /azure/login and stored in the
-                browser's cookie. Required — a None/empty value means the
+                browser's cookie. Required; a None/empty value means the
                 browser never started this flow (or the cookie expired), which
                 is exactly the login-CSRF case we reject.
 
@@ -156,8 +156,8 @@ class AzureSSOService:
         Validate the state token: well-formed, unexpired, correctly signed, and
         belonging to THIS browser.
 
-        The signature alone only proves "this server minted this token recently"
-        — not "this browser began this flow". Without the nonce comparison an
+        The signature alone only proves "this server minted this token recently",
+        not "this browser began this flow". Without the nonce comparison an
         attacker can start their own login, capture the resulting code+state,
         and feed it to a victim's browser, silently signing the victim into the
         attacker's account (login CSRF). Matching against the nonce cookie set
@@ -165,7 +165,7 @@ class AzureSSOService:
         """
         try:
             decoded = base64.urlsafe_b64decode(state.encode()).decode()
-            # Format: nonce:exp:signature  — nonce may contain url-safe chars but not ':'
+            # Format: nonce:exp:signature ; nonce may contain url-safe chars but not ':'
             parts = decoded.split(":")
             if len(parts) != 3:
                 raise ValueError("malformed state")

@@ -1,7 +1,7 @@
 """Clinical case aggregate.
 
 The central container that ties one episode of care together: presenting
-problem, referral source, the subject (pseudonymous — see ``ClinicalSubject``),
+problem, referral source, the subject (pseudonymous, see ``ClinicalSubject``),
 the assigned counsellor, the lifecycle, and the rolled-up screener
 administrations used at intake and closure for outcome measurement.
 

@@ -49,7 +49,7 @@ type NavItem = {
   iconClassName?: string
   flag?: FeatureFlag
   platformAdmin?: boolean
-  /** Requires the Clinical access scope — hidden entirely otherwise (privacy wall). */
+  /** Requires the Clinical access scope, hidden entirely otherwise (privacy wall). */
   clinicalScope?: boolean
 }
 
@@ -57,10 +57,10 @@ function platformTenantId(): string {
   return (import.meta.env.VITE_PLATFORM_TENANT_ID ?? "").trim()
 }
 
-/** Quick-access items — always visible at the top, no label. */
+/** Quick-access items: always visible at the top, no label. */
 const TOP_ITEMS: ReadonlyArray<NavItem> = [{ to: "/", label: "Home", icon: Home }]
 
-/** Day-to-day operational navigation — flat, no section label. */
+/** Day-to-day operational navigation: flat, no section label. */
 const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/clients", label: "Clients", icon: Building2 },
   { to: "/persons", label: "Persons", icon: Users },
@@ -78,7 +78,7 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/documents", label: "Documents", icon: FolderOpen, flag: "documents" },
 ]
 
-/** Configuration & admin — shown under a "Settings" label. */
+/** Configuration & admin: shown under a "Settings" label. */
 const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/industries", label: "Industries", icon: BarChart3 },
   { to: "/tags", label: "Tags", icon: Tag },
@@ -122,7 +122,7 @@ function resolveActive(pathname: string, to: string, allTos: readonly string[]):
 
 function useTenantDisplayName(): string {
   const currentTenant = useTenantStore((s) => s.currentTenant)
-  return currentTenant?.name ? toProperCase(currentTenant.name) : "—"
+  return currentTenant?.name ? toProperCase(currentTenant.name) : "-"
 }
 
 // ─── Expanded sidebar ────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ function ExpandedSidebar() {
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Main operational nav — flat, no label */}
+        {/* Main operational nav: flat, no label */}
         {mainItems.length > 0 && (
           <>
             <div className="mx-2 my-1 h-px bg-border" role="separator" />
@@ -292,7 +292,7 @@ function CollapsedHeader() {
           <Button
             type="button"
             variant="ghost"
-            aria-label={`${displayName} — expand sidebar`}
+            aria-label={`${displayName}: expand sidebar`}
             onClick={() => setOpen(true)}
             className="mx-auto size-9 p-0 rounded-md hover:bg-sidebar-accent focus-visible:ring-sidebar-ring"
           >

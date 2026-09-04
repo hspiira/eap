@@ -69,7 +69,7 @@ vi.mock("@/api/endpoints/users", () => ({
 const { Route } = await import("@/routes/service-sessions/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("sessions list — happy path", () => {
+describe("sessions list: happy path", () => {
   it("resolves the service name instead of an id fragment", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Short-term counselling")).toBeInTheDocument()

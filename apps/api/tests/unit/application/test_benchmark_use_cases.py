@@ -139,7 +139,7 @@ class TestWithdrawConsent:
 class TestCrossTenantBenchmark:
     @pytest.mark.asyncio
     async def test_suppressed_below_floor(self):
-        # Only 3 consenting tenants — well below default k=10
+        # Only 3 consenting tenants, well below default k=10
         repo = _FakeConsentRepo(
             *(_consent(f"t-{i}", BenchmarkScope.SESSION_VOLUME) for i in range(3))
         )

@@ -4,7 +4,7 @@ Azure identity linking invariants on UserEntity.
 The SSO callback resolves a user by Azure OID and falls back to email. Without a
 guard on re-linking, an email address recycled by the customer's IT department
 (offboard A, later reassign the address to new hire B) would let B's first SSO
-login silently inherit A's account — role, access scopes, case history, audit
+login silently inherit A's account: role, access scopes, case history, audit
 identity. In an EAP system holding PHI that is an access-control failure, so the
 invariant lives on the entity rather than in one caller.
 """

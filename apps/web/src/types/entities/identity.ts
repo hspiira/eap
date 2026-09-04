@@ -114,7 +114,7 @@ export interface User extends BaseEntity {
 }
 
 /**
- * Person — BE-canonical: a thin link between a User and a Client (via
+ * Person: BE-canonical: a thin link between a User and a Client (via
  * employment_info) or a primary employee (via dependent_info).
  *
  * BE `PersonResponse` only carries: `id, tenant_id, user_id, person_type,
@@ -158,7 +158,7 @@ export interface Person extends BaseEntity {
   client_id?: string | null
   /** @deprecated Use `dependent_info` instead. */
   parent_person_id?: string | null
-  /** @deprecated Not on BE Person response — contact lives on the linked User. */
+  /** @deprecated Not on BE Person response: contact lives on the linked User. */
   contact_info?: ContactInfo | null
   /** @deprecated Not on BE Person response. */
   address?: Address | null

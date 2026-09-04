@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class ProviderTier(str, Enum):
-    """Provider panel tier — drives routing and rate cards (Joseph's framework)."""
+    """Provider panel tier, drives routing and rate cards (Joseph's framework)."""
 
     T1 = "T1"
     T2 = "T2"

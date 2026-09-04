@@ -1,4 +1,4 @@
-"""EAP programme + Authorization routes — CLINICAL-scope only."""
+"""EAP programme + Authorization routes, CLINICAL-scope only."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession

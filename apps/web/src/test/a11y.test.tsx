@@ -43,7 +43,7 @@ vi.mock("@tanstack/react-router", async () => {
   }
 })
 
-describe("a11y — gated routes (zero serious/critical issues)", () => {
+describe("a11y: gated routes (zero serious/critical issues)", () => {
   it("client-create form is accessible", async () => {
     const { container } = renderWithProviders(<ClientFormSheet open onOpenChange={() => {}} />)
     await expect(await axe(container)).toHaveNoViolations()

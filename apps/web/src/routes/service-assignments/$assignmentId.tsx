@@ -77,7 +77,7 @@ function ServiceAssignmentDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["service-assignments"] })
         toast.showSuccess("Status updated")
       } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -156,7 +156,7 @@ function ServiceAssignmentDetailPage() {
                         label="Status"
                         value={<StatusBadge status={assignment.status} />}
                       />
-                      <DetailRow label="Notes" value={assignment.notes ?? "—"} fullWidth />
+                      <DetailRow label="Notes" value={assignment.notes ?? "-"} fullWidth />
                       <DetailRow
                         label="Assignment ID"
                         value={<span className="font-mono text-xs">{assignment.id}</span>}
@@ -204,7 +204,7 @@ function ServiceAssignmentDetailPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {service.service_type ?? service.category ?? "—"}
+                            {service.service_type ?? service.category ?? "-"}
                           </p>
                         </div>
                       </div>

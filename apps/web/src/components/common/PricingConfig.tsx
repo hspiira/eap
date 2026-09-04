@@ -274,7 +274,7 @@ function AdminUtilisationInputs({
           role="alert"
           className="border border-danger/40 bg-danger-soft/30 px-3 py-2 text-sm text-danger"
         >
-          Admin fee is below the floor of {value.admin_floor.toFixed(2)} — pricing requires approval
+          Admin fee is below the floor of {value.admin_floor.toFixed(2)}; pricing requires approval
           before activation.
         </p>
       )}

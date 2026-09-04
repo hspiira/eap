@@ -74,9 +74,9 @@ export function OverviewCard({ tenant }: { tenant: Tenant }) {
       </header>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         <Field label="ID" value={<span className="font-mono text-xs">{tenant.id}</span>} />
-        <Field label="Subscription" value={tenant.subscription_tier ?? "—"} />
-        <Field label="Max users" value={String(tenant.settings?.max_users ?? "—")} />
-        <Field label="Max clients" value={String(tenant.settings?.max_clients ?? "—")} />
+        <Field label="Subscription" value={tenant.subscription_tier ?? "-"} />
+        <Field label="Max users" value={String(tenant.settings?.max_users ?? "-")} />
+        <Field label="Max clients" value={String(tenant.settings?.max_clients ?? "-")} />
         <Field
           label="Custom branding"
           value={tenant.settings?.custom_branding ? "Enabled" : "Disabled"}
@@ -164,7 +164,7 @@ export function SubscriptionAndQuotasCard({ tenant }: { tenant: Tenant }) {
           Change the subscription tier or adjust user/client quotas.
         </p>
         <p className="mt-2 inline-block rounded-sm border border-fg/15 bg-bg px-2 py-1 text-xs text-fg-muted">
-          Advisory only — pricing tiers and quota enforcement are not yet wired up. Values save but
+          Advisory only: pricing tiers and quota enforcement are not yet wired up. Values save but
           do not block creation.
         </p>
       </header>
@@ -500,7 +500,7 @@ export function LifecycleCard({ tenant }: { tenant: Tenant }) {
             </DialogTitle>
             <DialogDescription>
               {reasonDialog === "suspend"
-                ? "Suspending pauses the tenant — users cannot sign in until reactivated."
+                ? "Suspending pauses the tenant: users cannot sign in until reactivated."
                 : "Terminating is permanent. The tenant cannot be restored after termination."}
             </DialogDescription>
           </DialogHeader>

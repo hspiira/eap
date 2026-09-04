@@ -178,7 +178,7 @@ async def update_user_role(
     """
     Change a user's tenant role. ADMIN-only.
 
-    Guards against demoting the last admin in a tenant — that would leave the
+    Guards against demoting the last admin in a tenant; that would leave the
     tenant unmanageable.
     """
     if user.role == TenantRole.ADMIN and body.role != TenantRole.ADMIN:

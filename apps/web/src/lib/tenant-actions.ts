@@ -1,5 +1,5 @@
 /**
- * Tenant actions — Zustand-only flow.
+ * Tenant actions: Zustand-only flow.
  * Single place for tenant CRUD/refresh/active-selection. State lives in tenantSlice.
  */
 

@@ -361,7 +361,7 @@ async def update_azure_sso(
     if data.azure_tenant_id:
         tenant.configure_azure_sso(data.azure_tenant_id, enabled=data.enabled)
     else:
-        # No new ID provided — just toggle the existing one (or no-op if never set).
+        # No new ID provided; just toggle the existing one (or no-op if never set).
         if data.enabled and not tenant.azure_tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

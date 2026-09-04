@@ -2,7 +2,7 @@
  * Triage instrument API (Phase 3 #2).
  *
  * BE base path is `/triage/instruments` (confirmed via openapi.json).
- * Fixture is DEV-only — flip to live by running production build.
+ * Fixture is DEV-only; flip to live by running production build.
  */
 
 import { useFixtures } from "@/lib/fixtures"

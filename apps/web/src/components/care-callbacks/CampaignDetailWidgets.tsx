@@ -232,7 +232,7 @@ export function AggregatePanel({
                     ? s.mean.toFixed(2)
                     : s.histogram
                       ? topHistogramEntry(s.histogram)
-                      : "—"}
+                      : "-"}
                 </TableCell>
               </TableRow>
             ))}
@@ -388,7 +388,7 @@ export function CaseStatusPill({ status }: { status: OutreachStatus }) {
 
 function topHistogramEntry(h: Record<string, number>): string {
   const entries = Object.entries(h)
-  if (entries.length === 0) return "—"
+  if (entries.length === 0) return "-"
   entries.sort((a, b) => b[1] - a[1])
   const [value, count] = entries[0]
   return `${value} (${count})`

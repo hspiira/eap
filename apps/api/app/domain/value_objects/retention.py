@@ -1,6 +1,6 @@
 """Per-data-class retention policy (Phase 4 #DSAR / SAD §6.6).
 
-Declared in code rather than in a config table — these values change rarely and
+Declared in code rather than in a config table; these values change rarely and
 need to be reviewed by legal whenever they do, so a code-review-gated constant
 is the right surface for v1. A future iteration can promote this to a tenant
 override table if multi-jurisdiction tenants need divergent windows.

@@ -97,9 +97,9 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
         <div className="grid grid-cols-2 gap-3">
           <Stat
             label="Duration"
-            value={service?.duration_minutes != null ? `${service.duration_minutes}m` : "—"}
+            value={service?.duration_minutes != null ? `${service.duration_minutes}m` : "-"}
           />
-          <Stat label="Feedback" value={session.feedback ? "Received" : "—"} />
+          <Stat label="Feedback" value={session.feedback ? "Received" : "-"} />
         </div>
       </RailSection>
 
@@ -119,7 +119,7 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg-muted">{service.service_type ?? "—"}</p>
+                <p className="truncate text-[11px] text-fg-muted">{service.service_type ?? "-"}</p>
               </div>
             </Link>
           ) : null}

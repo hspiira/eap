@@ -102,7 +102,7 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   )
 }
 
-/** Avatar + primary/secondary line — the shape every picker row uses. */
+/** Avatar + primary/secondary line: the shape every picker row uses. */
 export function PickerRow({
   initials,
   primary,
@@ -180,12 +180,12 @@ export function ServicePicker({
         <PickerRow
           initials="SV"
           primary={s.name}
-          secondary={s.service_type ?? s.category ?? "—"}
+          secondary={s.service_type ?? s.category ?? "-"}
           size="md"
         />
       )}
       renderRow={(s) => (
-        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? s.category ?? "—"} />
+        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? s.category ?? "-"} />
       )}
     />
   )

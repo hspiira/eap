@@ -1,7 +1,7 @@
 """Pricing engine (Phase 2 #D-Pricing).
 
 Computes an :class:`InvoicePreview` for a contract over a billing window. One
-calculation path per :class:`PricingModel`. Pure domain logic — no DB, no I/O.
+calculation path per :class:`PricingModel`. Pure domain logic: no DB, no I/O.
 The application layer (route or use case) is responsible for loading the
 contract and the relevant utilisation events.
 """
@@ -90,7 +90,7 @@ def _framework(
         drawn_total += total.amount
         lines.append(
             InvoiceLine(
-                description=f"Drawdown — {event.event_type.value}"
+                description=f"Drawdown: {event.event_type.value}"
                 + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,
@@ -118,7 +118,7 @@ def _fee_for_service(
         lines.append(
             InvoiceLine(
                 description=f"{event.event_type.value}"
-                + (f" — {event.service_code}" if event.service_code else ""),
+                + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,
                 total=total,
@@ -146,7 +146,7 @@ def _admin_utilisation(
         total = rate.multiply(decimal.Decimal(event.units))
         usage_lines.append(
             InvoiceLine(
-                description=f"Usage — {event.event_type.value}"
+                description=f"Usage: {event.event_type.value}"
                 + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,

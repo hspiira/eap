@@ -4,7 +4,7 @@
  * Providers are Persons whose `person_type === ServiceProvider` and who carry
  * a `provider_profile` (tier, region, accreditation, panel status, specialties).
  * This module is a thin wrapper around `personsApi` that filters for that
- * combination — the BE has no separate `/providers` route.
+ * combination: the BE has no separate `/providers` route.
  *
  * Lifecycle and roster management live in `panel.ts` (bulk-status, tier-change,
  * eligibility) and `non-compete-clauses.ts`.

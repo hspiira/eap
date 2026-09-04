@@ -1,5 +1,5 @@
 function fmtCount(n: number | null | undefined): string {
-  if (n == null) return "—"
+  if (n == null) return "-"
   return n.toLocaleString()
 }
 

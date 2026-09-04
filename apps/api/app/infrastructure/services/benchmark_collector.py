@@ -17,7 +17,7 @@ from app.infrastructure.models.survey_model import SurveyResponseModel
 class SqlBenchmarkCollector:
     """Computes one numeric value per consenting tenant for the requested scope.
 
-    The shape is deliberately simple — one number per tenant — so the cross-tenant
+    The shape is deliberately simple (one number per tenant), so the cross-tenant
     aggregator and the k-anon gate stay focused on disclosure rules rather than
     metric semantics. New metrics extend the dispatch table below.
     """

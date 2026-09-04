@@ -107,7 +107,7 @@ export function DiagnosisSelector({
   }
 
   const triggerLabel = useMemo(() => {
-    if (selectedDiagnosis) return selectedDiagnosis.code + " — " + selectedDiagnosis.name
+    if (selectedDiagnosis) return selectedDiagnosis.code + ", " + selectedDiagnosis.name
     if (value && treeQuery.isPending) return "Loading…"
     return placeholder
   }, [selectedDiagnosis, treeQuery.isPending, value, placeholder])
@@ -225,7 +225,7 @@ function DiagnosisList({
             </span>
             <span className="min-w-0 flex-1">
               <span className="font-medium">{d.code}</span>
-              <span className="ml-1 text-fg/80">— {d.name}</span>
+              <span className="ml-1 text-fg/80">- {d.name}</span>
             </span>
           </Button>
         </li>
@@ -290,7 +290,7 @@ function TypeGroupList({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="font-medium">{d.code}</span>
-                        <span className="ml-1 text-fg/80">— {d.name}</span>
+                        <span className="ml-1 text-fg/80">- {d.name}</span>
                       </span>
                     </Button>
                   </li>

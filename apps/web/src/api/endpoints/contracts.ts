@@ -8,7 +8,7 @@
  * - `start_date` / `end_date` are full datetimes (ISO with time), not just dates.
  * - `is_auto_renew` defaults to false; renewal_date is computed from period.
  * - Pricing model selection (RETAINER / FRAMEWORK / FFS / etc.) is set via a
- *   separate `PATCH /contracts/{id}/pricing` route — see `pricing.ts`.
+ *   separate `PATCH /contracts/{id}/pricing` route: see `pricing.ts`.
  */
 
 import type {

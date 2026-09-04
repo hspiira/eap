@@ -201,7 +201,7 @@ class InvalidStateError(DomainError):
     """Raised when an action is rejected by the entity's current state / FSM.
 
     Maps to HTTP 400. Use for transitions like activating an already-active
-    entity if you want HTTP 400 instead of 409 — choose 409 (ConflictError)
+    entity if you want HTTP 400 instead of 409; choose 409 (ConflictError)
     when the action is meaningful but the state collides; choose 400 here
     when the action itself is invalid given the state.
     """
@@ -226,7 +226,7 @@ class SubscriptionLimitError(EvexiaException):
     """
     Raised when a tenant has hit a subscription limit (max users, max clients, etc).
 
-    Returns 402 Payment Required — semantically "you need to upgrade your plan",
+    Returns 402 Payment Required, semantically "you need to upgrade your plan",
     NOT 403 Forbidden (which implies an authorization failure and confuses
     clients into thinking it's a role/permission issue).
     """

@@ -99,7 +99,7 @@ function UserDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["users"] })
         toast.showSuccess("Status updated")
       } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -114,7 +114,7 @@ function UserDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["users"] })
       toast.showSuccess("Email marked as verified")
     } catch (err) {
-      toast.showError(normalizeErrorMessage(err, "Could not verify email — please try again"))
+      toast.showError(normalizeErrorMessage(err, "Could not verify email, please try again"))
     } finally {
       setVerifyLoading(false)
     }
@@ -136,7 +136,7 @@ function UserDetailPage() {
       setReasonValue("")
       toast.showSuccess("Status updated")
     } catch (err) {
-      toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+      toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
     } finally {
       setActionLoading(false)
     }

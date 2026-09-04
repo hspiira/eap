@@ -1,6 +1,6 @@
 /**
- * Happy path for the login page: both entry points render — the Microsoft
- * SSO button and the password fallback — matching the Option C UX.
+ * Happy path for the login page: both entry points render, the Microsoft
+ * SSO button and the password fallback: matching the Option C UX.
  */
 
 import { describe, expect, it, vi } from "vitest"
@@ -31,7 +31,7 @@ vi.mock("@/hooks/useRedirectIfAuthenticated", () => ({
 const { Route } = await import("@/routes/auth/login")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("login — happy path", () => {
+describe("login: happy path", () => {
   it("offers Microsoft SSO and the password fallback", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText(/Sign in with Microsoft/i)).toBeInTheDocument()

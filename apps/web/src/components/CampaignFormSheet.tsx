@@ -102,7 +102,7 @@ export function CampaignFormSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="New care-callback campaign"
-      description="Define the audience size and counsellor pool. Enrol persons and activate once ready — outreach records start Pending until a counsellor claims each one."
+      description="Define the audience size and counsellor pool. Enrol persons and activate once ready; outreach records start Pending until a counsellor claims each one."
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -177,7 +177,7 @@ export function CampaignFormSheet({
 
       <FormSection
         title="Counsellor pool"
-        description="Counsellors who can claim outreach records once the campaign is active. Required to activate — a campaign can't go live with an empty pool."
+        description="Counsellors who can claim outreach records once the campaign is active. Required to activate; a campaign can't go live with an empty pool."
       >
         <FormField label="Counsellors" required error={errors.counsellor_pool?.message}>
           <CounsellorMultiPicker
@@ -196,7 +196,7 @@ export function CampaignFormSheet({
         <FormField
           label="Sampling notes"
           optional
-          description="Internal notes on how the audience was selected — appears on the campaign detail."
+          description="Internal notes on how the audience was selected, appears on the campaign detail."
           error={errors.sampling_notes?.message}
           htmlFor="cf-sampling-notes"
         >

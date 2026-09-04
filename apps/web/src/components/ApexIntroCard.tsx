@@ -21,7 +21,7 @@ export function ApexIntroCard({ className }: ApexIntroCardProps = {}) {
           </span>
           <div className="min-w-0 flex-1 grid gap-1">
             <p className="text-sm text-fg">
-              Hello, I'm <strong className="font-semibold">Apex</strong> — your tenant assistant.
+              Hello, I'm <strong className="font-semibold">Apex</strong>: your tenant assistant.
             </p>
             <p className="text-sm text-fg-muted">
               Ask me anything about clients, contracts, sessions, or incidents. I'll surface the

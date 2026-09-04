@@ -5,7 +5,7 @@ Revises: z4u7v9w1q3s6
 Create Date: 2026-07-10
 
 users:
-  display_name  VARCHAR(255) NULLABLE — display name sourced from the identity
+  display_name  VARCHAR(255) NULLABLE: display name sourced from the identity
                 provider (Azure AD 'name' claim). Null for password-only users.
                 Refreshed on every SSO login so it stays in sync with the IdP.
 """

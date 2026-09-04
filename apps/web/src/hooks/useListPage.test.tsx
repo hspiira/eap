@@ -1,7 +1,7 @@
 /**
  * The shared list-page scaffold. Eight server-paginated pages ride on this
  * hook, so its invariants are theirs: a filter or search change must reset
- * to page 1 (the F1 bug family — a stale page shows the wrong slice), and
+ * to page 1 (the F1 bug family: a stale page shows the wrong slice), and
  * the ?new=1 handoff must clear itself so a reload doesn't reopen the sheet.
  */
 

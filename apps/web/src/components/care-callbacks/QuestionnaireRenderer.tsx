@@ -104,7 +104,7 @@ function renderInput(
           onValueChange={(v) => onChange(v || null)}
         >
           <SelectTrigger id={inputId}>
-            <SelectValue placeholder="— Select —" />
+            <SelectValue placeholder="- Select -" />
           </SelectTrigger>
           <SelectContent>
             {(q.options ?? []).map((opt) => (

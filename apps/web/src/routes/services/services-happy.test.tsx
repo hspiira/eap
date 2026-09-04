@@ -34,7 +34,7 @@ vi.mock("@/api/endpoints/services", () => ({
 const { Route } = await import("@/routes/services/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("services list — happy path", () => {
+describe("services list: happy path", () => {
   it("renders the service by name", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Short-term counselling")).toBeInTheDocument()

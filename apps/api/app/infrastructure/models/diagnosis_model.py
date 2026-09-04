@@ -2,7 +2,7 @@
 
 Reference data shared across tenants. Two-level hierarchy: ``DiagnosisType``
 (category, e.g. "Mental Ill Health") groups ``Diagnosis`` rows (specific
-condition, e.g. "Depression"). Versioned per ADR-012 — rows are append-only
+condition, e.g. "Depression"). Versioned per ADR-012; rows are append-only
 with effective windows; clients filter to ``effective_until IS NULL`` for the
 current taxonomy.
 """

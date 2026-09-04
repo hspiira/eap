@@ -2,7 +2,7 @@
 The clinical/employer privacy wall.
 
 require_scope fails closed: a token with no grants is refused, full stop.
-There is no legacy escape hatch — scopes are stamped at mint from the DB
+There is no legacy escape hatch; scopes are stamped at mint from the DB
 user, so every valid token carries its current grants. These tests pin the
 wall itself, the mint/decode roundtrip, and the platform-admin-only rule
 for granting Clinical.

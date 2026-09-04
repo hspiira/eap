@@ -109,7 +109,7 @@ function ServiceSessionDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["service-sessions", "list"] })
         if (action !== "reschedule") showSuccess("Status updated")
       } catch (err) {
-        showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -314,7 +314,7 @@ function ServiceSessionDetailPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {service.service_type ?? "—"}
+                            {service.service_type ?? "-"}
                           </p>
                         </div>
                       </Link>
@@ -355,7 +355,7 @@ function ServiceSessionDetailPage() {
                                 )
                                 const dx = all.find((d) => d.id === session.diagnosis_id)
                                 return dx
-                                  ? `${dx.code} — ${dx.name}`
+                                  ? `${dx.code}: ${dx.name}`
                                   : diagnosisTreeQuery.isPending
                                     ? "Loading…"
                                     : session.diagnosis_id

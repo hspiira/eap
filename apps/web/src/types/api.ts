@@ -36,7 +36,7 @@ export interface PaginatedResponse<T> {
  * Deliberately `object` and not `Record<string, unknown>`: a TS interface has no
  * implicit index signature, so a `Record` bound is not satisfied by any of the
  * `*ListParams` interfaces below and forces every call site to cast. That bound is
- * what produced ~45 `as Record<string, unknown>` casts across the endpoint layer —
+ * what produced ~45 `as Record<string, unknown>` casts across the endpoint layer,
  * casts which also let undeclared params be smuggled through without a type error.
  * Values are serialized with `String()`; `undefined`/`null` are dropped.
  */
@@ -72,7 +72,7 @@ export interface CreateRequest {
 
 /**
  * Update request (generic, entities will extend this).
- * Partial update — concrete entity types declare optional fields.
+ * Partial update: concrete entity types declare optional fields.
  */
 export type UpdateRequest = Record<string, unknown>
 

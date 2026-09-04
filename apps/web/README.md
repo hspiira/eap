@@ -15,7 +15,7 @@ Frontend application for the Evexía platform.
 ### Prerequisites
 
 - Node.js 22+ (CI builds on 22 LTS)
-- pnpm (the only supported package manager — the repo pins it via `packageManager`
+- pnpm (the only supported package manager; the repo pins it via `packageManager`
   in `package.json` and `pnpm-lock.yaml` is the source of truth; do not use npm or yarn)
 - Backend API running at `http://localhost:8000`
 
@@ -48,7 +48,7 @@ pnpm typecheck    # tsc --noEmit
 ```
 
 These four commands are exactly what CI runs on every push and pull request
-(`.github/workflows/ci.yml`) — run them before pushing.
+(`.github/workflows/ci.yml`); run them before pushing.
 
 ## Project Structure
 

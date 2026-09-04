@@ -8,7 +8,7 @@ Widens the columns to TEXT to hold base64 ciphertext (which is ~33% larger
 than plaintext plus a 13-byte version/nonce/tag prefix). Existing rows are
 left unchanged; the application encrypts on the next write. A separate
 data-migration job is recommended if the table contains plaintext rows in
-production — for v1 the table is empty.
+production; for v1 the table is empty.
 """
 from typing import Sequence, Union
 

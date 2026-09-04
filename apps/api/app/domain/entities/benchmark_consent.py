@@ -1,7 +1,7 @@
 """Benchmark consent aggregate (Phase 4 #D-Benchmark / SAD A-19).
 
 Records a tenant's opt-in to cross-tenant benchmarking. One row per tenant per
-``BenchmarkScope`` — withdrawing one scope does not affect others. Each consent
+``BenchmarkScope``: withdrawing one scope does not affect others. Each consent
 carries an immutable ``version`` referring to the legal text the operator
 agreed to; superseding the agreement creates a new row rather than mutating.
 """

@@ -1,21 +1,21 @@
-# Track D — Cleanup & Dead Code
+# Track D: Cleanup & Dead Code
 
 Dead code, prototype leakage, decorative UI, and small consolidations. Line numbers as of
 2026-07-14 (`main` @ `066f1db`).
 
 ---
 
-## CQ-D01 — Delete the legacy theme system
+## CQ-D01: Delete the legacy theme system
 
-**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** Two complete theme systems ship simultaneously: `src/theme/**` (legacy palette→token,
 keyed on `[data-theme="dark"]`) and `src/styles/theme/**` (semantic tokens, keyed on `.dark`).
 `styles.css:2-5` imports both; `hooks/useThemeEffect.ts:22-23` sets **both** DOM flags because each
 system keys off a different selector. The two dark palettes independently define overlapping
 surface/border values (`--token-surface: #171717` in `theme/themes/evexia-dark.css:12` vs
-`--surface → #171717` in `styles/theme/tokens-dark.css`) — same colors maintained twice,
-guaranteed to drift. `styles.css:16-21` admits it ("Legacy palette tokens — retained for backwards
+`--surface → #171717` in `styles/theme/tokens-dark.css`): same colors maintained twice,
+guaranteed to drift. `styles.css:16-21` admits it ("Legacy palette tokens, retained for backwards
 compatibility… on collision, the later block wins"), and `theme/README.md` still documents the
 legacy system as *the* system.
 
@@ -30,24 +30,24 @@ legacy system as *the* system.
 
 ---
 
-## CQ-D02 — Delete dead code
+## CQ-D02: Delete dead code
 
 **Severity:** 🟢 Low · **Effort:** XS · **Status:** ✅ Done · **Owner:** Claude · **PR:** `9da91f2`
 
 > Done: deleted `hooks/useRequireAuth.ts`, `lib/route-auth.ts`, `hooks/useModal.ts`, `api/index.ts` (all verified zero-consumer); trimmed `uiSlice` to theme-only. tsc + `vite build` pass.
 
 **Problem.** Verified zero-consumer modules (grep):
-- `src/hooks/useRequireAuth.ts` (22 lines) — never imported; live guard is `components/common/RequireAuth.tsx`.
-- `src/lib/route-auth.ts` `requireAuthBeforeLoad` (32 lines) — never imported, and broken by
+- `src/hooks/useRequireAuth.ts` (22 lines), never imported; live guard is `components/common/RequireAuth.tsx`.
+- `src/lib/route-auth.ts` `requireAuthBeforeLoad` (32 lines), never imported, and broken by
   design in cookie mode (checks `apiClient.getToken()`, always null when `VITE_AUTH_USE_COOKIES=true`).
-- `src/hooks/useModal.ts` — never imported.
-- `src/store/slices/uiSlice.ts:17-28` — `activeModal`/`globalLoading`/`openModal`/`closeModal`/
+- `src/hooks/useModal.ts`, never imported.
+- `src/store/slices/uiSlice.ts:17-28`: `activeModal`/`globalLoading`/`openModal`/`closeModal`/
   `setGlobalLoading` have zero consumers; only `theme`/`setTheme` are used.
 - `src/api/index.ts` barrel exports only auth/users/tenants ("Other endpoints will be exported
-  here") while all consumers import `@/api/endpoints/*` directly — a misleading half-abstraction.
+  here") while all consumers import `@/api/endpoints/*` directly, a misleading half-abstraction.
 
 **Recommended fix.** Delete the three modules; trim `uiSlice` to theme; complete or delete the
-barrel (recommend delete — direct endpoint imports are the established convention).
+barrel (recommend delete: direct endpoint imports are the established convention).
 
 **Acceptance criteria.**
 - [ ] Files deleted; `tsc` and `pnpm build` pass.
@@ -55,14 +55,14 @@ barrel (recommend delete — direct endpoint imports are the established convent
 
 ---
 
-## CQ-D03 — Move prototype/mock code out of production trees
+## CQ-D03: Move prototype/mock code out of production trees
 
-**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** Prototype code ships in real trees where it gets copied as a pattern:
-- `src/routes/inbox.tsx` — 781 lines of `MOCK_RULES` with 2017 dates, dept tabs, platform cards.
-- `src/components/common/QueryTable.tsx` — mock `AtRiskRow` data, hardcoded `TOTAL_MOCK = 200`,
-  and its own fourth badge style (:100-117) — sitting in `components/common` masquerading as reusable.
+- `src/routes/inbox.tsx`: 781 lines of `MOCK_RULES` with 2017 dates, dept tabs, platform cards.
+- `src/components/common/QueryTable.tsx`: mock `AtRiskRow` data, hardcoded `TOTAL_MOCK = 200`,
+  and its own fourth badge style (:100-117): sitting in `components/common` masquerading as reusable.
 
 **Recommended fix.** Either delete, or move behind a clearly-labeled `src/prototypes/` (excluded
 from `components/common`), or convert to real implementations. At minimum, nothing mock-backed may
@@ -74,16 +74,16 @@ live in `components/common/` or an unflagged route.
 
 ---
 
-## CQ-D04 — Wire up or delete decorative UI
+## CQ-D04: Wire up or delete decorative UI
 
-**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-B01
+**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-B01
 
 **Problem.** Non-functional UI copy-pasted across all list pages:
 - `FilterButton` options passed without `onSelect` in every page (`FilterBar.tsx:43-69` supports
-  it; e.g. `engagements:174-180`, `clients:160-167`, `users:177-182`) — dropdowns that do nothing.
+  it; e.g. `engagements:174-180`, `clients:160-167`, `users:177-182`); dropdowns that do nothing.
 - `IconButton label="Export" icon={Download}` with no `onClick` in all 12 pages.
 - Select-all/row `Checkbox`es with no selection state in every table.
-- `clients/index.tsx:91,180-186` — `timeRange` filter rendered and settable but never used in any
+- `clients/index.tsx:91,180-186`: `timeRange` filter rendered and settable but never used in any
   query or filter (dead filter).
 
 **Recommended fix.** Decide per feature: implement (bulk selection, export) or remove. Do it in
@@ -96,9 +96,9 @@ the shared `EntityListView` (CQ-B01) so the decision applies everywhere at once.
 
 ---
 
-## CQ-D05 — Small DRY sweep (infrastructure)
+## CQ-D05: Small DRY sweep (infrastructure)
 
-**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem / fixes (one PR, mechanical).**
 1. `useCookies()` env check duplicated 3×: `api/client.ts:20-22`, `store/slices/authSlice.ts:14-19`,
@@ -118,24 +118,24 @@ the shared `EntityListView` (CQ-B01) so the decision applies everywhere at once.
 7. `LANGUAGE_OPTIONS` duplicated: `UserFormSheet.tsx:27-37` vs `PersonFormSheet.tsx:85-95` → move
    next to the enum.
 8. Currency default inconsistency: `EMPTY.currency = "KES"` (`ContractFormSheet.tsx:66`) vs
-   `"UGX"` (`EngagementFormSheet.tsx:73`) — confirm intent with product; centralize the default.
+   `"UGX"` (`EngagementFormSheet.tsx:73`): confirm intent with product; centralize the default.
 
 **Acceptance criteria.**
 - [ ] Each of the 8 items done or explicitly waived with a reason noted here.
 
 ---
 
-## CQ-D06 — Fix dropped form fields (session notes/diagnosis)
+## CQ-D06: Fix dropped form fields (session notes/diagnosis)
 
-**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** `ServiceSessionFormSheet.tsx:39,335-343` collects `notes` and
-`diagnosis_id`/`diagnosis_text`, but `parsePayload` (:123-134) silently drops them — users type
+`diagnosis_id`/`diagnosis_text`, but `parsePayload` (:123-134) silently drops them, users type
 notes that are never sent. Also `:149` hardcodes `duration: 60` with a TODO to read from the
 selected Service's `duration_minutes`.
 
 **Recommended fix.** Wire notes/diagnosis to the appropriate follow-up calls (or remove the fields
-until the BE supports them — silently swallowing user input is the worst option). Default duration
+until the BE supports them: silently swallowing user input is the worst option). Default duration
 from the selected Service.
 
 **Acceptance criteria.**

@@ -79,7 +79,7 @@ function CaseDetailPage() {
       await refreshCase()
       showSuccess(successMessage)
     } catch (err) {
-      showError(normalizeErrorMessage(err, "Action failed — please try again"))
+      showError(normalizeErrorMessage(err, "Action failed: please try again"))
       throw err
     } finally {
       setActionLoading(false)

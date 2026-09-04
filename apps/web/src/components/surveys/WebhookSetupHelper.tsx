@@ -2,7 +2,7 @@
  * Webhook setup helper for the Survey detail page (Phase 3 #2).
  *
  * Renders a copy-paste-friendly summary of the webhook URL + token plus a step-by-step
- * Google Forms instruction list. The secret is generated once on create — copy it
+ * Google Forms instruction list. The secret is generated once on create; copy it
  * immediately. Token rotation has been removed (P2 #0).
  */
 
@@ -45,7 +45,7 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
             size="sm"
             className="h-auto p-0 text-[11px] font-semibold tracking-wide text-fg/70 hover:bg-transparent hover:text-fg"
           >
-            Google Forms — step-by-step
+            Google Forms: step-by-step
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -57,7 +57,7 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
             </li>
             <li>
               Add the <strong>Email Notifications for Forms</strong> add-on (or your preferred
-              webhook bridge — e.g. Zapier, Make).
+              webhook bridge, e.g. Zapier, Make).
             </li>
             <li>
               Configure the bridge to <strong>POST</strong> each response as JSON to the URL above.

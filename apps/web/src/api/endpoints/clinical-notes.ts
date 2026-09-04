@@ -1,7 +1,7 @@
 /**
  * Clinical Notes API Endpoints
  *
- * `body` is a generic dict on the wire — the BE discriminates its required
+ * `body` is a generic dict on the wire; the BE discriminates its required
  * shape by `note_type` server-side (see ClinicalNoteType in types/enums and
  * the DAP/SOAP/Narrative body interfaces in types/entities/clinical.ts).
  * A malformed body is rejected as a domain error, not a 422, so client-side

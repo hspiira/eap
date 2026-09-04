@@ -30,9 +30,9 @@ import type { Client } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 
 const TIER_OPTIONS = [
-  { value: ClientTier.A, label: "Tier A", desc: "Strategic — full service mix" },
-  { value: ClientTier.B, label: "Tier B", desc: "Mid-tier — consultancy extension" },
-  { value: ClientTier.C, label: "Tier C", desc: "Long-tail — lower-touch model" },
+  { value: ClientTier.A, label: "Tier A", desc: "Strategic: full service mix" },
+  { value: ClientTier.B, label: "Tier B", desc: "Mid-tier: consultancy extension" },
+  { value: ClientTier.C, label: "Tier C", desc: "Long-tail: lower-touch model" },
 ] as const
 
 const TIER_VALUES = TIER_OPTIONS.map((o) => o.value) as [ClientTier, ...ClientTier[]]
@@ -254,7 +254,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
           optional
           description={
             isEdit
-              ? "Industry is set at creation only — contact platform admin to change."
+              ? "Industry is set at creation only; contact platform admin to change."
               : "The sector this client operates in. Drives benchmarking and reporting."
           }
           error={errors.industry_id?.message}

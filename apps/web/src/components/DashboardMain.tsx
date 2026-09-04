@@ -200,7 +200,7 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
                 className="text-xl font-semibold tabular-nums text-fg-subtle"
                 title="Failed to load"
               >
-                —
+                -
               </span>
             ) : (
               <span className="text-xl font-semibold tabular-nums text-fg">{kpi.value}</span>

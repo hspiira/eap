@@ -4,9 +4,9 @@ from enum import Enum
 class ClientTier(str, Enum):
     """Joseph's A/B/C clustering for client engagement tiering.
 
-    A — strategic / large account, full service mix.
-    B — mid-tier, consultancy-extension candidates.
-    C — long-tail / small account, lower-touch service model.
+    A: strategic / large account, full service mix.
+    B: mid-tier, consultancy-extension candidates.
+    C: long-tail / small account, lower-touch service model.
     """
 
     A = "A"
@@ -26,7 +26,7 @@ class CaseStatus(str, Enum):
 
 
 class CaseReferralSource(str, Enum):
-    """Origin of a case — drives downstream disclosure and reporting rules."""
+    """Origin of a case, drives downstream disclosure and reporting rules."""
 
     SELF = "Self"
     INFORMAL_MANAGER = "InformalManager"
@@ -107,18 +107,18 @@ class TriageRiskLevel(str, Enum):
 class TriageInstrumentCode(str, Enum):
     """Versioned identifiers for the supported triage instruments.
 
-    ``JOSEPH7`` — Joseph's 7-variable counsellor-callback screen.
-    ``WOS5`` — 5-item Work Outcome Scale (pre/post case).
-    ``PHQ9`` — 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
-    ``GAD7`` — 7-item Generalized Anxiety Disorder screen.
-    ``CSSRS`` — Columbia Suicide Severity Rating Scale (brief).
-    ``AUDIT_C`` — 3-item alcohol-use disorders screener.
-    ``DAST10`` — 10-item Drug Abuse Screening Test.
-    ``WHO5`` — 5-item WHO wellbeing index.
-    ``K10`` — Kessler 10 psychological distress.
-    ``WSAS`` — Work and Social Adjustment Scale.
-    ``DASS21`` — Depression, Anxiety, Stress 21-item scale.
-    ``PCL5`` — PTSD Checklist for DSM-5 (post-CISM).
+    ``JOSEPH7``: Joseph's 7-variable counsellor-callback screen.
+    ``WOS5``: 5-item Work Outcome Scale (pre/post case).
+    ``PHQ9``: 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
+    ``GAD7``: 7-item Generalized Anxiety Disorder screen.
+    ``CSSRS``: Columbia Suicide Severity Rating Scale (brief).
+    ``AUDIT_C``: 3-item alcohol-use disorders screener.
+    ``DAST10``: 10-item Drug Abuse Screening Test.
+    ``WHO5``: 5-item WHO wellbeing index.
+    ``K10``: Kessler 10 psychological distress.
+    ``WSAS``: Work and Social Adjustment Scale.
+    ``DASS21``: Depression, Anxiety, Stress 21-item scale.
+    ``PCL5``: PTSD Checklist for DSM-5 (post-CISM).
     """
 
     JOSEPH7 = "JOSEPH7"

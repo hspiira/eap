@@ -1,5 +1,5 @@
 /**
- * Tenant store slice — single source of truth for tenant context.
+ * Tenant store slice: single source of truth for tenant context.
  *
  * `currentTenantId` is hydrated from localStorage at module init so the apiClient
  * can read it before AppBootstrap finishes loading the full Tenant object.

@@ -300,7 +300,7 @@ export function EscalateDialog({
         <DialogHeader>
           <DialogTitle>Escalate</DialogTitle>
           <DialogDescription>
-            Notes are required — they explain why this is being escalated.
+            Notes are required; they explain why this is being escalated.
           </DialogDescription>
         </DialogHeader>
         <FormField label="Notes" required>

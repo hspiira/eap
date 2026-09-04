@@ -3,7 +3,7 @@
 Represents a workplace event (fatality, fraud, robbery, mass redundancy, etc.)
 that triggers acute psychological need. Tracks severity, affected population,
 and the multi-phase Mitchell-Everly response timeline. Linked sessions live
-on ``service_sessions.incident_id`` (nullable FK) — that backreference is the
+on ``service_sessions.incident_id`` (nullable FK); that backreference is the
 audit trail of what counselling work was delivered as part of the response.
 """
 

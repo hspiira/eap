@@ -1,5 +1,5 @@
 /**
- * Auth actions and init — ui.timeline-style flow.
+ * Auth actions and init: ui.timeline-style flow.
  * Single place for login, logout, initAuth; state lives in authSlice.
  */
 
@@ -41,7 +41,7 @@ export const authActions = {
           useAuthStore
             .getState()
             .setError(
-              "Tenant lookup failed — your workspace context may be incomplete. Please refresh.",
+              "Tenant lookup failed: your workspace context may be incomplete. Please refresh.",
             )
         }
       }
@@ -54,7 +54,7 @@ export const authActions = {
           console.error("[auth] Could not load tenant details after login:", e)
           useAuthStore
             .getState()
-            .setError("Could not load workspace details — please refresh the page.")
+            .setError("Could not load workspace details. Please refresh the page.")
         }
       }
       useAuthStore.getState().setLoading(false)

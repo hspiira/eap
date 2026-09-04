@@ -84,5 +84,5 @@ class TestContextVarLifecycle:
     def test_context_var_isolated_between_requests(self, client: TestClient):
         client.get("/echo")
         # After the request the contextvar in the test thread should still be None
-        # — the middleware reset() it on exit.
+        # because the middleware reset() it on exit.
         assert get_current_request_id() is None

@@ -38,7 +38,7 @@ class Deliverable:
     """One contractual artefact the engagement promises to produce.
 
     Tracked as an entity inside the Engagement aggregate (mutable status, but
-    same lifetime as the parent — never queried independently).
+    same lifetime as the parent, never queried independently).
     """
 
     id: DeliverableId

@@ -3,7 +3,7 @@
  *
  * **BE-canonical model.** Person is a thin link between a pre-existing User
  * and a Client (via employment_info) or a primary employee (via dependent_info).
- * The BE schema declares `additionalProperties: false` — first_name, last_name,
+ * The BE schema declares `additionalProperties: false`, so first_name, last_name,
  * date_of_birth, gender, contact_info, address are NOT accepted.
  *
  * Person creation is a 2-step flow:

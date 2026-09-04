@@ -241,7 +241,7 @@ function AdminCredentialsDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tenant created — save these credentials</DialogTitle>
+          <DialogTitle>Tenant created: save these credentials</DialogTitle>
           <DialogDescription>
             You will only see this once. Send the link or password to the tenant admin securely.
           </DialogDescription>
@@ -254,7 +254,7 @@ function AdminCredentialsDialog({
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wider text-fg-subtle">Admin email</dt>
-              <dd className="text-sm text-fg">{creds.admin_email ?? "—"}</dd>
+              <dd className="text-sm text-fg">{creds.admin_email ?? "-"}</dd>
             </div>
             {creds.admin_password ? (
               <div>
@@ -283,7 +283,7 @@ function AdminCredentialsDialog({
         ) : null}
         <DialogFooter>
           <Button type="button" onClick={onClose}>
-            I've saved them — open tenant
+            I've saved them: open tenant
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -299,18 +299,18 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
           {tenant.name}
         </Link>
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{tenant.code ?? "—"}</TableCell>
+      <TableCell className="font-mono text-xs text-fg/75">{tenant.code ?? "-"}</TableCell>
       <TableCell>
         <StatusBadge status={tenant.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{tenant.subscription_tier ?? "—"}</TableCell>
+      <TableCell className="text-sm text-fg/75">{tenant.subscription_tier ?? "-"}</TableCell>
       <TableCell>
         {tenant.azure_sso_enabled ? (
           <span className="inline-flex items-center gap-1 text-xs text-fg">
             <KeyRound className="size-3 text-primary" /> Azure
           </span>
         ) : (
-          <span className="text-xs text-fg-muted">—</span>
+          <span className="text-xs text-fg-muted">-</span>
         )}
       </TableCell>
       <TableCell className="text-right">

@@ -190,7 +190,7 @@ function LoginPage() {
 
         <Button type="submit" disabled={submitDisabled} className="w-full h-11">
           {isLocked
-            ? `Locked — ${formatLockoutCountdown(lockoutSecondsLeft)}`
+            ? `Locked: ${formatLockoutCountdown(lockoutSecondsLeft)}`
             : formState.isSubmitting
               ? "Signing in…"
               : "Sign in"}
@@ -201,7 +201,7 @@ function LoginPage() {
         <p>
           Forgot your password?{" "}
           <span className="text-fg-subtle">
-            Contact your administrator — they can issue a new sign-in link.
+            Contact your administrator: they can issue a new sign-in link.
           </span>
         </p>
         {azureEnabled && (

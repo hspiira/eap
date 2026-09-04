@@ -25,7 +25,7 @@ export interface Service extends BaseEntity {
   is_group_service?: boolean
   /** Group session capacity cap per BE `ServiceResponse.max_participants`. */
   max_participants?: number | null
-  /** @deprecated Not on BE — kept temporarily for legacy callers; will be removed. */
+  /** @deprecated Not on BE: kept temporarily for legacy callers; will be removed. */
   service_type?: string | null
   /** @deprecated Use `is_group_service` + `max_participants`. */
   group_settings?: {
@@ -40,7 +40,7 @@ export interface Service extends BaseEntity {
 /**
  * Service Session
  */
-/** Mirrors BE `ServiceSessionResponse` — field names and types are wire-true. */
+/** Mirrors BE `ServiceSessionResponse`: field names and types are wire-true. */
 export interface ServiceSession extends BaseEntity {
   service_id: string
   person_id: string
@@ -66,7 +66,7 @@ export interface ServiceSession extends BaseEntity {
   diagnosis_type_id?: string | null
   cancellation_reason?: string | null
   reschedule_count?: number | null
-  /** Plain text on the wire — there is no structured rating object. */
+  /** Plain text on the wire: there is no structured rating object. */
   feedback?: string | null
   is_active?: boolean
 }

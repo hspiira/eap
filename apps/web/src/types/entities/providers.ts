@@ -8,10 +8,10 @@ import type {
 import type { Person } from "./identity"
 
 /**
- * Service provider (counsellor / agency / clinic) — D-Provider v1.
+ * Service provider (counsellor / agency / clinic): D-Provider v1.
  */
 /**
- * Provider panel profile — mirrors BE `ProviderProfileSchema`.
+ * Provider panel profile: mirrors BE `ProviderProfileSchema`.
  *
  * On the BE, a "provider" is a Person whose `person_type=SERVICE_PROVIDER`
  * AND whose `provider_profile` is set. The profile is the panel-specific

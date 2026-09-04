@@ -327,7 +327,7 @@ function AggregatePanel({
                       ? s.mean.toFixed(2)
                       : s.histogram
                         ? topHistogramEntry(s.histogram)
-                        : "—"}
+                        : "-"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -357,10 +357,10 @@ function DetailRail({
           <Stat
             label="Satisfaction"
             value={
-              aggregate?.satisfaction_mean != null ? aggregate.satisfaction_mean.toFixed(2) : "—"
+              aggregate?.satisfaction_mean != null ? aggregate.satisfaction_mean.toFixed(2) : "-"
             }
           />
-          <Stat label="NPS" value={aggregate?.nps != null ? String(aggregate.nps) : "—"} />
+          <Stat label="NPS" value={aggregate?.nps != null ? String(aggregate.nps) : "-"} />
           <Stat label="K-floor" value={aggregate?.k_floor_met ? "Met" : `${SURVEY_K_FLOOR}+`} />
         </div>
       </RailSection>
@@ -399,7 +399,7 @@ function DetailRail({
 
 function topHistogramEntry(h: Record<string, number>): string {
   const entries = Object.entries(h)
-  if (entries.length === 0) return "—"
+  if (entries.length === 0) return "-"
   entries.sort((a, b) => b[1] - a[1])
   const [value, count] = entries[0]
   return `${value} (${count})`

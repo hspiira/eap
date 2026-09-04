@@ -1,6 +1,6 @@
 """Engagement model (Phase 4 #D-Engagement).
 
-Deliverables and hours-log entries live as JSONB arrays on the parent row —
+Deliverables and hours-log entries live as JSONB arrays on the parent row;
 they are children of the aggregate and never queried independently, so the
 relational overhead of separate tables is unwarranted in v1.
 """

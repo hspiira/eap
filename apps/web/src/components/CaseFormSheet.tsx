@@ -49,7 +49,7 @@ interface CaseFormSheetProps {
 }
 
 /**
- * Opens a case. There is no edit mode — a Case's identity (client, member,
+ * Opens a case. There is no edit mode: a Case's identity (client, member,
  * referral) is fixed at intake; everything else changes through lifecycle
  * actions (assign counsellor, advance, close, refer-out) on the detail page.
  */
@@ -85,7 +85,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
       open={open}
       onOpenChange={onOpenChange}
       title="Open a case"
-      description="Intake a new clinical case for an eligible member. Everything else — counsellor assignment, notes, closure — happens from the case once it's open."
+      description="Intake a new clinical case for an eligible member. Everything else (counsellor assignment, notes, closure) happens from the case once it's open."
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -165,7 +165,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
         <FormField
           label="Referral notes"
           optional
-          description="Context for the counsellor picking this up — not shared with the member."
+          description="Context for the counsellor picking this up, not shared with the member."
           error={errors.referral_notes?.message}
           htmlFor="case-referral-notes"
         >

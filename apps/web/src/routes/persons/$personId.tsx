@@ -103,7 +103,7 @@ function PersonDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["persons"] })
         toast.showSuccess("Status updated")
       } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -410,7 +410,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
       <RailSection title="At a glance">
         <DetailGrid>
           <DetailRow label="Eligible" value={person.is_eligible_for_services ? "Yes" : "No"} />
-          <DetailRow label="Last service" value={person.last_service_date ?? "—"} />
+          <DetailRow label="Last service" value={person.last_service_date ?? "-"} />
         </DetailGrid>
       </RailSection>
 

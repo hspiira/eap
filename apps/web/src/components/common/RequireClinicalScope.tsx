@@ -11,7 +11,7 @@ interface RequireClinicalScopeProps {
 }
 
 /**
- * Gate for clinical (PHI) routes — cases, clinical notes, authorizations.
+ * Gate for clinical (PHI) routes: cases, clinical notes, authorizations.
  * The BE fails closed on the same check (require_clinical_scope); this just
  * gives an unscoped session a clear message instead of a raw 403 from the API.
  */

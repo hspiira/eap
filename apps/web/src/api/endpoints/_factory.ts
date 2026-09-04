@@ -1,5 +1,5 @@
 /**
- * Endpoint factories — remove the copy-pasted CRUD and lifecycle method shapes
+ * Endpoint factories: remove the copy-pasted CRUD and lifecycle method shapes
  * repeated across entity endpoint modules. Spread the result into an entity's
  * `xxxApi` object and add bespoke routes alongside:
  *
@@ -9,7 +9,7 @@
  *     setTier, verify, getStats,   // entity-specific
  *   }
  *
- * NOTE: `makeLifecycleEndpoints` encodes one body convention — no body on
+ * NOTE: `makeLifecycleEndpoints` encodes one body convention, no body on
  * activate/archive/restore, `{ reason }` on suspend/terminate, and an optional
  * `{ reason }` on deactivate. Only adopt it where the existing endpoints already
  * match this convention exactly, so request payloads are unchanged.

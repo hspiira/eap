@@ -6,7 +6,7 @@ The rest of the e2e suite cannot test this. `tests/conftest.py` overrides
 ("so require_same_tenant passes"), and overrides `get_user_in_tenant` to skip
 the tenant check outright ("so existing E2E tests pass"). Every guard therefore
 succeeds by construction, and the highest-risk bug class in a multi-tenant
-health product — one tenant reading another's data — is untestable.
+health product (one tenant reading another's data) is untestable.
 
 These tests mint real JWTs for two tenants and override only the database, so
 `require_same_tenant` and friends run for real.
@@ -34,7 +34,7 @@ CLIENT_B = "client-iso-b"
 
 
 def _auth(tenant_id: str, user_id: str) -> dict[str, str]:
-    """A real signed token — not the conftest override."""
+    """A real signed token, not the conftest override."""
     token = create_access_token(
         user_id=user_id, tenant_id=tenant_id, email=f"{user_id}@example.com"
     )
@@ -108,7 +108,7 @@ class TestTenantScopedReads:
             params={"tenant_id": TENANT_A},
             headers=_auth(TENANT_A, "u-a"),
         )
-        # 404 is as acceptable as 403 — it leaks less.
+        # 404 is as acceptable as 403; it leaks less.
         assert r.status_code in (401, 403, 404), (
             f"tenant A read tenant B's client: {r.status_code} {r.text[:200]}"
         )

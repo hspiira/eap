@@ -190,7 +190,7 @@ function EngagementDetailPage() {
                     {overdue ? (
                       <p className="mt-3 inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-600">
                         <AlertTriangle className="size-3" />
-                        Overdue — past due date and not yet delivered
+                        Overdue: past due date and not yet delivered
                       </p>
                     ) : null}
                   </DetailCard>

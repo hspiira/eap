@@ -1,7 +1,7 @@
 /**
  * Clients API Endpoints
  *
- * `ClientCreate` does NOT include `tier` — BE intentionally separates tier
+ * `ClientCreate` does NOT include `tier`; BE intentionally separates tier
  * assignment as a dedicated `PATCH /clients/{id}/tier` call (with audit).
  * Use `setTier()` after `create()` to set initial tier.
  */

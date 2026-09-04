@@ -5,7 +5,7 @@ Blocks Viewer-role users from all mutation endpoints (POST, PATCH, PUT, DELETE).
 The role is read from the JWT claim embedded at token-mint time, so no DB
 round-trip is required.
 
-Auth routes (/auth/*) are exempt — they are public by design.
+Auth routes (/auth/*) are exempt; they are public by design.
 """
 
 import logging
@@ -51,7 +51,7 @@ class ViewerGuardMiddleware(BaseHTTPMiddleware):
                     },
                 )
         except Exception:
-            # Fail open by design: an undecodable token is not this guard's problem —
+            # Fail open by design: an undecodable token is not this guard's problem;
             # the auth dependency rejects it downstream. Logged so a decode regression
             # here (which would silently disable the viewer guard) is visible.
             logger.debug(

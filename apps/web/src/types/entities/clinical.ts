@@ -14,7 +14,7 @@ import type { BaseEntity } from "./base"
 
 /**
  * The employer-known side of a person eligible for EAP services. Deliberately
- * NOT linked to clinical_subject_id in any response — see Case below.
+ * NOT linked to clinical_subject_id in any response; see Case below.
  */
 export interface EligibleMember {
   id: string
@@ -26,7 +26,7 @@ export interface EligibleMember {
   primary_employee_member_id?: string | null
   coverage_start: string
   coverage_end?: string | null
-  /** Privacy-safe label sanctioned for display (e.g. masked/initials) — not a raw name. */
+  /** Privacy-safe label sanctioned for display (e.g. masked/initials), not a raw name. */
   display_label: string
   last_imported_at?: string | null
   suspended_at?: string | null
@@ -36,9 +36,9 @@ export interface EligibleMember {
 }
 
 /**
- * Mirrors BE `CaseResponse` — field names and nullability are wire-true.
+ * Mirrors BE `CaseResponse`: field names and nullability are wire-true.
  *
- * `clinical_subject_id` is a pseudonym, not a person reference — the privacy
+ * `clinical_subject_id` is a pseudonym, not a person reference, the privacy
  * wall (SAD Phase 5A) deliberately has no route resolving it back to a name.
  * Render it as an opaque subject reference. The counsellor who opens a case
  * (via an EligibleMember at open time) already knows who it's for; the
@@ -62,7 +62,7 @@ export interface Case extends BaseEntity {
   closure_screener_admin_ids: string[]
 }
 
-/** The three body shapes the BE accepts per note_type — see clinical-notes API. */
+/** The three body shapes the BE accepts per note_type; see clinical-notes API. */
 export interface DAPNoteBody {
   data: string
   assessment: string

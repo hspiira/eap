@@ -31,7 +31,7 @@ export function useCanWrite(): boolean {
 
 /**
  * Whether the current user holds the Clinical scope. `isLoading` lets a
- * gate distinguish "still checking" from "confirmed no access" — clinical
+ * gate distinguish "still checking" from "confirmed no access", clinical
  * (PHI) routes must fail closed once resolved, but shouldn't flash a
  * forbidden screen while the check is in flight.
  */

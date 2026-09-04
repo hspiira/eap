@@ -1,5 +1,5 @@
 /**
- * Auth store slice — single source of truth for authentication state.
+ * Auth store slice: single source of truth for authentication state.
  *
  * Initial state is hydrated synchronously from localStorage at module init, so
  * `useAuthStore.getState().token` is correct before AppBootstrap mounts.
@@ -26,7 +26,7 @@ export interface AuthState {
   isLoading: boolean
   error: string | null
   /**
-   * Bumped every time the session identity changes — sign-in, hydrate, or
+   * Bumped every time the session identity changes: sign-in, hydrate, or
    * teardown. The apiClient stamps each request with the value it saw and
    * refuses to act on a 401 whose stamp is stale, so a response that was
    * already in flight cannot clear the session that replaced it.

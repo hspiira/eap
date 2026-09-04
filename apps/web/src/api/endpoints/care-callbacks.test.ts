@@ -7,11 +7,11 @@ import { CareCallbackCampaignStatus } from "@/types/enums"
 /**
  * Campaign CRUD is fixture-backed in dev (mirrors the real wire shape) and
  * covered here. Outreach-record lifecycle (assign/attempts/complete/
- * unreachable/decline/escalate) is real-API-only now — there is no fixture
- * path for it — so it belongs in an e2e/integration suite, not here.
+ * unreachable/decline/escalate) is real-API-only now; there is no fixture
+ * path for it, so it belongs in an e2e/integration suite, not here.
  */
 describe("careCallbacksApi (fixture mode)", () => {
-  it("lists seeded campaigns most-recent first (bare array — not a PaginatedResponse)", async () => {
+  it("lists seeded campaigns most-recent first (bare array, not a PaginatedResponse)", async () => {
     const r = await careCallbacksApi.listCampaigns()
     expect(r.length).toBeGreaterThanOrEqual(2)
     expect(r[0].status).toBeTypeOf("string")

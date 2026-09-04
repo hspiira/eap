@@ -1,9 +1,9 @@
 """Pricing routes (Phase 2 #D-Pricing).
 
 Three endpoints:
-- ``PATCH /contracts/{id}/pricing`` — set or replace pricing config.
-- ``GET  /contracts/{id}/invoice-preview`` — compute an invoice line set.
-- ``POST /utilisation-events`` — record a billable activity.
+- ``PATCH /contracts/{id}/pricing``: set or replace pricing config.
+- ``GET  /contracts/{id}/invoice-preview``: compute an invoice line set.
+- ``POST /utilisation-events``: record a billable activity.
 """
 
 from __future__ import annotations

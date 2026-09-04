@@ -1,5 +1,5 @@
 /**
- * UI store slice — global UI state (theme).
+ * UI store slice: global UI state (theme).
  *
  * Theme is hydrated from localStorage at module init and persisted on every change.
  * The DOM mutations and system-theme listener are wired by the `useThemeEffect` hook

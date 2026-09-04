@@ -28,11 +28,11 @@ class PaymentFrequency(str, Enum):
 class PricingModel(str, Enum):
     """Joseph's five contract pricing strategies (SAD §5.2.3 / Meeting §3).
 
-    RETAINER — fixed periodic fee (e.g. monthly).
-    FRAMEWORK — pre-paid deposit drawn down per session.
-    FEE_FOR_SERVICE — pay per session at a rate card.
-    ADMIN_UTILISATION — admin-fee floor + per-session usage charges above the floor.
-    VALUE_ADD — bundled into a broader Minet relationship (no per-EAP invoice).
+    RETAINER: fixed periodic fee (e.g. monthly).
+    FRAMEWORK: pre-paid deposit drawn down per session.
+    FEE_FOR_SERVICE: pay per session at a rate card.
+    ADMIN_UTILISATION: admin-fee floor + per-session usage charges above the floor.
+    VALUE_ADD: bundled into a broader Minet relationship (no per-EAP invoice).
     """
 
     RETAINER = "Retainer"

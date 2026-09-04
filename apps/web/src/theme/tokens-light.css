@@ -1,16 +1,16 @@
 /*
- * Light theme — semantic colour tokens on :root.
+ * Light theme: semantic colour tokens on :root.
  *
  * Two naming conventions live here side-by-side:
- *   1. App tokens (--bg, --fg, --brand, --border-default, ...) — what app code
+ *   1. App tokens (--bg, --fg, --brand, --border-default, ...): what app code
  *      consumes via Tailwind utilities (bg-bg, text-fg, bg-brand, ...).
- *   2. shadcn aliases (--primary, --secondary, --accent, --muted, ...) —
- *      what upstream shadcn primitives reference. shadcn's `bg-primary` is
+ *   2. shadcn aliases (--primary, --secondary, --accent, --muted, ...): what
+ *      upstream shadcn primitives reference. shadcn's `bg-primary` is
  *      the brand; shadcn's `bg-accent` is a muted hover/highlight surface.
  */
 
 :root {
-  /* Neutral ramp — 12 steps, white → near-black. */
+  /* Neutral ramp: 12 steps, white → near-black. */
   --neutral-0: #ffffff;
   --neutral-50: #fafafa;
   --neutral-100: #f5f5f5;
@@ -24,22 +24,22 @@
   --neutral-900: #171717;
   --neutral-1000: #0a0a0a;
 
-  /* Surfaces — three levels. Page → card → elevated (popover/dialog). */
+  /* Surfaces: three levels. Page → card → elevated (popover/dialog). */
   --bg: var(--neutral-0);
   --surface: var(--neutral-0);
   --surface-hover: var(--neutral-50);
   --surface-elevated: var(--neutral-0);
 
-  /* Foreground — three levels. Default → muted → subtle. */
+  /* Foreground: three levels. Default → muted → subtle. */
   --fg: var(--neutral-900);
   --fg-muted: var(--neutral-600);
-  /* Lifted off neutral-400 (#a3a3a3, 2.52:1 on white — well under AA).
+  /* Lifted off neutral-400 (#a3a3a3, 2.52:1 on white, well under AA).
    * #6b6b6b holds 5.33:1 on --bg and 4.89:1 on the lightest panel while
    * staying visibly lighter than --fg-muted. */
   --fg-subtle: #6b6b6b;
   --fg-on-brand: var(--neutral-0);
 
-  /* Borders — Tegon-style hairlines. Should never compete with content.
+  /* Borders: Tegon-style hairlines. Should never compete with content.
    * subtle (cards, sections): nearly invisible, just enough to delimit surface
    * default (rows, dividers): barely visible
    * strong (focus/emphasis containers): visible neutral */
@@ -47,13 +47,13 @@
   --border-default: rgb(0 0 0 / 0.05);
   --border-strong: var(--neutral-200);
 
-  /* Brand — single colour, used for primary buttons, key accents. */
+  /* Brand: single colour, used for primary buttons, key accents. */
   --brand: #0f5132;
   --brand-hover: #0a3d24;
   --brand-soft: #e8f0eb;
   --brand-fg: var(--neutral-0);
 
-  /* Semantic roles — four colours, each with surface + fg + emphasis. */
+  /* Semantic roles: four colours, each with surface + fg + emphasis. */
   --success: #15803d;
   --success-soft: #dcfce7;
   --success-fg: #14532d;
@@ -95,7 +95,7 @@
   --destructive-foreground: var(--neutral-0);
   --input: var(--border-default);
 
-  /* Sidebar — matches page bg so the panel feels flush, not floating. */
+  /* Sidebar: matches page bg so the panel feels flush, not floating. */
   --sidebar: var(--bg);
   --sidebar-foreground: var(--fg);
   --sidebar-primary: var(--brand);

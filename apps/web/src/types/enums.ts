@@ -240,7 +240,7 @@ export type RelationType =
 
 /**
  * Relationship of an EligibleMember to the primary employee. Distinct from
- * RelationType (used for DependentInfo) — similar-looking but a different
+ * RelationType (used for DependentInfo): similar-looking but a different
  * enum on the wire; do not conflate the two.
  */
 export enum MemberRelation {
@@ -252,7 +252,7 @@ export enum MemberRelation {
 }
 
 /**
- * Client tier — assigned by ops, drives reporting and SLA expectations.
+ * Client tier: assigned by ops, drives reporting and SLA expectations.
  * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.
  */
 export enum ClientTier {
@@ -313,7 +313,7 @@ export enum ProviderRegion {
 }
 
 /**
- * Provider accreditation lifecycle — mirrors BE `AccreditationStatus`.
+ * Provider accreditation lifecycle: mirrors BE `AccreditationStatus`.
  */
 export enum AccreditationStatus {
   PENDING = "Pending",
@@ -324,7 +324,7 @@ export enum AccreditationStatus {
 }
 
 /**
- * Whether a provider is currently on the active panel — mirrors BE `PanelStatus`.
+ * Whether a provider is currently on the active panel, mirrors BE `PanelStatus`.
  */
 export enum PanelStatus {
   ACTIVE = "Active",
@@ -333,7 +333,7 @@ export enum PanelStatus {
 }
 
 /**
- * Lifecycle of a non-compete clause — mirrors BE `NonCompeteStatus`.
+ * Lifecycle of a non-compete clause: mirrors BE `NonCompeteStatus`.
  */
 export enum NonCompeteStatus {
   DRAFT = "Draft",
@@ -483,7 +483,7 @@ export enum EngagementType {
 }
 
 /**
- * Engagement deliverable status — independent from the parent engagement's status.
+ * Engagement deliverable status: independent from the parent engagement's status.
  */
 export enum DeliverableStatus {
   PENDING = "Pending",
@@ -590,7 +590,7 @@ export enum CaseClosureReason {
   OTHER = "Other",
 }
 
-/** Note template — each shapes a different `body` on the wire (see clinical-notes API). */
+/** Note template: each shapes a different `body` on the wire (see clinical-notes API). */
 export enum ClinicalNoteType {
   DAP = "DAP",
   SOAP = "SOAP",

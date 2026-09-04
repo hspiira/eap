@@ -1,11 +1,11 @@
-# Track B — DRY Consolidations
+# Track B: DRY Consolidations
 
 Duplication removal, ranked by lines removable. Every ticket here is behavior-preserving unless
 stated. Line numbers as of 2026-07-14 (`main` @ `066f1db`).
 
 ---
 
-## CQ-B01 — `useListPage` hook + `EntityListView`: kill the list-page template
+## CQ-B01: `useListPage` hook + `EntityListView`: kill the list-page template
 
 **Severity:** 🟠 High · **Effort:** L · **Status:** 🟨 In progress · **Owner:** Claude · **PR:** `ddcbb46`, `859cb3f` · **Depends on:** CQ-B06, CQ-B09
 
@@ -17,7 +17,7 @@ stated. Line numbers as of 2026-07-14 (`main` @ `066f1db`).
 > **Recipe for the remaining ~8 pages** (persons, clients, service-sessions, service-assignments,
 > tags, care-callbacks, engagements, surveys, tenants, providers, incidents, industries):
 > 1. `validateSearch: listSearchSchema({ status: enumParam(SomeEnum) })`; `STATUS_OPTIONS =
->    enumOptions(Enum, "All statuses")` — **but keep a curated array if the enum has members that
+>    enumOptions(Enum, "All statuses")`, **but keep a curated array if the enum has members that
 >    shouldn't be user filters** (e.g. `BaseStatus.Deleted`, see services).
 > 2. Replace the state/effects/query block with `useListPage<T>({ from, resource, listFn,
 >    extraParams: { status } })`; keep the page's own `useSearch`/`useNavigate` for the typed filter param.
@@ -26,7 +26,7 @@ stated. Line numbers as of 2026-07-14 (`main` @ `066f1db`).
 > 4. `eslint --fix` to drop now-unused imports; `tsc` + `vite build` to verify.
 >
 > **Note:** engagements/care-callbacks/surveys use the client-driven `useQuery`+`filterAndSort`
-> pattern (not `useEntityList`) — they need the CQ-A09 convergence first, or a `useListPage` variant
+> pattern (not `useEntityList`): they need the CQ-A09 convergence first, or a `useListPage` variant
 > that accepts a client-side sorter. The paginate-then-filter bugs (CQ-A04) should be fixed as each
 > page with a client-side secondary filter is migrated.
 
@@ -49,10 +49,10 @@ the loading/error/empty/table/pagination ternary chain, sticky `TableHeader` wit
   `care-callbacks/worklist/index.tsx:360`.
 
 **Recommended fix (two layers).**
-1. `src/hooks/useListPage.ts` — `useListPage<T, F>({ routeId, resource, listFn, defaultSort, filters })`
+1. `src/hooks/useListPage.ts`: `useListPage<T, F>({ routeId, resource, listFn, defaultSort, filters })`
    owning page/sort/search state, debounce, URL sync, `useEntityList`. Returns
    `{ items, total, page, setPage, sort, toggleSort, searchInput, setSearchInput, activeFilters, setFilter, clearFilter, hasFilters, loading, error, refetch }`.
-2. `src/components/common/EntityListView.tsx` — owns skeleton/error/empty/table/pagination and
+2. `src/components/common/EntityListView.tsx`: owns skeleton/error/empty/table/pagination and
    the sticky header; `ListColumn<T> = { field?, header, cell(row), sortable? }`.
 3. For pages the BE can't filter server-side, extract `filterAndSortClient<T>` into `src/lib/` and
    route both modes through the same hook so error/pagination handling is uniform.
@@ -67,14 +67,14 @@ the loading/error/empty/table/pagination ternary chain, sticky `TableHeader` wit
 
 ---
 
-## CQ-B02 — Extract `DetailPrimitives` (10+ verbatim copies, ~1,100 lines)
+## CQ-B02: Extract `DetailPrimitives` (10+ verbatim copies, ~1,100 lines)
 
 **Severity:** 🟠 High · **Effort:** S · **Status:** ✅ Done · **Owner:** Claude · **PR:** `a72df1f`
 
 > Done: all 5 primitives extracted to `components/common/DetailPrimitives.tsx`; removed from 11 detail routes (verified byte-identical before extraction). tsc + lint + `vite build` pass. `grep "function DetailCard" src/routes` → 0.
 
-**Problem.** Five presentational primitives — `DetailCard`, `RailSection`, `Stat`, `DetailGrid`,
-`DetailRow` (~120 lines) — are byte-identical (or trivially divergent) private functions in every
+**Problem.** Five presentational primitives: `DetailCard`, `RailSection`, `Stat`, `DetailGrid`,
+`DetailRow` (~120 lines), are byte-identical (or trivially divergent) private functions in every
 detail route. A styling change must be made in 10+ places.
 
 **Evidence.** `engagements/$engagementId.tsx:871-935`, `service-sessions/$sessionId.tsx:760-822`,
@@ -82,7 +82,7 @@ detail route. A styling change must be made in 10+ places.
 `contracts/$contractId.tsx:437-526`, `services/$serviceId.tsx:557-605`, `surveys/$surveyId.tsx:462-530`,
 `service-assignments/$assignmentId.tsx:402-460`, `care-callbacks/$campaignId.tsx:631-693`,
 `care-callbacks/worklist/$caseId.tsx:577-617` (subset).
-Only intentional divergence found: engagements' `Stat` adds `truncate` (:907) — keep it in the shared version.
+Only intentional divergence found: engagements' `Stat` adds `truncate` (:907); keep it in the shared version.
 
 **Recommended fix.** `src/components/common/DetailPrimitives.tsx` exporting the five components;
 drop-in replacement, zero behavior change.
@@ -93,9 +93,9 @@ drop-in replacement, zero behavior change.
 
 ---
 
-## CQ-B03 — Generic `EntityPicker<T>` + `LockedEntitySummary` (~1,250 lines)
+## CQ-B03: Generic `EntityPicker<T>` + `LockedEntitySummary` (~1,250 lines)
 
-**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-A05
+**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-A05
 
 **Problem.** The debounced-search → result-list → selected-summary picker is re-implemented from
 scratch in 9 places (~1,100 lines); the "locked entity" summary card is copied 7× (~250 lines),
@@ -111,7 +111,7 @@ bug described in CQ-A05.
   `CounsellorMultiPicker`.
 - Locked summaries: see CQ-A05 evidence list.
 - The right abstraction already exists file-locally: `PickerShell<T>` + `ChangeButton` in
-  `ServiceSessionFormSheet.tsx:658-711` — promote it.
+  `ServiceSessionFormSheet.tsx:658-711`: promote it.
 
 **Recommended fix.** `src/components/common/EntityPicker.tsx`:
 
@@ -133,7 +133,7 @@ interface EntityPickerProps<T extends { id: string }> {
 
 Per-entity one-liners in `components/common/pickers.tsx`
 (`export const ClientPicker = (p) => <EntityPicker resource="clients" listFn={clientsApi.list} … />`).
-Bind to RHF via `Controller` inside an `EntityPickerField` (removes the hidden-input hack, CQ-C08-adjacent — see CQ-B05).
+Bind to RHF via `Controller` inside an `EntityPickerField` (removes the hidden-input hack, CQ-C08-adjacent; see CQ-B05).
 
 **Acceptance criteria.**
 - [ ] All 9 pickers and 7 locked summaries replaced; ~0 private picker components left in sheets
@@ -143,15 +143,15 @@ Bind to RHF via `Controller` inside an `EntityPickerField` (removes the hidden-i
 
 ---
 
-## CQ-B04 — `EntityDetailPage` scaffold: shared detail-page chrome
+## CQ-B04: `EntityDetailPage` scaffold: shared detail-page chrome
 
-**Severity:** 🟠 High · **Effort:** L · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-B02, CQ-B08
+**Severity:** 🟠 High · **Effort:** L · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-B02, CQ-B08
 
 **Problem.** Four blocks are near-verbatim in 11+ detail routes: (1) loading block
 (`PageShell` + `DetailSkeleton`), (2) not-found block (`EmptyState` + "Back to X"), (3) header
-actions (ghost Back + ghost Refresh + divider + optional Edit — the same whitespace
+actions (ghost Back + ghost Refresh + divider + optional Edit, the same whitespace
 mis-indentation is replicated in 5 files, proof of copy-paste lineage), (4) the 8/4 grid body and
-hero bar. Only `tenants/$tenantId.tsx:97-100` renders a distinct error state — every other page
+hero bar. Only `tenants/$tenantId.tsx:97-100` renders a distinct error state; every other page
 swallows errors into "not found", losing the retry affordance.
 
 **Evidence.** Loading: `engagements:130-138`, `service-sessions:186-194`, `users:169-177`,
@@ -187,12 +187,12 @@ incidents outlier into line.
 
 ---
 
-## CQ-B05 — RHF field wrappers: `TextField` / `SelectField` / `DateField` / `NumberField`
+## CQ-B05: RHF field wrappers: `TextField` / `SelectField` / `DateField` / `NumberField`
 
-**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** Every enum select is 20+ lines of `Controller → Select → SelectTrigger → SelectContent
-→ map(SelectItem)`; 21 `Controller` instances across 9 sheets (~16 are this exact pattern —
+→ map(SelectItem)`; 21 `Controller` instances across 9 sheets (~16 are this exact pattern,
 `UserFormSheet` copy-pastes the language select twice *within the same file*, :173-190 vs
 :276-293). Parallel per-file `X_VALUES as const` arrays restate what `types/enums.ts` owns.
 Picker-backed fields register hidden `<Input type="hidden">`s (10 sites) to keep RHF tracking a
@@ -219,7 +219,7 @@ pairs, ~60 occurrences). `SelectField` takes `options` + `getLabel`. Wrap picker
 
 ---
 
-## CQ-B06 — Move `IconButton`, `ErrorState`, `ROW_BORDER` to `components/common`
+## CQ-B06: Move `IconButton`, `ErrorState`, `ROW_BORDER` to `components/common`
 
 **Severity:** 🟡 Medium · **Effort:** XS · **Status:** ✅ Done · **Owner:** Claude · **PR:** `1182cfc`
 
@@ -243,19 +243,19 @@ Mechanical, zero-risk, ~350 lines deleted. Do this before CQ-B01.
 
 ---
 
-## CQ-B07 — CRUD + lifecycle endpoint factories
+## CQ-B07: CRUD + lifecycle endpoint factories
 
 **Severity:** 🟡 Medium · **Effort:** S · **Status:** 🟨 In progress · **Owner:** Claude · **PR:** `2b8960b`
 
 > Done: `api/endpoints/_factory.ts` (`makeCrudEndpoints`, `makeLifecycleEndpoints`). Adopted CRUD in
 > clients/services/contracts and full lifecycle in clients (exact body match). **Remaining:** users
 > (no `update`, divergent lifecycle incl. `ban`), persons (no `update`, `deactivate` body differs),
-> tenants (`create` returns a different type) — their lifecycle bodies (`{}` vs `undefined`) and verb
+> tenants (`create` returns a different type), their lifecycle bodies (`{}` vs `undefined`) and verb
 > subsets diverge, so adopting the factory there needs per-entity care to avoid changing payloads.
 
 **Problem.** Four+ endpoint modules hand-write identical `create/getById/list/update` shapes plus
 the lifecycle verb family (`activate/deactivate(reason?)/suspend(reason)/terminate(reason)/
-archive/restore`) — each a one-liner differing only in entity type.
+archive/restore`): each a one-liner differing only in entity type.
 
 **Evidence.** `src/api/endpoints/clients.ts:34-130`, `users.ts:123-145`, `tenants.ts:94-112`,
 `persons.ts:92-122`, `services.ts`, `contracts.ts`.
@@ -281,7 +281,7 @@ Spread into each module; keep bespoke routes (setTier, verify, 2FA, stats) hand-
 
 ---
 
-## CQ-B08 — Shared formatters: `nameInitials`, `formatDate(Time)`, `formatMoney`, datetime input helpers
+## CQ-B08: Shared formatters: `nameInitials`, `formatDate(Time)`, `formatMoney`, datetime input helpers
 
 **Severity:** 🟡 Medium · **Effort:** S · **Status:** ✅ Done · **Owner:** Claude · **PR:** `a58aa92`, `117e567`
 
@@ -290,7 +290,7 @@ Spread into each module; keep bespoke routes (setTier, verify, 2FA, stats) hand-
 **Problem.** The initials helper is redefined **12×** (components + routes, sometimes under
 different names in the same shape) despite `lib/display.ts:40` already exporting `personInitials`
 and its header declaring itself the single source of truth. `new Date(x).toLocaleDateString()/
-toLocaleString()` appears **50+ times** across 22+ route files — while `User` has
+toLocaleString()` appears **50+ times** across 22+ route files, while `User` has
 `date_format`/`timezone` preferences that nothing honors. The currency string
 `` `${currency ?? ""} ${amount.toLocaleString()}`.trim() `` is copy-pasted at
 `contracts/$contractId.tsx:305,416`, `contracts/index.tsx:452`, `engagements/$engagementId.tsx:278`.
@@ -310,18 +310,18 @@ then changes in one place; honoring user preferences becomes a one-file change l
 
 ---
 
-## CQ-B09 — Search-param helpers: `enumParam`, `listSearchSchema`, `enumOptions`, `useNewParamSheet`
+## CQ-B09: Search-param helpers: `enumParam`, `listSearchSchema`, `enumOptions`, `useNewParamSheet`
 
 **Severity:** 🟡 Medium · **Effort:** S · **Status:** 🟨 In progress · **Owner:** Claude · **PR:** `8efd351`
 
 > Done: `lib/search-params.ts` with `enumParam`, `listSearchSchema`, `enumOptions`; contracts list
 > adopted as the reference (removed its hand-enumerated `isStatus` guard and `STATUS_OPTIONS` array).
-> **Remaining:** roll out to the other ~11 list pages and add `useNewParamSheet` — folded into the
+> **Remaining:** roll out to the other ~11 list pages and add `useNewParamSheet`, folded into the
 > CQ-B01 `useListPage` migration (deferred there because `useNewParamSheet` needs a per-route literal
 > id for TanStack's typed `useSearch`/`useNavigate`).
 
 **Problem.** Every list page hand-rolls `validateSearch`: enum guards that manually enumerate every
-member (break silently when a member is added — OCP violation), the literal
+member (break silently when a member is added, OCP violation), the literal
 `if (search.new === "1" || search.new === true)` line in **10 files**, per-page
 `STATUS_OPTIONS = [{ value: "all", … }]` arrays restating labels that `statusConfig` owns, and the
 `?new=1 → open sheet → strip param` effect duplicated in 7 files (with the clients bug, CQ-A08).
@@ -346,15 +346,15 @@ Options arrays: `engagements:88-95`, `contracts:75-83`, `users:78-86`, `service-
 
 ---
 
-## CQ-B10 — `useLifecycleActions` hook + shared `ReasonDialog`
+## CQ-B10: `useLifecycleActions` hook + shared `ReasonDialog`
 
-**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** The same `setActionLoading → if/else over LifecycleAction → await refetch →
 showSuccess → normalizeErrorMessage → finally` block is duplicated in **7 detail pages**. The only
 reason-collecting dialog (`users/$userId.tsx:463-530`) is inline, non-reusable, and titles via a
 3-level nested ternary (:475-481). `components/common/ConfirmDialog.tsx` exists but none of these
-destructive flows use it. `LifecycleActions` (the buttons) is already shared — only the behavior isn't.
+destructive flows use it. `LifecycleActions` (the buttons) is already shared, only the behavior isn't.
 
 **Evidence.** `clients/$clientId.tsx:144-162`, `persons/$personId.tsx:166-184`,
 `contracts/$contractId.tsx:116-138`, `users/$userId.tsx:112-131` (+ reason variant 146-167),
@@ -378,14 +378,14 @@ Render `{dialog}` once per page. Unblocks CQ-A06 (real reasons).
 **Acceptance criteria.**
 - [ ] All 7 pages use the hook; both inline reason dialogs deleted.
 - [ ] Destructive actions confirm via `ConfirmDialog`/`ReasonDialog`.
-- [ ] One error-message helper on the toast path (`normalizeErrorMessage` — retire the mixed
+- [ ] One error-message helper on the toast path (`normalizeErrorMessage`, retire the mixed
       usage of `defaultErrorMessage` vs inline `err instanceof Error`).
 
 ---
 
-## CQ-B11 — Shared zod helpers
+## CQ-B11: Shared zod helpers
 
-**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** The same refinements are hand-rolled per schema with divergent semantics:
 end-after-start date refine in 4 variants (string compare in `ContractFormSheet.tsx:54-57`
@@ -408,12 +408,12 @@ string-typed numeric fields.
 
 ---
 
-## CQ-B12 — `EntityLinkCard` + shared `Pill`
+## CQ-B12: `EntityLinkCard` + shared `Pill`
 
-**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-B08
+**Severity:** 🟢 Low · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-B08
 
 **Problem.** The "entity link card" (avatar/initials + name + subtitle, bordered, hover) markup is
-duplicated **20×** across 9 detail files — and inconsistently: some copies are `<Link>`s, some
+duplicated **20×** across 9 detail files, and inconsistently: some copies are `<Link>`s, some
 plain divs (`service-sessions:385-401`). The verified/2FA/overdue pill markup is duplicated in 4+
 files. IDs are rendered as `id.slice(0, 8)` mono-text instead of resolved names in contracts
 (:325), persons (:362,373), service-sessions (:363,372).
@@ -433,9 +433,9 @@ Optionally an `<EntityRef resource id />` that resolves + links, replacing `id.s
 
 ---
 
-## CQ-B13 — Dedupe fixture wiring
+## CQ-B13: Dedupe fixture wiring
 
-**Severity:** 🟢 Low · **Effort:** XS · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-A02
+**Severity:** 🟢 Low · **Effort:** XS · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-A02
 
 **Problem.** `function useFixture()` is copy-pasted **7×** (identical body, different env var);
 `function paginate<T>()` copy-pasted **3×** (`care-callbacks.ts:37`, `engagements.ts:38`,

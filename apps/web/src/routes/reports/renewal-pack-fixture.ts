@@ -2,7 +2,7 @@
  * Fixture for the per-client renewal pack template.
  *
  * Replaced by a BE call (likely `GET /v1/reports/renewal-pack/:client_id`) once Phase 3
- * lands the reporting endpoints. The shape declared here is the assumed contract — keep
+ * lands the reporting endpoints. The shape declared here is the assumed contract; keep
  * it in sync with the BE model when it ships.
  */
 
@@ -58,16 +58,16 @@ export const renewalPackFixture: RenewalPackData = {
     { month: "May 2026", count: 88 },
   ],
   diagnosisPrevalence: [
-    { label: "F32 — Depressive episode", count: 218 },
-    { label: "F41 — Anxiety disorder", count: 196 },
-    { label: "F43 — Adjustment / stress reactions", count: 142 },
-    { label: "F10 — Alcohol-use disorder", count: 71 },
+    { label: "F32: Depressive episode", count: 218 },
+    { label: "F41: Anxiety disorder", count: 196 },
+    { label: "F43: Adjustment / stress reactions", count: 142 },
+    { label: "F10: Alcohol-use disorder", count: 71 },
     { label: "Other / undiagnosed", count: 53 },
   ],
   careCallbacks: [
     { outcome: "No further intervention", count: 312, share: 64 },
     { outcome: "Recommended additional sessions", count: 96, share: 20 },
-    { outcome: "Crisis flag — escalated", count: 18, share: 4 },
+    { outcome: "Crisis flag: escalated", count: 18, share: 4 },
     { outcome: "No response", count: 60, share: 12 },
   ],
   satisfaction: [

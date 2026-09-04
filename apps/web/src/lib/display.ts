@@ -1,5 +1,5 @@
 /**
- * Display helpers — single source of truth for how entities are rendered as
+ * Display helpers: single source of truth for how entities are rendered as
  * strings in the UI. Add new helpers here rather than inlining `${a} ${b}` in
  * components, so display drift between routes is eliminated.
  */

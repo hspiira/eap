@@ -25,7 +25,7 @@ class TestEmailNormalisation:
         assert Email("Fred.H@corp.com") == Email("fred.h@corp.com")
 
     def test_case_variants_hash_equal(self):
-        """Frozen dataclass — equal values must be interchangeable as dict/set keys."""
+        """Frozen dataclass; equal values must be interchangeable as dict/set keys."""
         assert len({Email("Fred@corp.com"), Email("fred@corp.com")}) == 1
 
     def test_accepts_azure_b2b_guest_upn(self):

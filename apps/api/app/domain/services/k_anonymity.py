@@ -14,7 +14,7 @@ from typing import Any
 K_ANON_FLOOR = 10
 """Minimum distinct contributing tenants required to surface an aggregate.
 
-Sourced from SAD A-19. Override only at test-fixture level — tightening (raising
+Sourced from SAD A-19. Override only at test-fixture level; tightening (raising
 the floor) is always safe; loosening requires legal sign-off and a new ADR.
 """
 

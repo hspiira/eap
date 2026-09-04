@@ -1,7 +1,7 @@
 /**
  * Illustrative 24-hour duty log for one programme.
  *
- * Three lanes — sessions, cases, incidents — plotted on a shared hour axis with
+ * Three lanes (sessions, cases, incidents) plotted on a shared hour axis with
  * a marker for the current time. The lone 02:14 incident sitting well outside
  * the working-hours cluster is the point of the whole panel: assistance work
  * does not follow office hours.
@@ -81,7 +81,7 @@ export function DutyLog() {
 
       <p className="sr-only">
         Across an illustrative day, sessions cluster between 08:00 and 18:00, cases open steadily
-        from 07:00 to 20:00, and two incidents are escalated — one at 02:14, hours outside any
+        from 07:00 to 20:00, and two incidents are escalated, one at 02:14, hours outside any
         working day.
       </p>
 

@@ -3,9 +3,9 @@
  *
  * BE shape is a flat two-level taxonomy: types → diagnoses.
  * Three routes (confirmed via openapi.json):
- *   GET /diagnoses/types   — list all diagnosis types
- *   GET /diagnoses/tree    — types with nested diagnoses (preferred for UI)
- *   GET /diagnoses         — flat list, optionally filtered by type_code
+ *   GET /diagnoses/types: list all diagnosis types
+ *   GET /diagnoses/tree: types with nested diagnoses (preferred for UI)
+ *   GET /diagnoses: flat list, optionally filtered by type_code
  *
  * Fixture is DEV-only.
  */

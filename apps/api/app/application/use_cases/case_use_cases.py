@@ -1,7 +1,7 @@
 """Clinical case use cases.
 
 The Case aggregate is the orchestration spine for one episode of care. The
-``OpenCaseUseCase`` is the only path that creates Cases — it always resolves
+``OpenCaseUseCase`` is the only path that creates Cases; it always resolves
 the supplied ``EligibleMemberId`` to its pseudonymous ``ClinicalSubjectId``
 through the audited link repository, so a Case can never be opened directly
 against employer-side identifiers.

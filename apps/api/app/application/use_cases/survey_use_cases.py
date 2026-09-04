@@ -83,7 +83,7 @@ class IngestSurveyResponseUseCase:
     """
 
     class SignatureInvalid(DomainError):
-        """Raised when HMAC verification fails — distinguishable for 401 mapping."""
+        """Raised when HMAC verification fails, distinguishable for 401 mapping."""
 
     def __init__(
         self,

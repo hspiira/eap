@@ -56,7 +56,7 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     client_id: Mapped[str] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
 
     # Contract period. Real columns rather than a JSON blob so the term can be
-    # filtered and sorted in SQL — the renewal window needs an indexed range scan,
+    # filtered and sorted in SQL; the renewal window needs an indexed range scan,
     # and `period->>'end_date'` would neither use an index nor typecheck as a date.
     # The domain still models this as a single DateRange; the mapper joins them.
     start_date: Mapped[datetime] = mapped_column(

@@ -1,7 +1,7 @@
 """Clinical subject aggregate.
 
 The pseudonymous identity used by every clinical aggregate (Case, ClinicalNote,
-RiskAssessment, SafetyPlan, CrisisContact). Carries no PII — name, email, and
+RiskAssessment, SafetyPlan, CrisisContact). Carries no PII: name, email, and
 employer-side identifiers are deliberately absent. The only way to resolve a
 clinical subject back to an EligibleMember is via the audited
 ``eligible_member_clinical_link`` mapping.

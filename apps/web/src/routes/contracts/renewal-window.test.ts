@@ -13,7 +13,7 @@ const NOW = new Date("2026-07-13T12:00:00.000Z")
 
 /**
  * The renewal window used to be a client-side filter over one fetched page,
- * keyed on `renewal_date ?? end_date` — neither of which the BE sends — so it
+ * keyed on `renewal_date ?? end_date` (neither of which the BE sends), so it
  * returned an empty list in every window. It now maps to server params.
  */
 describe("renewalParams", () => {
@@ -30,7 +30,7 @@ describe("renewalParams", () => {
 
     it("only matches contracts that actually renew", () => {
       // A contract ending inside the window without auto-renew is expiring,
-      // not renewing — the label would otherwise lie.
+      // not renewing: the label would otherwise lie.
       expect(renewalParams("30d", NOW).is_auto_renew).toBe(true)
       expect(renewalParams("90d", NOW).is_auto_renew).toBe(true)
     })
@@ -52,7 +52,7 @@ describe("renewalParams", () => {
       expect(p.ends_from).toBeUndefined()
     })
 
-    it("does not filter on auto-renew — an expired term is expired either way", () => {
+    it("does not filter on auto-renew; an expired term is expired either way", () => {
       expect(renewalParams("expired", NOW).is_auto_renew).toBeUndefined()
     })
   })

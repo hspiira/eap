@@ -74,20 +74,20 @@ export function IndustryDetailsCard({
               onSelect={onSelectIndustry}
             />
           ) : (
-            <p className="text-xs text-fg-muted">Top-level industry — no parent or children.</p>
+            <p className="text-xs text-fg-muted">Top-level industry: no parent or children.</p>
           )}
         </Section>
 
         <Section title="Metadata">
           <dl className="grid grid-cols-3 gap-x-3 gap-y-2.5">
             <Field label="Code" mono>
-              {industry.code ?? <span className="text-fg-subtle">—</span>}
+              {industry.code ?? <span className="text-fg-subtle">-</span>}
             </Field>
             <Field label="Level" mono>
               {industry.level != null ? (
                 `L${industry.level}`
               ) : (
-                <span className="text-fg-subtle">—</span>
+                <span className="text-fg-subtle">-</span>
               )}
             </Field>
             <Field label="Children" mono>

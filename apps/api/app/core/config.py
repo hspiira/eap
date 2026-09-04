@@ -103,7 +103,7 @@ class Settings(BaseSettings):
         description=(
             "If True, CreateClient/CreateUser use cases reject creation past "
             "the tenant's max_clients/max_users quota with a 402. When False "
-            "(default), quotas are advisory only — pricing tiers are not yet "
+            "(default), quotas are advisory only; pricing tiers are not yet "
             "wired up and we don't want to block onboarding."
         ),
     )

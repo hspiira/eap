@@ -33,7 +33,7 @@ class AccessScope(str, Enum):
 
     CLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).
     Nobody holds it by default; platform admins grant it to counsellors.
-    Employer HR must never see clinical data — that is the product's core
+    Employer HR must never see clinical data; that is the product's core
     privacy promise, so clinical routes fail closed on a missing grant.
     Platform-admin status stays tenant-based and does NOT imply CLINICAL.
     """

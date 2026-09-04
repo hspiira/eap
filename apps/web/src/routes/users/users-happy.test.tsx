@@ -38,7 +38,7 @@ vi.mock("@/api/endpoints/users", () => ({
 const { Route } = await import("@/routes/users/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("users list — happy path", () => {
+describe("users list: happy path", () => {
   it("renders the user row by email", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("counsellor@minet.co.ug")).toBeInTheDocument()

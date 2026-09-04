@@ -12,7 +12,7 @@
 
 @theme {
   /*
-   * Legacy palette tokens — retained for backwards compatibility while
+   * Legacy palette tokens: retained for backwards compatibility while
    * existing components migrate. New code uses the semantic tokens declared
    * in the @theme inline block below; on collision, the later block wins.
    */
@@ -102,7 +102,7 @@
 
 @theme inline {
   /*
-   * New semantic tokens — preferred for all new code.
+   * New semantic tokens: preferred for all new code.
    * Declared after the legacy block so they win on collision via cascade.
    * Source values live in theme/tokens-{light,dark}.css.
    *
@@ -221,7 +221,7 @@ button {
 }
 
 /*
- * Sidebar tokens are now defined in theme/tokens-{light,dark}.css —
+ * Sidebar tokens are now defined in theme/tokens-{light,dark}.css,
  * bound to the new neutral ramp + brand. The legacy :root/.dark blocks here
  * have been removed.
  */

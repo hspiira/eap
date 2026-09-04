@@ -1,5 +1,5 @@
 /**
- * Response body -> ApiError normalization. Pure functions — no client state.
+ * Response body -> ApiError normalization. Pure functions: no client state.
  */
 
 import type { FieldErrors } from "@/types/api"

@@ -57,7 +57,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [dependency-groups]
-# CI installs with `uv sync --group dev`, which resolves dependency-groups only —
+# CI installs with `uv sync --group dev`, which resolves dependency-groups only;
 # it does NOT install [project.optional-dependencies]. Test deps must live here,
 # or pytest_asyncio/httpx silently go missing and every test errors on import.
 dev = [
@@ -75,13 +75,13 @@ dev = [
 # Clean-architecture layering enforcement (Phase 0 #C2 / SAD §13.2).
 #
 # Layers (innermost first):
-#   1. domain         — pure entities, value objects, repository interfaces
-#   2. application    — use cases; depends on domain only
-#   3. infrastructure — SQLAlchemy models, mappers, concrete repos
-#   4. api            — FastAPI routes/schemas; orchestrates application layer
+#   1. domain:         pure entities, value objects, repository interfaces
+#   2. application:    use cases; depends on domain only
+#   3. infrastructure: SQLAlchemy models, mappers, concrete repos
+#   4. api:            FastAPI routes/schemas; orchestrates application layer
 #
 # Allowed: outer → inner. Forbidden: inner → outer.
-# `core` and `shared` are leaf utilities — no inbound restrictions in v1.
+# `core` and `shared` are leaf utilities: no inbound restrictions in v1.
 #
 # Run: `uv run lint-imports`
 # ----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ forbidden_modules = [
     "app.infrastructure",
     "app.api",
 ]
-# Tech debt — to remove in Phase 1 (lifecycle collapse) when the
+# Tech debt: to remove in Phase 1 (lifecycle collapse) when the
 # password-set-token use case is restructured to depend on a domain repository
 # interface, with the concrete implementation injected from infrastructure.
 ignore_imports = [

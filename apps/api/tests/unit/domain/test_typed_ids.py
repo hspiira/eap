@@ -61,7 +61,7 @@ class TestTypedIds:
                     continue
                 assert a_cls is not b_cls, (
                     f"{a_name} and {b_name} resolve to the same class "
-                    "— have the type aliases regressed?"
+                    "; have the type aliases regressed?"
                 )
 
     def test_each_id_subclasses_id_base(self):
@@ -82,7 +82,7 @@ class TestTypedIds:
         """Two IDs with the same string value but different types are not equal."""
         # Python's default dataclass eq compares type + fields; subclasses
         # share the field shape but differ in class. Across distinct subclasses,
-        # equality must be False even when values match — this is what gives
+        # equality must be False even when values match; this is what gives
         # us nominal typing at runtime.
         assert PersonId("abc") != UserId("abc")
         assert TenantId("abc") != ClientId("abc")

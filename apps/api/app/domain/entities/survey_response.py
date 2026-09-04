@@ -1,7 +1,7 @@
 """Survey response entity (Phase 3 #D-Survey / SAD §5.2.7 / §6.4).
 
 One ingested webhook delivery from an external survey provider. The
-``external_response_id`` plus ``campaign_id`` form the idempotency key — re-deliveries
+``external_response_id`` plus ``campaign_id`` form the idempotency key; re-deliveries
 are detected and dropped at the repository layer (unique constraint).
 """
 

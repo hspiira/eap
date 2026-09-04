@@ -2,7 +2,7 @@
   "components": {
     "schemas": {
       "AccessScope": {
-        "description": "Per-user grants that gate the clinical / employer bounded contexts.\n\nCLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).\nNobody holds it by default; platform admins grant it to counsellors.\nEmployer HR must never see clinical data \u2014 that is the product's core\nprivacy promise, so clinical routes fail closed on a missing grant.\nPlatform-admin status stays tenant-based and does NOT imply CLINICAL.",
+        "description": "Per-user grants that gate the clinical / employer bounded contexts.\n\nCLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).\nNobody holds it by default; platform admins grant it to counsellors.\nEmployer HR must never see clinical data; that is the product's core\nprivacy promise, so clinical routes fail closed on a missing grant.\nPlatform-admin status stays tenant-based and does NOT imply CLINICAL.",
         "enum": [
           "Clinical",
           "EmployerPortal"
@@ -1353,7 +1353,7 @@
         "type": "string"
       },
       "CaseReferralSource": {
-        "description": "Origin of a case \u2014 drives downstream disclosure and reporting rules.",
+        "description": "Origin of a case, drives downstream disclosure and reporting rules.",
         "enum": [
           "Self",
           "InformalManager",
@@ -2067,7 +2067,7 @@
         "type": "object"
       },
       "ClientTier": {
-        "description": "Joseph's A/B/C clustering for client engagement tiering.\n\nA \u2014 strategic / large account, full service mix.\nB \u2014 mid-tier, consultancy-extension candidates.\nC \u2014 long-tail / small account, lower-touch service model.",
+        "description": "Joseph's A/B/C clustering for client engagement tiering.\n\nA: strategic / large account, full service mix.\nB: mid-tier, consultancy-extension candidates.\nC: long-tail / small account, lower-touch service model.",
         "enum": [
           "A",
           "B",
@@ -7794,7 +7794,7 @@
         "type": "string"
       },
       "PricingModel": {
-        "description": "Joseph's five contract pricing strategies (SAD \u00a75.2.3 / Meeting \u00a73).\n\nRETAINER \u2014 fixed periodic fee (e.g. monthly).\nFRAMEWORK \u2014 pre-paid deposit drawn down per session.\nFEE_FOR_SERVICE \u2014 pay per session at a rate card.\nADMIN_UTILISATION \u2014 admin-fee floor + per-session usage charges above the floor.\nVALUE_ADD \u2014 bundled into a broader Minet relationship (no per-EAP invoice).",
+        "description": "Joseph's five contract pricing strategies (SAD \u00a75.2.3 / Meeting \u00a73).\n\nRETAINER: fixed periodic fee (e.g. monthly).\nFRAMEWORK: pre-paid deposit drawn down per session.\nFEE_FOR_SERVICE: pay per session at a rate card.\nADMIN_UTILISATION: admin-fee floor + per-session usage charges above the floor.\nVALUE_ADD: bundled into a broader Minet relationship (no per-EAP invoice).",
         "enum": [
           "Retainer",
           "Framework",
@@ -7982,7 +7982,7 @@
         "type": "object"
       },
       "ProviderTier": {
-        "description": "Provider panel tier \u2014 drives routing and rate cards (Joseph's framework).",
+        "description": "Provider panel tier, drives routing and rate cards (Joseph's framework).",
         "enum": [
           "T1",
           "T2",
@@ -9647,7 +9647,7 @@
         "type": "string"
       },
       "SessionClinicalStatus": {
-        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED \u2014 client returns for follow-up (xlsx: T).\nREFERRED        \u2014 client referred elsewhere (xlsx: R).\nCOMPLETED       \u2014 case episode closed this session (xlsx: C).",
+        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).",
         "enum": [
           "ToBeContinued",
           "Referred",
@@ -10651,7 +10651,7 @@
         "type": "object"
       },
       "TriageInstrumentCode": {
-        "description": "Versioned identifiers for the supported triage instruments.\n\n``JOSEPH7`` \u2014 Joseph's 7-variable counsellor-callback screen.\n``WOS5`` \u2014 5-item Work Outcome Scale (pre/post case).\n``PHQ9`` \u2014 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.\n``GAD7`` \u2014 7-item Generalized Anxiety Disorder screen.\n``CSSRS`` \u2014 Columbia Suicide Severity Rating Scale (brief).\n``AUDIT_C`` \u2014 3-item alcohol-use disorders screener.\n``DAST10`` \u2014 10-item Drug Abuse Screening Test.\n``WHO5`` \u2014 5-item WHO wellbeing index.\n``K10`` \u2014 Kessler 10 psychological distress.\n``WSAS`` \u2014 Work and Social Adjustment Scale.\n``DASS21`` \u2014 Depression, Anxiety, Stress 21-item scale.\n``PCL5`` \u2014 PTSD Checklist for DSM-5 (post-CISM).",
+        "description": "Versioned identifiers for the supported triage instruments.\n\n``JOSEPH7``: Joseph's 7-variable counsellor-callback screen.\n``WOS5``: 5-item Work Outcome Scale (pre/post case).\n``PHQ9``: 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.\n``GAD7``: 7-item Generalized Anxiety Disorder screen.\n``CSSRS``: Columbia Suicide Severity Rating Scale (brief).\n``AUDIT_C``: 3-item alcohol-use disorders screener.\n``DAST10``: 10-item Drug Abuse Screening Test.\n``WHO5``: 5-item WHO wellbeing index.\n``K10``: Kessler 10 psychological distress.\n``WSAS``: Work and Social Adjustment Scale.\n``DASS21``: Depression, Anxiety, Stress 21-item scale.\n``PCL5``: PTSD Checklist for DSM-5 (post-CISM).",
         "enum": [
           "JOSEPH7",
           "WOS5",
@@ -10807,7 +10807,7 @@
         "type": "object"
       },
       "TriageScoreResponse": {
-        "description": "Computed triage classification \u2014 returned alongside the persisted outreach record.",
+        "description": "Computed triage classification, returned alongside the persisted outreach record.",
         "properties": {
           "crisis_flag": {
             "title": "Crisis Flag",
@@ -12557,7 +12557,7 @@
     },
     "/auth/azure/callback": {
       "get": {
-        "description": "Azure redirects here after the user signs in.\n\nFlow:\n1. Verify CSRF state (HMAC-signed + bound to this browser's nonce cookie)\n2. Exchange code for Azure id_token\n3. Extract oid + tid + email from token claims\n4. Resolve Evexia tenant via tenants.azure_tenant_id == tid\n5. Find user by azure_oid (returning SSO user) or email (first-time link)\n6. Issue internal JWT (same claims as password login)\n7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI\n\nEvery failure path returns a redirect carrying a user-facing ?error=\nmessage \u2014 never a raw 5xx, which would surface as a blank page.",
+        "description": "Azure redirects here after the user signs in.\n\nFlow:\n1. Verify CSRF state (HMAC-signed + bound to this browser's nonce cookie)\n2. Exchange code for Azure id_token\n3. Extract oid + tid + email from token claims\n4. Resolve Evexia tenant via tenants.azure_tenant_id == tid\n5. Find user by azure_oid (returning SSO user) or email (first-time link)\n6. Issue internal JWT (same claims as password login)\n7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI\n\nEvery failure path returns a redirect carrying a user-facing ?error=\nmessage, never a raw 5xx, which would surface as a blank page.",
         "operationId": "azure_callback_auth_azure_callback_get",
         "parameters": [
           {
@@ -12619,7 +12619,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Azure AD SSO callback \u2014 exchanges code for internal JWT",
+        "summary": "Azure AD SSO callback (exchanges code for internal JWT)",
         "tags": [
           "authentication"
         ]
@@ -12639,7 +12639,7 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Initiate Azure AD SSO \u2014 redirects to Microsoft login",
+        "summary": "Initiate Azure AD SSO (redirects to Microsoft login)",
         "tags": [
           "authentication"
         ]
@@ -28082,7 +28082,7 @@
     },
     "/users/{user_id}/role": {
       "patch": {
-        "description": "Change a user's tenant role. ADMIN-only.\n\nGuards against demoting the last admin in a tenant \u2014 that would leave the\ntenant unmanageable.",
+        "description": "Change a user's tenant role. ADMIN-only.\n\nGuards against demoting the last admin in a tenant; that would leave the\ntenant unmanageable.",
         "operationId": "update_user_role_users__user_id__role_patch",
         "parameters": [
           {

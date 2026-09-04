@@ -17,9 +17,9 @@ export interface Engagement extends BaseEntity {
   description?: string | null
   status: EngagementStatus
   engagement_type: EngagementType
-  /** ISO date — when scoping was signed off and work began. */
+  /** ISO date, when scoping was signed off and work began. */
   start_date: string
-  /** ISO date — agreed delivery date. Slips trigger a yellow indicator in the list. */
+  /** ISO date: agreed delivery date. Slips trigger a yellow indicator in the list. */
   due_date?: string | null
   /** Set when status transitions to CLOSED. */
   closed_at?: string | null
@@ -40,7 +40,7 @@ export interface EngagementDeliverable {
   title: string
   description?: string | null
   status: DeliverableStatus
-  /** ISO date — agreed delivery date for *this* deliverable. */
+  /** ISO date: agreed delivery date for *this* deliverable. */
   due_date?: string | null
   /** Set when status transitions to SUBMITTED / ACCEPTED. */
   submitted_at?: string | null
@@ -55,7 +55,7 @@ export interface EngagementTimeEntry {
   id: string
   engagement_id: string
   user_id: string
-  /** ISO date — the day the work happened. */
+  /** ISO date: the day the work happened. */
   occurred_on: string
   hours: number
   description?: string | null

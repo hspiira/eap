@@ -93,7 +93,7 @@ interface DetailQueryLike {
 
 /**
  * Loading / not-found / failed states for a detail query; `null` when the caller
- * should render the entity. Only a 404 means missing — anything else is retryable.
+ * should render the entity. Only a 404 means missing; anything else is retryable.
  */
 export function renderDetailState(
   query: DetailQueryLike,

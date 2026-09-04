@@ -81,7 +81,7 @@ class UserRepository(BaseRepository[UserEntity, UserId]):
         """
         Count users matching filters.
 
-        Must apply exactly the same filters as `list_all` — a count that disagrees
+        Must apply exactly the same filters as `list_all`; a count that disagrees
         with its page produces pagination over a total the caller cannot reach.
 
         Args:

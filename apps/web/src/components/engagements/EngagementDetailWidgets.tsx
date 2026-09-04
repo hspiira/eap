@@ -309,7 +309,7 @@ export function HoursPanel({
         />
         <Select value={deliverableId} onValueChange={setDeliverableId}>
           <SelectTrigger>
-            <SelectValue placeholder="— Deliverable —" />
+            <SelectValue placeholder="- Deliverable -" />
           </SelectTrigger>
           <SelectContent>
             {deliverables.map((d) => (
@@ -367,7 +367,7 @@ export function HoursPanel({
                   <TableCell className="px-3 py-2 font-mono text-xs text-fg/75">
                     {e.user_id}
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-fg/80">{e.description ?? "—"}</TableCell>
+                  <TableCell className="px-3 py-2 text-fg/80">{e.description ?? "-"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -450,14 +450,14 @@ export function DetailRail({
             label="Budget"
             value={engagement.budget_hours ? `${engagement.budget_hours}h` : "Open"}
           />
-          <Stat truncate label="Util" value={budgetPct !== null ? `${budgetPct}%` : "—"} />
+          <Stat truncate label="Util" value={budgetPct !== null ? `${budgetPct}%` : "-"} />
           <Stat
             truncate
             label="Rate"
             value={
               engagement.hourly_rate != null
                 ? `${engagement.hourly_rate}${engagement.currency ? ` ${engagement.currency}` : ""}`
-                : "—"
+                : "-"
             }
           />
         </div>

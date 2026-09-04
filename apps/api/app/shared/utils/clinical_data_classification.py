@@ -2,7 +2,7 @@
 
 The DPO uses this classification to produce a separate "special-category data
 accessed" report alongside the regular audit stream. The default rule is
-"opt-in by resource type / event name" — anything not on the explicit list is
+"opt-in by resource type / event name"; anything not on the explicit list is
 treated as ordinary so the flag never silently drifts.
 
 To classify a new clinical aggregate, add its `resource_type` string to

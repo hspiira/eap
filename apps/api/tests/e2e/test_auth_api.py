@@ -1,5 +1,5 @@
 """
-End-to-end cover for /auth — login, refresh, logout, /me.
+End-to-end cover for /auth: login, refresh, logout, /me.
 
 auth.py is 638 lines of the most security-critical logic in the service (login,
 lockout, token rotation, revocation, cookies, SSO) and had no e2e coverage at
@@ -34,7 +34,7 @@ USER = "user-auth-e2e"
 
 @pytest_asyncio.fixture
 async def auth_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Only get_db is overridden — the auth stack itself is real."""
+    """Only get_db is overridden; the auth stack itself is real."""
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
@@ -130,7 +130,7 @@ class TestLockout:
     Two independent defences fire at the same count (5): the per-IP login rate
     limiter, checked first, and the per-account lockout. From one IP the limiter
     always wins, so the lockout only does real work against attempts spread over
-    many IPs — which is exactly the case the limiter cannot catch. These tests
+    many IPs, which is exactly the case the limiter cannot catch. These tests
     come through both doors.
     """
 

@@ -223,7 +223,7 @@ async def login(
         )
         await user_repo.save(user)
         # Commit before raising. @transactional rolls back on HTTPException, and
-        # a failed login always ends in one — so without this the counter is
+        # a failed login always ends in one, so without this the counter is
         # discarded every time and the account lockout never fires.
         await db.commit()
         raise HTTPException(
@@ -441,7 +441,7 @@ async def logout(
                 await refresh_token_repo.revoke(jti)
         except Exception:
             # Logout still succeeds (cookies are cleared below), but an unrevoked
-            # refresh token remains usable until it expires — that needs a trail.
+            # refresh token remains usable until it expires; that needs a trail.
             logger.warning(
                 "auth.logout: refresh token revocation failed; token may remain valid until expiry",
                 extra={"jti": jti},
@@ -471,5 +471,5 @@ async def logout(
 
 
 # =============================================================================
-# AZURE AD SSO — Option C (Sign in with Microsoft, no tenant code required)
+# AZURE AD SSO: Option C (Sign in with Microsoft, no tenant code required)
 # =============================================================================

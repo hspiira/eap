@@ -49,7 +49,7 @@ vi.mock("@/api/endpoints/clients", () => ({
 const { Route } = await import("@/routes/clients/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("clients list — happy path", () => {
+describe("clients list: happy path", () => {
   it("renders client names from the server page, not identifiers", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Stanbic Bank Uganda")).toBeInTheDocument()

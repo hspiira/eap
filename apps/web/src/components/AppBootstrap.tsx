@@ -1,5 +1,5 @@
 /**
- * AppBootstrap — replaces AuthProvider + TenantProvider.
+ * AppBootstrap: replaces AuthProvider + TenantProvider.
  * Mounted once near the root. Owns:
  *  - one-shot auth hydrate from localStorage
  *  - apiClient 401 callback → store clear + redirect to /auth/login

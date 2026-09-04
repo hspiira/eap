@@ -19,7 +19,7 @@ export function nextSort(prev: SortState, field: string): SortState {
 
 /**
  * Reads `field` off a row by name. This is the one place allowed to widen a row
- * to an index signature — `sort.field` is a runtime string (it comes from column
+ * to an index signature: `sort.field` is a runtime string (it comes from column
  * definitions and the URL), so it cannot be checked statically. Callers that need
  * a computed or renamed column should pass their own `getValue` instead.
  */

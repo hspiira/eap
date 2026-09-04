@@ -162,7 +162,7 @@ function OverviewPanel({ provider }: { provider: Provider }) {
       <div>
         <dt className="text-xs text-fg/60">Specialties</dt>
         <dd className="mt-1 text-sm text-fg">
-          {profile.specialties.length === 0 ? "—" : profile.specialties.join(", ")}
+          {profile.specialties.length === 0 ? "-" : profile.specialties.join(", ")}
         </dd>
       </div>
       <div>
@@ -187,7 +187,7 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
     <dl className="grid gap-4 sm:grid-cols-2">
       <div>
         <dt className="text-xs text-fg/60">Authority</dt>
-        <dd className="mt-1 text-sm text-fg">{profile.accreditation_authority ?? "—"}</dd>
+        <dd className="mt-1 text-sm text-fg">{profile.accreditation_authority ?? "-"}</dd>
       </div>
       <div>
         <dt className="text-xs text-fg/60">Status</dt>
@@ -197,25 +197,25 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
       </div>
       <div>
         <dt className="text-xs text-fg/60">Expiry</dt>
-        <dd className="mt-1 text-sm text-fg">{profile.accreditation_expiry ?? "—"}</dd>
+        <dd className="mt-1 text-sm text-fg">{profile.accreditation_expiry ?? "-"}</dd>
       </div>
       {provider.license_info ? (
         <>
           <div>
             <dt className="text-xs text-fg/60">License number</dt>
             <dd className="mt-1 text-sm text-fg font-mono">
-              {provider.license_info.number ?? "—"}
+              {provider.license_info.number ?? "-"}
             </dd>
           </div>
           <div>
             <dt className="text-xs text-fg/60">Issuing authority</dt>
             <dd className="mt-1 text-sm text-fg">
-              {provider.license_info.issuing_authority ?? "—"}
+              {provider.license_info.issuing_authority ?? "-"}
             </dd>
           </div>
           <div>
             <dt className="text-xs text-fg/60">License expires</dt>
-            <dd className="mt-1 text-sm text-fg">{provider.license_info.expiry_date ?? "—"}</dd>
+            <dd className="mt-1 text-sm text-fg">{provider.license_info.expiry_date ?? "-"}</dd>
           </div>
         </>
       ) : null}

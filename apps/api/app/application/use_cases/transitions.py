@@ -2,14 +2,14 @@
 
 A single ``Transition<Aggregate>UseCase`` replaces the historical pile of
 per-verb classes (ActivateXUseCase, SuspendXUseCase, …). Callers pass a
-``<Aggregate>Transition`` enum value — one per business action — plus the
+``<Aggregate>Transition`` enum value (one per business action) plus the
 keyword arguments that action requires. The use case loads the aggregate
 by id, dispatches to the matching method on the entity, persists, and
 publishes any collected domain events.
 
 Why an enum (not a string): the enum value *is* the entity method name,
 so the dispatcher is a single ``getattr``. Adding a new transition is
-"add an enum member + entity method" — no new use-case class required.
+"add an enum member + entity method"; no new use-case class required.
 
 Invalid transitions are rejected by the entity itself (it raises
 ``InvalidStateError`` / ``DomainError``); the FSM lives on the entity, not

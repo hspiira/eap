@@ -12,8 +12,8 @@ import {
 
 export const CaseReferralSourceLabel: Record<CaseReferralSource, string> = {
   [CaseReferralSource.SELF]: "Self-referred",
-  [CaseReferralSource.INFORMAL_MANAGER]: "Informal — manager",
-  [CaseReferralSource.FORMAL_MANDATORY]: "Formal — mandatory",
+  [CaseReferralSource.INFORMAL_MANAGER]: "Informal: manager",
+  [CaseReferralSource.FORMAL_MANDATORY]: "Formal: mandatory",
   [CaseReferralSource.HR]: "HR",
   [CaseReferralSource.CISM_FOLLOW_UP]: "CISM follow-up",
   [CaseReferralSource.EMPLOYER_PROACTIVE]: "Employer proactive outreach",

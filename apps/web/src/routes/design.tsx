@@ -112,7 +112,7 @@ function ColorTokens() {
     <GallerySection
       id="colors"
       title="Colors"
-      description="Semantic tokens. Components consume these — never raw hex, never palette names."
+      description="Semantic tokens. Components consume these, never raw hex, never palette names."
     >
       <GallerySpecimen label="Surfaces" source="--color-bg / --color-surface / ...">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -268,7 +268,7 @@ function ButtonsSpecimen() {
     <GallerySection
       id="buttons"
       title="Buttons"
-      description="Current shadcn Button — forked, missing outline/destructive variants. Reset planned in this phase."
+      description="Current shadcn Button: forked, missing outline/destructive variants. Reset planned in this phase."
     >
       <GallerySpecimen label="Variants">
         <div className="flex flex-wrap items-center gap-3">
@@ -357,7 +357,7 @@ function CardsSpecimen() {
     <GallerySection
       id="cards"
       title="Cards"
-      description="shadcn Card primitive — base for all card-shaped surfaces."
+      description="shadcn Card primitive: base for all card-shaped surfaces."
     >
       <GallerySpecimen label="Card">
         <Card>
@@ -425,7 +425,7 @@ const GALLERY_ACTIVITIES: Activity[] = [
     icon: FileSignature,
     tone: "warning",
     title: "Contract renewal due",
-    description: "Acme Holdings — current term expires in 14 days.",
+    description: "Acme Holdings: current term expires in 14 days.",
     time: "Yesterday",
   },
   {
@@ -488,7 +488,7 @@ function FormsSpecimen() {
     <GallerySection
       id="forms"
       title="Forms"
-      description="Inputs and labels — pair with react-hook-form + zod (Phase 4)."
+      description="Inputs and labels: pair with react-hook-form + zod (Phase 4)."
     >
       <GallerySpecimen label="Input + Label">
         <div className="grid max-w-sm gap-3">

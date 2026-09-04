@@ -311,7 +311,7 @@ class PersonEntity:
         actor: UserId,
         reason: str,
     ) -> None:
-        """Audited panel-status flip — used by the 80→8 cull and any cure / suspension."""
+        """Audited panel-status flip, used by the 80→8 cull and any cure / suspension."""
         if not reason:
             raise DomainError("Panel-status change requires a reason")
         if self.status == BaseStatus.DELETED:

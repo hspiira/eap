@@ -24,7 +24,7 @@ import type { Service } from "@/types/entities"
 /**
  * Recent-session history for one person or one provider. Self-contained:
  * runs its own query and resolves service names, so detail pages embed it
- * as a single line. Service names render as names — never id fragments.
+ * as a single line. Service names render as names, never id fragments.
  */
 export function SessionHistory({
   personId,
@@ -117,7 +117,7 @@ export function SessionHistory({
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell className="text-sm text-fg/75">
-                  {servicesById.get(s.service_id)?.name ?? "—"}
+                  {servicesById.get(s.service_id)?.name ?? "-"}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={s.status} />

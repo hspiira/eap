@@ -23,7 +23,7 @@ describe("TierBadge", () => {
   it("renders an em-dash placeholder when tier is null", () => {
     render(<TierBadge tier={null} />)
     expect(screen.getByLabelText(/tier not set/i)).toBeInTheDocument()
-    expect(screen.getByText("—")).toBeInTheDocument()
+    expect(screen.getByText("-")).toBeInTheDocument()
   })
 
   it("renders an em-dash placeholder when tier is undefined", () => {

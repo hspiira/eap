@@ -16,7 +16,7 @@ import { CareCallbackCampaignStatus } from "@/types/enums"
 
 function topHistogramEntry(h: Record<string, number>): string {
   const entries = Object.entries(h)
-  if (entries.length === 0) return "—"
+  if (entries.length === 0) return "-"
   entries.sort((a, b) => b[1] - a[1])
   const [value, count] = entries[0]
   return `${value} (${count})`
@@ -85,7 +85,7 @@ export function WaveSummaryBody({
           <div className="flex items-start gap-2.5 rounded-sm border border-fg/15 bg-bg px-3 py-2.5 print:bg-white">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
             <div className="text-sm">
-              <p className="font-medium text-fg">Insufficient data — k-anon floor not met</p>
+              <p className="font-medium text-fg">Insufficient data: k-anon floor not met</p>
               <p className="mt-0.5 text-fg/65">
                 Per-question metrics are suppressed until at least {K_ANON_FLOOR} cases are
                 completed. Currently {aggregate.cases_completed} completed.
@@ -127,7 +127,7 @@ export function WaveSummaryBody({
                         ? s.mean.toFixed(2)
                         : s.histogram
                           ? topHistogramEntry(s.histogram)
-                          : "—"}
+                          : "-"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -162,7 +162,7 @@ export function WaveSummaryBody({
 
       <footer className="border-t border-fg/10 pt-4 text-[11px] text-fg-muted">
         <ShieldCheck className="mr-1 inline size-3 text-primary" />
-        Aggregate report — no PII. Counsellor notes are excluded by design. Generated{" "}
+        Aggregate report: no PII. Counsellor notes are excluded by design. Generated{" "}
         {formatDateTime(new Date())}.
       </footer>
     </>

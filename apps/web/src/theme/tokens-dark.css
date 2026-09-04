@@ -1,5 +1,5 @@
 /*
- * Dark theme — re-binds the same semantic tokens.
+ * Dark theme: re-binds the same semantic tokens.
  *
  * The neutral ramp inverts so neutral-0 is the darkest page surface and
  * neutral-1000 is near-white text. Component code never sees this; it reads
@@ -7,7 +7,7 @@
  */
 
 .dark {
-  /* Neutral ramp — inverted. */
+  /* Neutral ramp: inverted. */
   --neutral-0: #0a0a0a;
   --neutral-50: #111111;
   --neutral-100: #171717;
@@ -35,19 +35,19 @@
   --fg-subtle: #8a8a8a;
   --fg-on-brand: #052e16;
 
-  /* Borders — Tegon-style hairlines. Dark mode borders are inherently
+  /* Borders: Tegon-style hairlines. Dark mode borders are inherently
    * harder to balance; keep them well under 10% white. */
   --border-subtle: rgb(255 255 255 / 0.04);
   --border-default: rgb(255 255 255 / 0.06);
   --border-strong: var(--neutral-300);
 
-  /* Brand — brighter green works against dark surfaces. */
+  /* Brand: brighter green works against dark surfaces. */
   --brand: #34d399;
   --brand-hover: #6ee7b7;
   --brand-soft: rgb(52 211 153 / 0.12);
   --brand-fg: #052e16;
 
-  /* Semantic roles — softer fills, brighter emphasis. */
+  /* Semantic roles: softer fills, brighter emphasis. */
   --success: #4ade80;
   --success-soft: rgb(74 222 128 / 0.12);
   --success-fg: #bbf7d0;
@@ -86,7 +86,7 @@
   --destructive-foreground: var(--neutral-1000);
   --input: var(--border-default);
 
-  /* Sidebar — matches page bg; hover uses the old sidebar bg for contrast. */
+  /* Sidebar: matches page bg; hover uses the old sidebar bg for contrast. */
   --sidebar: var(--bg);
   --sidebar-foreground: var(--fg);
   --sidebar-primary: var(--brand);

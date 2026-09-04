@@ -1,6 +1,6 @@
 /**
  * Happy path for the cases list: rows render the case's pseudonymous
- * subject reference (never a name — Case only carries clinical_subject_id
+ * subject reference (never a name: Case only carries clinical_subject_id
  * by design, the privacy wall), and the route is gated on Clinical scope.
  */
 
@@ -43,7 +43,7 @@ vi.mock("@/api/endpoints/cases", () => ({
   },
 }))
 
-// This test covers the list rendering, not the auth/scope gate — those are
+// This test covers the list rendering, not the auth/scope gate; those are
 // their own concern. Render children directly, the way the other happy-path
 // tests exercise their (ungated) list pages.
 vi.mock("@/components/common/RequireClinicalScope", () => ({
@@ -53,7 +53,7 @@ vi.mock("@/components/common/RequireClinicalScope", () => ({
 const { Route } = await import("@/routes/cases/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("cases list — happy path", () => {
+describe("cases list: happy path", () => {
   it("renders the case by its subject reference, not a name", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("cs_ab12cd34ef56")).toBeInTheDocument()

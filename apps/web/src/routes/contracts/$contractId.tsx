@@ -93,7 +93,7 @@ function ContractDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["contracts"] })
         toast.showSuccess("Status updated")
       } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -445,7 +445,7 @@ function ServicesPanel({
                   <StatusBadge status={a.status} />
                 </TableCell>
                 <TableCell className="text-sm text-fg/75 truncate max-w-[24ch]">
-                  {a.notes ?? <span className="text-fg-subtle">—</span>}
+                  {a.notes ?? <span className="text-fg-subtle">-</span>}
                 </TableCell>
                 <TableCell className="text-right">
                   <Link

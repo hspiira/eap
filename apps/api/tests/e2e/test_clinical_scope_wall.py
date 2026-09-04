@@ -3,8 +3,8 @@ End-to-end cover for the clinical privacy wall.
 
 Runs against the real auth stack (only get_db is overridden): a real login
 mints the access_scopes claim from the DB user, and the clinical routes
-admit or refuse on it. This is the product's core privacy promise — an
-employer's HR admin must never see clinical data — so it gets its own
+admit or refuse on it. This is the product's core privacy promise: an
+employer's HR admin must never see clinical data, so it gets its own
 e2e module rather than riding along in another file.
 """
 
@@ -34,7 +34,7 @@ COUNSELLOR_EMAIL = "counsellor@example.test"
 
 @pytest_asyncio.fixture
 async def wall_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Only get_db is overridden — auth, minting and the wall are real."""
+    """Only get_db is overridden; auth, minting and the wall are real."""
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
@@ -84,7 +84,7 @@ def _bearer(token: str) -> dict[str, str]:
 
 class TestTheWall:
     async def test_hr_admin_cannot_list_cases(self, wall_client: AsyncClient, seeded: Any) -> None:
-        """Tenant ADMIN role does not imply clinical access — the whole point."""
+        """Tenant ADMIN role does not imply clinical access, the whole point."""
         token = await _login(wall_client, HR_EMAIL)
         r = await wall_client.get(f"/cases?tenant_id={TENANT}", headers=_bearer(token))
         assert r.status_code == 403
@@ -104,7 +104,7 @@ class TestTheWall:
         assert r.status_code == 403
 
     async def test_me_reports_the_grants(self, wall_client: AsyncClient, seeded: Any) -> None:
-        """The FE decides what to render from /auth/me — it must see the grants."""
+        """The FE decides what to render from /auth/me; it must see the grants."""
         token = await _login(wall_client, COUNSELLOR_EMAIL)
         r = await wall_client.get("/auth/me", headers=_bearer(token))
         assert r.status_code == 200

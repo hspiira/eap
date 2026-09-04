@@ -188,7 +188,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Azure AD SSO callback — exchanges code for internal JWT
+         * Azure AD SSO callback (exchanges code for internal JWT)
          * @description Azure redirects here after the user signs in.
          *
          *     Flow:
@@ -201,7 +201,7 @@ export interface paths {
          *     7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
          *
          *     Every failure path returns a redirect carrying a user-facing ?error=
-         *     message — never a raw 5xx, which would surface as a blank page.
+         *     message, never a raw 5xx, which would surface as a blank page.
          */
         get: operations["azure_callback_auth_azure_callback_get"];
         put?: never;
@@ -220,7 +220,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Initiate Azure AD SSO — redirects to Microsoft login
+         * Initiate Azure AD SSO (redirects to Microsoft login)
          * @description Start the Azure AD OAuth2 flow.  No credentials required from the user.
          *     The browser is redirected to Microsoft's login page; after authentication
          *     Azure redirects back to /auth/azure/callback.
@@ -4695,7 +4695,7 @@ export interface paths {
          * Change a user's tenant role (Admin/User/Viewer)
          * @description Change a user's tenant role. ADMIN-only.
          *
-         *     Guards against demoting the last admin in a tenant — that would leave the
+         *     Guards against demoting the last admin in a tenant; that would leave the
          *     tenant unmanageable.
          */
         patch: operations["update_user_role_users__user_id__role_patch"];
@@ -4788,7 +4788,7 @@ export interface components {
          *
          *     CLINICAL guards PHI surfaces (cases, clinical notes, EAP programmes).
          *     Nobody holds it by default; platform admins grant it to counsellors.
-         *     Employer HR must never see clinical data — that is the product's core
+         *     Employer HR must never see clinical data; that is the product's core
          *     privacy promise, so clinical routes fail closed on a missing grant.
          *     Platform-admin status stays tenant-based and does NOT imply CLINICAL.
          * @enum {string}
@@ -5434,7 +5434,7 @@ export interface components {
         CaseClosureReason: "GoalsMet" | "ClientDiscontinued" | "ReferredOut" | "NoShow" | "SessionCapReached" | "Ineligible" | "Other";
         /**
          * CaseReferralSource
-         * @description Origin of a case — drives downstream disclosure and reporting rules.
+         * @description Origin of a case, drives downstream disclosure and reporting rules.
          * @enum {string}
          */
         CaseReferralSource: "Self" | "InformalManager" | "FormalMandatory" | "HR" | "CISMFollowUp" | "EmployerProactive";
@@ -5800,9 +5800,9 @@ export interface components {
          * ClientTier
          * @description Joseph's A/B/C clustering for client engagement tiering.
          *
-         *     A — strategic / large account, full service mix.
-         *     B — mid-tier, consultancy-extension candidates.
-         *     C — long-tail / small account, lower-touch service model.
+         *     A: strategic / large account, full service mix.
+         *     B: mid-tier, consultancy-extension candidates.
+         *     C: long-tail / small account, lower-touch service model.
          * @enum {string}
          */
         ClientTier: "A" | "B" | "C";
@@ -8472,11 +8472,11 @@ export interface components {
          * PricingModel
          * @description Joseph's five contract pricing strategies (SAD §5.2.3 / Meeting §3).
          *
-         *     RETAINER — fixed periodic fee (e.g. monthly).
-         *     FRAMEWORK — pre-paid deposit drawn down per session.
-         *     FEE_FOR_SERVICE — pay per session at a rate card.
-         *     ADMIN_UTILISATION — admin-fee floor + per-session usage charges above the floor.
-         *     VALUE_ADD — bundled into a broader Minet relationship (no per-EAP invoice).
+         *     RETAINER: fixed periodic fee (e.g. monthly).
+         *     FRAMEWORK: pre-paid deposit drawn down per session.
+         *     FEE_FOR_SERVICE: pay per session at a rate card.
+         *     ADMIN_UTILISATION: admin-fee floor + per-session usage charges above the floor.
+         *     VALUE_ADD: bundled into a broader Minet relationship (no per-EAP invoice).
          * @enum {string}
          */
         PricingModel: "Retainer" | "Framework" | "FeeForService" | "AdminUtilisation" | "ValueAdd";
@@ -8530,7 +8530,7 @@ export interface components {
         };
         /**
          * ProviderTier
-         * @description Provider panel tier — drives routing and rate cards (Joseph's framework).
+         * @description Provider panel tier, drives routing and rate cards (Joseph's framework).
          * @enum {string}
          */
         ProviderTier: "T1" | "T2" | "T3";
@@ -9356,9 +9356,9 @@ export interface components {
          * @description Clinical continuation outcome recorded by the counsellor at session end.
          *
          *     Distinct from SessionStatus (scheduling lifecycle).
-         *     TO_BE_CONTINUED — client returns for follow-up (xlsx: T).
-         *     REFERRED        — client referred elsewhere (xlsx: R).
-         *     COMPLETED       — case episode closed this session (xlsx: C).
+         *     TO_BE_CONTINUED:  client returns for follow-up (xlsx: T).
+         *     REFERRED:         client referred elsewhere (xlsx: R).
+         *     COMPLETED:        case episode closed this session (xlsx: C).
          * @enum {string}
          */
         SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed";
@@ -9887,18 +9887,18 @@ export interface components {
          * TriageInstrumentCode
          * @description Versioned identifiers for the supported triage instruments.
          *
-         *     ``JOSEPH7`` — Joseph's 7-variable counsellor-callback screen.
-         *     ``WOS5`` — 5-item Work Outcome Scale (pre/post case).
-         *     ``PHQ9`` — 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
-         *     ``GAD7`` — 7-item Generalized Anxiety Disorder screen.
-         *     ``CSSRS`` — Columbia Suicide Severity Rating Scale (brief).
-         *     ``AUDIT_C`` — 3-item alcohol-use disorders screener.
-         *     ``DAST10`` — 10-item Drug Abuse Screening Test.
-         *     ``WHO5`` — 5-item WHO wellbeing index.
-         *     ``K10`` — Kessler 10 psychological distress.
-         *     ``WSAS`` — Work and Social Adjustment Scale.
-         *     ``DASS21`` — Depression, Anxiety, Stress 21-item scale.
-         *     ``PCL5`` — PTSD Checklist for DSM-5 (post-CISM).
+         *     ``JOSEPH7``: Joseph's 7-variable counsellor-callback screen.
+         *     ``WOS5``: 5-item Work Outcome Scale (pre/post case).
+         *     ``PHQ9``: 9-item Patient Health Questionnaire; item-9 > 0 triggers crisis.
+         *     ``GAD7``: 7-item Generalized Anxiety Disorder screen.
+         *     ``CSSRS``: Columbia Suicide Severity Rating Scale (brief).
+         *     ``AUDIT_C``: 3-item alcohol-use disorders screener.
+         *     ``DAST10``: 10-item Drug Abuse Screening Test.
+         *     ``WHO5``: 5-item WHO wellbeing index.
+         *     ``K10``: Kessler 10 psychological distress.
+         *     ``WSAS``: Work and Social Adjustment Scale.
+         *     ``DASS21``: Depression, Anxiety, Stress 21-item scale.
+         *     ``PCL5``: PTSD Checklist for DSM-5 (post-CISM).
          * @enum {string}
          */
         TriageInstrumentCode: "JOSEPH7" | "WOS5" | "PHQ9" | "GAD7" | "CSSRS" | "AUDIT_C" | "DAST10" | "WHO5" | "K10" | "WSAS" | "DASS21" | "PCL5";
@@ -9966,7 +9966,7 @@ export interface components {
         };
         /**
          * TriageScoreResponse
-         * @description Computed triage classification — returned alongside the persisted outreach record.
+         * @description Computed triage classification, returned alongside the persisted outreach record.
          */
         TriageScoreResponse: {
             /** Crisis Flag */

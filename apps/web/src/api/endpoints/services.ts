@@ -2,7 +2,7 @@
  * Services API Endpoints
  *
  * Shapes mirror BE OpenAPI (see `@/api/generated`).
- * `is_group_service` and `max_participants` are flat on the BE — there is no
+ * `is_group_service` and `max_participants` are flat on the BE; there is no
  * `group_settings` wrapper or `min_group_size`. Group settings are configured
  * via a dedicated PATCH `/services/{id}/group-settings` route.
  */

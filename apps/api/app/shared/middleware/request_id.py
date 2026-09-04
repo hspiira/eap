@@ -1,10 +1,10 @@
 """
-Request ID / correlation middleware (SAD §8.3 — observability).
+Request ID / correlation middleware (SAD §8.3, observability).
 
 Sets a unique request id per request so:
   * error responses can include a non-sensitive correlation id;
   * clients (or upstream proxies) can supply ``X-Request-Id`` to stitch their
-    traces to ours — we honour the inbound value when it's a canonical UUID;
+    traces to ours; we honour the inbound value when it's a canonical UUID;
   * structured logs anywhere in the request (route, use case, repo) can read
     the id via the ``current_request_id`` context variable;
   * the response carries ``X-Request-Id`` so the client can echo it on retry.
@@ -34,7 +34,7 @@ current_request_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 
 
 def get_current_request_id() -> str | None:
-    """Read the request id bound for the active task — ``None`` outside a request."""
+    """Read the request id bound for the active task; ``None`` outside a request."""
     return current_request_id.get()
 
 

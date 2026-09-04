@@ -3,7 +3,7 @@
 The Email value object now lowercases on construction, but rows written before
 that change may hold mixed-case addresses. Those rows are unreachable via Azure
 SSO (which lowercases the UPN claim) because `users.email` is compared with `=`,
-which is case-sensitive on PostgreSQL — the user hits "account has not been
+which is case-sensitive on PostgreSQL; the user hits "account has not been
 provisioned" with an address that looks correct to a human.
 
 This backfills existing rows and adds a CHECK constraint so a stray mixed-case
@@ -13,7 +13,7 @@ creating another invisible login failure.
 Collision safety: `users.email` is UNIQUE, so if two rows differ only by case
 (e.g. 'Fred@x.com' and 'fred@x.com') the UPDATE would violate that constraint.
 We detect this first and abort with an actionable message rather than letting
-the migration die on an opaque IntegrityError — the operator must merge or
+the migration die on an opaque IntegrityError; the operator must merge or
 rename the duplicates by hand, since picking a winner is a business decision.
 
 Revision ID: c9e3a5b7d1f4
@@ -50,7 +50,7 @@ def upgrade() -> None:
         detail = ", ".join(f"{row.normalised} ({row.n} rows)" for row in collisions)
         raise RuntimeError(
             "Cannot normalise users.email: these addresses collide once lowercased "
-            f"and users.email is UNIQUE — {detail}. Merge or rename the duplicate "
+            f"and users.email is UNIQUE: {detail}. Merge or rename the duplicate "
             "accounts, then re-run this migration."
         )
 
@@ -66,6 +66,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # The lowercasing itself is not reversible — the original casing is gone.
+    # The lowercasing itself is not reversible; the original casing is gone.
     # Dropping the constraint is all we can undo.
     op.drop_constraint("ck_users_email_lowercase", "users", type_="check")

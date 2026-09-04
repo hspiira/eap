@@ -14,7 +14,7 @@ const SEED: Incident[] = [
     id: "inc-001",
     tenant_id: "tenant-fixture",
     client_id: "fixture-stanbic",
-    title: "Workplace fatality — Branch 14",
+    title: "Workplace fatality: Branch 14",
     description:
       "Long-tenured employee passed away suddenly on-site. Counsellor support requested for the immediate team and adjacent branches.",
     severity: IncidentSeverity.CRITICAL,
@@ -30,7 +30,7 @@ const SEED: Incident[] = [
     id: "inc-002",
     tenant_id: "tenant-fixture",
     client_id: "fixture-absa",
-    title: "Robbery — main branch lobby",
+    title: "Robbery: main branch lobby",
     description:
       "Armed robbery during business hours; no injuries. Tellers and security visibly affected.",
     severity: IncidentSeverity.HIGH,

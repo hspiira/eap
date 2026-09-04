@@ -1,5 +1,5 @@
 /**
- * Questionnaire fixture — Joseph 7-variable triage + WOS-5 (post) + PHQ-9 item-9 crisis screen.
+ * Questionnaire fixture: Joseph 7-variable triage + WOS-5 (post) + PHQ-9 item-9 crisis screen.
  *
  * Replaced by BE `/v1/questionnaires` when Phase 3 BE #2 lands. Locked instruments
  * cannot be edited from the UI; the BE owns the canonical scoring rules.
@@ -8,7 +8,7 @@
 import type { Questionnaire } from "@/types/entities"
 import { QuestionnaireAdministration, QuestionnaireQuestionType } from "@/types/enums"
 
-/** Crisis-rule key — must match `QuestionnaireQuestion.key` for PHQ-9 item-9. */
+/** Crisis-rule key: must match `QuestionnaireQuestion.key` for PHQ-9 item-9. */
 export const PHQ9_ITEM9_KEY = "phq9_item9"
 
 const JOSEPH_7VAR: Questionnaire = {
@@ -107,7 +107,7 @@ const JOSEPH_7VAR: Questionnaire = {
 const WOS5_POST: Questionnaire = {
   id: "qn-wos5-post",
   code: "wos5-post-v1",
-  title: "WOS-5 — Post-call Wellbeing",
+  title: "WOS-5: Post-call Wellbeing",
   description:
     "WHO-5 / WOS-5 wellbeing index administered after the call. Outcomes report computes the pre/post delta.",
   administration: QuestionnaireAdministration.POST,
@@ -182,7 +182,7 @@ export function fixtureGetQuestionnaireByCode(code: string): Questionnaire | und
 }
 
 /**
- * Crisis-rule evaluator. Currently only PHQ-9 item-9 > 0 — the SAD §11 protocol target.
+ * Crisis-rule evaluator. Currently only PHQ-9 item-9 > 0: the SAD §11 protocol target.
  * Returns the human-readable list of reasons; empty array means no crisis flag.
  */
 export function evaluateCrisisRules(
@@ -191,7 +191,7 @@ export function evaluateCrisisRules(
   const reasons: string[] = []
   const phq9 = answers[PHQ9_ITEM9_KEY]
   if (typeof phq9 === "number" && phq9 > 0) {
-    reasons.push("PHQ-9 item 9 > 0 — self-harm screen positive")
+    reasons.push("PHQ-9 item 9 > 0: self-harm screen positive")
   }
   return reasons
 }

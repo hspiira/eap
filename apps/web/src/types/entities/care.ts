@@ -81,13 +81,13 @@ export interface QuestionnaireOption {
 }
 
 /**
- * Counsellor-Initiated Care Callback campaign — mirrors BE `CareCallbackCampaignResponse`.
+ * Counsellor-Initiated Care Callback campaign: mirrors BE `CareCallbackCampaignResponse`.
  *
  * A campaign defines a target audience size + period + counsellor pool for a client.
  * `POST /enrol` adds persons; each becomes a Pending `OutreachRecord` that a counsellor
- * must explicitly claim (assign) before working it — there is no auto round-robin.
+ * must explicitly claim (assign) before working it; there is no auto round-robin.
  *
- * Known BE gap: `completed_count`/derived `progress_ratio` never update — nothing calls
+ * Known BE gap: `completed_count`/derived `progress_ratio` never update, nothing calls
  * the entity's `increment_completed()`. Derive "completed" from a campaign summary's
  * `outreach_by_status.Completed` instead of trusting this field.
  */
@@ -126,9 +126,9 @@ export interface CallbackCampaignSummary {
 }
 
 /**
- * One person's outreach within a campaign — mirrors BE `OutreachRecordResponse`.
+ * One person's outreach within a campaign: mirrors BE `OutreachRecordResponse`.
  * Pending -> Assigned -> Contacted -> one of the four terminal statuses.
- * Unlike a clinical Case, `person_id` here is a real person reference — Care
+ * Unlike a clinical Case, `person_id` here is a real person reference, Care
  * Callbacks is not behind the clinical privacy wall.
  */
 export interface OutreachRecord extends BaseEntity {
@@ -148,7 +148,7 @@ export interface OutreachRecord extends BaseEntity {
 }
 
 /**
- * Aggregated, no-PII rollup for a finished campaign — what the per-client renewal pack
+ * Aggregated, no-PII rollup for a finished campaign: what the per-client renewal pack
  * (Phase 3 #3) consumes. BE enforces a k-anon floor (assumption A-19 = 10) and returns
  * `null` cells when the floor is unmet.
  */
@@ -163,7 +163,7 @@ export interface CallbackCampaignAggregate {
   wos5_delta_mean?: number | null
   /** Per-question summary (mean scale value or option histogram). */
   question_summaries: CallbackQuestionSummary[]
-  /** True when k-anon floor is satisfied — gate dashboards on this. */
+  /** True when k-anon floor is satisfied, gate dashboards on this. */
   k_floor_met: boolean
 }
 
@@ -181,7 +181,7 @@ export interface CallbackQuestionSummary {
 /**
  * Survey campaign (Phase 3 #2).
  *
- * The Evexía BE doesn't host the form — clients run Google Forms / Typeform / etc., and
+ * The Evexía BE doesn't host the form; clients run Google Forms / Typeform / etc., and
  * the survey provider POSTs each response to the webhook URL stored on this entity.
  * Aggregates compute server-side and respect the same k-anon floor as care-callbacks.
  */
@@ -213,9 +213,9 @@ export interface SurveyAggregate {
   response_count: number
   /** Mean satisfaction (1-5) across all responses; null when k-floor unmet. */
   satisfaction_mean?: number | null
-  /** Net Promoter Score buckets — promoters minus detractors as %; null when k-floor unmet. */
+  /** Net Promoter Score buckets: promoters minus detractors as %; null when k-floor unmet. */
   nps?: number | null
-  /** Per-question summaries — same shape as the care-callback aggregate. */
+  /** Per-question summaries: same shape as the care-callback aggregate. */
   question_summaries: SurveyQuestionSummary[]
   k_floor_met: boolean
 }

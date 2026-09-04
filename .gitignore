@@ -14,7 +14,7 @@
 # .vscode holds shared project settings that are meant to be committed, so
 # ignore the directory's contents but keep the files a team shares. A bare
 # `.vscode/` cannot do this: git will not re-include a file whose parent
-# directory is excluded. The `**/` prefix is required — a pattern containing a
+# directory is excluded. The `**/` prefix is required; a pattern containing a
 # slash is anchored to this file's directory, so plain `.vscode/*` would miss
 # apps/api/.vscode and apps/web/.vscode entirely.
 **/.vscode/*

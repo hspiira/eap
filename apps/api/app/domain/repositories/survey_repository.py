@@ -22,7 +22,7 @@ class SurveyResponseRepository(BaseRepository[SurveyResponse, SurveyResponseId])
         campaign_id: SurveyCampaignId,
         external_response_id: str,
     ) -> SurveyResponse | None:
-        """Idempotency lookup — return the existing row or None."""
+        """Idempotency lookup: return the existing row or None."""
         ...
 
     async def list_for_campaign(

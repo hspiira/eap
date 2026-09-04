@@ -44,7 +44,7 @@ afterEach(() => {
   createMock.mockReset()
 })
 
-describe("ServiceSessionFormSheet — create", () => {
+describe("ServiceSessionFormSheet: create", () => {
   it("rejects empty submission with field errors", async () => {
     renderWithProviders(<ServiceSessionFormSheet open onOpenChange={() => {}} />)
 

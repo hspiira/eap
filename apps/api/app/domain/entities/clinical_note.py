@@ -4,7 +4,7 @@ Append-only, signed-and-locked. The original body text is never overwritten:
 edits made before signing replace ``body``; edits requested after signing land
 in the ``amendments`` collection alongside the original. Signing transitions
 the note from DRAFT → SIGNED, and a configurable lock window after signature
-moves it to LOCKED — after which only amendments are accepted.
+moves it to LOCKED, after which only amendments are accepted.
 """
 
 from dataclasses import dataclass, field

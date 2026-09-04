@@ -23,7 +23,7 @@ def pagination(*, default_limit: int = 20, max_limit: int = 100) -> Callable[...
     Page/limit query params, declared once.
 
     They were spelled out in 21 routes and had drifted: most cap at 100, one at
-    200, one at 500. Those two keep their caps by passing max_limit — the
+    200, one at 500. Those two keep their caps by passing max_limit; the
     difference is now visible at the route instead of buried in a repeated
     Query() call.
     """

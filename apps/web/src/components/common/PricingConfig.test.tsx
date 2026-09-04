@@ -14,7 +14,7 @@ function Harness({ initial }: { initial: PricingModel }) {
   return <PricingConfig value={pricing} onChange={setPricing} projectedSessions={10} />
 }
 
-describe("PricingConfig — one screen per model + invoice preview", () => {
+describe("PricingConfig: one screen per model + invoice preview", () => {
   it("Retainer: renders monthly fee input and invoice preview", async () => {
     renderWithProviders(<Harness initial={PricingModel.RETAINER} />)
     expect(screen.getByLabelText(/monthly fee/i)).toBeInTheDocument()

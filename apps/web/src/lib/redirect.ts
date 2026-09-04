@@ -3,14 +3,14 @@
  *
  * Four call sites have to agree: the guards that capture where the user was
  * (RequireAuth, AppBootstrap's 401 handler) and the screens that send them
- * back (login, sso, the Azure callback). They used to disagree — the guards
+ * back (login, sso, the Azure callback). They used to disagree; the guards
  * captured `window.location.pathname` and dropped the query string, login
  * navigated with `search: {}`, and each screen validated `?redirect=` its own
  * way, from strict to not at all. Expiring on `/me?view=at-risk` returned you
  * to `/me` on the default view.
  */
 
-/** Auth screens are never a destination — sending a user back to one loops. */
+/** Auth screens are never a destination, sending a user back to one loops. */
 const AUTH_PATHS = new Set(["/auth/login", "/auth/set-password", "/auth/sso"])
 
 function isAuthPath(pathname: string): boolean {
@@ -19,7 +19,7 @@ function isAuthPath(pathname: string): boolean {
 
 /**
  * Where the user is now, as a relative path with query string and hash, or
- * undefined when there is nowhere worth returning to — an auth screen, or SSR
+ * undefined when there is nowhere worth returning to, an auth screen, or SSR
  * where there is no location at all.
  */
 export function currentRedirectPath(): string | undefined {

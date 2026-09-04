@@ -5,12 +5,12 @@ Revises: aa1b2c3d4e5f
 Create Date: 2026-05-11
 
 tenants:
-  azure_tenant_id   VARCHAR(36) NULLABLE UNIQUE — employer's Azure AD directory ID (tid claim)
+  azure_tenant_id   VARCHAR(36) NULLABLE UNIQUE: employer's Azure AD directory ID (tid claim)
   azure_sso_enabled BOOLEAN NOT NULL DEFAULT FALSE
 
 users:
-  azure_oid       VARCHAR(36) NULLABLE — Azure Object ID (oid claim); unique per (oid, tenant_id)
-  auth_provider   VARCHAR(20) NOT NULL DEFAULT 'password' — 'password' | 'azure_ad'
+  azure_oid       VARCHAR(36) NULLABLE: Azure Object ID (oid claim); unique per (oid, tenant_id)
+  auth_provider   VARCHAR(20) NOT NULL DEFAULT 'password': 'password' | 'azure_ad'
 """
 
 from typing import Sequence, Union
@@ -25,7 +25,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # tenants — Azure SSO config
+    # tenants: Azure SSO config
     op.add_column(
         "tenants",
         sa.Column("azure_tenant_id", sa.String(length=36), nullable=True),
@@ -46,7 +46,7 @@ def upgrade() -> None:
         unique=True,
     )
 
-    # users — Azure identity linkage
+    # users: Azure identity linkage
     op.add_column(
         "users",
         sa.Column("azure_oid", sa.String(length=36), nullable=True),

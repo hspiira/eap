@@ -2,7 +2,7 @@
  * Survey campaign in-memory store. Replaced by BE Phase 3 #3 endpoints.
  *
  * The aggregate computation respects a k-anon floor (= 10, matching care-callbacks)
- * so the FE never has to hide rows itself — it just renders what the BE returns.
+ * so the FE never has to hide rows itself; it just renders what the BE returns.
  */
 
 import type { Survey, SurveyAggregate, SurveyQuestionSummary } from "@/types/entities"
@@ -67,7 +67,7 @@ const SEED: Survey[] = [
     id: "srv-002",
     tenant_id: TENANT,
     client_id: "fixture-absa",
-    name: "ABSA branch debrief — March cohort",
+    name: "ABSA branch debrief: March cohort",
     description:
       "Short pulse survey for the post-CISM cohort. Webhook live but volume below the k-anon floor.",
     status: SurveyStatus.COLLECTING,

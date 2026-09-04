@@ -16,7 +16,7 @@ from app.domain.value_objects.core import PersonId, TenantId
 class DSARDataCollector(Protocol):
     """Walks every aggregate that may hold data tied to ``subject_person_id``.
 
-    Returns a JSON-serialisable bundle. The bundle is opaque — its shape is
+    Returns a JSON-serialisable bundle. The bundle is opaque; its shape is
     decided by the implementation and consumed by the export route, not by
     business logic in the use case.
     """

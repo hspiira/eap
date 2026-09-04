@@ -96,7 +96,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     failed_login_count: Mapped[int] = mapped_column(default=0, nullable=False, server_default="0")
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # Azure SSO — unique per tenant enforced at app layer (same oid, different tenants = OK)
+    # Azure SSO: unique per tenant enforced at app layer (same oid, different tenants = OK)
     azure_oid: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     access_scopes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")

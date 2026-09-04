@@ -1,4 +1,4 @@
-"""Clinical note model — body fields are encrypted at rest."""
+"""Clinical note model; body fields are encrypted at rest."""
 
 from datetime import datetime, timedelta
 from typing import Any

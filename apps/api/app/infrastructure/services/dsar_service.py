@@ -5,7 +5,7 @@ Concrete SQL implementations of the protocols declared in
 bundle from every aggregate that may carry data tied to a subject; the
 tombstoner overwrites the User PII fields and the Person emergency-contact /
 service-history columns while preserving row identity (so audit-chain links
-remain valid). Encrypted clinical fields keep their ciphertexts — without the
+remain valid). Encrypted clinical fields keep their ciphertexts; without the
 session key the data is already opaque, and the row identity is what audit
 trails rely on.
 """
@@ -172,7 +172,7 @@ class SqlDSARTombstoner:
 
         person.emergency_contact = None
         person.last_service_date = None
-        # employment_info / license_info / dependent_info contain PII — null them too.
+        # employment_info / license_info / dependent_info contain PII; null them too.
         person.employment_info = None
         person.license_info = None
         person.dependent_info = None

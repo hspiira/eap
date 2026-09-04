@@ -1,4 +1,4 @@
-# Track A — Correctness & Safety
+# Track A: Correctness & Safety
 
 Bugs and risks discovered during the SOLID/DRY review. These take priority over refactors:
 several are ship-blocking. Line numbers are as of 2026-07-14 (`main` @ `066f1db`); re-verify with
@@ -6,12 +6,12 @@ the greps given in each ticket before starting.
 
 ---
 
-## CQ-A01 — Live-mode API paths (`/v1/*`) don't exist in the backend schema
+## CQ-A01: Live-mode API paths (`/v1/*`) don't exist in the backend schema
 
-**Severity:** 🔴 Critical · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🔴 Critical · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** The fixture-backed endpoint modules have "live" branches that call `/v1/...` paths.
-The generated OpenAPI schema (`src/api/generated/schema.ts`) contains **zero** `/v1/*` paths —
+The generated OpenAPI schema (`src/api/generated/schema.ts`) contains **zero** `/v1/*` paths,
 real backend paths are `/engagements`, `/care-callback-campaigns`, `/survey-campaigns`,
 `/diagnoses`, and there is no `/incidents` or `/questionnaires` at all. Sub-resources diverge too:
 BE exposes `/engagements/{id}/hours`, `/activate`, `/deliver`, `/close`; FE calls
@@ -46,20 +46,20 @@ cutover 404s on first request.
 
 ---
 
-## CQ-A02 — Fixtures default ON; clinical business logic lives in fixture files
+## CQ-A02: Fixtures default ON; clinical business logic lives in fixture files
 
-**Severity:** 🔴 Critical · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🔴 Critical · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
-**Problem.** All 7 fixture toggles use `import.meta.env?.VITE_X_USE_FIXTURE !== 'false'` —
+**Problem.** All 7 fixture toggles use `import.meta.env?.VITE_X_USE_FIXTURE !== 'false'`,
 fixtures are ON unless every deployment sets 7 env vars explicitly. A missed var ships fake
 clinical data (fixture campaigns, PHQ-9 outcomes) to production silently. Worse:
-`evaluateCrisisRules` — the PHQ-9 item-9 self-harm crisis rule — is defined inside
+`evaluateCrisisRules` (the PHQ-9 item-9 self-harm crisis rule) is defined inside
 `questionnaires-fixture.ts` and imported by a production route; `engagementsApi.allowedTransitions`
 delegates to fixture code even in live mode. All fixture files are statically imported, so
 ~1,800 lines of seed data are always in the bundle.
 
 **Evidence.**
-- Toggles: `src/api/endpoints/{diagnoses:24, care-callbacks:34, engagements:35, incidents:29, pricing:19, questionnaires:17, surveys:30}.ts` — verified by grep.
+- Toggles: `src/api/endpoints/{diagnoses:24, care-callbacks:34, engagements:35, incidents:29, pricing:19, questionnaires:17, surveys:30}.ts`, verified by grep.
 - `src/api/endpoints/questionnaires-fixture.ts:191-200` (`evaluateCrisisRules`) imported by
   `src/routes/care-callbacks/worklist/$caseId.tsx:16`.
 - `src/api/endpoints/engagements.ts:69-71` → `engagements-fixture.ts` (`allowedTransitions`).
@@ -82,21 +82,21 @@ delegates to fixture code even in live mode. All fixture files are statically im
 
 ---
 
-## CQ-A03 — Query-key split-brain: current user cached under two different keys
+## CQ-A03: Query-key split-brain: current user cached under two different keys
 
 **Severity:** 🟠 High · **Effort:** S · **Status:** ✅ Done · **Owner:** Claude · **PR:** `dc91516`, `4ef79b0`
 
 > Done: `lib/query-keys.ts` created (`resourceKeys` factory + `queryKeys` map); the three
 > `['user', userId]` sites now use `queryKeys.users.detail(id)` so
-> `useEntityMutation({resource:'users'})` invalidation reaches them — split-brain fixed. Migrated
+> `useEntityMutation({resource:'users'})` invalidation reaches them: split-brain fixed. Migrated
 > ~27 hand-typed `detail`/`list` key literals across routes + form sheets to the factory;
 > `extraInvalidations` widened to `QueryKey`. Three self-consistent paginated sub-keys left as-is.
 > **Deferred (own ticket):** have `useEntityFormSheet` fully compose `useEntityMutation` (currently
-> re-implements invalidation) — tracked under CQ-C01's mutation-idiom convergence.
+> re-implements invalidation): tracked under CQ-C01's mutation-idiom convergence.
 
 **Problem.** The current user is cached as `['user', userId]` in three places, while the same
 record is cached as `['users', 'detail', id]` elsewhere. Any `useEntityMutation({ resource: 'users' })`
-(role change, suspend) invalidates `['users', …]` but never `['user', userId]` — so
+(role change, suspend) invalidates `['users', …]` but never `['user', userId]`, so
 `useCanWrite` returns a stale answer until the 5-minute staleTime lapses. More broadly, ~40 call
 sites hand-type raw key arrays instead of using the existing `entityListKey`/`entityDetailKey`
 helpers from `lib/queries.ts`.
@@ -124,9 +124,9 @@ helpers from `lib/queries.ts`.
 
 ---
 
-## CQ-A04 — Client-side filters silently applied over server-paginated data
+## CQ-A04: Client-side filters silently applied over server-paginated data
 
-**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** Five list pages fetch a server-paginated page (`limit: 20`, `total` from server) and
 then apply an additional local filter. Pagination still renders the server total, so counts are
@@ -139,11 +139,11 @@ incomplete. Each page invented a different one-off local filter instead of a ser
 - `src/routes/contracts/index.tsx:149` (`filterByRenewal`)
 - `src/routes/service-sessions/index.tsx:166` (`filterByRange`)
 - `src/routes/industries.tsx:86` (`filterByLevel`)
-- Correct precedent: `src/routes/providers/index.tsx:47-53` — explicit unpaginated fetch with a
+- Correct precedent: `src/routes/providers/index.tsx:47-53`: explicit unpaginated fetch with a
   comment, pagination footer hidden.
 
 **Recommended fix.** Per filter, either (a) push it into the server `params` if the BE supports
-it (extend endpoint param types — see CQ-C06), or (b) adopt the providers pattern: explicit full
+it (extend endpoint param types; see CQ-C06), or (b) adopt the providers pattern: explicit full
 fetch, comment, no pagination footer. Never mix silently. Fold into the `useListPage` migration
 (CQ-B01) where practical.
 
@@ -154,12 +154,12 @@ fetch, comment, no pagination footer. Never mix silently. Fold into the `useList
 
 ---
 
-## CQ-A05 — Entity-by-id resolved via the `search` param hack
+## CQ-A05: Entity-by-id resolved via the `search` param hack
 
-**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** ~10 sites resolve an entity by id with `list({ page: 1, limit: 1, search: id })`
-then `.find(x => x.id === id)` — relying on the search endpoint happening to match an id string.
+then `.find(x => x.id === id)`: relying on the search endpoint happening to match an id string.
 In form-sheet edit mode, pickers can't display the selected entity unless it happens to be in the
 first unsearched page, so they silently render "unselected". Detail pages also fetch related
 entities with untyped casts and client-side re-filtering.
@@ -168,7 +168,7 @@ entities with untyped casts and client-side re-filtering.
 - Locked summaries: `src/components/ContractFormSheet.tsx:310-315`, `PersonFormSheet.tsx:639-676`,
   `EngagementFormSheet.tsx:301-338`, `CampaignFormSheet.tsx:353-390`, `SurveyFormSheet.tsx:204-242`,
   `ServiceSessionFormSheet.tsx:371-449`, `ServiceAssignmentFormSheet.tsx:174-210`.
-- Worst case: `src/routes/service-sessions/$sessionId.tsx:111-123` — provider fetched by passing
+- Worst case: `src/routes/service-sessions/$sessionId.tsx:111-123`: provider fetched by passing
   its **id** as `search`, while `providersApi` has a real detail endpoint used by
   `routes/providers/$providerId.tsx:32`.
 - Picker resolution bug: `.find()` against current search page, e.g. `ContractFormSheet.tsx:355`.
@@ -185,9 +185,9 @@ entities with untyped casts and client-side re-filtering.
 
 ---
 
-## CQ-A06 — Hardcoded audit reasons, fake-user fallback, hardcoded completion data
+## CQ-A06: Hardcoded audit reasons, fake-user fallback, hardcoded completion data
 
-**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-B10
+**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-B10
 
 **Problem.** Destructive lifecycle actions write meaningless audit trails, and two mutation
 payloads fall back to a fake user id.
@@ -195,8 +195,8 @@ payloads fall back to a fake user id.
 **Evidence.**
 - `"Terminated from UI"` hardcoded reason: `src/routes/contracts/$contractId.tsx:122`,
   `clients/$clientId.tsx:152`, `persons/$personId.tsx:174`. (`users/$userId.tsx:463-530` does it
-  right with a reason dialog — but that dialog is inline and non-reusable.)
-- `src/routes/service-sessions/$sessionId.tsx:136-148` — `duration: 60`,
+  right with a reason dialog, but that dialog is inline and non-reusable.)
+- `src/routes/service-sessions/$sessionId.tsx:136-148`: `duration: 60`,
   `notes: "Session completed."` on complete; `"Cancelled by counsellor."` on cancel (TODO at :137).
 - `useAuthStore((s) => s.user_id) ?? "user-helen"` in
   `src/routes/engagements/$engagementId.tsx:596` and
@@ -204,7 +204,7 @@ payloads fall back to a fake user id.
 
 **Recommended fix.** Route all reason-gated actions through the shared `ReasonDialog` from
 CQ-B10; prompt for session completion details (or read duration from the selected Service);
-remove the `"user-helen"` fallback — if `user_id` is null that's an auth bug to surface, not
+remove the `"user-helen"` fallback, if `user_id` is null that's an auth bug to surface, not
 paper over.
 
 **Acceptance criteria.**
@@ -214,13 +214,13 @@ paper over.
 
 ---
 
-## CQ-A07 — `api/client.ts` internals: triplicated 401-retry, dead 5xx retry, `getBlob` error bypass
+## CQ-A07: `api/client.ts` internals: triplicated 401-retry, dead 5xx retry, `getBlob` error bypass
 
-**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** — · **PR:** —
+**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo · **Owner:** - · **PR:** -
 
 **Problem.** The transport core duplicates its own logic and one of its safety features never runs:
 1. The 401 → refresh → rebuild headers → retry block is copy-pasted 3× (`request()` :557-591,
-   `postFormData()` :293-310, `getBlob()` :341-355) and the copies already disagree —
+   `postFormData()` :293-310, `getBlob()` :341-355) and the copies already disagree,
    `request`/`postFormData` skip refresh for `/auth/` paths; `getBlob` doesn't.
 2. `buildHeaders` (:227-255) vs `buildAuthHeaders` (:260-277) duplicate token/CSRF/tenant logic,
    differing only in `Content-Type`.
@@ -243,7 +243,7 @@ through both. Fix retry by checking `response.status >= 500` inside the retry lo
 
 ---
 
-## CQ-A08 — `clients` list never strips `?new=1`
+## CQ-A08: `clients` list never strips `?new=1`
 
 **Severity:** 🟢 Low · **Effort:** XS · **Status:** ✅ Done · **Owner:** Claude · **PR:** `48ac3b3`
 
@@ -260,15 +260,15 @@ sheet and refreshing/back-navigating reopens it.
 
 ---
 
-## CQ-A09 — Missing/inconsistent error states on client-filtered list pages
+## CQ-A09: Missing/inconsistent error states on client-filtered list pages
 
-**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** — · **PR:** — · **Depends on:** CQ-B01
+**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo · **Owner:** - · **PR:** - · **Depends on:** CQ-B01
 
 **Problem.** The four client-driven list pages (raw `useQuery` + local `filterAndSort`) have no
 pagination and inconsistent error handling: `src/routes/engagements/index.tsx:126-139` renders
 nothing at all on query error; `src/routes/care-callbacks/index.tsx:180-186` invents a third
 inline error UI different from the shared `ErrorState`. `src/routes/tenants/index.tsx:108-113`
-uses `offset` instead of `page` — a third pagination param convention.
+uses `offset` instead of `page`: a third pagination param convention.
 
 **Recommended fix.** Fold these pages onto the shared list scaffold (CQ-B01) so error/empty/
 pagination states are uniform; align tenants on the `page` convention (or document why `offset`).

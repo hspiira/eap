@@ -218,7 +218,7 @@ class ReportQueryRunner:
     ) -> dict[str, Any]:
         """Per-question answer-frequency tables across a tenant's survey responses.
 
-        Reflects the same no-PII contract as ``GetSurveyAggregateUseCase`` —
+        Reflects the same no-PII contract as ``GetSurveyAggregateUseCase``;
         the runner never returns individual response rows, only counts.
         Optional ``campaign_id`` or ``client_id`` filters scope the slice.
         """

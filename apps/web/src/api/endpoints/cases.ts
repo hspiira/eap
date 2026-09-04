@@ -2,7 +2,7 @@
  * Clinical Cases API Endpoints
  *
  * All routes require the Clinical access scope (BE fails closed with 403
- * otherwise). GET /cases takes no query params — the BE list is unfiltered
+ * otherwise). GET /cases takes no query params; the BE list is unfiltered
  * and unpaginated, so the list page filters/searches client-side, same as
  * care-callbacks/engagements/surveys.
  */

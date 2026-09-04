@@ -92,7 +92,7 @@ export function SurveyFormSheet({
       period_end: values.period_end,
     }),
     save: ({ payload }) => surveysApi.create(payload),
-    successToast: { create: "Survey created — webhook ready to wire" },
+    successToast: { create: "Survey created: webhook ready to wire" },
     onSaved,
   })
 

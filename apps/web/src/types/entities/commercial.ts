@@ -7,14 +7,14 @@ export interface ContractPeriod {
   end_date: string
 }
 
-/** Money on the wire. `amount` is a decimal *string* — parse before arithmetic. */
+/** Money on the wire. `amount` is a decimal *string*, parse before arithmetic. */
 export interface ContractMoney {
   amount: string
   currency: string
 }
 
 /**
- * Contract — mirrors BE `ContractResponse` field-for-field.
+ * Contract: mirrors BE `ContractResponse` field-for-field.
  *
  * This type previously declared a shape the BE has never sent: top-level
  * `start_date`/`end_date` (they are nested under `period`), plus `renewal_date`,
@@ -76,7 +76,7 @@ export interface FFSPricing {
 export interface AdminUtilisationPricing {
   model: PricingModel.ADMIN_UTILISATION
   monthly_admin_fee: number
-  /** Hard floor on monthly admin fee — flags warnings if pricing dips below. */
+  /** Hard floor on monthly admin fee: flags warnings if pricing dips below. */
   admin_floor: number
   utilisation_rate: number
 }

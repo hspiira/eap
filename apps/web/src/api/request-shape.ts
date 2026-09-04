@@ -1,5 +1,5 @@
 /**
- * URL and header construction for outgoing requests. Pure functions — the
+ * URL and header construction for outgoing requests. Pure functions, the
  * caller supplies whatever session state (token, tenant id, csrf) it holds
  * rather than these functions reaching into a store themselves.
  */

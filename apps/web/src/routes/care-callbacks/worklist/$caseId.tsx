@@ -57,7 +57,7 @@ function CaseDetailPage() {
       await refresh()
       showSuccess(successMessage)
     } catch (err) {
-      showError(normalizeErrorMessage(err, "Action failed — please try again"))
+      showError(normalizeErrorMessage(err, "Action failed: please try again"))
     } finally {
       setActionLoading(false)
     }
@@ -162,7 +162,7 @@ function CaseDetailPage() {
                 title={isMine ? "No notes yet" : "Not assigned to you"}
                 description={
                   isMine
-                    ? "Log a contact attempt or close this record — notes recorded there appear here."
+                    ? "Log a contact attempt or close this record; notes recorded there appear here."
                     : "Claim this record to work it, or ask whoever holds it to hand it off."
                 }
               />

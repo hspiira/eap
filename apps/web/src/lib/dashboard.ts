@@ -72,7 +72,7 @@ function toResult(q: {
 }
 
 export function formatKpi(value: number | null): string {
-  if (value === null) return "—"
+  if (value === null) return "-"
   if (value < 1000) return value.toString()
   if (value < 10_000) return (value / 1000).toFixed(1).replace(/\.0$/, "") + "k"
   return Math.round(value / 1000) + "k"

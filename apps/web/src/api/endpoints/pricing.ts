@@ -60,7 +60,7 @@ function previewLocally(
           subtotal: drawdown,
           note:
             remaining < 0
-              ? `Deposit overdrawn by ${Math.abs(remaining).toFixed(2)} — top up required`
+              ? `Deposit overdrawn by ${Math.abs(remaining).toFixed(2)}: top up required`
               : `Remaining deposit: ${remaining.toFixed(2)}`,
         },
       ]
@@ -87,7 +87,7 @@ function previewLocally(
           unit_rate: pricing.monthly_admin_fee,
           subtotal: pricing.monthly_admin_fee,
           note: adminBelowFloor
-            ? `Below admin floor of ${pricing.admin_floor.toFixed(2)} — pricing requires approval`
+            ? `Below admin floor of ${pricing.admin_floor.toFixed(2)}: pricing requires approval`
             : null,
         },
         {

@@ -4,7 +4,7 @@
  * BE base path is `/survey-campaigns` (confirmed via openapi.json).
  * Fixture is DEV-only.
  *
- * Note: `rotateWebhookToken` has been removed — BE has no such route.
+ * Note: `rotateWebhookToken` has been removed; BE has no such route.
  * The webhook secret is returned once on create; display it immediately.
  */
 

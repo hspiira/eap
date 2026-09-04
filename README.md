@@ -167,10 +167,10 @@ Run it whenever you change a route, a request model, or a response model.
 
 `pnpm build` produces two plain artifacts, neither tied to a host:
 
-- `apps/web/.output` — a Nitro **node-server** bundle, started with
+- `apps/web/.output`:  a Nitro **node-server** bundle, started with
   `node .output/server/index.mjs`. Nitro can retarget other platforms with a
   preset, but nothing here sets one.
-- `apps/api` — an ASGI app, served by `uvicorn app.main:app` (see `Dockerfile`
+- `apps/api`:  an ASGI app, served by `uvicorn app.main:app` (see `Dockerfile`
   for the container form).
 
 So either half can run on a VM, in a container, or on a platform. Today both

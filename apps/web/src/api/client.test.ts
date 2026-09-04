@@ -28,7 +28,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe("apiClient — token + tenant headers", () => {
+describe("apiClient: token + tenant headers", () => {
   it("includes Authorization header when token set", async () => {
     apiClient.setToken("tok-1")
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
@@ -75,7 +75,7 @@ describe("apiClient — token + tenant headers", () => {
   })
 })
 
-describe("apiClient — refresh-on-401", () => {
+describe("apiClient: refresh-on-401", () => {
   it("attempts /auth/refresh on a 401, retries the original request, returns success", async () => {
     apiClient.setToken("old-tok")
     apiClient.setRefreshToken("refresh-1")
@@ -120,7 +120,7 @@ describe("apiClient — refresh-on-401", () => {
   })
 })
 
-describe("apiClient — a stale 401 must not clear a newer session", () => {
+describe("apiClient: a stale 401 must not clear a newer session", () => {
   it("ignores a 401 for a session the user has already signed back into", async () => {
     useAuthStore.getState().setAuth("old-tok", "u-1", "a@b.test")
     apiClient.setRefreshToken("refresh-1")
@@ -186,8 +186,8 @@ describe("apiClient — a stale 401 must not clear a newer session", () => {
   })
 })
 
-describe("apiClient — network errors and 5xx", () => {
-  it("throws ApiError for 5xx (no retry — fetch resolved successfully)", async () => {
+describe("apiClient: network errors and 5xx", () => {
+  it("throws ApiError for 5xx (no retry, fetch resolved successfully)", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: "BOOM", message: "boom" }))
 
     await expect(apiClient.get("/things")).rejects.toBeInstanceOf(ApiError)
@@ -207,7 +207,7 @@ describe("apiClient — network errors and 5xx", () => {
   }, 15_000)
 })
 
-describe("apiClient — error parsing", () => {
+describe("apiClient: error parsing", () => {
   it("parses fieldErrors out of details[]", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(422, {
@@ -277,7 +277,7 @@ describe("apiClient — error parsing", () => {
   })
 })
 
-describe("apiClient — clearAuth", () => {
+describe("apiClient: clearAuth", () => {
   it("wipes token, refresh, tenant", () => {
     apiClient.setToken("t")
     apiClient.setRefreshToken("r")
@@ -291,7 +291,7 @@ describe("apiClient — clearAuth", () => {
   })
 })
 
-describe("apiClient — URL building", () => {
+describe("apiClient: URL building", () => {
   it("appends tenant_id query param for non-skip endpoints", async () => {
     apiClient.setTenantId("t-1")
     fetchMock.mockResolvedValueOnce(jsonResponse(200, {}))

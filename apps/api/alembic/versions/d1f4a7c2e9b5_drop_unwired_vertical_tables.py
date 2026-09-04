@@ -60,5 +60,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Irreversible by design — see the module docstring.
+    # Irreversible by design; see the module docstring.
     pass

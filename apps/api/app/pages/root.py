@@ -155,7 +155,7 @@ def render_root_page(app_name: str) -> str:
             <h2 id="new-here-heading">New here?</h2>
             <p>This is the Evexía EAP API server. Use the base URL below for all requests.
             Open the API docs to explore endpoints (auth, tenants, clients, persons, services, and more).</p>
-            <div class="code" id="api-base">—</div>
+            <div class="code" id="api-base">-</div>
             <p>Run locally with:</p>
             <div class="code">uv run uvicorn app.main:app <span class="muted">--reload</span></div>
             <p>Copy <code>.env.example</code> to <code>.env</code> and set

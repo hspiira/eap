@@ -29,7 +29,7 @@ function setup(
   )
 }
 
-describe("useApiForm — validation", () => {
+describe("useApiForm: validation", () => {
   it("runs Zod validation and surfaces field errors on submit", async () => {
     const onSubmit = vi.fn()
     const { result } = setup(onSubmit)
@@ -58,7 +58,7 @@ describe("useApiForm — validation", () => {
   })
 })
 
-describe("useApiForm — server error mapping", () => {
+describe("useApiForm: server error mapping", () => {
   it("maps ApiError.fieldErrors to setError per field", async () => {
     const onSubmit = vi.fn().mockRejectedValue(
       new ApiError("Bad fields", "VALIDATION", 422, {
@@ -140,7 +140,7 @@ describe("useApiForm — server error mapping", () => {
   })
 })
 
-describe("useApiForm — submission state", () => {
+describe("useApiForm: submission state", () => {
   it("formState.isSubmitting flips during the call", async () => {
     let resolve: () => void = () => {}
     const onSubmit = vi.fn(

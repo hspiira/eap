@@ -2,7 +2,7 @@
 
 The HR-known view of one EAP-eligible person. Carries the employer's HRIS
 identifier and the relationship to the primary employee. Lives on the
-*employer* side of the privacy wall — clinical entities never reference this
+*employer* side of the privacy wall; clinical entities never reference this
 aggregate directly. The pseudonymous join goes via ``EligibleMemberClinicalLink``.
 """
 

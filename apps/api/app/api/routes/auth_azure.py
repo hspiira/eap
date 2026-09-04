@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 # Ties the OAuth round-trip to the browser that began it (login-CSRF defence).
 COOKIE_SSO_STATE = "evexia_sso_state"
-# Matches AzureSSOService._STATE_TTL_SECONDS — the signed state expires anyway.
+# Matches AzureSSOService._STATE_TTL_SECONDS; the signed state expires anyway.
 _SSO_STATE_COOKIE_MAX_AGE = 300
 
 
@@ -60,7 +60,7 @@ def _mask_email(email: str | None) -> str:
 @router.get(
     "/azure/login",
     status_code=status.HTTP_302_FOUND,
-    summary="Initiate Azure AD SSO — redirects to Microsoft login",
+    summary="Initiate Azure AD SSO (redirects to Microsoft login)",
     include_in_schema=True,
 )
 async def azure_login() -> RedirectResponse:
@@ -97,7 +97,7 @@ async def azure_login() -> RedirectResponse:
 @router.get(
     "/azure/callback",
     status_code=status.HTTP_302_FOUND,
-    summary="Azure AD SSO callback — exchanges code for internal JWT",
+    summary="Azure AD SSO callback (exchanges code for internal JWT)",
     include_in_schema=True,
 )
 @transactional()
@@ -123,13 +123,13 @@ async def azure_callback(
     7. Set HttpOnly cookies + redirect to AZURE_FRONTEND_REDIRECT_URI
 
     Every failure path returns a redirect carrying a user-facing ?error=
-    message — never a raw 5xx, which would surface as a blank page.
+    message, never a raw 5xx, which would surface as a blank page.
     """
 
     def _error_redirect(message: str) -> RedirectResponse:
         url = f"{settings.AZURE_FRONTEND_REDIRECT_URI}?error={quote(message)}"
         response = RedirectResponse(url, status_code=status.HTTP_302_FOUND)
-        # The flow is over either way — don't leave a usable nonce behind.
+        # The flow is over either way; don't leave a usable nonce behind.
         response.delete_cookie(COOKIE_SSO_STATE, path="/")
         return response
 
@@ -158,7 +158,7 @@ async def azure_callback(
             f"Organisation account is {tenant.status.value.lower()}. Access denied."
         )
 
-    # Resolve user — by OID first (returning user), then by email (first SSO login)
+    # Resolve user: by OID first (returning user), then by email (first SSO login)
     user = await user_repo.get_by_azure_oid(claims.oid, tenant.id)
     if not user:
         # Azure UPNs are not always RFC-shaped addresses (B2B guests look like
@@ -185,7 +185,7 @@ async def azure_callback(
                 "Your account has not been provisioned in Evexia. Contact your administrator."
             )
         # First-time Azure login: link OID to the existing user record. Refused
-        # when that record already belongs to a different Azure identity — see
+        # when that record already belongs to a different Azure identity; see
         # User.link_azure_identity (recycled-email account takeover).
         try:
             user.link_azure_identity(claims.oid)
@@ -207,13 +207,13 @@ async def azure_callback(
         return _error_redirect(f"User account is {user.status.value.lower()}. Access denied.")
 
     # Refresh display name from Azure on every SSO login (picks up profile renames).
-    # Single save covers the first-login link above too — both mutate the same
+    # Single save covers the first-login link above too; both mutate the same
     # entity inside one transaction.
     user.update_display_name(claims.name)
     user.record_successful_login()
     await user_repo.save(user)
 
-    # Issue internal JWT — identical claims to password login
+    # Issue internal JWT, identical claims to password login
     refresh_jti = None
     if getattr(settings, "REFRESH_TOKEN_REVOCATION", False) and refresh_token_repo:
         refresh_jti = generate_cuid()

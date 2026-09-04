@@ -1,8 +1,8 @@
-"""Structured logging configuration (SAD §8.3 — observability).
+"""Structured logging configuration (SAD §8.3, observability).
 
 JSON-line formatter that automatically pulls the active ``request_id`` from the
 context variable set by ``RequestIdMiddleware``, so any log call inside a
-request handler — route, use case, repository — gets correlated without the
+request handler (route, use case, repository) gets correlated without the
 caller passing the id around.
 
 Outside a request (e.g. background workers, startup), ``request_id`` is omitted.
@@ -23,7 +23,7 @@ class JsonFormatter(logging.Formatter):
 
     Standard fields: ``timestamp``, ``level``, ``logger``, ``message``,
     ``request_id`` (when in a request). Any record attribute supplied via
-    ``extra=`` is merged into the top-level object — keep them flat and
+    ``extra=`` is merged into the top-level object; keep them flat and
     machine-readable so ingestion pipelines can index without a parser.
     """
 
@@ -80,7 +80,7 @@ class JsonFormatter(logging.Formatter):
 def configure_logging(level: str = "INFO") -> None:
     """Install the JSON formatter on the root logger.
 
-    Idempotent — safe to call from multiple bootstrap paths (FastAPI startup,
+    Idempotent, safe to call from multiple bootstrap paths (FastAPI startup,
     worker scripts, tests). Existing handlers are replaced so the output format
     stays consistent.
     """

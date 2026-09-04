@@ -154,7 +154,7 @@ export function EngagementFormSheet({
         <FormField label="Name" required error={errors.name?.message} htmlFor="ef-name">
           <Input
             id="ef-name"
-            placeholder="e.g. Wellness policy refresh — Q3"
+            placeholder="e.g. Wellness policy refresh: Q3"
             {...register("name")}
           />
         </FormField>
@@ -166,7 +166,7 @@ export function EngagementFormSheet({
         >
           <Input
             id="ef-description"
-            placeholder="Internal notes — appears on the engagement detail."
+            placeholder="Internal notes: appears on the engagement detail."
             {...register("description")}
           />
         </FormField>

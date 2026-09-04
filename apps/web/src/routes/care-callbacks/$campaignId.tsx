@@ -84,7 +84,7 @@ function CampaignDetailPage() {
       await refreshCampaign()
       showSuccess(successMessage)
     } catch (err) {
-      showError(normalizeErrorMessage(err, "Action failed — please try again"))
+      showError(normalizeErrorMessage(err, "Action failed: please try again"))
     } finally {
       setActionLoading(false)
     }
@@ -214,7 +214,7 @@ function CampaignDetail({
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
   const total = campaign.target_count
-  // completed_count is a known BE gap (nothing calls increment_completed()) —
+  // completed_count is a known BE gap (nothing calls increment_completed()),
   // derive from the fetched records instead of trusting the campaign field.
   const completedCount = cases.filter((c) => c.status === OutreachStatus.COMPLETED).length
   const completionPct = total ? Math.round((completedCount / total) * 100) : 0

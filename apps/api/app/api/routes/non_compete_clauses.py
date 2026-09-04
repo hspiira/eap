@@ -107,7 +107,7 @@ async def sign_non_compete(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    # Tenant guard: fail-closed 404 on cross-tenant access — don't reveal existence.
+    # Tenant guard: fail-closed 404 on cross-tenant access; don't reveal existence.
     existing = await repo.get_by_id(NonCompeteClauseId(clause_id))
     if existing is None or existing.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Non-compete clause not found")
@@ -162,7 +162,7 @@ async def get_non_compete(
     db: AsyncSession = Depends(get_db),
 ):
     clause = await repo.get_by_id(NonCompeteClauseId(clause_id))
-    # Fail-closed 404 on cross-tenant access — don't reveal existence.
+    # Fail-closed 404 on cross-tenant access; don't reveal existence.
     if clause is None or clause.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Non-compete clause not found")
     return _to_response(clause)

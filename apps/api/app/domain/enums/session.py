@@ -38,9 +38,9 @@ class SessionClinicalStatus(str, Enum):
     """Clinical continuation outcome recorded by the counsellor at session end.
 
     Distinct from SessionStatus (scheduling lifecycle).
-    TO_BE_CONTINUED — client returns for follow-up (xlsx: T).
-    REFERRED        — client referred elsewhere (xlsx: R).
-    COMPLETED       — case episode closed this session (xlsx: C).
+    TO_BE_CONTINUED:  client returns for follow-up (xlsx: T).
+    REFERRED:         client referred elsewhere (xlsx: R).
+    COMPLETED:        case episode closed this session (xlsx: C).
     """
 
     TO_BE_CONTINUED = "ToBeContinued"

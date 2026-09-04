@@ -2,7 +2,7 @@
 
 Lifecycle dispatch is handled by ``TransitionUseCase`` in ``transitions.py``;
 this module keeps only the abstractions that bespoke (non-transition) use
-cases share — entity loading and event publishing.
+cases share: entity loading and event publishing.
 """
 
 from abc import ABC

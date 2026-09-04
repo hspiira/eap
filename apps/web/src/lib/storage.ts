@@ -1,5 +1,5 @@
 /**
- * Browser localStorage — three namespaced keys, typed access.
+ * Browser localStorage: three namespaced keys, typed access.
  *
  *   evexia.auth   → { token, refresh_token, user_id, email }
  *   evexia.tenant → { id }
@@ -29,7 +29,7 @@ function writeJson<T>(key: string, value: T): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value))
   } catch (_err) {
-    // quota exceeded or storage disabled — ignore
+    // quota exceeded or storage disabled: ignore
   }
 }
 
@@ -38,7 +38,7 @@ function remove(key: string): void {
   try {
     window.localStorage.removeItem(key)
   } catch (_err) {
-    // quota exceeded or storage disabled — ignore
+    // quota exceeded or storage disabled: ignore
   }
 }
 

@@ -25,5 +25,5 @@ class TestMaskEmail:
 
     @pytest.mark.parametrize("bad", [None, "", "not-an-email"])
     def test_degrades_safely_on_unusable_input(self, bad):
-        """Claims can be absent or malformed — masking must never raise."""
+        """Claims can be absent or malformed; masking must never raise."""
         assert _mask_email(bad) == "<none>"

@@ -249,7 +249,7 @@ class UserEntity:
         Azure identity. The SSO callback resolves users by OID first and falls
         back to email; without this guard, an email address recycled by the
         customer's IT department (offboard A, later assign the same address to
-        new hire B — routine in most organisations) would silently hand B
+        new hire B, routine in most organisations) would silently hand B
         control of A's account: A's role, access scopes, case history and audit
         identity. Re-linking is a deliberate admin action, not something a
         login should perform.

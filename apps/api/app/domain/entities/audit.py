@@ -36,7 +36,7 @@ class EntityChange:
 class AuditLog:
     """High-level audit log entry. Immutable; never updated or deleted.
 
-    ``is_special_category`` flags accesses that touch health / clinical data —
+    ``is_special_category`` flags accesses that touch health / clinical data,
     used by the DPO to produce a separate "special-category data accessed"
     report alongside ordinary audit output, satisfying jurisdictional special-
     category-data accountability requirements.

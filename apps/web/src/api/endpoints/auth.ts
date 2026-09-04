@@ -56,7 +56,7 @@ export const authApi = {
       try {
         await apiClient.post<unknown>("/auth/logout", undefined)
       } catch (_err) {
-        // ignore — client clears state below
+        // ignore: client clears state below
       }
     } else {
       const refreshToken = apiClient.getRefreshToken()
@@ -101,7 +101,7 @@ export const authApi = {
   },
 
   /**
-   * Whether Azure SSO is enabled on this build (FE flag — BE must also be configured).
+   * Whether Azure SSO is enabled on this build (FE flag; BE must also be configured).
    */
   isAzureSsoEnabled(): boolean {
     return azureSsoEnabled()

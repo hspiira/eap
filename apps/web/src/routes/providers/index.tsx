@@ -31,7 +31,7 @@ function ProvidersListPage() {
   const navigate = useNavigate({ from: "/providers/" })
   const [page] = useState(1)
 
-  // BE persons-list doesn't filter by tier/region yet — we fetch the full page
+  // BE persons-list doesn't filter by tier/region yet; we fetch the full page
   // and filter client-side. Acceptable until BE adds those filters.
   const query = useQuery({
     queryKey: ["providers", "list", page],
@@ -64,7 +64,7 @@ function ProvidersListPage() {
           <div>
             <h1 className="text-xl font-semibold text-fg">Providers</h1>
             <p className="mt-1 text-sm text-fg/70">
-              Counsellors, agencies, and clinics on the panel — tier T1/T2/T3 and region.
+              Counsellors, agencies, and clinics on the panel: tier T1/T2/T3 and region.
             </p>
           </div>
           <div className="flex gap-2">

@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { formatDate } from "@/lib/format"
+import { formatDate, toLocalDateKey } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
@@ -41,6 +41,12 @@ export const Route = createFileRoute("/clients/$clientId")({
 
 type TabValue = "overview" | "activity" | "contracts" | "staff"
 const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts", "staff"]
+
+const CONTRACTS_PAGE = 10
+const UPCOMING_DAYS = 90
+const ALERT_DAYS = 30
+/** The list endpoint caps limit at 100. Past that the window is reported as partial. */
+const WINDOW_PAGE = 100
 
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
@@ -80,11 +86,35 @@ function ClientDetailPage() {
   const children = childrenQuery.data?.items ?? []
 
   const contractsQuery = useQuery({
-    queryKey: entityListKey("contracts", { client_id: clientId, limit: 10 }),
-    queryFn: () => contractsApi.list({ limit: 10, client_id: clientId }),
+    queryKey: entityListKey("contracts", { client_id: clientId, limit: CONTRACTS_PAGE }),
+    queryFn: () => contractsApi.list({ limit: CONTRACTS_PAGE, client_id: clientId }),
     enabled,
   })
   const contracts = contractsQuery.data?.items ?? []
+  const contractsTotal = contractsQuery.data?.total ?? 0
+
+  // Alerts and the upcoming list need every contract ending in the window, not
+  // the first page of all of them. Anchored to the day so the key is stable.
+  const endWindow = useMemo(() => {
+    const from = new Date()
+    const to = new Date(from)
+    to.setDate(to.getDate() + UPCOMING_DAYS)
+    return { ends_from: from.toISOString(), ends_to: to.toISOString() }
+  }, [])
+
+  const endingQuery = useQuery({
+    queryKey: entityListKey("contracts", {
+      client_id: clientId,
+      ...endWindow,
+      limit: WINDOW_PAGE,
+    }),
+    queryFn: () =>
+      contractsApi.list({ client_id: clientId, ...endWindow, limit: WINDOW_PAGE }),
+    enabled,
+  })
+  const ending = endingQuery.data?.items ?? []
+  const endingTotal = endingQuery.data?.total ?? 0
+  const endingTruncated = endingTotal > ending.length
 
   const tagsQuery = useQuery({
     queryKey: ["client-tags", "for-client", clientId],
@@ -105,7 +135,7 @@ function ClientDetailPage() {
         await queryClient.invalidateQueries({ queryKey: ["clients"] })
         toast.showSuccess("Status updated")
       } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Action failed — please try again"))
+        toast.showError(normalizeErrorMessage(err, "Action failed: please try again"))
       } finally {
         setActionLoading(false)
       }
@@ -161,10 +191,10 @@ function ClientDetailPage() {
       })
     }
     const now = new Date()
-    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-    contracts.forEach((c) => {
+    const alertCutoff = new Date(now.getTime() + ALERT_DAYS * 24 * 60 * 60 * 1000)
+    ending.forEach((c) => {
       const end = new Date(c.period.end_date)
-      if (end <= in30Days && end >= now) {
+      if (end <= alertCutoff && end >= now) {
         list.push({
           id: `contract-expiring-${c.id}`,
           title: `Contract ending soon: ${c.id.slice(0, 8)}`,
@@ -175,20 +205,30 @@ function ClientDetailPage() {
         })
       }
     })
+    if (endingTruncated) {
+      list.push({
+        id: "contracts-truncated",
+        title: "Too many contracts to check",
+        description: `${endingTotal} contracts end in the next ${UPCOMING_DAYS} days. Only the first ${WINDOW_PAGE} were checked.`,
+        severity: "medium",
+        link: "/contracts",
+        linkLabel: "View all contracts",
+      })
+    }
     return list
-  }, [client, isVerified, hasBilling, contracts])
+  }, [client, isVerified, hasBilling, ending, endingTruncated, endingTotal])
 
   const upcomingItems = useMemo((): ClientUpcomingItem[] => {
     const list: ClientUpcomingItem[] = []
     const now = new Date()
-    const in90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000)
-    contracts.forEach((c) => {
+    const horizon = new Date(now.getTime() + UPCOMING_DAYS * 24 * 60 * 60 * 1000)
+    ending.forEach((c) => {
       // One item per contract: the term end is either a renewal or an ending,
       // decided by is_auto_renew. This used to branch on a renewal_date field the
       // BE has never sent, so neither branch ever fired.
       {
         const d = new Date(c.period.end_date)
-        if (d >= now && d <= in90Days) {
+        if (d >= now && d <= horizon) {
           list.push({
             id: `${c.is_auto_renew ? "renewal" : "end"}-${c.id}`,
             title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${c.id.slice(0, 8)}`,
@@ -201,28 +241,28 @@ function ClientDetailPage() {
       }
     })
     return list.slice(0, 5).sort((a, b) => a.date.localeCompare(b.date))
-  }, [contracts])
+  }, [ending])
 
   const onboardingSteps = useMemo((): ClientOnboardingStep[] => {
     if (!client) return []
     const hasContact = !!(client.contact_info?.email || client.contact_info?.phone)
-    const hasContract = contracts.length > 0
+    const hasContract = contractsTotal > 0
     return [
       { id: "contact", label: "Contact info added", done: hasContact },
       { id: "contract", label: "At least one contract", done: hasContract },
       { id: "billing", label: "Billing address set", done: hasBilling },
       { id: "verified", label: "Client verified", done: isVerified },
     ]
-  }, [client, isVerified, contracts.length, hasBilling])
+  }, [client, isVerified, contractsTotal, hasBilling])
 
   const todaysTodoItems = useMemo((): ClientTodaysTodoItem[] => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = toLocalDateKey(new Date())
     return upcomingItems
-      .filter((u) => u.date.slice(0, 10) === today)
-      .map((u, i) => ({
+      .filter((u) => toLocalDateKey(u.date) === today)
+      .map((u) => ({
         id: u.id,
         title: u.title,
-        time: u.time ?? (i === 0 ? "09:00" : `${9 + i}:00`),
+        time: u.time ?? null,
         link: u.link,
         linkLabel: u.linkLabel ?? "View",
       }))
@@ -306,7 +346,7 @@ function ClientDetailPage() {
               <TabsList className="-mx-3 mb-4 px-3">
                 <Tab value="overview">Overview</Tab>
                 <Tab value="activity">Activity</Tab>
-                <Tab value="contracts" count={contracts.length}>
+                <Tab value="contracts" count={contractsTotal}>
                   Contracts
                 </Tab>
                 <Tab value="staff">Staff</Tab>

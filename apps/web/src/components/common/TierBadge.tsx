@@ -28,7 +28,7 @@ export function TierBadge({ tier, className }: TierBadgeProps) {
         )}
         aria-label="Tier not set"
       >
-        —
+        -
       </span>
     )
   }

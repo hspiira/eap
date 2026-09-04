@@ -25,7 +25,7 @@ describe("authStorage", () => {
     expect(r.email).toBe("e@x")
   })
 
-  it("patch is partial — keeps unrelated keys", () => {
+  it("patch is partial; keeps unrelated keys", () => {
     authStorage.patch({ token: "t" })
     authStorage.patch({ user_id: "u" })
     const r = authStorage.read()

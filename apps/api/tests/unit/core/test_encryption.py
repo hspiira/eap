@@ -45,7 +45,7 @@ class TestRoundTrip:
         assert decrypt(ct, tenant_id="t-1") == ""
 
     def test_unicode_round_trips(self):
-        msg = "session summary — patient présente une anxiété généralisée"
+        msg = "session summary, patient présente une anxiété généralisée"
         assert decrypt(encrypt(msg, tenant_id="t-9"), tenant_id="t-9") == msg
 
 

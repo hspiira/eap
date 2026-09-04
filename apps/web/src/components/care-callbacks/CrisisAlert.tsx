@@ -11,7 +11,7 @@ interface Props {
 }
 
 const PROTOCOL_STEPS = [
-  "Stay on the line — do not transfer cold.",
+  "Stay on the line; do not transfer cold.",
   "Run the immediate-risk script (means, plan, intent).",
   "Warm-handoff to the on-call clinician via the crisis bridge.",
   "Notify the supervisor in the on-call channel before closing the case.",

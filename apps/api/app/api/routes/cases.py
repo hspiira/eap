@@ -1,4 +1,4 @@
-"""Clinical case routes — CLINICAL-scope only."""
+"""Clinical case routes, CLINICAL-scope only."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession

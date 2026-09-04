@@ -6,13 +6,13 @@ result is reproducible from stored answers regardless of catalogue evolution.
 
 Scoring rules (SAD §B.4 / §2.3.1):
 
-* **JOSEPH7** — 7 Likert items 0..3; ``total ∈ [0, 21]``. Risk bands: 0-4 LOW,
+* **JOSEPH7**: 7 Likert items 0..3; ``total ∈ [0, 21]``. Risk bands: 0-4 LOW,
   5-9 MODERATE, 10-14 HIGH, 15+ CRITICAL. Stage-of-Change derived from item 7
-  (motivation) — the higher the score, the further along the change spectrum.
-* **WOS5** — 5 Likert items 1..5; pre/post case captured separately. Reports
+  (motivation); the higher the score, the further along the change spectrum.
+* **WOS5**: 5 Likert items 1..5; pre/post case captured separately. Reports
   carry both ``raw`` (5..25) and ``normalised_0_100`` so renewal packs can
   show pre→post deltas on a familiar scale. Risk band derives from raw total.
-* **PHQ9** — 9 items 0..3; ``total ∈ [0, 27]``. Standard severity bands. Item 9
+* **PHQ9**: 9 items 0..3; ``total ∈ [0, 27]``. Standard severity bands. Item 9
   asks about self-harm ideation: any non-zero answer raises the crisis flag
   irrespective of total severity (SAD §6.3 acceptance criterion).
 """

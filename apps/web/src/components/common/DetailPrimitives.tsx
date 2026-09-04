@@ -77,7 +77,7 @@ export function DetailRow({
         className={cn("mt-0.5 text-sm text-fg", fullWidth ? "whitespace-pre-wrap" : "truncate")}
         title={!fullWidth && typeof value === "string" ? value : undefined}
       >
-        {value || <span className="text-fg-subtle">—</span>}
+        {value || <span className="text-fg-subtle">-</span>}
       </dd>
     </div>
   )

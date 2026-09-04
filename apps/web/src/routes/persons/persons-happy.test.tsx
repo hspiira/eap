@@ -1,6 +1,6 @@
 /**
  * Happy path for the persons list: rows render as people (names), never as
- * raw identifiers — the exact regression this table shipped with once.
+ * raw identifiers: the exact regression this table shipped with once.
  */
 
 import { describe, expect, it, vi } from "vitest"
@@ -44,7 +44,7 @@ vi.mock("@/api/endpoints/users", () => ({
 const { Route } = await import("@/routes/persons/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
-describe("persons list — happy path", () => {
+describe("persons list: happy path", () => {
   it("renders the person by name, not by identifier", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Janet Nakato")).toBeInTheDocument()

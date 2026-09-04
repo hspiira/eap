@@ -2,7 +2,7 @@
  * Service Assignments API Endpoints
  *
  * Create/Update payload shapes are sourced from the BE OpenAPI schema via
- * `@/api/generated`. Do not extend ServiceAssignmentCreate locally — if the
+ * `@/api/generated`. Do not extend ServiceAssignmentCreate locally; if the
  * shape needs to change, update the BE Pydantic schema and re-run
  * `pnpm openapi:sync`.
  */

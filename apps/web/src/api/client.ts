@@ -108,7 +108,7 @@ class ApiClient {
             const data = await response.clone().json()
             if (data && typeof data.csrf_token === "string") this.setCsrfToken(data.csrf_token)
           } catch (_err) {
-            // body may be empty — fine
+            // body may be empty, fine
           }
           return true
         } catch (_err) {
@@ -210,7 +210,7 @@ class ApiClient {
    * POST FormData with auth headers, returns parsed JSON
    */
   /**
-   * Fetch, and on a 401 refresh once and retry. `/auth/` paths are exempt — a 401
+   * Fetch, and on a 401 refresh once and retry. `/auth/` paths are exempt; a 401
    * there is the answer, not a stale token.
    */
   private async fetchWithAuthRetry(
@@ -276,7 +276,7 @@ class ApiClient {
    *
    * `sessionEpoch` is the session identity captured when the request went out.
    * If it no longer matches, this 401 answers a session that has since been
-   * replaced or torn down — the user may already have signed back in — so
+   * replaced or torn down (the user may already have signed back in), so
    * acting on it would clear a token that is perfectly good and bounce them
    * straight back to the login form. Drop it instead.
    */

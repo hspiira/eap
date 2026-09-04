@@ -2,7 +2,7 @@
  * Helpers for list-route `validateSearch` and filter option arrays.
  *
  * Replace hand-enumerated enum guards (which break silently when an enum member
- * is added — OCP violation) and per-page `STATUS_OPTIONS` arrays with:
+ * is added, OCP violation) and per-page `STATUS_OPTIONS` arrays with:
  *
  *   validateSearch: listSearchSchema({ status: enumParam(ContractStatus) })
  *   const STATUS_OPTIONS = enumOptions(ContractStatus, "All statuses")

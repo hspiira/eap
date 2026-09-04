@@ -2,7 +2,7 @@
 
 `ContractPricing` is the configuration the pricing engine consumes; one
 shape per :class:`~app.domain.enums.PricingModel`. Concrete fields differ
-per model so we use a discriminated value object — invalid combinations
+per model so we use a discriminated value object; invalid combinations
 raise on construction.
 """
 
@@ -42,7 +42,7 @@ class RateCard:
 
 @dataclass(frozen=True)
 class UtilisationTier:
-    """Stepped pricing tier — usage above ``up_to_units`` switches rate."""
+    """Stepped pricing tier: usage above ``up_to_units`` switches rate."""
 
     up_to_units: int
     unit_rate: Money
@@ -65,7 +65,7 @@ class ContractPricing:
     - ``ADMIN_UTILISATION``: ``admin_fee_floor`` + ``rate_card``; the floor
       is invoiced regardless of activity.
     - ``VALUE_ADD``: ``parent_contract_id`` (the broader Minet contract that
-      absorbs the EAP cost — no per-EAP invoice line generated).
+      absorbs the EAP cost, no per-EAP invoice line generated).
     """
 
     model: PricingModel

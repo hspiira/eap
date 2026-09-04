@@ -77,7 +77,7 @@ export const engagementsApi = {
     return apiClient.post<Engagement>(`/engagements/${id}/${action}`, {})
   },
 
-  /** Static FSM helper — valid in fixture and live modes. */
+  /** Static FSM helper: valid in fixture and live modes. */
   allowedTransitions(from: EngagementStatus): EngagementStatus[] {
     return fixtureAllowedTransitions(from)
   },

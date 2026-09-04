@@ -58,7 +58,7 @@ class Email:
     every mail system we care about, but `users.email` is compared with `=` in
     SQL, which is case-SENSITIVE on PostgreSQL. Without normalising here, a user
     provisioned as `Fred.H@corp.com` could never be found by an Azure SSO login,
-    which lowercases the UPN claim — they would hit "account has not been
+    which lowercases the UPN claim; they would hit "account has not been
     provisioned" forever, with the two addresses looking identical to a human.
 
     `#` is permitted in the local part for Azure AD B2B guest UPNs, which take
@@ -75,6 +75,6 @@ class Email:
             raise ValueError("Email must be less than 255 characters")
         if not re.match(r"^[a-z0-9._%+#-]+@[a-z0-9.-]+\.[a-z]{2,}$", normalised):
             raise ValueError("Invalid email address format")
-        # frozen dataclass — bypass the immutability guard to store the
+        # frozen dataclass: bypass the immutability guard to store the
         # normalised form, so every consumer sees one canonical value.
         object.__setattr__(self, "value", normalised)

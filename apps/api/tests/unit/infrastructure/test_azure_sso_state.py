@@ -2,7 +2,7 @@
 OAuth state-token integrity for the Azure SSO flow.
 
 The signed state proves "this server minted this token recently". On its own it
-does NOT prove "this browser started this flow" — so an attacker could begin
+does NOT prove "this browser started this flow", so an attacker could begin
 their own login, capture the resulting code+state, and feed it to a victim's
 browser, silently signing the victim into the attacker's account (login CSRF).
 Binding the state to a nonce cookie issued at /azure/login closes that.
@@ -47,7 +47,7 @@ class TestStateBinding:
 
     @pytest.mark.parametrize("missing", [None, ""])
     def test_rejects_absent_nonce(self, sso, missing):
-        """No cookie means the browser never started this flow — fail closed."""
+        """No cookie means the browser never started this flow; fail closed."""
         state, _ = sso._create_state()
         with pytest.raises(ValueError, match="not issued to this browser"):
             sso._verify_state(state, missing)
@@ -67,7 +67,7 @@ class TestStateIntegrity:
 
     def test_rejects_expired_state(self, sso, monkeypatch):
         state, nonce = sso._create_state()
-        # Capture the real clock before patching — referencing time.time() from
+        # Capture the real clock before patching; referencing time.time() from
         # inside the replacement would recurse into itself.
         future = time.time() + sso._STATE_TTL_SECONDS + 60
         monkeypatch.setattr(time, "time", lambda: future)

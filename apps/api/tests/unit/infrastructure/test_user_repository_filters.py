@@ -130,7 +130,7 @@ class TestTwoFactorFilter:
     async def test_enabled_false_is_filtered_in_sql(
         self, repo: UserRepositoryImpl, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """False must still filter — a falsy check here would drop the filter."""
+        """False must still filter; a falsy check here would drop the filter."""
         filters = await self._capture_filters(repo, monkeypatch, is_two_factor_enabled=False)
         assert filters["is_two_factor_enabled"] is False
 

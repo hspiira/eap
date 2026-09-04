@@ -70,7 +70,7 @@ class TriageInstrumentSchema(BaseModel):
 
 
 class TriageScoreResponse(BaseModel):
-    """Computed triage classification — returned alongside the persisted outreach record."""
+    """Computed triage classification, returned alongside the persisted outreach record."""
 
     instrument_code: TriageInstrumentCode
     instrument_version: str

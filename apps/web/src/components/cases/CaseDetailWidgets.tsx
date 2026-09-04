@@ -339,7 +339,7 @@ export function AdvanceDialog({
         </FormField>
         {needsCounsellor ? (
           <p className="text-xs text-danger">
-            Assign a counsellor first — Active requires one to already be set.
+            Assign a counsellor first: Active requires one to already be set.
           </p>
         ) : null}
         <DialogFooter>
@@ -480,7 +480,7 @@ export function ReferOutDialog({
         <DialogHeader>
           <DialogTitle>Refer case out</DialogTitle>
           <DialogDescription>
-            Notes are required — they explain the referral and become the closure record.
+            Notes are required; they explain the referral and become the closure record.
           </DialogDescription>
         </DialogHeader>
         <FormField label="Notes" required>
@@ -661,7 +661,7 @@ export function noteBodyEntries(body: ClinicalNoteBody): [label: string, text: s
 function NoteBody({ body }: { body: ClinicalNoteBody }) {
   const entries = noteBodyEntries(body)
   if (entries.length === 0) {
-    return <p className="text-sm text-fg/85">—</p>
+    return <p className="text-sm text-fg/85">-</p>
   }
   return (
     <dl className="space-y-2">

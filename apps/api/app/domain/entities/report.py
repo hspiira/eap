@@ -18,7 +18,7 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass(frozen=True)
 class TemplateSection:
-    """One section of a report template — a query + display metadata."""
+    """One section of a report template: a query + display metadata."""
 
     title: str
     query_type: ReportQueryType

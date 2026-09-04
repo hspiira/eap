@@ -173,7 +173,7 @@ export function ServiceSessionFormSheet({
         const { __isBackfill, __backfillReason, __notes, ...body } = payload
         if (isEdit && entity) {
           // PATCH takes the clinical/admin fields (+ notes); scheduling is
-          // immutable here — reschedule is its own transition on the detail page.
+          // immutable here: reschedule is its own transition on the detail page.
           const {
             service_id: _s,
             person_id: _p,
@@ -276,7 +276,7 @@ export function ServiceSessionFormSheet({
           <FormField
             label="Headcount"
             required
-            description="Number of participants — group sessions need at least 2."
+            description="Number of participants: group sessions need at least 2."
             error={errors.headcount?.message}
             htmlFor="ss-headcount"
           >
@@ -415,7 +415,7 @@ export function ServiceSessionFormSheet({
           >
             <Input
               id="ss-backfill-reason"
-              placeholder="e.g. Phone session — paper notes, entered next day"
+              placeholder="e.g. Phone session: paper notes, entered next day"
               {...register("backfill_reason")}
             />
           </FormField>
@@ -466,7 +466,7 @@ export function ServiceSessionFormSheet({
           <FormField
             label="Notes"
             optional
-            description="Internal notes — not shared with the subject."
+            description="Internal notes, not shared with the subject."
             error={errors.notes?.message}
             htmlFor="ss-notes"
           >

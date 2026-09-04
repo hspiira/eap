@@ -1,7 +1,7 @@
 """Data Subject Access Request aggregate (Phase 4 #DSAR / SAD §6.6).
 
 Tracks the lifecycle of an export or erasure request. The aggregate is the
-*request*, not the data — actual collection / tombstoning is performed by
+*request*, not the data; actual collection / tombstoning is performed by
 infrastructure-level use cases that this aggregate gates via its FSM.
 """
 
@@ -27,7 +27,7 @@ from app.shared.utils.datetime import utc_now
 
 @dataclass
 class DSARRequest:
-    """One subject-access request — export OR erasure (never both)."""
+    """One subject-access request: export OR erasure (never both)."""
 
     id: DSARRequestId
     tenant_id: TenantId

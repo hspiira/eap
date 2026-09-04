@@ -1,11 +1,11 @@
 """Report use cases (Phase 2 #D-Reports).
 
 Bespoke use cases:
-- ``CreateReportTemplateUseCase`` — create a template; transitions are dispatched
+- ``CreateReportTemplateUseCase``: create a template; transitions are dispatched
   through the existing ``TransitionUseCase`` once we add a ``ReportTemplateTransition``.
-- ``RunReportTemplateUseCase`` — load the template, create a ``ReportRun``,
+- ``RunReportTemplateUseCase``: load the template, create a ``ReportRun``,
   dispatch each section through the runner, save the materialised output.
-- ``GetReportRunUseCase`` / ``ListReportRunsUseCase`` — query helpers.
+- ``GetReportRunUseCase`` / ``ListReportRunsUseCase``: query helpers.
 """
 
 from __future__ import annotations
@@ -224,7 +224,7 @@ def build_renewal_pack_sections(*, client_id: str | None = None) -> list[Templat
             parameters=satisfaction_params,
             narrative=(
                 "Per-question response frequencies from the satisfaction "
-                "survey waves; aggregate-only — no individual answers."
+                "survey waves; aggregate-only: no individual answers."
             ),
         ),
         TemplateSection(
@@ -232,7 +232,7 @@ def build_renewal_pack_sections(*, client_id: str | None = None) -> list[Templat
             query_type=ReportQueryType.CONTRACT_UTILISATION,
             parameters=utilisation_params,
             narrative=(
-                "Total billable units logged per contract for the period — "
+                "Total billable units logged per contract for the period; "
                 "renewal-conversation input for retainer / FFS sizing."
             ),
         ),

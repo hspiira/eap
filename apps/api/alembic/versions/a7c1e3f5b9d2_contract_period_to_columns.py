@@ -5,7 +5,7 @@ or sort on it in SQL: the renewal window needs an indexed range scan on the end 
 the term, and `period->>'end_date'` neither uses an index nor typechecks as a
 timestamp. The FE consequently had a renewal filter with nothing behind it.
 
-The domain is unchanged — ContractEntity still models the term as one DateRange.
+The domain is unchanged; ContractEntity still models the term as one DateRange.
 This is persistence only; the mapper joins the two columns back together.
 
 Backfill notes:

@@ -3,7 +3,7 @@
 FHIR-aligned in shape: a ``Questionnaire`` is a versioned bundle of ``QuestionnaireItem``s,
 and a ``QuestionnaireResponse`` records the answers a respondent supplied for one
 administration. Instrument definitions are immutable in-process catalogue entries
-(see ``app.domain.services.triage_scoring``) — only responses are persisted.
+(see ``app.domain.services.triage_scoring``); only responses are persisted.
 """
 
 from __future__ import annotations

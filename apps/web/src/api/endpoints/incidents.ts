@@ -3,8 +3,8 @@
  *
  * BE base path is `/critical-incidents` (confirmed via openapi.json).
  * Fixture is DEV-only. The full CISM UI (P2 #5) will add:
- *   POST /{id}/phases  — phase-add form (Demobilisation, Defusing, ...)
- *   GET  /{id}/after-action — printable after-action report
+ *   POST /{id}/phases: phase-add form (Demobilisation, Defusing, ...)
+ *   GET  /{id}/after-action: printable after-action report
  */
 
 import { useFixtures } from "@/lib/fixtures"

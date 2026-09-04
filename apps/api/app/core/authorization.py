@@ -128,7 +128,7 @@ def require_self_or_role(*allowed_roles: TenantRole):
     OR users whose tenant role is in allowed_roles.
 
     Use for endpoints that should be self-service for the target user but
-    overridable by admins — e.g. password change, 2FA toggle, preferences.
+    overridable by admins: e.g. password change, 2FA toggle, preferences.
 
     Requires the route to declare `user_id: str` as a path/query param so
     FastAPI resolves it before this dependency runs.
@@ -171,7 +171,7 @@ def require_scope(*allowed_scopes: AccessScope):
 
     Admits a token only when its ``access_scopes`` claim contains one of
     ``allowed_scopes``. Fails closed: a token with no grants is refused.
-    There is no legacy escape hatch — scopes are stamped at mint from the
+    There is no legacy escape hatch; scopes are stamped at mint from the
     DB user, so every valid token carries its current grants.
     """
 

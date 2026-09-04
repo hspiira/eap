@@ -191,7 +191,7 @@ function ProfileBody({ userId }: ProfileBodyProps) {
         <header>
           <h2 className="text-lg font-semibold text-fg">Preferences</h2>
           <p className="text-sm text-fg-muted">
-            Update your language and timezone — applies to all dates and times shown to you.
+            Update your language and timezone: applies to all dates and times shown to you.
           </p>
         </header>
 
@@ -300,13 +300,13 @@ function PreviewLinks() {
     {
       view: "inbox",
       label: "Inbox",
-      description: "Notification inbox — placeholder, not yet wired to real data.",
+      description: "Notification inbox: placeholder, not yet wired to real data.",
       icon: Inbox,
     },
     {
       view: "at-risk",
       label: "At Risk",
-      description: "PHQ-9 / no-show driven at-risk list — placeholder, ships in Phase 3.",
+      description: "PHQ-9 / no-show driven at-risk list: placeholder, ships in Phase 3.",
       icon: AlertCircle,
     },
   ]
@@ -315,7 +315,7 @@ function PreviewLinks() {
       <header>
         <h2 className="text-sm font-semibold text-fg">Preview pages</h2>
         <p className="text-xs text-fg-muted">
-          Work-in-progress screens — not yet linked from the main nav.
+          Work-in-progress screens, not yet linked from the main nav.
         </p>
       </header>
       <div className="grid gap-3 sm:grid-cols-2">

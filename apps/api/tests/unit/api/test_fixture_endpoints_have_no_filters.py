@@ -4,7 +4,7 @@ A tripwire for the fixture-backed endpoints.
 The FE serves local fixtures for these resources and filters them in the browser.
 That is correct only while the fixture returns the whole dataset as one page. The
 moment one of these endpoints starts filtering server-side, the FE page must send
-the params instead of filtering a page — otherwise it silently shows wrong counts
+the params instead of filtering a page; otherwise it silently shows wrong counts
 and hides matching rows on later pages, with no error anywhere.
 
 So: when one of these gains a filter param, this test fails. It is not asking you
@@ -26,7 +26,7 @@ FIXTURE_BACKED = {
 
 
 def _query_params(path: str) -> set[str]:
-    """Read the published contract rather than the route table — routers are
+    """Read the published contract rather than the route table; routers are
     mounted, so app.routes does not carry them."""
     spec = app.openapi()["paths"].get(path)
     assert spec is not None, f"route not found in the OpenAPI schema: GET {path}"
@@ -55,7 +55,7 @@ def _assert_no_new_filters(path: str) -> None:
         f"GET {path} gained query param(s) {sorted(new)}.\n"
         f"This endpoint is fixture-backed on the frontend, which filters the fetched "
         f"page in the browser. If it now filters server-side, the FE page must send "
-        f"these params — otherwise its counts and pagination will be wrong (see "
+        f"these params; otherwise its counts and pagination will be wrong (see "
         f"finding F1). Update the FE page, then remove this endpoint from "
         f"FIXTURE_BACKED."
     )

@@ -40,7 +40,7 @@ class BulkUpdatePanelStatusUseCase:
     """Flip ``panel_status`` for a batch of providers in one call (audit-trailed).
 
     Skips providers already at the target status (idempotent), records 404s for
-    unknown ids, and rejects non-providers — all returned in the result rather
+    unknown ids, and rejects non-providers, all returned in the result rather
     than raising, so the operator can act on the partial outcome.
     """
 
@@ -158,7 +158,7 @@ class CheckProviderEligibilityUseCase:
                 )
         if binding:
             reasons.append(
-                f"{len(binding)} binding non-compete clause(s) — verify scope before assignment"
+                f"{len(binding)} binding non-compete clause(s): verify scope before assignment"
             )
         return {
             "provider_id": provider_id.value,

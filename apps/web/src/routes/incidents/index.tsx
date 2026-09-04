@@ -26,7 +26,7 @@ function IncidentsListPage() {
           <div>
             <h1 className="text-xl font-semibold text-fg">Critical incidents</h1>
             <p className="mt-1 text-sm text-fg/70">
-              CISM log — events, severity, affected population, linked sessions.
+              CISM log: events, severity, affected population, linked sessions.
             </p>
           </div>
           <Link

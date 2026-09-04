@@ -512,7 +512,7 @@ class TestUpdatePreferences:
 
 
 class TestRecordLogin:
-    """record-login is intentionally not an HTTP route — last_login_at is
+    """record-login is intentionally not an HTTP route; last_login_at is
     server-derived during login. This pins the removal so it doesn't come back."""
 
     async def test_record_login_is_not_a_route(

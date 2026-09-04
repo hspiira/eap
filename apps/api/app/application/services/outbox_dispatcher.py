@@ -5,7 +5,7 @@ consumer is built-in; future consumers (notifications, reports) register via
 :meth:`OutboxDispatcher.register_consumer`.
 
 Concurrency model: a single worker process. Two workers running against the
-same database are *safe* (each row is updated by id) but inefficient — pin
+same database are *safe* (each row is updated by id) but inefficient; pin
 the worker to one replica until SELECT ... FOR UPDATE SKIP LOCKED is wired.
 """
 

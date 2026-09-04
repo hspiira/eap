@@ -8,7 +8,7 @@ interface ListSearch {
   new?: boolean
 }
 
-/** Narrow view of TanStack's navigate — just the search-writing we need. */
+/** Narrow view of TanStack's navigate, just the search-writing we need. */
 type NavigateFn = (opts: {
   search: (prev: Record<string, unknown>) => Record<string, unknown>
   replace?: boolean
@@ -22,7 +22,7 @@ type NavigateFn = (opts: {
  * TanStack types both on the route literal, so a hook that called them itself
  * would need a cast and would throw away each page's typed search params.
  *
- * `setFilter` is the important one — it writes a filter to the URL and resets to
+ * `setFilter` is the important one; it writes a filter to the URL and resets to
  * page 1. A filter that doesn't reset the page silently shows the wrong slice.
  */
 export function useListPage<S extends ListSearch>({
@@ -85,7 +85,7 @@ export function useListPage<S extends ListSearch>({
     sort,
     toggleSort,
     setFilter,
-    /** For `useEntityList` params — sort_by/sort_desc are omitted when unsorted. */
+    /** For `useEntityList` params: sort_by/sort_desc are omitted when unsorted. */
     sortParams: {
       sort_by: sort.field,
       sort_desc: sort.field ? sort.desc : undefined,

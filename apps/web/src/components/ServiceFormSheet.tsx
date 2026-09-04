@@ -156,7 +156,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
               render={({ field }) => (
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger id="sv-category">
-                    <SelectValue placeholder="—" />
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORY_OPTIONS.map((c) => (
