@@ -314,14 +314,14 @@ function ClientRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             {nameInitials(row.name)}
           </span>
           <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
         </Link>
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/70">{row.code}</TableCell>
+      <TableCell className="text-xs text-fg/70">{row.code}</TableCell>
       <TableCell>
         <TierBadge tier={row.tier} />
       </TableCell>
