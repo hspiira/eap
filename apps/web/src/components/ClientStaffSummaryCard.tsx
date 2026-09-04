@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react"
-
+import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ChevronRight, Users } from "lucide-react"
 
 import { personsApi } from "@/api/endpoints/persons"
 import { Panel } from "@/components/common/Panel"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import type { Person } from "@/types/entities"
 import { PersonType } from "@/types/enums"
 
 interface ClientStaffSummaryCardProps {
@@ -16,24 +15,27 @@ interface ClientStaffSummaryCardProps {
 }
 
 export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSummaryCardProps) {
-  const [persons, setPersons] = useState<Person[]>([])
-  const [loading, setLoading] = useState(true)
+  const peopleQuery = useQuery({
+    queryKey: ["persons", "client-summary", clientId],
+    queryFn: async () => {
+      const [all, employees, dependents] = await Promise.all([
+        personsApi.list({ client_id: clientId, limit: 1 }),
+        personsApi.list({ client_id: clientId, person_type: PersonType.CLIENT_EMPLOYEE, limit: 1 }),
+        personsApi.list({ client_id: clientId, person_type: PersonType.DEPENDENT, limit: 1 }),
+      ])
+      return {
+        total: all.total,
+        staff: employees.total,
+        dependents: dependents.total,
+      }
+    },
+  })
 
-  useEffect(() => {
-    setLoading(true)
-    personsApi
-      .list({ client_id: clientId, limit: 500 })
-      .then((res) => setPersons(res.items ?? []))
-      .catch(() => setPersons([]))
-      .finally(() => setLoading(false))
-  }, [clientId])
-
-  const staff = persons.filter((p) => p.person_type === PersonType.CLIENT_EMPLOYEE)
-  const dependents = persons.filter((p) => p.person_type === PersonType.DEPENDENT)
-  const other = persons.filter(
-    (p) => p.person_type !== PersonType.CLIENT_EMPLOYEE && p.person_type !== PersonType.DEPENDENT,
-  )
-  const total = persons.length
+  const loading = peopleQuery.isPending
+  const total = peopleQuery.data?.total ?? 0
+  const staff = peopleQuery.data?.staff ?? 0
+  const dependents = peopleQuery.data?.dependents ?? 0
+  const other = Math.max(0, total - staff - dependents)
 
   return (
     <Panel
@@ -58,6 +60,13 @@ export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSumma
           <Skeleton className="h-3.5 w-full" />
           <Skeleton className="h-3.5 w-full" />
         </div>
+      ) : peopleQuery.isError ? (
+        <div className="grid gap-2 text-sm text-fg/60">
+          <p>People data could not be loaded.</p>
+          <Button variant="outline" size="sm" onClick={() => void peopleQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : (
         <div className="grid gap-3">
           <div>
@@ -65,11 +74,9 @@ export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSumma
             <p className="text-xs text-fg/60">Total people linked to this client</p>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-fg/8 pt-2 text-xs">
-            <Row label="Employees" value={staff.length} />
-            <Row label="Dependents" value={dependents.length} />
-            {other.length > 0 ? (
-              <Row label="Other" value={other.length} className="col-span-2" />
-            ) : null}
+            <Row label="Employees" value={staff} />
+            <Row label="Dependents" value={dependents} />
+            {other > 0 ? <Row label="Other" value={other} className="col-span-2" /> : null}
           </div>
         </div>
       )}

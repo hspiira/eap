@@ -4,6 +4,7 @@
  */
 
 import type * as TanstackRouter from "@tanstack/react-router"
+import { fireEvent, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { configureAxe } from "vitest-axe"
 
@@ -47,6 +48,21 @@ describe("a11y: gated routes (zero serious/critical issues)", () => {
   it("client-create form is accessible", async () => {
     const { container } = renderWithProviders(<ClientFormSheet open onOpenChange={() => {}} />)
     await expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it("shows the required fields and expands a separate billing address", () => {
+    renderWithProviders(<ClientFormSheet open onOpenChange={() => {}} />)
+
+    expect(screen.getByText("Fields marked * are required.")).toBeInTheDocument()
+    expect(screen.getByLabelText(/Name/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Code/)).toBeInTheDocument()
+    expect(screen.queryByLabelText("Street")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText("Billing address is different"))
+
+    expect(screen.getByLabelText(/Street/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/City/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Country/)).toBeInTheDocument()
   })
 
   it("person form sheet is accessible", async () => {

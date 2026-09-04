@@ -258,7 +258,11 @@ export function DetailRail({
             {ba?.country ? <DetailRow label="Country" value={ba.country} /> : null}
           </DetailGrid>
         ) : (
-          <p className="text-xs text-fg-muted">No billing address on file.</p>
+          <p className="text-xs text-fg-muted">
+            {client.contact_info?.address
+              ? "Same as contact address."
+              : "No billing address on file."}
+          </p>
         )}
       </RailSection>
 

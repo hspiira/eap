@@ -11,7 +11,7 @@
  *   - toFormValues (required when entity given): entity → form values
  */
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import type { DefaultValues, FieldValues } from "react-hook-form"
@@ -81,6 +81,7 @@ export function useEntityFormSheet<TValues extends FieldValues, TPayload, TResul
 
   const isEdit = !!entity
   const qc = useQueryClient()
+  const initializedEntityKey = useRef<string | null>(null)
 
   const form = useApiForm<TValues>({
     schema,
@@ -103,14 +104,18 @@ export function useEntityFormSheet<TValues extends FieldValues, TPayload, TResul
     },
   })
 
+  const currentEntityKey = entityId(entity) ?? "new"
+
   useEffect(() => {
-    if (!open) return
+    if (!open || initializedEntityKey.current === currentEntityKey) return
+
     if (entity && toFormValues) {
       form.reset(toFormValues(entity) as DefaultValues<TValues>)
     } else {
       form.reset(defaultValues)
     }
-  }, [open, entity])
+    initializedEntityKey.current = currentEntityKey
+  }, [currentEntityKey, defaultValues, entity, form, open, toFormValues])
 
   return { ...form, isEdit }
 }

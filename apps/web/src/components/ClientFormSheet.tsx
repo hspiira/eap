@@ -13,6 +13,8 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import {
   Command,
   CommandEmpty,
@@ -61,6 +63,7 @@ const clientSchema = z
       .max(5, "Code must be 3–5 characters")
       .regex(/^[A-Za-z0-9]+$/, "Code must use letters and numbers only"),
     tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
+    billing_address_different: z.boolean(),
     preferred_contact_method: z
       .enum(["", ...CONTACT_METHOD_OPTIONS.map((o) => o.value)] as readonly [string, ...string[]])
       .optional(),
@@ -78,8 +81,7 @@ const clientSchema = z
     industry_id: z.string().optional(),
   })
   .superRefine((d, ctx) => {
-    const anyBilling = d.billing_street || d.billing_city || d.billing_postal || d.billing_country
-    if (!anyBilling) return
+    if (!d.billing_address_different) return
     for (const f of ["billing_street", "billing_city", "billing_country"] as const) {
       if (!d[f]?.trim()) {
         ctx.addIssue({
@@ -97,6 +99,7 @@ const EMPTY: ClientFormValues = {
   name: "",
   code: "",
   tier: "",
+  billing_address_different: false,
   preferred_contact_method: "",
   email: "",
   phone: "",
@@ -142,6 +145,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       name: c.name,
       code: c.code,
       tier: c.tier ?? "",
+      billing_address_different: !!c.billing_address,
       preferred_contact_method: c.preferred_contact_method ?? "",
       email: c.contact_info?.email ?? "",
       phone: c.contact_info?.phone ?? "",
@@ -161,7 +165,10 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         address: values.address || null,
       },
       billing_address:
-        values.billing_street && values.billing_city && values.billing_country
+        values.billing_address_different &&
+        values.billing_street &&
+        values.billing_city &&
+        values.billing_country
           ? {
               street: values.billing_street,
               city: values.billing_city,
@@ -200,13 +207,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
     onSaved,
   })
 
-  const billingStreet = useWatch({ control, name: "billing_street" })
-  const billingCity = useWatch({ control, name: "billing_city" })
-  const billingPostal = useWatch({ control, name: "billing_postal" })
-  const billingCountry = useWatch({ control, name: "billing_country" })
-  const hasAnyBillingValue = Boolean(
-    billingStreet || billingCity || billingPostal || billingCountry,
-  )
+  const billingAddressDifferent = useWatch({ control, name: "billing_address_different" })
 
   const errors = formState.errors
 
@@ -415,41 +416,68 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
 
       <FormSection
         title="Billing address"
-        description="Where invoices are sent. Leave blank if same as contact address."
+        description="By default, invoices use the contact address."
       >
-        <FormField
-          label="Street"
-          required={hasAnyBillingValue}
-          error={errors.billing_street?.message}
-          htmlFor="cs-billing-street"
-        >
-          <Input id="cs-billing-street" {...register("billing_street")} />
-        </FormField>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="City"
-            required={hasAnyBillingValue}
-            error={errors.billing_city?.message}
-            htmlFor="cs-billing-city"
-          >
-            <Input id="cs-billing-city" {...register("billing_city")} />
-          </FormField>
-          <FormField
-            label="Postal code"
-            error={errors.billing_postal?.message}
-            htmlFor="cs-billing-postal"
-          >
-            <Input id="cs-billing-postal" {...register("billing_postal")} />
-          </FormField>
+        <div className="flex items-start gap-2">
+          <Controller
+            control={control}
+            name="billing_address_different"
+            render={({ field }) => (
+              <Checkbox
+                id="cs-billing-different"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+            )}
+          />
+          <div className="grid gap-0.5">
+            <label htmlFor="cs-billing-different" className="text-sm text-fg">
+              Billing address is different
+            </label>
+            <p className="text-xs text-fg-muted">Add a separate address for invoices.</p>
+          </div>
         </div>
-        <FormField
-          label="Country"
-          required={hasAnyBillingValue}
-          error={errors.billing_country?.message}
-          htmlFor="cs-billing-country"
-        >
-          <Input id="cs-billing-country" placeholder="Uganda" {...register("billing_country")} />
-        </FormField>
+        <Collapsible open={billingAddressDifferent}>
+          <CollapsibleContent className="space-y-3.5 pt-3">
+            <FormField
+              label="Street"
+              required={billingAddressDifferent}
+              error={errors.billing_street?.message}
+              htmlFor="cs-billing-street"
+            >
+              <Input id="cs-billing-street" {...register("billing_street")} />
+            </FormField>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                label="City"
+                required={billingAddressDifferent}
+                error={errors.billing_city?.message}
+                htmlFor="cs-billing-city"
+              >
+                <Input id="cs-billing-city" {...register("billing_city")} />
+              </FormField>
+              <FormField
+                label="Postal code"
+                error={errors.billing_postal?.message}
+                htmlFor="cs-billing-postal"
+              >
+                <Input id="cs-billing-postal" {...register("billing_postal")} />
+              </FormField>
+            </div>
+            <FormField
+              label="Country"
+              required={billingAddressDifferent}
+              error={errors.billing_country?.message}
+              htmlFor="cs-billing-country"
+            >
+              <Input
+                id="cs-billing-country"
+                placeholder="Uganda"
+                {...register("billing_country")}
+              />
+            </FormField>
+          </CollapsibleContent>
+        </Collapsible>
       </FormSection>
     </SheetForm>
   )

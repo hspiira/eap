@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react"
-
+import { useQuery } from "@tanstack/react-query"
 import { Activity, FileText, Mail, Phone, Users } from "lucide-react"
 
 import { activitiesApi } from "@/api/endpoints/activities"
 import { Panel, PanelEmpty, PanelList } from "@/components/common/Panel"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { Activity as ActivityEntity } from "@/types/entities"
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   CALL: Phone,
@@ -42,23 +41,22 @@ interface ClientActivityCardProps {
 }
 
 export function ClientActivityCard({ clientId, limit = 10, className }: ClientActivityCardProps) {
-  const [activities, setActivities] = useState<ActivityEntity[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    setLoading(true)
-    activitiesApi
-      .list({ limit, client_id: clientId })
-      .then((res) => setActivities(res.items ?? []))
-      .catch(() => setActivities([]))
-      .finally(() => setLoading(false))
-  }, [clientId, limit])
+  const activitiesQuery = useQuery({
+    queryKey: ["activities", "client", clientId, limit],
+    queryFn: () => activitiesApi.list({ limit, client_id: clientId }),
+  })
+  const loading = activitiesQuery.isPending
+  const activities = activitiesQuery.data?.items ?? []
 
   return (
     <Panel
       icon={Activity}
       title="Activity"
-      count={!loading && activities.length > 0 ? activities.length : null}
+      count={
+        !loading && !activitiesQuery.isError && (activitiesQuery.data?.total ?? 0) > 0
+          ? activitiesQuery.data?.total
+          : null
+      }
       className={className}
       bodyClassName="p-0"
     >
@@ -74,6 +72,18 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
             </li>
           ))}
         </PanelList>
+      ) : activitiesQuery.isError ? (
+        <PanelEmpty>
+          <span className="block">Activity could not be loaded.</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => void activitiesQuery.refetch()}
+          >
+            Retry
+          </Button>
+        </PanelEmpty>
       ) : activities.length === 0 ? (
         <PanelEmpty>No recent activity.</PanelEmpty>
       ) : (
