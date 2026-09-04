@@ -40,10 +40,7 @@ def _money(value: str, currency: str = "UGX") -> Money:
 
 def _contract(pricing: ContractPricing) -> ContractEntity:
     now = datetime.now(UTC)
-    period = DateRange(
-        start_date=datetime(2026, 1, 1, tzinfo=UTC),
-        end_date=datetime(2026, 12, 31, 23, 59, 59, tzinfo=UTC),
-    )
+    period = DateRange(start_date=date(2026, 1, 1), end_date=date(2026, 12, 31))
     return ContractEntity(
         id=ContractId("c-1"),
         tenant_id=TenantId("t-1"),

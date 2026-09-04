@@ -124,8 +124,8 @@ class ContractMapper:
         if model.start_date is None or model.end_date is None:
             raise ValueError("Contract period must have start_date and end_date")
         period = DateRange(
-            start_date=ensure_utc(model.start_date),
-            end_date=ensure_utc(model.end_date),
+            start_date=model.start_date,
+            end_date=model.end_date,
         )
 
         # Reconstruct Money from JSON

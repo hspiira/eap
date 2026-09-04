@@ -6,7 +6,7 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date
 from typing import Any
 
 from sqlalchemy import select
@@ -96,7 +96,7 @@ class ContractRepositoryImpl(
         return filters
 
     @staticmethod
-    def _ends_conditions(ends_from: datetime | None, ends_to: datetime | None) -> list[Any]:
+    def _ends_conditions(ends_from: date | None, ends_to: date | None) -> list[Any]:
         """
         Inclusive window on the end of the contract term.
 
@@ -117,8 +117,8 @@ class ContractRepositoryImpl(
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
         is_auto_renew: bool | None = None,
-        ends_from: datetime | None = None,
-        ends_to: datetime | None = None,
+        ends_from: date | None = None,
+        ends_to: date | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -145,8 +145,8 @@ class ContractRepositoryImpl(
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
         is_auto_renew: bool | None = None,
-        ends_from: datetime | None = None,
-        ends_to: datetime | None = None,
+        ends_from: date | None = None,
+        ends_to: date | None = None,
         search: str | None = None,
     ) -> int:
         """Count contracts matching filters. Must mirror list_all exactly."""

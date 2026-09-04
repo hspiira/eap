@@ -1,11 +1,16 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 
 
 @dataclass(frozen=True)
 class DateRange:
-    start_date: datetime
-    end_date: datetime
+    """An inclusive span of calendar days.
+
+    Contract terms are agreed as days rather than instants, so both bounds are dates.
+    """
+
+    start_date: date
+    end_date: date
 
     def __post_init__(self):
         if self.start_date > self.end_date:
@@ -25,8 +30,8 @@ class DateRange:
     def years(self) -> int:
         return self.end_date.year - self.start_date.year
 
-    def contains(self, date: datetime) -> bool:
-        return self.start_date <= date <= self.end_date
+    def contains(self, day: date) -> bool:
+        return self.start_date <= day <= self.end_date
 
-    def extend_to(self, new_end: datetime) -> "DateRange":
+    def extend_to(self, new_end: date) -> "DateRange":
         return DateRange(self.start_date, new_end)

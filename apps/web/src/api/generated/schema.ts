@@ -6151,7 +6151,7 @@ export interface components {
             client_id: string;
             /**
              * End Date
-             * Format: date-time
+             * Format: date
              * @description Contract end date
              */
             end_date: string;
@@ -6165,7 +6165,7 @@ export interface components {
             payment_frequency: components["schemas"]["PaymentFrequency"];
             /**
              * Start Date
-             * Format: date-time
+             * Format: date
              * @description Contract start date
              */
             start_date: string;
@@ -6225,7 +6225,7 @@ export interface components {
         ContractRenewRequest: {
             /**
              * New End Date
-             * Format: date-time
+             * Format: date
              * @description New contract end date
              */
             new_end_date: string;
@@ -6548,13 +6548,13 @@ export interface components {
         DateRangeSchema: {
             /**
              * End Date
-             * Format: date-time
+             * Format: date
              * @description End date
              */
             end_date: string;
             /**
              * Start Date
-             * Format: date-time
+             * Format: date
              * @description Start date
              */
             start_date: string;
@@ -13075,9 +13075,9 @@ export interface operations {
                 payment_status?: components["schemas"]["PaymentStatus"] | null;
                 /** @description Filter by whether the contract auto-renews */
                 is_auto_renew?: boolean | null;
-                /** @description Only contracts whose term ends at or after this instant (ISO 8601) */
+                /** @description Only contracts whose term ends on or after this day (YYYY-MM-DD) */
                 ends_from?: string | null;
-                /** @description Only contracts whose term ends at or before this instant (ISO 8601) */
+                /** @description Only contracts whose term ends on or before this day (YYYY-MM-DD) */
                 ends_to?: string | null;
                 /** @description Field to sort by */
                 sort_by?: string;

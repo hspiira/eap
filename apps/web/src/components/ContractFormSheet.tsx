@@ -63,19 +63,6 @@ const EMPTY: ContractFormValues = {
   is_auto_renew: false,
 }
 
-/** Convert an HTML `date` input value (`YYYY-MM-DD`) to an ISO datetime BE will accept. */
-function toIsoDatetime(date: string): string {
-  if (!date) return ""
-  return `${date}T00:00:00Z`
-}
-
-/** Convert a BE ISO datetime back to a `YYYY-MM-DD` string for the date input. */
-function fromIsoDatetime(iso: string | null | undefined): string {
-  if (!iso) return ""
-  const m = /^(\d{4}-\d{2}-\d{2})/.exec(iso)
-  return m ? m[1] : ""
-}
-
 interface ContractFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -112,8 +99,8 @@ export function ContractFormSheet({
       // the currency to the KES default.
       toFormValues: (c) => ({
         client_id: c.client_id,
-        start_date: fromIsoDatetime(c.period.start_date),
-        end_date: fromIsoDatetime(c.period.end_date),
+        start_date: c.period.start_date,
+        end_date: c.period.end_date,
         billing_amount: c.billing_rate.amount,
         currency: c.billing_rate.currency,
         payment_frequency: c.payment_frequency,
@@ -121,8 +108,8 @@ export function ContractFormSheet({
       }),
       parsePayload: (values): ContractCreate => ({
         client_id: values.client_id,
-        start_date: toIsoDatetime(values.start_date),
-        end_date: toIsoDatetime(values.end_date),
+        start_date: values.start_date,
+        end_date: values.end_date,
         billing_rate: {
           amount: values.billing_amount,
           currency: values.currency.toUpperCase(),

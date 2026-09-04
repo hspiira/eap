@@ -5,7 +5,7 @@ Application services for Contract aggregate operations.
 Refactored to use base use case classes.
 """
 
-from datetime import datetime
+from datetime import date
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.contract import ContractEntity
@@ -34,8 +34,8 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
         contract_id: ContractId,
         tenant_id: TenantId,
         client_id: ClientId,
-        start_date: datetime,
-        end_date: datetime,
+        start_date: date,
+        end_date: date,
         billing_rate: Money,
         payment_frequency: PaymentFrequency,
         is_auto_renew: bool = False,

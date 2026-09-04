@@ -59,10 +59,8 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     # filtered and sorted in SQL; the renewal window needs an indexed range scan,
     # and `period->>'end_date'` would neither use an index nor typecheck as a date.
     # The domain still models this as a single DateRange; the mapper joins them.
-    start_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True
-    )
-    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
 
     # Billing (stored as JSON)
     billing_rate: Mapped[dict] = mapped_column(JSON, nullable=False)

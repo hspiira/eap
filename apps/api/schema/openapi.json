@@ -2789,7 +2789,7 @@
           },
           "end_date": {
             "description": "Contract end date",
-            "format": "date-time",
+            "format": "date",
             "title": "End Date",
             "type": "string"
           },
@@ -2805,7 +2805,7 @@
           },
           "start_date": {
             "description": "Contract start date",
-            "format": "date-time",
+            "format": "date",
             "title": "Start Date",
             "type": "string"
           }
@@ -2953,7 +2953,7 @@
         "properties": {
           "new_end_date": {
             "description": "New contract end date",
-            "format": "date-time",
+            "format": "date",
             "title": "New End Date",
             "type": "string"
           },
@@ -3693,13 +3693,13 @@
         "properties": {
           "end_date": {
             "description": "End date",
-            "format": "date-time",
+            "format": "date",
             "title": "End Date",
             "type": "string"
           },
           "start_date": {
             "description": "Start date",
-            "format": "date-time",
+            "format": "date",
             "title": "Start Date",
             "type": "string"
           }
@@ -16570,40 +16570,40 @@
             }
           },
           {
-            "description": "Only contracts whose term ends at or after this instant (ISO 8601)",
+            "description": "Only contracts whose term ends on or after this day (YYYY-MM-DD)",
             "in": "query",
             "name": "ends_from",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "date-time",
+                  "format": "date",
                   "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Only contracts whose term ends at or after this instant (ISO 8601)",
+              "description": "Only contracts whose term ends on or after this day (YYYY-MM-DD)",
               "title": "Ends From"
             }
           },
           {
-            "description": "Only contracts whose term ends at or before this instant (ISO 8601)",
+            "description": "Only contracts whose term ends on or before this day (YYYY-MM-DD)",
             "in": "query",
             "name": "ends_to",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "format": "date-time",
+                  "format": "date",
                   "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Only contracts whose term ends at or before this instant (ISO 8601)",
+              "description": "Only contracts whose term ends on or before this day (YYYY-MM-DD)",
               "title": "Ends To"
             }
           },

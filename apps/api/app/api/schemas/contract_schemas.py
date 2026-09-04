@@ -25,8 +25,8 @@ class MoneySchema(BaseModel):
 class DateRangeSchema(BaseModel):
     """Date range schema."""
 
-    start_date: datetime = Field(..., description="Start date")
-    end_date: datetime = Field(..., description="End date")
+    start_date: date = Field(..., description="Start date")
+    end_date: date = Field(..., description="End date")
 
 
 # === Request Schemas ===
@@ -43,8 +43,8 @@ class ContractCreate(BaseModel):
     """Request schema for creating a contract."""
 
     client_id: str = Field(..., description="Client identifier")
-    start_date: datetime = Field(..., description="Contract start date")
-    end_date: datetime = Field(..., description="Contract end date")
+    start_date: date = Field(..., description="Contract start date")
+    end_date: date = Field(..., description="Contract end date")
     billing_rate: MoneySchema = Field(..., description="Billing rate")
     payment_frequency: PaymentFrequency = Field(..., description="Payment frequency")
     is_auto_renew: bool = Field(False, description="Whether contract auto-renews")
@@ -53,7 +53,7 @@ class ContractCreate(BaseModel):
 class ContractRenewRequest(BaseModel):
     """Request schema for renewing a contract."""
 
-    new_end_date: datetime = Field(..., description="New contract end date")
+    new_end_date: date = Field(..., description="New contract end date")
     new_rate: MoneyCreate | None = Field(None, description="New billing rate (optional)")
 
 

@@ -22,7 +22,7 @@ Design Notes:
 """
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, time
+from datetime import date, datetime
 
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.events import ContractRenewed, ContractTerminated, DomainEvent
@@ -71,20 +71,16 @@ class ContractEntity:
         return self.pricing.model if self.pricing else None
 
     def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
-        if new_end_date <= self.period.end_date.date():
+        if new_end_date <= self.period.end_date:
             raise DomainError("New end date must be after current")
-        # Convert date to datetime at end of day for the new period
-        new_end_datetime = datetime.combine(new_end_date, time.max).replace(
-            tzinfo=self.period.end_date.tzinfo
-        )
-        self.period = DateRange(self.period.start_date, new_end_datetime)
+        self.period = DateRange(self.period.start_date, new_end_date)
         if new_rate:
             self.billing_rate = new_rate
         self.status = ContractStatus.RENEWED
         now = utc_now()
         self.updated_at = now
         self.events.append(
-            ContractRenewed(occurred_at=now, contract_id=self.id, new_end_date=new_end_datetime)
+            ContractRenewed(occurred_at=now, contract_id=self.id, new_end_date=new_end_date)
         )
 
     def activate(self) -> None:
@@ -194,11 +190,11 @@ class ContractEntity:
         """Check if contract is active. Returns True for ACTIVE or RENEWED status."""
         if self.status not in (ContractStatus.ACTIVE, ContractStatus.RENEWED):
             return False
-        return self.period.contains(utc_now())
+        return self.period.contains(utc_now().date())
 
     def days_remaining(self) -> int:
-        """Returns days remaining in contract. Negative if expired."""
-        return (self.period.end_date - utc_now()).days
+        """Returns whole days left in the term. Zero on the last day, negative once past."""
+        return (self.period.end_date - utc_now().date()).days
 
     # === Public Properties ===
 

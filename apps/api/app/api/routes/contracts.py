@@ -6,7 +6,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 import decimal
-from datetime import datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -199,14 +199,11 @@ async def renew_contract(
             currency=body.new_rate.currency,
         )
 
-    # Convert datetime to date for renew method
-    new_end_date = body.new_end_date.date()
-
     use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
         contract.id,
         ContractTransition.RENEW,
-        new_end_date=new_end_date,
+        new_end_date=body.new_end_date,
         new_rate=new_rate,
     )
     await audit_change(contract, audit_handler, current_user, request)
@@ -354,13 +351,13 @@ async def list_contracts(
     is_auto_renew: bool | None = Query(
         None, description="Filter by whether the contract auto-renews"
     ),
-    ends_from: datetime | None = Query(
+    ends_from: date | None = Query(
         None,
-        description="Only contracts whose term ends at or after this instant (ISO 8601)",
+        description="Only contracts whose term ends on or after this day (YYYY-MM-DD)",
     ),
-    ends_to: datetime | None = Query(
+    ends_to: date | None = Query(
         None,
-        description="Only contracts whose term ends at or before this instant (ISO 8601)",
+        description="Only contracts whose term ends on or before this day (YYYY-MM-DD)",
     ),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),

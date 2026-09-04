@@ -7,7 +7,7 @@ Implementation lives in infrastructure layer.
 
 from abc import abstractmethod
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentStatus
@@ -63,8 +63,8 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
         is_auto_renew: bool | None = None,
-        ends_from: datetime | None = None,
-        ends_to: datetime | None = None,
+        ends_from: date | None = None,
+        ends_to: date | None = None,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -97,8 +97,8 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
         status: ContractStatus | None = None,
         payment_status: PaymentStatus | None = None,
         is_auto_renew: bool | None = None,
-        ends_from: datetime | None = None,
-        ends_to: datetime | None = None,
+        ends_from: date | None = None,
+        ends_to: date | None = None,
         search: str | None = None,
     ) -> int:
         """

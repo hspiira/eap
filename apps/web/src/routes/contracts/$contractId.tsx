@@ -356,11 +356,7 @@ function termInDays(c: Contract): string {
   return `${Math.max(0, days).toLocaleString()}d`
 }
 
-/**
- * Server-computed. Reported to be off by one on the final two days of a term,
- * raised with the team; the arithmetic is server side so it cannot be corrected
- * here.
- */
+/** Server-computed whole days left in the term. Zero on the last day. */
 function daysToRenewal(c: Contract): string {
   return `${c.days_remaining}d`
 }
