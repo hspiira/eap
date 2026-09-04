@@ -134,12 +134,20 @@ cannot settle: the frontend's own note in `src/api/endpoints/care-callbacks.ts`
 says care callbacks are deliberately not behind the wall.
 
 That question stops being theoretical the moment anyone wires a risk surface to
-the frontend. Outreach records carry `triage_risk_level`, and care callbacks are
-the only place the backend holds anything shaped like "at risk". So the obvious
-way to give `components/common/QueryTable.tsx` real data (CQ-A13 in the web
-backlog, currently five fabricated rows) is also the way to put clinical risk
-levels on a page reachable at `/me?view=at-risk` with no scope check in front of
-them. Decide the guard before the wiring, not after.
+the frontend, and the frontend has already said which data it intends to use.
+`routes/me.tsx:290` describes the At Risk screen as a "PHQ-9 / no-show driven
+at-risk list: placeholder, ships in Phase 3". Both of those inputs are clinical.
+
+Outreach records carry `triage_risk_level`, and care callbacks are the only
+place the backend holds anything shaped like "at risk", so that is the route a
+Phase 3 implementation would take. `care_callbacks.py` carries no scope guard,
+and the screen is reachable at `/me?view=at-risk`. Decide the guard before the
+wiring, not after.
+
+The screen renders placeholder rows today and is labelled as a preview, so
+nothing is exposed right now. The point is about what happens when it is
+promoted. See CQ-A13 in the web backlog, which records the same case from the
+frontend side.
 
 **Recommended fix.** A test that enumerates the route table and asserts the
 guard is present on every route under the clinical routers, in the style of the
