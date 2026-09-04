@@ -62,7 +62,7 @@ not executed.
 | BE-A07 | A 500 response bypasses the middleware stack | 🟡 Medium | S | - | ⬜ | | |
 | BE-A08 | Outbox dispatcher cannot run on more than one replica | 🟡 Medium | M | - | ⬜ | | |
 | BE-A09 | `alembic upgrade --sql` crashes a twelfth of the way through | 🟡 Medium | S | - | ⬜ | | |
-| BE-A10 | The clients model expects a table no migration creates | 🔴 Critical | S | - | ⬜ | | |
+| BE-A10 | A revision id was applied, then redefined | 🔴 Critical | S | - | ⬜ | | |
 | BE-A11 | `alembic_version` holds three rows, so `upgrade head` fails | 🔴 Critical | XS | BE-A10 | ⬜ | | |
 
 ### Track B: Test Coverage ([B-coverage.md](./B-coverage.md))

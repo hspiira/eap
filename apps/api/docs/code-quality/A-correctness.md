@@ -437,104 +437,89 @@ the DDL unconditionally.
 
 ---
 
-## BE-A10: The clients model expects a table no migration creates
+## BE-A10: A revision id was applied, then redefined
 
 **Severity:** 🔴 Critical · **Effort:** S · **Status:** ⬜ Todo
 
-**Problem.** The client aliases feature has moved from a JSON column to a
-normalised table, but only half of that move exists. The model layer is on the
-new design and the database is on the old one.
+**Problem.** `GET /clients` returns 500. Every client read fails with
+`UndefinedTableError: relation "client_aliases" does not exist`, and because
+`client_model.py` declares `alias_records` with `lazy="selectin"`, that is every
+client read rather than only ones that want aliases. Confirmed offline: the
+relationship's target table is `client_aliases`, and the eager strategy issues a
+second SELECT against it after the primary query.
 
-Verified offline, without touching the shared database:
+The cause is not a missing migration. It is a migration that alembic believes it
+has already run.
+
+`a5b7c9d1e3f4_add_client_aliases.py` has been rewritten three times while
+keeping the same revision id:
+
+| Version | What it does | Applied? |
+|---------|--------------|----------|
+| v1 | `add_column clients.aliases` (JSON) | yes, this is what ran |
+| v2 | `down_revision` became a 3-tuple, making it a merge | no |
+| v3 | creates `client_aliases`, backfills from the JSON column, drops it | no |
+
+The database recorded `a5b7c9d1e3f4` as applied from v1. Alembic consults only
+`alembic_version`, so it considers that revision done and will never run v3, no
+matter how many times anyone runs `upgrade`. State verified read-only against
+the shared database by the session that applied it:
 
 ```
-client_aliases in Base.metadata:        True
-alias_records lazy strategy:            selectin
-clients.aliases column present in model: False
+client_aliases table:   MISSING
+clients.aliases column: present
+alembic_version:        a5b7c9d1e3f4, e1a5b8c3d7f2, e1a5c7b9d3f2
 ```
 
-Three facts together make this a runtime break rather than untidiness:
+So the schema is stuck between two designs: the column the model no longer maps
+is present, and the table the model requires is absent.
 
-1. `app/infrastructure/models/client_alias_model.py` maps `ClientAliasModel` to
-   a table named `client_aliases`, and `models/__init__.py:24` imports it, so it
-   is part of `Base.metadata`.
-2. No migration creates `client_aliases`. The only aliases migration,
-   `a5b7c9d1e3f4_add_client_aliases.py`, adds a JSON column `clients.aliases`
-   and nothing else.
-3. `client_model.py` declares `alias_records` with `lazy="selectin"`, so every
-   load of a `ClientModel` eagerly issues a second SELECT against
-   `client_aliases`. Not only queries that ask for aliases; every client query.
+**Recommended fix.** Not "write the migration"; v3 already does exactly what is
+needed, including the cascade foreign key and the unique index on
+`(tenant_id, normalized_alias)`. The fix is to make alembic run it: delete the
+`a5b7c9d1e3f4` row from `alembic_version`, leaving its two parents, then
+`alembic upgrade head`. The merge then applies, consumes both parents, creates
+the table, backfills and drops the column. That repairs the schema and the
+three-row bookkeeping in BE-A09 in one pass rather than two.
 
-So any client read against the current database fails on a table that does not
-exist. And the column that was added is now orphaned: `clients.aliases` is
-mapped by nothing, because the model no longer declares it.
+It is a write to a shared database and belongs to whoever owns the feature.
 
-**Why it matters beyond the break.** BE-A09 records that
-`a5b7c9d1e3f4` was applied to the shared database to fix what was believed to be
-a live `UndefinedColumnError`. That diagnosis was for the older design. Applying
-it added a column nothing uses and did not create the table that is actually
-missing, so the break it was meant to fix is still there in a different form.
+**The transferable hazard.** A revision id that is applied and then redefined
+leaves the database marked done for work that never ran, and nothing in alembic
+will ever notice, because the version table is the only thing it consults. This
+is worse than a missing migration, which at least fails loudly. Two habits
+prevent it:
 
-**Recommended fix.** Decide which design is intended first; the fix differs
-completely.
+- Commit a migration before running it anywhere shared. This file is still
+  untracked, so it can change a fourth time, and the record of what actually ran
+  exists nowhere.
+- Never edit a revision that has been applied. Write a new one.
 
-- If aliases are a table, write the migration that creates `client_aliases`
-  with its tenant-scoped unique index on `(tenant_id, normalized_alias)` and the
-  `clients.id` foreign key with `ondelete="CASCADE"`, and drop the now-unused
-  `clients.aliases` column in the same revision.
-- If aliases stay a JSON column, delete `client_alias_model.py`, remove it from
-  `models/__init__.py`, and drop `alias_records` from `client_model.py`.
-
-Either way `lazy="selectin"` deserves a second look. It makes every client
-query pay for aliases whether or not the caller wants them, which is the eager
-loading that `C-structure.md` records as deliberately absent everywhere else in
-this codebase.
+**A second fragility in v3.** It imports `normalize_client_alias` from
+`app.shared.utils.client_alias` and `generate_cuid` from
+`app.shared.utils.generators`. A migration is a historical record and should be
+self-contained; importing live application code means its behaviour changes as
+that code changes, and it breaks outright if the module moves. `client_alias.py`
+is itself untracked. Inline both helpers.
 
 **Acceptance criteria**
 
-- [ ] The model layer and the migration history agree on one design.
-- [ ] A client read succeeds against a freshly migrated database.
-- [ ] No mapped table lacks a migration, asserted by a test that compares
-      `Base.metadata.tables` against the tables the migrations create.
-- [ ] `clients.aliases` is either mapped or dropped, not orphaned.
+- [ ] `GET /clients` returns 200 against a migrated database.
+- [ ] `alembic_version` holds one row.
+- [ ] The migration is committed before it is applied anywhere shared.
+- [ ] The migration does not import from `app.`.
+- [ ] A test compares `Base.metadata.tables` against the tables the migrations
+      create, so a mapped table with no migration fails in CI rather than at
+      runtime.
 
-**Ownership.** Not written by this session. The file mtimes put the CSV import
-work at 23:51 to 23:54 on 2026-09-04 and `client_model.py` at 00:17 on 09-05.
-The owner was still unidentified when this was filed; see the handoff note in
-the README.
+**Ownership.** Not this session. File mtimes put the CSV import work at 23:51 to
+23:54 on 2026-09-04 and `client_model.py` at 00:17 on 09-05; the owner was still
+unidentified when this was filed.
 
-**This cannot fix itself, which is the part that makes it urgent.** The
-migration file was rewritten at 00:21 on 09-05 and now does the right thing: it
-creates `client_aliases`, copies the JSON values across, and drops
-`clients.aliases`. That work will never run. Revision `a5b7c9d1e3f4` is already
-recorded in `alembic_version`, stamped when the file's contents were still
-"add a JSON column", so `alembic upgrade` considers it done and skips it.
-
-Verified read-only against the shared database:
-
-| | State |
-|---|---|
-| `client_aliases` table | does not exist |
-| `clients.aliases` column | present |
-| `a5b7c9d1e3f4` in `alembic_version` | applied |
-
-So the database is pinned to the old design while the model expects the new one,
-and no ordinary migration command closes the gap. Repairing it means either
-stamping the revision back and re-running it, or writing a follow-up revision
-that does the create-and-copy. That is a decision for the feature's owner, and
-it has to be sequenced with the `alembic_version` row repair in BE-A11, because
-both touch the same bookkeeping.
-
-That revision id has now carried three different definitions in one evening:
-add a JSON column with a single parent, the same with three parents, and
-create-table-and-drop-column with three parents. One of the three is what the
-database recorded. An applied revision is a fact about a database, so editing
-one after it has run makes the file and the database disagree permanently.
-
-The rewritten migration also calls `sa.inspect(bind)` at line 44, which is the
-exact pattern BE-A09 records as breaking `alembic upgrade --sql`. So the offline
-render stays broken, and the acceptance criterion there should be checked
-against this file too.
+**Correction.** The first version of this entry said no migration created
+`client_aliases` and that someone needed to write one. That was true when
+checked at 00:18 and false three minutes later, because the file changed again
+at 00:21. Caught by eap-85. The diagnosis above replaces it.
 
 ---
 
