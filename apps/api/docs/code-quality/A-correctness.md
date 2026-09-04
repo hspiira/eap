@@ -378,6 +378,74 @@ the DDL unconditionally.
 
 ---
 
+## BE-A10: The clients model expects a table no migration creates
+
+**Severity:** 🔴 Critical · **Effort:** S · **Status:** ⬜ Todo
+
+**Problem.** The client aliases feature has moved from a JSON column to a
+normalised table, but only half of that move exists. The model layer is on the
+new design and the database is on the old one.
+
+Verified offline, without touching the shared database:
+
+```
+client_aliases in Base.metadata:        True
+alias_records lazy strategy:            selectin
+clients.aliases column present in model: False
+```
+
+Three facts together make this a runtime break rather than untidiness:
+
+1. `app/infrastructure/models/client_alias_model.py` maps `ClientAliasModel` to
+   a table named `client_aliases`, and `models/__init__.py:24` imports it, so it
+   is part of `Base.metadata`.
+2. No migration creates `client_aliases`. The only aliases migration,
+   `a5b7c9d1e3f4_add_client_aliases.py`, adds a JSON column `clients.aliases`
+   and nothing else.
+3. `client_model.py` declares `alias_records` with `lazy="selectin"`, so every
+   load of a `ClientModel` eagerly issues a second SELECT against
+   `client_aliases`. Not only queries that ask for aliases; every client query.
+
+So any client read against the current database fails on a table that does not
+exist. And the column that was added is now orphaned: `clients.aliases` is
+mapped by nothing, because the model no longer declares it.
+
+**Why it matters beyond the break.** BE-A09 records that
+`a5b7c9d1e3f4` was applied to the shared database to fix what was believed to be
+a live `UndefinedColumnError`. That diagnosis was for the older design. Applying
+it added a column nothing uses and did not create the table that is actually
+missing, so the break it was meant to fix is still there in a different form.
+
+**Recommended fix.** Decide which design is intended first; the fix differs
+completely.
+
+- If aliases are a table, write the migration that creates `client_aliases`
+  with its tenant-scoped unique index on `(tenant_id, normalized_alias)` and the
+  `clients.id` foreign key with `ondelete="CASCADE"`, and drop the now-unused
+  `clients.aliases` column in the same revision.
+- If aliases stay a JSON column, delete `client_alias_model.py`, remove it from
+  `models/__init__.py`, and drop `alias_records` from `client_model.py`.
+
+Either way `lazy="selectin"` deserves a second look. It makes every client
+query pay for aliases whether or not the caller wants them, which is the eager
+loading that `C-structure.md` records as deliberately absent everywhere else in
+this codebase.
+
+**Acceptance criteria**
+
+- [ ] The model layer and the migration history agree on one design.
+- [ ] A client read succeeds against a freshly migrated database.
+- [ ] No mapped table lacks a migration, asserted by a test that compares
+      `Base.metadata.tables` against the tables the migrations create.
+- [ ] `clients.aliases` is either mapped or dropped, not orphaned.
+
+**Ownership.** Not written by this session. The file mtimes put the CSV import
+work at 23:51 to 23:54 on 2026-09-04 and `client_model.py` at 00:17 on 09-05.
+The owner was still unidentified when this was filed; see the handoff note in
+the README.
+
+---
+
 ## BE-A08: Outbox dispatcher cannot run on more than one replica
 
 **Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo
