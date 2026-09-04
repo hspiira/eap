@@ -451,14 +451,27 @@ visible the next time a value is corrected. Examples: `payment_frequency` and `p
 `routes/persons/index.tsx`, `region`, `panel_status`, `tier` and `accreditation_status` across
 both providers routes, and the `Status is ${searchParams.status}` filter chips on five list routes.
 
-**Known limit in the helper.** `getStatusLabel` splits on a lower-to-upper boundary, so an embedded
-acronym is lost: `CISMFollowUp` becomes "Cismfollow Up" and `CISMResponse` becomes "Cismresponse".
-`CaseReferralSource` and `ClinicalNoteType` both carry CISM values, so neither can be routed through
-the helper as it stands. `src/utils/statusLabel.test.ts` pins this behaviour so a future fix has a
-failing case to flip rather than discovering it in the UI.
+**Guard added.** `src/utils/statusLabel.test.ts` now asserts that labelling round-trips for every
+PascalCase value of every enum: removing the spaces from the label returns the wire value exactly.
+That is 252 values across 57 enums, so a new member is covered without anyone writing a case. It
+catches both failure modes this helper has shipped, words left glued and an acronym flattened.
+Verified by restoring the previous helper, which fails it. The narrower "contains no case boundary"
+assertions do not catch the second mode, because `Cismresponse` has no boundary left to find.
 
-**Recommended fix.** Two parts, in order. First teach `getStatusLabel` to preserve a run of capitals
-so the CISM values survive. Then sweep the remaining raw renders, per module rather than in one pass,
+**One display question this raised.** Preserving a run of capitals means a value that is entirely
+capitals is now left alone, so `ActivityType` values render as `CALL` and `EMAIL` rather than `Call`
+and `Email`. That is correct for `DAP` and `SOAP`, and shouty for the rest.
+`components/ClientActivityCard.tsx:93` renders `activity_type` raw as a fallback title, so it
+already shows the capitals; routing it through the helper would not fix it. Those enums want a label
+map rather than a derived label, which is a copy decision.
+
+**Previous limit, now fixed.** `getStatusLabel` splits on a lower-to-upper boundary, so an embedded
+acronym is lost: `CISMFollowUp` becomes "Cismfollow Up" and `CISMResponse` becomes "Cismresponse".
+`CaseReferralSource` and `ClinicalNoteType` both carry CISM values. Fixed in `c1823a8`, which
+splits on the boundary between an acronym and a following word and preserves an all-capital word,
+so these now read `CISM Follow Up` and `CISM Response`.
+
+**Recommended fix.** Two parts, in order. Sweep the remaining raw renders, per module rather than in one pass,
 since three sessions share this tree. A lint rule barring a bare enum-typed field inside JSX braces
 would prevent recurrence, but the enum drift guard added in `a7bbd31` only checks values against the
 contract, not how they are displayed.
