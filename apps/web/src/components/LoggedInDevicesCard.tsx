@@ -53,10 +53,7 @@ export const SAMPLE_SESSIONS: ReadonlyArray<ActiveSession> = [
   },
 ]
 
-export function LoggedInDevicesCard({
-  sessions,
-  className,
-}: LoggedInDevicesCardProps) {
+export function LoggedInDevicesCard({ sessions, className }: LoggedInDevicesCardProps) {
   return (
     <Card className={cn("rounded-md", className)}>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
