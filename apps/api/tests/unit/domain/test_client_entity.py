@@ -255,6 +255,7 @@ class TestClientSuspension:
         active_client.suspend("Payment overdue")
 
         assert active_client.status == BaseStatus.INACTIVE
+        assert active_client.suspension_reason == "Payment overdue"
         assert any(isinstance(e, ClientSuspended) for e in active_client.events)
 
     def test_suspend_without_reason_raises_error(self, active_client):
@@ -360,13 +361,29 @@ class TestClientRestore:
 
     def test_restore_deleted_client_raises_error(self, deleted_client):
         """Test that restoring deleted client raises DomainError."""
-        with pytest.raises(DomainError, match="Cannot restore deleted client"):
+        with pytest.raises(DomainError, match="Only archived clients"):
             deleted_client.restore()
 
     def test_restore_active_client_raises_error(self, active_client):
         """Test that restoring active client raises DomainError."""
-        with pytest.raises(DomainError, match="Client is already active"):
+        with pytest.raises(DomainError, match="Only archived clients"):
             active_client.restore()
+
+    def test_restore_inactive_client_raises_error(self, client_id, tenant_id, contact_info, now):
+        inactive_client = ClientEntity(
+            id=client_id,
+            tenant_id=tenant_id,
+            name="Inactive Corp",
+            code="INA",
+            contact_info=contact_info,
+            status=BaseStatus.INACTIVE,
+            is_verified=False,
+            created_at=now,
+            updated_at=now,
+        )
+
+        with pytest.raises(DomainError, match="Only archived clients"):
+            inactive_client.restore()
 
 
 # =============================================================================

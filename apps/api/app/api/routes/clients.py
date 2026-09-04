@@ -50,7 +50,7 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier
+from app.domain.enums import BaseStatus, ClientTier, ContractStatus
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -104,6 +104,7 @@ def _to_client_response(client: ClientEntity) -> ClientResponse:
         parent_client_id=client.parent_client_id.value if client.parent_client_id else None,
         preferred_contact_method=client.preferred_contact_method,
         tier=client.tier,
+        suspension_reason=client.suspension_reason,
         is_active=client.is_active(),
     )
 
@@ -442,6 +443,7 @@ async def list_clients(
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
     tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
@@ -457,6 +459,7 @@ async def list_clients(
         status=status,
         is_verified=is_verified,
         tier=tier,
+        include_archived=include_archived,
         search=search,
         limit=pg.limit,
         offset=pg.offset,
@@ -469,6 +472,7 @@ async def list_clients(
         status=status,
         is_verified=is_verified,
         tier=tier,
+        include_archived=include_archived,
         search=search,
     )
 
@@ -557,13 +561,19 @@ async def get_client_stats(
     child_result = await db.execute(child_clients_stmt)
     child_clients_count = int(child_result.scalar() or 0)
 
-    # Count total contracts
-    contracts = await contract_repo.get_by_client_id(client.tenant_id, client.id)
-    total_contracts_count = len(contracts)
-
-    # Count active contracts
-    active_contract = await contract_repo.get_active_by_client_id(client.tenant_id, client.id)
-    active_contracts_count = 1 if active_contract else 0
+    total_contracts_count = await contract_repo.count(
+        client.tenant_id,
+        client_id=client.id,
+    )
+    active_contracts_count = await contract_repo.count(
+        client.tenant_id,
+        client_id=client.id,
+        status=ContractStatus.ACTIVE,
+    ) + await contract_repo.count(
+        client.tenant_id,
+        client_id=client.id,
+        status=ContractStatus.RENEWED,
+    )
 
     return ClientStatsResponse(
         client_id=client_id,
@@ -597,7 +607,9 @@ async def get_child_clients(
         ClientModel.parent_client_id == client_id,
         ClientModel.deleted_at.is_(None),
     )
-    stmt = stmt.order_by(ClientModel.created_at.desc()).limit(pg.limit).offset(pg.offset)
+    stmt = stmt.order_by(
+        ClientModel.created_at.desc(), ClientModel.id.desc()
+    ).limit(pg.limit).offset(pg.offset)
 
     result = await db.execute(stmt)
     models = result.scalars().all()

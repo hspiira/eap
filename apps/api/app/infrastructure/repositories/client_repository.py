@@ -78,6 +78,7 @@ class ClientRepositoryImpl(
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        include_archived: bool = False,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -93,6 +94,10 @@ class ClientRepositoryImpl(
         if tier is not None:
             filters["tier"] = tier
 
+        extra_conditions = []
+        if not include_archived and status is None:
+            extra_conditions.append(ClientModel.status != BaseStatus.ARCHIVED)
+
         return await self._query_all(
             tenant_id=tenant_id.value,
             limit=limit,
@@ -102,6 +107,7 @@ class ClientRepositoryImpl(
             filters=filters,
             search=search,
             search_fields=["name"],
+            extra_conditions=extra_conditions,
         )
 
     async def count(
@@ -110,6 +116,7 @@ class ClientRepositoryImpl(
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        include_archived: bool = False,
         search: str | None = None,
     ) -> int:
         """Count clients matching filters."""
@@ -121,9 +128,14 @@ class ClientRepositoryImpl(
         if tier is not None:
             filters["tier"] = tier
 
+        extra_conditions = []
+        if not include_archived and status is None:
+            extra_conditions.append(ClientModel.status != BaseStatus.ARCHIVED)
+
         return await self._count_all(
             tenant_id=tenant_id.value,
             filters=filters,
             search=search,
             search_fields=["name"],
+            extra_conditions=extra_conditions,
         )

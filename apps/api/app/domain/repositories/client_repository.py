@@ -46,6 +46,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        include_archived: bool = False,
         search: str | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -61,6 +62,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        include_archived: bool = False,
         search: str | None = None,
     ) -> int:
         """Count clients matching filters."""

@@ -97,8 +97,6 @@ class ClientUpdate(BaseModel):
         None, description="Preferred contact method"
     )
     tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
-
-
 class ClientUpdateTier(BaseModel):
     """Request schema for updating client engagement tier."""
 
@@ -137,6 +135,7 @@ class ClientResponse(BaseModel):
         None, description="Preferred contact method"
     )
     tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
+    suspension_reason: str | None = Field(None, description="Reason for suspension")
     is_active: bool = Field(..., description="Whether client is active")
 
     model_config = ConfigDict(from_attributes=True)

@@ -79,6 +79,7 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     tier: Mapped[ClientTier | None] = mapped_column(
         EnumValueType(ClientTier), nullable=True, index=True
     )
+    suspension_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     def __repr__(self) -> str:
         return f"<ClientModel(id={self.id}, name={self.name}, status={self.status})>"

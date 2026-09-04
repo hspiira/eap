@@ -47,6 +47,7 @@ class ClientEntity:
     parent_client_id: ClientId | None = None
     preferred_contact_method: ContactMethod | None = None
     tier: ClientTier | None = None
+    suspension_reason: str | None = None
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
@@ -66,6 +67,7 @@ class ClientEntity:
         if self.status == BaseStatus.ACTIVE:
             raise DomainError("Client is already active")
         self.status = BaseStatus.ACTIVE
+        self.suspension_reason = None
         self.updated_at = utc_now()
         self.events.append(ClientActivated(occurred_at=utc_now(), client_id=self.id))
 
@@ -76,6 +78,7 @@ class ClientEntity:
         if self.status == BaseStatus.INACTIVE:
             raise DomainError("Client is already inactive")
         self.status = BaseStatus.INACTIVE
+        self.suspension_reason = None
         self.updated_at = utc_now()
         self.events.append(
             ClientDeactivated(
@@ -92,6 +95,7 @@ class ClientEntity:
         if self.status == BaseStatus.INACTIVE:
             raise DomainError("Client is already inactive")
         self.status = BaseStatus.INACTIVE
+        self.suspension_reason = reason.strip()
         self.updated_at = utc_now()
         self.events.append(ClientSuspended(occurred_at=utc_now(), client_id=self.id, reason=reason))
 
@@ -118,19 +122,11 @@ class ClientEntity:
         self.updated_at = utc_now()
 
     def restore(self) -> None:
-        """Restore archived or soft-deleted client"""
-        if self.status == BaseStatus.DELETED:
-            raise DomainError("Cannot restore deleted client")
-        # Check if client is already active and not deleted
-        if self.status == BaseStatus.ACTIVE and self.deleted_at is None:
-            raise DomainError("Client is already active and does not need restoration")
-        # Restore soft-deleted client
-        if self.deleted_at:
-            self.deleted_at = None
-            self.status = BaseStatus.INACTIVE
-        # Restore archived client
-        if self.status == BaseStatus.ARCHIVED:
-            self.status = BaseStatus.ACTIVE
+        """Restore an archived client to active operation."""
+        if self.status != BaseStatus.ARCHIVED:
+            raise DomainError("Only archived clients can be restored")
+        self.status = BaseStatus.ACTIVE
+        self.suspension_reason = None
         self.updated_at = utc_now()
 
     def update_name(self, name: str) -> None:
