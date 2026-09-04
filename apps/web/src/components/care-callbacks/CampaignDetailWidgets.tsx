@@ -66,7 +66,7 @@ export function Hero({ campaign, client }: { campaign: CallbackCampaign; client:
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg/45">{client.code}</span>
+          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -121,7 +121,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                     {c.counsellor_id}
                   </Link>
                 ) : (
-                  <span className="text-xs text-fg/45">Unassigned</span>
+                  <span className="text-xs text-fg-subtle">Unassigned</span>
                 )}
               </TableCell>
               <TableCell>
@@ -138,13 +138,15 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                   ) : null}
                 </div>
               </TableCell>
-              <TableCell className="font-mono text-xs text-fg/75">{c.contact_attempts}</TableCell>
+              <TableCell className="tabular-nums text-xs text-fg/75">
+                {c.contact_attempts}
+              </TableCell>
               <TableCell className="text-right">
                 <Link
                   to="/care-callbacks/worklist/$caseId"
                   params={{ caseId: c.id }}
                   aria-label="Open case"
-                  className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                  className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
                 >
                   <ChevronRight className="size-3.5" />
                 </Link>
@@ -223,8 +225,8 @@ export function AggregatePanel({
             {aggregate.question_summaries.map((s) => (
               <TableRow key={s.question_key} className="border-fg/8">
                 <TableCell className="px-2 py-1.5">{s.prompt}</TableCell>
-                <TableCell className="px-2 py-1.5 text-right font-mono">{s.n}</TableCell>
-                <TableCell className="px-2 py-1.5 text-right font-mono">
+                <TableCell className="px-2 py-1.5 text-right tabular-nums">{s.n}</TableCell>
+                <TableCell className="px-2 py-1.5 text-right tabular-nums">
                   {s.mean !== null && s.mean !== undefined
                     ? s.mean.toFixed(2)
                     : s.histogram
@@ -347,7 +349,7 @@ export function DetailRail({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg/55">{client.code}</p>
+              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>
@@ -473,7 +475,7 @@ export function CounsellorPoolDialog({
         />
         <div className="max-h-44 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
           {items.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-fg/55">
+            <p className="px-3 py-2 text-xs text-fg-muted">
               {debounced ? "No users match." : "Start typing to search users."}
             </p>
           ) : (
@@ -570,7 +572,7 @@ export function EnrolDialog({
         />
         <div className="max-h-52 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
           {items.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-fg/55">
+            <p className="px-3 py-2 text-xs text-fg-muted">
               {debounced ? "No persons match." : "Start typing to search persons."}
             </p>
           ) : (

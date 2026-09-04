@@ -269,7 +269,7 @@ function ServiceSessionDetailPage() {
                     {session.notes ? (
                       <p className="text-sm text-fg whitespace-pre-wrap">{session.notes}</p>
                     ) : (
-                      <p className="text-xs text-fg/55">No notes recorded.</p>
+                      <p className="text-xs text-fg-muted">No notes recorded.</p>
                     )}
                   </DetailCard>
 
@@ -290,11 +290,11 @@ function ServiceSessionDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(person)}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
+                          <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg/55">Loading person…</p>
+                      <p className="text-xs text-fg-muted">Loading person…</p>
                     )}
                   </DetailCard>
 
@@ -313,7 +313,7 @@ function ServiceSessionDetailPage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                          <p className="truncate text-[11px] text-fg/55">
+                          <p className="truncate text-[11px] text-fg-muted">
                             {service.service_type ?? "—"}
                           </p>
                         </div>
@@ -331,15 +331,15 @@ function ServiceSessionDetailPage() {
                           <p className="truncate font-mono text-sm font-medium text-fg">
                             {provider.id}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">
+                          <p className="truncate text-[11px] text-fg-muted">
                             {provider.provider_profile.tier} · {provider.provider_profile.region}
                           </p>
                         </div>
                       </div>
                     ) : session.provider_id ? (
-                      <p className="text-xs text-fg/55">Loading provider…</p>
+                      <p className="text-xs text-fg-muted">Loading provider…</p>
                     ) : (
-                      <p className="text-xs text-fg/55">No provider assigned.</p>
+                      <p className="text-xs text-fg-muted">No provider assigned.</p>
                     )}
                   </DetailCard>
 

@@ -313,7 +313,7 @@ function CampaignDetail({
                     }
                   >
                     {campaign.counsellor_pool.length === 0 ? (
-                      <p className="text-xs text-fg/55">No counsellors assigned.</p>
+                      <p className="text-xs text-fg-muted">No counsellors assigned.</p>
                     ) : (
                       <ul className="space-y-1.5">
                         {campaign.counsellor_pool.map((id) => (

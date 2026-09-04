@@ -81,7 +81,7 @@ export function Hero({
       <StatusBadge status={session.status} />
       <span
         title="Notes and feedback are encrypted at rest"
-        className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm border border-fg/15 bg-surface px-1.5 py-0.5 text-[10px] text-fg/55"
+        className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm border border-fg/15 bg-surface px-1.5 py-0.5 text-[10px] text-fg-muted"
       >
         <Lock className="size-2.5" aria-hidden />
         Encrypted record
@@ -119,7 +119,7 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg/55">{service.service_type ?? "—"}</p>
+                <p className="truncate text-[11px] text-fg-muted">{service.service_type ?? "—"}</p>
               </div>
             </Link>
           ) : null}
@@ -137,7 +137,7 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{displayName(person)}</p>
-                <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
+                <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
               </div>
             </Link>
           ) : null}

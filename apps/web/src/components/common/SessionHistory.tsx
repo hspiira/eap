@@ -88,7 +88,7 @@ export function SessionHistory({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">{sessions.length} recent sessions.</p>
+        <p className="text-xs text-fg-muted">{sessions.length} recent sessions.</p>
         {personId ? (
           <Link
             to="/service-sessions"
@@ -126,7 +126,7 @@ export function SessionHistory({
                     to="/service-sessions/$sessionId"
                     params={{ sessionId: s.id }}
                     aria-label="Open session"
-                    className="inline-flex text-fg/40 hover:text-primary"
+                    className="inline-flex text-fg-subtle hover:text-primary"
                   >
                     <ChevronRight className="size-4" />
                   </Link>

@@ -275,7 +275,7 @@ function ServiceRow({ row }: { row: Service }) {
               {row.name}
             </span>
             {row.description ? (
-              <span className="block truncate text-xs text-fg/55">{row.description}</span>
+              <span className="block truncate text-xs text-fg-muted">{row.description}</span>
             ) : null}
           </span>
         </Link>
@@ -286,13 +286,13 @@ function ServiceRow({ row }: { row: Service }) {
             {humanizeServiceType(row.service_type)}
           </span>
         ) : (
-          <span className="text-fg/40">—</span>
+          <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="font-mono text-sm text-fg/75">
+      <TableCell className="tabular-nums text-sm text-fg/75">
         {row.duration_minutes != null ? `${row.duration_minutes}m` : "—"}
       </TableCell>
       <TableCell>
@@ -301,7 +301,7 @@ function ServiceRow({ row }: { row: Service }) {
             {row.max_participants != null ? `Up to ${row.max_participants}` : "Group"}
           </span>
         ) : (
-          <span className="text-xs text-fg/55">Individual</span>
+          <span className="text-xs text-fg-muted">Individual</span>
         )}
       </TableCell>
       <TableCell className="text-right">

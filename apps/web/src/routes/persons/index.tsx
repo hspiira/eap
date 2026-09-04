@@ -333,7 +333,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
               {fullName}
             </span>
             {row.employment_info?.role ? (
-              <span className="block truncate text-xs text-fg/55">
+              <span className="block truncate text-xs text-fg-muted">
                 {row.employment_info.role}
                 {row.employment_info.department ? ` · ${row.employment_info.department}` : ""}
               </span>
@@ -359,12 +359,12 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
           <Link
             to="/clients/$clientId"
             params={{ clientId: row.employment_info.client_id }}
-            className="font-mono text-xs text-fg/40 hover:text-primary"
+            className="font-mono text-xs text-fg-subtle hover:text-primary"
           >
             {row.employment_info.client_id.slice(0, 8)}
           </Link>
         ) : (
-          <span className="text-fg/40">—</span>
+          <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
       <TableCell>
@@ -380,9 +380,9 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
             {linkedUser.email}
           </Link>
         ) : row.user_id ? (
-          <span className="font-mono text-xs text-fg/40">{row.user_id.slice(0, 8)}</span>
+          <span className="font-mono text-xs text-fg-subtle">{row.user_id.slice(0, 8)}</span>
         ) : (
-          <span className="text-fg/40">—</span>
+          <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
       <TableCell className="text-right">

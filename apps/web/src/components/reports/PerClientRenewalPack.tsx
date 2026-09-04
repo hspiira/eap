@@ -66,7 +66,7 @@ export function PerClientRenewalPack() {
 export function RenewalPackHeader({ data }: { data: RenewalPackData }) {
   return (
     <section>
-      <p className="text-[11px] font-semibold tracking-wide text-fg/55">Renewal pack</p>
+      <p className="text-[11px] font-semibold tracking-wide text-fg-muted">Renewal pack</p>
       <h2 className="mt-1 text-2xl font-semibold text-fg">{data.client.name}</h2>
       <dl className="mt-4 grid gap-4 sm:grid-cols-3">
         <Field label="Period" value={data.period} />
@@ -91,7 +91,7 @@ export function SessionsByMonth({ data }: { data: RenewalPackData }) {
                 style={{ width: `${Math.round((m.count / max) * 100)}%` }}
               />
             </span>
-            <span className="text-right font-mono text-xs text-fg">{m.count}</span>
+            <span className="text-right tabular-nums text-xs text-fg">{m.count}</span>
           </li>
         ))}
       </ul>
@@ -112,7 +112,7 @@ export function DiagnosisPrevalence({ data }: { data: RenewalPackData }) {
               <span className="block h-2 rounded-sm bg-fg/8" aria-hidden>
                 <span className="block h-full bg-danger" style={{ width: `${pct}%` }} />
               </span>
-              <span className="text-right font-mono text-xs text-fg">{pct}%</span>
+              <span className="text-right tabular-nums text-xs text-fg">{pct}%</span>
             </li>
           )
         })}
@@ -140,8 +140,8 @@ export function CareCallbackOutcomes({ data }: { data: RenewalPackData }) {
           {data.careCallbacks.map((row) => (
             <TableRow key={row.outcome} className="border-fg/10">
               <TableCell className="py-2 pr-3 text-fg">{row.outcome}</TableCell>
-              <TableCell className="py-2 pr-3 font-mono text-fg">{row.count}</TableCell>
-              <TableCell className="py-2 font-mono text-fg/65">{row.share}%</TableCell>
+              <TableCell className="py-2 pr-3 tabular-nums text-fg">{row.count}</TableCell>
+              <TableCell className="py-2 tabular-nums text-fg/65">{row.share}%</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -156,8 +156,8 @@ export function SatisfactionDistribution({ data }: { data: RenewalPackData }) {
       <ul className="mt-3 grid grid-cols-5 gap-2 text-center">
         {data.satisfaction.map((s) => (
           <li key={s.bucket} className="rounded-sm border border-fg/15 bg-bg p-2 print:bg-white">
-            <div className="text-[10px] font-semibold tracking-wide text-fg/55">{s.bucket}</div>
-            <div className="mt-1 font-mono text-lg font-semibold text-fg">{s.count}</div>
+            <div className="text-[10px] font-semibold tracking-wide text-fg-muted">{s.bucket}</div>
+            <div className="mt-1 tabular-nums text-lg font-semibold text-fg">{s.count}</div>
           </li>
         ))}
       </ul>

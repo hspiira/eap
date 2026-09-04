@@ -197,15 +197,13 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
               <Skeleton className="h-6 w-10" />
             ) : kpi.error ? (
               <span
-                className="font-mono text-xl font-semibold tabular-nums text-fg-subtle"
+                className="text-xl font-semibold tabular-nums text-fg-subtle"
                 title="Failed to load"
               >
                 —
               </span>
             ) : (
-              <span className="font-mono text-xl font-semibold tabular-nums text-fg">
-                {kpi.value}
-              </span>
+              <span className="text-xl font-semibold tabular-nums text-fg">{kpi.value}</span>
             )}
             {kpi.delta ? (
               <Badge
@@ -217,7 +215,7 @@ function KpiStrip({ kpis }: { kpis: ReadonlyArray<KpiSpec> }) {
                       : "outline"
                 }
                 size="sm"
-                className="font-mono tabular-nums"
+                className="tabular-nums"
               >
                 {kpi.delta.direction === "up" ? "↑" : "↓"} {kpi.delta.value}
               </Badge>

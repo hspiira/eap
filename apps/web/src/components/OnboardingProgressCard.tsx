@@ -74,7 +74,7 @@ export function OnboardingProgressCard({
               />
             </div>
           </div>
-          <span className="font-mono text-xs font-medium tabular-nums text-fg">{percent}%</span>
+          <span className="text-xs font-medium tabular-nums text-fg">{percent}%</span>
         </div>
 
         <ol className="grid gap-1.5">
@@ -126,7 +126,7 @@ export function OnboardingProgressCard({
             onClick={() => onStartStep?.(nextStep)}
           >
             Continue setup
-            <span className="inline-flex size-5 items-center justify-center rounded-sm bg-primary font-mono text-xs font-medium tabular-nums text-primary-foreground">
+            <span className="inline-flex size-5 items-center justify-center rounded-sm bg-primary text-xs font-medium tabular-nums text-primary-foreground">
               {remaining}
             </span>
           </Button>

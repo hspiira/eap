@@ -69,10 +69,10 @@ export function Hero({
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg/45">{client.code}</span>
+          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
-      <span className="font-mono text-xs text-fg/55">{engagement.engagement_type}</span>
+      <span className="font-mono text-xs text-fg-muted">{engagement.engagement_type}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <EngagementStatusPill status={engagement.status} />
       {overdue ? (
@@ -142,7 +142,7 @@ export function DeliverablesPanel({
   return (
     <DetailCard title="Deliverables">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className="text-xs text-fg/55">
+        <p className="text-xs text-fg-muted">
           {deliverables.length} deliverable{deliverables.length === 1 ? "" : "s"}
         </p>
         <Button
@@ -203,7 +203,7 @@ export function DeliverablesPanel({
             <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-fg">{d.title}</p>
-                <p className="truncate text-xs text-fg/55">
+                <p className="truncate text-xs text-fg-muted">
                   {d.due_date ? `Due ${formatDate(d.due_date)}` : "No due date"}
                   {d.submitted_at ? ` · submitted ${formatDate(d.submitted_at)}` : ""}
                 </p>
@@ -285,7 +285,7 @@ export function HoursPanel({
 
   return (
     <DetailCard title="Hours log">
-      <p className="mb-3 text-xs text-fg/55">
+      <p className="mb-3 text-xs text-fg-muted">
         Hours roll up into the engagement totals. Tag a deliverable to keep utilisation per
         artefact.
       </p>
@@ -298,7 +298,7 @@ export function HoursPanel({
           min={0.25}
           step={0.25}
           placeholder="Hours"
-          className="font-mono"
+          className="tabular-nums"
           value={hours}
           onChange={(e) => setHours(e.target.value)}
         />
@@ -361,7 +361,7 @@ export function HoursPanel({
               {entries.map((e) => (
                 <TableRow key={e.id} className="border-fg/8 last:border-0">
                   <TableCell className="px-3 py-2">{formatDate(e.occurred_on)}</TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono">
+                  <TableCell className="px-3 py-2 text-right tabular-nums">
                     {e.hours.toFixed(2)}
                   </TableCell>
                   <TableCell className="px-3 py-2 font-mono text-xs text-fg/75">
@@ -404,7 +404,7 @@ export function TimelinePanel({
               className="mt-1.5 inline-block size-1.5 -translate-x-[7.5px] rounded-full bg-primary"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium text-fg/55">
+              <p className="text-[11px] font-medium text-fg-muted">
                 {formatDateTime(e.at)} · <span className="font-mono">{e.actor}</span> ·{" "}
                 <TimelineKindPill kind={e.kind} />
               </p>
@@ -478,7 +478,7 @@ export function DetailRail({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg/55">{client.code}</p>
+              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>
@@ -486,7 +486,7 @@ export function DetailRail({
 
       <RailSection title="Lifecycle">
         {allowedTransitions.length === 0 ? (
-          <p className="rounded-sm border border-fg/10 bg-surface px-3 py-2 text-xs text-fg/55">
+          <p className="rounded-sm border border-fg/10 bg-surface px-3 py-2 text-xs text-fg-muted">
             No transitions available from <strong>{engagement.status}</strong>.
           </p>
         ) : (

@@ -32,11 +32,13 @@ export function IndustryDetailsCard({
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold leading-tight text-fg">{industry.name}</h3>
           <div className="mt-1 flex items-center gap-2">
-            <span className="font-mono text-[11px] text-fg/55">{industry.code ?? "no code"}</span>
+            <span className="font-mono text-[11px] text-fg-muted">
+              {industry.code ?? "no code"}
+            </span>
             {industry.level != null ? (
               <>
                 <span className="h-3 w-px bg-fg/20" aria-hidden />
-                <span className="font-mono text-[11px] text-fg/55">L{industry.level}</span>
+                <span className="font-mono text-[11px] text-fg-muted">L{industry.level}</span>
               </>
             ) : null}
           </div>
@@ -56,7 +58,7 @@ export function IndustryDetailsCard({
           size="sm"
           onClick={onClose}
           aria-label="Close details"
-          className="size-7 shrink-0 p-0 text-fg/55"
+          className="size-7 shrink-0 p-0 text-fg-muted"
         >
           <X className="size-4" />
         </Button>
@@ -72,20 +74,20 @@ export function IndustryDetailsCard({
               onSelect={onSelectIndustry}
             />
           ) : (
-            <p className="text-xs text-fg/55">Top-level industry — no parent or children.</p>
+            <p className="text-xs text-fg-muted">Top-level industry — no parent or children.</p>
           )}
         </Section>
 
         <Section title="Metadata">
           <dl className="grid grid-cols-3 gap-x-3 gap-y-2.5">
             <Field label="Code" mono>
-              {industry.code ?? <span className="text-fg/40">—</span>}
+              {industry.code ?? <span className="text-fg-subtle">—</span>}
             </Field>
             <Field label="Level" mono>
               {industry.level != null ? (
                 `L${industry.level}`
               ) : (
-                <span className="text-fg/40">—</span>
+                <span className="text-fg-subtle">—</span>
               )}
             </Field>
             <Field label="Children" mono>
@@ -111,7 +113,7 @@ export function IndustryDetailsCard({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h4 className="text-xs font-semibold tracking-wide text-fg/55">{title}</h4>
+      <h4 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h4>
       {children}
     </section>
   )
@@ -130,7 +132,7 @@ function Field({
 }) {
   return (
     <div className={cn(fullWidth && "col-span-3")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
+      <dt className="text-[11px] font-medium tracking-wide text-fg-muted">{label}</dt>
       <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "font-mono text-xs")}>
         {children}
       </dd>
@@ -187,11 +189,11 @@ function TreeNode({ industry, kind, onSelect }: TreeNodeProps) {
       )}
     >
       <Icon
-        className={cn("size-3.5 shrink-0", kind === "current" ? "text-primary" : "text-fg/40")}
+        className={cn("size-3.5 shrink-0", kind === "current" ? "text-primary" : "text-fg-subtle")}
       />
       <span className="truncate">{industry.name}</span>
       {industry.code ? (
-        <span className="font-mono text-[11px] text-fg/55">{industry.code}</span>
+        <span className="font-mono text-[11px] text-fg-muted">{industry.code}</span>
       ) : null}
     </span>
   )

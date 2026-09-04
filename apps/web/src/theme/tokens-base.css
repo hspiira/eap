@@ -49,9 +49,12 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
 
-  /* Font stacks. Mono is reserved for tabular numerics, IDs, codes, timestamps. */
+  /* Font stacks. Inter Tight matches the landing page (loaded in __root.tsx);
+   * the system stack behind it covers the load window and offline. Mono is
+   * reserved for tabular numerics, IDs, codes, timestamps. */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+    "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue",
+    sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Menlo", "Consolas", monospace;
 
   /* Motion — fast and direct. Reduced motion overrides below. */

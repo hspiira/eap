@@ -205,8 +205,8 @@ function TypographyTokens() {
           ))}
         </div>
       </GallerySpecimen>
-      <GallerySpecimen label="Tabular numerics" source="font-mono + font-feature-settings: 'tnum'">
-        <div className="grid gap-2 font-mono tabular-nums text-fg">
+      <GallerySpecimen label="Tabular numerics" source="tabular-nums">
+        <div className="grid gap-2 tabular-nums text-fg">
           <div className="flex justify-between border-b border-border-subtle py-1">
             <span>Active clients</span>
             <span>1,234</span>

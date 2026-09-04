@@ -33,7 +33,10 @@
   /* Foreground — three levels. Default → muted → subtle. */
   --fg: var(--neutral-900);
   --fg-muted: var(--neutral-600);
-  --fg-subtle: var(--neutral-400);
+  /* Lifted off neutral-400 (#a3a3a3, 2.52:1 on white — well under AA).
+   * #6b6b6b holds 5.33:1 on --bg and 4.89:1 on the lightest panel while
+   * staying visibly lighter than --fg-muted. */
+  --fg-subtle: #6b6b6b;
   --fg-on-brand: var(--neutral-0);
 
   /* Borders — Tegon-style hairlines. Should never compete with content.

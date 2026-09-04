@@ -310,7 +310,7 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
             <KeyRound className="size-3 text-primary" /> Azure
           </span>
         ) : (
-          <span className="text-xs text-fg/55">—</span>
+          <span className="text-xs text-fg-muted">—</span>
         )}
       </TableCell>
       <TableCell className="text-right">

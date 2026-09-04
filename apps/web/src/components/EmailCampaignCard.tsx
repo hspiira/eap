@@ -101,13 +101,11 @@ function SectionBlock({
         !isFirstColumn && totalCols > 1 && "sm:border-l sm:border-l-fg/8",
       )}
     >
-      <div className="text-xs font-semibold tracking-wide text-fg/55">{section.title}</div>
+      <div className="text-xs font-semibold tracking-wide text-fg-muted">{section.title}</div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="font-mono text-2xl font-semibold tabular-nums text-fg">
-          {section.primaryMetric}
-        </span>
+        <span className="text-2xl font-semibold tabular-nums text-fg">{section.primaryMetric}</span>
         {section.primaryHint ? (
-          <span className="text-xs text-fg/45">{section.primaryHint}</span>
+          <span className="text-xs text-fg-subtle">{section.primaryHint}</span>
         ) : null}
       </div>
       <ul className="mt-3 grid gap-1.5">
@@ -121,7 +119,7 @@ function SectionBlock({
               )}
               {r.label}
             </span>
-            <span className="font-mono font-medium tabular-nums text-fg">{r.value}</span>
+            <span className="font-medium tabular-nums text-fg">{r.value}</span>
           </li>
         ))}
       </ul>

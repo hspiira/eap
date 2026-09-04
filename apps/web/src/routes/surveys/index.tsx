@@ -245,7 +245,7 @@ function SurveyRow({
               {row.name}
             </span>
             {row.description ? (
-              <span className="block truncate text-xs text-fg/55">{row.description}</span>
+              <span className="block truncate text-xs text-fg-muted">{row.description}</span>
             ) : null}
           </span>
         </Link>
@@ -255,11 +255,11 @@ function SurveyRow({
       </TableCell>
       <TableCell className="text-sm text-fg/75">
         {formatDate(row.period_start)}
-        <span className="text-fg/40"> – </span>
+        <span className="text-fg-subtle"> – </span>
         {formatDate(row.period_end)}
       </TableCell>
       <TableCell className="text-xs text-fg/75">{row.source}</TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{row.response_count}</TableCell>
+      <TableCell className="tabular-nums text-xs text-fg/75">{row.response_count}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link

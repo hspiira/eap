@@ -91,7 +91,7 @@ export function Tab({ value, children, count, icon: Icon, disabled }: TabProps) 
       {count != null ? (
         <span
           className={cn(
-            "ml-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-sm bg-fg/10 px-1 font-mono text-[10px] text-fg/65",
+            "ml-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-sm bg-fg/10 px-1 tabular-nums text-[10px] text-fg/65",
             selected && "bg-primary/15 text-primary",
           )}
         >

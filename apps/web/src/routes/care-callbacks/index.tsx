@@ -284,7 +284,7 @@ function CampaignRow({
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {row.name}
             </span>
-            <span className="block truncate text-xs text-fg/55">Target: {row.target_count}</span>
+            <span className="block truncate text-xs text-fg-muted">Target: {row.target_count}</span>
           </span>
         </Link>
       </TableCell>
@@ -293,17 +293,19 @@ function CampaignRow({
       </TableCell>
       <TableCell className="text-sm text-fg/75">
         {formatDate(row.period_start)}
-        <span className="text-fg/40"> – </span>
+        <span className="text-fg-subtle"> – </span>
         {formatDate(row.period_end)}
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{row.counsellor_pool.length}</TableCell>
+      <TableCell className="tabular-nums text-xs text-fg/75">
+        {row.counsellor_pool.length}
+      </TableCell>
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
             <span>
               {row.completed_count}/{total}
             </span>
-            <span className="font-mono">{completionPct}%</span>
+            <span className="tabular-nums">{completionPct}%</span>
           </div>
           <div className="mt-1 h-1 w-full overflow-hidden rounded-sm bg-fg/10" aria-hidden>
             <div

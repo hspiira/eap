@@ -248,12 +248,12 @@ function Hero({ survey, client }: { survey: Survey; client: Client | null }) {
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg/45">{client.code}</span>
+          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <SurveyStatusPill status={survey.status} />
-      <span className="font-mono text-xs text-fg/55">{survey.source}</span>
+      <span className="font-mono text-xs text-fg-muted">{survey.source}</span>
     </div>
   )
 }
@@ -321,8 +321,8 @@ function AggregatePanel({
               {aggregate.question_summaries.map((s) => (
                 <TableRow key={s.question_key} className="border-fg/10 last:border-0">
                   <TableCell className="px-3 py-2 text-fg">{s.prompt}</TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono text-fg">{s.n}</TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono text-fg/80">
+                  <TableCell className="px-3 py-2 text-right tabular-nums text-fg">{s.n}</TableCell>
+                  <TableCell className="px-3 py-2 text-right tabular-nums text-fg/80">
                     {s.mean !== null && s.mean !== undefined
                       ? s.mean.toFixed(2)
                       : s.histogram
@@ -380,7 +380,7 @@ function DetailRail({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg/55">{client.code}</p>
+              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>

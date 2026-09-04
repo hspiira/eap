@@ -76,9 +76,11 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
       <Input placeholder={placeholder} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
         {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
+          <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">{debounced ? emptyNoMatch : emptyPrompt}</p>
+          <p className="px-3 py-2 text-xs text-fg-muted">
+            {debounced ? emptyNoMatch : emptyPrompt}
+          </p>
         ) : (
           <ul className="divide-y divide-fg/8">
             {items.map((item) => (
@@ -123,7 +125,7 @@ export function PickerRow({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-fg">{primary}</span>
         {secondary ? (
-          <span className="block truncate font-mono text-[11px] text-fg/55">{secondary}</span>
+          <span className="block truncate font-mono text-[11px] text-fg-muted">{secondary}</span>
         ) : null}
       </span>
     </>

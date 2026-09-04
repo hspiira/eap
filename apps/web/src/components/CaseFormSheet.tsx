@@ -194,7 +194,7 @@ export function EligibleMemberPicker({
 
   if (!clientId) {
     return (
-      <div className="rounded-sm border border-fg/15 bg-surface px-3 py-2 text-sm text-fg/55">
+      <div className="rounded-sm border border-fg/15 bg-surface px-3 py-2 text-sm text-fg-muted">
         Pick a client first
       </div>
     )
@@ -233,9 +233,9 @@ export function EligibleMemberPicker({
       />
       <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
         {isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
+          <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
         ) : filtered.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
+          <p className="px-3 py-2 text-xs text-fg-muted">
             {members.length === 0 ? "No eligible members for this client." : "No members match."}
           </p>
         ) : (

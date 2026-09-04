@@ -64,7 +64,7 @@ export function ActivityFeedCard({ activities, limit = 6 }: ActivityFeedCardProp
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border p-3">
         <div className="flex items-center gap-2">
           <CardTitle className="text-sm font-semibold text-fg">Activity feed</CardTitle>
-          <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+          <Badge variant="secondary" size="sm" className="tabular-nums">
             {activities === undefined && isLoading ? "…" : items.length}
           </Badge>
         </div>
@@ -136,9 +136,7 @@ function ActivityRow({ activity: a }: { activity: Activity }) {
               {a.badge.label}
             </Badge>
           ) : null}
-          <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-fg-subtle">
-            {a.time}
-          </span>
+          <span className="ml-auto shrink-0 text-xs tabular-nums text-fg-subtle">{a.time}</span>
         </div>
         <p className="mt-0.5 text-sm text-fg-muted">{a.description}</p>
         {a.actions ? <div className="mt-2 flex gap-2">{a.actions}</div> : null}

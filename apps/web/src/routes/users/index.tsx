@@ -312,7 +312,7 @@ function UserRow({
             <BadgeCheck className="size-3 text-primary" /> Verified
           </span>
         ) : (
-          <span className="text-xs text-fg/55">Unverified</span>
+          <span className="text-xs text-fg-muted">Unverified</span>
         )}
       </TableCell>
       <TableCell>
@@ -321,7 +321,7 @@ function UserRow({
             <ShieldCheck className="size-3 text-primary" /> On
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+          <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
             <ShieldOff className="size-3" /> Off
           </span>
         )}
@@ -332,7 +332,7 @@ function UserRow({
             <KeyRound className="size-3 text-primary" /> Microsoft
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+          <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
             <KeyRound className="size-3" /> Password
           </span>
         )}

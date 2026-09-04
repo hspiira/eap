@@ -70,7 +70,7 @@ export function Hero({ client, verified }: { client: Client; verified: boolean }
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {client.name}
       </h1>
-      <span className="font-mono text-xs text-fg/55">{client.code}</span>
+      <span className="font-mono text-xs text-fg-muted">{client.code}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={client.status} />
       <TierBadge tier={client.tier} />
@@ -123,7 +123,7 @@ export function ContractsPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">
+        <p className="text-xs text-fg-muted">
           {contracts.length} contract{contracts.length === 1 ? "" : "s"}
         </p>
         <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
@@ -186,7 +186,7 @@ export function ContractsPanel({
                     to="/contracts/$contractId"
                     params={{ contractId: c.id }}
                     aria-label="Open contract"
-                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
                   >
                     <ChevronRight className="size-3.5" />
                   </Link>
@@ -244,7 +244,7 @@ export function DetailRail({
             {ba?.country ? <DetailRow label="Country" value={ba.country} /> : null}
           </DetailGrid>
         ) : (
-          <p className="text-xs text-fg/55">No billing address on file.</p>
+          <p className="text-xs text-fg-muted">No billing address on file.</p>
         )}
       </RailSection>
 
@@ -261,7 +261,7 @@ export function DetailRail({
             </Link>
           ) : null}
           {childrenLoading ? (
-            <p className="mt-2 text-xs text-fg/55">Loading children…</p>
+            <p className="mt-2 text-xs text-fg-muted">Loading children…</p>
           ) : children.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {children.map((c) => (
@@ -271,9 +271,9 @@ export function DetailRail({
                     params={{ clientId: c.id }}
                     className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary"
                   >
-                    <ChevronRight className="size-3.5 text-fg/45" />
+                    <ChevronRight className="size-3.5 text-fg-subtle" />
                     <span className="truncate">{c.name}</span>
-                    <span className="font-mono text-[11px] text-fg/55">{c.code}</span>
+                    <span className="font-mono text-[11px] text-fg-muted">{c.code}</span>
                   </Link>
                 </li>
               ))}
@@ -284,9 +284,9 @@ export function DetailRail({
 
       <RailSection title="Tags">
         {tagsLoading ? (
-          <p className="text-xs text-fg/55">Loading…</p>
+          <p className="text-xs text-fg-muted">Loading…</p>
         ) : tags.length === 0 ? (
-          <p className="text-xs text-fg/55">No tags assigned.</p>
+          <p className="text-xs text-fg-muted">No tags assigned.</p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {tags.map((t) => (

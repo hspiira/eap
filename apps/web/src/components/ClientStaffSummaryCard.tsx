@@ -61,7 +61,7 @@ export function ClientStaffSummaryCard({ clientId, className }: ClientStaffSumma
       ) : (
         <div className="grid gap-3">
           <div>
-            <div className="font-mono text-2xl font-semibold tabular-nums text-fg">{total}</div>
+            <div className="text-2xl font-semibold tabular-nums text-fg">{total}</div>
             <p className="text-xs text-fg/60">Total people linked to this client</p>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-fg/8 pt-2 text-xs">
@@ -81,7 +81,7 @@ function Row({ label, value, className }: { label: string; value: number; classN
   return (
     <div className={cn("flex justify-between py-1", className)}>
       <span className="text-fg/60">{label}</span>
-      <span className="font-mono font-medium tabular-nums text-fg">{value}</span>
+      <span className="font-medium tabular-nums text-fg">{value}</span>
     </div>
   )
 }

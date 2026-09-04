@@ -302,11 +302,11 @@ function ClientRow({
           <span className="block min-w-0">
             <span className="block truncate text-sm text-fg">{contactPrimary}</span>
             {contactSecondary ? (
-              <span className="block truncate text-xs text-fg/55">{contactSecondary}</span>
+              <span className="block truncate text-xs text-fg-muted">{contactSecondary}</span>
             ) : null}
           </span>
         ) : (
-          <span className="text-fg/40">—</span>
+          <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
       <TableCell className="text-right">

@@ -92,7 +92,7 @@ export function ClientActivityCard({ clientId, limit = 10, className }: ClientAc
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="text-sm font-medium text-fg">{title}</span>
-                    <span className="ml-auto shrink-0 font-mono text-xs tabular-nums text-fg/45">
+                    <span className="ml-auto shrink-0 text-xs tabular-nums text-fg-subtle">
                       {formatActivityTime(a.occurred_at)}
                     </span>
                   </div>

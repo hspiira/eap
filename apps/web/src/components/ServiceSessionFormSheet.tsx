@@ -390,7 +390,7 @@ export function ServiceSessionFormSheet({
               <span className="block text-sm font-medium text-fg">
                 This session already happened
               </span>
-              <span className="block text-xs text-fg/55">
+              <span className="block text-xs text-fg-muted">
                 Backfill a past session. It will be marked Completed and tagged with a logged-at
                 timestamp + reason in the audit trail.
               </span>
@@ -564,11 +564,11 @@ function LockedServiceSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected service"}
         </p>
-        <p className="truncate text-[11px] text-fg/55">
+        <p className="truncate text-[11px] text-fg-muted">
           {resolved?.service_type ?? serviceId.slice(0, 8)}
         </p>
       </div>
-      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked
       </span>
     </div>
@@ -596,11 +596,11 @@ function LockedPersonSummary({ personId, person }: { personId: string; person: P
         <p className="truncate text-sm font-medium text-fg">
           {resolved ? displayName(resolved) : "Selected person"}
         </p>
-        <p className="truncate text-[11px] text-fg/55">
+        <p className="truncate text-[11px] text-fg-muted">
           {resolved?.person_type ?? personId.slice(0, 8)}
         </p>
       </div>
-      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked
       </span>
     </div>

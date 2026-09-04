@@ -288,7 +288,7 @@ function IndustriesPage() {
                             </span>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-fg/65">
-                            {row.code ?? <span className="text-fg/40">—</span>}
+                            {row.code ?? <span className="text-fg-subtle">—</span>}
                           </TableCell>
                           <TableCell>
                             <LevelPill level={row.level ?? null} />
@@ -297,7 +297,7 @@ function IndustriesPage() {
                             {row.parent_id ? (
                               <span className="font-mono text-xs">{row.parent_id.slice(0, 8)}</span>
                             ) : (
-                              <span className="text-fg/40">—</span>
+                              <span className="text-fg-subtle">—</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -344,7 +344,7 @@ function filterByLevel(items: ReadonlyArray<Industry>, level: LevelFilter): Indu
 }
 
 function LevelPill({ level }: { level: number | null }) {
-  if (level == null) return <span className="text-fg/40">—</span>
+  if (level == null) return <span className="text-fg-subtle">—</span>
   return (
     <span className="inline-flex items-center border border-fg/15 bg-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-fg/75">
       L{level}

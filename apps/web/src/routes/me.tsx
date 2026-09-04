@@ -93,7 +93,7 @@ function MeBody() {
               <Link to="/me" className="hover:text-fg transition-colors">
                 Profile
               </Link>
-              <span className="text-fg/40">·</span>
+              <span className="text-fg-subtle">·</span>
               {meta.label}
             </span>
           }

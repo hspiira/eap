@@ -241,11 +241,11 @@ function UserDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(person, user)}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
+                          <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg/55">
+                      <p className="text-xs text-fg-muted">
                         No person profile linked to this account.
                       </p>
                     )}
@@ -273,7 +273,7 @@ function UserDetailPage() {
                             <BadgeCheck className="size-3.5 text-primary" /> Yes
                           </span>
                         ) : (
-                          <span className="text-fg/55">No</span>
+                          <span className="text-fg-muted">No</span>
                         )
                       }
                     />
@@ -295,7 +295,7 @@ function UserDetailPage() {
                               <ShieldCheck className="size-3.5 text-primary" /> Enabled
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-fg/55">
+                            <span className="inline-flex items-center gap-1 text-fg-muted">
                               <ShieldOff className="size-3.5" /> Disabled
                             </span>
                           )
@@ -328,7 +328,7 @@ function UserDetailPage() {
                           user.azure_oid ? (
                             <span className="font-mono text-xs">{user.azure_oid}</span>
                           ) : (
-                            <span className="text-fg/55">Not linked</span>
+                            <span className="text-fg-muted">Not linked</span>
                           )
                         }
                       />

@@ -45,9 +45,7 @@ export function ClientOnboardingCard({
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <span className="font-mono text-xs font-medium tabular-nums text-fg/75">
-              {percent}%
-            </span>
+            <span className="text-xs font-medium tabular-nums text-fg/75">{percent}%</span>
           </div>
           <ol className="grid gap-1.5">
             {steps.map((step) => {
@@ -61,7 +59,7 @@ export function ClientOnboardingCard({
                         ? "border-primary bg-primary text-primary-foreground"
                         : isNext
                           ? "border-primary text-primary"
-                          : "border-fg/15 text-fg/40",
+                          : "border-fg/15 text-fg-subtle",
                     )}
                     aria-hidden
                   >
@@ -70,7 +68,7 @@ export function ClientOnboardingCard({
                   <span
                     className={cn(
                       "flex-1 text-sm",
-                      step.done ? "text-fg/45 line-through" : "text-fg",
+                      step.done ? "text-fg-subtle line-through" : "text-fg",
                     )}
                   >
                     {step.label}

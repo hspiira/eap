@@ -31,7 +31,7 @@ export function ApexIntroCard({ className }: ApexIntroCardProps = {}) {
         </div>
 
         <div className="flex items-center gap-2 rounded-sm border border-border-subtle bg-surface px-3 py-2">
-          <span className="font-mono text-xs tabular-nums text-fg-subtle">0:00</span>
+          <span className="text-xs tabular-nums text-fg-subtle">0:00</span>
           <div className="flex flex-1 items-center justify-center gap-0.5" aria-hidden>
             {Array.from({ length: 32 }).map((_, i) => (
               <span

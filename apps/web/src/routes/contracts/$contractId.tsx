@@ -272,10 +272,10 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg/45">{client.code}</span>
+          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
         </Link>
       ) : (
-        <span className="font-mono text-xs text-fg/45">{contract.client_id.slice(0, 8)}</span>
+        <span className="font-mono text-xs text-fg-subtle">{contract.client_id.slice(0, 8)}</span>
       )}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={contract.status} />
@@ -315,11 +315,11 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg/55">{client.code}</p>
+              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         ) : (
-          <p className="text-xs text-fg/55">Loading client…</p>
+          <p className="text-xs text-fg-muted">Loading client…</p>
         )}
       </RailSection>
 
@@ -407,7 +407,7 @@ function ServicesPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">
+        <p className="text-xs text-fg-muted">
           {assignments.length} service
           {assignments.length === 1 ? "" : "s"} covered.
         </p>
@@ -444,14 +444,14 @@ function ServicesPanel({
                   <StatusBadge status={a.status} />
                 </TableCell>
                 <TableCell className="text-sm text-fg/75 truncate max-w-[24ch]">
-                  {a.notes ?? <span className="text-fg/40">—</span>}
+                  {a.notes ?? <span className="text-fg-subtle">—</span>}
                 </TableCell>
                 <TableCell className="text-right">
                   <Link
                     to="/service-assignments/$assignmentId"
                     params={{ assignmentId: a.id }}
                     aria-label="Open assignment"
-                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
                   >
                     <ChevronRight className="size-3.5" />
                   </Link>

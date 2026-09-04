@@ -52,7 +52,7 @@ function SkeletonRow({ icon: Icon, className }: { icon?: React.ElementType; clas
         className,
       )}
     >
-      <span className="grid size-5 shrink-0 place-items-center bg-fg/8 text-fg/40">
+      <span className="grid size-5 shrink-0 place-items-center bg-fg/8 text-fg-subtle">
         {Icon ? <Icon className="size-3" /> : null}
       </span>
       <span className="flex flex-1 flex-col gap-1">

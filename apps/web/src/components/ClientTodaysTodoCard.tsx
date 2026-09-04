@@ -45,17 +45,17 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
             variant="ghost"
             size="sm"
             aria-label="Previous day"
-            className="size-5 p-0 text-fg/55"
+            className="size-5 p-0 text-fg-muted"
           >
             <ChevronLeft className="size-3.5" />
           </Button>
-          <span className="font-mono text-xs tabular-nums text-fg/65">{formatTodayLabel()}</span>
+          <span className="text-xs tabular-nums text-fg/65">{formatTodayLabel()}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             aria-label="Next day"
-            className="size-5 p-0 text-fg/55"
+            className="size-5 p-0 text-fg-muted"
           >
             <ChevronRight className="size-3.5" />
           </Button>
@@ -67,7 +67,7 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
             {items.map((item) => (
               <li key={item.id} className="flex items-baseline gap-3 text-sm text-fg">
                 {item.time ? (
-                  <span className="shrink-0 font-mono tabular-nums text-fg/45">{item.time}</span>
+                  <span className="shrink-0 tabular-nums text-fg-subtle">{item.time}</span>
                 ) : (
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-fg/40" aria-hidden />
                 )}
@@ -81,7 +81,7 @@ export function ClientTodaysTodoCard({ items, className }: ClientTodaysTodoCardP
                   )}
                 </span>
                 {item.link && item.linkLabel ? (
-                  <a href={item.link} className="shrink-0 text-xs text-fg/55 hover:text-primary">
+                  <a href={item.link} className="shrink-0 text-xs text-fg-muted hover:text-primary">
                     {item.linkLabel}
                   </a>
                 ) : null}

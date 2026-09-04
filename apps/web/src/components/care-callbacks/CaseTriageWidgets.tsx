@@ -164,7 +164,7 @@ export function DetailRail({
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-fg">{campaignName ?? campaignId}</p>
-            <p className="truncate font-mono text-[11px] text-fg/55">{campaignId}</p>
+            <p className="truncate font-mono text-[11px] text-fg-muted">{campaignId}</p>
           </div>
         </Link>
       </RailSection>
@@ -181,7 +181,7 @@ export function DetailRail({
           >
             {outreach.person_id.slice(0, 2).toUpperCase()}
           </span>
-          <p className="truncate font-mono text-[11px] text-fg/55">{outreach.person_id}</p>
+          <p className="truncate font-mono text-[11px] text-fg-muted">{outreach.person_id}</p>
         </Link>
       </RailSection>
     </div>

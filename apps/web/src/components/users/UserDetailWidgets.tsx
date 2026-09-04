@@ -109,11 +109,11 @@ export function DetailRail({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{displayName(person, user)}</p>
-              <p className="truncate text-[11px] text-fg/55">{person.person_type}</p>
+              <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
             </div>
           </Link>
         ) : (
-          <p className="text-xs text-fg/55">No person profile linked.</p>
+          <p className="text-xs text-fg-muted">No person profile linked.</p>
         )}
       </RailSection>
 
@@ -179,7 +179,7 @@ export function AccessScopesCard({
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-fg">Clinical</p>
-            <p className="text-xs text-fg/55">
+            <p className="text-xs text-fg-muted">
               Cases, clinical notes and EAP programmes. Only platform admins can change this.
             </p>
           </div>
@@ -192,7 +192,7 @@ export function AccessScopesCard({
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-fg">Employer portal</p>
-            <p className="text-xs text-fg/55">Employer-facing reporting surfaces.</p>
+            <p className="text-xs text-fg-muted">Employer-facing reporting surfaces.</p>
           </div>
           <Switch
             checked={scopes.includes(AccessScope.EMPLOYER_PORTAL)}

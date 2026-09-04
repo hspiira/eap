@@ -266,7 +266,7 @@ export function ContractFormSheet({
               step="0.01"
               min="0"
               placeholder="0.00"
-              className="font-mono"
+              className="tabular-nums"
               {...register("billing_amount")}
             />
           </FormField>
@@ -311,9 +311,9 @@ function LockedClientSummary({ clientId, client }: { clientId: string; client: C
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
+        <p className="truncate font-mono text-[11px] text-fg-muted">{resolved?.code ?? clientId}</p>
       </div>
-      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked
       </span>
     </div>

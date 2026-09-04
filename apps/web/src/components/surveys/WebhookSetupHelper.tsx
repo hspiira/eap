@@ -97,7 +97,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
 
   return (
     <div>
-      <p className="text-[11px] font-semibold tracking-wide text-fg/55">{label}</p>
+      <p className="text-[11px] font-semibold tracking-wide text-fg-muted">{label}</p>
       <div className="mt-1 flex items-stretch overflow-hidden rounded-sm border border-fg/15">
         <code className="flex-1 truncate bg-bg px-3 py-2 font-mono text-xs text-fg">{display}</code>
         {mask && (

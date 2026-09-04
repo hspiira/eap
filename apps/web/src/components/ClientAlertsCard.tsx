@@ -31,7 +31,7 @@ const SEVERITY_LABEL: Record<ClientAlertSeverity, string> = {
 
 const SEVERITY_TONE: Record<ClientAlertSeverity, { icon: string; pill: string }> = {
   low: {
-    icon: "text-fg/45",
+    icon: "text-fg-subtle",
     pill: "border border-fg/15 text-fg/70",
   },
   medium: {
@@ -94,7 +94,7 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
                           aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
                           aria-expanded={isExpanded}
                           onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                          className="size-6 p-0 text-fg/55"
+                          className="size-6 p-0 text-fg-muted"
                         >
                           {isExpanded ? (
                             <ChevronUp className="size-3.5" />

@@ -278,14 +278,14 @@ function PersonDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(primaryEmployee)}
                           </p>
-                          <p className="truncate font-mono text-[11px] text-fg/55">
+                          <p className="truncate font-mono text-[11px] text-fg-muted">
                             {primaryEmployee.employment_info?.employee_code ??
                               primaryEmployee.id.slice(0, 8)}
                           </p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg/55">Loading employee…</p>
+                      <p className="text-xs text-fg-muted">Loading employee…</p>
                     )}
                     <DetailGrid>
                       <DetailRow label="Relationship" value={person.dependent_info.relationship} />
@@ -374,7 +374,9 @@ function Hero({
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">{fullName}</h1>
       {person.employment_info?.employee_code ? (
-        <span className="font-mono text-xs text-fg/55">{person.employment_info.employee_code}</span>
+        <span className="font-mono text-xs text-fg-muted">
+          {person.employment_info.employee_code}
+        </span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
@@ -427,7 +429,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg/55">{client.code}</p>
+              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>
@@ -448,16 +450,16 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{user.email}</p>
-              <p className="truncate text-[11px] text-fg/55">
+              <p className="truncate text-[11px] text-fg-muted">
                 {user.is_two_factor_enabled ? "2FA on" : "2FA off"} ·{" "}
                 {user.is_email_verified ? "verified" : "unverified"}
               </p>
             </div>
           </Link>
         ) : person.user_id ? (
-          <p className="text-xs text-fg/55">Loading user…</p>
+          <p className="text-xs text-fg-muted">Loading user…</p>
         ) : (
-          <p className="text-xs text-fg/55">No user account linked.</p>
+          <p className="text-xs text-fg-muted">No user account linked.</p>
         )}
       </RailSection>
 

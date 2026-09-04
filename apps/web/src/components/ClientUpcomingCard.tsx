@@ -38,17 +38,17 @@ export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg/60">
                     <span className="flex items-center gap-1">
                       <Calendar className="size-3 shrink-0" aria-hidden />
-                      <span className="font-mono tabular-nums">{item.date}</span>
+                      <span className="tabular-nums">{item.date}</span>
                     </span>
                     {item.time ? (
                       <span className="flex items-center gap-1">
                         <Clock className="size-3 shrink-0" aria-hidden />
-                        <span className="font-mono tabular-nums">{item.time}</span>
+                        <span className="tabular-nums">{item.time}</span>
                       </span>
                     ) : null}
                   </div>
                   {item.context ? (
-                    <div className="flex items-center gap-1 text-xs text-fg/55">
+                    <div className="flex items-center gap-1 text-xs text-fg-muted">
                       <MapPin className="size-3 shrink-0" aria-hidden />
                       <span>{item.context}</span>
                     </div>

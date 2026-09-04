@@ -236,12 +236,12 @@ function TagRow({
             <span className="font-mono text-xs text-fg/65">{swatch}</span>
           </span>
         ) : (
-          <span className="text-fg/40">—</span>
+          <span className="text-fg-subtle">—</span>
         )}
       </TableCell>
       <TableCell>
         <span className="block max-w-[60ch] truncate text-sm text-fg/75">
-          {row.description ?? <span className="text-fg/40">—</span>}
+          {row.description ?? <span className="text-fg-subtle">—</span>}
         </span>
       </TableCell>
       <TableCell className="text-right">

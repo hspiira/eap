@@ -147,7 +147,7 @@ export function CampaignFormSheet({
             inputMode="numeric"
             min={0}
             placeholder="e.g. 60"
-            className="font-mono"
+            className="tabular-nums"
             {...register("target_count")}
           />
         </FormField>
@@ -228,9 +228,9 @@ function LockedClientSummary({ clientId, client }: { clientId: string; client: C
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg/55">{resolved?.code ?? clientId}</p>
+        <p className="truncate font-mono text-[11px] text-fg-muted">{resolved?.code ?? clientId}</p>
       </div>
-      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked
       </span>
     </div>
@@ -293,9 +293,9 @@ function CounsellorMultiPicker({
       />
       <div className="max-h-44 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
         {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg/55">Loading…</p>
+          <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg/55">
+          <p className="px-3 py-2 text-xs text-fg-muted">
             {debounced ? "No users match." : "Start typing to search users."}
           </p>
         ) : (

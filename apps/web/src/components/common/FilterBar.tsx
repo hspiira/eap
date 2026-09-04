@@ -123,7 +123,7 @@ export function FilterTrigger<T extends string>({
         >
           {Icon ? <Icon className="size-3.5 text-fg/65" /> : null}
           <span className="whitespace-nowrap">{current}</span>
-          <ChevronDown className="size-3.5 text-fg/55" />
+          <ChevronDown className="size-3.5 text-fg-muted" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-44">
@@ -157,18 +157,18 @@ export function FilterSearch({
         className,
       )}
     >
-      <Search aria-hidden className="pointer-events-none absolute left-2 size-3.5 text-fg/55" />
+      <Search aria-hidden className="pointer-events-none absolute left-2 size-3.5 text-fg-muted" />
       <Input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-full w-44 border-0 bg-transparent p-0 text-sm text-fg shadow-none placeholder:text-fg/55 focus-visible:ring-0"
+        className="h-full w-44 border-0 bg-transparent p-0 text-sm text-fg shadow-none placeholder:text-fg-muted focus-visible:ring-0"
       />
       <kbd
         aria-hidden
-        className="ml-1 hidden h-5 select-none items-center border border-fg/20 bg-surface px-1 font-mono text-[10px] text-fg/55 sm:inline-flex"
+        className="ml-1 hidden h-5 select-none items-center border border-fg/20 bg-surface px-1 font-mono text-[10px] text-fg-muted sm:inline-flex"
       >
         ⌘K
       </kbd>

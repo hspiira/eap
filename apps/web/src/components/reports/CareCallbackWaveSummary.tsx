@@ -38,7 +38,7 @@ export function WaveSummaryBody({
   return (
     <>
       <section>
-        <p className="text-[11px] font-semibold tracking-wide text-fg/55">Wave summary</p>
+        <p className="text-[11px] font-semibold tracking-wide text-fg-muted">Wave summary</p>
         <div className="mt-1 flex flex-wrap items-baseline gap-3">
           <h2 className="text-2xl font-semibold text-fg">{campaign.name}</h2>
           <CampaignStatusPill status={campaign.status} />
@@ -52,7 +52,7 @@ export function WaveSummaryBody({
             value={
               <>
                 {formatDate(campaign.period_start)}
-                <span className="mx-1 text-fg/45">–</span>
+                <span className="mx-1 text-fg-subtle">–</span>
                 {formatDate(campaign.period_end)}
               </>
             }
@@ -95,7 +95,7 @@ export function WaveSummaryBody({
         </ReportSection>
       ) : (
         <ReportSection title="Per-question outcomes">
-          <p className="mt-1 text-xs text-fg/55">
+          <p className="mt-1 text-xs text-fg-muted">
             {wos5 != null
               ? `WOS-5 follow-up post-mean: ${wos5.toFixed(2)}`
               : "WOS-5 follow-up not collected for this wave."}
@@ -119,8 +119,10 @@ export function WaveSummaryBody({
                 {aggregate.question_summaries.map((s) => (
                   <TableRow key={s.question_key} className="border-fg/10 last:border-0">
                     <TableCell className="px-3 py-2 text-fg">{s.prompt}</TableCell>
-                    <TableCell className="px-3 py-2 text-right font-mono text-fg">{s.n}</TableCell>
-                    <TableCell className="px-3 py-2 text-right font-mono text-fg/80">
+                    <TableCell className="px-3 py-2 text-right tabular-nums text-fg">
+                      {s.n}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right tabular-nums text-fg/80">
                       {s.mean !== null && s.mean !== undefined
                         ? s.mean.toFixed(2)
                         : s.histogram
@@ -137,7 +139,7 @@ export function WaveSummaryBody({
 
       <ReportSection title="Counsellor pool">
         {campaign.counsellor_pool.length === 0 ? (
-          <p className="text-xs text-fg/55">No counsellors on this wave.</p>
+          <p className="text-xs text-fg-muted">No counsellors on this wave.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {campaign.counsellor_pool.map((id) => (
@@ -158,7 +160,7 @@ export function WaveSummaryBody({
         )}
       </ReportSection>
 
-      <footer className="border-t border-fg/10 pt-4 text-[11px] text-fg/55">
+      <footer className="border-t border-fg/10 pt-4 text-[11px] text-fg-muted">
         <ShieldCheck className="mr-1 inline size-3 text-primary" />
         Aggregate report — no PII. Counsellor notes are excluded by design. Generated{" "}
         {formatDateTime(new Date())}.

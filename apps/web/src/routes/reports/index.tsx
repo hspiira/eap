@@ -97,7 +97,7 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
       <div className={cn(base, "opacity-60")} aria-disabled="true">
         <CardHeader template={template} icon={Icon} />
         <p className="text-sm text-fg/65">{template.description}</p>
-        <span className="mt-auto inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+        <span className="mt-auto inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
           Coming soon
         </span>
       </div>
@@ -130,7 +130,7 @@ function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: 
       </span>
       <div className="min-w-0 flex-1">
         <h2 className="text-sm font-semibold text-fg">{template.title}</h2>
-        <p className="text-[11px] text-fg/55">{template.cadence}</p>
+        <p className="text-[11px] text-fg-muted">{template.cadence}</p>
       </div>
     </div>
   )

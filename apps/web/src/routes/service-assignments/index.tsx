@@ -270,7 +270,7 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
-        {row.notes ?? <span className="text-fg/40">—</span>}
+        {row.notes ?? <span className="text-fg-subtle">—</span>}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

@@ -153,7 +153,7 @@ function CaseDetailPage() {
           <div className="col-span-12 min-w-0 lg:col-span-8">
             {outreach.notes ? (
               <div className="rounded-sm border border-fg/10 bg-surface p-4">
-                <h3 className="mb-2 text-xs font-semibold tracking-wide text-fg/55">Notes</h3>
+                <h3 className="mb-2 text-xs font-semibold tracking-wide text-fg-muted">Notes</h3>
                 <p className="whitespace-pre-wrap text-sm text-fg/85">{outreach.notes}</p>
               </div>
             ) : (

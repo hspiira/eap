@@ -17,7 +17,7 @@ export function ReportSection({ title, children }: { title: string; children: Re
 export function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold tracking-wide text-fg/55">{label}</dt>
+      <dt className="text-[11px] font-semibold tracking-wide text-fg-muted">{label}</dt>
       <dd className="mt-0.5 text-sm text-fg">{value}</dd>
     </div>
   )
@@ -45,7 +45,7 @@ export function SummaryStat({
       <div
         className={cn(
           "flex items-center gap-1 text-[10px] font-semibold tracking-wide",
-          isDanger ? "text-danger-fg" : "text-fg/55",
+          isDanger ? "text-danger-fg" : "text-fg-muted",
         )}
       >
         {isDanger ? <AlertTriangle className="size-3" /> : null}
@@ -53,11 +53,14 @@ export function SummaryStat({
       </div>
       <div className="mt-0.5 flex items-baseline gap-2">
         <span
-          className={cn("font-mono text-lg font-semibold", isDanger ? "text-danger-fg" : "text-fg")}
+          className={cn(
+            "tabular-nums text-lg font-semibold",
+            isDanger ? "text-danger-fg" : "text-fg",
+          )}
         >
           {value}
         </span>
-        {hint ? <span className="font-mono text-[11px] text-fg/55">{hint}</span> : null}
+        {hint ? <span className="tabular-nums text-[11px] text-fg-muted">{hint}</span> : null}
       </div>
     </div>
   )

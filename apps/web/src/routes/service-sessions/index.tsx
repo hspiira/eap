@@ -390,7 +390,7 @@ function SessionRow({
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {dateLabel}
             </span>
-            <span className="block truncate font-mono text-xs text-fg/55">{timeLabel}</span>
+            <span className="block truncate tabular-nums text-xs text-fg-muted">{timeLabel}</span>
           </span>
         </Link>
       </TableCell>
@@ -416,7 +416,7 @@ function SessionRow({
         <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="text-sm text-fg/75">
-        {row.location ?? <span className="text-fg/40">—</span>}
+        {row.location ?? <span className="text-fg-subtle">—</span>}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

@@ -60,7 +60,7 @@ export function LoggedInDevicesCard({
     <Card className={cn("rounded-md", className)}>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">
         <CardTitle className="text-sm font-semibold text-fg">Active sessions</CardTitle>
-        <Badge variant="secondary" size="sm" className="font-mono tabular-nums">
+        <Badge variant="secondary" size="sm" className="tabular-nums">
           {sessions.length}
         </Badge>
       </CardHeader>
@@ -87,7 +87,7 @@ export function LoggedInDevicesCard({
                   </div>
                   <div className="text-xs text-fg-muted">
                     {s.location ? `${s.location} · ` : ""}
-                    <span className="font-mono tabular-nums">{s.lastActive}</span>
+                    <span className="tabular-nums">{s.lastActive}</span>
                   </div>
                 </div>
                 {!s.current ? (

@@ -347,15 +347,15 @@ function ContractRow({
       <TableCell>
         <span className="block min-w-0">
           <span className="block truncate text-sm text-fg">{formatDate(row.period.end_date)}</span>
-          <span className="block truncate text-xs text-fg/55">
+          <span className="block truncate text-xs text-fg-muted">
             {row.is_auto_renew ? "Renews" : "Ends"}
           </span>
         </span>
       </TableCell>
       <TableCell>
         <span className="block min-w-0">
-          <span className="block truncate font-mono text-sm text-fg">{billing.amount}</span>
-          <span className="block truncate text-xs text-fg/55">{billing.frequency}</span>
+          <span className="block truncate tabular-nums text-sm text-fg">{billing.amount}</span>
+          <span className="block truncate text-xs text-fg-muted">{billing.frequency}</span>
         </span>
       </TableCell>
       <TableCell className="text-right">

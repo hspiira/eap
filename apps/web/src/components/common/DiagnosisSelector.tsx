@@ -160,7 +160,7 @@ export function DiagnosisSelector({
             <>
               {recentDiagnoses.length > 0 && (
                 <section>
-                  <p className="flex items-center gap-1.5 px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wide text-fg/45">
+                  <p className="flex items-center gap-1.5 px-3 pt-2 pb-1 text-[10px] font-semibold tracking-wide text-fg-subtle">
                     <Clock className="size-3" aria-hidden />
                     Recently used
                   </p>

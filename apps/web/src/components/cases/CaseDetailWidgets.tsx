@@ -140,7 +140,7 @@ export function DetailRail({
         {caseData.assigned_counsellor_id ? (
           <p className="text-sm text-fg">{counsellor?.email ?? "Loading…"}</p>
         ) : (
-          <p className="text-sm text-fg/55">Unassigned</p>
+          <p className="text-sm text-fg-muted">Unassigned</p>
         )}
         {!isTerminal ? (
           <Button
@@ -667,7 +667,7 @@ function NoteBody({ body }: { body: ClinicalNoteBody }) {
     <dl className="space-y-2">
       {entries.map(([label, text]) => (
         <div key={label}>
-          <dt className="text-[11px] font-medium tracking-wide text-fg/55">{label}</dt>
+          <dt className="text-[11px] font-medium tracking-wide text-fg-muted">{label}</dt>
           <dd className="mt-0.5 whitespace-pre-wrap text-sm text-fg/85">{text}</dd>
         </div>
       ))}
@@ -693,7 +693,7 @@ export function NotesPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">{notes.length} notes.</p>
+        <p className="text-xs text-fg-muted">{notes.length} notes.</p>
         <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={onAddNote}>
           Add note
         </Button>
@@ -714,7 +714,7 @@ export function NotesPanel({
             >
               <NoteBody body={n.body} />
               <div className="mt-3 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-xs text-fg/55">
+                <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
                   {n.signed_at ? (
                     <>
                       <Lock className="size-3" /> Signed {formatDateTime(n.signed_at)}

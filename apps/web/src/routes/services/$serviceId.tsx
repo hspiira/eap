@@ -254,14 +254,14 @@ function Hero({ service }: { service: Service }) {
         {service.name}
       </h1>
       {service.service_type ? (
-        <span className="font-mono text-xs text-fg/55">
+        <span className="font-mono text-xs text-fg-muted">
           {humanizeServiceType(service.service_type)}
         </span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={service.status} />
       {service.duration_minutes != null ? (
-        <span className="font-mono text-xs text-fg/55">{service.duration_minutes}m</span>
+        <span className="tabular-nums text-xs text-fg-muted">{service.duration_minutes}m</span>
       ) : null}
     </div>
   )
@@ -312,14 +312,14 @@ function ContractsPanel({
                 <StatusBadge status={a.status} />
               </TableCell>
               <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
-                {a.notes ?? <span className="text-fg/40">—</span>}
+                {a.notes ?? <span className="text-fg-subtle">—</span>}
               </TableCell>
               <TableCell className="text-right">
                 <Link
                   to="/service-assignments/$assignmentId"
                   params={{ assignmentId: a.id }}
                   aria-label="Open assignment"
-                  className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                  className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
                 >
                   <ChevronRight className="size-3.5" />
                 </Link>
@@ -363,7 +363,7 @@ function SessionsPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-fg/55">{sessions.length} recent sessions.</p>
+        <p className="text-xs text-fg-muted">{sessions.length} recent sessions.</p>
         <Link
           to="/service-sessions"
           search={{ service_id: serviceId }}
@@ -405,7 +405,7 @@ function SessionsPanel({
                     to="/service-sessions/$sessionId"
                     params={{ sessionId: s.id }}
                     aria-label="Open session"
-                    className="inline-grid size-7 place-items-center rounded-sm text-fg/55 hover:bg-surface-hover hover:text-fg"
+                    className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
                   >
                     <ChevronRight className="size-3.5" />
                   </Link>

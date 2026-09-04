@@ -184,11 +184,11 @@ function LockedContractSummary({
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-mono text-sm font-medium text-fg">{label}</p>
-        <p className="truncate text-[11px] text-fg/55">
+        <p className="truncate text-[11px] text-fg-muted">
           {resolved ? `Client ${resolved.client_id.slice(0, 8)}` : contractId.slice(0, 8)}
         </p>
       </div>
-      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg/55">
+      <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked
       </span>
     </div>

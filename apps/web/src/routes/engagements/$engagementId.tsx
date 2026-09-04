@@ -254,7 +254,7 @@ function EngagementDetailPage() {
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg/55">No lead assigned.</p>
+                      <p className="text-xs text-fg-muted">No lead assigned.</p>
                     )}
                   </DetailCard>
                 </div>

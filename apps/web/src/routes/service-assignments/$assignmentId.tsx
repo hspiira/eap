@@ -182,13 +182,13 @@ function ServiceAssignmentDetailPage() {
                           <p className="truncate font-mono text-sm font-medium text-fg">
                             {contract.id.slice(0, 8)}
                           </p>
-                          <p className="truncate text-[11px] text-fg/55">
+                          <p className="truncate text-[11px] text-fg-muted">
                             {contract.status} · client {contract.client_id.slice(0, 8)}
                           </p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg/55">Loading contract…</p>
+                      <p className="text-xs text-fg-muted">Loading contract…</p>
                     )}
                   </DetailCard>
 
@@ -203,13 +203,13 @@ function ServiceAssignmentDetailPage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                          <p className="truncate text-[11px] text-fg/55">
+                          <p className="truncate text-[11px] text-fg-muted">
                             {service.service_type ?? service.category ?? "—"}
                           </p>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-fg/55">Loading service…</p>
+                      <p className="text-xs text-fg-muted">Loading service…</p>
                     )}
                   </DetailCard>
                 </div>
@@ -268,7 +268,7 @@ function Hero({
           {assignment.contract_id.slice(0, 8)}
         </span>
       )}
-      <span className="text-fg/45">·</span>
+      <span className="text-fg-subtle">·</span>
       <span className="truncate text-sm font-semibold text-fg">
         {service?.name ?? assignment.service_id.slice(0, 8)}
       </span>
@@ -293,7 +293,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
           <DetailRow label="Start" value={formatDate(contract?.period.start_date)} />
           <DetailRow label="End" value={formatDate(contract?.period.end_date)} />
         </DetailGrid>
-        <p className="mt-2 text-[11px] text-fg/50">Inherited from the parent contract.</p>
+        <p className="mt-2 text-[11px] text-fg-subtle">Inherited from the parent contract.</p>
       </RailSection>
 
       {contract ? (
@@ -313,7 +313,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
               <p className="truncate font-mono text-sm font-medium text-fg">
                 {contract.id.slice(0, 8)}
               </p>
-              <p className="truncate text-[11px] text-fg/55">{contract.status}</p>
+              <p className="truncate text-[11px] text-fg-muted">{contract.status}</p>
             </div>
           </Link>
         </RailSection>

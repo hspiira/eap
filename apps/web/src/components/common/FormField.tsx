@@ -38,17 +38,17 @@ export function FormField({
           ) : null}
         </Label>
         {optional ? (
-          <span className="text-[10px] font-medium tracking-wide text-fg/45">Optional</span>
+          <span className="text-[10px] font-medium tracking-wide text-fg-subtle">Optional</span>
         ) : null}
       </div>
-      {description ? <p className="text-xs leading-relaxed text-fg/55">{description}</p> : null}
+      {description ? <p className="text-xs leading-relaxed text-fg-muted">{description}</p> : null}
       {children}
       {error ? (
         <p className="text-xs font-medium text-danger" role="alert">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-fg/55">{hint}</p>
+        <p className="text-xs text-fg-muted">{hint}</p>
       ) : null}
     </div>
   )

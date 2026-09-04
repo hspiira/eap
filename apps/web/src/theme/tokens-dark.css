@@ -30,7 +30,9 @@
   /* Foreground. */
   --fg: var(--neutral-900);
   --fg-muted: var(--neutral-600);
-  --fg-subtle: var(--neutral-500);
+  /* Lifted off neutral-500 (#6b6b6b, 3.36:1 on --surface). #8a8a8a clears
+   * 4.5:1 on every dark surface and stays under --fg-muted. */
+  --fg-subtle: #8a8a8a;
   --fg-on-brand: #052e16;
 
   /* Borders — Tegon-style hairlines. Dark mode borders are inherently

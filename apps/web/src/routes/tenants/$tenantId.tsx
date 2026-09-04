@@ -60,7 +60,7 @@ function TenantDetailBody() {
             >
               Tenants
             </Link>
-            <span className="mx-1 text-fg/40">/</span>
+            <span className="mx-1 text-fg-subtle">/</span>
             {tenant?.name ?? tenantId}
           </>
         }

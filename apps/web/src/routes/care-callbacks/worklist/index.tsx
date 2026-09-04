@@ -310,7 +310,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         </div>
       </TableCell>
       <TableCell className="text-sm text-fg/75">{formatDate(row.last_attempted_at)}</TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{row.contact_attempts}</TableCell>
+      <TableCell className="tabular-nums text-xs text-fg/75">{row.contact_attempts}</TableCell>
       <TableCell className="text-right">
         <Link
           to="/care-callbacks/worklist/$caseId"
@@ -351,8 +351,8 @@ function CaseStatusPill({ status }: { status: OutreachStatus }) {
 function Pip({ label, value }: { label: string; value: number }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
-      <span className="text-fg/55">{label}</span>
-      <span className="font-mono text-sm font-semibold text-fg">{value}</span>
+      <span className="text-fg-muted">{label}</span>
+      <span className="tabular-nums text-sm font-semibold text-fg">{value}</span>
     </span>
   )
 }

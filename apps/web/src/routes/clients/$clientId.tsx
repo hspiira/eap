@@ -339,7 +339,7 @@ function ClientDetailPage() {
               <TabPanel value="staff">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-fg/55">
+                    <p className="text-xs text-fg-muted">
                       Employees, dependents and providers linked to this client.
                     </p>
                     <Button

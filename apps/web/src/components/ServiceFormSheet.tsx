@@ -181,7 +181,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
               inputMode="numeric"
               min={0}
               placeholder="60"
-              className="font-mono"
+              className="tabular-nums"
               {...register("duration_minutes")}
             />
           </FormField>
@@ -221,7 +221,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
               type="number"
               inputMode="numeric"
               min={1}
-              className="font-mono"
+              className="tabular-nums"
               {...register("max_participants")}
             />
           </FormField>

@@ -211,7 +211,7 @@ function EngagementsListPage() {
           <AlertTriangle className="size-3.5" />
           Overdue only
           {overdueCount > 0 ? (
-            <span className="font-mono text-[10px] text-fg/55">({overdueCount})</span>
+            <span className="tabular-nums text-[10px] text-fg-muted">({overdueCount})</span>
           ) : null}
         </Button>
         <div className="ml-auto" />
@@ -344,7 +344,7 @@ function EngagementRow({
             <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {row.name}
             </span>
-            <span className="block truncate text-xs text-fg/55">
+            <span className="block truncate text-xs text-fg-muted">
               Started {formatDate(row.start_date)}
             </span>
           </span>
@@ -369,12 +369,14 @@ function EngagementRow({
       <TableCell>
         <div className="min-w-32">
           <div className="flex items-center justify-between text-xs text-fg/65">
-            <span className="font-mono">
+            <span className="tabular-nums">
               {row.hours_logged.toFixed(1)}
               {row.budget_hours ? `/${row.budget_hours}` : ""}
             </span>
             {budgetPct !== null ? (
-              <span className={cn("font-mono", budgetPct > 100 ? "text-amber-600" : "text-fg/55")}>
+              <span
+                className={cn("tabular-nums", budgetPct > 100 ? "text-amber-600" : "text-fg-muted")}
+              >
                 {budgetPct}%
               </span>
             ) : null}
