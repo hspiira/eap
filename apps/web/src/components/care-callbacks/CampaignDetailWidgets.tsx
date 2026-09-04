@@ -67,7 +67,7 @@ export function Hero({ campaign, client }: { campaign: CallbackCampaign; client:
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
+          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -107,7 +107,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                 <Link
                   to="/care-callbacks/worklist/$caseId"
                   params={{ caseId: c.id }}
-                  className="font-mono text-xs text-fg group-hover:text-primary"
+                  className="text-xs text-fg group-hover:text-primary font-mono"
                 >
                   {c.person_id}
                 </Link>
@@ -117,7 +117,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                   <Link
                     to="/users/$userId"
                     params={{ userId: c.counsellor_id }}
-                    className="font-mono text-xs text-fg/75 hover:text-primary"
+                    className="text-xs text-fg/75 hover:text-primary"
                   >
                     {c.counsellor_id}
                   </Link>
@@ -344,13 +344,13 @@ export function DetailRail({
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
             >
               {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
+              <p className="truncate text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>
@@ -451,7 +451,10 @@ export function CounsellorPoolDialog({
               return (
                 <span
                   key={id}
-                  className="inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs text-primary"
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-xs text-primary",
+                    !user?.email && "font-mono",
+                  )}
                 >
                   {user?.email ?? id.slice(0, 12)}
                   <Button
@@ -589,7 +592,7 @@ export function EnrolDialog({
                     <span className="flex items-center gap-2">
                       <span
                         aria-hidden
-                        className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+                        className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                       >
                         {nameInitials(displayName(p))}
                       </span>

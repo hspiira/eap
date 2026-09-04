@@ -159,7 +159,7 @@ function ServiceAssignmentDetailPage() {
                       <DetailRow label="Notes" value={assignment.notes ?? "-"} fullWidth />
                       <DetailRow
                         label="Assignment ID"
-                        value={<span className="font-mono text-xs">{assignment.id}</span>}
+                        value={<span className="text-xs font-mono">{assignment.id}</span>}
                         fullWidth
                       />
                     </DetailGrid>
@@ -179,7 +179,7 @@ function ServiceAssignmentDetailPage() {
                           <FileSignature className="size-3.5" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-mono text-sm font-medium text-fg">
+                          <p className="truncate text-sm font-medium text-fg font-mono">
                             {contract.id.slice(0, 8)}
                           </p>
                           <p className="truncate text-[11px] text-fg-muted">
@@ -259,12 +259,12 @@ function Hero({
         <Link
           to="/contracts/$contractId"
           params={{ contractId: contract.id }}
-          className="font-mono text-sm font-semibold text-fg hover:text-primary"
+          className="text-sm font-semibold text-fg hover:text-primary"
         >
           {contract.id.slice(0, 8)}
         </Link>
       ) : (
-        <span className="font-mono text-sm font-semibold text-fg">
+        <span className="text-sm font-semibold text-fg font-mono">
           {assignment.contract_id.slice(0, 8)}
         </span>
       )}
@@ -310,9 +310,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
               <FileSignature className="size-3.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-mono text-sm font-medium text-fg">
-                {contract.id.slice(0, 8)}
-              </p>
+              <p className="truncate text-sm font-medium text-fg">{contract.id.slice(0, 8)}</p>
               <p className="truncate text-[11px] text-fg-muted">{contract.status}</p>
             </div>
           </Link>

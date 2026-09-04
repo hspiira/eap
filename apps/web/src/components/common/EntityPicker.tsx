@@ -119,14 +119,14 @@ export function PickerRow({
     <>
       <span
         aria-hidden
-        className={`grid ${size === "md" ? "size-7" : "size-6"} shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary`}
+        className={`grid ${size === "md" ? "size-7" : "size-6"} shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary`}
       >
         {initials}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-fg">{primary}</span>
         {secondary ? (
-          <span className="block truncate font-mono text-[11px] text-fg-muted">{secondary}</span>
+          <span className="block truncate text-[11px] text-fg-muted">{secondary}</span>
         ) : null}
       </span>
     </>

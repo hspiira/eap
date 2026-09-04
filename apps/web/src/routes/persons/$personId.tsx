@@ -197,7 +197,7 @@ function PersonDetailPage() {
                       {person.family_id ? (
                         <DetailRow
                           label="Family ID"
-                          value={<span className="font-mono text-xs">{person.family_id}</span>}
+                          value={<span className="text-xs font-mono">{person.family_id}</span>}
                           fullWidth
                         />
                       ) : null}
@@ -232,9 +232,7 @@ function PersonDetailPage() {
                         label="Employee code"
                         value={
                           person.employment_info.employee_code ? (
-                            <span className="font-mono">
-                              {person.employment_info.employee_code}
-                            </span>
+                            <span>{person.employment_info.employee_code}</span>
                           ) : null
                         }
                       />
@@ -270,7 +268,7 @@ function PersonDetailPage() {
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                         >
                           {personInitials(primaryEmployee)}
                         </span>
@@ -278,7 +276,7 @@ function PersonDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(primaryEmployee)}
                           </p>
-                          <p className="truncate font-mono text-[11px] text-fg-muted">
+                          <p className="truncate text-[11px] text-fg-muted">
                             {primaryEmployee.employment_info?.employee_code ??
                               primaryEmployee.id.slice(0, 8)}
                           </p>
@@ -368,15 +366,13 @@ function Hero({
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-xs font-semibold text-primary"
       >
         {personInitials(person, user)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">{fullName}</h1>
       {person.employment_info?.employee_code ? (
-        <span className="font-mono text-xs text-fg-muted">
-          {person.employment_info.employee_code}
-        </span>
+        <span className="text-xs text-fg-muted">{person.employment_info.employee_code}</span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
@@ -423,13 +419,13 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
             >
               {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
+              <p className="truncate text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>

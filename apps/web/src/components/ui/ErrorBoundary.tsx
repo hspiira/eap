@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
               {this.state.error && import.meta.env.DEV && (
                 <div className="mb-6 p-3 bg-muted/10 border border-safe rounded-none text-left">
-                  <p className="text-fg-muted text-xs font-mono break-all">
+                  <p className="text-fg-muted text-xs break-all font-mono">
                     {this.state.error.message}
                   </p>
                 </div>

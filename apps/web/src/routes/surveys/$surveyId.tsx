@@ -249,7 +249,7 @@ function Hero({ survey, client }: { survey: Survey; client: Client | null }) {
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
+          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -375,13 +375,13 @@ function DetailRail({
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
             >
               {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
+              <p className="truncate text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>

@@ -28,7 +28,7 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
         <h2 className="text-sm font-semibold text-fg">Webhook setup</h2>
         <p className="mt-1 text-xs text-fg/60">
           Configure your survey provider to POST each response to this endpoint with the shared
-          secret in the <code className="font-mono">X-Evexia-Token</code> header.
+          secret in the <code>X-Evexia-Token</code> header.
         </p>
       </header>
 
@@ -99,7 +99,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
     <div>
       <p className="text-[11px] font-semibold tracking-wide text-fg-muted">{label}</p>
       <div className="mt-1 flex items-stretch overflow-hidden rounded-sm border border-fg/15">
-        <code className="flex-1 truncate bg-bg px-3 py-2 font-mono text-xs text-fg">{display}</code>
+        <code className="flex-1 truncate bg-bg px-3 py-2 text-xs text-fg">{display}</code>
         {mask && (
           <Button
             type="button"

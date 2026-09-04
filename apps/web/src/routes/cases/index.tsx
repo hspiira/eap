@@ -173,7 +173,7 @@ function CasesListPage() {
                       <Link
                         to="/cases/$caseId"
                         params={{ caseId: c.id }}
-                        className="font-mono text-xs text-fg hover:text-primary"
+                        className="text-xs text-fg hover:text-primary"
                       >
                         {c.clinical_subject_id}
                       </Link>

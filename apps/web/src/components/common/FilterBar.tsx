@@ -131,7 +131,7 @@ export function FilterSearch({
       />
       <kbd
         aria-hidden
-        className="ml-1 hidden h-5 select-none items-center border border-fg/20 bg-surface px-1 font-mono text-[10px] text-fg-muted sm:inline-flex"
+        className="ml-1 hidden h-5 select-none items-center border border-fg/20 bg-surface px-1 text-[10px] text-fg-muted sm:inline-flex"
       >
         ⌘K
       </kbd>

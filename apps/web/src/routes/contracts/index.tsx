@@ -39,6 +39,7 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
+import { cn } from "@/lib/utils"
 import type { Client, Contract } from "@/types/entities"
 import { ContractStatus } from "@/types/enums"
 
@@ -293,20 +294,18 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             <FileSignature className="size-3" />
           </span>
-          <span className="font-mono text-sm font-medium text-fg group-hover:text-primary">
-            {number}
-          </span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{number}</span>
         </Link>
       </TableCell>
       <TableCell>
         <Link
           to="/clients/$clientId"
           params={{ clientId: row.client_id }}
-          className="text-sm text-fg hover:text-primary"
+          className={cn("text-sm text-fg hover:text-primary", !linkedClient?.name && "font-mono")}
         >
           {linkedClient?.name ?? row.client_id.slice(0, 8)}
         </Link>

@@ -98,7 +98,7 @@ export function IndustryFormSheet({
           id="ind-code"
           placeholder="ENR-REN"
           maxLength={12}
-          className="font-mono"
+
           {...register("code")}
         />
       </FormField>
@@ -113,7 +113,7 @@ export function IndustryFormSheet({
         <Input
           id="ind-parent"
           placeholder="cln…"
-          className="font-mono"
+
           {...register("parent_industry_id")}
         />
       </FormField>

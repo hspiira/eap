@@ -159,7 +159,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
           id="tenant-code"
           placeholder="minet"
           autoComplete="off"
-          className="font-mono"
+
           disabled={isEdit}
           {...register("code", {
             setValueAs: (v) => (typeof v === "string" ? v.toLowerCase() : v),

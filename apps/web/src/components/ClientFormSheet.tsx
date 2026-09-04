@@ -244,7 +244,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
             id="cs-code"
             placeholder="ACME"
             maxLength={5}
-            className="font-mono"
+
             disabled={isEdit}
             {...register("code")}
           />

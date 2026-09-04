@@ -250,7 +250,7 @@ function AdminCredentialsDialog({
           <dl className="space-y-3 rounded-sm border border-border-subtle bg-bg p-4">
             <div>
               <dt className="text-xs uppercase tracking-wider text-fg-subtle">Tenant code</dt>
-              <dd className="font-mono text-sm text-fg">{creds.code}</dd>
+              <dd className="text-sm text-fg">{creds.code}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wider text-fg-subtle">Admin email</dt>
@@ -299,7 +299,7 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
           {tenant.name}
         </Link>
       </TableCell>
-      <TableCell className="font-mono text-xs text-fg/75">{tenant.code ?? "-"}</TableCell>
+      <TableCell className="text-xs text-fg/75">{tenant.code ?? "-"}</TableCell>
       <TableCell>
         <StatusBadge status={tenant.status} />
       </TableCell>

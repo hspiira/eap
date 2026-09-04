@@ -240,17 +240,17 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             CT
           </span>
-          <span className="font-mono text-sm text-fg group-hover:text-primary">
+          <span className="text-sm text-fg group-hover:text-primary font-mono">
             {row.contract_id.slice(0, 8)}
           </span>
         </Link>
       </TableCell>
       <TableCell>
-        <Link to="/services" className="font-mono text-sm text-fg hover:text-primary">
+        <Link to="/services" className="text-sm text-fg hover:text-primary">
           {row.service_id.slice(0, 8)}
         </Link>
       </TableCell>

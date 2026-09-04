@@ -65,7 +65,7 @@ function ProviderDetailPage() {
             Providers
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-mono text-base font-semibold text-fg">{p.id}</h1>
+            <h1 className="text-base font-semibold text-fg font-mono">{p.id}</h1>
             <ProviderTierBadge tier={profile.tier} />
             <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-fg/20 bg-surface text-fg rounded-none">
               {profile.region}
@@ -203,9 +203,7 @@ function AccreditationPanel({ provider }: { provider: Provider }) {
         <>
           <div>
             <dt className="text-xs text-fg/60">License number</dt>
-            <dd className="mt-1 text-sm text-fg font-mono">
-              {provider.license_info.number ?? "-"}
-            </dd>
+            <dd className="mt-1 text-sm text-fg">{provider.license_info.number ?? "-"}</dd>
           </div>
           <div>
             <dt className="text-xs text-fg/60">Issuing authority</dt>

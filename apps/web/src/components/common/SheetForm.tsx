@@ -108,7 +108,7 @@ export function SheetForm({
 
           <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-fg/10 bg-surface px-5 py-3">
             <span className="hidden text-[11px] text-fg-subtle sm:inline">
-              <kbd className="rounded-sm border border-fg/15 bg-bg px-1 py-px font-mono text-[10px] text-fg-muted">
+              <kbd className="rounded-sm border border-fg/15 bg-bg px-1 py-px text-[10px] text-fg-muted">
                 ⌘ Enter
               </kbd>{" "}
               to save

@@ -259,9 +259,7 @@ function Hero({ service }: { service: Service }) {
         {service.name}
       </h1>
       {service.service_type ? (
-        <span className="font-mono text-xs text-fg-muted">
-          {humanizeServiceType(service.service_type)}
-        </span>
+        <span className="text-xs text-fg-muted">{humanizeServiceType(service.service_type)}</span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={service.status} />
@@ -308,7 +306,7 @@ function ContractsPanel({
                 <Link
                   to="/contracts/$contractId"
                   params={{ contractId: a.contract_id }}
-                  className="font-mono text-sm text-fg group-hover:text-primary"
+                  className="text-sm text-fg group-hover:text-primary font-mono"
                 >
                   {a.contract_id.slice(0, 8)}
                 </Link>
@@ -397,7 +395,7 @@ function SessionsPanel({
                   <Link
                     to="/persons/$personId"
                     params={{ personId: s.person_id }}
-                    className="font-mono text-xs text-fg/75 hover:text-primary"
+                    className="text-xs text-fg/75 hover:text-primary font-mono"
                   >
                     {s.person_id.slice(0, 8)}
                   </Link>

@@ -32,9 +32,7 @@ export function IndustryDetailsCard({
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold leading-tight text-fg">{industry.name}</h3>
           <div className="mt-1 flex items-center gap-2">
-            <span className="font-mono text-[11px] text-fg-muted">
-              {industry.code ?? "no code"}
-            </span>
+            <span className="text-[11px] text-fg-muted">{industry.code ?? "no code"}</span>
           </div>
         </div>
         <Button
@@ -81,7 +79,7 @@ export function IndustryDetailsCard({
               {children.length}
             </Field>
             <Field label="ID" mono fullWidth>
-              <span className="text-fg/65">{industry.id}</span>
+              <span className="text-fg/65 font-mono">{industry.id}</span>
             </Field>
           </dl>
         </Section>
@@ -120,9 +118,7 @@ function Field({
   return (
     <div className={cn(fullWidth && "col-span-3")}>
       <dt className="text-[11px] font-medium tracking-wide text-fg-muted">{label}</dt>
-      <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "font-mono text-xs")}>
-        {children}
-      </dd>
+      <dd className={cn("mt-0.5 truncate text-sm text-fg", mono && "text-xs")}>{children}</dd>
     </div>
   )
 }
@@ -179,9 +175,7 @@ function TreeNode({ industry, kind, onSelect }: TreeNodeProps) {
         className={cn("size-3.5 shrink-0", kind === "current" ? "text-primary" : "text-fg-subtle")}
       />
       <span className="truncate">{industry.name}</span>
-      {industry.code ? (
-        <span className="font-mono text-[11px] text-fg-muted">{industry.code}</span>
-      ) : null}
+      {industry.code ? <span className="text-[11px] text-fg-muted">{industry.code}</span> : null}
     </span>
   )
   if (!interactive) return inner

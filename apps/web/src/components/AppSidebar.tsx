@@ -148,7 +148,7 @@ function ExpandedHeader() {
           <span className="flex-1 text-left">Search</span>
           <kbd
             aria-hidden
-            className="inline-flex h-5 select-none items-center rounded-sm border border-border bg-bg px-1.5 font-mono text-[10px] font-medium"
+            className="inline-flex h-5 select-none items-center rounded-sm border border-border bg-bg px-1.5 text-[10px] font-medium"
           >
             ⌘K
           </kbd>

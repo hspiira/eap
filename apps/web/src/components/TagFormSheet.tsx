@@ -96,7 +96,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
             id="tag-color"
             type="text"
             placeholder="Hex e.g. 6 chars after #"
-            className="font-mono"
+
             {...register("color")}
           />
           <span

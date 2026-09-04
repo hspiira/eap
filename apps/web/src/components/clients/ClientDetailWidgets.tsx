@@ -67,14 +67,14 @@ export function Hero({ client, verified }: { client: Client; verified: boolean }
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-xs font-semibold text-primary"
       >
         {nameInitials(client.name)}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {client.name}
       </h1>
-      <span className="font-mono text-xs text-fg-muted">{client.code}</span>
+      <span className="text-xs text-fg-muted">{client.code}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={client.status} />
       <TierBadge tier={client.tier} />
@@ -190,7 +190,7 @@ export function ContractsPanel({
                   <Link
                     to="/contracts/$contractId"
                     params={{ contractId: c.id }}
-                    className="font-medium text-fg group-hover:text-primary"
+                    className="font-medium text-fg group-hover:text-primary font-mono"
                   >
                     {c.id.slice(0, 8)}
                   </Link>
@@ -311,7 +311,7 @@ export function DetailRail({
                     >
                       <ChevronRight className="size-3.5 text-fg-subtle" />
                       <span className="truncate">{c.name}</span>
-                      <span className="font-mono text-[11px] text-fg-muted">{c.code}</span>
+                      <span className="text-[11px] text-fg-muted">{c.code}</span>
                     </Link>
                   </li>
                 ))}

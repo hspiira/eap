@@ -21,6 +21,7 @@ import {
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { displayName, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
+import { cn } from "@/lib/utils"
 import type { Person, Service, ServiceSession } from "@/types/entities"
 import { ClientType, SessionCategory, SessionType } from "@/types/enums"
 
@@ -553,7 +554,7 @@ function LockedServiceSummary({
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
       >
         SV
       </span>
@@ -561,7 +562,12 @@ function LockedServiceSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected service"}
         </p>
-        <p className="truncate text-[11px] text-fg-muted">
+        <p
+          className={cn(
+            "truncate text-[11px] text-fg-muted",
+            !resolved?.service_type && "font-mono",
+          )}
+        >
           {resolved?.service_type ?? serviceId.slice(0, 8)}
         </p>
       </div>
@@ -585,7 +591,7 @@ function LockedPersonSummary({ personId, person }: { personId: string; person: P
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
       >
         {resolved ? personInitials(resolved) : "··"}
       </span>
@@ -593,7 +599,12 @@ function LockedPersonSummary({ personId, person }: { personId: string; person: P
         <p className="truncate text-sm font-medium text-fg">
           {resolved ? displayName(resolved) : "Selected person"}
         </p>
-        <p className="truncate text-[11px] text-fg-muted">
+        <p
+          className={cn(
+            "truncate text-[11px] text-fg-muted",
+            !resolved?.person_type && "font-mono",
+          )}
+        >
           {resolved?.person_type ?? personId.slice(0, 8)}
         </p>
       </div>

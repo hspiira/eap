@@ -68,7 +68,7 @@ export function OverviewCard({ tenant }: { tenant: Tenant }) {
       <header className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-fg">{tenant.name}</h2>
-          <p className="font-mono text-xs text-fg-muted">{tenant.code}</p>
+          <p className="text-xs text-fg-muted">{tenant.code}</p>
         </div>
         <StatusBadge status={tenant.status} />
       </header>
@@ -316,7 +316,7 @@ export function AzureSsoCard({ tenant }: { tenant: Tenant }) {
           <Input
             id="azure-tenant-id"
             placeholder="00000000-0000-0000-0000-000000000000"
-            className="font-mono"
+
             value={tid}
             onChange={(e) => setTid(e.target.value)}
             spellCheck={false}

@@ -266,11 +266,11 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             <Headphones className="size-3" />
           </span>
-          <span className="font-mono text-sm font-medium text-fg group-hover:text-primary">
+          <span className="text-sm font-medium text-fg group-hover:text-primary font-mono">
             {row.person_id}
           </span>
         </Link>

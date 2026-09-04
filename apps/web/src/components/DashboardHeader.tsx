@@ -86,7 +86,7 @@ function HeaderSearch() {
       <span className="flex-1 text-left">Search</span>
       <kbd
         aria-hidden
-        className="inline-flex h-5 select-none items-center rounded-sm border border-border-subtle bg-bg px-1.5 font-mono text-[10px] font-medium"
+        className="inline-flex h-5 select-none items-center rounded-sm border border-border-subtle bg-bg px-1.5 text-[10px] font-medium"
       >
         ⌘K
       </kbd>
@@ -198,7 +198,7 @@ function UserMenu() {
           aria-label="Account menu"
         >
           <span
-            className="grid size-6 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center rounded-sm bg-primary/10 text-[10px] font-semibold text-primary"
             aria-hidden
           >
             {initial}
@@ -211,7 +211,7 @@ function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex items-center gap-2.5">
             <span
-              className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 font-mono text-sm font-semibold text-primary"
+              className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 text-sm font-semibold text-primary"
               aria-hidden
             >
               {initial}

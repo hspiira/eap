@@ -36,7 +36,7 @@ export function Hero({
       >
         <Phone className="size-4" />
       </span>
-      <h1 className="shrink truncate font-mono text-sm font-semibold leading-tight text-fg">
+      <h1 className="shrink truncate text-sm font-semibold leading-tight text-fg font-mono">
         {outreach.person_id}
       </h1>
       {campaignName ? (
@@ -177,7 +177,7 @@ export function DetailRail({
         >
           <span
             aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             {outreach.person_id.slice(0, 2).toUpperCase()}
           </span>

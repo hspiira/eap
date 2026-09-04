@@ -245,12 +245,12 @@ function IndustriesPage() {
                               {row.name}
                             </span>
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-fg/65">
+                          <TableCell className="text-xs text-fg/65">
                             {row.code ?? <span className="text-fg-subtle">-</span>}
                           </TableCell>
                           <TableCell className="text-sm text-fg/65">
                             {row.parent_industry_id ? (
-                              <span className="font-mono text-xs">
+                              <span className="text-xs font-mono">
                                 {row.parent_industry_id.slice(0, 8)}
                               </span>
                             ) : (

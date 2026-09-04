@@ -99,9 +99,7 @@ export function InviteToProjectCard({
         </div>
 
         <div className="flex items-center gap-2 rounded-sm border border-border-subtle bg-surface px-2 py-1.5">
-          <span className="min-w-0 flex-1 truncate font-mono text-xs text-fg-muted">
-            {inviteLink}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-xs text-fg-muted">{inviteLink}</span>
           <Button
             variant="ghost"
             size="sm"
@@ -126,7 +124,7 @@ export function InviteToProjectCard({
               className="flex items-center gap-3 rounded-sm border border-border-subtle bg-surface px-2 py-1.5"
             >
               <span
-                className="grid size-7 shrink-0 place-items-center rounded-sm bg-muted font-mono text-xs font-medium text-fg-muted"
+                className="grid size-7 shrink-0 place-items-center rounded-sm bg-muted text-xs font-medium text-fg-muted"
                 aria-hidden
               >
                 {m.initials ?? m.name.slice(0, 1).toUpperCase()}

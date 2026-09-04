@@ -116,7 +116,7 @@ function IncidentDetailPage() {
               </div>
               <div>
                 <dt className="text-xs text-fg/60">Client</dt>
-                <dd className="text-sm text-fg font-mono break-all">{inc.client_id}</dd>
+                <dd className="text-sm text-fg break-all font-mono">{inc.client_id}</dd>
               </div>
             </dl>
           </section>

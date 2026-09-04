@@ -48,6 +48,7 @@ import {
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
+import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Client, Person } from "@/types/entities"
 import { Language, PersonType, type RelationType, TenantRole, WorkStatus } from "@/types/enums"
@@ -448,7 +449,7 @@ export function PersonFormSheet({
               <Input
                 id="ps-empid"
                 placeholder="MNT-014"
-                className="font-mono"
+
                 {...register("employee_id")}
               />
             </FormField>
@@ -643,7 +644,7 @@ export function PersonFormSheet({
               <Input
                 id="ps-tz"
                 placeholder="Africa/Kampala"
-                className="font-mono"
+
                 {...register("timezone")}
               />
             </FormField>
@@ -716,7 +717,7 @@ function LockedClientSummary({ clientId, client }: { clientId: string; client: C
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
       >
         {resolved ? nameInitials(resolved.name) : "··"}
       </span>
@@ -724,7 +725,9 @@ function LockedClientSummary({ clientId, client }: { clientId: string; client: C
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected client"}
         </p>
-        <p className="truncate font-mono text-[11px] text-fg-muted">{resolved?.code ?? clientId}</p>
+        <p className={cn("truncate text-[11px] text-fg-muted", !resolved?.code && "font-mono")}>
+          {resolved?.code || clientId}
+        </p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
         Locked

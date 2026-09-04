@@ -312,7 +312,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
             {personInitials(row, linkedUser)}
           </span>
@@ -347,7 +347,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
           <Link
             to="/clients/$clientId"
             params={{ clientId: row.employment_info.client_id }}
-            className="font-mono text-xs text-fg-subtle hover:text-primary"
+            className="text-xs text-fg-subtle hover:text-primary font-mono"
           >
             {row.employment_info.client_id.slice(0, 8)}
           </Link>
@@ -368,7 +368,7 @@ function PersonRow({ row, clientsById }: { row: Person; clientsById: Map<string,
             {linkedUser.email}
           </Link>
         ) : row.user_id ? (
-          <span className="font-mono text-xs text-fg-subtle">{row.user_id.slice(0, 8)}</span>
+          <span className="text-xs text-fg-subtle font-mono">{row.user_id.slice(0, 8)}</span>
         ) : (
           <span className="text-fg-subtle">-</span>
         )}

@@ -50,7 +50,7 @@ export function Hero({ caseData }: { caseData: Case }) {
       >
         <HeartPulse className="size-4" />
       </span>
-      <h1 className="shrink truncate font-mono text-sm font-semibold leading-tight text-fg">
+      <h1 className="shrink truncate text-sm font-semibold leading-tight text-fg">
         {caseData.clinical_subject_id}
       </h1>
       <span className="text-xs text-fg/65">

@@ -13,7 +13,7 @@ export function FixtureBanner() {
       <FlaskConical className="size-3 shrink-0" aria-hidden />
       <span>
         Fixture mode: some data is local sample data, not from the API. Set{" "}
-        <code className="font-mono">VITE_USE_FIXTURES=false</code> to use the real API.
+        <code>VITE_USE_FIXTURES=false</code> to use the real API.
       </span>
     </div>
   )

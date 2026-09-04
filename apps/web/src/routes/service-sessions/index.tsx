@@ -47,6 +47,7 @@ import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { queryKeys } from "@/lib/query-keys"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
+import { cn } from "@/lib/utils"
 import type { Service, ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
@@ -401,7 +402,10 @@ function SessionRow({
         <Link
           to="/services/$serviceId"
           params={{ serviceId: row.service_id }}
-          className="text-xs text-fg/75 hover:text-primary"
+          className={cn(
+            "text-xs text-fg/75 hover:text-primary",
+            !linkedService?.name && "font-mono",
+          )}
         >
           {linkedService?.name ?? row.service_id.slice(0, 8)}
         </Link>

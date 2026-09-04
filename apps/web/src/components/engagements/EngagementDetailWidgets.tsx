@@ -70,10 +70,10 @@ export function Hero({
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
+          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
-      <span className="font-mono text-xs text-fg-muted">{engagement.engagement_type}</span>
+      <span className="text-xs text-fg-muted">{engagement.engagement_type}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <EngagementStatusPill status={engagement.status} />
       {overdue ? (
@@ -347,7 +347,7 @@ export function HoursPanel({
                   <TableCell className="px-3 py-2 text-right tabular-nums">
                     {e.hours.toFixed(2)}
                   </TableCell>
-                  <TableCell className="px-3 py-2 font-mono text-xs text-fg/75">
+                  <TableCell className="px-3 py-2 text-xs text-fg/75 font-mono">
                     {e.user_id}
                   </TableCell>
                   <TableCell className="px-3 py-2 text-fg/80">{e.note ?? "-"}</TableCell>
@@ -388,8 +388,7 @@ export function TimelinePanel({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-medium text-fg-muted">
-                {formatDateTime(e.at)} · <span className="font-mono">{e.actor}</span> ·{" "}
-                <TimelineKindPill kind={e.kind} />
+                {formatDateTime(e.at)} · <span>{e.actor}</span> · <TimelineKindPill kind={e.kind} />
               </p>
               <p className="mt-0.5 text-sm text-fg">{e.message}</p>
             </div>
@@ -455,13 +454,13 @@ export function DetailRail({
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
             >
               {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
+              <p className="truncate text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         </RailSection>

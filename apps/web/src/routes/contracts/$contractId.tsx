@@ -261,7 +261,7 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
       >
         <FileSignature className="size-4" />
       </span>
-      <h1 className="shrink truncate font-mono text-base font-semibold leading-tight text-fg">
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg font-mono">
         {contract.id.slice(0, 8)}
       </h1>
       {client ? (
@@ -271,7 +271,7 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
           className="text-xs text-fg/65 hover:text-primary"
         >
           {client.name}
-          <span className="ml-1.5 font-mono text-fg-subtle">{client.code}</span>
+          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
         </Link>
       ) : (
         <span className="font-mono text-xs text-fg-subtle">{contract.client_id.slice(0, 8)}</span>
@@ -308,13 +308,13 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
             >
               {nameInitials(client.name)}
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{client.name}</p>
-              <p className="truncate font-mono text-[11px] text-fg-muted">{client.code}</p>
+              <p className="truncate text-[11px] text-fg-muted">{client.code}</p>
             </div>
           </Link>
         ) : (
@@ -431,7 +431,7 @@ function ServicesPanel({
                   <Link
                     to="/service-assignments/$assignmentId"
                     params={{ assignmentId: a.id }}
-                    className="font-mono text-sm text-fg group-hover:text-primary"
+                    className="text-sm text-fg group-hover:text-primary"
                   >
                     {a.service_id.slice(0, 8)}
                   </Link>

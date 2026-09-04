@@ -234,7 +234,7 @@ function UserDetailPage() {
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 font-mono text-[10px] font-semibold text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                         >
                           {personInitials(person, user)}
                         </span>
