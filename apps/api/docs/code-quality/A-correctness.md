@@ -495,6 +495,18 @@ prevent it:
   exists nowhere.
 - Never edit a revision that has been applied. Write a new one.
 
+**v3 reintroduces the BE-A09 offline break.** Line 44 calls `sa.inspect(bind)`
+to test whether `clients.aliases` still exists. That is the exact pattern BE-A09
+records as making `alembic upgrade --sql` exit with
+`NoInspectionAvailable`, because offline mode binds a `MockConnection` that has
+no inspection system. So this file keeps the offline render broken, and BE-A09's
+acceptance criteria should be checked against it too. Found by eap-d3.
+
+**Sequence this with BE-A11.** Both touch `alembic_version`, and the repair
+above deletes a row that BE-A11 is also about. Doing them separately means
+writing to the same table twice and reasoning about an intermediate state that
+need not exist. One pass fixes both.
+
 **A second fragility in v3.** It imports `normalize_client_alias` from
 `app.shared.utils.client_alias` and `generate_cuid` from
 `app.shared.utils.generators`. A migration is a historical record and should be
