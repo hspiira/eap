@@ -23,7 +23,7 @@ describe("boolParam", () => {
    * and decodes back as the number 1. Checking only for the string left the
    * filter off after a reload. Both forms are covered so that cannot return.
    */
-  it("accepts the numeric form the router decodes a written \"1\" into", () => {
+  it('accepts the numeric form the router decodes a written "1" into', () => {
     expect(parse(1)).toBe(true)
     expect(parse("1")).toBe(true)
   })
