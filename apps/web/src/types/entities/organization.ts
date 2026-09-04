@@ -34,16 +34,8 @@ export interface Client extends BaseEntity {
   industry_id?: string | null
   parent_client_id?: string | null
   preferred_contact_method?: string | null
+  aliases?: string[]
   metadata?: Record<string, unknown> | null
-}
-
-/**
- * Client stats (child count, contracts, verification)
- */
-export interface ClientStats {
-  child_count?: number
-  contract_count?: number
-  is_verified?: boolean
 }
 
 /**

@@ -84,7 +84,9 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         if self.tenant_repository:
             tenant = await self.tenant_repository.get_by_id(tenant_id)
             if not tenant:
-                raise NotFoundError(f"Tenant not found: {tenant_id.value}", "Tenant", tenant_id.value)
+                raise NotFoundError(
+                    f"Tenant not found: {tenant_id.value}", "Tenant", tenant_id.value
+                )
             from app.core.config import settings as _settings  # local import to avoid cycle
 
             if getattr(_settings, "ENFORCE_SUBSCRIPTION_LIMITS", False):

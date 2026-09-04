@@ -100,10 +100,24 @@ class ClientUpdate(BaseModel):
     contact_info: ContactInfoCreate | None = Field(None, description="Contact information")
     billing_address: AddressCreate | None = Field(None, description="Billing address")
     industry_id: str | None = Field(None, description="Industry identifier")
+
+
 class ClientUpdateTier(BaseModel):
     """Request schema for updating client engagement tier."""
 
     tier: ClientTier | None = Field(..., description="Engagement tier; null clears it")
+
+
+class ClientUpdateAliases(BaseModel):
+    """Replace the human-readable aliases used to find a client."""
+
+    aliases: list[str] = Field(default_factory=list, max_length=50)
+
+
+class ClientAliasMergeRequest(BaseModel):
+    """Move aliases from another client into the selected client."""
+
+    source_client_id: str = Field(..., min_length=1, max_length=25)
 
 
 class ClientUpdateContactInfo(BaseModel):
@@ -139,6 +153,7 @@ class ClientResponse(BaseModel):
     )
     tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
     suspension_reason: str | None = Field(None, description="Reason for suspension")
+    aliases: list[str] = Field(default_factory=list, description="Alternative client names")
     is_active: bool = Field(..., description="Whether client is active")
 
     model_config = ConfigDict(from_attributes=True)
@@ -152,6 +167,32 @@ class ClientListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     limit: int = Field(..., description="Items per page")
     has_more: bool = Field(..., description="Whether there are more items")
+
+
+class ClientImportIssue(BaseModel):
+    """A warning or validation problem found in an imported row."""
+
+    row: int = Field(..., description="CSV row number")
+    field: str | None = Field(None, description="CSV field associated with the issue")
+    message: str = Field(..., description="Human-readable explanation")
+    severity: str = Field("error", description="error, warning, or skipped")
+
+
+class ClientImportCreated(BaseModel):
+    """Identity assigned to an imported client."""
+
+    name: str
+    code: str
+
+
+class ClientImportResponse(BaseModel):
+    """Result of a client CSV import."""
+
+    imported: int
+    skipped: int
+    failed: int
+    clients: list[ClientImportCreated]
+    issues: list[ClientImportIssue]
 
 
 class ClientStatsResponse(BaseModel):

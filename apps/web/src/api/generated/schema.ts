@@ -906,6 +906,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clients/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export clients as CSV
+         * @description Export the tenant's matching clients without exposing other tenants.
+         */
+        get: operations["export_clients_clients_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import clients from CSV
+         * @description Validate and create a batch of clients in one transaction.
+         */
+        post: operations["import_clients_clients_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the client CSV import template
+         * @description Return the supported client import columns as an Excel-compatible CSV.
+         */
+        get: operations["client_import_template_clients_import_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clients/name/{name}": {
         parameters: {
             query?: never;
@@ -964,6 +1024,46 @@ export interface paths {
          * @description Activate a client.
          */
         post: operations["activate_client_clients__client_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/{client_id}/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace client aliases
+         * @description Replace aliases while keeping them tenant-scoped and deduplicated.
+         */
+        patch: operations["update_client_aliases_clients__client_id__aliases_patch"];
+        trace?: never;
+    };
+    "/clients/{client_id}/aliases/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge aliases from another client
+         * @description Move aliases between clients without merging their operational records.
+         */
+        post: operations["merge_client_aliases_clients__client_id__aliases_merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5290,6 +5390,14 @@ export interface components {
          * @enum {string}
          */
         BenchmarkScope: "SessionVolume" | "UtilisationRates" | "Satisfaction" | "CareCallbackOutcomes";
+        /** Body_import_clients_clients_import_post */
+        Body_import_clients_clients_import_post: {
+            /**
+             * File
+             * @description UTF-8 CSV using the client import template
+             */
+            file: string;
+        };
         /** BulkPanelStatusResponse */
         BulkPanelStatusResponse: {
             /** Not Found */
@@ -5491,6 +5599,14 @@ export interface components {
          */
         CaseStatus: "Intake" | "Assessment" | "Active" | "Closed" | "ReferredOut" | "NoShowClosed";
         /**
+         * ClientAliasMergeRequest
+         * @description Move aliases from another client into the selected client.
+         */
+        ClientAliasMergeRequest: {
+            /** Source Client Id */
+            source_client_id: string;
+        };
+        /**
          * ClientCreate
          * @description Request schema for creating a client.
          */
@@ -5534,6 +5650,59 @@ export interface components {
             reason?: string | null;
         };
         /**
+         * ClientImportCreated
+         * @description Identity assigned to an imported client.
+         */
+        ClientImportCreated: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * ClientImportIssue
+         * @description A warning or validation problem found in an imported row.
+         */
+        ClientImportIssue: {
+            /**
+             * Field
+             * @description CSV field associated with the issue
+             */
+            field?: string | null;
+            /**
+             * Message
+             * @description Human-readable explanation
+             */
+            message: string;
+            /**
+             * Row
+             * @description CSV row number
+             */
+            row: number;
+            /**
+             * Severity
+             * @description error, warning, or skipped
+             * @default error
+             */
+            severity: string;
+        };
+        /**
+         * ClientImportResponse
+         * @description Result of a client CSV import.
+         */
+        ClientImportResponse: {
+            /** Clients */
+            clients: components["schemas"]["ClientImportCreated"][];
+            /** Failed */
+            failed: number;
+            /** Imported */
+            imported: number;
+            /** Issues */
+            issues: components["schemas"]["ClientImportIssue"][];
+            /** Skipped */
+            skipped: number;
+        };
+        /**
          * ClientListResponse
          * @description Response schema for client list.
          */
@@ -5569,6 +5738,11 @@ export interface components {
          * @description Response schema for client.
          */
         ClientResponse: {
+            /**
+             * Aliases
+             * @description Alternative client names
+             */
+            aliases?: string[];
             /** @description Billing address */
             billing_address?: components["schemas"]["AddressSchema"] | null;
             /**
@@ -5839,6 +6013,14 @@ export interface components {
             preferred_contact_method?: components["schemas"]["ContactMethod"] | null;
             /** @description Engagement tier (A/B/C) */
             tier?: components["schemas"]["ClientTier"] | null;
+        };
+        /**
+         * ClientUpdateAliases
+         * @description Replace the human-readable aliases used to find a client.
+         */
+        ClientUpdateAliases: {
+            /** Aliases */
+            aliases?: string[];
         };
         /**
          * ClientUpdateBillingAddress
@@ -12172,6 +12354,108 @@ export interface operations {
             };
         };
     };
+    export_clients_clients_export_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Filter by client status */
+                status?: components["schemas"]["BaseStatus"] | null;
+                /** @description Filter by engagement tier (A/B/C) */
+                tier?: components["schemas"]["ClientTier"] | null;
+                /** @description Filter by parent client */
+                parent_client_id?: string | null;
+                /** @description Include archived clients */
+                include_archived?: boolean;
+                /** @description Search in client name */
+                search?: string | null;
+                /** @description Field to sort by */
+                sort_by?: string;
+                /** @description Sort in descending order */
+                sort_desc?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_clients_clients_import_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Validate without creating clients */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_clients_clients_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    client_import_template_clients_import_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_client_by_name_clients_name__name__get: {
         parameters: {
             query: {
@@ -12281,6 +12565,80 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_client_aliases_clients__client_id__aliases_patch: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientUpdateAliases"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_client_aliases_clients__client_id__aliases_merge_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientAliasMergeRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

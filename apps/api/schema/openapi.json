@@ -991,6 +991,21 @@
         "title": "BenchmarkScope",
         "type": "string"
       },
+      "Body_import_clients_clients_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "UTF-8 CSV using the client import template",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_clients_clients_import_post",
+        "type": "object"
+      },
       "BulkPanelStatusResponse": {
         "properties": {
           "not_found": {
@@ -1536,6 +1551,22 @@
         "title": "CaseStatus",
         "type": "string"
       },
+      "ClientAliasMergeRequest": {
+        "description": "Move aliases from another client into the selected client.",
+        "properties": {
+          "source_client_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Source Client Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_client_id"
+        ],
+        "title": "ClientAliasMergeRequest",
+        "type": "object"
+      },
       "ClientCreate": {
         "description": "Request schema for creating a client.",
         "properties": {
@@ -1631,6 +1662,104 @@
         "title": "ClientDeactivateRequest",
         "type": "object"
       },
+      "ClientImportCreated": {
+        "description": "Identity assigned to an imported client.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "code"
+        ],
+        "title": "ClientImportCreated",
+        "type": "object"
+      },
+      "ClientImportIssue": {
+        "description": "A warning or validation problem found in an imported row.",
+        "properties": {
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CSV field associated with the issue",
+            "title": "Field"
+          },
+          "message": {
+            "description": "Human-readable explanation",
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "description": "CSV row number",
+            "title": "Row",
+            "type": "integer"
+          },
+          "severity": {
+            "default": "error",
+            "description": "error, warning, or skipped",
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "message"
+        ],
+        "title": "ClientImportIssue",
+        "type": "object"
+      },
+      "ClientImportResponse": {
+        "description": "Result of a client CSV import.",
+        "properties": {
+          "clients": {
+            "items": {
+              "$ref": "#/components/schemas/ClientImportCreated"
+            },
+            "title": "Clients",
+            "type": "array"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ClientImportIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "imported",
+          "skipped",
+          "failed",
+          "clients",
+          "issues"
+        ],
+        "title": "ClientImportResponse",
+        "type": "object"
+      },
       "ClientListResponse": {
         "description": "Response schema for client list.",
         "properties": {
@@ -1676,6 +1805,14 @@
       "ClientResponse": {
         "description": "Response schema for client.",
         "properties": {
+          "aliases": {
+            "description": "Alternative client names",
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
           "billing_address": {
             "anyOf": [
               {
@@ -2171,6 +2308,21 @@
           }
         },
         "title": "ClientUpdate",
+        "type": "object"
+      },
+      "ClientUpdateAliases": {
+        "description": "Replace the human-readable aliases used to find a client.",
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Aliases",
+            "type": "array"
+          }
+        },
+        "title": "ClientUpdateAliases",
         "type": "object"
       },
       "ClientUpdateBillingAddress": {
@@ -15005,6 +15157,250 @@
         ]
       }
     },
+    "/clients/export": {
+      "get": {
+        "description": "Export the tenant's matching clients without exposing other tenants.",
+        "operationId": "export_clients_clients_export_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by client status",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/BaseStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by client status",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "Filter by engagement tier (A/B/C)",
+            "in": "query",
+            "name": "tier",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ClientTier"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by engagement tier (A/B/C)",
+              "title": "Tier"
+            }
+          },
+          {
+            "description": "Filter by parent client",
+            "in": "query",
+            "name": "parent_client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by parent client",
+              "title": "Parent Client Id"
+            }
+          },
+          {
+            "description": "Include archived clients",
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include archived clients",
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Search in client name",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search in client name",
+              "title": "Search"
+            }
+          },
+          {
+            "description": "Field to sort by",
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "created_at",
+              "description": "Field to sort by",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort in descending order",
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Sort in descending order",
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export clients as CSV",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/import": {
+      "post": {
+        "description": "Validate and create a batch of clients in one transaction.",
+        "operationId": "import_clients_clients_import_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Validate without creating clients",
+            "in": "query",
+            "name": "dry_run",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Validate without creating clients",
+              "title": "Dry Run",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_clients_clients_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import clients from CSV",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/import/template": {
+      "get": {
+        "description": "Return the supported client import columns as an Excel-compatible CSV.",
+        "operationId": "client_import_template_clients_import_template_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Download the client CSV import template",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
     "/clients/name/{name}": {
       "get": {
         "description": "Get client by name within a tenant.",
@@ -15209,6 +15605,140 @@
           }
         ],
         "summary": "Activate a client",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/{client_id}/aliases": {
+      "patch": {
+        "description": "Replace aliases while keeping them tenant-scoped and deduplicated.",
+        "operationId": "update_client_aliases_clients__client_id__aliases_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientUpdateAliases"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Replace client aliases",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/{client_id}/aliases/merge": {
+      "post": {
+        "description": "Move aliases between clients without merging their operational records.",
+        "operationId": "merge_client_aliases_clients__client_id__aliases_merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientAliasMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Merge aliases from another client",
         "tags": [
           "clients"
         ]

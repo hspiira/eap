@@ -48,6 +48,7 @@ class ClientEntity:
     preferred_contact_method: ContactMethod | None = None
     tier: ClientTier | None = None
     suspension_reason: str | None = None
+    aliases: list[str] = field(default_factory=list[str])
     deleted_at: datetime | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 

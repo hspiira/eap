@@ -41,6 +41,7 @@ from app.api.dependencies.identity import (
 )
 from app.api.dependencies.organization import (
     get_activity_repository,
+    get_client_alias_repository,
     get_client_repository,
     get_client_tag_repository,
     get_industry_repository,
@@ -76,6 +77,7 @@ __all__ = [
     "PageParams",
     "pagination",
     "get_activity_repository",
+    "get_client_alias_repository",
     "get_audit_event_handler",
     "get_audit_repository",
     "get_authorization_repository",

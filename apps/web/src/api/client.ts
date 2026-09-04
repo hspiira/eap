@@ -250,8 +250,8 @@ class ApiClient {
   /**
    * GET with blob response (e.g. file download)
    */
-  async getBlob(path: string): Promise<Blob> {
-    const url = this.buildUrl(path)
+  async getBlob(path: string, params?: QueryParams): Promise<Blob> {
+    const url = this.buildUrl(path, params)
     const response = await this.fetchWithAuthRetry(path, (headers) =>
       fetch(url, {
         method: "GET",

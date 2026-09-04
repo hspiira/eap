@@ -18,6 +18,21 @@ import type {
   PaginatedResponse,
 } from "../types"
 
+export interface ClientImportIssue {
+  row: number
+  field?: string | null
+  message: string
+  severity?: "error" | "warning" | "skipped"
+}
+
+export interface ClientImportResult {
+  imported: number
+  skipped: number
+  failed: number
+  clients: Array<{ name: string; code: string }>
+  issues: ClientImportIssue[]
+}
+
 export type { ClientCreate, ClientUpdate }
 export type ClientUpdateTier = Schemas["ClientUpdateTier"]
 
@@ -49,6 +64,23 @@ export const clientsApi = {
     return apiClient.get<PaginatedResponse<Client>>("/clients", params)
   },
 
+  async importCsv(file: File, dryRun = false): Promise<ClientImportResult> {
+    const formData = new FormData()
+    formData.append("file", file)
+    return apiClient.postFormData<ClientImportResult>(
+      `/clients/import?dry_run=${String(dryRun)}`,
+      formData,
+    )
+  },
+
+  async getImportTemplate(): Promise<Blob> {
+    return apiClient.getBlob("/clients/import/template")
+  },
+
+  async exportCsv(params?: Omit<ClientListParams, "page" | "limit">): Promise<Blob> {
+    return apiClient.getBlob("/clients/export", params)
+  },
+
   /**
    * Update client
    */
@@ -62,6 +94,16 @@ export const clientsApi = {
    */
   async setTier(clientId: string, tier: ClientTier | null): Promise<Client> {
     return apiClient.patch<Client>(`/clients/${clientId}/tier`, { tier })
+  },
+
+  async updateAliases(clientId: string, aliases: string[]): Promise<Client> {
+    return apiClient.patch<Client>(`/clients/${clientId}/aliases`, { aliases })
+  },
+
+  async mergeAliases(clientId: string, sourceClientId: string): Promise<Client> {
+    return apiClient.post<Client>(`/clients/${clientId}/aliases/merge`, {
+      source_client_id: sourceClientId,
+    })
   },
 
   /**

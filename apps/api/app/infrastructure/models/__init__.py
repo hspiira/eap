@@ -20,6 +20,7 @@ from app.infrastructure.models.care_callback_model import (
     OutreachRecordModel,
 )
 from app.infrastructure.models.case_model import CaseModel
+from app.infrastructure.models.client_alias_model import ClientAliasModel
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
@@ -80,6 +81,7 @@ __all__ = [
     "ClinicalSubjectModel",
     "EAPProgrammeModel",
     "ClientModel",
+    "ClientAliasModel",
     "ClientTagModel",
     "ContactModel",
     "ContractModel",

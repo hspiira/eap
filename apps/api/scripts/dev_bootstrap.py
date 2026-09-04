@@ -12,6 +12,7 @@ Invoked by `pnpm setup` from the repo root, which also installs dependencies.
 
 from __future__ import annotations
 
+import getpass
 import re
 import subprocess
 import sys
@@ -112,7 +113,17 @@ def ensure_database(url: str) -> bool:
             conn = await asyncpg.connect(admin_dsn)
         except Exception as exc:
             warn(f"cannot reach PostgreSQL at {parts.hostname}:{parts.port or 5432} - {exc}")
-            warn("start PostgreSQL, or point DATABASE_URL in the repo-root .env at a reachable one")
+            if "does not exist" in str(exc) and "role" in str(exc):
+                warn(
+                    f"the server is up but the role is not; try your OS user, e.g. {getpass.getuser()!r}"
+                )
+                warn(
+                    f"    edit DATABASE_URL in {REPO_ROOT / '.env'}, or: createuser -s {parts.username or 'postgres'}"
+                )
+            else:
+                warn(
+                    "start PostgreSQL, or point DATABASE_URL in the repo-root .env at a reachable one"
+                )
             return False
         try:
             exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = $1", dbname)

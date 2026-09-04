@@ -8,15 +8,17 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
+from app.infrastructure.models.client_alias_model import ClientAliasModel
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
+from app.shared.utils.client_alias import normalize_client_alias
 
 
 class ClientRepositoryImpl(
@@ -72,6 +74,39 @@ class ClientRepositoryImpl(
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
+    async def get_by_name_or_alias(self, tenant_id: TenantId, value: str) -> ClientEntity | None:
+        """Resolve a canonical client name or a tenant-scoped alias."""
+        client = await self.get_by_name(tenant_id, value)
+        if client:
+            return client
+        normalized = normalize_client_alias(value)
+        stmt = (
+            select(ClientModel)
+            .join(ClientAliasModel, ClientAliasModel.client_id == ClientModel.id)
+            .where(
+                ClientModel.tenant_id == tenant_id.value,
+                ClientModel.deleted_at.is_(None),
+                ClientAliasModel.normalized_alias == normalized,
+            )
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model:
+            return self._to_entity(model)
+        if len(normalized) < 4:
+            return None
+        prefix_result = await self.session.execute(
+            select(ClientModel)
+            .join(ClientAliasModel, ClientAliasModel.client_id == ClientModel.id)
+            .where(
+                ClientModel.tenant_id == tenant_id.value,
+                ClientModel.deleted_at.is_(None),
+                ClientAliasModel.normalized_alias.like(f"{normalized}%"),
+            )
+        )
+        models = prefix_result.unique().scalars().all()
+        return self._to_entity(models[0]) if len(models) == 1 else None
+
     async def list_all(
         self,
         tenant_id: TenantId,
@@ -100,6 +135,18 @@ class ClientRepositoryImpl(
         extra_conditions = []
         if not include_archived and status is None:
             extra_conditions.append(ClientModel.status != BaseStatus.ARCHIVED)
+        if search:
+            extra_conditions.append(
+                or_(
+                    ClientModel.name.ilike(f"%{search}%"),
+                    ClientModel.id.in_(
+                        select(ClientAliasModel.client_id).where(
+                            ClientAliasModel.tenant_id == tenant_id.value,
+                            ClientAliasModel.alias.ilike(f"%{search}%"),
+                        )
+                    ),
+                )
+            )
 
         return await self._query_all(
             tenant_id=tenant_id.value,
@@ -108,7 +155,7 @@ class ClientRepositoryImpl(
             sort_by=sort_by,
             sort_desc=sort_desc,
             filters=filters,
-            search=search,
+            search=None,
             search_fields=["name"],
             extra_conditions=extra_conditions,
         )
@@ -137,11 +184,23 @@ class ClientRepositoryImpl(
         extra_conditions = []
         if not include_archived and status is None:
             extra_conditions.append(ClientModel.status != BaseStatus.ARCHIVED)
+        if search:
+            extra_conditions.append(
+                or_(
+                    ClientModel.name.ilike(f"%{search}%"),
+                    ClientModel.id.in_(
+                        select(ClientAliasModel.client_id).where(
+                            ClientAliasModel.tenant_id == tenant_id.value,
+                            ClientAliasModel.alias.ilike(f"%{search}%"),
+                        )
+                    ),
+                )
+            )
 
         return await self._count_all(
             tenant_id=tenant_id.value,
             filters=filters,
-            search=search,
+            search=None,
             search_fields=["name"],
             extra_conditions=extra_conditions,
         )

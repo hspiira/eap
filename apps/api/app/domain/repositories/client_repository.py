@@ -36,6 +36,10 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         """
 
     @abstractmethod
+    async def get_by_name_or_alias(self, tenant_id: TenantId, value: str) -> ClientEntity | None:
+        """Get a client by canonical name or normalized alias."""
+
+    @abstractmethod
     async def get_by_code(self, tenant_id: TenantId, code: str) -> ClientEntity | None:
         """Get a client by normalized code within a tenant."""
 

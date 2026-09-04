@@ -5,8 +5,12 @@ Database representation of Client aggregate.
 This is a data container only - no business logic.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, Index, String, func, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.infrastructure.models.base import (
@@ -17,6 +21,9 @@ from app.infrastructure.models.base import (
     TenantMixin,
     TimestampMixin,
 )
+
+if TYPE_CHECKING:
+    from app.infrastructure.models.client_alias_model import ClientAliasModel
 
 
 class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
@@ -48,6 +55,9 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
     )  # 3-5 character unique code
     contact_info: Mapped[dict] = mapped_column(JSON, nullable=False)
     billing_address: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    alias_records: Mapped[list[ClientAliasModel]] = relationship(
+        back_populates="client", cascade="all, delete-orphan", lazy="selectin"
+    )
 
     # Relationships
     industry_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)

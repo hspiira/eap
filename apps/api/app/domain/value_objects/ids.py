@@ -61,6 +61,11 @@ class ClientId(Id):
 
 
 @dataclass(frozen=True)
+class ClientAliasId(Id):
+    pass
+
+
+@dataclass(frozen=True)
 class IndustryId(Id):
     pass
 

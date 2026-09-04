@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -24,6 +24,7 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -372,6 +373,12 @@ function ClientDetailPage() {
                   <ClientUpcomingCard items={upcomingItems} />
                   <ClientOnboardingCard steps={onboardingSteps} />
                   <ClientTodaysTodoCard items={todaysTodoItems} />
+                  <ClientAliasesCard
+                    client={client}
+                    onSaved={(updated) =>
+                      queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
+                    }
+                  />
                 </div>
               </TabPanel>
 
@@ -430,5 +437,123 @@ function ClientDetailPage() {
         </div>
       </div>
     </PageShell>
+  )
+}
+
+function ClientAliasesCard({
+  client,
+  onSaved,
+}: {
+  client: Client
+  onSaved: (client: Client) => void
+}) {
+  const [draft, setDraft] = useState((client.aliases ?? []).join(", "))
+  const [sourceClientId, setSourceClientId] = useState("")
+  const [sourceSearch, setSourceSearch] = useState("")
+  const [saving, setSaving] = useState(false)
+  const toast = useToast()
+  const sourceQuery = useQuery({
+    queryKey: ["clients", "alias-merge-search", sourceSearch],
+    queryFn: () => clientsApi.list({ search: sourceSearch.trim(), limit: 8 }),
+    enabled: sourceSearch.trim().length >= 2 && !sourceClientId,
+  })
+
+  useEffect(() => setDraft((client.aliases ?? []).join(", ")), [client.aliases])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const updated = await clientsApi.updateAliases(
+        client.id,
+        draft.split(",").map((alias) => alias.trim()).filter(Boolean),
+      )
+      onSaved(updated)
+      toast.showSuccess("Aliases updated")
+    } catch (error) {
+      toast.showError(normalizeErrorMessage(error, "Could not update aliases"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const merge = async () => {
+    const source = sourceClientId.trim()
+    if (!source) return
+    setSaving(true)
+    try {
+      const updated = await clientsApi.mergeAliases(client.id, source)
+      onSaved(updated)
+      setSourceClientId("")
+      setSourceSearch("")
+      toast.showSuccess("Aliases merged")
+    } catch (error) {
+      toast.showError(normalizeErrorMessage(error, "Could not merge aliases"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="space-y-3 border border-fg/10 bg-surface p-4">
+      <div>
+        <h2 className="text-sm font-semibold text-fg">Alternate names</h2>
+        <p className="mt-0.5 text-xs text-fg-muted">
+          Use aliases to recognise this client during imports and search.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Separate aliases with commas"
+          aria-label="Client aliases"
+          className="h-8 text-xs"
+        />
+        <Button type="button" size="sm" className="h-8 shrink-0" disabled={saving} onClick={() => void save()}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+      <div className="relative border-t border-fg/8 pt-3">
+        <div className="flex gap-2">
+          <Input
+            value={sourceSearch}
+            onChange={(event) => {
+              setSourceSearch(event.target.value)
+              setSourceClientId("")
+            }}
+            placeholder="Find another client to merge aliases from"
+            aria-label="Find client for alias merge"
+            className="h-8 text-xs"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 shrink-0"
+            disabled={saving || !sourceClientId}
+            onClick={() => void merge()}
+          >
+            Merge aliases
+          </Button>
+        </div>
+        {sourceQuery.data?.items.length && !sourceClientId ? (
+          <div className="absolute inset-x-0 top-12 z-10 border border-fg/15 bg-surface p-1 shadow-lg">
+            {sourceQuery.data.items.map((candidate) => (
+              <button
+                key={candidate.id}
+                type="button"
+                className="block w-full px-2 py-1.5 text-left text-xs text-fg hover:bg-surface-hover"
+                onClick={() => {
+                  setSourceClientId(candidate.id)
+                  setSourceSearch(candidate.name)
+                }}
+              >
+                {candidate.name} <span className="text-fg-muted">{candidate.code}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
   )
 }

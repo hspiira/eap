@@ -11,6 +11,7 @@
 const KEY_AUTH = "evexia.auth"
 const KEY_TENANT = "evexia.tenant"
 const KEY_UI = "evexia.ui"
+const KEY_CLIENT_VIEWS = "evexia.client_views"
 
 function readJson<T>(key: string): Partial<T> {
   if (typeof window === "undefined") return {}
@@ -125,5 +126,24 @@ export const uiStorage = {
     const next = { ...this.read(), ...partial }
     writeJson(KEY_UI, next)
     return next
+  },
+}
+
+export interface ClientSavedView {
+  id: string
+  name: string
+  search?: string
+  tier?: string
+  archived?: boolean
+  parent_client_id?: string
+}
+
+export const clientViewsStorage = {
+  read(): ClientSavedView[] {
+    const stored = readJson<{ views: ClientSavedView[] }>(KEY_CLIENT_VIEWS)
+    return Array.isArray(stored.views) ? stored.views : []
+  },
+  write(views: ClientSavedView[]): void {
+    writeJson(KEY_CLIENT_VIEWS, { views })
   },
 }

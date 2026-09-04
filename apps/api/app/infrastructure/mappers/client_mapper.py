@@ -84,6 +84,7 @@ class ClientMapper:
             preferred_contact_method=preferred_contact_method,
             tier=tier,
             suspension_reason=getattr(model, "suspension_reason", None),
+            aliases=[alias.alias for alias in model.alias_records],
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
             deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,

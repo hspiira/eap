@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domain.repositories.activity_repository import ActivityRepository
+from app.domain.repositories.client_alias_repository import ClientAliasRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
+from app.infrastructure.repositories.client_alias_repository import ClientAliasRepositoryImpl
 from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
 from app.infrastructure.repositories.client_tag_repository import ClientTagRepositoryImpl
 from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
@@ -27,6 +29,13 @@ async def get_client_repository(
         ClientRepository implementation
     """
     return ClientRepositoryImpl(db)
+
+
+async def get_client_alias_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ClientAliasRepository:
+    """Dependency for tenant-scoped client alias persistence."""
+    return ClientAliasRepositoryImpl(db)
 
 
 async def get_industry_repository(

@@ -4,6 +4,7 @@ Repository Implementations
 SQLAlchemy implementations of domain repository interfaces.
 """
 
+from app.infrastructure.repositories.client_alias_repository import ClientAliasRepositoryImpl
 from app.infrastructure.repositories.client_repository import (
     ClientRepositoryImpl,
 )
@@ -22,6 +23,7 @@ from app.infrastructure.repositories.user_repository import (
 
 __all__ = [
     "ClientRepositoryImpl",
+    "ClientAliasRepositoryImpl",
     "ContractRepositoryImpl",
     "PersonRepositoryImpl",
     "TenantRepositoryImpl",

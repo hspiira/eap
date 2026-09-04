@@ -30,7 +30,6 @@ export type {
   Client,
   ClientBillingAddress,
   ClientContactInfo,
-  ClientStats,
   ClientTag,
   ClinicalNote,
   Contact,
