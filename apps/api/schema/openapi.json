@@ -1755,6 +1755,18 @@
             "$ref": "#/components/schemas/BaseStatus",
             "description": "Client status"
           },
+          "suspension_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reason for suspension",
+            "title": "Suspension Reason"
+          },
           "tenant_id": {
             "description": "Tenant identifier",
             "title": "Tenant Id",
@@ -2085,8 +2097,42 @@
         "type": "string"
       },
       "ClientUpdate": {
-        "description": "Request schema for updating client basic information.",
+        "description": "Request schema for an atomic client profile update.",
         "properties": {
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing address"
+          },
+          "contact_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactInfoCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Contact information"
+          },
+          "industry_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Industry identifier",
+            "title": "Industry Id"
+          },
           "name": {
             "anyOf": [
               {
@@ -14713,6 +14759,18 @@
               ],
               "description": "Filter by engagement tier (A/B/C)",
               "title": "Tier"
+            }
+          },
+          {
+            "description": "Include archived clients",
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Include archived clients",
+              "title": "Include Archived",
+              "type": "boolean"
             }
           },
           {

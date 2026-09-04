@@ -1,12 +1,11 @@
 /**
  * Clients API Endpoints
  *
- * `ClientCreate` does NOT include `tier`; BE intentionally separates tier
- * assignment as a dedicated `PATCH /clients/{id}/tier` call (with audit).
- * Use `setTier()` after `create()` to set initial tier.
+ * Client profile updates are atomic. `setTier()` remains available for inline
+ * tier changes from the detail rail, where the dedicated audit action matters.
  */
 
-import type { ClientCreate, ClientUpdate, Schemas } from "@/api/generated"
+import type { ClientCreate, ClientStatsResponse, ClientUpdate, Schemas } from "@/api/generated"
 import type { ClientTier } from "@/types/enums"
 
 import apiClient from "../client"
@@ -14,7 +13,6 @@ import type {
   Client,
   ClientBillingAddress,
   ClientContactInfo,
-  ClientStats,
   ClientTag,
   ListParams,
   PaginatedResponse,
@@ -25,6 +23,7 @@ export type ClientUpdateTier = Schemas["ClientUpdateTier"]
 
 export interface ClientListParams extends ListParams {
   tier?: ClientTier
+  include_archived?: boolean
 }
 
 export const clientsApi = {
@@ -135,8 +134,8 @@ export const clientsApi = {
   /**
    * Get client stats (child count, contracts, verification)
    */
-  async getStats(clientId: string): Promise<ClientStats> {
-    return apiClient.get<ClientStats>(`/clients/${clientId}/stats`)
+  async getStats(clientId: string): Promise<ClientStatsResponse> {
+    return apiClient.get<ClientStatsResponse>(`/clients/${clientId}/stats`)
   },
 
   /**

@@ -88,7 +88,7 @@ class ClientDeactivateRequest(BaseModel):
 
 
 class ClientUpdate(BaseModel):
-    """Request schema for updating client basic information."""
+    """Request schema for an atomic client profile update."""
 
     name: OptionalSanitizedStr = Field(
         None, min_length=1, max_length=255, description="Client name"
@@ -97,6 +97,9 @@ class ClientUpdate(BaseModel):
         None, description="Preferred contact method"
     )
     tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
+    contact_info: ContactInfoCreate | None = Field(None, description="Contact information")
+    billing_address: AddressCreate | None = Field(None, description="Billing address")
+    industry_id: str | None = Field(None, description="Industry identifier")
 class ClientUpdateTier(BaseModel):
     """Request schema for updating client engagement tier."""
 

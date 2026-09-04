@@ -5,6 +5,8 @@ Application services for Client aggregate operations.
 Refactored to use base use case classes to eliminate boilerplate.
 """
 
+from typing import cast
+
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
@@ -25,6 +27,8 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 from app.shared.utils.datetime import utc_now
+
+UNSET = object()
 
 # =============================================================================
 # CREATE USE CASE (special - not a lifecycle operation)
@@ -55,6 +59,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         billing_address: Address | None = None,
         industry_id: IndustryId | None = None,
         parent_client_id: ClientId | None = None,
+        preferred_contact_method: ContactMethod | None = None,
     ) -> ClientEntity:
         """
         Create a new client.
@@ -113,7 +118,9 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             if parent.id == client_id:
                 raise ValidationException("A client cannot be its own parent", "parent_client_id")
 
-        if industry_id and self.industry_repository:
+        if industry_id:
+            if not self.industry_repository:
+                raise NotFoundError("Industry repository is unavailable")
             industry = await self.industry_repository.get_by_id(industry_id)
             if not industry or industry.tenant_id != tenant_id:
                 raise NotFoundError(
@@ -131,7 +138,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             parent_client_id=parent_client_id,
             status=BaseStatus.PENDING,
             is_verified=False,
-            preferred_contact_method=None,
+            preferred_contact_method=preferred_contact_method,
             created_at=utc_now(),
             updated_at=utc_now(),
             deleted_at=None,
@@ -155,16 +162,39 @@ class UpdateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         self,
         client_id: ClientId,
         name: str | None = None,
-        preferred_contact_method: ContactMethod | None = None,
-        tier: ClientTier | None = None,
+        preferred_contact_method: ContactMethod | None | object = UNSET,
+        tier: ClientTier | None | object = UNSET,
+        contact_info: ContactInfo | None | object = UNSET,
+        billing_address: Address | None | object = UNSET,
+        industry_id: IndustryId | None | object = UNSET,
+        industry_repository: IndustryRepository | None = None,
     ) -> ClientEntity:
         client = await self._get_entity_or_raise(client_id, "Client")
         if name is not None:
             client.update_name(name)
-        if preferred_contact_method is not None:
-            client.update_preferred_contact_method(preferred_contact_method)
-        if tier is not None:
-            client.update_tier(tier)
+        if preferred_contact_method is not UNSET:
+            client.update_preferred_contact_method(
+                cast(ContactMethod | None, preferred_contact_method)
+            )
+        if tier is not UNSET:
+            client.update_tier(cast(ClientTier | None, tier))
+        if contact_info is not UNSET:
+            client.update_contact_info(cast(ContactInfo, contact_info))
+        if billing_address is not UNSET:
+            client.update_billing_address(cast(Address | None, billing_address))
+        if industry_id is not UNSET:
+            industry_value = cast(IndustryId | None, industry_id)
+            if industry_value is not None:
+                if not industry_repository:
+                    raise NotFoundError("Industry repository is unavailable")
+                industry = await industry_repository.get_by_id(industry_value)
+                if not industry or industry.tenant_id != client.tenant_id:
+                    raise NotFoundError(
+                        f"Industry not found: {industry_value.value}",
+                        "Industry",
+                        industry_value.value,
+                    )
+            client.update_industry(industry_value)
         return await self._save_and_publish_events(client)
 
 

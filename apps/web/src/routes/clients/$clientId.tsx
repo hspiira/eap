@@ -30,6 +30,7 @@ import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
+import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
 import { PersonType } from "@/types/enums"
@@ -62,6 +63,7 @@ function ClientDetailPage() {
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
+  const userId = useAuthStore((s) => s.user_id)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -163,6 +165,24 @@ function ClientDetailPage() {
     },
     [clientId, queryClient, toast],
   )
+
+  const handleVerify = useCallback(async () => {
+    if (!userId) {
+      toast.showError("Your user identity is not available")
+      return
+    }
+    setActionLoading(true)
+    try {
+      const updated = await clientsApi.verify(clientId, userId)
+      queryClient.setQueryData(entityDetailKey("clients", clientId), updated)
+      await queryClient.invalidateQueries({ queryKey: ["clients", "stats", clientId] })
+      toast.showSuccess("Client verified")
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Verification failed"))
+    } finally {
+      setActionLoading(false)
+    }
+  }, [clientId, queryClient, toast, userId])
 
   const hasBilling = client
     ? !!(
@@ -406,6 +426,7 @@ function ClientDetailPage() {
               actionLoading={actionLoading}
               onTierChange={handleTierChange}
               tierLoading={tierLoading}
+              onVerify={handleVerify}
             />
           </aside>
         </div>

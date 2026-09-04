@@ -1,3 +1,5 @@
+import type { ClientStatsResponse } from "@/api/generated"
+
 function fmtCount(n: number | null | undefined): string {
   if (n == null) return "-"
   return n.toLocaleString()
@@ -5,7 +7,7 @@ function fmtCount(n: number | null | undefined): string {
 
 interface DetailRailProps {
   client: Client
-  stats: ClientStats | null
+  stats: ClientStatsResponse | null
   statsLoading: boolean
   tags: ClientTag[]
   tagsLoading: boolean
@@ -15,6 +17,7 @@ interface DetailRailProps {
   actionLoading: boolean
   onTierChange: (tier: ClientTier | null) => Promise<void>
   tierLoading: boolean
+  onVerify: () => Promise<void>
 }
 
 const ROW_BORDER = "border-fg/8"
@@ -55,7 +58,7 @@ import {
 } from "@/components/ui/table"
 import { nameInitials } from "@/lib/display"
 import { formatDay } from "@/lib/format"
-import type { Client, ClientStats, ClientTag, Contract } from "@/types/entities"
+import type { Client, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -216,6 +219,7 @@ export function DetailRail({
   actionLoading,
   onTierChange,
   tierLoading,
+  onVerify,
 }: DetailRailProps) {
   const ba = client.billing_address
   const hasBilling = !!(ba?.street || ba?.city || ba?.postal_code || ba?.country)
@@ -223,8 +227,14 @@ export function DetailRail({
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Child clients" value={statsLoading ? "…" : fmtCount(stats?.child_count)} />
-          <Stat label="Contracts" value={statsLoading ? "…" : fmtCount(stats?.contract_count)} />
+          <Stat
+            label="Child clients"
+            value={statsLoading ? "…" : fmtCount(stats?.child_clients_count)}
+          />
+          <Stat
+            label="Contracts"
+            value={statsLoading ? "…" : fmtCount(stats?.total_contracts_count)}
+          />
         </div>
       </RailSection>
 
@@ -331,6 +341,17 @@ export function DetailRail({
       </RailSection>
 
       <RailSection title="Lifecycle">
+        {!client.is_verified ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="mb-2 rounded-none"
+            onClick={() => void onVerify()}
+            disabled={actionLoading}
+          >
+            Verify
+          </Button>
+        ) : null}
         <LifecycleActions
           entityId={client.id}
           currentStatus={client.status}

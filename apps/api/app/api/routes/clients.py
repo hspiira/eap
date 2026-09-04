@@ -17,6 +17,7 @@ from app.api.dependencies import (
     get_contract_repository,
     get_industry_repository,
     get_tenant_repository,
+    get_user_repository,
     pagination,
 )
 from app.api.schemas.client_schemas import (
@@ -35,6 +36,7 @@ from app.api.schemas.client_schemas import (
     ContactInfoSchema,
 )
 from app.application.use_cases.client_use_cases import (
+    UNSET,
     CreateClientUseCase,
     UpdateClientUseCase,
 )
@@ -56,6 +58,7 @@ from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -157,6 +160,7 @@ async def create_client(
             billing_address=billing_address,
             industry_id=IndustryId(data.industry_id) if data.industry_id else None,
             parent_client_id=ClientId(data.parent_client_id) if data.parent_client_id else None,
+            preferred_contact_method=data.preferred_contact_method,
         )
     except EvexiaException as e:
         raise HTTPException(status_code=e.http_status, detail=e.message) from e
@@ -177,10 +181,15 @@ async def verify_client(
     current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Verify a client."""
+    verifier = await user_repo.get_by_id(UserId(verified_by))
+    if not verifier or verifier.tenant_id != client.tenant_id:
+        raise HTTPException(status_code=404, detail="Verifier user not found")
+
     use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
         client.id, ClientTransition.VERIFY, verified_by=UserId(verified_by)
@@ -330,15 +339,44 @@ async def update_client(
     current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
+    industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update client basic information."""
+    contact_info = None
+    if data.contact_info is not None:
+        contact_info = ContactInfo(
+            phone=data.contact_info.phone,
+            email=Email(data.contact_info.email) if data.contact_info.email else None,
+            address=data.contact_info.address,
+        )
+    elif "contact_info" in data.model_fields_set:
+        contact_info = ContactInfo()
+
+    billing_address = None
+    if data.billing_address is not None:
+        billing_address = Address(
+            street=data.billing_address.street,
+            city=data.billing_address.city,
+            country=data.billing_address.country,
+            postal_code=data.billing_address.postal_code,
+        )
+
+    fields = data.model_fields_set
     client = await UpdateClientUseCase(client_repo).execute(
         client.id,
         name=data.name,
-        preferred_contact_method=data.preferred_contact_method,
-        tier=data.tier,
+        preferred_contact_method=(
+            data.preferred_contact_method if "preferred_contact_method" in fields else UNSET
+        ),
+        tier=data.tier if "tier" in fields else UNSET,
+        contact_info=contact_info if "contact_info" in fields else UNSET,
+        billing_address=billing_address if "billing_address" in fields else UNSET,
+        industry_id=(IndustryId(data.industry_id) if data.industry_id else None)
+        if "industry_id" in fields
+        else UNSET,
+        industry_repository=industry_repo,
     )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)

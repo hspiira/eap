@@ -152,6 +152,13 @@ class ClientEntity:
         self.billing_address = address
         self.updated_at = utc_now()
 
+    def update_industry(self, industry_id: IndustryId | None) -> None:
+        """Update or clear the client's industry classification."""
+        if self.status == BaseStatus.DELETED:
+            raise DomainError("Cannot update industry for deleted client")
+        self.industry_id = industry_id
+        self.updated_at = utc_now()
+
     def update_preferred_contact_method(self, method: ContactMethod | None) -> None:
         """Update preferred contact method"""
         if self.status == BaseStatus.DELETED:

@@ -5613,6 +5613,11 @@ export interface components {
             /** @description Client status */
             status: components["schemas"]["BaseStatus"];
             /**
+             * Suspension Reason
+             * @description Reason for suspension
+             */
+            suspension_reason?: string | null;
+            /**
              * Tenant Id
              * @description Tenant identifier
              */
@@ -5813,9 +5818,18 @@ export interface components {
         ClientType: "New" | "Repeat";
         /**
          * ClientUpdate
-         * @description Request schema for updating client basic information.
+         * @description Request schema for an atomic client profile update.
          */
         ClientUpdate: {
+            /** @description Billing address */
+            billing_address?: components["schemas"]["AddressCreate"] | null;
+            /** @description Contact information */
+            contact_info?: components["schemas"]["ContactInfoCreate"] | null;
+            /**
+             * Industry Id
+             * @description Industry identifier
+             */
+            industry_id?: string | null;
             /**
              * Name
              * @description Client name
@@ -12049,6 +12063,8 @@ export interface operations {
                 is_verified?: boolean | null;
                 /** @description Filter by engagement tier (A/B/C) */
                 tier?: components["schemas"]["ClientTier"] | null;
+                /** @description Include archived clients */
+                include_archived?: boolean;
                 /** @description Search in client name */
                 search?: string | null;
                 /** @description Field to sort by */

@@ -3,7 +3,7 @@ import { useState } from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown } from "lucide-react"
-import { Controller } from "react-hook-form"
+import { Controller, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -23,11 +23,17 @@ import {
 } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { cn } from "@/lib/utils"
 import type { Client } from "@/types/entities"
-import { ClientTier } from "@/types/enums"
+import { ClientTier, ContactMethod } from "@/types/enums"
 
 const TIER_OPTIONS = [
   { value: ClientTier.A, label: "Tier A", desc: "Strategic: full service mix" },
@@ -36,6 +42,14 @@ const TIER_OPTIONS = [
 ] as const
 
 const TIER_VALUES = TIER_OPTIONS.map((o) => o.value) as [ClientTier, ...ClientTier[]]
+
+const CONTACT_METHOD_OPTIONS = [
+  { value: ContactMethod.EMAIL, label: "Email" },
+  { value: ContactMethod.PHONE, label: "Phone" },
+  { value: ContactMethod.SMS, label: "SMS" },
+  { value: ContactMethod.WHATSAPP, label: "WhatsApp" },
+  { value: ContactMethod.WECHAT, label: "WeChat" },
+] as const
 
 const clientSchema = z
   .object({
@@ -46,6 +60,9 @@ const clientSchema = z
       .min(3, "Code must be 3–5 characters")
       .max(5, "Code must be 3–5 characters"),
     tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
+    preferred_contact_method: z
+      .enum(["", ...CONTACT_METHOD_OPTIONS.map((o) => o.value)] as readonly [string, ...string[]])
+      .optional(),
     email: z
       .string()
       .trim()
@@ -79,6 +96,7 @@ const EMPTY: ClientFormValues = {
   name: "",
   code: "",
   tier: "",
+  preferred_contact_method: "",
   email: "",
   phone: "",
   address: "",
@@ -123,6 +141,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       name: c.name,
       code: c.code,
       tier: c.tier ?? "",
+      preferred_contact_method: c.preferred_contact_method ?? "",
       email: c.contact_info?.email ?? "",
       phone: c.contact_info?.phone ?? "",
       address: c.contact_info?.address ?? "",
@@ -150,17 +169,24 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
             }
           : null,
       industry_id: values.industry_id || null,
+      preferred_contact_method: values.preferred_contact_method
+        ? (values.preferred_contact_method as ContactMethod)
+        : null,
       __tier: values.tier ? (values.tier as ClientTier) : null,
     }),
     save: async ({ payload, entity, isEdit }) => {
       const { __tier, ...createPayload } = payload
       let saved: Client
       if (isEdit && entity) {
-        const update: ClientUpdate = { name: createPayload.name }
-        saved = await clientsApi.update(entity.id, update)
-        if (__tier !== (entity.tier ?? null)) {
-          saved = await clientsApi.setTier(entity.id, __tier ?? null)
+        const update: ClientUpdate = {
+          name: createPayload.name,
+          contact_info: createPayload.contact_info,
+          billing_address: createPayload.billing_address,
+          industry_id: createPayload.industry_id,
+          preferred_contact_method: createPayload.preferred_contact_method,
+          tier: __tier,
         }
+        saved = await clientsApi.update(entity.id, update)
       } else {
         saved = await clientsApi.create(createPayload)
         if (__tier) {
@@ -172,6 +198,14 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
     successToast: { create: "Client created", update: "Client updated" },
     onSaved,
   })
+
+  const billingStreet = useWatch({ control, name: "billing_street" })
+  const billingCity = useWatch({ control, name: "billing_city" })
+  const billingPostal = useWatch({ control, name: "billing_postal" })
+  const billingCountry = useWatch({ control, name: "billing_country" })
+  const hasAnyBillingValue = Boolean(
+    billingStreet || billingCity || billingPostal || billingCountry,
+  )
 
   const errors = formState.errors
 
@@ -208,6 +242,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
             placeholder="ACME"
             maxLength={5}
             className="font-mono"
+            disabled={isEdit}
             {...register("code")}
           />
         </FormField>
@@ -254,7 +289,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
           optional
           description={
             isEdit
-              ? "Industry is set at creation only; contact platform admin to change."
+              ? "Use the industry classification for benchmarking and reporting."
               : "The sector this client operates in. Drives benchmarking and reporting."
           }
           error={errors.industry_id?.message}
@@ -272,7 +307,6 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
                     variant="outline"
                     role="combobox"
                     aria-expanded={industryOpen}
-                    disabled={isEdit}
                     className={cn(
                       "w-full h-9 justify-between px-3 font-normal text-sm",
                       !field.value && "text-muted-foreground",
@@ -346,6 +380,31 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         <FormField label="Email" optional error={errors.email?.message} htmlFor="cs-email">
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
         </FormField>
+        <FormField
+          label="Preferred contact method"
+          optional
+          error={errors.preferred_contact_method?.message}
+          htmlFor="cs-preferred-contact"
+        >
+          <Controller
+            control={control}
+            name="preferred_contact_method"
+            render={({ field }) => (
+              <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <SelectTrigger id="cs-preferred-contact">
+                  <SelectValue placeholder="No preference" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTACT_METHOD_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
         <FormField label="Phone" optional error={errors.phone?.message} htmlFor="cs-phone">
           <Input id="cs-phone" type="tel" placeholder="+256 …" {...register("phone")} />
         </FormField>
@@ -360,7 +419,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       >
         <FormField
           label="Street"
-          optional
+          optional={!hasAnyBillingValue}
           error={errors.billing_street?.message}
           htmlFor="cs-billing-street"
         >
@@ -369,7 +428,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         <div className="grid grid-cols-2 gap-3">
           <FormField
             label="City"
-            optional
+            optional={!hasAnyBillingValue}
             error={errors.billing_city?.message}
             htmlFor="cs-billing-city"
           >
@@ -386,7 +445,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         </div>
         <FormField
           label="Country"
-          optional
+          optional={!hasAnyBillingValue}
           error={errors.billing_country?.message}
           htmlFor="cs-billing-country"
         >
