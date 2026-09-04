@@ -43,6 +43,7 @@ import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Person, User } from "@/types/entities"
 import { AccessScope, TenantRole } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({ user }: { user: User }) {
   return (
@@ -109,7 +110,9 @@ export function DetailRail({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-fg">{displayName(person, user)}</p>
-              <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
+              <p className="truncate text-[11px] text-fg-muted">
+                {getStatusLabel(person.person_type)}
+              </p>
             </div>
           </Link>
         ) : (

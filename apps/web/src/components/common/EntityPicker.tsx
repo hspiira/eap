@@ -12,6 +12,7 @@ import { displayName, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
 import type { Client, Person, Provider, Service } from "@/types/entities"
+import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
 export function EntityPicker<T extends { id: string }, P extends ListParams = ListParams>({
@@ -212,7 +213,7 @@ export function PersonPicker({
         <PickerRow
           initials={personInitials(p)}
           primary={displayName(p)}
-          secondary={p.person_type}
+          secondary={getStatusLabel(p.person_type)}
           size="md"
         />
       )}
@@ -220,7 +221,7 @@ export function PersonPicker({
         <PickerRow
           initials={personInitials(p)}
           primary={displayName(p)}
-          secondary={p.person_type}
+          secondary={getStatusLabel(p.person_type)}
         />
       )}
     />

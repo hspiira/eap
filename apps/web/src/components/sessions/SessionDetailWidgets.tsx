@@ -38,6 +38,7 @@ import { displayName } from "@/lib/display"
 import { formatDateTime } from "@/lib/format"
 import type { Person, Service, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({
   session,
@@ -137,7 +138,9 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{displayName(person)}</p>
-                <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
+                <p className="truncate text-[11px] text-fg-muted">
+                  {getStatusLabel(person.person_type)}
+                </p>
               </div>
             </Link>
           ) : null}

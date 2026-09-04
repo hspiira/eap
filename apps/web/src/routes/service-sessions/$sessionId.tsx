@@ -33,6 +33,7 @@ import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/service-sessions/$sessionId")({
   component: ServiceSessionDetailPage,
@@ -290,7 +291,9 @@ function ServiceSessionDetailPage() {
                           <p className="truncate text-sm font-medium text-fg">
                             {displayName(person)}
                           </p>
-                          <p className="truncate text-[11px] text-fg-muted">{person.person_type}</p>
+                          <p className="truncate text-[11px] text-fg-muted">
+                            {getStatusLabel(person.person_type)}
+                          </p>
                         </div>
                       </Link>
                     ) : (

@@ -38,6 +38,7 @@ import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Service, ServiceAssignment, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/services/$serviceId")({
   component: ServiceDetailPage,
@@ -169,7 +170,10 @@ function ServiceDetailPage() {
                           service.service_type ? humanizeServiceType(service.service_type) : null
                         }
                       />
-                      <DetailRow label="Category" value={service.category} />
+                      <DetailRow
+                        label="Category"
+                        value={service.category ? getStatusLabel(service.category) : null}
+                      />
                     </DetailGrid>
                   </DetailCard>
 

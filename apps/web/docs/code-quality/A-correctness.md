@@ -429,3 +429,40 @@ primitive default and delete all sixteen overrides in the same commit so the cha
 as one visual diff. Until then, import `ROW_BORDER` from `common/tableStyles` rather than
 redeclaring it, as `routes/clients/index.tsx` now does.
 
+---
+
+## CQ-A15: Enum wire values are printed to users in place of labels
+
+**Severity:** Medium - **Effort:** M - **Status:** Partly fixed - **Owner:** - - **PR:** -
+
+**Problem.** Enum values are wire values, not display text. Where a component renders one directly
+the user sees the wire form. This stayed invisible while values read as English, and became visible
+when they were corrected to the PascalCase forms the API accepts.
+
+Seven sites were live defects, showing `ClientEmployee` and `ShortTermCounselling` rather than
+"Client Employee" and "Short Term Counselling". Those are fixed by routing through
+`getStatusLabel`, with a test asserting no value of `PersonType` or `ServiceCategory` survives
+labelling with a case boundary intact.
+
+**What remains.** About thirty further raw renders exist across the app. Each is currently correct
+only because its enum happens to hold single-word values, so each is a latent defect that becomes
+visible the next time a value is corrected. Examples: `payment_frequency` and `payment_status` in
+`routes/contracts/$contractId.tsx`, `role` in `routes/persons/$personId.tsx` and
+`routes/persons/index.tsx`, `region`, `panel_status`, `tier` and `accreditation_status` across
+both providers routes, and the `Status is ${searchParams.status}` filter chips on five list routes.
+
+**Known limit in the helper.** `getStatusLabel` splits on a lower-to-upper boundary, so an embedded
+acronym is lost: `CISMFollowUp` becomes "Cismfollow Up" and `CISMResponse` becomes "Cismresponse".
+`CaseReferralSource` and `ClinicalNoteType` both carry CISM values, so neither can be routed through
+the helper as it stands. `src/utils/statusLabel.test.ts` pins this behaviour so a future fix has a
+failing case to flip rather than discovering it in the UI.
+
+**Recommended fix.** Two parts, in order. First teach `getStatusLabel` to preserve a run of capitals
+so the CISM values survive. Then sweep the remaining raw renders, per module rather than in one pass,
+since three sessions share this tree. A lint rule barring a bare enum-typed field inside JSX braces
+would prevent recurrence, but the enum drift guard added in `a7bbd31` only checks values against the
+contract, not how they are displayed.
+
+**Why this recurs.** Two sessions each shipped a regression of this exact shape within a day, both
+found by the other checking rather than by a test. There is no guard on the display side.
+
