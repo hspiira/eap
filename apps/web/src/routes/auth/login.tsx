@@ -11,14 +11,7 @@ import { useApiForm } from "@/hooks/useApiForm"
 import { useRedirectIfAuthenticated } from "@/hooks/useRedirectIfAuthenticated"
 import { authActions } from "@/lib/auth-store"
 import { getLockoutSecondsRemaining, isAccountLocked } from "@/lib/errors"
-
-function safeRedirectPath(raw: unknown): string | undefined {
-  const s = typeof raw === "string" ? raw.trim() : ""
-  if (!s || !s.startsWith("/") || s.startsWith("//")) return undefined
-  if (s === "/auth/login" || s === "/auth/set-password" || s.startsWith("/auth/azure"))
-    return undefined
-  return s
-}
+import { redirectTarget, safeRedirectPath } from "@/lib/redirect"
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -81,7 +74,8 @@ function LoginPage() {
       authActions.clearError()
       try {
         await authActions.login(values)
-        navigate({ to: redirectTo, search: {} })
+        const target = redirectTarget(redirectTo)
+        navigate({ to: target.to, search: target.search, hash: target.hash })
       } catch (err) {
         if (isAccountLocked(err)) {
           const seconds = getLockoutSecondsRemaining(err) ?? DEFAULT_LOCKOUT_SECONDS

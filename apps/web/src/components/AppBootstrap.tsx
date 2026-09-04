@@ -13,11 +13,10 @@ import { useNavigate } from "@tanstack/react-router"
 import apiClient from "@/api/client"
 import { useSilentRefresh } from "@/hooks/useSilentRefresh"
 import { authActions } from "@/lib/auth-store"
+import { currentRedirectPath } from "@/lib/redirect"
 import { tenantActions } from "@/lib/tenant-actions"
 import { useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
-
-const AUTH_PAGES = new Set(["/auth/login", "/auth/set-password", "/auth/azure/callback"])
 
 export function AppBootstrap() {
   const navigate = useNavigate()
@@ -49,11 +48,9 @@ export function AppBootstrap() {
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {
       useAuthStore.getState().clearAuth()
-      const path = typeof window !== "undefined" ? window.location.pathname : "/"
-      const redirect = path && !AUTH_PAGES.has(path) ? path : undefined
       navigate({
         to: "/auth/login",
-        search: { tenant_code: undefined, email: undefined, redirect },
+        search: { tenant_code: undefined, email: undefined, redirect: currentRedirectPath() },
         replace: true,
       })
     })

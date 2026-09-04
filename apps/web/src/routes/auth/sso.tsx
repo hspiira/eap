@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
 import { useRedirectIfAuthenticated } from "@/hooks/useRedirectIfAuthenticated"
+import { safeRedirectPath } from "@/lib/redirect"
 
 export const Route = createFileRoute("/auth/sso")({
   component: SsoPage,
   validateSearch: (search: Record<string, unknown>) => ({
     tenant_code: typeof search.tenant_code === "string" ? search.tenant_code : undefined,
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    redirect: safeRedirectPath(search.redirect),
   }),
 })
 

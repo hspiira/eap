@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import apiClient from "@/api/client"
+import { useAuthStore } from "@/store/slices/authSlice"
 import { ApiError } from "@/types/api"
 
 const ORIGIN = "http://localhost:8000"
@@ -116,6 +117,72 @@ describe("apiClient — refresh-on-401", () => {
 
     await expect(apiClient.post("/auth/login", { email: "a" })).rejects.toBeInstanceOf(ApiError)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("apiClient — a stale 401 must not clear a newer session", () => {
+  it("ignores a 401 for a session the user has already signed back into", async () => {
+    useAuthStore.getState().setAuth("old-tok", "u-1", "a@b.test")
+    apiClient.setRefreshToken("refresh-1")
+    const errorCallback = vi.fn()
+    apiClient.setAuthErrorCallback(errorCallback)
+
+    // Hold the original request open so the sign-in can land while it is in flight.
+    let release: (r: Response) => void = () => {}
+    const held = new Promise<Response>((resolve) => {
+      release = resolve
+    })
+    fetchMock
+      .mockReturnValueOnce(held)
+      .mockResolvedValueOnce(jsonResponse(401, { error: "INVALID_REFRESH" }))
+
+    const inFlight = apiClient.get("/things")
+
+    // The user signs in again on the login screen; this is a different session.
+    useAuthStore.getState().setAuth("new-tok", "u-1", "a@b.test")
+
+    release(jsonResponse(401, { error: "EXPIRED", message: "expired" }))
+    await expect(inFlight).rejects.toBeInstanceOf(ApiError)
+
+    // The fresh token survives and nobody is bounced back to the login form.
+    expect(apiClient.getToken()).toBe("new-tok")
+    expect(errorCallback).not.toHaveBeenCalled()
+    apiClient.setAuthErrorCallback(null)
+  })
+
+  it("still clears auth when the 401 belongs to the current session", async () => {
+    useAuthStore.getState().setAuth("tok-1", "u-1", "a@b.test")
+    apiClient.setRefreshToken("refresh-1")
+    const errorCallback = vi.fn()
+    apiClient.setAuthErrorCallback(errorCallback)
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(401, { error: "EXPIRED", message: "expired" }))
+      .mockResolvedValueOnce(jsonResponse(401, { error: "INVALID_REFRESH" }))
+
+    await expect(apiClient.get("/things")).rejects.toBeInstanceOf(ApiError)
+
+    expect(apiClient.getToken()).toBeNull()
+    expect(errorCallback).toHaveBeenCalledTimes(1)
+    apiClient.setAuthErrorCallback(null)
+  })
+
+  it("fires the redirect once when several requests 401 on the same dead session", async () => {
+    useAuthStore.getState().setAuth("tok-1", "u-1", "a@b.test")
+    apiClient.setRefreshToken("refresh-1")
+    const errorCallback = vi.fn()
+    apiClient.setAuthErrorCallback(errorCallback)
+
+    fetchMock.mockResolvedValue(jsonResponse(401, { error: "EXPIRED", message: "expired" }))
+
+    await Promise.allSettled([
+      apiClient.get("/things"),
+      apiClient.get("/others"),
+      apiClient.get("/more"),
+    ])
+
+    expect(errorCallback).toHaveBeenCalledTimes(1)
+    apiClient.setAuthErrorCallback(null)
   })
 })
 

@@ -2,6 +2,7 @@ import { useEffect } from "react"
 
 import { useNavigate } from "@tanstack/react-router"
 
+import { redirectTarget } from "@/lib/redirect"
 import { useAuthStore } from "@/store/slices/authSlice"
 
 /**
@@ -14,7 +15,8 @@ export function useRedirectIfAuthenticated(redirectTo = "/") {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate({ to: redirectTo })
+      const target = redirectTarget(redirectTo)
+      navigate({ to: target.to, search: target.search, hash: target.hash })
     }
   }, [isAuthenticated, navigate, redirectTo])
 

@@ -52,6 +52,11 @@ class ApiClient {
     useAuthStore.getState().setToken(token, expiresInSeconds)
   }
 
+  /** Identity of the session as it stands now. See AuthState.sessionEpoch. */
+  private currentSessionEpoch(): number {
+    return useAuthStore.getState().sessionEpoch
+  }
+
   /** Epoch ms when the current access token expires, or null if unknown. */
   getTokenExpiresAt(): number | null {
     if (useCookies()) return null
@@ -212,16 +217,14 @@ class ApiClient {
     path: string,
     doFetch: (headers: Record<string, string>) => Promise<Response>,
   ): Promise<Response> {
+    const sessionEpoch = this.currentSessionEpoch()
     const response = await doFetch(this.buildAuthHeaders(path))
     if (response.status === 401 && !path.includes("/auth/")) {
       if (await this.tryRefreshToken()) {
         const retry = await doFetch(this.buildAuthHeaders(path))
         if (retry.ok) return retry
       }
-      this.handleAuthError(401)
-    }
-    if (response.status === 403) {
-      this.handleAuthError(403)
+      this.handleAuthError(sessionEpoch)
     }
     return response
   }
@@ -269,14 +272,19 @@ class ApiClient {
    * Supports both EAP shape ({ error, message, details? }) and FastAPI HTTPException ({ detail: string | array }).
    */
   /**
-   * Handle authentication errors
+   * Tear down the session and let React navigate to the login screen.
+   *
+   * `sessionEpoch` is the session identity captured when the request went out.
+   * If it no longer matches, this 401 answers a session that has since been
+   * replaced or torn down — the user may already have signed back in — so
+   * acting on it would clear a token that is perfectly good and bounce them
+   * straight back to the login form. Drop it instead.
    */
-  private handleAuthError(status: number): void {
-    if (status === 401) {
-      this.clearAuth()
-      // Notify React context to handle navigation (avoids hard redirect)
-      this.onAuthError?.()
-    }
+  private handleAuthError(sessionEpoch: number): void {
+    if (this.currentSessionEpoch() !== sessionEpoch) return
+    this.clearAuth()
+    // Notify React context to handle navigation (avoids hard redirect)
+    this.onAuthError?.()
   }
 
   /**
@@ -327,6 +335,9 @@ class ApiClient {
     options: RequestInit & RequestOptions = {},
   ): Promise<T> {
     const { signal, timeout, headers, ...fetchOptions } = options
+
+    // Captured before the request goes out; handleAuthError compares against it.
+    const sessionEpoch = this.currentSessionEpoch()
 
     const { signal: requestSignal, timeoutId } = this.makeTimeoutSignal(signal, timeout)
 
@@ -385,11 +396,7 @@ class ApiClient {
             clearTimeout(retryTimeoutId)
           }
         }
-        this.handleAuthError(401)
-      }
-
-      if (response.status === 403) {
-        this.handleAuthError(403)
+        this.handleAuthError(sessionEpoch)
       }
 
       if (!response.ok) {

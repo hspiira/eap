@@ -25,6 +25,13 @@ export interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
+  /**
+   * Bumped every time the session identity changes — sign-in, hydrate, or
+   * teardown. The apiClient stamps each request with the value it saw and
+   * refuses to act on a 401 whose stamp is stale, so a response that was
+   * already in flight cannot clear the session that replaced it.
+   */
+  sessionEpoch: number
 }
 
 export interface AuthActions {
@@ -54,6 +61,7 @@ function readInitialState(): AuthState {
     isAuthenticated: !!(token || persisted.user_id),
     isLoading: true,
     error: null,
+    sessionEpoch: 0,
   }
 }
 
@@ -67,13 +75,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
       user_id: user_id ?? null,
       email: email ?? null,
     })
-    set({
+    set((state) => ({
       token,
       user_id: user_id ?? null,
       email: email ?? null,
       isAuthenticated: !!token || !!(user_id ?? null),
       error: null,
-    })
+      sessionEpoch: state.sessionEpoch + 1,
+    }))
   },
 
   setToken: (token, expiresInSeconds) => {
@@ -102,7 +111,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   clearAuth: () => {
     authStorage.clear()
-    set({
+    set((state) => ({
       token: null,
       refreshToken: null,
       csrfToken: null,
@@ -111,6 +120,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       email: null,
       isAuthenticated: false,
       error: null,
-    })
+      sessionEpoch: state.sessionEpoch + 1,
+    }))
   },
 }))

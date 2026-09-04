@@ -3,6 +3,7 @@ import { type ReactNode, useEffect } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { Loader2 } from "lucide-react"
 
+import { currentRedirectPath } from "@/lib/redirect"
 import { useAuthStore } from "@/store/slices/authSlice"
 
 interface RequireAuthProps {
@@ -33,8 +34,7 @@ export function RequireAuth({
   useEffect(() => {
     if (isLoading) return
     if (isAuthenticated) return
-    const redirect =
-      redirectAfterLogin ?? (typeof window !== "undefined" ? window.location.pathname : undefined)
+    const redirect = redirectAfterLogin ?? currentRedirectPath()
     navigate({
       to: loginPath,
       search: { tenant_code: undefined, email: undefined, redirect },

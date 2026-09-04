@@ -5,14 +5,12 @@ import { AlertCircle, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { authActions } from "@/lib/auth-store"
+import { redirectTarget, safeRedirectPath } from "@/lib/redirect"
 
 export const Route = createFileRoute("/auth/azure/callback")({
   component: AzureCallbackPage,
   validateSearch: (search: Record<string, unknown>) => ({
-    redirect:
-      typeof search.redirect === "string" && search.redirect.startsWith("/")
-        ? search.redirect
-        : "/",
+    redirect: safeRedirectPath(search.redirect) ?? "/",
     error: typeof search.error === "string" ? search.error : undefined,
   }),
 })
@@ -39,7 +37,13 @@ function AzureCallbackPage() {
           await authActions.bootstrapFromCookies()
         }
         if (!cancelled) {
-          navigate({ to: search.redirect, replace: true })
+          const target = redirectTarget(search.redirect)
+          navigate({
+            to: target.to,
+            search: target.search,
+            hash: target.hash,
+            replace: true,
+          })
         }
       } catch (err) {
         if (cancelled) return
