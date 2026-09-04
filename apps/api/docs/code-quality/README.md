@@ -61,6 +61,7 @@ not executed.
 | BE-A06 | `sort_by` is an unvalidated column lookup in 32 of 34 repositories | 🟡 Medium | M | - | ⬜ | | |
 | BE-A07 | A 500 response bypasses the middleware stack | 🟡 Medium | S | - | ⬜ | | |
 | BE-A08 | Outbox dispatcher cannot run on more than one replica | 🟡 Medium | M | - | ⬜ | | |
+| BE-A09 | `alembic upgrade --sql` crashes a twelfth of the way through | 🟡 Medium | S | - | ⬜ | | |
 
 ### Track B: Test Coverage ([B-coverage.md](./B-coverage.md))
 

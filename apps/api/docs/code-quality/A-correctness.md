@@ -329,6 +329,55 @@ in the first place.
 
 ---
 
+## BE-A09: `alembic upgrade --sql` crashes a twelfth of the way through
+
+**Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo
+
+**Problem.** Offline mode is unusable. `uv run alembic upgrade head --sql` exits
+1 after emitting four of the 45 revisions:
+
+```
+sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for
+object of type <class 'sqlalchemy.engine.mock.MockConnection'>
+```
+
+Two migrations branch on the live schema by calling `inspect()` on the bound
+connection:
+
+- `alembic/versions/32b395f52e9f_add_missing_service_tables.py:45`
+- `alembic/versions/3ae4af283411_add_client_code_and_employee_code_fields.py:25`
+
+Offline mode binds a `MockConnection`, which records SQL instead of executing
+it and cannot be inspected, so the first of those aborts the run. The pattern is
+`if 'code' not in columns:`, which is a migration deciding at runtime whether it
+has already been applied.
+
+The consequence is that nobody can review the SQL before it reaches a database,
+and no offline or DBA-gated deploy path works. It also removes the one check
+that does not require touching a shared database, which matters in a repo where
+several people share one.
+
+**How this surfaced.** It was mistaken for a passing check. A clean-looking
+prefix of the output was read as evidence that `upgrade head` succeeded, when
+the run had aborted before reaching the revision in question. Two things made
+that easy: the output begins with a plausible `CREATE TABLE alembic_version`
+bootstrap, and piping through `grep` replaces alembic's exit code with grep's.
+
+**Recommended fix.** Make the two migrations declarative. A migration should
+know what it does from its own position in the history rather than asking the
+database, and the conditional in `3ae4af283411` exists to make a re-run safe,
+which the version table already guarantees. If a guard is genuinely wanted,
+`op.get_context().is_offline_mode()` lets the migration skip inspection and emit
+the DDL unconditionally.
+
+**Acceptance criteria**
+
+- [ ] `alembic upgrade head --sql` exits 0 and emits every revision.
+- [ ] No migration calls `inspect()` on the bound connection.
+- [ ] CI runs the offline render, so a future migration cannot reintroduce it.
+
+---
+
 ## BE-A08: Outbox dispatcher cannot run on more than one replica
 
 **Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo
