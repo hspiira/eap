@@ -8,7 +8,9 @@ import { useQueries } from "@tanstack/react-query"
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { incidentsApi } from "@/api/endpoints/incidents"
+import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
+import { servicesApi } from "@/api/endpoints/services"
 
 import { entityListKey } from "./queries"
 
@@ -44,16 +46,28 @@ export function useDashboardKpis() {
         queryFn: () => contractsApi.list(KPI_PARAMS),
         staleTime: ONE_MINUTE,
       },
+      {
+        queryKey: entityListKey("services", KPI_PARAMS),
+        queryFn: () => servicesApi.list(KPI_PARAMS),
+        staleTime: ONE_MINUTE,
+      },
+      {
+        queryKey: entityListKey("service-assignments", KPI_PARAMS),
+        queryFn: () => serviceAssignmentsApi.list(KPI_PARAMS),
+        staleTime: ONE_MINUTE,
+      },
     ],
   })
 
-  const [clients, incidents, sessions, contracts] = queries
+  const [clients, incidents, sessions, contracts, services, assignments] = queries
 
   return {
     clients: toResult(clients),
     incidents: toResult(incidents),
     sessions: toResult(sessions),
     contracts: toResult(contracts),
+    services: toResult(services),
+    assignments: toResult(assignments),
     isLoading: queries.some((q) => q.isLoading),
     isError: queries.every((q) => q.isError),
   }

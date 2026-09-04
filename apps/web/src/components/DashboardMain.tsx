@@ -1,3 +1,5 @@
+import { useMemo } from "react"
+
 import { Link } from "@tanstack/react-router"
 import {
   AlertTriangle,
@@ -11,7 +13,7 @@ import {
 } from "lucide-react"
 
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { type ClientAlert, ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
+import { ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -75,17 +77,24 @@ const QUICK_ACTIONS: ReadonlyArray<QuickAction> = [
   },
 ]
 
-const SAMPLE_ALERTS: ClientAlert[] = [
-  {
-    id: "demo-a1",
-    title: "Wire alerts feed",
-    severity: "low",
-    description: "Hook this card up to the audit-log API once query factories land in lib/queries.",
-  },
-]
-
 export function DashboardMain() {
   const kpis = useDashboardKpis()
+
+  // Derived from the same counts the KPI strip shows, so the checklist reflects
+  // the tenant rather than a fixed script.
+  const onboardingSteps = useMemo(
+    () => [
+      { id: 1, label: "Add first client", done: (kpis.clients.value ?? 0) > 0 },
+      { id: 2, label: "Create a service", done: (kpis.services.value ?? 0) > 0 },
+      {
+        id: 3,
+        label: "Assign a service to a client",
+        done: (kpis.assignments.value ?? 0) > 0,
+      },
+      { id: 4, label: "Record a contract", done: (kpis.contracts.value ?? 0) > 0 },
+    ],
+    [kpis.clients.value, kpis.services.value, kpis.assignments.value, kpis.contracts.value],
+  )
 
   const kpiSpecs: ReadonlyArray<KpiSpec> = [
     {
@@ -137,8 +146,8 @@ export function DashboardMain() {
             <ActivityFeedCard />
           </div>
           <div className="grid gap-4 xl:col-span-1">
-            <OnboardingProgressCard />
-            <ClientAlertsCard alerts={SAMPLE_ALERTS} />
+            <OnboardingProgressCard steps={onboardingSteps} />
+            <ClientAlertsCard alerts={[]} />
           </div>
         </div>
       </div>

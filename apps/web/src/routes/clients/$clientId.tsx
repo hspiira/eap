@@ -22,7 +22,6 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
-import { EmailCampaignCard } from "@/components/EmailCampaignCard"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
@@ -373,9 +372,6 @@ function ClientDetailPage() {
                   <ClientUpcomingCard items={upcomingItems} />
                   <ClientOnboardingCard steps={onboardingSteps} />
                   <ClientTodaysTodoCard items={todaysTodoItems} />
-                </div>
-                <div className="mt-4">
-                  <EmailCampaignCard />
                 </div>
               </TabPanel>
 
