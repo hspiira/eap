@@ -329,6 +329,65 @@ in the first place.
 
 ---
 
+## BE-A11: `alembic_version` holds three rows, so `upgrade head` fails
+
+**Severity:** 🔴 Critical · **Effort:** XS · **Status:** ⬜ Todo
+
+**Problem.** `alembic upgrade head` fails against the shared database:
+
+```
+Requested revision a5b7c9d1e3f4 overlaps with other requested revisions
+e1a5b8c3d7f2, e1a5c7b9d3f2
+```
+
+`alembic_version` holds three rows where a clean history would hold one:
+
+```
+['a5b7c9d1e3f4', 'e1a5b8c3d7f2', 'e1a5c7b9d3f2']
+```
+
+`a5b7c9d1e3f4` was applied while it still declared the single parent
+`z4u7v9w1q3s6`, so alembic inserted it as a third independent head beside the
+other two. The file was then edited to declare all three as parents, making it a
+merge revision. Alembic now sees a merge and two of its own parents all recorded
+as current, and refuses. When a merge is applied normally, alembic deletes the
+parent rows because the merge subsumes them; that never happened here because
+the revision was not a merge when it ran.
+
+**The schema is correct.** Verified read-only: every branch's DDL is applied,
+`clients.suspension_reason` is present, `contracts.start_date` and `end_date`
+are `date`. Only the bookkeeping rows are wrong. No data is at risk.
+
+**How to check it.** `alembic current` is misleading here. It prints a single
+line, `a5b7c9d1e3f4 (head) (mergepoint)`, because it collapses the display to
+the effective head. Only a direct read shows the problem:
+
+```sql
+SELECT version_num FROM alembic_version ORDER BY 1;
+```
+
+`alembic upgrade head --sql` is no help either: it is offline, never reads
+`alembic_version`, and crashes anyway (BE-A09).
+
+**Recommended fix.** Reduce the table to the single row `a5b7c9d1e3f4`, which is
+the state a clean merge application would have produced. No DDL, no data change.
+This has to be sequenced with BE-A10: that ticket needs the same revision either
+re-run or superseded, so repairing the rows first without deciding the file
+leaves the same trap for whoever migrates next.
+
+**Not attempted.** This is a write to a database several sessions share, and the
+decision belongs to the feature's owner and the user, not to a reviewer.
+
+**Acceptance criteria**
+
+- [ ] `SELECT version_num FROM alembic_version` returns exactly one row.
+- [ ] `alembic upgrade head` exits 0 against the shared database.
+- [ ] The BE-A10 design decision is made before or with this repair.
+- [ ] `README.md:37` and `:56`, which tell a developer to run `alembic upgrade
+      head`, are true again.
+
+---
+
 ## BE-A09: `alembic upgrade --sql` crashes a twelfth of the way through
 
 **Severity:** 🟡 Medium · **Effort:** S · **Status:** ⬜ Todo
@@ -443,6 +502,39 @@ this codebase.
 work at 23:51 to 23:54 on 2026-09-04 and `client_model.py` at 00:17 on 09-05.
 The owner was still unidentified when this was filed; see the handoff note in
 the README.
+
+**This cannot fix itself, which is the part that makes it urgent.** The
+migration file was rewritten at 00:21 on 09-05 and now does the right thing: it
+creates `client_aliases`, copies the JSON values across, and drops
+`clients.aliases`. That work will never run. Revision `a5b7c9d1e3f4` is already
+recorded in `alembic_version`, stamped when the file's contents were still
+"add a JSON column", so `alembic upgrade` considers it done and skips it.
+
+Verified read-only against the shared database:
+
+| | State |
+|---|---|
+| `client_aliases` table | does not exist |
+| `clients.aliases` column | present |
+| `a5b7c9d1e3f4` in `alembic_version` | applied |
+
+So the database is pinned to the old design while the model expects the new one,
+and no ordinary migration command closes the gap. Repairing it means either
+stamping the revision back and re-running it, or writing a follow-up revision
+that does the create-and-copy. That is a decision for the feature's owner, and
+it has to be sequenced with the `alembic_version` row repair in BE-A11, because
+both touch the same bookkeeping.
+
+That revision id has now carried three different definitions in one evening:
+add a JSON column with a single parent, the same with three parents, and
+create-table-and-drop-column with three parents. One of the three is what the
+database recorded. An applied revision is a fact about a database, so editing
+one after it has run makes the file and the database disagree permanently.
+
+The rewritten migration also calls `sa.inspect(bind)` at line 44, which is the
+exact pattern BE-A09 records as breaking `alembic upgrade --sql`. So the offline
+render stays broken, and the acceptance criterion there should be checked
+against this file too.
 
 ---
 
