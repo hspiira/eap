@@ -133,6 +133,14 @@ clinical guard either. Whether that is right is a product question this review
 cannot settle: the frontend's own note in `src/api/endpoints/care-callbacks.ts`
 says care callbacks are deliberately not behind the wall.
 
+That question stops being theoretical the moment anyone wires a risk surface to
+the frontend. Outreach records carry `triage_risk_level`, and care callbacks are
+the only place the backend holds anything shaped like "at risk". So the obvious
+way to give `components/common/QueryTable.tsx` real data (CQ-A13 in the web
+backlog, currently five fabricated rows) is also the way to put clinical risk
+levels on a page reachable at `/me?view=at-risk` with no scope check in front of
+them. Decide the guard before the wiring, not after.
+
 **Recommended fix.** A test that enumerates the route table and asserts the
 guard is present on every route under the clinical routers, in the style of the
 existing `tests/unit/api/test_fixture_endpoints_have_no_filters.py`, which
