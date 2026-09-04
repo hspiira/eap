@@ -124,10 +124,16 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
 export function getStatusLabel(status: StatusType): string {
   if (status.includes(" ")) return status
 
-  // Wire values are PascalCase, so split on the case boundary before title-casing.
+  // Wire values are PascalCase. Split on the case boundary, and on the boundary
+  // between an acronym and a following word, so CISMResponse reads as two words.
+  // A word that is all capitals is an acronym and keeps its case.
   return status
     .split(/[_\s-]/)
-    .flatMap((part) => part.split(/(?<=[a-z0-9])(?=[A-Z])/))
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .flatMap((part) => part.split(/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/))
+    .map((word) =>
+      word === word.toUpperCase()
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    )
     .join(" ")
 }

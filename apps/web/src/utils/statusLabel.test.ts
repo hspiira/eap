@@ -26,10 +26,14 @@ describe("getStatusLabel over real enum values", () => {
     expect(getStatusLabel("Already Spaced")).toBe("Already Spaced")
   })
 
-  it("mangles an embedded acronym, which is a known limit", () => {
-    // Documents current behaviour so a future fix has a failing case to flip.
-    // CaseReferralSource and ClinicalNoteType carry CISM values; if either is
-    // ever rendered through this helper the acronym is lost.
-    expect(getStatusLabel("CISMFollowUp")).toBe("Cismfollow Up")
+  it("keeps an embedded acronym intact", () => {
+    expect(getStatusLabel("CISMFollowUp")).toBe("CISM Follow Up")
+    // ServiceCategory.CISM_RESPONSE reaches this helper from the service detail page.
+    expect(getStatusLabel("CISMResponse")).toBe("CISM Response")
+  })
+
+  it("leaves a value that is entirely an acronym alone", () => {
+    expect(getStatusLabel("DAP")).toBe("DAP")
+    expect(getStatusLabel("SOAP")).toBe("SOAP")
   })
 })
