@@ -495,3 +495,38 @@ contract, not how they are displayed.
 **Why this recurs.** Two sessions each shipped a regression of this exact shape within a day, both
 found by the other checking rather than by a test. There is no guard on the display side.
 
+---
+
+## CQ-A16: The client overview shows a fabricated campaign badged "Live"
+
+**Severity:** High - **Effort:** S - **Status:** Todo - **Owner:** - - **PR:** -
+
+**Problem.** `routes/clients/$clientId.tsx` renders `<EmailCampaignCard />` with no props. The
+component's defaults then supply everything on screen: a campaign named "Wellness check-in · Q2
+2026", a delivery rate of 98.0% from 415,581 sent, and an open rate of 32.4% from 131,955 opened.
+The card also renders an unconditional `Live` badge, so the page asserts the figures are current.
+
+Because the call site passes nothing, the card cannot be about the client being viewed. Whichever
+client you open, the same invented campaign appears with the same numbers.
+
+This is distinct from CQ-A13. The At Risk screen is a design sketch, labelled as one and reached
+through a "Preview pages" heading that says so. The client detail page is a live page in the module
+this review covers, and nothing on it marks this card as placeholder.
+
+**Evidence.**
+- `src/routes/clients/$clientId.tsx` renders `<EmailCampaignCard />`, no props.
+- `src/components/EmailCampaignCard.tsx:26` declares `DEFAULT_SECTIONS` with the figures above.
+- `src/components/EmailCampaignCard.tsx:57` defaults the subtitle to the campaign name.
+- `src/components/EmailCampaignCard.tsx:67` renders the `Live` badge unconditionally.
+- Seen rendered in a browser on the Minet Uganda overview tab.
+
+**Recommended fix.** The component itself is fine: it is presentational, with defaults that suit a
+gallery. The defect is the call site. Either pass real campaign data for the client, or remove the
+card from the overview tab until there is a source for it. A search of the published contract found
+no endpoint serving campaign delivery metrics scoped to a client, so removal is the available
+option today. Make the `Live` badge conditional on real data either way.
+
+**Acceptance criteria.**
+- No live page renders campaign figures that are the same for every client.
+- A "Live" badge appears only when the figures came from the API.
+
