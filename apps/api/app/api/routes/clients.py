@@ -9,9 +9,22 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 import csv
 import difflib
 import io
+import json
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
@@ -34,7 +47,10 @@ from app.api.schemas.client_schemas import (
     ClientDeactivateRequest,
     ClientImportCreated,
     ClientImportIssue,
+    ClientImportJobListResponse,
+    ClientImportJobResponse,
     ClientImportResponse,
+    ClientImportRowPreview,
     ClientListResponse,
     ClientResponse,
     ClientStatsResponse,
@@ -62,7 +78,7 @@ from app.core.authorization import (
     require_same_tenant,
     require_tenant_role,
 )
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod, ContractStatus, TenantRole
@@ -83,6 +99,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.infrastructure.mappers.client_mapper import ClientMapper
+from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.client_alias import normalize_client_alias
@@ -93,6 +110,7 @@ from app.shared.utils.client_csv import (
     generated_client_code,
     parse_client_csv,
 )
+from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
@@ -739,20 +757,32 @@ async def _remove_existing_import_rows(
     client_repo: ClientRepository,
     alias_repo: ClientAliasRepository,
     issues: list[dict[str, str | int]],
+    decisions: dict[int, dict[str, str | None]] | None = None,
+    matches: dict[int, ClientEntity] | None = None,
 ) -> tuple[list[tuple[ClientCsvRow, str]], int]:
-    """Skip existing names and reject codes that would collide with the tenant."""
+    """Apply existing-client decisions and reject remaining tenant conflicts."""
     ready: list[tuple[ClientCsvRow, str]] = []
     skipped = 0
     for row, code in candidates:
         existing = await client_repo.get_by_name_or_alias(tenant_id, row.name)
         if existing:
-            detail = (
-                "Client name or alias already exists; skipped"
-                if existing.name.casefold() == row.name.casefold()
-                else f"Matches existing client '{existing.name}' through its name or alias; skipped"
-            )
-            issues.append(_import_issue(row, "name", detail, "skipped"))
-            skipped += 1
+            if matches is not None:
+                matches[row.row_number] = existing
+            decision = (decisions or {}).get(row.row_number, {}).get("action", "skip")
+            if decision == "merge":
+                ready.append((row, code))
+            elif decision == "create":
+                issues.append(
+                    _import_issue(row, "name", "Client already exists; choose skip or merge")
+                )
+            else:
+                detail = (
+                    "Client name or alias already exists; skipped"
+                    if existing.name.casefold() == row.name.casefold()
+                    else f"Matches existing client '{existing.name}' through its name or alias; skipped"
+                )
+                issues.append(_import_issue(row, "name", detail, "skipped"))
+                skipped += 1
             continue
         if await client_repo.get_by_code(tenant_id, code):
             issues.append(_import_issue(row, "code", f"Client code '{code}' already exists"))
@@ -774,6 +804,14 @@ async def _remove_existing_import_rows(
                 alias_conflict = True
         if alias_conflict:
             continue
+        action = (decisions or {}).get(row.row_number, {}).get("action")
+        if action == "skip":
+            issues.append(_import_issue(row, "name", "Skipped by user", "skipped"))
+            skipped += 1
+            continue
+        if action == "merge" and not (decisions or {}).get(row.row_number, {}).get("client_id"):
+            issues.append(_import_issue(row, "name", "Choose a client before merging this row"))
+            continue
         ready.append((row, code))
     return ready, skipped
 
@@ -783,21 +821,145 @@ async def _add_similarity_warnings(
     tenant_id: TenantId,
     client_repo: ClientRepository,
     issues: list[dict[str, str | int]],
+    similar_matches: dict[int, ClientEntity] | None = None,
 ) -> None:
     """Flag close names for review without blocking a valid import."""
     existing = await client_repo.list_all(tenant_id, limit=10_000, include_archived=True)
     existing_names = {client.name.casefold(): client.name for client in existing}
     for row, _code in rows:
-        matches = difflib.get_close_matches(row.name.casefold(), existing_names, n=1, cutoff=0.86)
-        if matches and matches[0] != row.name.casefold():
+        close_matches = difflib.get_close_matches(
+            row.name.casefold(), existing_names, n=1, cutoff=0.86
+        )
+        if close_matches and close_matches[0] != row.name.casefold():
+            matched_client = next(
+                client for client in existing if client.name.casefold() == close_matches[0]
+            )
+            if similar_matches is not None:
+                similar_matches[row.row_number] = matched_client
             issues.append(
                 _import_issue(
                     row,
                     "name",
-                    f"Similar existing client: '{existing_names[matches[0]]}'. Review before importing.",
+                    f"Similar existing client: '{existing_names[close_matches[0]]}'. Review before importing.",
                     "warning",
                 )
             )
+
+
+def _parse_import_decisions(
+    raw: str | None, issues: list[dict[str, str | int]]
+) -> dict[int, dict[str, str | None]] | None:
+    """Decode row actions posted by the confirmation step."""
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        issues.append({"row": 0, "field": "decisions", "message": "Invalid import decisions"})
+        return {}
+    if not isinstance(payload, dict):
+        issues.append({"row": 0, "field": "decisions", "message": "Invalid import decisions"})
+        return {}
+    decisions: dict[int, dict[str, str | None]] = {}
+    for key, value in payload.items():
+        try:
+            row_number = int(key)
+        except (TypeError, ValueError):
+            issues.append({"row": 0, "field": "decisions", "message": "Invalid row decision"})
+            continue
+        if not isinstance(value, dict) or value.get("action") not in {"create", "skip", "merge"}:
+            issues.append(
+                {
+                    "row": row_number,
+                    "field": "decisions",
+                    "message": "Action must be create, skip, or merge",
+                }
+            )
+            continue
+        client_id = value.get("client_id")
+        decisions[row_number] = {
+            "action": str(value["action"]),
+            "client_id": str(client_id) if client_id else None,
+        }
+    return decisions
+
+
+def _import_row_previews(
+    rows: list[ClientCsvRow],
+    candidates: list[tuple[ClientCsvRow, str]],
+    issues: list[dict[str, str | int]],
+    matches: dict[int, ClientEntity],
+    similar_matches: dict[int, ClientEntity],
+) -> list[ClientImportRowPreview]:
+    """Build the server-authoritative preview shown before confirmation."""
+    codes = {row.row_number: code for row, code in candidates}
+    error_rows = {
+        int(issue["row"])
+        for issue in issues
+        if issue.get("severity", "error") == "error" and int(issue["row"]) > 0
+    }
+    previews: list[ClientImportRowPreview] = []
+    for row in rows:
+        matched = matches.get(row.row_number) or similar_matches.get(row.row_number)
+        state = "duplicate" if row.row_number in matches else "similar" if matched else "new"
+        if row.row_number in error_rows:
+            state = "invalid"
+        previews.append(
+            ClientImportRowPreview(
+                row=row.row_number,
+                name=row.name,
+                code=codes.get(row.row_number),
+                aliases=list(row.aliases),
+                contact=" · ".join(value for value in (row.email, row.phone) if value) or None,
+                state=state,
+                default_action="skip" if matched or state == "invalid" else "create",
+                matched_client_id=matched.id.value if matched else None,
+                matched_client_name=matched.name if matched else None,
+            )
+        )
+    return previews
+
+
+async def _validate_merge_decisions(
+    rows: list[tuple[ClientCsvRow, str]],
+    tenant_id: TenantId,
+    client_repo: ClientRepository,
+    decisions: dict[int, dict[str, str | None]] | None,
+    matches: dict[int, ClientEntity],
+    issues: list[dict[str, str | int]],
+) -> None:
+    """Validate merge targets before a confirmation can create any rows."""
+    for row, _code in rows:
+        decision = (decisions or {}).get(row.row_number, {})
+        if decision.get("action") != "merge":
+            continue
+        target_id = decision.get("client_id") or (
+            matches[row.row_number].id.value if row.row_number in matches else None
+        )
+        target = await client_repo.get_by_id(ClientId(target_id)) if target_id else None
+        if not target or target.tenant_id != tenant_id:
+            issues.append(_import_issue(row, "name", "Merge target was not found"))
+
+
+def _to_import_job_response(job: ClientImportJobModel) -> ClientImportJobResponse:
+    """Map a persisted import job to its public progress response."""
+    return ClientImportJobResponse(
+        id=job.id,
+        filename=job.filename,
+        status=job.status,
+        file_size=job.file_size,
+        total_rows=job.total_rows,
+        processed_rows=job.processed_rows,
+        imported=job.imported,
+        skipped=job.skipped,
+        failed=job.failed,
+        retry_count=job.retry_count,
+        issues=[ClientImportIssue(**issue) for issue in (job.issues or [])],
+        error_message=job.error_message,
+        created_at=job.created_at.isoformat(),
+        started_at=job.started_at.isoformat() if job.started_at else None,
+        completed_at=job.completed_at.isoformat() if job.completed_at else None,
+    )
 
 
 async def _resolve_import_references(
@@ -859,18 +1021,65 @@ def _import_billing_address(row: ClientCsvRow) -> Address | None:
 async def _create_imported_clients(
     rows: list[tuple[ClientCsvRow, str, IndustryId | None, ClientId | None]],
     tenant_id: TenantId,
-    request: Request,
+    request: Request | None,
     current_user: TokenData,
     client_repo: ClientRepository,
     tenant_repo: TenantRepository,
     industry_repo: IndustryRepository,
     alias_repo: ClientAliasRepository,
+    decisions: dict[int, dict[str, str | None]] | None,
+    matches: dict[int, ClientEntity],
+    issues: list[dict[str, str | int]],
     audit_handler,
-) -> list[ClientImportCreated]:
+    progress_callback: Callable[[int], Awaitable[None]] | None = None,
+) -> tuple[list[ClientImportCreated], int, int]:
     """Create and audit the prevalidated rows."""
     created: list[ClientImportCreated] = []
+    failed = 0
     use_case = CreateClientUseCase(client_repo, tenant_repo, industry_repo)
-    for row, code, industry_id, parent_client_id in rows:
+    for index, (row, code, industry_id, parent_client_id) in enumerate(rows, start=1):
+        if progress_callback is not None:
+            await progress_callback(index)
+        decision = (decisions or {}).get(row.row_number, {})
+        if decision.get("action") == "merge":
+            target_id = decision.get("client_id") or (
+                matches[row.row_number].id.value if row.row_number in matches else None
+            )
+            target = await client_repo.get_by_id(ClientId(target_id)) if target_id else None
+            if not target or target.tenant_id != tenant_id:
+                issues.append(_import_issue(row, "name", "Merge target was not found"))
+                failed += 1
+                continue
+            aliases = list(await alias_repo.list_for_client(target.id, tenant_id))
+            alias_values = [alias.alias for alias in aliases]
+            if normalize_client_alias(row.name) != normalize_client_alias(target.name):
+                alias_values.append(row.name)
+            alias_values.extend(row.aliases)
+            conflict = False
+            for alias in alias_values:
+                normalized = normalize_client_alias(alias)
+                owner = await alias_repo.find_by_normalized(tenant_id, normalized)
+                if owner and owner.client_id != target.id:
+                    issues.append(
+                        _import_issue(row, "aliases", f"Alias '{alias}' belongs to another client")
+                    )
+                    conflict = True
+                    break
+                canonical_owner = await client_repo.get_by_name(tenant_id, alias)
+                if canonical_owner and canonical_owner.id != target.id:
+                    issues.append(
+                        _import_issue(row, "aliases", f"Alias '{alias}' is another client's name")
+                    )
+                    conflict = True
+                    break
+            if conflict:
+                failed += 1
+                continue
+            merged = await alias_repo.replace_for_client(target.id, tenant_id, alias_values)
+            target.aliases = [alias.alias for alias in merged]
+            await audit_change(target, audit_handler, current_user, request, tenant_id=tenant_id)
+            created.append(ClientImportCreated(name=target.name, code=target.code))
+            continue
         client = await use_case.execute(
             client_id=ClientId(generate_cuid()),
             tenant_id=tenant_id,
@@ -888,7 +1097,7 @@ async def _create_imported_clients(
         await alias_repo.replace_for_client(client.id, tenant_id, row.aliases)
         await audit_change(client, audit_handler, current_user, request, tenant_id=tenant_id)
         created.append(ClientImportCreated(name=client.name, code=client.code))
-    return created
+    return created, 0, failed
 
 
 @router.post(
@@ -900,6 +1109,7 @@ async def _create_imported_clients(
 async def import_clients(
     request: Request,
     file: UploadFile = File(..., description="UTF-8 CSV using the client import template"),
+    decisions_json: str = Form("", description="JSON row actions from the server preview"),
     tenant_id: str = Query(..., description="Tenant identifier"),
     dry_run: bool = Query(False, description="Validate without creating clients"),
     current_user: TokenData = Depends(require_same_tenant),
@@ -924,18 +1134,30 @@ async def import_clients(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    # Existing names are idempotently skipped. Explicit code conflicts and invalid
-    # references remain errors, so a bad file never creates a partial batch.
+    decisions = _parse_import_decisions(decisions_json, issues)
+    matches: dict[int, ClientEntity] = {}
+    similar_matches: dict[int, ClientEntity] = {}
     candidates, skipped = _prepare_import_rows(rows, issues)
     _validate_file_aliases(candidates, issues)
     ready, existing_skipped = await _remove_existing_import_rows(
-        candidates, TenantId(tenant_id), client_repo, alias_repo, issues
+        candidates,
+        TenantId(tenant_id),
+        client_repo,
+        alias_repo,
+        issues,
+        decisions,
+        matches,
     )
     skipped += existing_skipped
     ready_with_references = await _resolve_import_references(
         ready, TenantId(tenant_id), client_repo, industry_repo, issues
     )
-    await _add_similarity_warnings(ready, TenantId(tenant_id), client_repo, issues)
+    await _add_similarity_warnings(ready, TenantId(tenant_id), client_repo, issues, similar_matches)
+    await _validate_merge_decisions(
+        ready, TenantId(tenant_id), client_repo, decisions, {**matches, **similar_matches}, issues
+    )
+
+    previews = _import_row_previews(rows, candidates, issues, matches, similar_matches)
 
     errors = [issue for issue in issues if issue.get("severity", "error") == "error"]
     if errors:
@@ -945,6 +1167,7 @@ async def import_clients(
             failed=len(errors),
             clients=[],
             issues=[ClientImportIssue(**issue) for issue in issues],
+            rows=previews,
         )
 
     if dry_run:
@@ -957,9 +1180,10 @@ async def import_clients(
                 for row, code, _, _ in ready_with_references
             ],
             issues=[ClientImportIssue(**issue) for issue in issues],
+            rows=previews,
         )
 
-    created = await _create_imported_clients(
+    created, decision_skipped, decision_failed = await _create_imported_clients(
         ready_with_references,
         TenantId(tenant_id),
         request,
@@ -968,16 +1192,250 @@ async def import_clients(
         tenant_repo,
         industry_repo,
         alias_repo,
+        decisions,
+        {**matches, **similar_matches},
+        issues,
         audit_handler,
     )
 
     return ClientImportResponse(
         imported=len(created),
-        skipped=skipped,
-        failed=0,
+        skipped=skipped + decision_skipped,
+        failed=decision_failed,
         clients=created,
         issues=[ClientImportIssue(**issue) for issue in issues],
+        rows=previews,
     )
+
+
+async def _run_client_import_job(job_id: str) -> None:
+    """Process a queued import in a fresh session after the request commits."""
+    from app.infrastructure.repositories.client_alias_repository import ClientAliasRepositoryImpl
+    from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+    from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
+    from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+    from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+    from app.shared.handlers.audit_event_handler import AuditEventHandler
+
+    async with AsyncSessionLocal() as db:
+        job = await db.get(ClientImportJobModel, job_id)
+        if not job:
+            return
+        job.status = "processing"
+        job.started_at = utc_now()
+        job.error_message = None
+        await db.commit()
+        try:
+            rows, issues = parse_client_csv(job.file_content)
+            tenant_id = TenantId(job.tenant_id)
+            decisions = {int(key): value for key, value in (job.decisions or {}).items()}
+            client_repo = ClientRepositoryImpl(db)
+            alias_repo = ClientAliasRepositoryImpl(db)
+            industry_repo = IndustryRepositoryImpl(db)
+            tenant_repo = TenantRepositoryImpl(db)
+            matches: dict[int, ClientEntity] = {}
+            similar_matches: dict[int, ClientEntity] = {}
+            candidates, skipped = _prepare_import_rows(rows, issues)
+            _validate_file_aliases(candidates, issues)
+            ready, existing_skipped = await _remove_existing_import_rows(
+                candidates,
+                tenant_id,
+                client_repo,
+                alias_repo,
+                issues,
+                decisions,
+                matches,
+            )
+            skipped += existing_skipped
+            ready_with_references = await _resolve_import_references(
+                ready, tenant_id, client_repo, industry_repo, issues
+            )
+            await _add_similarity_warnings(ready, tenant_id, client_repo, issues, similar_matches)
+            await _validate_merge_decisions(
+                ready,
+                tenant_id,
+                client_repo,
+                decisions,
+                {**matches, **similar_matches},
+                issues,
+            )
+            job.total_rows = len(rows)
+            job.issues = issues
+            await db.commit()
+            errors = [issue for issue in issues if issue.get("severity", "error") == "error"]
+            if errors:
+                job.status = "completed"
+                job.failed = len(errors)
+                job.skipped = skipped
+                job.processed_rows = len(rows)
+            else:
+                current_user = TokenData(user_id=job.requested_by, tenant_id=job.tenant_id)
+                audit_handler = AuditEventHandler(OutboxRepositoryImpl(db))
+
+                async def update_progress(processed: int) -> None:
+                    job.processed_rows = processed
+                    await db.commit()
+
+                created, decision_skipped, decision_failed = await _create_imported_clients(
+                    ready_with_references,
+                    tenant_id,
+                    None,
+                    current_user,
+                    client_repo,
+                    tenant_repo,
+                    industry_repo,
+                    alias_repo,
+                    decisions,
+                    {**matches, **similar_matches},
+                    issues,
+                    audit_handler,
+                    update_progress,
+                )
+                job.status = "completed"
+                job.imported = len(created)
+                job.skipped = skipped + decision_skipped
+                job.failed = decision_failed
+                job.processed_rows = len(rows)
+                job.issues = issues
+            job.completed_at = utc_now()
+            await db.commit()
+        except Exception as exc:
+            await db.rollback()
+            job = await db.get(ClientImportJobModel, job_id)
+            if job:
+                job.status = "failed"
+                job.error_message = str(exc)[:1000]
+                job.completed_at = utc_now()
+                await db.commit()
+
+
+@router.post(
+    "/import/jobs",
+    response_model=ClientImportJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Queue a background client import",
+)
+@transactional()
+async def queue_client_import(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(..., description="UTF-8 CSV using the client import template"),
+    decisions_json: str = Form("", description="JSON row actions from the server preview"),
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    _write_access: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> ClientImportJobResponse:
+    """Queue imports larger than the synchronous request limit."""
+    if file.filename and not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=415, detail="Only CSV files are supported")
+    content = await file.read()
+    if len(content) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="CSV file must be 50 MB or smaller")
+    try:
+        parsed_rows, _ = parse_client_csv(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    decisions: dict[str, object] = {}
+    if decisions_json:
+        try:
+            decisions = json.loads(decisions_json)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=422, detail="Invalid import decisions") from exc
+    job = ClientImportJobModel(
+        id=generate_cuid(),
+        tenant_id=tenant_id,
+        requested_by=current_user.user_id,
+        filename=file.filename or "clients.csv",
+        file_size=len(content),
+        file_content=content,
+        decisions=decisions,
+        status="queued",
+        total_rows=len(parsed_rows),
+        issues=[],
+    )
+    db.add(job)
+    await db.flush()
+    background_tasks.add_task(_run_client_import_job, job.id)
+    return _to_import_job_response(job)
+
+
+@router.get(
+    "/import/jobs",
+    response_model=ClientImportJobListResponse,
+    summary="List client import history",
+)
+@readonly()
+async def list_client_import_jobs(
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: TokenData = Depends(require_same_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> ClientImportJobListResponse:
+    """Return recent imports for the current tenant."""
+    result = await db.execute(
+        select(ClientImportJobModel)
+        .where(ClientImportJobModel.tenant_id == tenant_id)
+        .order_by(ClientImportJobModel.created_at.desc())
+        .limit(limit)
+    )
+    count_result = await db.execute(
+        select(func.count(ClientImportJobModel.id)).where(
+            ClientImportJobModel.tenant_id == tenant_id
+        )
+    )
+    return ClientImportJobListResponse(
+        items=[_to_import_job_response(job) for job in result.scalars().all()],
+        total=count_result.scalar_one(),
+    )
+
+
+@router.get(
+    "/import/jobs/{job_id}",
+    response_model=ClientImportJobResponse,
+    summary="Get client import progress",
+)
+@readonly()
+async def get_client_import_job(
+    job_id: str,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> ClientImportJobResponse:
+    """Return one tenant-scoped import job."""
+    job = await db.get(ClientImportJobModel, job_id)
+    if not job or job.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Import job not found")
+    return _to_import_job_response(job)
+
+
+@router.post(
+    "/import/jobs/{job_id}/retry",
+    response_model=ClientImportJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Retry a failed client import",
+)
+@transactional()
+async def retry_client_import_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    _write_access: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> ClientImportJobResponse:
+    """Requeue a failed import using its original file and decisions."""
+    job = await db.get(ClientImportJobModel, job_id)
+    if not job or job.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Import job not found")
+    if job.status != "failed":
+        raise HTTPException(status_code=409, detail="Only failed imports can be retried")
+    job.status = "queued"
+    job.error_message = None
+    job.completed_at = None
+    job.retry_count += 1
+    await db.flush()
+    background_tasks.add_task(_run_client_import_job, job.id)
+    return _to_import_job_response(job)
 
 
 @router.patch(

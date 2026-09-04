@@ -993,6 +993,12 @@
       },
       "Body_import_clients_clients_import_post": {
         "properties": {
+          "decisions_json": {
+            "default": "",
+            "description": "JSON row actions from the server preview",
+            "title": "Decisions Json",
+            "type": "string"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "description": "UTF-8 CSV using the client import template",
@@ -1004,6 +1010,27 @@
           "file"
         ],
         "title": "Body_import_clients_clients_import_post",
+        "type": "object"
+      },
+      "Body_queue_client_import_clients_import_jobs_post": {
+        "properties": {
+          "decisions_json": {
+            "default": "",
+            "description": "JSON row actions from the server preview",
+            "title": "Decisions Json",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "UTF-8 CSV using the client import template",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_queue_client_import_clients_import_jobs_post",
         "type": "object"
       },
       "BulkPanelStatusResponse": {
@@ -1720,6 +1747,138 @@
         "title": "ClientImportIssue",
         "type": "object"
       },
+      "ClientImportJobListResponse": {
+        "description": "Paginated import history.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClientImportJobResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ClientImportJobListResponse",
+        "type": "object"
+      },
+      "ClientImportJobResponse": {
+        "description": "Progress and result metadata for a background client import.",
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "file_size": {
+            "title": "File Size",
+            "type": "integer"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/ClientImportIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "processed_rows": {
+            "title": "Processed Rows",
+            "type": "integer"
+          },
+          "retry_count": {
+            "title": "Retry Count",
+            "type": "integer"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_rows": {
+            "title": "Total Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "status",
+          "file_size",
+          "total_rows",
+          "processed_rows",
+          "imported",
+          "skipped",
+          "failed",
+          "retry_count",
+          "created_at"
+        ],
+        "title": "ClientImportJobResponse",
+        "type": "object"
+      },
       "ClientImportResponse": {
         "description": "Result of a client CSV import.",
         "properties": {
@@ -1745,6 +1904,13 @@
             "title": "Issues",
             "type": "array"
           },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ClientImportRowPreview"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
           "skipped": {
             "title": "Skipped",
             "type": "integer"
@@ -1758,6 +1924,96 @@
           "issues"
         ],
         "title": "ClientImportResponse",
+        "type": "object"
+      },
+      "ClientImportRowPreview": {
+        "description": "Server-side classification and decision state for one imported row.",
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact"
+          },
+          "default_action": {
+            "default": "create",
+            "enum": [
+              "create",
+              "skip"
+            ],
+            "title": "Default Action",
+            "type": "string"
+          },
+          "matched_client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Client Id"
+          },
+          "matched_client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Client Name"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "new",
+              "duplicate",
+              "similar",
+              "invalid"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "name",
+          "state"
+        ],
+        "title": "ClientImportRowPreview",
         "type": "object"
       },
       "ClientListResponse": {
@@ -15376,6 +15632,236 @@
           }
         ],
         "summary": "Import clients from CSV",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/import/jobs": {
+      "get": {
+        "description": "Return recent imports for the current tenant.",
+        "operationId": "list_client_import_jobs_clients_import_jobs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientImportJobListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List client import history",
+        "tags": [
+          "clients"
+        ]
+      },
+      "post": {
+        "description": "Queue imports larger than the synchronous request limit.",
+        "operationId": "queue_client_import_clients_import_jobs_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_queue_client_import_clients_import_jobs_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientImportJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Queue a background client import",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/import/jobs/{job_id}": {
+      "get": {
+        "description": "Return one tenant-scoped import job.",
+        "operationId": "get_client_import_job_clients_import_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientImportJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get client import progress",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/import/jobs/{job_id}/retry": {
+      "post": {
+        "description": "Requeue a failed import using its original file and decisions.",
+        "operationId": "retry_client_import_job_clients_import_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientImportJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry a failed client import",
         "tags": [
           "clients"
         ]

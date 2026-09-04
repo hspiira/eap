@@ -5,6 +5,8 @@ Pydantic models for request/response validation.
 Separate from domain entities.
 """
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
@@ -185,6 +187,27 @@ class ClientImportCreated(BaseModel):
     code: str
 
 
+class ClientImportRowPreview(BaseModel):
+    """Server-side classification and decision state for one imported row."""
+
+    row: int
+    name: str
+    code: str | None = None
+    aliases: list[str] = Field(default_factory=list)
+    contact: str | None = None
+    state: Literal["new", "duplicate", "similar", "invalid"]
+    default_action: Literal["create", "skip"] = "create"
+    matched_client_id: str | None = None
+    matched_client_name: str | None = None
+
+
+class ClientImportDecision(BaseModel):
+    """Action selected for a row during import confirmation."""
+
+    action: Literal["create", "skip", "merge"]
+    client_id: str | None = None
+
+
 class ClientImportResponse(BaseModel):
     """Result of a client CSV import."""
 
@@ -193,6 +216,34 @@ class ClientImportResponse(BaseModel):
     failed: int
     clients: list[ClientImportCreated]
     issues: list[ClientImportIssue]
+    rows: list[ClientImportRowPreview] = Field(default_factory=list)
+
+
+class ClientImportJobResponse(BaseModel):
+    """Progress and result metadata for a background client import."""
+
+    id: str
+    filename: str
+    status: Literal["queued", "processing", "completed", "failed"]
+    file_size: int
+    total_rows: int
+    processed_rows: int
+    imported: int
+    skipped: int
+    failed: int
+    retry_count: int
+    issues: list[ClientImportIssue] = Field(default_factory=list)
+    error_message: str | None = None
+    created_at: str
+    started_at: str | None = None
+    completed_at: str | None = None
+
+
+class ClientImportJobListResponse(BaseModel):
+    """Paginated import history."""
+
+    items: list[ClientImportJobResponse]
+    total: int
 
 
 class ClientStatsResponse(BaseModel):

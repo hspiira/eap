@@ -25,12 +25,48 @@ export interface ClientImportIssue {
   severity?: "error" | "warning" | "skipped"
 }
 
+export interface ClientImportRowPreview {
+  row: number
+  name: string
+  code: string | null
+  aliases: string[]
+  contact: string | null
+  state: "new" | "duplicate" | "similar" | "invalid"
+  default_action: "create" | "skip"
+  matched_client_id: string | null
+  matched_client_name: string | null
+}
+
 export interface ClientImportResult {
   imported: number
   skipped: number
   failed: number
   clients: Array<{ name: string; code: string }>
   issues: ClientImportIssue[]
+  rows: ClientImportRowPreview[]
+}
+
+export type ClientImportDecision = {
+  action: "create" | "skip" | "merge"
+  client_id?: string
+}
+
+export interface ClientImportJob {
+  id: string
+  filename: string
+  status: "queued" | "processing" | "completed" | "failed"
+  file_size: number
+  total_rows: number
+  processed_rows: number
+  imported: number
+  skipped: number
+  failed: number
+  retry_count: number
+  issues: ClientImportIssue[]
+  error_message: string | null
+  created_at: string
+  started_at: string | null
+  completed_at: string | null
 }
 
 export type { ClientCreate, ClientUpdate }
@@ -64,13 +100,40 @@ export const clientsApi = {
     return apiClient.get<PaginatedResponse<Client>>("/clients", params)
   },
 
-  async importCsv(file: File, dryRun = false): Promise<ClientImportResult> {
+  async importCsv(
+    file: File,
+    dryRun = false,
+    decisions?: Record<number, ClientImportDecision>,
+  ): Promise<ClientImportResult> {
     const formData = new FormData()
     formData.append("file", file)
+    if (decisions) formData.append("decisions_json", JSON.stringify(decisions))
     return apiClient.postFormData<ClientImportResult>(
       `/clients/import?dry_run=${String(dryRun)}`,
       formData,
     )
+  },
+
+  async queueImport(
+    file: File,
+    decisions?: Record<number, ClientImportDecision>,
+  ): Promise<ClientImportJob> {
+    const formData = new FormData()
+    formData.append("file", file)
+    if (decisions) formData.append("decisions_json", JSON.stringify(decisions))
+    return apiClient.postFormData<ClientImportJob>("/clients/import/jobs", formData)
+  },
+
+  async getImportJob(jobId: string): Promise<ClientImportJob> {
+    return apiClient.get<ClientImportJob>(`/clients/import/jobs/${jobId}`)
+  },
+
+  async listImportJobs(): Promise<{ items: ClientImportJob[]; total: number }> {
+    return apiClient.get<{ items: ClientImportJob[]; total: number }>("/clients/import/jobs")
+  },
+
+  async retryImport(jobId: string): Promise<ClientImportJob> {
+    return apiClient.post<ClientImportJob>(`/clients/import/jobs/${jobId}/retry`)
   },
 
   async getImportTemplate(): Promise<Blob> {
