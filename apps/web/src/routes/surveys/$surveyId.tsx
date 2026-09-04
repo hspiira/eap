@@ -35,6 +35,7 @@ import { useEntityMutation } from "@/lib/queries"
 import { SurveyStatusPill } from "@/routes/surveys/index"
 import type { Client, Survey, SurveyAggregate } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/surveys/$surveyId")({
   component: SurveyDetailPage,
@@ -167,7 +168,7 @@ function SurveyDetailPage() {
                         label="Status"
                         value={<SurveyStatusPill status={survey.status} />}
                       />
-                      <DetailRow label="Source" value={survey.source} />
+                      <DetailRow label="Source" value={getStatusLabel(survey.source)} />
                     </DetailGrid>
                   </DetailCard>
 
@@ -253,7 +254,7 @@ function Hero({ survey, client }: { survey: Survey; client: Client | null }) {
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <SurveyStatusPill status={survey.status} />
-      <span className="font-mono text-xs text-fg-muted">{survey.source}</span>
+      <span className="text-xs text-fg-muted">{getStatusLabel(survey.source)}</span>
     </div>
   )
 }

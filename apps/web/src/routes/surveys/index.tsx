@@ -37,6 +37,7 @@ import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Survey } from "@/types/entities"
 import { SurveyStatus } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/surveys/")({
   component: SurveysListPage,
@@ -262,7 +263,7 @@ function SurveyRow({
         <span className="text-fg-subtle"> – </span>
         {formatDate(row.period_end)}
       </TableCell>
-      <TableCell className="text-xs text-fg/75">{row.source}</TableCell>
+      <TableCell className="text-xs text-fg/75">{getStatusLabel(row.source)}</TableCell>
       <TableCell className="tabular-nums text-xs text-fg/75">{row.response_count}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
