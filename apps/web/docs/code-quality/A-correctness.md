@@ -365,3 +365,68 @@ a name or gain a case reference number instead.
 - `src/routes/cases/$caseId.tsx` heading uses `caseData.clinical_subject_id`.
 - `src/routes/care-callbacks/worklist/$caseId.tsx` heading uses `outreach.person_id`.
 
+---
+
+## CQ-A13: The At Risk page shows five rows of fabricated data as if they were real
+
+**Severity:** Critical - **Effort:** M - **Status:** Todo - **Owner:** - - **PR:** -
+
+**Problem.** `QueryTable` holds a `MOCK_DATA` array of five invented records and renders it
+directly: `const displayData = MOCK_DATA`. It is not a shared table component despite its name and
+location in `common/`, it is a prototype with hardcoded contents.
+
+`AtRiskPage` renders it, and that page is reachable by a user at `/me?view=at-risk`, with
+`/at-risk` redirecting there. So the product presents fabricated compliance records, with invented
+names, quantities and dates, as live data. In a system that manages client contracts and clinical
+cases this is worse than a broken page, because nothing on screen says the contents are not real.
+
+Its seven filter controls, its pagination and its Reset button are all wired to state that
+`displayData` ignores, so roughly eight further controls do nothing. It also renders its own `h1`,
+which now duplicates the one `PageShell` provides.
+
+**Evidence.**
+- `src/components/common/QueryTable.tsx:44` declares `MOCK_DATA`.
+- `src/components/common/QueryTable.tsx:140` is `const displayData = MOCK_DATA`.
+- `src/components/AtRiskPage.tsx:294` renders `<QueryTable title="At Risk" />`.
+- `src/routes/me.tsx:77` exposes it as the "At Risk" view; `src/routes/at-risk.tsx` redirects in.
+- The design gallery already marks it `status: "rebuild"` at `src/routes/design.tsx:637`.
+
+**Recommended fix.** This needs a product decision before any code, because there is no way to
+infer what data should back "At Risk" from the codebase. Either:
+1. Define the query it should run and build it on `EntityListView`, dropping the filters that have
+   no server-side equivalent; or
+2. Remove the view and its sidebar entry until there is a data source.
+
+Do not leave it rendering `MOCK_DATA` in either case.
+
+**Acceptance criteria.**
+- No route reachable by a user renders hardcoded record data.
+- Every filter shown on the page changes the result set.
+
+---
+
+## CQ-A14: List routes duplicate a row-border constant the primitive could own
+
+**Severity:** Low - **Effort:** M - **Status:** Todo - **Owner:** - - **PR:** -
+
+**Problem.** `TableRow` defaults to `border-fg/20`. Sixteen files pass `border-fg/8` instead, most
+of them via their own local copy of the constant rather than the `ROW_BORDER` export that exists
+for it.
+
+**Correction to an earlier finding.** This was previously recorded as a correctness bug, on the
+grounds that two single-class selectors of equal specificity leave the winner to stylesheet order.
+That was wrong. `cn` is `twMerge(clsx(...))`, and tailwind-merge removes the conflicting earlier
+class, so the value passed at the call site deterministically wins. Verified directly:
+`twMerge("border-b border-fg/20", "border-fg/8")` yields `border-b border-fg/8`. The rendered
+result is predictable; only the duplication is a problem.
+
+**Why the primitive default was not simply changed.** Of 63 `TableRow` usages, 8 set a border
+explicitly and the rest inherit `border-fg/20`. Changing the default to `/8` would lighten row
+borders on roughly 55 rows across the app, which is a visible restyle rather than a cleanup, so it
+wants to be a deliberate design decision rather than a side effect.
+
+**Recommended fix.** Decide the intended row-border weight once. If it is `/8`, change the
+primitive default and delete all sixteen overrides in the same commit so the change is reviewable
+as one visual diff. Until then, import `ROW_BORDER` from `common/tableStyles` rather than
+redeclaring it, as `routes/clients/index.tsx` now does.
+

@@ -9,14 +9,12 @@ import { ClientFormSheet } from "@/components/ClientFormSheet"
 import { BulkAction } from "@/components/common/BulkAction"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
-import { ErrorState } from "@/components/common/ErrorState"
+import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
-import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
+import { ROW_BORDER } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -27,15 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
@@ -60,7 +50,13 @@ const TIER_OPTIONS = [
 
 type TierFilter = (typeof TIER_OPTIONS)[number]["value"]
 
-const ROW_BORDER = "border-fg/8"
+const COLUMNS: ListColumn[] = [
+  { header: "Client", sortField: "name" },
+  { header: "Code", sortField: "code" },
+  { header: "Tier", sortField: "tier" },
+  { header: "Status", sortField: "status" },
+  { header: "Contact", className: "text-fg/65" },
+]
 
 function ClientsListPage() {
   const searchParams = useSearch({ from: "/clients/" })
@@ -178,19 +174,23 @@ function ClientsListPage() {
         onConfirm={handleArchive}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col bg-bg">
-        {loading ? (
-          <div className="flex-1 overflow-auto p-5">
-            <TableSkeleton
-              cols={5}
-              headers={["Name", "Code", "Status", "Contact", "Operation"]}
-              withFilters
-              withPagination
-            />
-          </div>
-        ) : error ? (
-          <ErrorState message={error} onRetry={() => void query.refetch()} />
-        ) : items.length === 0 ? (
+      <EntityListView
+        columns={COLUMNS}
+        items={items}
+        rowKey={(row) => row.id}
+        renderRow={(row) => (
+          <ClientRow
+            row={row}
+            isSelected={selection.selectedIds.has(row.id)}
+            onToggle={() => selection.toggleSelect(row.id)}
+            onEdit={() => setEditing(row)}
+            onArchive={() => setArchiving(row)}
+          />
+        )}
+        loading={loading}
+        error={error}
+        onRetry={() => void query.refetch()}
+        empty={
           <EmptyState
             icon={Building2}
             title={hasFilters ? "No clients match your filters" : "No clients yet"}
@@ -208,84 +208,35 @@ function ClientsListPage() {
               )
             }
           />
-        ) : (
-          <>
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
-              <BulkAction
-                ids={selection.selectedIds}
-                label="Archive"
-                confirmTitle="Archive clients"
-                confirmDescription={(n) =>
-                  `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
-                }
-                destructive
-                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
-                action={clientsApi.archive}
-                invalidateKey={["clients"]}
-                verb="archived"
-                noun="client"
-                onDone={selection.clearSelection}
-              />
-            </SelectionBar>
-            <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
-                <TableHeader className={STICKY_TABLE_HEAD}>
-                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                    <TableHead className="w-10 px-3">
-                      <Checkbox
-                        aria-label="Select all"
-                        checked={selection.selectAllState}
-                        onCheckedChange={selection.toggleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
-                        Client
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="code" sort={sort} onToggle={toggleSort}>
-                        Code
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="tier" sort={sort} onToggle={toggleSort}>
-                        Tier
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead className="text-fg/65">Contact</TableHead>
-                    <TableHead className="w-16 text-right text-fg/65">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
-                    <ClientRow
-                      key={row.id}
-                      row={row}
-                      isSelected={selection.selectedIds.has(row.id)}
-                      onToggle={() => selection.toggleSelect(row.id)}
-                      onEdit={() => setEditing(row)}
-                      onArchive={() => setArchiving(row)}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {total > 0 && (
-              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+        }
+        sort={sort}
+        onToggleSort={toggleSort}
+        page={page}
+        total={total}
+        limit={limit}
+        onPageChange={setPage}
+        selectAllState={selection.selectAllState}
+        onToggleSelectAll={selection.toggleSelectAll}
+        toolbar={
+          <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Archive"
+              confirmTitle="Archive clients"
+              confirmDescription={(n) =>
+                `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
+              }
+              destructive
+              labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+              action={clientsApi.archive}
+              invalidateKey={["clients"]}
+              verb="archived"
+              noun="client"
+              onDone={selection.clearSelection}
+            />
+          </SelectionBar>
+        }
+      />
     </PageShell>
   )
 }
