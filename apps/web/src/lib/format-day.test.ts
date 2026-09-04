@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { addYearsToDay, daysBetweenDays, formatDay, toDayKey } from "@/lib/format"
+import { addDaysToDay, addYearsToDay, daysBetweenDays, formatDay, toDayKey } from "@/lib/format"
 
 describe("toDayKey", () => {
   it("reads the day out of a UTC-midnight instant without shifting it", () => {
@@ -78,5 +78,33 @@ describe("addYearsToDay", () => {
 
   it("returns an empty string for nothing usable", () => {
     expect(addYearsToDay(null, 1)).toBe("")
+  })
+})
+
+describe("addDaysToDay", () => {
+  it("shifts a calendar day forward", () => {
+    expect(addDaysToDay("2026-03-31", 90)).toBe("2026-06-29")
+  })
+
+  it("shifts backward for a negative count", () => {
+    expect(addDaysToDay("2026-03-01", -1)).toBe("2026-02-28")
+  })
+
+  it("crosses a leap day correctly", () => {
+    expect(addDaysToDay("2028-02-28", 1)).toBe("2028-02-29")
+    expect(addDaysToDay("2028-02-28", 2)).toBe("2028-03-01")
+  })
+
+  it("does not drift across a DST boundary", () => {
+    expect(addDaysToDay("2026-03-07", 1)).toBe("2026-03-08")
+    expect(addDaysToDay("2026-11-01", 1)).toBe("2026-11-02")
+  })
+
+  it("reads a day out of an instant before shifting", () => {
+    expect(addDaysToDay("2026-03-31T00:00:00Z", 1)).toBe("2026-04-01")
+  })
+
+  it("returns an empty string for nothing usable", () => {
+    expect(addDaysToDay(null, 1)).toBe("")
   })
 })

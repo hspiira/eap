@@ -124,7 +124,8 @@ function ClientsListPage() {
   return (
     <PageShell
       icon={Building2}
-      breadcrumb="Organization & Clients · Clients"
+      trail={[{ label: "Organization & Clients" }]}
+      title="Clients"
       actions={
         <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
           <Plus className="size-3.5" />

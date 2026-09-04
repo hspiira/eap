@@ -100,6 +100,14 @@ export function todayDayKey(): string {
   return toLocalDateKey(new Date())
 }
 
+/** Shift a calendar day by whole days. */
+export function addDaysToDay(value: string | null | undefined, days: number): string {
+  const key = toDayKey(value)
+  if (!key) return ""
+  const [y, m, d] = key.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
 /** Shift a calendar day by whole years, keeping it a day. */
 export function addYearsToDay(value: string | null | undefined, years: number): string {
   const key = toDayKey(value)

@@ -120,7 +120,8 @@ function CaseDetailPage() {
   return (
     <PageShell
       icon={Headphones}
-      breadcrumb={`Care · My worklist · ${outreach.person_id}`}
+      trail={[{ label: "Care" }, { label: "My worklist", to: "/care-callbacks/worklist" }]}
+      title={`Callback ${outreach.person_id.slice(0, 8)}`}
       actions={
         <Button
           type="button"

@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Pencil, ShieldCheck } from "lucide-react"
 
 import { tenantsApi } from "@/api/endpoints/tenants"
@@ -51,19 +51,14 @@ function TenantDetailBody() {
     <AppLayout>
       <PageShell
         icon={ShieldCheck}
-        breadcrumb={
-          <>
-            <Link
-              to="/tenants"
-              search={{ new: undefined, search: undefined, status: undefined }}
-              className="hover:underline"
-            >
-              Tenants
-            </Link>
-            <span className="mx-1 text-fg-subtle">/</span>
-            {tenant?.name ?? tenantId}
-          </>
-        }
+        trail={[
+          {
+            label: "Tenants",
+            to: "/tenants",
+            search: { new: undefined, search: undefined, status: undefined },
+          },
+        ]}
+        title={tenant?.name ?? tenantId}
         actions={
           tenant ? (
             <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>

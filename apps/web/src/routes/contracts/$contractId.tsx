@@ -87,8 +87,9 @@ function ContractDetailPage() {
           await contractsApi.terminate(id, { reason: "Terminated from UI" })
         } else if (action === "renew") {
           if (!contract) return
-          const nextDay = addYearsToDay(contract.period.end_date, 1)
-          await contractsApi.renew(id, { new_end_date: `${nextDay}T00:00:00Z` })
+          await contractsApi.renew(id, {
+            new_end_date: addYearsToDay(contract.period.end_date, 1),
+          })
         }
         await queryClient.invalidateQueries({ queryKey: ["contracts"] })
         toast.showSuccess("Status updated")

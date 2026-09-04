@@ -311,3 +311,57 @@ would collide.
 - An engagement can be taken Draft to Closed entirely from the UI.
 - `close` is not offered on an engagement that has not been invoiced.
 
+---
+
+## CQ-A11: The page heading is rendered twice, and 6 pages still have none
+
+**Severity:** Medium - **Effort:** M - **Status:** Todo - **Owner:** - - **PR:** -
+
+**Problem.** `PageShell` now renders the page heading as an `h1`, which is the accessible and
+conventional place for it. `DashboardHeader` still derives and renders its own title from the
+route, so a list page shows its name twice, once in the global bar and once as the heading.
+
+The global title cannot simply be removed yet. Six routes render content without `PageShell` and
+would be left with no heading at all: `providers/index.tsx`, `providers/$providerId.tsx`,
+`incidents/index.tsx`, `incidents/$incidentId.tsx`, `tags/$tagId.tsx`, and the `new.tsx` shims
+that render rather than redirect.
+
+**Evidence.**
+- `src/components/common/PageShell.tsx` renders the `h1`.
+- `src/components/DashboardHeader.tsx:46` renders `PageTitle` for every route.
+- Verify: `for f in $(find src/routes -name '*.tsx' ! -name '*.test.tsx'); do grep -q PageShell
+  "$f" || echo "$f"; done`, then discard the layout and redirect files.
+
+**Recommended fix.** Bring the six content routes onto `PageShell`, then delete `PageTitle`,
+`ROUTE_TITLES` and `routeTitle` from `DashboardHeader` and leave the global bar to search,
+notifications and the account menu. Do it in that order; removing the title first regresses those
+six pages.
+
+**Acceptance criteria.**
+- Every route that renders content has exactly one `h1`.
+- The global header carries no page title.
+
+---
+
+## CQ-A12: Clinical detail pages are titled with a truncated id
+
+**Severity:** Low - **Effort:** S - **Status:** Todo - **Owner:** - - **PR:** -
+
+**Problem.** `cases/$caseId.tsx` and `care-callbacks/worklist/$caseId.tsx` had a full UUID as the
+page heading. They now show `Case 9f2c4b1e` and `Callback 9f2c4b1e`, following the truncation
+already used for contract references, which is an improvement but still not a name a person
+recognises.
+
+Neither page has a human identifier in scope. Both could resolve one: the worklist page holds
+`outreach.person_id` and could fetch the person. That was not done deliberately, because the
+clinical module identifies subjects as `clinical_subject_id` rather than by name, which reads as
+intentional pseudonymisation. Surfacing a name here is a privacy decision, not a UI cleanup.
+
+**Question for the product owner.** Should a counsellor see the person's name in the heading of a
+clinical case, or is the pseudonymous id deliberate? The answer decides whether these pages fetch
+a name or gain a case reference number instead.
+
+**Evidence.**
+- `src/routes/cases/$caseId.tsx` heading uses `caseData.clinical_subject_id`.
+- `src/routes/care-callbacks/worklist/$caseId.tsx` heading uses `outreach.person_id`.
+

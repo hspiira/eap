@@ -134,7 +134,8 @@ function CaseDetailPage() {
   return (
     <PageShell
       icon={HeartPulse}
-      breadcrumb={`Clinical · Cases · ${caseData.clinical_subject_id}`}
+      trail={[{ label: "Clinical" }, { label: "Cases", to: "/cases" }]}
+      title={`Case ${caseData.clinical_subject_id.slice(0, 8)}`}
       actions={
         <Button
           type="button"

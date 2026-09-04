@@ -2,7 +2,7 @@ import { useMemo } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { AlertCircle, ArrowLeft, Building2, Inbox, LogOut, User as UserIcon } from "lucide-react"
+import { AlertCircle, Building2, Inbox, LogOut, User as UserIcon } from "lucide-react"
 import { z } from "zod"
 
 import { usersApi } from "@/api/endpoints/users"
@@ -86,26 +86,7 @@ function MeBody() {
     const Content = meta.component
     return (
       <AppLayout>
-        <PageShell
-          icon={meta.icon}
-          breadcrumb={
-            <span className="flex items-center gap-1">
-              <Link to="/me" className="hover:text-fg transition-colors">
-                Profile
-              </Link>
-              <span className="text-fg-subtle">·</span>
-              {meta.label}
-            </span>
-          }
-          actions={
-            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-fg/70">
-              <Link to="/me">
-                <ArrowLeft className="size-3" />
-                Back
-              </Link>
-            </Button>
-          }
-        >
+        <PageShell icon={meta.icon} trail={[{ label: "Profile", to: "/me" }]} title={meta.label}>
           <Content />
         </PageShell>
       </AppLayout>

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Building2, Pencil, Plus } from "lucide-react"
+import { Building2, Pencil, Plus } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
+import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
@@ -41,6 +41,14 @@ export const Route = createFileRoute("/clients/$clientId")({
 
 type TabValue = "overview" | "activity" | "contracts" | "staff"
 const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts", "staff"]
+
+const CLIENTS_LIST_SEARCH = {
+  page: undefined,
+  limit: undefined,
+  search: undefined,
+  sort: undefined,
+  tier: undefined,
+} as const
 
 const CONTRACTS_PAGE = 10
 const UPCOMING_DAYS = 90
@@ -96,10 +104,8 @@ function ClientDetailPage() {
   // Alerts and the upcoming list need every contract ending in the window, not
   // the first page of all of them. Anchored to the day so the key is stable.
   const endWindow = useMemo(() => {
-    const from = new Date()
-    const to = new Date(from)
-    to.setDate(to.getDate() + UPCOMING_DAYS)
-    return { ends_from: from.toISOString(), ends_to: to.toISOString() }
+    const from = todayDayKey()
+    return { ends_from: from, ends_to: addDaysToDay(from, UPCOMING_DAYS) }
   }, [])
 
   const endingQuery = useQuery({
@@ -277,30 +283,21 @@ function ClientDetailPage() {
   return (
     <PageShell
       icon={Building2}
-      breadcrumb={`Organization & Clients · Clients · ${client.name}`}
+      trail={[
+        { label: "Organization & Clients" },
+        { label: "Clients", to: "/clients", search: CLIENTS_LIST_SEARCH },
+      ]}
+      title={client.name}
       actions={
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/clients" })}
-            aria-label="Back to clients"
-            title="Back to clients"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="size-3.5" />
-            Edit
-          </Button>
-        </>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1.5 px-2.5"
+          onClick={() => setEditOpen(true)}
+        >
+          <Pencil className="size-3.5" />
+          Edit
+        </Button>
       }
     >
       <Hero client={client} verified={isVerified} />
