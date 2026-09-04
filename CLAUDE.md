@@ -20,8 +20,11 @@ without being asked.
 
 ## Commits
 
+- Commit your work when a piece of it is finished. Do not leave it sitting in
+  the working tree.
 - Commit with no affiliation: no `Co-Authored-By` trailer and no tool
   attribution in the message or PR body.
+- Stage by path. Several agents share this tree, so commit only your own files.
 
 ## Data and sources
 
