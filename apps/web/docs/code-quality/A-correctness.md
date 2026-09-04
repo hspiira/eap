@@ -458,6 +458,22 @@ catches both failure modes this helper has shipped, words left glued and an acro
 Verified by restoring the previous helper, which fails it. The narrower "contains no case boundary"
 assertions do not catch the second mode, because `Cismresponse` has no boundary left to find.
 
+**Which enums need a label map.** The helper cannot tell `DAP` from `CALL`; both are just
+all-capital strings, so the right treatment is undecidable from the value and has to be declared.
+It splits cleanly, verified against the enum file:
+
+| Enum | All-capital values | Wants |
+| --- | --- | --- |
+| `TriageInstrumentCode` | CSSRS, WSAS | case kept, real acronyms |
+| `ClinicalNoteType` | DAP, SOAP | case kept, real acronyms |
+| `CaseReferralSource` | HR | case kept, real acronym |
+| `ActivityType` | CALL, EMAIL, MEETING, NOTE | title case, shouty constants |
+| `ActionType` | CREATE, UPDATE, DELETE and 8 more | title case, shouty constants |
+
+So two enums want a label map and three want what the helper already does. The round-trip guard
+currently pins `CALL` and the rest as caps-preserving, so introducing the map will fail that
+assertion, which is the intended signal rather than a problem.
+
 **One display question this raised.** Preserving a run of capitals means a value that is entirely
 capitals is now left alone, so `ActivityType` values render as `CALL` and `EMAIL` rather than `Call`
 and `Email`. That is correct for `DAP` and `SOAP`, and shouty for the rest.
