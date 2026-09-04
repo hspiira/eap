@@ -14762,6 +14762,24 @@
             }
           },
           {
+            "description": "Filter by parent client",
+            "in": "query",
+            "name": "parent_client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by parent client",
+              "title": "Parent Client Id"
+            }
+          },
+          {
             "description": "Include archived clients",
             "in": "query",
             "name": "include_archived",

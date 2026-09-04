@@ -184,7 +184,7 @@ function ClientDetailPage() {
     }
   }, [clientId, queryClient, toast, userId])
 
-  const hasBilling = client
+  const hasSeparateBilling = client
     ? !!(
         client.billing_address &&
         (client.billing_address.street ||
@@ -193,6 +193,7 @@ function ClientDetailPage() {
           client.billing_address.country)
       )
     : false
+  const hasBilling = hasSeparateBilling || !!client?.contact_info?.address
 
   const isVerified = !!(client?.is_verified ?? stats?.is_verified)
 
@@ -387,6 +388,7 @@ function ClientDetailPage() {
                   contracts={contracts}
                   total={contractsTotal}
                   loading={contractsQuery.isPending}
+                  clientId={clientId}
                   onAdd={() => setAddContractOpen(true)}
                 />
               </TabPanel>

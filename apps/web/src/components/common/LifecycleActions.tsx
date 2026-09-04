@@ -1,7 +1,8 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
+import { TenantRole } from "@/types/enums"
 import { getAllowedLifecycleActions, type LifecycleAction } from "@/utils/lifecycleConfig"
 
 import { ConfirmDialog } from "./ConfirmDialog"
@@ -31,6 +32,7 @@ export interface LifecycleActionsProps {
   kind: "base" | "user" | "tenant" | "client" | "contract" | "service" | "session" | "document"
   onAction: (entityId: string, action: LifecycleAction) => void | Promise<void>
   loading?: boolean
+  adminOnlyActions?: ReadonlyArray<LifecycleAction>
 }
 
 export function LifecycleActions({
@@ -39,6 +41,7 @@ export function LifecycleActions({
   kind,
   onAction,
   loading = false,
+  adminOnlyActions = [],
 }: LifecycleActionsProps) {
   const [confirmState, setConfirmState] = useState<{
     action: LifecycleAction
@@ -46,7 +49,11 @@ export function LifecycleActions({
   } | null>(null)
 
   const canWrite = useCanWrite()
-  const allowed = getAllowedLifecycleActions(currentStatus, kind)
+  const currentRole = useCurrentRole()
+  const adminOnly = new Set(adminOnlyActions)
+  const allowed = getAllowedLifecycleActions(currentStatus, kind).filter(
+    (action) => !adminOnly.has(action) || currentRole === TenantRole.ADMIN,
+  )
   if (!canWrite || allowed.length === 0) return null
 
   const handleClick = (action: LifecycleAction) => {

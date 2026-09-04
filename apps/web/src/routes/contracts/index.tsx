@@ -45,6 +45,7 @@ import { ContractStatus } from "@/types/enums"
 export const Route = createFileRoute("/contracts/")({
   component: ContractsListPage,
   validateSearch: listSearchSchema({
+    client_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
     status: enumParam(ContractStatus),
     renewal: (v): Exclude<RenewalFilter, "all"> | undefined =>
       v === "30d" || v === "90d" || v === "expired" ? v : undefined,
@@ -93,6 +94,7 @@ function ContractsListPage() {
   const canWrite = useCanWrite()
 
   const activeStatus = searchParams.status
+  const activeClientId = searchParams.client_id
   const activeRenewal: RenewalFilter = searchParams.renewal ?? "all"
 
   // Anchored to the selected window, not to render: an inline `new Date()` would
@@ -126,6 +128,7 @@ function ContractsListPage() {
       page,
       limit,
       search: activeSearch,
+      client_id: activeClientId,
       status: activeStatus,
       ...renewalWindow,
       ...sortParams,
@@ -136,7 +139,11 @@ function ContractsListPage() {
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || activeRenewal !== "all"
+  const hasFilters =
+    Boolean(activeSearch) ||
+    Boolean(activeClientId) ||
+    Boolean(activeStatus) ||
+    activeRenewal !== "all"
 
   return (
     <PageShell
@@ -156,6 +163,12 @@ function ContractsListPage() {
       }
     >
       <FilterBar>
+        {activeClientId ? (
+          <FilterChip
+            label={`Client ${activeClientId.slice(0, 8)}`}
+            onRemove={() => setFilter("client_id", undefined)}
+          />
+        ) : null}
         {activeStatus ? (
           <FilterChip
             label={`Status is ${activeStatus}`}

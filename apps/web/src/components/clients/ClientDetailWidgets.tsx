@@ -93,12 +93,14 @@ export function ContractsPanel({
   total,
   loading,
   onAdd,
+  clientId,
 }: {
   contracts: Contract[]
   /** Server-side total, which can exceed the page held in `contracts`. */
   total?: number
   loading: boolean
   onAdd: () => void
+  clientId: string
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
@@ -135,10 +137,22 @@ export function ContractsPanel({
             ? `Showing ${contracts.length} of ${total} contracts`
             : `${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
         </p>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
-          <Plus className="size-3.5" />
-          Add contract
-        </Button>
+        <div className="flex items-center gap-2">
+          {total != null && total > contracts.length ? (
+            <Link
+              to="/contracts"
+              search={{ client_id: clientId }}
+              className="inline-flex items-center gap-0.5 text-xs text-fg-muted hover:text-fg"
+            >
+              View all
+              <ChevronRight className="size-3" />
+            </Link>
+          ) : null}
+          <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+            <Plus className="size-3.5" />
+            Add contract
+          </Button>
+        </div>
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
         <Table className="w-full caption-bottom text-sm">
@@ -258,11 +272,16 @@ export function DetailRail({
             {ba?.country ? <DetailRow label="Country" value={ba.country} /> : null}
           </DetailGrid>
         ) : (
-          <p className="text-xs text-fg-muted">
-            {client.contact_info?.address
-              ? "Same as contact address."
-              : "No billing address on file."}
-          </p>
+          <div className="text-xs text-fg-muted">
+            {client.contact_info?.address ? (
+              <>
+                <p>Same as contact address.</p>
+                <p className="mt-1 text-sm text-fg/75">{client.contact_info.address}</p>
+              </>
+            ) : (
+              <p>No billing address on file.</p>
+            )}
+          </div>
         )}
       </RailSection>
 
@@ -281,21 +300,31 @@ export function DetailRail({
           {childrenLoading ? (
             <p className="mt-2 text-xs text-fg-muted">Loading children…</p>
           ) : children.length > 0 ? (
-            <ul className="mt-2 space-y-1">
-              {children.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    to="/clients/$clientId"
-                    params={{ clientId: c.id }}
-                    className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary"
-                  >
-                    <ChevronRight className="size-3.5 text-fg-subtle" />
-                    <span className="truncate">{c.name}</span>
-                    <span className="font-mono text-[11px] text-fg-muted">{c.code}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="mt-2 space-y-1">
+                {children.map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      to="/clients/$clientId"
+                      params={{ clientId: c.id }}
+                      className="inline-flex items-center gap-1.5 text-sm text-fg hover:text-primary"
+                    >
+                      <ChevronRight className="size-3.5 text-fg-subtle" />
+                      <span className="truncate">{c.name}</span>
+                      <span className="font-mono text-[11px] text-fg-muted">{c.code}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/clients"
+                search={{ parent_client_id: client.id }}
+                className="mt-2 inline-flex items-center gap-0.5 text-xs text-fg-muted hover:text-fg"
+              >
+                View all child clients
+                <ChevronRight className="size-3" />
+              </Link>
+            </>
           ) : null}
         </RailSection>
       ) : null}
@@ -362,6 +391,7 @@ export function DetailRail({
           kind="client"
           onAction={onAction}
           loading={actionLoading}
+          adminOnlyActions={["archive", "terminate"]}
         />
       </RailSection>
     </div>

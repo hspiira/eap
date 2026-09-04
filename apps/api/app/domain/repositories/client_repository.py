@@ -46,6 +46,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
         limit: int = 100,
@@ -62,6 +63,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
     ) -> int:

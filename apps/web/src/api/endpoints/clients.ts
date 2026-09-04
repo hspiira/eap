@@ -23,6 +23,7 @@ export type ClientUpdateTier = Schemas["ClientUpdateTier"]
 
 export interface ClientListParams extends ListParams {
   tier?: ClientTier
+  parent_client_id?: string
   include_archived?: boolean
 }
 

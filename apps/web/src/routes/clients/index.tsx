@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
@@ -34,11 +35,15 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Client } from "@/types/entities"
-import { ClientTier } from "@/types/enums"
+import { ClientTier, TenantRole } from "@/types/enums"
 
 export const Route = createFileRoute("/clients/")({
   component: ClientsListPage,
-  validateSearch: listSearchSchema({ tier: enumParam(ClientTier), archived: boolParam() }),
+  validateSearch: listSearchSchema({
+    tier: enumParam(ClientTier),
+    archived: boolParam(),
+    parent_client_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+  }),
 })
 
 const TIER_OPTIONS = [
@@ -83,9 +88,13 @@ function ClientsListPage() {
     sortParams,
   } = useListPage({ searchParams, navigate })
   const activeTier = searchParams.tier
+  const activeParentClientId = searchParams.parent_client_id
   const includeArchived = searchParams.archived === true
   const queryClient = useQueryClient()
   const toast = useToast()
+  const canWrite = useCanWrite()
+  const currentRole = useCurrentRole()
+  const canArchive = currentRole === TenantRole.ADMIN
   const [editing, setEditing] = useState<Client | null>(null)
   const [archiving, setArchiving] = useState<Client | null>(null)
   const [archiveLoading, setArchiveLoading] = useState(false)
@@ -117,6 +126,7 @@ function ClientsListPage() {
       limit,
       search: activeSearch,
       tier: activeTier,
+      parent_client_id: activeParentClientId,
       include_archived: includeArchived || undefined,
       ...sortParams,
     },
@@ -127,7 +137,8 @@ function ClientsListPage() {
   const selection = useTableSelection(items)
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
-  const hasFilters = Boolean(activeSearch) || Boolean(activeTier) || includeArchived
+  const hasFilters =
+    Boolean(activeSearch) || Boolean(activeTier) || Boolean(activeParentClientId) || includeArchived
 
   return (
     <PageShell
@@ -135,13 +146,21 @@ function ClientsListPage() {
       trail={[{ label: "Organization & Clients" }]}
       title="Clients"
       actions={
-        <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
-          <Plus className="size-3.5" />
-          Add client
-        </Button>
+        canWrite ? (
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddModalOpen(true)}>
+            <Plus className="size-3.5" />
+            Add client
+          </Button>
+        ) : null
       }
     >
       <FilterBar>
+        {activeParentClientId ? (
+          <FilterChip
+            label={`Child clients of ${activeParentClientId.slice(0, 8)}`}
+            onRemove={() => setFilter("parent_client_id", undefined)}
+          />
+        ) : null}
         {activeTier ? (
           <FilterChip label={`Tier is ${activeTier}`} onRemove={() => handleTierChange("all")} />
         ) : null}
@@ -201,8 +220,8 @@ function ClientsListPage() {
             row={row}
             isSelected={selection.selectedIds.has(row.id)}
             onToggle={() => selection.toggleSelect(row.id)}
-            onEdit={() => setEditing(row)}
-            onArchive={() => setArchiving(row)}
+            onEdit={canWrite ? () => setEditing(row) : undefined}
+            onArchive={canArchive ? () => setArchiving(row) : undefined}
           />
         )}
         loading={loading}
@@ -218,7 +237,7 @@ function ClientsListPage() {
                 : "Add your first corporate client to get started."
             }
             action={
-              hasFilters ? null : (
+              hasFilters || !canWrite ? null : (
                 <Button size="sm" className="gap-1.5" onClick={() => setAddModalOpen(true)}>
                   <Plus className="size-4" />
                   Add client
@@ -237,21 +256,23 @@ function ClientsListPage() {
         onToggleSelectAll={selection.toggleSelectAll}
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
-            <BulkAction
-              ids={selection.selectedIds}
-              label="Archive"
-              confirmTitle="Archive clients"
-              confirmDescription={(n) =>
-                `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
-              }
-              destructive
-              labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
-              action={clientsApi.archive}
-              invalidateKey={["clients"]}
-              verb="archived"
-              noun="client"
-              onDone={selection.clearSelection}
-            />
+            {canArchive ? (
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Archive"
+                confirmTitle="Archive clients"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.archive}
+                invalidateKey={["clients"]}
+                verb="archived"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            ) : null}
           </SelectionBar>
         }
       />
@@ -269,8 +290,8 @@ function ClientRow({
   row: Client
   isSelected: boolean
   onToggle: () => void
-  onEdit: () => void
-  onArchive: () => void
+  onEdit?: () => void
+  onArchive?: () => void
 }) {
   const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
   const contactSecondary =
@@ -347,14 +368,18 @@ function ClientRow({
                   View details
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={onArchive}
-                className="text-destructive focus:text-destructive"
-              >
-                Archive
-              </DropdownMenuItem>
+              {onEdit ? <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem> : null}
+              {onArchive ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={onArchive}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    Archive
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -48,11 +48,12 @@ from app.core.authorization import (
     get_client_for_current_tenant,
     require_not_viewer,
     require_same_tenant,
+    require_tenant_role,
 )
 from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier, ContractStatus
+from app.domain.enums import BaseStatus, ClientTier, ContractStatus, TenantRole
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -273,6 +274,7 @@ async def terminate_client(
     request: Request,
     body: ClientTerminateRequest,
     current_user: TokenData = Depends(require_not_viewer),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -294,6 +296,7 @@ async def terminate_client(
 async def archive_client(
     request: Request,
     current_user: TokenData = Depends(require_not_viewer),
+    _admin: None = Depends(require_tenant_role(TenantRole.ADMIN)),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -481,6 +484,7 @@ async def list_clients(
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
     tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    parent_client_id: str | None = Query(None, description="Filter by parent client"),
     include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),
     pg: PageParams = Depends(pagination()),
@@ -497,6 +501,7 @@ async def list_clients(
         status=status,
         is_verified=is_verified,
         tier=tier,
+        parent_client_id=ClientId(parent_client_id) if parent_client_id else None,
         include_archived=include_archived,
         search=search,
         limit=pg.limit,
@@ -510,6 +515,7 @@ async def list_clients(
         status=status,
         is_verified=is_verified,
         tier=tier,
+        parent_client_id=ClientId(parent_client_id) if parent_client_id else None,
         include_archived=include_archived,
         search=search,
     )
@@ -645,9 +651,11 @@ async def get_child_clients(
         ClientModel.parent_client_id == client_id,
         ClientModel.deleted_at.is_(None),
     )
-    stmt = stmt.order_by(
-        ClientModel.created_at.desc(), ClientModel.id.desc()
-    ).limit(pg.limit).offset(pg.offset)
+    stmt = (
+        stmt.order_by(ClientModel.created_at.desc(), ClientModel.id.desc())
+        .limit(pg.limit)
+        .offset(pg.offset)
+    )
 
     result = await db.execute(stmt)
     models = result.scalars().all()

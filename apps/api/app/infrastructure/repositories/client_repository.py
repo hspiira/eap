@@ -78,6 +78,7 @@ class ClientRepositoryImpl(
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
         limit: int = 100,
@@ -93,6 +94,8 @@ class ClientRepositoryImpl(
             filters["is_verified"] = is_verified
         if tier is not None:
             filters["tier"] = tier
+        if parent_client_id is not None:
+            filters["parent_client_id"] = parent_client_id.value
 
         extra_conditions = []
         if not include_archived and status is None:
@@ -116,6 +119,7 @@ class ClientRepositoryImpl(
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
         tier: "ClientTier | None" = None,
+        parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
     ) -> int:
@@ -127,6 +131,8 @@ class ClientRepositoryImpl(
             filters["is_verified"] = is_verified
         if tier is not None:
             filters["tier"] = tier
+        if parent_client_id is not None:
+            filters["parent_client_id"] = parent_client_id.value
 
         extra_conditions = []
         if not include_archived and status is None:
