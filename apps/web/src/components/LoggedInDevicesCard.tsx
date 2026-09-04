@@ -17,7 +17,7 @@ export interface ActiveSession {
 }
 
 interface LoggedInDevicesCardProps {
-  sessions?: ReadonlyArray<ActiveSession>
+  sessions: ReadonlyArray<ActiveSession>
   className?: string
 }
 
@@ -27,7 +27,8 @@ const DEVICE_ICON: Record<DeviceType, React.ElementType> = {
   browser: Globe,
 }
 
-const DEFAULT_SESSIONS: ReadonlyArray<ActiveSession> = [
+/** Sample data for the design gallery. Never a fallback for real data. */
+export const SAMPLE_SESSIONS: ReadonlyArray<ActiveSession> = [
   {
     id: "s1",
     device: "desktop",
@@ -53,9 +54,9 @@ const DEFAULT_SESSIONS: ReadonlyArray<ActiveSession> = [
 ]
 
 export function LoggedInDevicesCard({
-  sessions = DEFAULT_SESSIONS,
+  sessions,
   className,
-}: LoggedInDevicesCardProps = {}) {
+}: LoggedInDevicesCardProps) {
   return (
     <Card className={cn("rounded-md", className)}>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 border-b border-border-subtle p-3">

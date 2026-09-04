@@ -20,8 +20,8 @@ import {
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
 import { ApexIntroCard } from "@/components/ApexIntroCard"
 import { QueryTable } from "@/components/common/QueryTable"
-import { InviteToProjectCard } from "@/components/InviteToProjectCard"
-import { LoggedInDevicesCard } from "@/components/LoggedInDevicesCard"
+import { InviteToProjectCard, SAMPLE_MEMBERS } from "@/components/InviteToProjectCard"
+import { LoggedInDevicesCard, SAMPLE_SESSIONS } from "@/components/LoggedInDevicesCard"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -335,8 +335,8 @@ export function AtRiskPage() {
           ))}
         </div>
         <div className="mt-6 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-          <InviteToProjectCard />
-          <LoggedInDevicesCard />
+          <InviteToProjectCard members={SAMPLE_MEMBERS} />
+          <LoggedInDevicesCard sessions={SAMPLE_SESSIONS} />
         </div>
       </div>
     </div>

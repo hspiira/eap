@@ -17,7 +17,10 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
 import { GalleryControls } from "@/components/gallery/GalleryControls"
 import { GallerySection, GallerySpecimen } from "@/components/gallery/GallerySection"
-import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
+import {
+  OnboardingProgressCard,
+  SAMPLE_ONBOARDING_STEPS,
+} from "@/components/OnboardingProgressCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -397,7 +400,11 @@ function MigratedCardsSpecimen() {
         source="components/OnboardingProgressCard.tsx"
       >
         <div className="max-w-md">
-          <OnboardingProgressCard onDismiss={() => {}} onStartStep={() => {}} />
+          <OnboardingProgressCard
+            steps={SAMPLE_ONBOARDING_STEPS}
+            onDismiss={() => {}}
+            onStartStep={() => {}}
+          />
         </div>
       </GallerySpecimen>
       <GallerySpecimen label="ClientAlertsCard" source="components/ClientAlertsCard.tsx">

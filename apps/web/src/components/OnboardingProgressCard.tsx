@@ -10,7 +10,8 @@ interface OnboardingStep {
   done: boolean
 }
 
-const DEFAULT_STEPS: ReadonlyArray<OnboardingStep> = [
+/** Sample data for the design gallery. Never a fallback for real data. */
+export const SAMPLE_ONBOARDING_STEPS: ReadonlyArray<OnboardingStep> = [
   { id: 1, label: "Set up company", done: true },
   { id: 2, label: "Add first client", done: false },
   { id: 3, label: "Create a service", done: false },
@@ -18,16 +19,16 @@ const DEFAULT_STEPS: ReadonlyArray<OnboardingStep> = [
 ]
 
 interface OnboardingProgressCardProps {
-  steps?: ReadonlyArray<OnboardingStep>
+  steps: ReadonlyArray<OnboardingStep>
   onDismiss?: () => void
   onStartStep?: (step: OnboardingStep) => void
 }
 
 export function OnboardingProgressCard({
-  steps = DEFAULT_STEPS,
+  steps,
   onDismiss,
   onStartStep,
-}: OnboardingProgressCardProps = {}) {
+}: OnboardingProgressCardProps) {
   const completed = steps.filter((s) => s.done).length
   const total = steps.length
   const percent = total === 0 ? 0 : Math.round((completed / total) * 100)

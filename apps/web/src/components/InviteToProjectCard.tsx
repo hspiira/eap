@@ -25,12 +25,13 @@ export interface InviteMember {
 }
 
 interface InviteToProjectCardProps {
-  members?: ReadonlyArray<InviteMember>
+  members: ReadonlyArray<InviteMember>
   inviteLink?: string
   className?: string
 }
 
-const DEFAULT_MEMBERS: ReadonlyArray<InviteMember> = [
+/** Sample data for the design gallery. Never a fallback for real data. */
+export const SAMPLE_MEMBERS: ReadonlyArray<InviteMember> = [
   {
     id: "u1",
     name: "Lynel",
@@ -61,10 +62,10 @@ const ROLE_LABEL: Record<InviteRole, string> = {
 }
 
 export function InviteToProjectCard({
-  members = DEFAULT_MEMBERS,
+  members,
   inviteLink = "https://evexia.app/invite/Q4TF-93EA",
   className,
-}: InviteToProjectCardProps = {}) {
+}: InviteToProjectCardProps) {
   const [email, setEmail] = useState("")
   const [copied, setCopied] = useState(false)
 

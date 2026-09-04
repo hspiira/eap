@@ -19,11 +19,14 @@ interface CampaignSection {
 interface EmailCampaignCardProps {
   title?: string
   subtitle?: string
-  sections?: ReadonlyArray<CampaignSection>
+  sections: ReadonlyArray<CampaignSection>
+  /** Marks the figures as current. Only pass this when they came from the API. */
+  isLive?: boolean
   className?: string
 }
 
-const DEFAULT_SECTIONS: ReadonlyArray<CampaignSection> = [
+/** Sample data for the design gallery. Never a fallback for real data. */
+export const SAMPLE_CAMPAIGN_SECTIONS: ReadonlyArray<CampaignSection> = [
   {
     title: "Delivered",
     primaryMetric: "98.0%",
@@ -55,19 +58,22 @@ const DOT_TONE: Record<NonNullable<CampaignMetric["dot"]>, string> = {
 export function EmailCampaignCard({
   title = "Outreach campaign",
   subtitle = "Wellness check-in · Q2 2026",
-  sections = DEFAULT_SECTIONS,
+  sections,
+  isLive = false,
   className,
-}: EmailCampaignCardProps = {}) {
+}: EmailCampaignCardProps) {
   return (
     <Panel
       icon={Mail}
       title={title}
       subtitle={subtitle}
       badge={
-        <span className="inline-flex items-center gap-1 rounded-sm border border-success/30 bg-success-soft px-1.5 py-0.5 text-[11px] font-medium text-success-fg">
-          <span className="size-1.5 rounded-full bg-success" aria-hidden />
-          Live
-        </span>
+        isLive ? (
+          <span className="inline-flex items-center gap-1 rounded-sm border border-success/30 bg-success-soft px-1.5 py-0.5 text-[11px] font-medium text-success-fg">
+            <span className="size-1.5 rounded-full bg-success" aria-hidden />
+            Live
+          </span>
+        ) : null
       }
       className={className}
       bodyClassName="grid grid-cols-1 sm:grid-cols-2"
