@@ -42,8 +42,6 @@ type NavEntry = {
 
 const NAV_ITEMS: ReadonlyArray<NavEntry> = [
   { to: "/", label: "Home", icon: Home, group: "Quick" },
-  { to: "/inbox", label: "Inbox", icon: Inbox, group: "Quick" },
-  { to: "/at-risk", label: "At Risk", icon: AlertCircle, group: "Quick" },
   { to: "/clients", label: "Clients", icon: Building2, group: "Navigate" },
   { to: "/persons", label: "Persons", icon: Users, group: "Navigate" },
   { to: "/service-sessions", label: "Sessions", icon: Calendar, group: "Navigate" },
@@ -61,6 +59,10 @@ const NAV_ITEMS: ReadonlyArray<NavEntry> = [
   { to: "/audit", label: "Audits", icon: ClipboardCheck, group: "Settings" },
   { to: "/activities", label: "Activity Logs", icon: Activity, group: "Settings" },
   { to: "/tenants", label: "Tenants", icon: ShieldCheck, group: "Settings" },
+  // Work-in-progress screens. routes/me.tsx lists them under a heading saying
+  // so; grouping them keeps the palette honest about what they are.
+  { to: "/inbox", label: "Inbox", icon: Inbox, group: "Preview" },
+  { to: "/at-risk", label: "At Risk", icon: AlertCircle, group: "Preview" },
 ]
 
 const TOGGLE_EVENT = "toggle-command-palette"

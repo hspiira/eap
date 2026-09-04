@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 import { ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { type ClientAlert, ClientAlertsCard } from "@/components/ClientAlertsCard"
+import { type ClientAlert, ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

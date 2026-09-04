@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 
 import { type Activity, ActivityFeedCard } from "@/components/ActivityFeedCard"
-import { type ClientAlert, ClientAlertsCard } from "@/components/ClientAlertsCard"
+import { type ClientAlert, ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
 import { SeverityBadge } from "@/components/common/SeverityBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
