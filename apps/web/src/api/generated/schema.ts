@@ -12063,6 +12063,8 @@ export interface operations {
                 is_verified?: boolean | null;
                 /** @description Filter by engagement tier (A/B/C) */
                 tier?: components["schemas"]["ClientTier"] | null;
+                /** @description Filter by parent client */
+                parent_client_id?: string | null;
                 /** @description Include archived clients */
                 include_archived?: boolean;
                 /** @description Search in client name */
