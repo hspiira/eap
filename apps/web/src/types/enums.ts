@@ -463,8 +463,10 @@ export enum SurveySource {
  */
 export enum EngagementStatus {
   SCOPING = "Scoping",
+  DRAFT = "Draft",
   ACTIVE = "Active",
   DELIVERED = "Delivered",
+  INVOICED = "Invoiced",
   CLOSED = "Closed",
   CANCELLED = "Cancelled",
 }

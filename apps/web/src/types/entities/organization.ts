@@ -52,9 +52,9 @@ export interface ClientStats {
 export interface Industry extends BaseEntity {
   name: string
   code?: string | null
-  parent_id?: string | null
-  level?: number | null
-  metadata?: Record<string, unknown> | null
+  description?: string | null
+  parent_industry_id?: string | null
+  is_active?: boolean
 }
 
 /**

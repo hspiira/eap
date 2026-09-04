@@ -28,7 +28,7 @@ const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
     person_id: z.string().trim().min(1, "Person is required"),
-    service_provider_id: z.string().optional(),
+    service_provider_id: z.string().trim().min(1, "Provider is required"),
     scheduled_at: z
       .string()
       .min(1, "Scheduled time is required")
@@ -150,7 +150,7 @@ export function ServiceSessionFormSheet({
         return {
           service_id: values.service_id,
           person_id: values.person_id,
-          provider_id: values.service_provider_id || "",
+          provider_id: values.service_provider_id,
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
           category: values.category ?? undefined,
@@ -339,11 +339,8 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection
-        title="Provider"
-        description="Optional. The counsellor or clinic delivering the session."
-      >
-        <FormField label="Provider" optional error={errors.service_provider_id?.message}>
+      <FormSection title="Provider" description="The counsellor or clinic delivering the session.">
+        <FormField label="Provider" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
             onChange={(id) =>

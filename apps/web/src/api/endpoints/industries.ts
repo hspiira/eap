@@ -2,16 +2,13 @@
  * Industries API Endpoints
  */
 
+import type { Schemas } from "@/api/generated"
+
 import apiClient from "../client"
 import type { Industry, ListParams, PaginatedResponse } from "../types"
 
-export interface IndustryCreate {
-  name: string
-  code?: string | null
-  parent_id?: string | null
-  level?: number | null
-  metadata?: Record<string, unknown> | null
-}
+export type IndustryCreate = Schemas["IndustryCreate"]
+export type IndustryUpdate = Schemas["IndustryUpdate"]
 
 export const industriesApi = {
   async create(data: IndustryCreate): Promise<Industry> {

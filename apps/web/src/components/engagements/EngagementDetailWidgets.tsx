@@ -28,7 +28,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
-import { formatDate, formatDateTime } from "@/lib/format"
+import { formatDate, formatDateTime, formatDay } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { EngagementStatusPill } from "@/routes/engagements/index"
 import { useAuthStore } from "@/store/slices/authSlice"
@@ -239,22 +239,19 @@ export function DeliverablesPanel({
 
 export function HoursPanel({
   engagementId,
-  deliverables,
   entries,
   loading,
 }: {
   engagementId: string
-  deliverables: EngagementDeliverable[]
   entries: EngagementTimeEntry[]
   loading: boolean
 }) {
   const { showError } = useToast()
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
 
-  const [occurredOn, setOccurredOn] = useState(new Date().toISOString().slice(0, 10))
+  const [loggedOn, setLoggedOn] = useState(new Date().toISOString().slice(0, 10))
   const [hours, setHours] = useState("")
-  const [description, setDescription] = useState("")
-  const [deliverableId, setDeliverableId] = useState("")
+  const [note, setNote] = useState("")
 
   const logMutation = useEntityMutation({
     resource: "engagements",
@@ -262,10 +259,9 @@ export function HoursPanel({
       engagementsApi.logTime({
         engagement_id: engagementId,
         user_id: userId,
-        occurred_on: occurredOn,
+        logged_on: loggedOn,
         hours: Number(hours),
-        description: description.trim() || null,
-        deliverable_id: deliverableId || null,
+        note: note.trim() || null,
       }),
     detailId: engagementId,
     skipListInvalidation: true,
@@ -275,13 +271,12 @@ export function HoursPanel({
     ],
     onSuccess: () => {
       setHours("")
-      setDescription("")
-      setDeliverableId("")
+      setNote("")
     },
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
-  const canSubmit = !!occurredOn && Number(hours) > 0
+  const canSubmit = !!loggedOn && Number(hours) > 0
 
   return (
     <DetailCard title="Hours log">
@@ -291,7 +286,7 @@ export function HoursPanel({
       </p>
 
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[8rem_5rem_1fr_10rem_auto]">
-        <Input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
+        <Input type="date" value={loggedOn} onChange={(e) => setLoggedOn(e.target.value)} />
         <Input
           type="number"
           inputMode="decimal"
@@ -303,22 +298,10 @@ export function HoursPanel({
           onChange={(e) => setHours(e.target.value)}
         />
         <Input
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Note (optional)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
         />
-        <Select value={deliverableId} onValueChange={setDeliverableId}>
-          <SelectTrigger>
-            <SelectValue placeholder="- Deliverable -" />
-          </SelectTrigger>
-          <SelectContent>
-            {deliverables.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
-                {d.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Button
           type="button"
           size="sm"
@@ -360,14 +343,14 @@ export function HoursPanel({
             <TableBody>
               {entries.map((e) => (
                 <TableRow key={e.id} className="border-fg/8 last:border-0">
-                  <TableCell className="px-3 py-2">{formatDate(e.occurred_on)}</TableCell>
+                  <TableCell className="px-3 py-2">{formatDay(e.logged_on)}</TableCell>
                   <TableCell className="px-3 py-2 text-right tabular-nums">
                     {e.hours.toFixed(2)}
                   </TableCell>
                   <TableCell className="px-3 py-2 font-mono text-xs text-fg/75">
                     {e.user_id}
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-fg/80">{e.description ?? "-"}</TableCell>
+                  <TableCell className="px-3 py-2 text-fg/80">{e.note ?? "-"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

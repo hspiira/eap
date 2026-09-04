@@ -8,7 +8,7 @@ import { ApiError } from "@/types/api"
 const createMock = vi.fn()
 const listServicesMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
 const listPersonsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
-const listProvidersMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listProvidersMock = vi.fn()
 
 vi.mock("@/api/endpoints/service-sessions", () => ({
   serviceSessionsApi: {
@@ -39,10 +39,37 @@ beforeEach(() => {
   listServicesMock.mockClear()
   listPersonsMock.mockClear()
   listProvidersMock.mockClear()
+  listProvidersMock.mockResolvedValue({
+    items: [
+      {
+        id: "prov-1",
+        person_type: "Provider",
+        provider_profile: { tier: "Senior", region: "Kampala" },
+      },
+    ],
+    total: 1,
+    page: 1,
+    limit: 8,
+    has_more: false,
+  })
 })
 afterEach(() => {
   createMock.mockReset()
 })
+
+/** Provider is required, so every create-path test has to choose one. */
+async function chooseProvider() {
+  const search = screen.getByPlaceholderText(/search providers/i)
+  fireEvent.change(search, { target: { value: "prov" } })
+  await new Promise((r) => setTimeout(r, 400))
+
+  console.log(
+    "PICKER:",
+    screen.getByPlaceholderText(/search providers/i).parentElement?.textContent,
+  )
+  const option = await screen.findByText("prov-1")
+  fireEvent.click(option)
+}
 
 describe("ServiceSessionFormSheet: create", () => {
   it("rejects empty submission with field errors", async () => {
@@ -80,6 +107,7 @@ describe("ServiceSessionFormSheet: create", () => {
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: "2026-06-01T10:30" },
     })
+    await chooseProvider()
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
 
     await waitFor(() => expect(createMock).toHaveBeenCalled())
@@ -115,6 +143,7 @@ describe("ServiceSessionFormSheet: create", () => {
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: "2026-06-01T10:30" },
     })
+    await chooseProvider()
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
 
     expect(await screen.findByText(/service not found/i)).toBeInTheDocument()

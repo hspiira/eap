@@ -53,15 +53,14 @@ export interface EngagementDeliverable {
 
 export interface EngagementTimeEntry {
   id: string
-  engagement_id: string
   user_id: string
-  /** ISO date: the day the work happened. */
-  occurred_on: string
+  /** Calendar day the work happened. */
+  logged_on: string
   hours: number
-  description?: string | null
-  /** Optional reference to a deliverable. */
-  deliverable_id?: string | null
-  created_at: string
+  note?: string | null
+  /** Absent from the API, which nests entries under their engagement. */
+  engagement_id?: string
+  created_at?: string
 }
 
 export interface EngagementTimelineEvent {

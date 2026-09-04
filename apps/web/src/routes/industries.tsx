@@ -6,7 +6,7 @@ import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 import { industriesApi } from "@/api/endpoints/industries"
 import { AppLayout } from "@/components/AppLayout"
 import { EmptyState } from "@/components/common/EmptyState"
-import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
@@ -35,16 +35,6 @@ export const Route = createFileRoute("/industries")({
   component: IndustriesPage,
 })
 
-const LEVEL_OPTIONS = [
-  { value: "all", label: "All levels" },
-  { value: "0", label: "Top level" },
-  { value: "1", label: "Level 1" },
-  { value: "2", label: "Level 2" },
-  { value: "3", label: "Level 3+" },
-] as const
-
-type LevelFilter = (typeof LEVEL_OPTIONS)[number]["value"]
-
 const ROW_BORDER = "border-fg/8"
 
 function IndustriesPage() {
@@ -52,7 +42,6 @@ function IndustriesPage() {
   const [page, setPage] = useState(1)
   const limit = 20
   const [searchInput, setSearchInput] = useState("")
-  const [levelFilter, setLevelFilter] = useState<LevelFilter>("all")
   const [createOpen, setCreateOpen] = useState(false)
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
 
@@ -74,8 +63,7 @@ function IndustriesPage() {
     },
     listFn: industriesApi.list,
   })
-  const allItems = query.data?.items ?? []
-  const items = filterByLevel(allItems, levelFilter)
+  const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
@@ -102,7 +90,6 @@ function IndustriesPage() {
       const inVisible = visibleItems.some((i) => i.id === id)
       if (!inVisible && hint) {
         setSearchInput(hint.code ?? hint.name)
-        setLevelFilter("all")
         setPage(1)
       }
       selectIndustry(id, hint)
@@ -119,17 +106,15 @@ function IndustriesPage() {
         industriesApi.getById(id),
         industriesApi.getChildren(id),
       ])
-      // Some endpoints drop parent_id from /industries/:id even when it
-      // exists on the list payload; fall back to the row hint.
       const merged: Industry = {
         ...industry,
-        parent_id: industry.parent_id ?? rowHint?.parent_id ?? null,
+        parent_industry_id: industry.parent_industry_id ?? rowHint?.parent_industry_id ?? null,
       }
       setSelectedIndustry(merged)
       setChildIndustries(children)
-      if (merged.parent_id) {
+      if (merged.parent_industry_id) {
         try {
-          const parent = await industriesApi.getById(merged.parent_id)
+          const parent = await industriesApi.getById(merged.parent_industry_id)
           setParentIndustry(parent)
         } catch (_err) {
           setParentIndustry(null)
@@ -174,8 +159,7 @@ function IndustriesPage() {
   if (isLoading) return <div className="p-8 text-fg">Loading…</div>
   if (!isAuthenticated) return null
 
-  const levelChip = LEVEL_OPTIONS.find((o) => o.value === levelFilter)
-  const hasFilters = Boolean(activeSearch) || levelFilter !== "all"
+  const hasFilters = Boolean(activeSearch)
 
   return (
     <AppLayout>
@@ -194,15 +178,6 @@ function IndustriesPage() {
         }
       >
         <FilterBar>
-          {levelFilter !== "all" && levelChip ? (
-            <FilterChip label={levelChip.label} onRemove={() => setLevelFilter("all")} />
-          ) : null}
-          <FilterTrigger
-            label="All levels"
-            value={levelFilter}
-            options={LEVEL_OPTIONS}
-            onChange={setLevelFilter}
-          />
           <div className="ml-auto" />
           <FilterSearch
             value={searchInput}
@@ -216,7 +191,7 @@ function IndustriesPage() {
         <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
           <div className="col-span-12 flex min-w-0 flex-col overflow-hidden lg:col-span-8">
             {loading ? (
-              <TableSkeleton cols={3} headers={["Name", "Code", "Level"]} withPagination />
+              <TableSkeleton cols={3} headers={["Name", "Code", "Parent"]} withPagination />
             ) : error ? (
               <ErrorBlock message={error} onRetry={() => void query.refetch()} />
             ) : items.length === 0 ? (
@@ -243,11 +218,6 @@ function IndustriesPage() {
                         <TableHead>
                           <SortHeader field="code" sort={sort} onToggle={toggleSort}>
                             Code
-                          </SortHeader>
-                        </TableHead>
-                        <TableHead>
-                          <SortHeader field="level" sort={sort} onToggle={toggleSort}>
-                            Level
                           </SortHeader>
                         </TableHead>
                         <TableHead className="text-fg/65">Parent</TableHead>
@@ -278,12 +248,11 @@ function IndustriesPage() {
                           <TableCell className="font-mono text-xs text-fg/65">
                             {row.code ?? <span className="text-fg-subtle">-</span>}
                           </TableCell>
-                          <TableCell>
-                            <LevelPill level={row.level ?? null} />
-                          </TableCell>
                           <TableCell className="text-sm text-fg/65">
-                            {row.parent_id ? (
-                              <span className="font-mono text-xs">{row.parent_id.slice(0, 8)}</span>
+                            {row.parent_industry_id ? (
+                              <span className="font-mono text-xs">
+                                {row.parent_industry_id.slice(0, 8)}
+                              </span>
                             ) : (
                               <span className="text-fg-subtle">-</span>
                             )}
@@ -321,22 +290,6 @@ function IndustriesPage() {
         </div>
       </PageShell>
     </AppLayout>
-  )
-}
-
-function filterByLevel(items: ReadonlyArray<Industry>, level: LevelFilter): Industry[] {
-  if (level === "all") return [...items]
-  if (level === "3") return items.filter((i) => (i.level ?? 0) >= 3)
-  const target = Number.parseInt(level, 10)
-  return items.filter((i) => (i.level ?? 0) === target)
-}
-
-function LevelPill({ level }: { level: number | null }) {
-  if (level == null) return <span className="text-fg-subtle">-</span>
-  return (
-    <span className="inline-flex items-center border border-fg/15 bg-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-fg/75">
-      L{level}
-    </span>
   )
 }
 

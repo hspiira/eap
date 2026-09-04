@@ -167,7 +167,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
 
       <FormField
         label="Subscription tier"
-        required
+        description="Defaults to Free."
         error={errors.subscription_tier?.message}
         htmlFor="tenant-tier"
       >

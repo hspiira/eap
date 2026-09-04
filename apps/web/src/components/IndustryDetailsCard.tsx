@@ -35,12 +35,6 @@ export function IndustryDetailsCard({
             <span className="font-mono text-[11px] text-fg-muted">
               {industry.code ?? "no code"}
             </span>
-            {industry.level != null ? (
-              <>
-                <span className="h-3 w-px bg-fg/20" aria-hidden />
-                <span className="font-mono text-[11px] text-fg-muted">L{industry.level}</span>
-              </>
-            ) : null}
           </div>
         </div>
         <Button
@@ -82,13 +76,6 @@ export function IndustryDetailsCard({
           <dl className="grid grid-cols-3 gap-x-3 gap-y-2.5">
             <Field label="Code" mono>
               {industry.code ?? <span className="text-fg-subtle">-</span>}
-            </Field>
-            <Field label="Level" mono>
-              {industry.level != null ? (
-                `L${industry.level}`
-              ) : (
-                <span className="text-fg-subtle">-</span>
-              )}
             </Field>
             <Field label="Children" mono>
               {children.length}

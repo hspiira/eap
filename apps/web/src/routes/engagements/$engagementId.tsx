@@ -271,7 +271,6 @@ function EngagementDetailPage() {
               <TabPanel value="hours">
                 <HoursPanel
                   engagementId={engagementId}
-                  deliverables={deliverables}
                   entries={timeEntries}
                   loading={timeQuery.isPending}
                 />

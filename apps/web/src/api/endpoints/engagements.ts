@@ -46,6 +46,7 @@ function paginate<T>(items: T[]): PaginatedResponse<T> {
 const FSM_ROUTES: Partial<Record<EngagementStatus, string>> = {
   [EngagementStatus.ACTIVE]: "activate",
   [EngagementStatus.DELIVERED]: "deliver",
+  [EngagementStatus.INVOICED]: "invoice",
   [EngagementStatus.CLOSED]: "close",
 }
 

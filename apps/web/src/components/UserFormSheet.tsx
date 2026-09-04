@@ -132,8 +132,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
         </FormField>
         <FormField
           label="Role"
-          required
-          description="Admins can manage tenant settings, users, and SSO."
+          description="Defaults to User. Admins can manage tenant settings, users, and SSO."
           error={errors.role?.message}
           htmlFor="us-role"
         >

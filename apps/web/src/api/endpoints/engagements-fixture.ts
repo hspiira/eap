@@ -6,7 +6,7 @@
  * timeline events. Replaced by BE Phase 4 #1 endpoints.
  */
 
-import type { DeliverableCreate } from "@/api/generated"
+import type { DeliverableCreate, HoursLogCreate } from "@/api/generated"
 import type {
   Engagement,
   EngagementDeliverable,
@@ -49,7 +49,7 @@ const ENGAGEMENT_SEED: Engagement[] = [
     client_id: "fixture-absa",
     name: "Manager mental-health training: Q2",
     description: "Two cohorts × half-day workshop. Includes pre/post evaluation.",
-    status: EngagementStatus.SCOPING,
+    status: EngagementStatus.DRAFT,
     engagement_type: EngagementType.TRAINING,
     start_date: "2026-05-20",
     due_date: "2026-07-10",
@@ -130,50 +130,45 @@ const TIME_ENTRY_SEED: EngagementTimeEntry[] = [
     id: "te-001",
     engagement_id: "eng-001",
     user_id: "user-helen",
-    occurred_on: "2026-04-02",
+    logged_on: "2026-04-02",
     hours: 4,
-    description: "Stakeholder interviews: HR + ops.",
-    deliverable_id: "dlv-001",
+    note: "Stakeholder interviews: HR + ops.",
     created_at: "2026-04-02T18:00:00Z",
   },
   {
     id: "te-002",
     engagement_id: "eng-001",
     user_id: "user-helen",
-    occurred_on: "2026-04-08",
+    logged_on: "2026-04-08",
     hours: 6,
-    description: "Interview synthesis + memo draft.",
-    deliverable_id: "dlv-001",
+    note: "Interview synthesis + memo draft.",
     created_at: "2026-04-08T18:00:00Z",
   },
   {
     id: "te-003",
     engagement_id: "eng-001",
     user_id: "user-helen",
-    occurred_on: "2026-04-29",
+    logged_on: "2026-04-29",
     hours: 8,
-    description: "Policy draft outline.",
-    deliverable_id: "dlv-002",
+    note: "Policy draft outline.",
     created_at: "2026-04-29T18:00:00Z",
   },
   {
     id: "te-004",
     engagement_id: "eng-003",
     user_id: "user-helen",
-    occurred_on: "2026-03-10",
+    logged_on: "2026-03-10",
     hours: 24,
-    description: "On-site visits: 8 branches.",
-    deliverable_id: "dlv-003",
+    note: "On-site visits: 8 branches.",
     created_at: "2026-03-10T18:00:00Z",
   },
   {
     id: "te-005",
     engagement_id: "eng-003",
     user_id: "user-mary",
-    occurred_on: "2026-03-25",
+    logged_on: "2026-03-25",
     hours: 14,
-    description: "Findings synthesis + report draft.",
-    deliverable_id: "dlv-003",
+    note: "Findings synthesis + report draft.",
     created_at: "2026-03-25T18:00:00Z",
   },
 ]
@@ -236,14 +231,8 @@ export interface EngagementCreateInput {
 /** `DeliverableCreate` plus the engagement id, which the route carries in its path. */
 export type DeliverableCreateInput = DeliverableCreate & { engagement_id: string }
 
-export interface TimeEntryCreateInput {
-  engagement_id: string
-  user_id: string
-  occurred_on: string
-  hours: number
-  description?: string | null
-  deliverable_id?: string | null
-}
+/** `HoursLogCreate` plus the engagement id, which the route carries in its path. */
+export type TimeEntryCreateInput = HoursLogCreate & { engagement_id: string }
 
 export function fixtureListEngagements(): Engagement[] {
   return [...engagementStore].sort((a, b) =>
@@ -260,7 +249,7 @@ export function fixtureCreateEngagement(input: EngagementCreateInput): Engagemen
   const engagement: Engagement = {
     id: `eng-${Math.random().toString(36).slice(2, 8)}`,
     tenant_id: TENANT,
-    status: EngagementStatus.SCOPING,
+    status: EngagementStatus.DRAFT,
     closed_at: null,
     hours_logged: 0,
     description: input.description ?? null,
@@ -285,11 +274,17 @@ export function fixtureCreateEngagement(input: EngagementCreateInput): Engagemen
   return engagement
 }
 
+/**
+ * Mirrors the domain FSM in app/domain/entities/engagement.py, which is a strict
+ * chain. Scoping and Cancelled have no server-side counterpart.
+ */
 const ALLOWED_TRANSITIONS: Record<EngagementStatus, EngagementStatus[]> = {
-  [EngagementStatus.SCOPING]: [EngagementStatus.ACTIVE, EngagementStatus.CANCELLED],
-  [EngagementStatus.ACTIVE]: [EngagementStatus.DELIVERED, EngagementStatus.CANCELLED],
-  [EngagementStatus.DELIVERED]: [EngagementStatus.CLOSED, EngagementStatus.ACTIVE],
+  [EngagementStatus.DRAFT]: [EngagementStatus.ACTIVE],
+  [EngagementStatus.ACTIVE]: [EngagementStatus.DELIVERED],
+  [EngagementStatus.DELIVERED]: [EngagementStatus.INVOICED],
+  [EngagementStatus.INVOICED]: [EngagementStatus.CLOSED],
   [EngagementStatus.CLOSED]: [],
+  [EngagementStatus.SCOPING]: [],
   [EngagementStatus.CANCELLED]: [],
 }
 
@@ -385,7 +380,7 @@ export function fixtureUpdateDeliverableStatus(
 export function fixtureListTimeEntries(engagementId: string): EngagementTimeEntry[] {
   return timeStore
     .filter((t) => t.engagement_id === engagementId)
-    .sort((a, b) => (a.occurred_on < b.occurred_on ? 1 : -1))
+    .sort((a, b) => (a.logged_on < b.logged_on ? 1 : -1))
 }
 
 export function fixtureCreateTimeEntry(input: TimeEntryCreateInput): EngagementTimeEntry {
@@ -394,10 +389,9 @@ export function fixtureCreateTimeEntry(input: TimeEntryCreateInput): EngagementT
     id: `te-${Math.random().toString(36).slice(2, 8)}`,
     engagement_id: input.engagement_id,
     user_id: input.user_id,
-    occurred_on: input.occurred_on,
+    logged_on: input.logged_on,
     hours: input.hours,
-    description: input.description ?? null,
-    deliverable_id: input.deliverable_id ?? null,
+    note: input.note ?? null,
     created_at: now,
   }
   timeStore.push(entry)
@@ -408,7 +402,7 @@ export function fixtureCreateTimeEntry(input: TimeEntryCreateInput): EngagementT
     kind: EngagementTimelineEventKind.HOURS_LOGGED,
     at: now,
     actor: input.user_id,
-    message: `Logged ${input.hours}h on ${input.occurred_on}.`,
+    message: `Logged ${input.hours}h on ${input.logged_on}.`,
   })
   return entry
 }

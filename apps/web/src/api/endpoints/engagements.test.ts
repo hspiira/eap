@@ -16,7 +16,7 @@ describe("engagementsApi (fixture mode)", () => {
       engagement_type: EngagementType.ADVISORY,
       start_date: "2026-05-01",
     })
-    expect(created.status).toBe(EngagementStatus.SCOPING)
+    expect(created.status).toBe(EngagementStatus.DRAFT)
 
     await expect(engagementsApi.transition(created.id, EngagementStatus.CLOSED)).rejects.toThrow(
       /Cannot transition/,
@@ -26,6 +26,8 @@ describe("engagementsApi (fixture mode)", () => {
     expect(active.status).toBe(EngagementStatus.ACTIVE)
     const delivered = await engagementsApi.transition(created.id, EngagementStatus.DELIVERED)
     expect(delivered.status).toBe(EngagementStatus.DELIVERED)
+    const invoiced = await engagementsApi.transition(created.id, EngagementStatus.INVOICED)
+    expect(invoiced.status).toBe(EngagementStatus.INVOICED)
   })
 
   it("logTime rolls hours up into the engagement totals", async () => {
@@ -41,13 +43,13 @@ describe("engagementsApi (fixture mode)", () => {
     await engagementsApi.logTime({
       engagement_id: created.id,
       user_id: "user-helen",
-      occurred_on: "2026-05-02",
+      logged_on: "2026-05-02",
       hours: 3.5,
     })
     await engagementsApi.logTime({
       engagement_id: created.id,
       user_id: "user-helen",
-      occurred_on: "2026-05-03",
+      logged_on: "2026-05-03",
       hours: 2,
     })
 

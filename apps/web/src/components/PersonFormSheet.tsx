@@ -481,7 +481,6 @@ export function PersonFormSheet({
           </div>
           <FormField
             label="Work status"
-            required
             error={errors.work_status?.message}
             htmlFor="ps-workstatus"
           >

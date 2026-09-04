@@ -14,19 +14,12 @@ const industrySchema = z.object({
     .trim()
     .optional()
     .refine((v) => !v || v.length <= 12, "Keep code under 12 characters"),
-  level: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || (/^\d+$/.test(v) && Number.parseInt(v, 10) >= 0),
-      "Use a non-negative integer",
-    ),
-  parent_id: z.string().optional(),
+  parent_industry_id: z.string().optional(),
 })
 
 type IndustryFormValues = z.infer<typeof industrySchema>
 
-const DEFAULTS: IndustryFormValues = { name: "", code: "", level: "", parent_id: "" }
+const DEFAULTS: IndustryFormValues = { name: "", code: "", parent_industry_id: "" }
 
 interface IndustryFormSheetProps {
   open: boolean
@@ -56,14 +49,14 @@ export function IndustryFormSheet({
     toFormValues: (i) => ({
       name: i.name,
       code: i.code ?? "",
-      level: i.level != null ? String(i.level) : "",
-      parent_id: i.parent_id ?? "",
+      parent_industry_id: i.parent_industry_id ?? "",
     }),
     parsePayload: (values): Parameters<typeof industriesApi.create>[0] => ({
       name: values.name,
       code: values.code?.trim() ? values.code.trim().toUpperCase() : null,
-      level: values.level?.trim() ? Number.parseInt(values.level, 10) : null,
-      parent_id: values.parent_id?.trim() ? values.parent_id.trim() : null,
+      parent_industry_id: values.parent_industry_id?.trim()
+        ? values.parent_industry_id.trim()
+        : null,
     }),
     save: ({ payload, entity, isEdit }) =>
       isEdit && entity ? industriesApi.update(entity.id, payload) : industriesApi.create(payload),
@@ -111,27 +104,17 @@ export function IndustryFormSheet({
       </FormField>
 
       <FormField
-        label="Level"
-        optional
-        description="Depth in the hierarchy (0 = top level)."
-        error={errors.level?.message}
-        htmlFor="ind-level"
-      >
-        <Input id="ind-level" type="number" min={0} placeholder="0" {...register("level")} />
-      </FormField>
-
-      <FormField
         label="Parent industry"
         optional
         description="Paste the parent industry's ID. Leave empty for a top-level industry."
-        error={errors.parent_id?.message}
+        error={errors.parent_industry_id?.message}
         htmlFor="ind-parent"
       >
         <Input
           id="ind-parent"
           placeholder="cln…"
           className="font-mono"
-          {...register("parent_id")}
+          {...register("parent_industry_id")}
         />
       </FormField>
     </SheetForm>
