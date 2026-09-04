@@ -58,7 +58,8 @@ const clientSchema = z
       .string()
       .trim()
       .min(3, "Code must be 3–5 characters")
-      .max(5, "Code must be 3–5 characters"),
+      .max(5, "Code must be 3–5 characters")
+      .regex(/^[A-Za-z0-9]+$/, "Code must use letters and numbers only"),
     tier: z.enum(["", ...TIER_VALUES] as readonly [string, ...string[]]).optional(),
     preferred_contact_method: z
       .enum(["", ...CONTACT_METHOD_OPTIONS.map((o) => o.value)] as readonly [string, ...string[]])
@@ -226,6 +227,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       submitLabel={isEdit ? "Save changes" : "Create client"}
       submittingLabel={isEdit ? "Saving…" : "Creating…"}
     >
+      <p className="text-xs text-fg-muted">Fields marked * are required.</p>
       <FormSection title="Identity">
         <FormField label="Name" required error={errors.name?.message} htmlFor="cs-name">
           <Input id="cs-name" placeholder="e.g. Acme Corp" {...register("name")} />
@@ -249,7 +251,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       </FormSection>
 
       <FormSection title="Tiering & sector">
-        <FormField label="Tier" optional error={errors.tier?.message} htmlFor="cs-tier">
+        <FormField label="Tier" error={errors.tier?.message} htmlFor="cs-tier">
           <Controller
             control={control}
             name="tier"
@@ -286,7 +288,6 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
 
         <FormField
           label="Industry"
-          optional
           description={
             isEdit
               ? "Use the industry classification for benchmarking and reporting."
@@ -377,12 +378,11 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         title="Primary contact"
         description="Used for billing and account notifications."
       >
-        <FormField label="Email" optional error={errors.email?.message} htmlFor="cs-email">
+        <FormField label="Email" error={errors.email?.message} htmlFor="cs-email">
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
         </FormField>
         <FormField
           label="Preferred contact method"
-          optional
           error={errors.preferred_contact_method?.message}
           htmlFor="cs-preferred-contact"
         >
@@ -405,10 +405,10 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
             )}
           />
         </FormField>
-        <FormField label="Phone" optional error={errors.phone?.message} htmlFor="cs-phone">
+        <FormField label="Phone" error={errors.phone?.message} htmlFor="cs-phone">
           <Input id="cs-phone" type="tel" placeholder="+256 …" {...register("phone")} />
         </FormField>
-        <FormField label="Address" optional error={errors.address?.message} htmlFor="cs-address">
+        <FormField label="Address" error={errors.address?.message} htmlFor="cs-address">
           <Input id="cs-address" placeholder="Street, city" {...register("address")} />
         </FormField>
       </FormSection>
@@ -419,7 +419,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       >
         <FormField
           label="Street"
-          optional={!hasAnyBillingValue}
+          required={hasAnyBillingValue}
           error={errors.billing_street?.message}
           htmlFor="cs-billing-street"
         >
@@ -428,7 +428,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         <div className="grid grid-cols-2 gap-3">
           <FormField
             label="City"
-            optional={!hasAnyBillingValue}
+            required={hasAnyBillingValue}
             error={errors.billing_city?.message}
             htmlFor="cs-billing-city"
           >
@@ -436,7 +436,6 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
           </FormField>
           <FormField
             label="Postal code"
-            optional
             error={errors.billing_postal?.message}
             htmlFor="cs-billing-postal"
           >
@@ -445,7 +444,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         </div>
         <FormField
           label="Country"
-          optional={!hasAnyBillingValue}
+          required={hasAnyBillingValue}
           error={errors.billing_country?.message}
           htmlFor="cs-billing-country"
         >
