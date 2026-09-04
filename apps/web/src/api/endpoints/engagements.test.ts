@@ -73,7 +73,7 @@ describe("engagementsApi (fixture mode)", () => {
     const submitted = await engagementsApi.updateDeliverableStatus(
       created.id,
       dlv.id,
-      DeliverableStatus.SUBMITTED,
+      DeliverableStatus.DELIVERED,
     )
     expect(submitted.submitted_at).not.toBeNull()
 

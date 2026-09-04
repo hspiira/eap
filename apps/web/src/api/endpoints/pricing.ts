@@ -65,7 +65,7 @@ function previewLocally(
         },
       ]
     }
-    case PricingModel.FFS: {
+    case PricingModel.FEE_FOR_SERVICE: {
       return [
         {
           label: "Sessions delivered",

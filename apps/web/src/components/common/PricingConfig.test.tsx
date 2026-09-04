@@ -38,7 +38,7 @@ describe("PricingConfig: one screen per model + invoice preview", () => {
   })
 
   it("FFS: renders single unit-rate input and ffs preview", async () => {
-    renderWithProviders(<Harness initial={PricingModel.FFS} />)
+    renderWithProviders(<Harness initial={PricingModel.FEE_FOR_SERVICE} />)
     expect(screen.getByLabelText(/unit rate/i)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText(/sessions delivered/i)).toBeInTheDocument())
   })
@@ -70,7 +70,7 @@ describe("PricingConfig: one screen per model + invoice preview", () => {
     const { unmount } = renderWithProviders(<Harness initial={PricingModel.RETAINER} />)
     expect(screen.getByLabelText(/^session cap$/i)).toBeInTheDocument()
     unmount()
-    renderWithProviders(<Harness initial={PricingModel.FFS} />)
+    renderWithProviders(<Harness initial={PricingModel.FEE_FOR_SERVICE} />)
     expect(screen.queryByLabelText(/^session cap$/i)).not.toBeInTheDocument()
     expect(screen.getByLabelText(/unit rate/i)).toBeInTheDocument()
   })

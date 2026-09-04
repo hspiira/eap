@@ -41,6 +41,7 @@ import type {
 } from "@/types/entities"
 import type { EngagementTimelineEventKind } from "@/types/enums"
 import { DeliverableStatus, type EngagementStatus } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({
   engagement,
@@ -88,9 +89,8 @@ export function Hero({
 const DELIVERABLE_STATUS_OPTIONS: DeliverableStatus[] = [
   DeliverableStatus.PENDING,
   DeliverableStatus.IN_PROGRESS,
-  DeliverableStatus.SUBMITTED,
+  DeliverableStatus.DELIVERED,
   DeliverableStatus.ACCEPTED,
-  DeliverableStatus.REJECTED,
 ]
 
 export function DeliverablesPanel({
@@ -224,7 +224,7 @@ export function DeliverablesPanel({
                 <SelectContent>
                   {DELIVERABLE_STATUS_OPTIONS.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {s}
+                      {getStatusLabel(s)}
                     </SelectItem>
                   ))}
                 </SelectContent>

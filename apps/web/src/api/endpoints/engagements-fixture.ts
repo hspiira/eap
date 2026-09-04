@@ -115,7 +115,7 @@ const DELIVERABLE_SEED: EngagementDeliverable[] = [
     engagement_id: "eng-003",
     title: "Branch audit report",
     description: "Findings + recommendations for the 12 priority branches.",
-    status: DeliverableStatus.SUBMITTED,
+    status: DeliverableStatus.DELIVERED,
     due_date: "2026-03-31",
     submitted_at: "2026-04-01T16:00:00Z",
     accepted_at: null,
@@ -284,8 +284,6 @@ const ALLOWED_TRANSITIONS: Record<EngagementStatus, EngagementStatus[]> = {
   [EngagementStatus.DELIVERED]: [EngagementStatus.INVOICED],
   [EngagementStatus.INVOICED]: [EngagementStatus.CLOSED],
   [EngagementStatus.CLOSED]: [],
-  [EngagementStatus.SCOPING]: [],
-  [EngagementStatus.CANCELLED]: [],
 }
 
 export function fixtureAllowedTransitions(from: EngagementStatus): EngagementStatus[] {
@@ -363,7 +361,7 @@ export function fixtureUpdateDeliverableStatus(
   const now = new Date().toISOString()
   target.status = status
   target.updated_at = now
-  if (status === DeliverableStatus.SUBMITTED && !target.submitted_at) target.submitted_at = now
+  if (status === DeliverableStatus.DELIVERED && !target.submitted_at) target.submitted_at = now
   if (status === DeliverableStatus.ACCEPTED && !target.accepted_at) target.accepted_at = now
   timelineStore.push({
     id: `tl-${target.engagement_id}-${timelineStore.length + 1}`,

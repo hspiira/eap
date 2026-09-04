@@ -135,9 +135,8 @@ export enum WorkStatus {
 export enum StaffRole {
   ADMIN = "Admin",
   MANAGER = "Manager",
-  COORDINATOR = "Coordinator",
-  SUPPORT = "Support",
-  VIEWER = "Viewer",
+  STAFF = "Staff",
+  VOLUNTEER = "Volunteer",
 }
 
 /**
@@ -292,9 +291,9 @@ export enum IncidentStatus {
 export enum PricingModel {
   RETAINER = "Retainer",
   FRAMEWORK = "Framework",
-  FFS = "FFS",
-  ADMIN_UTILISATION = "Admin+Utilisation",
-  VALUE_ADD = "Value-Add",
+  FEE_FOR_SERVICE = "FeeForService",
+  ADMIN_UTILISATION = "AdminUtilisation",
+  VALUE_ADD = "ValueAdd",
 }
 
 export enum ProviderTier {
@@ -450,11 +449,9 @@ export enum SurveyStatus {
  * the union open so we can add SurveyMonkey / Typeform without a schema change.
  */
 export enum SurveySource {
-  MICROSOFT_FORMS = "Microsoft Forms",
-  GOOGLE_FORMS = "Google Forms",
+  GOOGLE_FORMS = "GoogleForms",
   TYPEFORM = "Typeform",
-  SURVEY_MONKEY = "SurveyMonkey",
-  CUSTOM = "Custom",
+  MICROSOFT_FORMS = "MicrosoftForms",
 }
 
 /**
@@ -462,13 +459,11 @@ export enum SurveySource {
  * SCOPING → ACTIVE → DELIVERED → CLOSED. CANCELLED is a terminal off-ramp from any state.
  */
 export enum EngagementStatus {
-  SCOPING = "Scoping",
   DRAFT = "Draft",
   ACTIVE = "Active",
   DELIVERED = "Delivered",
   INVOICED = "Invoiced",
   CLOSED = "Closed",
-  CANCELLED = "Cancelled",
 }
 
 /**
@@ -489,10 +484,9 @@ export enum EngagementType {
  */
 export enum DeliverableStatus {
   PENDING = "Pending",
-  IN_PROGRESS = "In Progress",
-  SUBMITTED = "Submitted",
+  IN_PROGRESS = "InProgress",
+  DELIVERED = "Delivered",
   ACCEPTED = "Accepted",
-  REJECTED = "Rejected",
 }
 
 /**

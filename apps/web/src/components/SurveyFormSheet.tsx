@@ -20,13 +20,12 @@ import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { Client, Survey } from "@/types/entities"
 import { SurveySource } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 const SOURCE_VALUES = [
-  SurveySource.MICROSOFT_FORMS,
   SurveySource.GOOGLE_FORMS,
   SurveySource.TYPEFORM,
-  SurveySource.SURVEY_MONKEY,
-  SurveySource.CUSTOM,
+  SurveySource.MICROSOFT_FORMS,
 ] as const
 
 const schema = z
@@ -164,7 +163,7 @@ export function SurveyFormSheet({
                 <SelectContent>
                   {SOURCE_VALUES.map((v) => (
                     <SelectItem key={v} value={v}>
-                      {v}
+                      {getStatusLabel(v)}
                     </SelectItem>
                   ))}
                 </SelectContent>

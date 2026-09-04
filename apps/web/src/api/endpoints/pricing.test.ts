@@ -53,7 +53,7 @@ describe("pricingApi.preview (fixture mode)", () => {
 
   it("FFS: pure pay-per-session math", async () => {
     const lines = await pricingApi.preview(
-      { model: PricingModel.FFS, unit_rate: 2_500 },
+      { model: PricingModel.FEE_FOR_SERVICE, unit_rate: 2_500 },
       { projected_sessions: 12 },
     )
     expect(lines[0].subtotal).toBe(30_000)

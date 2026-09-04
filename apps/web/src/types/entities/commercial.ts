@@ -69,7 +69,7 @@ export interface FrameworkPricing {
 }
 
 export interface FFSPricing {
-  model: PricingModel.FFS
+  model: PricingModel.FEE_FOR_SERVICE
   unit_rate: number
 }
 

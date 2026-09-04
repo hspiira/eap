@@ -122,14 +122,12 @@ export function getStatusColors(status: StatusType): StatusColorConfig {
  * Get human-readable status label
  */
 export function getStatusLabel(status: StatusType): string {
-  // If status is already in Title Case (like enum values), return as is
-  if (status.includes(" ") || (status[0] === status[0].toUpperCase() && !status.includes("_"))) {
-    return status
-  }
+  if (status.includes(" ")) return status
 
-  // Convert snake_case or camelCase to Title Case
+  // Wire values are PascalCase, so split on the case boundary before title-casing.
   return status
     .split(/[_\s-]/)
+    .flatMap((part) => part.split(/(?<=[a-z0-9])(?=[A-Z])/))
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ")
 }

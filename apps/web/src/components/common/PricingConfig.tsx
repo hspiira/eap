@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table"
 import type { ContractPricing, InvoiceLinePreview } from "@/types/entities"
 import { PricingModel } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 interface PricingConfigProps {
   value: ContractPricing
@@ -41,7 +42,7 @@ interface PricingConfigProps {
 const MODEL_VALUES = [
   PricingModel.RETAINER,
   PricingModel.FRAMEWORK,
-  PricingModel.FFS,
+  PricingModel.FEE_FOR_SERVICE,
   PricingModel.ADMIN_UTILISATION,
   PricingModel.VALUE_ADD,
 ] as const
@@ -52,7 +53,7 @@ export function defaultPricingFor(model: PricingModel): ContractPricing {
       return { model, monthly_fee: 0, session_cap: null, overflow_rate: null }
     case PricingModel.FRAMEWORK:
       return { model, deposit: 0, drawdown_balance: 0, unit_rate: 0 }
-    case PricingModel.FFS:
+    case PricingModel.FEE_FOR_SERVICE:
       return { model, unit_rate: 0 }
     case PricingModel.ADMIN_UTILISATION:
       return { model, monthly_admin_fee: 0, admin_floor: 0, utilisation_rate: 0 }
@@ -81,7 +82,7 @@ export function PricingConfig({ value, onChange, projectedSessions = 20 }: Prici
           <SelectContent className="rounded-none border-fg/30 bg-white">
             {MODEL_VALUES.map((m) => (
               <SelectItem key={m} value={m} className="rounded-none">
-                {m}
+                {getStatusLabel(m)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -94,7 +95,9 @@ export function PricingConfig({ value, onChange, projectedSessions = 20 }: Prici
       {value.model === PricingModel.FRAMEWORK && (
         <FrameworkInputs value={value} onChange={onChange} />
       )}
-      {value.model === PricingModel.FFS && <FFSInputs value={value} onChange={onChange} />}
+      {value.model === PricingModel.FEE_FOR_SERVICE && (
+        <FFSInputs value={value} onChange={onChange} />
+      )}
       {value.model === PricingModel.ADMIN_UTILISATION && (
         <AdminUtilisationInputs value={value} onChange={onChange} />
       )}
@@ -222,7 +225,7 @@ function FFSInputs({
   value,
   onChange,
 }: {
-  value: Extract<ContractPricing, { model: PricingModel.FFS }>
+  value: Extract<ContractPricing, { model: PricingModel.FEE_FOR_SERVICE }>
   onChange: (p: ContractPricing) => void
 }) {
   return (

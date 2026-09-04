@@ -53,11 +53,11 @@ export const Route = createFileRoute("/engagements/")({
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
-  { value: EngagementStatus.SCOPING, label: "Scoping" },
+  { value: EngagementStatus.DRAFT, label: "Draft" },
   { value: EngagementStatus.ACTIVE, label: "Active" },
   { value: EngagementStatus.DELIVERED, label: "Delivered" },
+  { value: EngagementStatus.INVOICED, label: "Invoiced" },
   { value: EngagementStatus.CLOSED, label: "Closed" },
-  { value: EngagementStatus.CANCELLED, label: "Cancelled" },
 ] as const
 
 const TYPE_OPTIONS = [
@@ -401,14 +401,14 @@ function statusTone(status: EngagementStatus): string {
   switch (status) {
     case EngagementStatus.ACTIVE:
       return "border-primary/30 bg-primary/10 text-primary"
-    case EngagementStatus.SCOPING:
+    case EngagementStatus.DRAFT:
       return "border-fg/20 bg-bg text-fg"
     case EngagementStatus.DELIVERED:
       return "border-amber-500/40 bg-amber-500/10 text-amber-600"
     case EngagementStatus.CLOSED:
       return "border-fg/15 bg-bg text-fg/60"
-    case EngagementStatus.CANCELLED:
-      return "border-danger/30 bg-danger-soft text-danger-fg"
+    case EngagementStatus.INVOICED:
+      return "border-primary/20 bg-primary/5 text-primary"
     default:
       return "border-fg/15 bg-bg text-fg/65"
   }
@@ -417,7 +417,7 @@ function statusTone(status: EngagementStatus): string {
 export function isOverdue(due: string | null | undefined, status: EngagementStatus): boolean {
   if (!due) return false
   if (status === EngagementStatus.DELIVERED || status === EngagementStatus.CLOSED) return false
-  if (status === EngagementStatus.CANCELLED) return false
+  if (status === EngagementStatus.INVOICED) return false
   return Date.parse(due) < Date.now()
 }
 
