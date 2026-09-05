@@ -16,12 +16,14 @@ to each other.
 
 ### Service catalogue (what the UI calls "interventions")
 
-| Concern | Location |
-| --- | --- |
-| Entity | `apps/api/app/domain/entities/service.py:19` |
-| Table `services` | `apps/api/app/infrastructure/models/service_model.py:30` |
+
+| Concern              | Location                                                      |
+| -------------------- | ------------------------------------------------------------- |
+| Entity               | `apps/api/app/domain/entities/service.py:19`                  |
+| Table `services`     | `apps/api/app/infrastructure/models/service_model.py:30`      |
 | Coarse grouping enum | `apps/api/app/domain/enums/session.py:50` (`ServiceCategory`) |
-| List page | `apps/web/src/routes/services/index.tsx` |
+| List page            | `apps/web/src/routes/services/index.tsx`                      |
+
 
 `services.category` is a free-text `String(100)`, not the `ServiceCategory`
 enum. The two are unrelated in the schema. The list page's empty state reads
@@ -30,13 +32,15 @@ language a service row is an intervention.
 
 ### Diagnosis taxonomy
 
-| Concern | Location |
-| --- | --- |
-| Entities | `apps/api/app/domain/entities/diagnosis.py` |
-| Tables `diagnosis_types`, `diagnoses` | `apps/api/alembic/versions/f4a6b8c1d3e5_add_diagnosis_taxonomy.py` |
-| Repository | `apps/api/app/infrastructure/repositories/diagnosis_repository.py:41` |
-| Routes | `apps/api/app/api/routes/diagnoses.py` |
-| Selector | `apps/web/src/components/common/DiagnosisSelector.tsx` |
+
+| Concern                               | Location                                                              |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| Entities                              | `apps/api/app/domain/entities/diagnosis.py`                           |
+| Tables `diagnosis_types`, `diagnoses` | `apps/api/alembic/versions/f4a6b8c1d3e5_add_diagnosis_taxonomy.py`    |
+| Repository                            | `apps/api/app/infrastructure/repositories/diagnosis_repository.py:41` |
+| Routes                                | `apps/api/app/api/routes/diagnoses.py`                                |
+| Selector                              | `apps/web/src/components/common/DiagnosisSelector.tsx`                |
+
 
 Two levels, strictly one to many: a `DiagnosisType` has many `Diagnosis`. The
 migration seeds 16 types and 52 diagnoses. Both tables carry `code`,
@@ -91,37 +95,39 @@ Matching on a case and punctuation insensitive comparison against the seeded
 taxonomy, 11 classifications hit a type name and 2 hit a diagnosis name
 directly. The remaining 16 resolve by inspection as follows.
 
-| Classification | Target level | Target |
-| --- | --- | --- |
-| Addictions | type | `ADDICTIONS` |
-| Career Challenges | type | `CAREER_CHALLENGES` |
-| Change Management | type | `CHANGE_MANAGEMENT` |
-| Child Teenage Stress | type | `CHILD_TEENAGE` |
-| Family &  Relationship | type | `FAMILY_RELATIONSHIP` |
-| Financial issues | type | `FINANCIAL_WELLNESS` |
-| Health Promotion | type | `HEALTH_PROMOTION` |
-| Loss & Grief | type | `LOSS_GRIEF` |
-| Medical Disease Management Alert | type | `MEDICAL_DISEASE_MGMT` |
-| Mental Ill Health | type | `MENTAL_ILL_HEALTH` |
-| Relationship Abuse | type | `GBV` |
-| Trauma Disorder | type | `TRAUMA` |
-| Work stress & Anxiety | type | `WORK_STRESS_ANXIETY` |
-| ADHD Assessment | diagnosis | `ADHD` / `ADHD_ASSESSMENT` |
-| ADHD Coaching | diagnosis | `ADHD` / `ADHD_COACHING` |
-| Behavioral | diagnosis | `BEHAVIOURAL_PERSONALITY` / `BEHAVIOURAL_PROBLEM` |
-| Burnout | diagnosis | `WORK_STRESS_ANXIETY` / `BURNOUT` |
-| Career Improvement | diagnosis | `CAREER_CHALLENGES` / `CAREER_ASSESSMENT` |
-| Child Sexual Abuse | diagnosis | `CHILD_TEENAGE` / `CHILD_SEX_ABUSE` |
-| Daily habits to build emotional strength | diagnosis | `PERSONAL_GROWTH` / `DAILY_HABITS` |
-| Depression Disorder | diagnosis | `MENTAL_ILL_HEALTH` / `DEPRESSION` |
-| Emotional Resilience | diagnosis | `PERSONAL_GROWTH` / `EMOTIONAL_RESILIENCE` |
-| Personality Issues | diagnosis | `BEHAVIOURAL_PERSONALITY` / `PERSONALITY_ISSUES` |
-| Physical Fitness | diagnosis | `HEALTH_PROMOTION` / `PHYSICAL_FITNESS` |
-| School related concerns | diagnosis | `CHILD_TEENAGE` / `SCHOOL_ISSUES` |
-| Emotional challenges | none | needs a new leaf, see 3.2 |
-| Coaching & Mentorship | none | not a diagnosis, see 3.1 |
-| No show | none | not a diagnosis, see 3.1 |
-| Others | none | needs an explicit bucket, see 3.2 |
+
+| Classification                           | Target level | Target                                            |
+| ---------------------------------------- | ------------ | ------------------------------------------------- |
+| Addictions                               | type         | `ADDICTIONS`                                      |
+| Career Challenges                        | type         | `CAREER_CHALLENGES`                               |
+| Change Management                        | type         | `CHANGE_MANAGEMENT`                               |
+| Child Teenage Stress                     | type         | `CHILD_TEENAGE`                                   |
+| Family &  Relationship                   | type         | `FAMILY_RELATIONSHIP`                             |
+| Financial issues                         | type         | `FINANCIAL_WELLNESS`                              |
+| Health Promotion                         | type         | `HEALTH_PROMOTION`                                |
+| Loss & Grief                             | type         | `LOSS_GRIEF`                                      |
+| Medical Disease Management Alert         | type         | `MEDICAL_DISEASE_MGMT`                            |
+| Mental Ill Health                        | type         | `MENTAL_ILL_HEALTH`                               |
+| Relationship Abuse                       | type         | `GBV`                                             |
+| Trauma Disorder                          | type         | `TRAUMA`                                          |
+| Work stress & Anxiety                    | type         | `WORK_STRESS_ANXIETY`                             |
+| ADHD Assessment                          | diagnosis    | `ADHD` / `ADHD_ASSESSMENT`                        |
+| ADHD Coaching                            | diagnosis    | `ADHD` / `ADHD_COACHING`                          |
+| Behavioral                               | diagnosis    | `BEHAVIOURAL_PERSONALITY` / `BEHAVIOURAL_PROBLEM` |
+| Burnout                                  | diagnosis    | `WORK_STRESS_ANXIETY` / `BURNOUT`                 |
+| Career Improvement                       | diagnosis    | `CAREER_CHALLENGES` / `CAREER_ASSESSMENT`         |
+| Child Sexual Abuse                       | diagnosis    | `CHILD_TEENAGE` / `CHILD_SEX_ABUSE`               |
+| Daily habits to build emotional strength | diagnosis    | `PERSONAL_GROWTH` / `DAILY_HABITS`                |
+| Depression Disorder                      | diagnosis    | `MENTAL_ILL_HEALTH` / `DEPRESSION`                |
+| Emotional Resilience                     | diagnosis    | `PERSONAL_GROWTH` / `EMOTIONAL_RESILIENCE`        |
+| Personality Issues                       | diagnosis    | `BEHAVIOURAL_PERSONALITY` / `PERSONALITY_ISSUES`  |
+| Physical Fitness                         | diagnosis    | `HEALTH_PROMOTION` / `PHYSICAL_FITNESS`           |
+| School related concerns                  | diagnosis    | `CHILD_TEENAGE` / `SCHOOL_ISSUES`                 |
+| Emotional challenges                     | type         | `MENTAL_ILL_HEALTH` (§5 q2)                       |
+| Coaching & Mentorship                    | none         | not a diagnosis, see 3.1                          |
+| No show                                  | none         | not a diagnosis, see 3.1                          |
+| Others                                   | none         | unsettled, see 3.2 and §5 q5                      |
+
 
 The assignments in the lower half of the table are my reading of the labels,
 not something the file states. They should be confirmed by whoever owns the
@@ -129,16 +135,18 @@ clinical taxonomy before they are seeded.
 
 ## 3. Findings
 
+
+
 ### 3.1 Three classifications are not diagnoses
 
 - `No show` is a scheduling outcome. `SessionStatus.NO_SHOW` already exists at
-  `apps/api/app/domain/enums/session.py:18`. Storing it as a diagnosis would
-  inflate every prevalence count with rows that had no clinical contact.
+`apps/api/app/domain/enums/session.py:18`. Storing it as a diagnosis would
+inflate every prevalence count with rows that had no clinical contact.
 - `Coaching & Mentorship` is an intervention. It belongs in the `services`
-  catalogue, not the taxonomy.
-- `Nurturing mental wellness in the workplace` is mapped to `Mental Ill Health`.
-  It reads as a promotional or awareness activity, so it is closer to
-  `HEALTH_PROMOTION` or, again, a service.
+catalogue, not the taxonomy.
+- `Nurturing mental wellness in the workplace` is mapped to `Mental Ill Health`
+in the source. The clinical owner has confirmed it is a promotion, so it maps
+to `HEALTH_PROMOTION`. This corrects the source rather than transcribing it.
 
 This is the core structural problem: the single legacy column carried diagnosis,
 session outcome, and service delivered at once. Splitting them is the main value
@@ -146,12 +154,15 @@ of the migration.
 
 ### 3.2 Two gaps in the seeded taxonomy
 
-- `Emotional challenges` has no leaf. Either add one under `MENTAL_ILL_HEALTH`
-  or fold it into `PERSONAL_GROWTH`.
+- `Emotional challenges` has no leaf. Resolved: fold into `MENTAL_ILL_HEALTH`
+at type level rather than adding a leaf, since the label names a state rather
+than any one of that type's five leaves.
 - `Others` has no home. An explicit `OTHER` type with a single `UNSPECIFIED`
-  diagnosis is preferable to a null, because it separates "clinician chose
-  other" from "never recorded". Both are reportable, and they mean different
-  things.
+diagnosis is preferable to a null, because it separates "clinician chose
+other" from "never recorded". Both are reportable, and they mean different
+things.
+
+
 
 ### 3.3 The two columns are not disjoint vocabularies
 
@@ -166,20 +177,20 @@ optional.
 ### 3.4 Data quality defects in the file
 
 - Three rows hold clinical narrative in the key column, for example
-  "The client presented with heavy grief/ sadness and loss of meaning in life".
-  These belong in `issue_topic` or the clinical note, not in a taxonomy key.
+"The client presented with heavy grief/ sadness and loss of meaning in life".
+These belong in `issue_topic` or the clinical note, not in a taxonomy key.
 - The second of those, "The client presented with symptoms of depression and
-  fear about living without any parent", is classified as
-  `Work stress & Anxiety`. On its own text it reads as depression or loss.
+fear about living without any parent", is classified as
+`Work stress & Anxiety`. On its own text it reads as depression or loss.
 - `Personality` is classified as `Family &  Relationship`. It reads as
-  `BEHAVIOURAL_PERSONALITY`.
+`BEHAVIOURAL_PERSONALITY`.
 - `Change Magement Risks` (typo in source) is classified as
-  `Career Improvement` rather than `Change Management`.
+`Career Improvement` rather than `Change Management`.
 - `Family Stress, fatigue, Burnout` goes to `Family &  Relationship` while
-  `Work Stress, Fatigue, Burnout` goes to `Work stress & Anxiety`. Burnout is
-  handled inconsistently across the two.
+`Work Stress, Fatigue, Burnout` goes to `Work stress & Anxiety`. Burnout is
+handled inconsistently across the two.
 - `Family &  Relationship` contains a double space, in both columns.
-  `Sexual Abuse ` and two narrative rows have trailing whitespace.
+`Sexual Abuse ` and two narrative rows have trailing whitespace.
 - Five rows are exact duplicates.
 
 I have not corrected any of these. Each is a clinical judgement that needs an
@@ -211,12 +222,12 @@ they drive programme session caps.
 Nothing derives one from the other. Two consequences:
 
 - Given a completed session you cannot determine which programme cap it should
-  draw down, because the only route from the catalogue to the cap is a
-  free-text string a user typed.
+draw down, because the only route from the catalogue to the cap is a
+free-text string a user typed.
 - `Authorization.consume_session`
-  (`apps/api/app/domain/entities/authorization.py:89`) has no callers other than
-  the manual route at `apps/api/app/api/routes/eap_programmes.py:203`.
-  Entitlement drawdown is manual today.
+(`apps/api/app/domain/entities/authorization.py:89`) has no callers other than
+the manual route at `apps/api/app/api/routes/eap_programmes.py:203`.
+Entitlement drawdown is manual today.
 
 Typing the column is the prerequisite for automating drawdown. It needs a data
 audit of existing values first; there is no seed for this column, so the current
@@ -231,6 +242,8 @@ as enum-backed, confirm it has a `$ref` in the contract and a CHECK constraint
 or enum column in the model; `service.category` has neither.
 
 ## 4. Recommendation
+
+
 
 ### 4.1 Add a `diagnosis_aliases` table
 
@@ -286,10 +299,12 @@ the reporting path.
 ### 4.4 Separate the three non-diagnosis values
 
 - Route `No show` to `SessionStatus.NO_SHOW` during import and leave both
-  diagnosis columns null.
+diagnosis columns null.
 - Seed `Coaching & Mentorship` as a row in `services`, and map the legacy value
-  to `service_id` rather than to a diagnosis.
+to `service_id` rather than to a diagnosis.
 - Decide `Nurturing mental wellness in the workplace` with the clinical owner.
+
+
 
 ### 4.5 Then enable prevalence reporting
 
@@ -300,10 +315,24 @@ leaves over the volumes in this file, leaf-level counts will be too sparse to be
 meaningful, and small cell counts in clinical reporting are a privacy exposure
 in their own right.
 
-## 5. Open questions for the clinical owner
+## 5. Questions for the clinical owner
 
-1. The 16 inferred assignments in section 2. Confirm or correct.
-2. `Emotional challenges`: new leaf, or fold into an existing type?
-3. `Nurturing mental wellness in the workplace`: health promotion, or a service?
-4. Section 3.4 items two through five: which classification is correct?
-5. Should `Others` be an explicit type, or stay null?
+Answered 2026-09-05 by the clinical owner. The remaining two are being worked
+through as the alias data is loaded.
+
+1. **The 16 inferred assignments in section 2.** Confirmed as correct. They load
+   as `confidence = 'confirmed'` rather than `'inferred'`.
+2. **`Emotional challenges`.** Fold into an existing type; no new leaf. Mapped
+   to `MENTAL_ILL_HEALTH` at type level, since the label names a state rather
+   than any one of that type's five leaves.
+3. **`Nurturing mental wellness in the workplace`.** A promotion. Maps to
+   `HEALTH_PROMOTION`, not `MENTAL_ILL_HEALTH` as the source file had it. This
+   corrects a source classification, so it is a data fix rather than a
+   transcription.
+4. **Section 3.4 items two through five: which classification is correct?**
+   Open. These four rows are held back from the alias load rather than guessed;
+   each changes what a session is counted as.
+5. **Should `Others` be an explicit type, or stay null?** Open. Until it is
+   settled, `Others` has no alias and a row carrying it is rejected rather than
+   bucketed, which is the same treatment as any unmapped value.
+
