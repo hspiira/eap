@@ -125,7 +125,7 @@ class ClientEntity:
     def restore(self) -> None:
         """Restore an archived client to active operation."""
         if self.status != BaseStatus.ARCHIVED:
-            raise DomainError("Only archived clients can be restored")
+            raise ConflictError("Only archived clients can be restored")
         self.status = BaseStatus.ACTIVE
         self.suspension_reason = None
         self.updated_at = utc_now()

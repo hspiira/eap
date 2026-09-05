@@ -819,6 +819,7 @@ class TestClientLifecycleFlow:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Lifecycle Test Client",
+                "code": "LIFEC",
                 "contact_info": {"phone": "+1-555-LIFECYCLE"},
             },
         )
@@ -850,6 +851,7 @@ class TestClientLifecycleFlow:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Verified Client",
+                "code": "VERIF",
                 "contact_info": {"email": "verified@client.com"},
             },
         )
@@ -876,6 +878,7 @@ class TestClientLifecycleFlow:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "CRUD Test Client",
+                "code": "CCRUD",
                 "contact_info": {"phone": "+1-555-CRUD-TEST"},
             },
         )
@@ -922,6 +925,7 @@ class TestClientLifecycleFlow:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Corporate HQ",
+                "code": "CORPH",
                 "contact_info": {"phone": "+1-555-HQ-MAIN"},
             },
         )
@@ -934,6 +938,7 @@ class TestClientLifecycleFlow:
                 f"/clients/?tenant_id={tenant_id}",
                 json={
                     "name": f"Branch {i + 1}",
+                    "code": f"BR{i + 1:03d}",
                     "contact_info": {"phone": f"+1-555-BRANCH-{i}"},
                     "parent_client_id": parent_id,
                 },

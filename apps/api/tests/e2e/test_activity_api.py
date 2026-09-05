@@ -183,6 +183,7 @@ class TestActivityIntegration:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Activity CRUD Client",
+                "code": "ACRUD",
                 "contact_info": {"email": "info@acc.com"},
             },
         )
@@ -254,6 +255,7 @@ class TestActivityIntegration:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Activity Filter Client",
+                "code": "AFILT",
                 "contact_info": {"email": "info@afc.com"},
             },
         )

@@ -410,7 +410,7 @@ class PersonEntity:
         if self.status == BaseStatus.ACTIVE:
             raise ConflictError("Person is already active")
         if self.status != BaseStatus.ARCHIVED:
-            raise DomainError("Person must be archived to restore")
+            raise ConflictError("Person must be archived to restore")
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
 
