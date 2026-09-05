@@ -42,8 +42,8 @@ import {
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
-import { Button } from "@/components/ui/button"
 import { ContractAttachments } from "@/components/contracts/ContractAttachments"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -219,7 +219,11 @@ export function ContractsPanel({
                   {formatDay(c.period.start_date)}
                 </TableCell>
                 <TableCell className="text-sm text-fg/75">{formatDay(c.period.end_date)}</TableCell>
-                <TableCell><Button size="sm" variant="outline" onClick={() => setAttachmentContract(c)}>Attachments</Button></TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" onClick={() => setAttachmentContract(c)}>
+                    Attachments
+                  </Button>
+                </TableCell>
                 <TableCell className="text-right">
                   <Link
                     to="/contracts/$contractId"
@@ -235,10 +239,17 @@ export function ContractsPanel({
           </TableBody>
         </Table>
       </div>
-      {attachmentContract && <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-medium">{contractLabel(attachmentContract)}</h3><Button variant="ghost" size="sm" onClick={() => setAttachmentContract(null)}>Close attachments</Button></div>
-        <ContractAttachments key={attachmentContract.id} contractId={attachmentContract.id} />
-      </div>}
+      {attachmentContract && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-medium">{contractLabel(attachmentContract)}</h3>
+            <Button variant="ghost" size="sm" onClick={() => setAttachmentContract(null)}>
+              Close attachments
+            </Button>
+          </div>
+          <ContractAttachments key={attachmentContract.id} contractId={attachmentContract.id} />
+        </div>
+      )}
     </div>
   )
 }

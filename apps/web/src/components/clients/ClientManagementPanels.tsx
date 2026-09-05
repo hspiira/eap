@@ -12,20 +12,33 @@ import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import { utilisationApi } from "@/api/endpoints/utilisation"
 import type { PaginatedResponse } from "@/api/types"
-import { StatusBadge } from "@/components/common/StatusBadge"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { contractLabel, memberLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDay } from "@/lib/format"
 import { entityListKey } from "@/lib/queries"
 import type { Client, Contact, Document, Member } from "@/types/entities"
-import { contractLabel, memberLabel } from "@/lib/display"
-import { MemberRelation, EligibilityStatus } from "@/types/enums"
-import { formatDay } from "@/lib/format"
+import { EligibilityStatus, MemberRelation } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 function Panel({
@@ -216,9 +229,14 @@ export function ClientRosterPanel({
   const [status, setStatus] = useState<EligibilityStatus | "all">("all")
   const [page, setPage] = useState(1)
   const debouncedSearch = useDebouncedValue(search.trim())
-  const params = { client_id: clientId, page, limit: 20, search: debouncedSearch || undefined,
+  const params = {
+    client_id: clientId,
+    page,
+    limit: 20,
+    search: debouncedSearch || undefined,
     relation: relation === "all" ? undefined : relation,
-    status: status === "all" ? undefined : status }
+    status: status === "all" ? undefined : status,
+  }
   const filtered = Boolean(debouncedSearch || relation !== "all" || status !== "all" || page !== 1)
   const filteredQuery = useQuery({
     queryKey: entityListKey("members", params),
@@ -243,37 +261,108 @@ export function ClientRosterPanel({
         ) : null
       }
     >
-      <p className="text-sm text-fg-muted">Employees and beneficiaries covered by this client. Open a member to manage their details and dependants.</p>
+      <p className="text-sm text-fg-muted">
+        Employees and beneficiaries covered by this client. Open a member to manage their details
+        and dependants.
+      </p>
       <div className="flex flex-col gap-3 border-y border-fg/10 py-4 sm:flex-row">
-        <Input aria-label="Search members" placeholder="Search name, employee number or email" value={search}
-          onChange={(event) => { setSearch(event.target.value); setPage(1) }} className="sm:flex-1" />
-        <Select value={relation} onValueChange={(value) => { setRelation(value as MemberRelation | "all"); setPage(1) }}>
-          <SelectTrigger aria-label="Relationship" className="sm:w-44"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All relationships</SelectItem>
-            {Object.values(MemberRelation).map((value) => <SelectItem key={value} value={value}>{getStatusLabel(value)}</SelectItem>)}
+        <Input
+          aria-label="Search members"
+          placeholder="Search name, employee number or email"
+          value={search}
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setPage(1)
+          }}
+          className="sm:flex-1"
+        />
+        <Select
+          value={relation}
+          onValueChange={(value) => {
+            setRelation(value as MemberRelation | "all")
+            setPage(1)
+          }}
+        >
+          <SelectTrigger aria-label="Relationship" className="sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All relationships</SelectItem>
+            {Object.values(MemberRelation).map((value) => (
+              <SelectItem key={value} value={value}>
+                {getStatusLabel(value)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <Select value={status} onValueChange={(value) => { setStatus(value as EligibilityStatus | "all"); setPage(1) }}>
-          <SelectTrigger aria-label="Eligibility status" className="sm:w-40"><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All statuses</SelectItem>
-            {Object.values(EligibilityStatus).map((value) => <SelectItem key={value} value={value}>{getStatusLabel(value)}</SelectItem>)}
+        <Select
+          value={status}
+          onValueChange={(value) => {
+            setStatus(value as EligibilityStatus | "all")
+            setPage(1)
+          }}
+        >
+          <SelectTrigger aria-label="Eligibility status" className="sm:w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {Object.values(EligibilityStatus).map((value) => (
+              <SelectItem key={value} value={value}>
+                {getStatusLabel(value)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        {(search || relation !== "all" || status !== "all") && <Button variant="ghost" onClick={() => { setSearch(""); setRelation("all"); setStatus("all"); setPage(1) }}>Clear filters</Button>}
+        {(search || relation !== "all" || status !== "all") && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSearch("")
+              setRelation("all")
+              setStatus("all")
+              setPage(1)
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
       <ClientRosterContent query={roster} filtered={filtered} />
-      {roster.data && roster.data.total > 20 && <div className="flex items-center justify-between border-t border-fg/10 pt-3 text-sm">
-        <span>Page {page} of {Math.ceil(roster.data.total / 20)}</span>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled={page === 1 || roster.isFetching} onClick={() => setPage(page - 1)}>Previous</Button>
-          <Button variant="outline" disabled={page * 20 >= roster.data.total || roster.isFetching} onClick={() => setPage(page + 1)}>Next</Button>
+      {roster.data && roster.data.total > 20 && (
+        <div className="flex items-center justify-between border-t border-fg/10 pt-3 text-sm">
+          <span>
+            Page {page} of {Math.ceil(roster.data.total / 20)}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={page === 1 || roster.isFetching}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={page * 20 >= roster.data.total || roster.isFetching}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>}
+      )}
     </Panel>
   )
 }
 
-function ClientRosterContent({ query, filtered }: { query: UseQueryResult<PaginatedResponse<Member>>, filtered: boolean }) {
+function ClientRosterContent({
+  query,
+  filtered,
+}: {
+  query: UseQueryResult<PaginatedResponse<Member>>
+  filtered: boolean
+}) {
   if (query.isPending) return <p className="text-xs text-fg-muted">Loading members…</p>
   if (query.isError) {
     return (
@@ -292,15 +381,31 @@ function ClientRosterContent({ query, filtered }: { query: UseQueryResult<Pagina
     )
   }
   const { items, total } = query.data
-  if (total === 0) return <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">{filtered ? "No members match these filters." : "No members yet."}</p>
+  if (total === 0)
+    return (
+      <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
+        {filtered ? "No members match these filters." : "No members yet."}
+      </p>
+    )
   return (
     <>
       <p className="text-xs text-fg-muted">
         Showing {items.length} of {total} members · employees and beneficiaries
       </p>
       <Table>
-        <TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Relationship</TableHead><TableHead>Contact</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-        <TableBody>{items.map((member) => <RosterRow key={member.id} member={member} />)}</TableBody>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Member</TableHead>
+            <TableHead>Relationship</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((member) => (
+            <RosterRow key={member.id} member={member} />
+          ))}
+        </TableBody>
       </Table>
     </>
   )
@@ -309,12 +414,24 @@ function ClientRosterContent({ query, filtered }: { query: UseQueryResult<Pagina
 function RosterRow({ member }: { member: Member }) {
   return (
     <TableRow>
-      <TableCell><Link to="/members/$memberId" params={{ memberId: member.id }} className="font-medium text-primary hover:underline">{memberLabel(member)}</Link>
+      <TableCell>
+        <Link
+          to="/members/$memberId"
+          params={{ memberId: member.id }}
+          className="font-medium text-primary hover:underline"
+        >
+          {memberLabel(member)}
+        </Link>
         <p className="mt-1 text-xs text-fg-muted">{member.employer_member_id}</p>
       </TableCell>
       <TableCell>{getStatusLabel(member.relation)}</TableCell>
-      <TableCell><p>{member.work_email || member.personal_email || "No email"}</p><p className="mt-1 text-xs text-fg-muted">{member.phone || "No phone"}</p></TableCell>
-      <TableCell><StatusBadge status={member.status} /></TableCell>
+      <TableCell>
+        <p>{member.work_email || member.personal_email || "No email"}</p>
+        <p className="mt-1 text-xs text-fg-muted">{member.phone || "No phone"}</p>
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={member.status} />
+      </TableCell>
     </TableRow>
   )
 }
@@ -386,8 +503,18 @@ export function ClientServicesPanel({ clientId }: { clientId: string }) {
       const serviceIds = [
         ...new Set(groups.flatMap(({ assignments }) => assignments.map((a) => a.service_id))),
       ]
-      const services = new Map(await Promise.all(serviceIds.map(async (id) => [id, await servicesApi.getById(id)] as const)))
-      return groups.map(({contract, assignments}) => ({contract, assignments: assignments.map((assignment) => ({assignment, service: services.get(assignment.service_id)!}))}))
+      const services = new Map(
+        await Promise.all(
+          serviceIds.map(async (id) => [id, await servicesApi.getById(id)] as const),
+        ),
+      )
+      return groups.map(({ contract, assignments }) => ({
+        contract,
+        assignments: assignments.map((assignment) => ({
+          assignment,
+          service: services.get(assignment.service_id)!,
+        })),
+      }))
     },
   })
   return (
@@ -406,16 +533,52 @@ export function ClientServicesPanel({ clientId }: { clientId: string }) {
             {rows.map(({ contract, assignments }) => (
               <article key={contract.id} className="border border-fg/10">
                 <header className="flex items-center justify-between gap-3 border-b border-fg/10 bg-fg/3 p-4">
-                  <div><p className="mb-1 text-xs text-fg-muted">Contract term · {assignments.length} services</p>
-                  <Link to="/contracts/$contractId" params={{ contractId: contract.id }} search={{tab: "services"}} className="font-medium text-primary hover:underline">{contractLabel(contract)}</Link></div>
+                  <div>
+                    <p className="mb-1 text-xs text-fg-muted">
+                      Contract term · {assignments.length} services
+                    </p>
+                    <Link
+                      to="/contracts/$contractId"
+                      params={{ contractId: contract.id }}
+                      search={{ tab: "services" }}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {contractLabel(contract)}
+                    </Link>
+                  </div>
                   <StatusBadge status={contract.status} />
                 </header>
-                {assignments.length ? <div className="divide-y divide-fg/10">{assignments.map(({assignment, service}) => <div key={assignment.id ?? service.id} className="flex items-center justify-between gap-4 p-4">
-                  <div><Link to="/services/$serviceId" params={{serviceId: service.id}} className="text-sm font-medium text-primary hover:underline">{service.name}</Link>
-                  <p className="mt-1 text-xs text-fg-muted">{getStatusLabel(service.category ?? "Service")}</p>
-                  {assignment.notes && <p className="mt-2 text-sm text-fg-muted">{assignment.notes}</p>}</div>
-                  <StatusBadge status={assignment.status} />
-                </div>)}</div> : <p className="p-6 text-sm text-fg-muted">No services assigned to this contract yet.</p>}
+                {assignments.length ? (
+                  <div className="divide-y divide-fg/10">
+                    {assignments.map(({ assignment, service }) => (
+                      <div
+                        key={assignment.id ?? service.id}
+                        className="flex items-center justify-between gap-4 p-4"
+                      >
+                        <div>
+                          <Link
+                            to="/services/$serviceId"
+                            params={{ serviceId: service.id }}
+                            className="text-sm font-medium text-primary hover:underline"
+                          >
+                            {service.name}
+                          </Link>
+                          <p className="mt-1 text-xs text-fg-muted">
+                            {getStatusLabel(service.category ?? "Service")}
+                          </p>
+                          {assignment.notes && (
+                            <p className="mt-2 text-sm text-fg-muted">{assignment.notes}</p>
+                          )}
+                        </div>
+                        <StatusBadge status={assignment.status} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-6 text-sm text-fg-muted">
+                    No services assigned to this contract yet.
+                  </p>
+                )}
               </article>
             ))}
           </div>

@@ -256,6 +256,13 @@ async def create_member(
         tenant_id=current_user.tenant_id,
         client_id=data.client_id,
     )
+    # A duplicate code is a conflict, matching the 409 the update path returns.
+    # Without this the use case's DomainError surfaces as a 400.
+    duplicate = await member_repo.find_by_employer_member_id(
+        TenantId(current_user.tenant_id), ClientId(data.client_id), employer_member_id
+    )
+    if duplicate is not None:
+        raise HTTPException(status_code=409, detail="Member code already exists for this client")
     use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
     member, _ = await use_case.execute(
         tenant_id=TenantId(current_user.tenant_id),

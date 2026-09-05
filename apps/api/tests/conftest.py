@@ -1161,15 +1161,11 @@ async def session_test_provider(
 async def session_test_client_person(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
-    """Create a client employee person for session tests."""
-    from datetime import date
-
-    from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
+    """Create a client member for session tests, without a user account."""
+    from app.domain.enums import BaseStatus, EligibilityStatus, MemberRelation
     from app.infrastructure.models.client_model import ClientModel
-    from app.infrastructure.models.person_model import PersonModel
-    from app.infrastructure.models.user_model import UserModel
+    from app.infrastructure.models.eligible_member_model import EligibleMemberModel
 
-    # employment_info must name a client and a well-formed employee_code.
     employer_id = generate_cuid()
     db_session.add(
         ClientModel(
@@ -1183,41 +1179,23 @@ async def session_test_client_person(
         )
     )
 
-    user_id = generate_cuid()
-    user = UserModel(
-        id=user_id,
-        tenant_id=session_test_tenant["id"],
-        email=f"client-person-{user_id[:8]}@example.com",
-        status=UserStatus.ACTIVE,
-        is_two_factor_enabled=False,
-    )
-    db_session.add(user)
     await db_session.flush()
 
-    # Create client employee person
     person_id = generate_cuid()
-    person = PersonModel(
+    person = EligibleMemberModel(
         id=person_id,
         tenant_id=session_test_tenant["id"],
-        user_id=user_id,
-        person_type=PersonType.CLIENT_EMPLOYEE,
-        is_dual_role=False,
-        status=BaseStatus.ACTIVE,
-        employment_info={
-            "client_id": employer_id,
-            "employee_code": "STE-01-01",
-            "role": "Test Employee",
-            "start_date": date.today().isoformat(),
-            "status": WorkStatus.ACTIVE.value,
-            "department": "Testing",
-        },
+        client_id=employer_id,
+        employer_member_id="STE-01-01",
+        display_label="Test member",
+        relation=MemberRelation.EMPLOYEE,
+        status=EligibilityStatus.ACTIVE,
     )
     db_session.add(person)
     await db_session.commit()
 
     return {
         "id": person_id,
-        "user_id": user_id,
         "tenant_id": session_test_tenant["id"],
     }
 
@@ -1241,7 +1219,7 @@ async def test_service_session(
         json={
             "service_id": session_test_service["id"],
             "provider_id": session_test_provider["id"],
-            "person_id": session_test_client_person["id"],
+            "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
             "location": "Office A",
         },
@@ -1269,7 +1247,7 @@ async def test_service_session_2(
         json={
             "service_id": session_test_service["id"],
             "provider_id": session_test_provider["id"],
-            "person_id": session_test_client_person["id"],
+            "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
             "location": "Office B",
         },

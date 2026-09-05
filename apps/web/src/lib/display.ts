@@ -4,8 +4,8 @@
  * components, so display drift between routes is eliminated.
  */
 
-import type { Contract, Member, Person, User } from "@/types/entities"
 import { formatDay } from "@/lib/format"
+import type { Contract, Member, Person, User } from "@/types/entities"
 
 export function contractLabel(contract: Contract): string {
   return `${formatDay(contract.period.start_date)} to ${formatDay(contract.period.end_date)}`

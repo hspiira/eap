@@ -17,7 +17,7 @@ def _mappings() -> CanonicalMappings:
         client_codes={"ABSA": "client-absa", "STANBIC": "client-stanbic"},
         service_codes={"COUNSEL": "svc-1"},
         provider_codes={"DR-A": "prov-1"},
-        person_codes={"E1234": "person-1"},
+        member_codes={"client-absa": {"E1234": "member-1"}},
         status_text={
             "COMPLETED": SessionStatus.COMPLETED,
             "CANCELLED": SessionStatus.CANCELLED,
@@ -31,7 +31,7 @@ def _row(**overrides) -> HistoricalSessionRow:
         client_code="ABSA",
         service_code="COUNSEL",
         provider_code="DR-A",
-        person_code="E1234",
+        member_code="E1234",
         status_text="COMPLETED",
         scheduled_at_text="2024-09-15T10:00:00",
     )

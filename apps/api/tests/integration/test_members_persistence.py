@@ -95,7 +95,9 @@ async def member_http(isolated_members_db):
             yield session
 
     clients = AsyncMock()
-    clients.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    clients.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), name="Acme", code="ACM"
+    )
     app.dependency_overrides[get_db] = session_dependency
     app.dependency_overrides[get_current_user] = lambda: TokenData(
         user_id="u1", tenant_id="t1", role="Admin"
@@ -203,7 +205,7 @@ async def test_repository_filters_and_tenant_isolation(member_http, isolated_mem
                 client_id="c1",
                 employer_member_id="HR-3",
                 display_label="Private name",
-                relation="Employee",
+                relation="Child",
                 status="Active",
                 primary_employee_member_id=primary_id,
             )
@@ -219,3 +221,97 @@ async def test_repository_filters_and_tenant_isolation(member_http, isolated_mem
     assert len(beneficiaries.json()) == 1
     assert beneficiaries.json()[0]["display_label"] == "Child member"
     assert (await http.get("/members/foreign")).status_code == 404
+
+
+async def test_member_codes_are_issued_in_sequence_against_postgresql(
+    member_http, isolated_members_db
+):
+    """The real HTTP path, real repository, real unique constraint.
+
+    Mocked route tests cannot show that the sequence keeps counting across
+    requests, nor that the per-client unique index tolerates it.
+    """
+    http, _ = member_http
+    issued = []
+    for _ in range(3):
+        response = await http.post(
+            "/members",
+            json={"client_id": "c1", "display_label": "Auto member", "relation": "Employee"},
+        )
+        assert response.status_code == 201, response.text
+        issued.append(response.json()["employer_member_id"])
+
+    assert issued == ["ACM-001", "ACM-002", "ACM-003"]
+
+    async with isolated_members_db() as session:
+        stored = await session.scalars(select(EligibleMemberModel.employer_member_id))
+        assert sorted(stored) == ["ACM-001", "ACM-002", "ACM-003"]
+
+
+async def test_hand_written_codes_do_not_get_reissued(member_http):
+    """An imported roster already using the prefix must not collide."""
+    http, _ = member_http
+    seeded = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "employer_member_id": "ACM-007",
+            "display_label": "Imported",
+            "relation": "Employee",
+        },
+    )
+    assert seeded.status_code == 201, seeded.text
+
+    response = await http.post(
+        "/members",
+        json={"client_id": "c1", "display_label": "Next", "relation": "Employee"},
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["employer_member_id"] == "ACM-008"
+
+
+async def test_identity_numbers_round_trip_through_postgresql(member_http, isolated_members_db):
+    http, _ = member_http
+    response = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "display_label": "Amina",
+            "relation": "Employee",
+            "staff_number": "EMP-9",
+            "national_id": "CM12345",
+            "passport_number": "B0987654",
+        },
+    )
+    assert response.status_code == 201, response.text
+    member_id = response.json()["id"]
+
+    async with isolated_members_db() as session:
+        row = await session.get(EligibleMemberModel, member_id)
+        assert (row.staff_number, row.national_id, row.passport_number) == (
+            "EMP-9",
+            "CM12345",
+            "B0987654",
+        )
+
+    listed = await http.get("/members")
+    assert listed.status_code == 200, listed.text
+    item = listed.json()["items"][0]
+    assert item["national_id"] == "CM12345"
+    assert item["client_name"] == "Acme"
+
+
+async def test_duplicate_member_code_is_rejected_not_500(member_http):
+    http, _ = member_http
+    payload = {
+        "client_id": "c1",
+        "employer_member_id": "ACM-001",
+        "display_label": "First",
+        "relation": "Employee",
+    }
+    assert (await http.post("/members", json=payload)).status_code == 201
+
+    duplicate = await http.post("/members", json={**payload, "display_label": "Second"})
+
+    assert duplicate.status_code == 409, duplicate.text

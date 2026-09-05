@@ -128,8 +128,8 @@ async def test_create_without_a_code_issues_the_next_client_sequence(api):
 
 async def test_create_skips_a_code_already_taken(api):
     api.members.next_member_sequence.return_value = 1
-    # Taken, free, then the use case re-checks the code it was handed.
-    api.members.find_by_employer_member_id.side_effect = [member("ACM-001"), None, None]
+    # Taken, free, then the route and the use case each re-check the issued code.
+    api.members.find_by_employer_member_id.side_effect = [member("ACM-001"), None, None, None]
     payload = {key: value for key, value in CREATE.items() if key != "employer_member_id"}
 
     response = await api.http.post("/members", json=payload)

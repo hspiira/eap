@@ -7,7 +7,7 @@ import pytest
 from app.core.encryption import EncryptionError, KeyProvider, set_key_provider
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
-from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
+from app.domain.value_objects.core import EligibleMemberId, PersonId, ServiceId, SessionId, TenantId
 from app.infrastructure.mappers.service_session_mapper import ServiceSessionMapper
 
 
@@ -33,7 +33,7 @@ def _make_entity(tenant: str, notes: str | None, feedback: str | None) -> Servic
         tenant_id=TenantId(tenant),
         service_id=ServiceId("svc-1"),
         provider_id=PersonId("prov-1"),
-        person_id=PersonId("per-1"),
+        member_id=EligibleMemberId("per-1"),
         scheduled_at=now,
         status=SessionStatus.SCHEDULED,
         created_at=now,
@@ -91,7 +91,7 @@ class TestServiceSessionEncryptionWiring:
             tenant_id="t-B",
             service_id=model_a.service_id,
             provider_id=model_a.provider_id,
-            person_id=model_a.person_id,
+            member_id=model_a.member_id,
             scheduled_at=model_a.scheduled_at,
             status=model_a.status,
             reschedule_count=model_a.reschedule_count,

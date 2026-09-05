@@ -41,7 +41,7 @@ class TestCreateServiceSession:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
                 "location": "Conference Room A",
             },
@@ -51,7 +51,7 @@ class TestCreateServiceSession:
         data = response.json()
         assert data["service_id"] == session_test_service["id"]
         assert data["provider_id"] == session_test_provider["id"]
-        assert data["person_id"] == session_test_client_person["id"]
+        assert data["member_id"] == session_test_client_person["id"]
         assert data["location"] == "Conference Room A"
         assert data["status"] == "Scheduled"
         assert data["reschedule_count"] == 0
@@ -72,7 +72,7 @@ class TestCreateServiceSession:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
             },
         )
@@ -108,9 +108,9 @@ class TestGetServiceSession:
 
 
 class TestGetSessionsByPerson:
-    """Tests for GET /service-sessions/person/{person_id} endpoint."""
+    """Tests for GET /service-sessions/member/{member_id} endpoint."""
 
-    async def test_get_sessions_by_person_success(
+    async def test_get_sessions_by_member_success(
         self,
         client: AsyncClient,
         session_test_tenant: dict,
@@ -119,15 +119,15 @@ class TestGetSessionsByPerson:
     ):
         """Test getting all sessions for a person."""
         tenant_id = session_test_tenant["id"]
-        person_id = session_test_client_person["id"]
+        member_id = session_test_client_person["id"]
 
-        response = await client.get(f"/service-sessions/person/{person_id}?tenant_id={tenant_id}")
+        response = await client.get(f"/service-sessions/member/{member_id}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 1
-        assert all(s["person_id"] == person_id for s in data)
+        assert all(s["member_id"] == member_id for s in data)
 
 
 class TestGetSessionsByProvider:
@@ -260,15 +260,15 @@ class TestListServiceSessions:
     ):
         """Test filtering sessions by person."""
         tenant_id = session_test_tenant["id"]
-        person_id = session_test_client_person["id"]
+        member_id = session_test_client_person["id"]
 
         response = await client.get(
-            f"/service-sessions/?tenant_id={tenant_id}&person_id={person_id}"
+            f"/service-sessions/?tenant_id={tenant_id}&member_id={member_id}"
         )
         data = response.json()
 
         assert response.status_code == 200
-        assert all(s["person_id"] == person_id for s in data["items"])
+        assert all(s["member_id"] == member_id for s in data["items"])
 
 
 # =============================================================================
@@ -532,7 +532,7 @@ class TestServiceSessionLifecycleFlow:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
                 "location": "Initial Location",
             },
@@ -581,7 +581,7 @@ class TestServiceSessionLifecycleFlow:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
             },
         )

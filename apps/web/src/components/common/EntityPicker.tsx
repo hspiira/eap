@@ -2,7 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { membersApi, type MemberListParams } from "@/api/endpoints/members"
+import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"

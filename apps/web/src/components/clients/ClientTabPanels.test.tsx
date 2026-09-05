@@ -1,10 +1,12 @@
 import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+
 import { renderWithProviders } from "@/test/utils"
+
 import {
-  ClientServicesPanel,
   ClientDocumentsPanel,
+  ClientServicesPanel,
   ClientUtilisationPanel,
 } from "./ClientManagementPanels"
 
@@ -42,7 +44,10 @@ const contract = {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.contracts.mockResolvedValue({ items: [contract], total: 1 })
-  mocks.assignments.mockResolvedValue({ items: [{ id: "assignment-1", service_id: "private-service-id", status: "Active" }], total: 1 })
+  mocks.assignments.mockResolvedValue({
+    items: [{ id: "assignment-1", service_id: "private-service-id", status: "Active" }],
+    total: 1,
+  })
   mocks.service.mockResolvedValue({
     id: "private-service-id",
     name: "Counselling",
