@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, LargeBinary, String
+from sqlalchemy import JSON, DateTime, LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.models.base import Base, CuidMixin, TenantMixin, TimestampMixin
@@ -27,5 +27,5 @@ class ClientImportJobModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     retry_count: Mapped[int] = mapped_column(nullable=False, default=0)
     issues: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     error_message: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    started_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
