@@ -98,6 +98,7 @@ async def update_client_tag(
     """Update a client tag."""
     tag = await UpdateClientTagUseCase(tag_repo).execute(
         ClientTagId(tag_id),
+        TenantId(current_user.tenant_id),
         name=data.name,
         description=data.description,
         color=data.color,

@@ -146,11 +146,11 @@ class ClientEntity:
         self.contact_info = contact_info
         self.updated_at = utc_now()
 
-    def update_billing_address(self, address: Address | None) -> None:
+    def update_billing_address(self, billing_address: Address | None) -> None:
         """Update billing address"""
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot update billing address for deleted client")
-        self.billing_address = address
+        self.billing_address = billing_address
         self.updated_at = utc_now()
 
     def update_industry(self, industry_id: IndustryId | None) -> None:
