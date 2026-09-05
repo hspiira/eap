@@ -1,2 +1,5 @@
-# Bulk reformats — skip in git blame (git config blame.ignoreRevsFile .git-blame-ignore-revs)
+# Bulk reformats, skipped in git blame (git config blame.ignoreRevsFile .git-blame-ignore-revs)
 f6f03188324251a68294461a8fabfcaf258d6c00
+
+# Prettier adopted across apps/web; formatting only.
+49046fe3db777372e97021de2644e227b9882ff9

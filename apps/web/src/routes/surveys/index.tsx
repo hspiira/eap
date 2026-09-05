@@ -1,0 +1,348 @@
+import { useEffect, useState } from "react"
+
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { ClipboardList, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+
+import { surveysApi } from "@/api/endpoints/surveys"
+import { BulkAction } from "@/components/common/BulkAction"
+import { EmptyState } from "@/components/common/EmptyState"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
+import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SelectionBar } from "@/components/common/SelectionBar"
+import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
+import { SurveyFormSheet } from "@/components/SurveyFormSheet"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { useTableSelection } from "@/hooks/useTableSelection"
+import { formatDate } from "@/lib/format"
+import { enumParam, listSearchSchema } from "@/lib/search-params"
+import { cn } from "@/lib/utils"
+import type { Survey } from "@/types/entities"
+import { SurveyStatus } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
+
+export const Route = createFileRoute("/surveys/")({
+  component: SurveysListPage,
+  validateSearch: listSearchSchema({ status: enumParam(SurveyStatus) }),
+})
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: SurveyStatus.DRAFT, label: "Draft" },
+  { value: SurveyStatus.COLLECTING, label: "Collecting" },
+  { value: SurveyStatus.CLOSED, label: "Closed" },
+] as const
+
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
+
+function SurveysListPage() {
+  const searchParams = useSearch({ from: "/surveys/" })
+  const navigate = useNavigate({ from: "/surveys/" })
+  const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
+  const [addOpen, setAddOpen] = useState(false)
+  const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
+  useEffect(() => {
+    if (searchParams.new) {
+      setAddOpen(true)
+      navigate({ search: (prev) => ({ ...prev, new: undefined }), replace: true })
+    }
+  }, [searchParams.new, navigate])
+
+  const query = useQuery({
+    queryKey: ["surveys", "list"],
+    queryFn: () => surveysApi.list(),
+    staleTime: 30_000,
+  })
+  const allItems = query.data?.items ?? []
+  const items = filterAndSort(allItems, {
+    search: searchInput.trim(),
+    status: searchParams.status,
+    sort,
+  })
+  const selection = useTableSelection(items)
+  const loading = query.isPending
+  const handleStatusChange = (next: StatusFilter) => {
+    const status = next === "all" ? undefined : (next as SurveyStatus)
+    navigate({ search: (prev) => ({ ...prev, status }), replace: true })
+  }
+  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
+  const hasFilters = Boolean(searchInput) || Boolean(searchParams.status)
+
+  return (
+    <PageShell
+      icon={ClipboardList}
+      breadcrumb="Insights · Surveys"
+      actions={
+        <>
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Plus className="size-3.5" />
+            New survey
+          </Button>
+        </>
+      }
+    >
+      <FilterBar>
+        {searchParams.status ? (
+          <FilterChip
+            label={`Status is ${searchParams.status}`}
+            onRemove={() => handleStatusChange("all")}
+          />
+        ) : null}
+        <FilterTrigger
+          label="All statuses"
+          value={(searchParams.status ?? "all") as StatusFilter}
+          options={STATUS_OPTIONS}
+          onChange={handleStatusChange}
+        />
+        <div className="ml-auto" />
+        <FilterSearch value={searchInput} onChange={setSearchInput} placeholder="Search surveys…" />
+      </FilterBar>
+
+      <SurveyFormSheet open={addOpen} onOpenChange={setAddOpen} />
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
+        {loading ? (
+          <div className="flex-1 overflow-auto p-5">
+            <TableSkeleton cols={5} />
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={ClipboardList}
+            title={hasFilters ? "No surveys match your filters" : "No surveys yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear filters."
+                : "Create a survey and copy the webhook URL into your provider to start collecting responses."
+            }
+            action={
+              hasFilters ? null : (
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  New survey
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Close"
+                confirmTitle="Close surveys"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "survey" : "surveys"} will stop accepting responses. You can reopen them later.`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={surveysApi.close}
+                invalidateKey={["surveys"]}
+                verb="closed"
+                noun="survey"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className={STICKY_TABLE_HEAD}>
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox
+                        aria-label="Select all"
+                        checked={selection.selectAllState}
+                        onCheckedChange={selection.toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="name" sort={sort} onToggle={toggleSort}>
+                        Survey
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="period_start" sort={sort} onToggle={toggleSort}>
+                        Window
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-fg/65">Source</TableHead>
+                    <TableHead className="text-fg/65">Responses</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((s) => (
+                    <SurveyRow
+                      key={s.id}
+                      row={s}
+                      isSelected={selection.selectedIds.has(s.id)}
+                      onToggle={() => selection.toggleSelect(s.id)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+      </div>
+    </PageShell>
+  )
+}
+
+function SurveyRow({
+  row,
+  isSelected,
+  onToggle,
+}: {
+  row: Survey
+  isSelected: boolean
+  onToggle: () => void
+}) {
+  return (
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
+        <Checkbox
+          aria-label={`Select ${row.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
+      </TableCell>
+      <TableCell>
+        <Link
+          to="/surveys/$surveyId"
+          params={{ surveyId: row.id }}
+          className="flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <ClipboardList className="size-3" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
+              {row.name}
+            </span>
+            {row.description ? (
+              <span className="block truncate text-xs text-fg-muted">{row.description}</span>
+            ) : null}
+          </span>
+        </Link>
+      </TableCell>
+      <TableCell>
+        <SurveyStatusPill status={row.status} />
+      </TableCell>
+      <TableCell className="text-sm text-fg/75">
+        {formatDate(row.period_start)}
+        <span className="text-fg-subtle"> – </span>
+        {formatDate(row.period_end)}
+      </TableCell>
+      <TableCell className="text-xs text-fg/75">{getStatusLabel(row.source)}</TableCell>
+      <TableCell className="tabular-nums text-xs text-fg/75">{row.response_count}</TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/surveys/$surveyId"
+            params={{ surveyId: row.id }}
+            aria-label={`Open ${row.name}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${row.name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/surveys/$surveyId" params={{ surveyId: row.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+export function SurveyStatusPill({ status }: { status: SurveyStatus }) {
+  const tone = statusTone(status)
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium",
+        tone,
+      )}
+    >
+      {status}
+    </span>
+  )
+}
+
+function statusTone(status: SurveyStatus): string {
+  switch (status) {
+    case SurveyStatus.COLLECTING:
+      return "border-primary/30 bg-primary/10 text-primary"
+    case SurveyStatus.DRAFT:
+      return "border-fg/20 bg-bg text-fg"
+    case SurveyStatus.CLOSED:
+      return "border-fg/15 bg-bg text-fg/60"
+    default:
+      return "border-fg/15 bg-bg text-fg/65"
+  }
+}
+
+function filterAndSort(
+  items: Survey[],
+  opts: { search: string; status?: SurveyStatus; sort: SortState },
+): Survey[] {
+  let out = items
+  if (opts.status) out = out.filter((s) => s.status === opts.status)
+  if (opts.search) {
+    const q = opts.search.toLowerCase()
+    out = out.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.description?.toLowerCase().includes(q) ||
+        s.client_id.toLowerCase().includes(q) ||
+        s.source.toLowerCase().includes(q),
+    )
+  }
+  return compareSort(out, opts.sort)
+}

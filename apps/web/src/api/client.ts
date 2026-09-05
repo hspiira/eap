@@ -1,0 +1,487 @@
+/**
+ * API Client
+ * Centralized API client with authentication, tenant context, and error handling.
+ * API spec: https://eap-ten.vercel.app/redoc (same API when running locally).
+ */
+
+import { parseError } from "@/api/errors"
+import { buildAuthHeaders, buildHeaders, buildUrl, type SessionContext } from "@/api/request-shape"
+import { useAuthStore } from "@/store/slices/authSlice"
+import { useTenantStore } from "@/store/slices/tenantSlice"
+import type { ApiClientConfig, QueryParams, RequestOptions } from "@/types/api"
+import { ApiError } from "@/types/api"
+
+const DEFAULT_TIMEOUT = 30000 // 30 seconds
+const DEFAULT_RETRY_ATTEMPTS = 3
+const DEFAULT_RETRY_DELAY = 1000 // 1 second
+
+function useCookies(): boolean {
+  return import.meta.env.VITE_AUTH_USE_COOKIES === "true"
+}
+
+type AuthErrorCallback = () => void
+
+class ApiClient {
+  private baseUrl: string
+  private timeout: number
+  private retryAttempts: number
+  private retryDelay: number
+  private onAuthError: AuthErrorCallback | null = null
+  private refreshPromise: Promise<boolean> | null = null
+
+  constructor(config: ApiClientConfig) {
+    this.baseUrl = config.baseUrl.replace(/\/$/, "") // Remove trailing slash
+    this.timeout = config.timeout ?? DEFAULT_TIMEOUT
+    this.retryAttempts = config.retryAttempts ?? DEFAULT_RETRY_ATTEMPTS
+    this.retryDelay = config.retryDelay ?? DEFAULT_RETRY_DELAY
+  }
+
+  /**
+   * Set callback for auth errors (401). Called after clearing auth.
+   * Use this to handle navigation in React context.
+   */
+  setAuthErrorCallback(callback: AuthErrorCallback | null): void {
+    this.onAuthError = callback
+  }
+
+  /**
+   * Set authentication token. Optionally pass `expiresInSeconds` to record when the token
+   * expires; AppBootstrap uses that to schedule a silent refresh.
+   */
+  setToken(token: string | null, expiresInSeconds?: number): void {
+    useAuthStore.getState().setToken(token, expiresInSeconds)
+  }
+
+  /** Identity of the session as it stands now. See AuthState.sessionEpoch. */
+  private currentSessionEpoch(): number {
+    return useAuthStore.getState().sessionEpoch
+  }
+
+  /** Epoch ms when the current access token expires, or null if unknown. */
+  getTokenExpiresAt(): number | null {
+    if (useCookies()) return null
+    return useAuthStore.getState().tokenExpiresAt
+  }
+
+  setCsrfToken(token: string | null): void {
+    useAuthStore.getState().setCsrfToken(token)
+  }
+  getCsrfToken(): string | null {
+    return useAuthStore.getState().csrfToken
+  }
+
+  getToken(): string | null {
+    return useAuthStore.getState().token
+  }
+
+  setRefreshToken(token: string | null): void {
+    useAuthStore.getState().setRefreshToken(token)
+  }
+
+  getRefreshToken(): string | null {
+    return useAuthStore.getState().refreshToken
+  }
+
+  /**
+   * Public proactive refresh. Same wire as the reactive 401 path but exposed so a scheduler
+   * can rotate the access token before it expires.
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    return this.tryRefreshToken()
+  }
+
+  private async tryRefreshToken(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise
+
+    this.refreshPromise = (async () => {
+      if (useCookies()) {
+        try {
+          const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+            credentials: "include",
+          })
+          if (!response.ok) return false
+          // BE may rotate the CSRF token on refresh; honor it if returned.
+          try {
+            const data = await response.clone().json()
+            if (data && typeof data.csrf_token === "string") this.setCsrfToken(data.csrf_token)
+          } catch (_err) {
+            // body may be empty, fine
+          }
+          return true
+        } catch (_err) {
+          return false
+        } finally {
+          this.refreshPromise = null
+        }
+      }
+
+      const refreshToken = this.getRefreshToken()
+      if (!refreshToken) return false
+
+      try {
+        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
+
+        if (!response.ok) return false
+
+        const data = await response.json()
+        const expiresIn = typeof data.expires_in === "number" ? data.expires_in : undefined
+        this.setToken(data.access_token, expiresIn)
+        this.setRefreshToken(data.refresh_token)
+        return true
+      } catch (_err) {
+        return false
+      } finally {
+        this.refreshPromise = null
+      }
+    })()
+
+    return this.refreshPromise
+  }
+
+  setTenantId(tenantId: string | null): void {
+    useTenantStore.getState().setCurrentTenantId(tenantId)
+  }
+
+  getTenantId(): string | null {
+    return useTenantStore.getState().currentTenantId
+  }
+
+  /**
+   * Clear authentication and tenant context
+   */
+  clearAuth(): void {
+    useAuthStore.getState().clearAuth()
+    useTenantStore.getState().clear()
+  }
+
+  /**
+   * When using cookie auth, check if the session is still valid (refresh succeeds).
+   * Used by initAuth to restore auth state on reload.
+   */
+  async validateSession(): Promise<boolean> {
+    if (!useCookies()) return !!this.getToken()
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+        credentials: "include",
+      })
+      return response.ok
+    } catch (_err) {
+      return false
+    }
+  }
+
+  /** Snapshot of the session state request-shaping functions need. */
+  private session(): SessionContext {
+    return {
+      token: this.getToken(),
+      csrfToken: this.getCsrfToken(),
+      tenantId: this.getTenantId(),
+      useCookies: useCookies(),
+    }
+  }
+
+  private buildUrl(endpoint: string, params?: QueryParams): string {
+    return buildUrl(this.baseUrl, endpoint, this.getTenantId(), params)
+  }
+
+  private buildHeaders(
+    customHeaders?: Record<string, string>,
+    endpoint?: string,
+    excludeSensitiveHeaders?: boolean,
+  ): HeadersInit {
+    return buildHeaders(this.session(), customHeaders, endpoint, excludeSensitiveHeaders)
+  }
+
+  private buildAuthHeaders(endpoint?: string): Record<string, string> {
+    return buildAuthHeaders(this.session(), endpoint)
+  }
+
+  /**
+   * POST FormData with auth headers, returns parsed JSON
+   */
+  /**
+   * Fetch, and on a 401 refresh once and retry. `/auth/` paths are exempt; a 401
+   * there is the answer, not a stale token.
+   */
+  private async fetchWithAuthRetry(
+    path: string,
+    doFetch: (headers: Record<string, string>) => Promise<Response>,
+  ): Promise<Response> {
+    const sessionEpoch = this.currentSessionEpoch()
+    const response = await doFetch(this.buildAuthHeaders(path))
+    if (response.status === 401 && !path.includes("/auth/")) {
+      if (await this.tryRefreshToken()) {
+        const retry = await doFetch(this.buildAuthHeaders(path))
+        if (retry.ok) return retry
+      }
+      this.handleAuthError(sessionEpoch)
+    }
+    return response
+  }
+
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const url = this.buildUrl(path)
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: "POST",
+        body: formData,
+        headers,
+        ...(useCookies() ? { credentials: "include" as RequestCredentials } : {}),
+      }),
+    )
+
+    if (!response.ok) {
+      throw await parseError(response)
+    }
+
+    return this.parseBody<T>(response)
+  }
+
+  /**
+   * GET with blob response (e.g. file download)
+   */
+  async getBlob(path: string, params?: QueryParams): Promise<Blob> {
+    const url = this.buildUrl(path, params)
+    const response = await this.fetchWithAuthRetry(path, (headers) =>
+      fetch(url, {
+        method: "GET",
+        headers,
+        credentials: useCookies() ? "include" : undefined,
+      }),
+    )
+
+    if (!response.ok) {
+      throw new ApiError("Failed to download document", "DOWNLOAD_ERROR", response.status)
+    }
+
+    return response.blob()
+  }
+
+  /**
+   * Parse error response.
+   * Supports both EAP shape ({ error, message, details? }) and FastAPI HTTPException ({ detail: string | array }).
+   */
+  /**
+   * Tear down the session and let React navigate to the login screen.
+   *
+   * `sessionEpoch` is the session identity captured when the request went out.
+   * If it no longer matches, this 401 answers a session that has since been
+   * replaced or torn down (the user may already have signed back in), so
+   * acting on it would clear a token that is perfectly good and bounce them
+   * straight back to the login form. Drop it instead.
+   */
+  private handleAuthError(sessionEpoch: number): void {
+    if (this.currentSessionEpoch() !== sessionEpoch) return
+    this.clearAuth()
+    // Notify React context to handle navigation (avoids hard redirect)
+    this.onAuthError?.()
+  }
+
+  /**
+   * Retry logic with exponential backoff
+   */
+  private async retryRequest(requestFn: () => Promise<Response>, attempt = 1): Promise<Response> {
+    try {
+      return await requestFn()
+    } catch (error) {
+      if (attempt >= this.retryAttempts) {
+        throw error
+      }
+
+      // Only retry on network errors or 5xx errors
+      if (error instanceof TypeError || (error instanceof ApiError && error.status >= 500)) {
+        const delay = this.retryDelay * Math.pow(2, attempt - 1)
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        return this.retryRequest(requestFn, attempt + 1)
+      }
+
+      throw error
+    }
+  }
+
+  /** An abort signal firing after `timeout` (or the client default), combined with any caller signal. */
+  private makeTimeoutSignal(
+    signal?: AbortSignal,
+    timeout?: number,
+  ): { signal: AbortSignal; timeoutId: ReturnType<typeof setTimeout> } {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout ?? this.timeout)
+    const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal
+    return { signal: combined, timeoutId }
+  }
+
+  /** Parsed JSON body, or an empty object for 204/non-JSON responses. */
+  private async parseBody<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get("content-type")
+    if (!contentType || !contentType.includes("application/json")) return {} as T
+    return (await response.json()) as T
+  }
+
+  /**
+   * Make HTTP request with timeout and retry
+   */
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit & RequestOptions = {},
+  ): Promise<T> {
+    const { signal, timeout, headers, ...fetchOptions } = options
+
+    // Captured before the request goes out; handleAuthError compares against it.
+    const sessionEpoch = this.currentSessionEpoch()
+
+    const { signal: requestSignal, timeoutId } = this.makeTimeoutSignal(signal, timeout)
+
+    // endpoint may already be a full URL or a relative path
+    const isAbsoluteUrl = endpoint.startsWith("http")
+    const isSameOrigin = !isAbsoluteUrl || new URL(endpoint).origin === new URL(this.baseUrl).origin
+
+    const url = isAbsoluteUrl ? endpoint : this.buildUrl(endpoint)
+    const pathForHeaders = isAbsoluteUrl
+      ? new URL(endpoint).pathname + new URL(endpoint).search
+      : endpoint
+
+    const sanitizedHeaders = isSameOrigin
+      ? (headers as Record<string, string>)
+      : (() => {
+          const {
+            Authorization: _auth,
+            "x-tenant-id": _tenant,
+            ...rest
+          } = (headers as Record<string, string>) || {}
+          return rest
+        })()
+
+    const credentials =
+      useCookies() && isSameOrigin ? { credentials: "include" as RequestCredentials } : {}
+
+    const requestFn = () =>
+      fetch(url, {
+        ...fetchOptions,
+        headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
+        signal: requestSignal,
+        ...credentials,
+      })
+
+    try {
+      const response = await this.retryRequest(requestFn)
+
+      clearTimeout(timeoutId)
+
+      // Handle 401 - refresh once (fresh timeout + rebuilt headers for the rotated token) and retry.
+      if (response.status === 401 && !endpoint.includes("/auth/")) {
+        if (await this.tryRefreshToken()) {
+          const { signal: retrySignal, timeoutId: retryTimeoutId } = this.makeTimeoutSignal(
+            signal,
+            timeout,
+          )
+          try {
+            const retryResponse = await fetch(url, {
+              ...fetchOptions,
+              headers: this.buildHeaders(sanitizedHeaders, pathForHeaders, !isSameOrigin),
+              signal: retrySignal,
+              ...credentials,
+            })
+            if (retryResponse.ok) return this.parseBody<T>(retryResponse)
+          } finally {
+            clearTimeout(retryTimeoutId)
+          }
+        }
+        this.handleAuthError(sessionEpoch)
+      }
+
+      if (!response.ok) {
+        throw await parseError(response)
+      }
+
+      return this.parseBody<T>(response)
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      if (error instanceof ApiError) {
+        throw error
+      }
+
+      // Handle network errors
+      if (error instanceof TypeError) {
+        throw new ApiError("Network error: Unable to connect to the server", "NETWORK_ERROR", 0)
+      }
+
+      // Handle abort errors
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new ApiError("Request timeout: The request took too long", "TIMEOUT_ERROR", 0)
+      }
+
+      throw error
+    }
+  }
+
+  /**
+   * GET request
+   */
+  async get<T>(endpoint: string, params?: QueryParams, options?: RequestOptions): Promise<T> {
+    const fullUrl = this.buildUrl(endpoint, params)
+    return this.request<T>(fullUrl, {
+      method: "GET",
+      ...options,
+    })
+  }
+
+  /**
+   * POST request
+   */
+  async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "POST",
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    })
+  }
+
+  /**
+   * PATCH request
+   */
+  async patch<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    })
+  }
+
+  async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PUT",
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    })
+  }
+
+  /**
+   * DELETE request
+   */
+  async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "DELETE",
+      ...options,
+    })
+  }
+}
+
+const apiClient = new ApiClient({
+  baseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+  timeout: DEFAULT_TIMEOUT,
+  retryAttempts: DEFAULT_RETRY_ATTEMPTS,
+  retryDelay: DEFAULT_RETRY_DELAY,
+})
+
+export default apiClient

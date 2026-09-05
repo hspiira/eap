@@ -1,18 +1,76 @@
-# Python-generated files
+# One ignore file for the whole monorepo. Patterns without a leading slash match
+# at any depth, so a rule here covers apps/api and apps/web too; the per-app
+# .gitignore files were three-quarters duplicates of this one.
+# Anchor with a leading slash when a rule must apply only at the repo root.
+
+# --- Secrets ---------------------------------------------------------------
+# Never commit, at any depth. The committed templates are the exception.
+.env
+.env.*
+!.env.example
+!.env.test
+
+# --- Editor / OS -----------------------------------------------------------
+# .vscode holds shared project settings that are meant to be committed, so
+# ignore the directory's contents but keep the files a team shares. A bare
+# `.vscode/` cannot do this: git will not re-include a file whose parent
+# directory is excluded. The `**/` prefix is required; a pattern containing a
+# slash is anchored to this file's directory, so plain `.vscode/*` would miss
+# apps/api/.vscode and apps/web/.vscode entirely.
+**/.vscode/*
+!**/.vscode/settings.json
+!**/.vscode/extensions.json
+!**/.vscode/launch.json
+!**/.vscode/tasks.json
+.idea/
+.DS_Store
+Thumbs.db
+*.local
+
+# --- Python ----------------------------------------------------------------
 __pycache__/
 *.py[oc]
+*.egg-info
+wheels/
+.venv/
+.python-version.local
+
+# --- Node ------------------------------------------------------------------
+node_modules/
+.pnpm-store/
+
+# --- Build output ----------------------------------------------------------
 build/
 dist/
-wheels/
-*.egg-info
+dist-ssr/
+.output/
+.nitro/
+.vinxi/
+.tanstack/
+.wrangler/
 
-# Virtual environments
-.venv
-docs/
-.env
-allevia.db
-*.db
-
-# pytest-cov writes this on every local run; it was tracked, so it dirtied
-# the working tree after each test invocation.
+# --- Tooling caches --------------------------------------------------------
+.ruff_cache/
+.pytest_cache/
+.import_linter_cache/
+.mypy_cache/
 .coverage
+coverage.xml
+htmlcov/
+*.tsbuildinfo
+
+# --- Local databases -------------------------------------------------------
+# A 1.75MB SQLite file was committed once; the pre-commit large-file hook and
+# these patterns are both there to stop a repeat.
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Scratch ---------------------------------------------------------------
+count.txt
+todos.json
+
+# --- graft -----------------------------------------------------------------
+# Local graph cache, regenerable with `graft build`. Root-anchored so a source
+# directory named graft/ elsewhere is unaffected.
+/graft/

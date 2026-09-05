@@ -1,0 +1,17 @@
+# Generated. Owned by their generators, never hand-edited, and compared with
+# `git diff --exit-code` in CI - reformatting them would fail those gates.
+src/routeTree.gen.ts
+src/api/generated/
+
+# Build output
+.output/
+.nitro/
+.vinxi/
+.tanstack/
+dist/
+node_modules/
+
+# Prose is left to humans. These docs carry hand-aligned tables with emoji
+# status columns that prettier re-flows unhelpfully, and reformatting living
+# planning documents adds churn without making them clearer.
+*.md

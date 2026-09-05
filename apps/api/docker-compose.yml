@@ -1,0 +1,99 @@
+# =============================================================================
+# Evexía API Docker Compose
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # API Service
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./alembic:/app/alembic
+    environment:
+      - APP_NAME=Evexía
+      - APP_VERSION=0.1.0
+      - DEBUG=true
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://evexia:evexia@db:5432/evexia
+      - DATABASE_ECHO=false
+      - SECRET_KEY=dev-secret-key-change-in-production-at-least-32-chars
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+      - LOG_LEVEL=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # API Service (Production with PostgreSQL)
+  # ---------------------------------------------------------------------------
+  api-prod:
+    build:
+      context: .
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Evexía
+      - APP_VERSION=0.1.0
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql+asyncpg://evexia:evexia@db:5432/evexia
+      - DATABASE_ECHO=false
+      - SECRET_KEY=${SECRET_KEY:?Secret key is required}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - LOG_LEVEL=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=evexia
+      - POSTGRES_PASSWORD=evexia
+      - POSTGRES_DB=evexia
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evexia -d evexia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local

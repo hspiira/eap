@@ -1,0 +1,306 @@
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { Download, ExternalLink, FileCheck, MoreHorizontal, Plus } from "lucide-react"
+
+import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
+import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
+import { PageShell } from "@/components/common/PageShell"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { SortHeader } from "@/components/common/SortHeader"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
+import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Pagination } from "@/components/ui/pagination"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { useListPage } from "@/hooks/useListPage"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { useEntityList } from "@/lib/queries"
+import { listSearchSchema } from "@/lib/search-params"
+import type { ServiceAssignment } from "@/types/entities"
+import { BaseStatus } from "@/types/enums"
+
+const ASSIGNMENT_STATUSES: ReadonlyArray<BaseStatus> = [
+  BaseStatus.ACTIVE,
+  BaseStatus.INACTIVE,
+  BaseStatus.PENDING,
+  BaseStatus.ARCHIVED,
+]
+
+export const Route = createFileRoute("/service-assignments/")({
+  component: ServiceAssignmentsListPage,
+  validateSearch: listSearchSchema({
+    status: (v) => (ASSIGNMENT_STATUSES.includes(v as BaseStatus) ? (v as BaseStatus) : undefined),
+    contract_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+  }),
+})
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: BaseStatus.ACTIVE, label: "Active" },
+  { value: BaseStatus.PENDING, label: "Pending" },
+  { value: BaseStatus.INACTIVE, label: "Inactive" },
+  { value: BaseStatus.ARCHIVED, label: "Archived" },
+] as const
+
+type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+
+const ROW_BORDER = "border-fg/8"
+
+function ServiceAssignmentsListPage() {
+  const searchParams = useSearch({ from: "/service-assignments/" })
+  const navigate = useNavigate({ from: "/service-assignments/" })
+  const {
+    searchInput,
+    setSearchInput,
+    activeSearch,
+    addOpen,
+    setAddOpen,
+    page,
+    setPage,
+    limit,
+    sort,
+    toggleSort,
+    setFilter,
+    sortParams,
+  } = useListPage({ searchParams, navigate })
+  const activeStatus = searchParams.status
+  const activeContractId = searchParams.contract_id
+
+  const handleStatusChange = (next: StatusFilter) =>
+    setFilter("status", next === "all" ? undefined : next)
+
+  const clearContract = () => setFilter("contract_id", undefined)
+
+  const query = useEntityList({
+    resource: "service-assignments",
+    params: {
+      page,
+      limit,
+      search: activeSearch,
+      contract_id: activeContractId,
+      status: activeStatus,
+      ...sortParams,
+    },
+    listFn: serviceAssignmentsApi.list,
+  })
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const loading = query.isPending
+  const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
+  const hasFilters = Boolean(activeSearch) || Boolean(activeStatus) || Boolean(activeContractId)
+
+  return (
+    <PageShell
+      icon={FileCheck}
+      breadcrumb="Commercial · Service Assignments"
+      actions={
+        <>
+          <IconButton label="Export" icon={Download} />
+          <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Plus className="size-3.5" />
+            Add assignment
+          </Button>
+        </>
+      }
+    >
+      <FilterBar>
+        {activeStatus ? (
+          <FilterChip
+            label={`Status is ${activeStatus}`}
+            onRemove={() => handleStatusChange("all")}
+          />
+        ) : null}
+        {activeContractId ? (
+          <FilterChip label={`Contract ${activeContractId.slice(0, 8)}`} onRemove={clearContract} />
+        ) : null}
+        <FilterTrigger
+          label="All statuses"
+          value={(activeStatus ?? "all") as StatusFilter}
+          options={STATUS_OPTIONS}
+          onChange={handleStatusChange}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search assignments…"
+        />
+      </FilterBar>
+
+      <ServiceAssignmentFormSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        contractId={activeContractId}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col bg-bg">
+        {loading ? (
+          <div className="flex-1 overflow-auto p-5">
+            <TableSkeleton cols={5} />
+          </div>
+        ) : error ? (
+          <ErrorState message={error} onRetry={() => void query.refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={FileCheck}
+            title={hasFilters ? "No assignments match your filters" : "No service assignments yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear filters."
+                : "Link a service to a contract so sessions can be billed against it."
+            }
+            action={
+              hasFilters ? null : (
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Plus className="size-4" />
+                  Add assignment
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <div className="relative min-h-0 flex-1 overflow-auto">
+              <Table className="w-full caption-bottom text-sm">
+                <TableHeader className={STICKY_TABLE_HEAD}>
+                  <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                    <TableHead className="w-10 px-3">
+                      <Checkbox aria-label="Select all" />
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="contract_id" sort={sort} onToggle={toggleSort}>
+                        Contract
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="service_id" sort={sort} onToggle={toggleSort}>
+                        Service
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead className="w-16 text-right text-fg/65">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((row) => (
+                    <AssignmentRow key={row.id} row={row} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {total > 0 && (
+              <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
+                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </PageShell>
+  )
+}
+
+function AssignmentRow({ row }: { row: ServiceAssignment }) {
+  return (
+    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+      <TableCell className="px-3">
+        <Checkbox aria-label={`Select ${row.id}`} onClick={(e) => e.stopPropagation()} />
+      </TableCell>
+      <TableCell>
+        <Link
+          to="/contracts/$contractId"
+          params={{ contractId: row.contract_id }}
+          className="flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+          >
+            CT
+          </span>
+          <span className="text-sm text-fg group-hover:text-primary font-mono">
+            {row.contract_id.slice(0, 8)}
+          </span>
+        </Link>
+      </TableCell>
+      <TableCell>
+        <Link to="/services" className="text-sm text-fg hover:text-primary">
+          {row.service_id.slice(0, 8)}
+        </Link>
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={row.status} />
+      </TableCell>
+      <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
+        {row.notes ?? <span className="text-fg-subtle">-</span>}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/service-assignments/$assignmentId"
+            params={{ assignmentId: row.id }}
+            aria-label={`Open assignment ${row.id.slice(0, 8)}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for assignment ${row.id.slice(0, 8)}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/service-assignments/$assignmentId" params={{ assignmentId: row.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/contracts/$contractId" params={{ contractId: row.contract_id }}>
+                  View contract
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                Archive
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}

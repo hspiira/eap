@@ -1,0 +1,38 @@
+{
+  "name": "evexia",
+  "private": true,
+  "packageManager": "pnpm@10.9.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "setup": "pnpm install && pnpm setup:api && pnpm bootstrap",
+    "setup:api": "cd apps/api && uv sync --group dev",
+    "bootstrap": "cd apps/api && uv run python scripts/dev_bootstrap.py",
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta --kill-others-on-fail \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "dev:web": "pnpm --filter @evexia/web dev",
+    "build": "pnpm install --frozen-lockfile && concurrently --names api,web --prefix-colors blue,magenta \"pnpm build:api\" \"pnpm build:web\"",
+    "build:api": "cd apps/api && uv sync --frozen",
+    "build:web": "pnpm --filter @evexia/web build",
+    "contracts": "pnpm --filter @evexia/web contracts:sync",
+    "contracts:check": "pnpm --filter @evexia/web contracts:check",
+    "lint": "concurrently --names api,web --prefix-colors blue,magenta \"pnpm lint:api\" \"pnpm lint:web\"",
+    "lint:api": "cd apps/api && uv run ruff check app tests scripts && uv run ruff format --check app tests scripts && uv run lint-imports",
+    "lint:web": "pnpm --filter @evexia/web lint && pnpm --filter @evexia/web format:check",
+    "format": "concurrently --names api,web --prefix-colors blue,magenta \"pnpm format:api\" \"pnpm format:web\"",
+    "format:api": "cd apps/api && uv run ruff format app tests scripts && uv run ruff check --fix app tests scripts",
+    "format:web": "pnpm --filter @evexia/web format",
+    "typecheck": "concurrently --names api,web --prefix-colors blue,magenta \"pnpm typecheck:api\" \"pnpm typecheck:web\"",
+    "typecheck:api": "cd apps/api && uv run python scripts/pyright_gate.py --run app/domain",
+    "typecheck:web": "pnpm --filter @evexia/web typecheck",
+    "test": "concurrently --names api,web --prefix-colors blue,magenta \"pnpm test:api\" \"pnpm test:web\"",
+    "test:api": "cd apps/api && uv run pytest tests/unit --cov=app --cov-report=term-missing --cov-fail-under=60",
+    "test:web": "pnpm --filter @evexia/web test",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm contracts:check"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
