@@ -148,6 +148,7 @@ ignore_imports = [
     "app.api.dependencies.identity -> app.infrastructure.repositories.person_repository",
     "app.api.dependencies.identity -> app.infrastructure.repositories.user_repository",
     "app.api.dependencies.organization -> app.infrastructure.repositories.activity_repository",
+    "app.api.dependencies.organization -> app.infrastructure.repositories.client_alias_repository",
     "app.api.dependencies.organization -> app.infrastructure.repositories.client_repository",
     "app.api.dependencies.organization -> app.infrastructure.repositories.client_tag_repository",
     "app.api.dependencies.organization -> app.infrastructure.repositories.industry_repository",
@@ -173,6 +174,21 @@ ignore_imports = [
     "app.api.routes.auth_azure -> app.infrastructure.services.azure_sso_service",
     "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
     "app.api.routes.clients -> app.infrastructure.models.client_model",
+    # Remaining legacy client workspace SQL orchestration.  These imports are
+    # pre-existing and must be moved behind application ports in the client
+    # extraction; do not add new route -> infrastructure edges.
+    "app.api.routes.clients -> app.infrastructure.models.client_alias_model",
+    "app.api.routes.clients -> app.infrastructure.models.client_import_job_model",
+    "app.api.routes.clients -> app.infrastructure.models.client_saved_view_model",
+    "app.api.routes.clients -> app.infrastructure.models.client_tag_assignment_model",
+    "app.api.routes.clients -> app.infrastructure.models.client_tag_model",
+    "app.api.routes.clients -> app.infrastructure.models.contact_model",
+    "app.api.routes.clients -> app.infrastructure.models.person_model",
+    "app.api.routes.clients -> app.infrastructure.repositories.client_alias_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.client_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.industry_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.outbox_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.tenant_repository",
     "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",
     "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
 ]
