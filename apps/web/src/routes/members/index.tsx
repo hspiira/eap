@@ -2,7 +2,18 @@ import { useCallback, useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Download, ExternalLink, Plus, Users } from "lucide-react"
+import {
+  CheckCircle2,
+  CircleDashed,
+  Clock,
+  Download,
+  ExternalLink,
+  MoreHorizontal,
+  PauseCircle,
+  Plus,
+  Users,
+  XCircle,
+} from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -11,16 +22,21 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { StatusBadge } from "@/components/common/StatusBadge"
+import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
-import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
@@ -37,12 +53,34 @@ export const Route = createFileRoute("/members/")({
 })
 
 const COLUMNS: ListColumn[] = [
+  {
+    header: <span className="sr-only">Status</span>,
+    sortField: "status",
+    className: "w-8 px-2",
+  },
   { header: "Member", sortField: "display_label" },
-  { header: "Relationship", sortField: "relation" },
-  { header: "Client" },
-  { header: "Status", sortField: "status" },
-  { header: "Contact" },
+  { header: "Member ID", className: "text-fg/65" },
+  { header: "Relationship", sortField: "relation", className: "text-fg/65" },
+  { header: "Client", className: "text-fg/65" },
+  { header: "Contact", className: "text-fg/65" },
 ]
+
+const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; className: string }> = {
+  [EligibilityStatus.ACTIVE]: { icon: CheckCircle2, className: "text-primary" },
+  [EligibilityStatus.PENDING]: { icon: Clock, className: "text-warning" },
+  [EligibilityStatus.SUSPENDED]: { icon: PauseCircle, className: "text-fg/45" },
+  [EligibilityStatus.TERMINATED]: { icon: XCircle, className: "text-danger" },
+}
+
+function StatusIcon({ status }: { status: string }) {
+  const entry = STATUS_ICONS[status] ?? { icon: CircleDashed, className: "text-fg/40" }
+  const Icon = entry.icon
+  return (
+    <span title={status} aria-label={status} role="img" className="inline-flex">
+      <Icon className={`size-3.5 ${entry.className}`} />
+    </span>
+  )
+}
 
 const RELATION_OPTIONS = [
   { value: "all", label: "All relationships" },
@@ -275,60 +313,55 @@ function MemberRow({
   const label = member.display_label ?? member.employer_member_id
   const contact = member.work_email ?? member.personal_email ?? "—"
   return (
-    <TableRow className="group border-fg/8">
-      <TableCell className="px-3">
+    <TableRow className={`group h-9 ${ROW_BORDER}`}>
+      <TableCell className="px-3 py-1.5">
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
-      <TableCell>
+      <TableCell className="px-2 py-1.5">
+        <StatusIcon status={member.status} />
+      </TableCell>
+      <TableCell className="py-1.5">
         <Link
           to="/members/$memberId"
           params={{ memberId: member.id }}
-          className="flex items-center gap-2.5"
+          className="block truncate text-sm font-medium text-fg group-hover:text-primary"
         >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-          >
-            {nameInitials(label)}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
-              {label}
-            </span>
-            <span className="block truncate text-xs text-fg-muted">
-              {member.employer_member_id}
-            </span>
-          </span>
+          {label}
         </Link>
       </TableCell>
-      <TableCell className="text-xs text-fg/70">{member.relation}</TableCell>
-      <TableCell>
-        <span className="font-mono text-xs text-fg/60">{member.client_id.slice(0, 10)}</span>
+      <TableCell className="py-1.5 font-mono text-xs text-fg/60">
+        {member.employer_member_id}
       </TableCell>
-      <TableCell>
-        <StatusBadge status={member.status} />
+      <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
+      <TableCell className="py-1.5 font-mono text-xs text-fg/60">
+        {member.client_id.slice(0, 10)}
       </TableCell>
-      <TableCell className="text-xs text-fg/70">{contact}</TableCell>
-      <TableCell className="text-right">
-        {onEdit ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="rounded-none px-2 text-xs"
-            onClick={onEdit}
-          >
-            Edit
-          </Button>
-        ) : null}
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          aria-label={`Open ${label}`}
-          className="inline-grid size-7 place-items-center text-fg/65 hover:text-fg"
-        >
-          <ExternalLink className="size-3.5" />
-        </Link>
+      <TableCell className="max-w-[15rem] truncate py-1.5 text-xs text-fg/70">{contact}</TableCell>
+      <TableCell className="py-1.5 text-right">
+        <div className="flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${label}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/members/$memberId" params={{ memberId: member.id }}>
+                  <ExternalLink className="mr-2 size-3.5" />
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              {onEdit ? <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
   )
