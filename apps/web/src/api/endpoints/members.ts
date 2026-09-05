@@ -11,7 +11,8 @@ import type { ListParams, PaginatedResponse } from "../types"
 
 export interface MemberCreateRequest {
   client_id: string
-  employer_member_id: string
+  /** Optional. Left blank, the API issues the next {client code}-### code. */
+  employer_member_id?: string | null
   relation: MemberRelation
   primary_employee_member_id?: string | null
   work_email?: string | null
@@ -20,6 +21,9 @@ export interface MemberCreateRequest {
   date_of_birth?: string | null
   gender?: MemberGender | null
   phone?: string | null
+  staff_number?: string | null
+  national_id?: string | null
+  passport_number?: string | null
 }
 
 export type MemberUpdateRequest = Partial<Omit<MemberCreateRequest, "client_id">>

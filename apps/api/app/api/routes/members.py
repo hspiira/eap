@@ -39,6 +39,7 @@ from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMem
 from app.core.authorization import require_not_viewer
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
+from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.enums import EligibilityStatus, MemberRelation
@@ -83,6 +84,9 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         date_of_birth=member.date_of_birth,
         gender=member.gender,
         phone=member.phone,
+        staff_number=member.staff_number,
+        national_id=member.national_id,
+        passport_number=member.passport_number,
         last_imported_at=member.last_imported_at,
         suspended_at=member.suspended_at,
         terminated_at=member.terminated_at,
@@ -161,12 +165,10 @@ async def _validate_roster_update(
                 detail="Reassign this employee's beneficiaries before changing their relationship",
             )
     duplicate = await member_repo.find_by_employer_member_id(
-        member.tenant_id, member.client_id, updated.employer_member_id
+        member.tenant_id, member.client_id, updated.employer_member_id or member.employer_member_id
     )
     if duplicate is not None and duplicate.id != member.id:
-        raise HTTPException(
-            status_code=409, detail="Company member ID already exists for this client"
-        )
+        raise HTTPException(status_code=409, detail="Member code already exists for this client")
     await _validate_primary(
         member_repo,
         updated.primary_employee_member_id,
@@ -179,10 +181,33 @@ async def _client_in_tenant(
     client_id: str,
     tenant_id: str,
     client_repo: ClientRepository,
-) -> None:
+) -> ClientEntity:
     client = await client_repo.get_by_id(ClientId(client_id))
     if not client or client.tenant_id.value != tenant_id:
         raise HTTPException(status_code=404, detail="Client not found")
+    return client
+
+
+async def _issue_member_id(
+    member_repo: EligibleMemberRepository,
+    *,
+    tenant_id: TenantId,
+    client_id: ClientId,
+    client_code: str,
+) -> str:
+    """Issue the next ``{client code}-###`` id for this client.
+
+    Retries on collision because two concurrent enrolments can read the same
+    sequence before either has committed.
+    """
+    prefix = client_code.strip().upper()
+    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
+    for candidate_sequence in range(sequence, sequence + 50):
+        candidate = f"{prefix}-{candidate_sequence:03d}"
+        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
+        if existing is None:
+            return candidate
+    raise HTTPException(status_code=409, detail="Could not issue a member ID for this client")
 
 
 async def _validate_primary(
@@ -218,7 +243,13 @@ async def create_member(
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
+    client = await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
+    employer_member_id = data.employer_member_id or await _issue_member_id(
+        member_repo,
+        tenant_id=TenantId(current_user.tenant_id),
+        client_id=ClientId(data.client_id),
+        client_code=client.code,
+    )
     await _validate_primary(
         member_repo,
         data.primary_employee_member_id,
@@ -229,7 +260,7 @@ async def create_member(
     member, _ = await use_case.execute(
         tenant_id=TenantId(current_user.tenant_id),
         client_id=ClientId(data.client_id),
-        employer_member_id=data.employer_member_id,
+        employer_member_id=employer_member_id,
         relation=data.relation,
         tenant_secret=_tenant_secret(current_user.tenant_id),
         created_by=UserId(current_user.user_id),
@@ -244,6 +275,9 @@ async def create_member(
         date_of_birth=data.date_of_birth,
         gender=data.gender,
         phone=data.phone,
+        staff_number=data.staff_number,
+        national_id=data.national_id,
+        passport_number=data.passport_number,
     )
     await record_member_change(
         outbox,
@@ -357,6 +391,9 @@ async def export_members(
         "date_of_birth",
         "gender",
         "phone",
+        "staff_number",
+        "national_id",
+        "passport_number",
     ]
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
@@ -396,7 +433,7 @@ async def update_member(
     except ValidationError as error:
         raise HTTPException(
             status_code=422,
-            detail="Member update must retain a valid name, company ID and beneficiary relationship",
+            detail="Member update must retain a valid name, member code and beneficiary relationship",
         ) from error
     await _validate_roster_update(member, updated, member_repo)
     details = updated.model_dump(exclude={"client_id"})
@@ -405,6 +442,7 @@ async def update_member(
         if updated.primary_employee_member_id
         else None
     )
+    details["employer_member_id"] = updated.employer_member_id or member.employer_member_id
     details["work_email"] = Email(str(updated.work_email)) if updated.work_email else None
     details["personal_email"] = (
         Email(str(updated.personal_email)) if updated.personal_email else None

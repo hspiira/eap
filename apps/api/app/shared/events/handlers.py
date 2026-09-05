@@ -72,7 +72,7 @@ async def log_session_events(event: SessionCompleted | SessionCancelled) -> None
     if isinstance(event, SessionCancelled):
         logger.info(f"{event_type}: Session {session_id} - Reason: {event.reason}")
     elif isinstance(event, SessionCompleted):
-        logger.info(f"{event_type}: Session {session_id} for Person {event.person_id.value}")
+        logger.info(f"{event_type}: Session {session_id} for Person {event.member_id.value}")
 
 
 # =============================================================================
@@ -127,7 +127,7 @@ async def track_session_completion(event: SessionCompleted) -> None:
     """
     logger.debug(
         f"Would track session completion: session={event.session_id.value}, "
-        f"person={event.person_id.value}"
+        f"person={event.member_id.value}"
     )
     # TODO: Implement analytics tracking
 

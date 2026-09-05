@@ -71,7 +71,9 @@ async def api():
     state.members.list_for_primary.return_value = []
     state.members.list_all.return_value = []
     state.members.count.return_value = 0
-    state.clients.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    state.clients.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), name="Acme", code="ACM"
+    )
     state.contacts.list_for_member.return_value = []
     dependencies = {
         get_eligible_member_repository: state.members,
@@ -111,6 +113,55 @@ async def test_create_commits_roster_subject_link_and_audit_without_pii(api):
     assert event["tenant_id"] == "t1"
     assert "Amina" not in str(event)
     assert "clinical_subject_id" not in response.json()
+
+
+async def test_create_without_a_code_issues_the_next_client_sequence(api):
+    api.members.next_member_sequence.return_value = 4
+    payload = {key: value for key, value in CREATE.items() if key != "employer_member_id"}
+
+    response = await api.http.post("/members", json=payload)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["employer_member_id"] == "ACM-004"
+    api.members.next_member_sequence.assert_awaited_once()
+
+
+async def test_create_skips_a_code_already_taken(api):
+    api.members.next_member_sequence.return_value = 1
+    # Taken, free, then the use case re-checks the code it was handed.
+    api.members.find_by_employer_member_id.side_effect = [member("ACM-001"), None, None]
+    payload = {key: value for key, value in CREATE.items() if key != "employer_member_id"}
+
+    response = await api.http.post("/members", json=payload)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["employer_member_id"] == "ACM-002"
+
+
+async def test_create_keeps_an_explicit_member_code(api):
+    response = await api.http.post("/members", json=CREATE)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["employer_member_id"] == "HR-1"
+    api.members.next_member_sequence.assert_not_awaited()
+
+
+async def test_create_records_optional_identification_numbers(api):
+    response = await api.http.post(
+        "/members",
+        json={
+            **CREATE,
+            "staff_number": "EMP-9",
+            "national_id": "CM12345",
+            "passport_number": "B0987654",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["staff_number"] == "EMP-9"
+    assert body["national_id"] == "CM12345"
+    assert body["passport_number"] == "B0987654"
 
 
 @pytest.mark.parametrize(

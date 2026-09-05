@@ -12,7 +12,7 @@ from datetime import datetime
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
+from app.domain.value_objects.core import EligibleMemberId, PersonId, ServiceId, SessionId, TenantId
 
 
 class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
@@ -24,15 +24,15 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
     """
 
     @abstractmethod
-    async def get_by_person_id(
-        self, tenant_id: TenantId, person_id: PersonId
+    async def get_by_member_id(
+        self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
         """
         Get all sessions for a person within a tenant.
 
         Args:
             tenant_id: Tenant identifier
-            person_id: Person identifier
+            member_id: Member identifier
 
         Returns:
             List of ServiceSessionEntity for the person
@@ -75,7 +75,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
     async def list_all(
         self,
         tenant_id: TenantId,
-        person_id: PersonId | None = None,
+        member_id: EligibleMemberId | None = None,
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
@@ -91,7 +91,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
         Args:
             tenant_id: Tenant identifier
-            person_id: Filter by person identifier
+            member_id: Filter by member identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
             status: Filter by session status
@@ -110,7 +110,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
     async def count(
         self,
         tenant_id: TenantId,
-        person_id: PersonId | None = None,
+        member_id: EligibleMemberId | None = None,
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
@@ -124,7 +124,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
         Args:
             tenant_id: Tenant identifier
-            person_id: Filter by person identifier
+            member_id: Filter by member identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
             status: Filter by session status

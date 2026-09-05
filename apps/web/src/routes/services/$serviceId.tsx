@@ -18,6 +18,7 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
+import { MemberLink } from "@/components/common/MemberLink"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
@@ -383,7 +384,7 @@ function SessionsPanel({
           <TableHeader className={TABLE_HEAD}>
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Scheduled</TableHead>
-              <TableHead>Person</TableHead>
+              <TableHead>Member</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-10 text-right text-fg/65">
                 <span className="sr-only">Open</span>
@@ -395,13 +396,7 @@ function SessionsPanel({
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell>
-                  <Link
-                    to="/persons/$personId"
-                    params={{ personId: s.person_id }}
-                    className="text-xs text-fg/75 hover:text-primary font-mono"
-                  >
-                    {s.person_id.slice(0, 8)}
-                  </Link>
+                  <MemberLink memberId={s.member_id} />
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={s.status} />

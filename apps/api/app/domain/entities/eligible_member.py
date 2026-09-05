@@ -41,6 +41,9 @@ class EligibleMember:
     date_of_birth: date | None = None
     gender: MemberGender | None = None
     phone: str | None = None
+    staff_number: str | None = None
+    national_id: str | None = None
+    passport_number: str | None = None
     last_imported_at: datetime | None = None
     suspended_at: datetime | None = None
     terminated_at: datetime | None = None
@@ -107,6 +110,9 @@ class EligibleMember:
         date_of_birth: date | None = None,
         gender: MemberGender | None = None,
         phone: str | None = None,
+        staff_number: str | None = None,
+        national_id: str | None = None,
+        passport_number: str | None = None,
     ) -> None:
         """Update current roster details without creating a User account."""
         if not employer_member_id.strip():
@@ -131,6 +137,9 @@ class EligibleMember:
         self.date_of_birth = date_of_birth
         self.gender = gender
         self.phone = phone
+        self.staff_number = staff_number
+        self.national_id = national_id
+        self.passport_number = passport_number
         self.updated_at = utc_now()
 
     def is_currently_eligible(self, *, today: date | None = None) -> bool:

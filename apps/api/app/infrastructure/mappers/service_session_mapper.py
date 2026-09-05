@@ -14,6 +14,7 @@ from app.domain.enums import (
     SessionType,
 )
 from app.domain.value_objects.core import (
+    EligibleMemberId,
     PersonId,
     ServiceId,
     SessionId,
@@ -42,7 +43,7 @@ class ServiceSessionMapper:
         tenant_id = TenantId(model.tenant_id)
         service_id = ServiceId(model.service_id)
         provider_id = PersonId(model.provider_id)
-        person_id = PersonId(model.person_id)
+        member_id = EligibleMemberId(model.member_id)
 
         # Reconstruct enums
         status = SessionStatus(model.status)
@@ -53,7 +54,7 @@ class ServiceSessionMapper:
             tenant_id=tenant_id,
             service_id=service_id,
             provider_id=provider_id,
-            person_id=person_id,
+            member_id=member_id,
             scheduled_at=ensure_utc(model.scheduled_at),
             status=status,
             created_at=ensure_utc(model.created_at),
@@ -101,7 +102,7 @@ class ServiceSessionMapper:
             tenant_id=entity.tenant_id.value,
             service_id=entity.service_id.value,
             provider_id=entity.provider_id.value,
-            person_id=entity.person_id.value,
+            member_id=entity.member_id.value,
             scheduled_at=ensure_utc(entity.scheduled_at),
             status=entity.status,
             reschedule_count=entity.reschedule_count,

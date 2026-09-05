@@ -7,7 +7,7 @@ import { ApiError } from "@/types/api"
 
 const createMock = vi.fn()
 const listServicesMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
-const listPersonsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listMembersMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
 const listProvidersMock = vi.fn()
 
 vi.mock("@/api/endpoints/service-sessions", () => ({
@@ -22,9 +22,9 @@ vi.mock("@/api/endpoints/services", () => ({
   },
 }))
 
-vi.mock("@/api/endpoints/persons", () => ({
-  personsApi: {
-    list: (...args: unknown[]) => listPersonsMock(...args),
+vi.mock("@/api/endpoints/members", () => ({
+  membersApi: {
+    list: (...args: unknown[]) => listMembersMock(...args),
   },
 }))
 
@@ -37,7 +37,7 @@ vi.mock("@/api/endpoints/providers", () => ({
 beforeEach(() => {
   createMock.mockReset()
   listServicesMock.mockClear()
-  listPersonsMock.mockClear()
+  listMembersMock.mockClear()
   listProvidersMock.mockClear()
   listProvidersMock.mockResolvedValue({
     items: [
@@ -77,7 +77,7 @@ describe("ServiceSessionFormSheet: create", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
     expect(await screen.findByText(/service is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/person is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/member is required/i)).toBeInTheDocument()
     expect(screen.getByText(/scheduled time is required/i)).toBeInTheDocument()
     expect(createMock).not.toHaveBeenCalled()
   })
@@ -90,14 +90,16 @@ describe("ServiceSessionFormSheet: create", () => {
         open
         onOpenChange={() => {}}
         serviceId="svc-1"
-        personId="p-1"
+        memberId="p-1"
         service={{ id: "svc-1", name: "Counselling" } as never}
-        person={
+        member={
           {
             id: "p-1",
             first_name: "Ada",
             last_name: "Lovelace",
-            person_type: "ClientEmployee",
+            relation: "Employee",
+            display_label: "Test member",
+            employer_member_id: "HR-1",
           } as never
         }
         onSaved={onSaved}
@@ -113,7 +115,7 @@ describe("ServiceSessionFormSheet: create", () => {
     await waitFor(() => expect(createMock).toHaveBeenCalled())
     const args = createMock.mock.calls[0][0]
     expect(args.service_id).toBe("svc-1")
-    expect(args.person_id).toBe("p-1")
+    expect(args.member_id).toBe("p-1")
     expect(args.scheduled_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     await waitFor(() => expect(onSaved).toHaveBeenCalled())
   })
@@ -127,14 +129,16 @@ describe("ServiceSessionFormSheet: create", () => {
         open
         onOpenChange={() => {}}
         serviceId="svc-1"
-        personId="p-1"
+        memberId="p-1"
         service={{ id: "svc-1", name: "Counselling" } as never}
-        person={
+        member={
           {
             id: "p-1",
             first_name: "Ada",
             last_name: "Lovelace",
-            person_type: "ClientEmployee",
+            relation: "Employee",
+            display_label: "Test member",
+            employer_member_id: "HR-1",
           } as never
         }
       />,

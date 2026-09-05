@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from app.domain.events.base import DomainEvent
-from app.domain.value_objects.core import PersonId, SessionId
+from app.domain.value_objects.core import EligibleMemberId, SessionId
 
 
 @dataclass(frozen=True)
@@ -12,7 +12,7 @@ class SessionCompleted(DomainEvent):
     """Event raised when a service session is completed."""
 
     session_id: SessionId
-    person_id: PersonId
+    member_id: EligibleMemberId
 
 
 @dataclass(frozen=True)

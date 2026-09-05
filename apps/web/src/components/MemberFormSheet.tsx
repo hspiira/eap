@@ -49,7 +49,7 @@ const optionalEmail = () =>
 const memberSchema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
-    employer_member_id: z.string().trim().min(1, "Member ID is required"),
+    employer_member_id: optionalText(),
     relation: z.enum(RELATION_VALUES),
     primary_employee_member_id: optionalText(),
     work_email: optionalEmail(),
@@ -58,6 +58,9 @@ const memberSchema = z
     date_of_birth: optionalText(),
     gender: z.enum(GENDER_VALUES).optional(),
     phone: optionalText(),
+    staff_number: optionalText(),
+    national_id: optionalText(),
+    passport_number: optionalText(),
   })
   .superRefine((value, ctx) => {
     if (value.relation !== MemberRelation.EMPLOYEE && !value.primary_employee_member_id?.trim()) {
@@ -82,6 +85,9 @@ const EMPTY: MemberFormValues = {
   date_of_birth: "",
   gender: undefined,
   phone: "",
+  staff_number: "",
+  national_id: "",
+  passport_number: "",
 }
 
 interface MemberFormSheetProps {
@@ -151,6 +157,8 @@ export function MemberFormSheet({
 
       <MemberPersonalFields form={form} />
 
+      <MemberIdentifierFields form={form} />
+
       <MemberContactFields form={form} />
     </SheetForm>
   )
@@ -168,13 +176,16 @@ function toValues(member: Member): MemberFormValues {
     date_of_birth: member.date_of_birth ?? "",
     gender: member.gender ?? undefined,
     phone: member.phone ?? "",
+    staff_number: member.staff_number ?? "",
+    national_id: member.national_id ?? "",
+    passport_number: member.passport_number ?? "",
   }
 }
 
 function toRequest(values: MemberFormValues) {
   return {
     client_id: values.client_id.trim(),
-    employer_member_id: values.employer_member_id.trim(),
+    employer_member_id: optionalValue(values.employer_member_id),
     relation: values.relation,
     primary_employee_member_id:
       values.relation === MemberRelation.EMPLOYEE
@@ -186,6 +197,9 @@ function toRequest(values: MemberFormValues) {
     date_of_birth: optionalValue(values.date_of_birth),
     gender: values.gender ?? null,
     phone: optionalValue(values.phone),
+    staff_number: optionalValue(values.staff_number),
+    national_id: optionalValue(values.national_id),
+    passport_number: optionalValue(values.passport_number),
   }
 }
 
@@ -277,15 +291,21 @@ function MemberIdentityFields({
         </FormField>
       )}
       <FormField
-        label="Company member ID"
-        htmlFor="member-company-id"
-        required
+        label="Member code"
+        htmlFor="member-code"
+        hint={
+          member
+            ? "Changing this breaks references in exports already shared with the client."
+            : `Leave blank to issue the next code automatically${
+                resolvedClient ? ` (${resolvedClient.code}-001, -002, …)` : ""
+              }.`
+        }
         error={errors.employer_member_id?.message}
       >
         <Input
-          id="member-company-id"
+          id="member-code"
           {...form.register("employer_member_id")}
-          placeholder="e.g. EMP-1042"
+          placeholder={resolvedClient ? `${resolvedClient.code}-001` : "Auto-generated"}
         />
       </FormField>
       <FormField label="Name" htmlFor="member-name" required error={errors.display_label?.message}>
@@ -389,6 +409,40 @@ function MemberPersonalFields({ form }: { form: UseEntityFormSheetReturn<MemberF
               </Select>
             )}
           />
+        </FormField>
+      </div>
+    </FormSection>
+  )
+}
+
+function MemberIdentifierFields({ form }: { form: UseEntityFormSheetReturn<MemberFormValues> }) {
+  const errors = form.formState.errors
+  return (
+    <FormSection
+      title="Identification"
+      description="Optional. Recorded for verification; none of these is the member code."
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        <FormField
+          label="Company ID number"
+          htmlFor="member-staff-number"
+          error={errors.staff_number?.message}
+        >
+          <Input id="member-staff-number" {...form.register("staff_number")} />
+        </FormField>
+        <FormField
+          label="National ID (NIN)"
+          htmlFor="member-national-id"
+          error={errors.national_id?.message}
+        >
+          <Input id="member-national-id" {...form.register("national_id")} />
+        </FormField>
+        <FormField
+          label="Passport number"
+          htmlFor="member-passport-number"
+          error={errors.passport_number?.message}
+        >
+          <Input id="member-passport-number" {...form.register("passport_number")} />
         </FormField>
       </div>
     </FormSection>

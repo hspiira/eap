@@ -26,7 +26,7 @@ class ServiceSessionCreate(BaseModel):
 
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    person_id: str = Field(..., description="Person identifier")
+    member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
     location: OptionalSanitizedStr = Field(None, description="Session location")
 
@@ -66,7 +66,7 @@ class ServiceSessionCompleteRequest(BaseModel):
         description=(
             "Clinical case to draw this session down against. Supplied by a caller that "
             "already holds clinical context; it cannot be inferred from the session, "
-            "which carries an employer-side person id. Omit to leave the authorization "
+            "which carries an employer-side member id. Omit to leave the authorization "
             "untouched and consume it through the manual route."
         ),
     )
@@ -151,7 +151,7 @@ class ServiceSessionResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    person_id: str = Field(..., description="Person identifier")
+    member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
     status: SessionStatus = Field(..., description="Session status")
     reschedule_count: int = Field(..., description="Number of times rescheduled")

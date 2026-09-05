@@ -36,7 +36,7 @@ describe("member forms", () => {
   it("creates a roster member with contextual client and blank optional fields as null", async () => {
     const user = userEvent.setup()
     renderWithProviders(<MemberFormSheet open onOpenChange={vi.fn()} clientId="client-1" />)
-    await user.type(screen.getByRole("textbox", { name: "Company member ID" }), " HR-1 ")
+    await user.type(screen.getByRole("textbox", { name: "Member code" }), " HR-1 ")
     await user.type(screen.getByRole("textbox", { name: "Name" }), " Amina ")
     await user.click(screen.getByRole("button", { name: "Add member" }))
     await waitFor(() =>
@@ -57,13 +57,39 @@ describe("member forms", () => {
     )
   })
 
-  it("requires name and member ID before submitting", async () => {
+  it("requires a name but lets the server issue the member code", async () => {
     const user = userEvent.setup()
     renderWithProviders(<MemberFormSheet open onOpenChange={vi.fn()} clientId="client-1" />)
     await user.click(screen.getByRole("button", { name: "Add member" }))
     expect(await screen.findByText("Name is required")).toBeInTheDocument()
-    expect(screen.getByText("Member ID is required")).toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Amina")
+    await user.click(screen.getByRole("button", { name: "Add member" }))
+    await waitFor(() =>
+      expect(api.create).toHaveBeenCalledWith(
+        expect.objectContaining({ employer_member_id: null, display_label: "Amina" }),
+      ),
+    )
+  })
+
+  it("sends the optional identification numbers when they are filled in", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<MemberFormSheet open onOpenChange={vi.fn()} clientId="client-1" />)
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "Amina")
+    await user.type(screen.getByRole("textbox", { name: "Company ID number" }), "EMP-9")
+    await user.type(screen.getByRole("textbox", { name: "National ID (NIN)" }), "CM12345")
+    await user.type(screen.getByRole("textbox", { name: "Passport number" }), "B0987654")
+    await user.click(screen.getByRole("button", { name: "Add member" }))
+    await waitFor(() =>
+      expect(api.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          staff_number: "EMP-9",
+          national_id: "CM12345",
+          passport_number: "B0987654",
+        }),
+      ),
+    )
   })
 
   it("clears optional contact data on edit without changing client", async () => {

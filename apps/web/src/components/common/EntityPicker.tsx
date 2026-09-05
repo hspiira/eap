@@ -2,16 +2,17 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { membersApi, type MemberListParams } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { displayName, nameInitials, personInitials } from "@/lib/display"
+import { displayName, memberLabel, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client, Person, Provider, Service } from "@/types/entities"
+import type { Client, Member, Person, Provider, Service } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
@@ -198,6 +199,41 @@ export function ServicePicker({
 }
 
 /** Person search-and-select. Was copy-pasted into form sheets that assign a session or service to someone. */
+export function MemberPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <EntityPicker<Member, MemberListParams>
+      resource="members"
+      listFn={membersApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search members…"
+      emptyPrompt="Search by name or company member ID."
+      emptyNoMatch="No members match."
+      renderSelected={(member) => (
+        <PickerRow
+          initials={nameInitials(memberLabel(member))}
+          primary={memberLabel(member)}
+          secondary={member.relation}
+          size="md"
+        />
+      )}
+      renderRow={(member) => (
+        <PickerRow
+          initials={nameInitials(memberLabel(member))}
+          primary={memberLabel(member)}
+          secondary={member.relation}
+        />
+      )}
+    />
+  )
+}
+
 export function PersonPicker({
   value,
   onChange,

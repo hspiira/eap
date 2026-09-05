@@ -62,6 +62,15 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         employer_member_id: str,
     ) -> EligibleMember | None: ...
 
+    async def next_member_sequence(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        prefix: str,
+    ) -> int:
+        """Next free numeric suffix for ``{prefix}-###`` member ids in this client."""
+        ...
+
 
 class ClinicalSubjectRepository(BaseRepository[ClinicalSubject, ClinicalSubjectId]):
     async def find_by_pseudonym(

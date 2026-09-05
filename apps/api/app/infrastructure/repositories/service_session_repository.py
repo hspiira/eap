@@ -17,6 +17,7 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
+    EligibleMemberId,
     PersonId,
     ServiceId,
     SessionId,
@@ -55,13 +56,13 @@ class ServiceSessionRepositoryImpl(
 
     # Domain-specific queries (not in base class)
 
-    async def get_by_person_id(
-        self, tenant_id: TenantId, person_id: PersonId
+    async def get_by_member_id(
+        self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
         """Get all sessions for a person within tenant, excluding soft-deleted."""
         stmt = select(ServiceSessionModel).where(
             ServiceSessionModel.tenant_id == tenant_id.value,
-            ServiceSessionModel.person_id == person_id.value,
+            ServiceSessionModel.member_id == member_id.value,
             ServiceSessionModel.deleted_at.is_(None),
         )
         result = await self.session.execute(stmt)
@@ -99,14 +100,14 @@ class ServiceSessionRepositoryImpl(
 
     def _base_filters(
         self,
-        person_id: PersonId | None,
+        member_id: EligibleMemberId | None,
         provider_id: PersonId | None,
         service_id: ServiceId | None,
         status: SessionStatus | None,
     ) -> dict[str, Any]:
         filters: dict[str, Any] = {}
-        if person_id:
-            filters["person_id"] = person_id.value
+        if member_id:
+            filters["member_id"] = member_id.value
         if provider_id:
             filters["provider_id"] = provider_id.value
         if service_id:
@@ -136,7 +137,7 @@ class ServiceSessionRepositoryImpl(
     async def list_all(
         self,
         tenant_id: TenantId,
-        person_id: PersonId | None = None,
+        member_id: EligibleMemberId | None = None,
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
@@ -154,7 +155,7 @@ class ServiceSessionRepositoryImpl(
             offset=offset,
             sort_by=sort_by,
             sort_desc=sort_desc,
-            filters=self._base_filters(person_id, provider_id, service_id, status),
+            filters=self._base_filters(member_id, provider_id, service_id, status),
             search=None,
             search_fields=None,
             extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
@@ -163,7 +164,7 @@ class ServiceSessionRepositoryImpl(
     async def count(
         self,
         tenant_id: TenantId,
-        person_id: PersonId | None = None,
+        member_id: EligibleMemberId | None = None,
         provider_id: PersonId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
@@ -173,7 +174,7 @@ class ServiceSessionRepositoryImpl(
         """Count sessions matching filters. Must mirror list_all exactly."""
         return await self._count_all(
             tenant_id=tenant_id.value,
-            filters=self._base_filters(person_id, provider_id, service_id, status),
+            filters=self._base_filters(member_id, provider_id, service_id, status),
             extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
             search=None,
             search_fields=None,

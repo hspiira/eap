@@ -54,7 +54,7 @@ class SqlDSARDataCollector:
                 await self._session.execute(
                     select(ServiceSessionModel).where(
                         ServiceSessionModel.tenant_id == tenant_id.value,
-                        ServiceSessionModel.person_id == subject_person_id.value,
+                        ServiceSessionModel.provider_id == subject_person_id.value,
                     )
                 )
             )

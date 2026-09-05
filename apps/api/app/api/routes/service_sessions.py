@@ -14,6 +14,8 @@ from app.api.dependencies import (
     PageParams,
     get_audit_event_handler,
     get_authorization_repository,
+    get_eligible_member_repository,
+    get_person_repository,
     get_service_repository,
     get_service_session_repository,
     pagination,
@@ -44,21 +46,27 @@ from app.application.use_cases.transitions import (
 )
 from app.core.authorization import (
     get_service_session_for_current_tenant,
+    require_not_viewer,
     require_same_tenant,
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
+    PersonType,
     SessionStatus,
 )
+from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
+from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
+from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
     CaseId,
+    EligibleMemberId,
     PersonId,
     ServiceId,
     SessionId,
@@ -80,7 +88,7 @@ def _to_service_session_response(
         tenant_id=session.tenant_id.value,
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
-        person_id=session.person_id.value,
+        member_id=session.member_id.value,
         scheduled_at=session.scheduled_at,
         status=session.status,
         reschedule_count=session.reschedule_count,
@@ -115,6 +123,7 @@ def _to_service_session_response(
     response_model=ServiceSessionResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new service session",
+    dependencies=[Depends(require_not_viewer)],
 )
 @transactional()
 async def create_service_session(
@@ -123,16 +132,34 @@ async def create_service_session(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    person_repo: PersonRepository = Depends(get_person_repository),
+    service_repo: ServiceRepository = Depends(get_service_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service session."""
+    member = await member_repo.get_by_id(EligibleMemberId(data.member_id))
+    if member is None or member.tenant_id.value != tenant_id:
+        raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
+    provider = await person_repo.get_by_id(PersonId(data.provider_id))
+    if provider is None or provider.tenant_id.value != tenant_id:
+        raise NotFoundError(
+            "Provider not found", resource_type="Person", resource_id=data.provider_id
+        )
+    if provider.person_type != PersonType.SERVICE_PROVIDER:
+        raise DomainError("Session provider must be a service provider")
+    service = await service_repo.get_by_id(ServiceId(data.service_id))
+    if service is None or service.tenant_id.value != tenant_id:
+        raise NotFoundError(
+            "Service not found", resource_type="Service", resource_id=data.service_id
+        )
     session = await CreateServiceSessionUseCase(session_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),
         provider_id=PersonId(data.provider_id),
-        person_id=PersonId(data.person_id),
+        member_id=EligibleMemberId(data.member_id),
         scheduled_at=data.scheduled_at,
         location=data.location,
         session_type=data.session_type,
@@ -407,7 +434,7 @@ async def restore_service_session(
 async def list_service_sessions(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    person_id: str | None = Query(None, description="Filter by person identifier"),
+    member_id: str | None = Query(None, description="Filter by member identifier"),
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
     status: SessionStatus | None = Query(None, description="Filter by session status"),
@@ -427,7 +454,7 @@ async def list_service_sessions(
 
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
-        person_id=PersonId(person_id) if person_id else None,
+        member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=PersonId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
@@ -441,7 +468,7 @@ async def list_service_sessions(
 
     total = await session_repo.count(
         tenant_id=TenantId(tenant_id),
-        person_id=PersonId(person_id) if person_id else None,
+        member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=PersonId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
@@ -473,21 +500,21 @@ async def get_service_session(
 
 
 @router.get(
-    "/person/{person_id}",
+    "/member/{member_id}",
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a person",
 )
 @readonly()
-async def get_sessions_by_person(
-    person_id: str,
+async def get_sessions_by_member(
+    member_id: str,
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a person."""
-    sessions = await GetServiceSessionUseCase(session_repo).execute_by_person(
-        TenantId(tenant_id), PersonId(person_id)
+    sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
+        TenantId(tenant_id), EligibleMemberId(member_id)
     )
     return [_to_service_session_response(session) for session in sessions]
 

@@ -61,6 +61,9 @@ class EnrolEligibleMemberUseCase:
         date_of_birth: date | None = None,
         gender: MemberGender | None = None,
         phone: str | None = None,
+        staff_number: str | None = None,
+        national_id: str | None = None,
+        passport_number: str | None = None,
     ) -> tuple[EligibleMember, ClinicalSubject]:
         existing = await self._members.find_by_employer_member_id(
             tenant_id, client_id, employer_member_id
@@ -86,6 +89,9 @@ class EnrolEligibleMemberUseCase:
             date_of_birth=date_of_birth,
             gender=gender,
             phone=phone,
+            staff_number=staff_number,
+            national_id=national_id,
+            passport_number=passport_number,
             created_by=created_by,
             created_at=now,
             updated_at=now,

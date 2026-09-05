@@ -126,7 +126,12 @@ def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[Issue]]:
         )
         if not name:
             issues.append(
-                {"row": row_number, "field": "name", "message": "Name is required", "severity": "error"}
+                {
+                    "row": row_number,
+                    "field": "name",
+                    "message": "Name is required",
+                    "severity": "error",
+                }
             )
             continue
 

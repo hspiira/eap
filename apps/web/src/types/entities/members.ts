@@ -34,6 +34,9 @@ export interface Member {
   date_of_birth?: string | null
   gender?: MemberGender | null
   phone?: string | null
+  staff_number?: string | null
+  national_id?: string | null
+  passport_number?: string | null
   last_imported_at?: string | null
   suspended_at?: string | null
   terminated_at?: string | null

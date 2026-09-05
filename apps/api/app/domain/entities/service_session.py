@@ -16,7 +16,7 @@ from app.domain.enums import (
 )
 from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
 from app.domain.exceptions import ConflictError, DomainError
-from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
+from app.domain.value_objects.core import EligibleMemberId, PersonId, ServiceId, SessionId, TenantId
 from app.shared.utils.datetime import utc_now
 
 
@@ -27,7 +27,7 @@ class ServiceSessionEntity:
     tenant_id: TenantId
     service_id: ServiceId
     provider_id: PersonId
-    person_id: PersonId
+    member_id: EligibleMemberId
     scheduled_at: datetime
     status: SessionStatus
     created_at: datetime
@@ -73,7 +73,7 @@ class ServiceSessionEntity:
         self.duration = duration
         self.notes = notes
         self.events.append(
-            SessionCompleted(occurred_at=utc_now(), session_id=self.id, person_id=self.person_id)
+            SessionCompleted(occurred_at=utc_now(), session_id=self.id, member_id=self.member_id)
         )
 
     def cancel(self, reason: str) -> None:

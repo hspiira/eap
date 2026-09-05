@@ -9,7 +9,7 @@ function toLocalDatetime(iso: string): string {
 interface DetailRailProps {
   session: ServiceSession
   service: Service | null
-  person: Person | null
+  member: Member | null
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
 }
@@ -34,20 +34,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { displayName } from "@/lib/display"
+import { memberLabel } from "@/lib/display"
 import { formatDateTime } from "@/lib/format"
-import type { Person, Service, ServiceSession } from "@/types/entities"
+import type { Member, Service, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({
   session,
   service,
-  person,
+  member,
 }: {
   session: ServiceSession
   service: Service | null
-  person: Person | null
+  member: Member | null
 }) {
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
@@ -69,13 +69,13 @@ export function Hero({
           {service.name}
         </Link>
       ) : null}
-      {person ? (
+      {member ? (
         <Link
-          to="/persons/$personId"
-          params={{ personId: person.id }}
+          to="/members/$memberId"
+          params={{ memberId: member.id }}
           className="text-xs text-fg/65 hover:text-primary"
         >
-          · {displayName(person)}
+          · {memberLabel(member)}
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -91,7 +91,7 @@ export function Hero({
   )
 }
 
-export function DetailRail({ session, service, person, onAction, actionLoading }: DetailRailProps) {
+export function DetailRail({ session, service, member, onAction, actionLoading }: DetailRailProps) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
@@ -124,10 +124,10 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </div>
             </Link>
           ) : null}
-          {person ? (
+          {member ? (
             <Link
-              to="/persons/$personId"
-              params={{ personId: person.id }}
+              to="/members/$memberId"
+              params={{ memberId: member.id }}
               className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
             >
               <span
@@ -137,9 +137,9 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
                 <Users className="size-3.5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{displayName(person)}</p>
+                <p className="truncate text-sm font-medium text-fg">{memberLabel(member)}</p>
                 <p className="truncate text-[11px] text-fg-muted">
-                  {getStatusLabel(person.person_type)}
+                  {getStatusLabel(member.relation)}
                 </p>
               </div>
             </Link>

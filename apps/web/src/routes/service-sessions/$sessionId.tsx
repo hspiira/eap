@@ -5,7 +5,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { ArrowLeft, CalendarClock, Pencil, Wrench } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { displayName, personInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
@@ -74,10 +74,10 @@ function ServiceSessionDetailPage() {
     enabled: !!session?.service_id,
   })
 
-  const { data: person = null } = useQuery({
-    queryKey: entityDetailKey("persons", session?.person_id ?? ""),
-    queryFn: () => personsApi.getById(session!.person_id),
-    enabled: !!session?.person_id,
+  const { data: member = null } = useQuery({
+    queryKey: entityDetailKey("members", session?.member_id ?? ""),
+    queryFn: () => membersApi.getById(session!.member_id),
+    enabled: !!session?.member_id,
   })
 
   const providerId = session?.provider_id
@@ -200,14 +200,14 @@ function ServiceSessionDetailPage() {
         </>
       }
     >
-      <Hero session={session} service={service} person={person} />
+      <Hero session={session} service={service} member={member} />
 
       <ServiceSessionFormSheet
         open={editOpen}
         onOpenChange={setEditOpen}
         session={session}
         service={service}
-        person={person}
+        member={member}
         onSaved={(updated) =>
           queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
         }
@@ -279,29 +279,29 @@ function ServiceSessionDetailPage() {
                   </DetailCard>
 
                   <DetailCard title="Subject">
-                    {person ? (
+                    {member ? (
                       <Link
-                        to="/persons/$personId"
-                        params={{ personId: person.id }}
+                        to="/members/$memberId"
+                        params={{ memberId: member.id }}
                         className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
                       >
                         <span
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                         >
-                          {personInitials(person)}
+                          {nameInitials(memberLabel(member))}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">
-                            {displayName(person)}
+                            {memberLabel(member)}
                           </p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {getStatusLabel(person.person_type)}
+                            {getStatusLabel(member.relation)}
                           </p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg-muted">Loading person…</p>
+                      <p className="text-xs text-fg-muted">Loading member…</p>
                     )}
                   </DetailCard>
 
@@ -393,7 +393,7 @@ function ServiceSessionDetailPage() {
             <DetailRail
               session={session}
               service={service}
-              person={person}
+              member={member}
               onAction={handleAction}
               actionLoading={actionLoading}
             />

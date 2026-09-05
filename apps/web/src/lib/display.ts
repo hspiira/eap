@@ -4,7 +4,16 @@
  * components, so display drift between routes is eliminated.
  */
 
-import type { Person, User } from "@/types/entities"
+import type { Contract, Member, Person, User } from "@/types/entities"
+import { formatDay } from "@/lib/format"
+
+export function contractLabel(contract: Contract): string {
+  return `${formatDay(contract.period.start_date)} to ${formatDay(contract.period.end_date)}`
+}
+
+export function memberLabel(member: Member): string {
+  return member.display_label?.trim() || member.employer_member_id
+}
 
 /**
  * Display name for a Person.

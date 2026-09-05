@@ -84,8 +84,9 @@ function PersonDetailPage() {
   })
 
   const sessionsQuery = useQuery({
-    queryKey: entityListKey("service-sessions", { person_id: personId, limit: 20 }),
-    queryFn: () => serviceSessionsApi.list({ limit: 20, person_id: personId }),
+    queryKey: entityListKey("service-sessions", { provider_id: personId, limit: 20 }),
+    queryFn: () => serviceSessionsApi.list({ limit: 20, provider_id: personId }),
+    enabled: person?.person_type === "ServiceProvider",
   })
   const sessions = sessionsQuery.data?.items ?? []
 
@@ -325,7 +326,13 @@ function PersonDetailPage() {
               </TabPanel>
 
               <TabPanel value="sessions">
-                <SessionHistory personId={personId} />
+                {person.person_type === "ServiceProvider" ? (
+                  <SessionHistory providerId={personId} />
+                ) : (
+                  <p className="text-sm text-fg-muted">
+                    Client sessions are recorded against Members.
+                  </p>
+                )}
               </TabPanel>
 
               <TabPanel value="history">

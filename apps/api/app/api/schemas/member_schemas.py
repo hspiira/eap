@@ -59,7 +59,12 @@ class MemberCreate(BaseModel):
     """Create a covered member; a login account is optional and separate."""
 
     client_id: str = Field(..., min_length=1)
-    employer_member_id: SanitizedStr = Field(..., min_length=1, max_length=255)
+    employer_member_id: SanitizedStr | None = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+    )
     relation: MemberRelation
     primary_employee_member_id: str | None = None
     work_email: EmailStr | None = None
@@ -68,6 +73,9 @@ class MemberCreate(BaseModel):
     date_of_birth: date | None = None
     gender: MemberGender | None = None
     phone: SanitizedStr | None = Field(None, max_length=50)
+    staff_number: SanitizedStr | None = Field(None, max_length=100)
+    national_id: SanitizedStr | None = Field(None, max_length=100)
+    passport_number: SanitizedStr | None = Field(None, max_length=100)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -106,6 +114,9 @@ class MemberUpdate(BaseModel):
     date_of_birth: date | None = None
     gender: MemberGender | None = None
     phone: SanitizedStr | None = Field(None, max_length=50)
+    staff_number: SanitizedStr | None = Field(None, max_length=100)
+    national_id: SanitizedStr | None = Field(None, max_length=100)
+    passport_number: SanitizedStr | None = Field(None, max_length=100)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -139,6 +150,9 @@ class MemberResponse(BaseModel):
     date_of_birth: date | None
     gender: MemberGender | None
     phone: str | None
+    staff_number: str | None = None
+    national_id: str | None = None
+    passport_number: str | None = None
     last_imported_at: datetime | None
     suspended_at: datetime | None
     terminated_at: datetime | None

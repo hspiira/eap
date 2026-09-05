@@ -39,6 +39,9 @@ class EligibleMemberMapper:
             date_of_birth=model.date_of_birth,
             gender=MemberGender(model.gender) if model.gender else None,
             phone=model.phone,
+            staff_number=model.staff_number,
+            national_id=model.national_id,
+            passport_number=model.passport_number,
             last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
             suspended_at=ensure_utc(model.suspended_at) if model.suspended_at else None,
             terminated_at=ensure_utc(model.terminated_at) if model.terminated_at else None,
@@ -71,6 +74,9 @@ class EligibleMemberMapper:
             date_of_birth=entity.date_of_birth,
             gender=entity.gender,
             phone=entity.phone,
+            staff_number=entity.staff_number,
+            national_id=entity.national_id,
+            passport_number=entity.passport_number,
             last_imported_at=ensure_utc(entity.last_imported_at)
             if entity.last_imported_at
             else None,

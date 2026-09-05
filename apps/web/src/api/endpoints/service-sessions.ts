@@ -2,7 +2,7 @@
  * Service Sessions API Endpoints
  *
  * Create payload sourced from BE OpenAPI (`@/api/generated.ServiceSessionCreate`).
- * Fields beyond `{service_id, provider_id, person_id, scheduled_at, location}`
+ * Fields beyond `{service_id, provider_id, member_id, scheduled_at, location}`
  * are not accepted by the BE. Lifecycle mutations (complete/cancel/no-show)
  * have dedicated request schemas; see ServiceSessionCompleteRequest etc.
  */
@@ -28,7 +28,7 @@ export type ServiceSessionUpdateFeedback = Schemas["ServiceSessionUpdateFeedback
 
 /** Mirrors the query params on `GET /service-sessions/` in the BE OpenAPI schema. */
 export interface ServiceSessionListParams extends ListParams {
-  person_id?: string
+  member_id?: string
   provider_id?: string
   service_id?: string
   /** ISO 8601 instant; inclusive lower bound on `scheduled_at`. */

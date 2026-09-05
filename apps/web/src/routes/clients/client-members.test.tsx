@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getClient: vi.fn(),
   listMembers: vi.fn(),
   createMember: vi.fn(),
+  listContracts: vi.fn(),
   canWrite: true,
 }))
 
@@ -27,7 +28,10 @@ vi.mock("@/api/endpoints/members", () => ({
 }))
 vi.mock("@/api/endpoints/contacts", () => ({ contactsApi: { byClient: async () => [] } }))
 vi.mock("@/api/endpoints/contracts", () => ({
-  contractsApi: { list: async () => ({ items: [], total: 0 }) },
+  contractsApi: { list: mocks.listContracts },
+}))
+vi.mock("@/api/endpoints/activities", () => ({
+  activitiesApi: { list: async () => ({ items: [], total: 0 }) },
 }))
 vi.mock("@/hooks/useCanWrite", () => ({ useCanWrite: () => mocks.canWrite }))
 vi.mock("@/hooks/useTabSearchParam", async () => {
@@ -89,9 +93,66 @@ beforeEach(() => {
   mocks.getClient.mockResolvedValue({ id: "client-1", name: "Acme", aliases: [] })
   mocks.listMembers.mockResolvedValue(emptyRoster)
   mocks.createMember.mockResolvedValue(makeMember())
+  mocks.listContracts.mockResolvedValue({ items: [], total: 0 })
 })
 
 describe("client members integration", () => {
+  it("searches within the client and supports relationship filters and pagination", async () => {
+    mocks.listMembers.mockImplementation(async (params) => ({
+      ...emptyRoster, items: [makeMember({display_label: params.search || "Amina Namukasa"})], total: 45,
+    }))
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+    await screen.findByRole("link", {name: "Amina Namukasa"})
+    await user.click(screen.getByRole("button", {name: "Next"}))
+    await waitFor(() => expect(mocks.listMembers).toHaveBeenCalledWith(expect.objectContaining({client_id: "client-1", page: 2, limit: 20})))
+    await user.type(screen.getByRole("textbox", {name: "Search members"}), "Grace")
+    await screen.findByRole("link", {name: "Grace"})
+    expect(mocks.listMembers).toHaveBeenLastCalledWith(expect.objectContaining({client_id: "client-1", search: "Grace", page: 1}))
+    await user.click(screen.getByRole("combobox", {name: "Relationship"}))
+    await user.click(screen.getByRole("option", {name: "Child"}))
+    await waitFor(() => expect(mocks.listMembers).toHaveBeenLastCalledWith(expect.objectContaining({client_id: "client-1", search: "Grace", relation: "Child", page: 1})))
+    await user.click(screen.getByRole("button", {name: "Clear filters"}))
+    await screen.findByRole("link", {name: "Amina Namukasa"})
+    expect(screen.getByRole("textbox", {name: "Search members"})).toHaveValue("")
+  })
+
+  it("hides completed setup from overview and retains it in the setup tab after reload", async () => {
+    mocks.getClient.mockResolvedValue({
+      id: "client-1",
+      name: "Acme",
+      aliases: [],
+      is_verified: true,
+      contact_info: { email: "ops@acme.test" },
+      billing_address: { city: "Kampala", country: "Uganda" },
+    })
+    mocks.listMembers.mockResolvedValue({ ...emptyRoster, items: [makeMember()], total: 1 })
+    mocks.listContracts.mockImplementation(async (params) =>
+      params.ends_from ? { items: [], total: 0 } : { items: [], total: 1 },
+    )
+    const user = userEvent.setup()
+    const first = renderWithProviders(<Page />)
+    await screen.findByRole("link", { name: /Amina/ })
+    await user.click(screen.getByRole("tab", { name: "Overview" }))
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument()
+    first.unmount()
+    renderWithProviders(<Page />)
+    await screen.findByRole("link", { name: /Amina/ })
+    await user.click(screen.getByRole("tab", { name: "Setup" }))
+    expect(await screen.findByRole("progressbar")).toHaveAttribute("aria-valuenow", "100")
+    expect(screen.getByText("Roster started")).toHaveClass("line-through")
+  })
+
+  it("shows incomplete setup with a working next action", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+    await screen.findByText("No members yet.")
+    await user.click(screen.getByRole("tab", { name: "Overview" }))
+    expect(await screen.findByRole("progressbar")).toHaveAttribute("aria-valuenow", "0")
+    await user.click(screen.getAllByRole("button", { name: "Continue" })[1])
+    expect(screen.getByRole("tab", { name: /^Contracts/ })).toHaveAttribute("aria-selected", "true")
+  })
+
   it("shows the canonical roster, total and member links with the legacy staff tab", async () => {
     mocks.listMembers.mockResolvedValue({
       ...emptyRoster,
@@ -119,10 +180,10 @@ describe("client members integration", () => {
       "true",
     )
     expect(screen.getByText(/Showing 2 of 125 members/)).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "View all members" })).toHaveAttribute(
-      "href",
-      "/members?client_id=client-1",
-    )
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled()
+    expect(screen.getByRole("textbox", { name: "Search members" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Sessions" })).toBeInTheDocument()
     expect(mocks.listMembers).toHaveBeenCalledExactlyOnceWith({ client_id: "client-1", limit: 20 })
   })
 
@@ -136,7 +197,7 @@ describe("client members integration", () => {
     await user.click(screen.getByRole("button", { name: "Add member" }))
     const form = within(screen.getByRole("dialog"))
     expect(form.getByRole("textbox", { name: "Client" })).toHaveValue("client-1")
-    await user.type(form.getByRole("textbox", { name: "Company member ID" }), "HR-1")
+    await user.type(form.getByRole("textbox", { name: "Member code" }), "HR-1")
     await user.type(form.getByRole("textbox", { name: "Name" }), "Amina Namukasa")
     mocks.listMembers.mockResolvedValue({ ...emptyRoster, items: [makeMember()], total: 1 })
     await user.click(form.getByRole("button", { name: "Add member" }))
@@ -152,8 +213,8 @@ describe("client members integration", () => {
     )
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
     expect(queryClient.getQueryState(["clients", "list"])?.isInvalidated).toBe(true)
-    await user.click(screen.getByRole("tab", { name: "Overview" }))
-    expect(screen.getByText("✓ Roster started")).toBeInTheDocument()
+    await user.click(screen.getByRole("tab", { name: "Setup" }))
+    expect(screen.getByText("Roster started")).toHaveClass("line-through")
   })
 
   it("distinguishes loading and failure from an empty roster and supports retry", async () => {

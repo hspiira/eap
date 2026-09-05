@@ -1,11 +1,12 @@
 import { Controller } from "react-hook-form"
+import { useQuery } from "@tanstack/react-query"
 import { z } from "zod"
 
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
-import { PersonPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
+import { MemberPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -19,16 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
-import { displayName, personInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
-import type { Person, Service, ServiceSession } from "@/types/entities"
+import type { Member, Service, ServiceSession } from "@/types/entities"
 import { ClientType, SessionCategory, SessionType } from "@/types/enums"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
-    person_id: z.string().trim().min(1, "Person is required"),
+    member_id: z.string().trim().min(1, "Member is required"),
     service_provider_id: z.string().trim().min(1, "Provider is required"),
     scheduled_at: z
       .string()
@@ -72,7 +73,7 @@ type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   service_id: "",
-  person_id: "",
+  member_id: "",
   service_provider_id: "",
   scheduled_at: "",
   location: "",
@@ -99,12 +100,12 @@ interface ServiceSessionFormSheetProps {
   session?: ServiceSession | null
   /** When set, locks the service picker. */
   serviceId?: string
-  /** When set, locks the person picker. */
-  personId?: string
+  /** When set, locks the member picker. */
+  memberId?: string
   /** Pre-resolved service for the locked summary. */
   service?: Service | null
-  /** Pre-resolved person for the locked summary. */
-  person?: Person | null
+  /** Pre-resolved member for the locked summary. */
+  member?: Member | null
   onSaved?: (session: ServiceSession) => void
 }
 
@@ -113,13 +114,13 @@ export function ServiceSessionFormSheet({
   onOpenChange,
   session,
   serviceId,
-  personId,
+  memberId,
   service,
-  person,
+  member,
   onSaved,
 }: ServiceSessionFormSheetProps) {
   const lockedServiceId = serviceId ?? session?.service_id
-  const lockedPersonId = personId ?? session?.person_id
+  const lockedMemberId = memberId ?? session?.member_id
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
@@ -134,7 +135,7 @@ export function ServiceSessionFormSheet({
     >({
       resource: "service-sessions",
       schema,
-      defaultValues: { ...EMPTY, service_id: serviceId ?? "", person_id: personId ?? "" },
+      defaultValues: { ...EMPTY, service_id: serviceId ?? "", member_id: memberId ?? "" },
       open,
       onOpenChange,
       entity: session,
@@ -150,7 +151,7 @@ export function ServiceSessionFormSheet({
         }
         return {
           service_id: values.service_id,
-          person_id: values.person_id,
+          member_id: values.member_id,
           provider_id: values.service_provider_id,
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
@@ -177,7 +178,7 @@ export function ServiceSessionFormSheet({
           // immutable here: reschedule is its own transition on the detail page.
           const {
             service_id: _s,
-            person_id: _p,
+            member_id: _p,
             provider_id: _pr,
             scheduled_at: _at,
             session_number: _sn,
@@ -203,7 +204,7 @@ export function ServiceSessionFormSheet({
     })
 
   const watchedService = watch("service_id")
-  const watchedPerson = watch("person_id")
+  const watchedMember = watch("member_id")
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
   const watchedCategory = watch("category")
@@ -223,7 +224,7 @@ export function ServiceSessionFormSheet({
           ? "Update the time, location, or notes for this session."
           : watchedBackfill
             ? "Record a session that already happened. Marked Completed and tagged in the audit trail."
-            : "Schedule a session for a person against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
+            : "Schedule a session for a member against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
       }
       size="lg"
       onSubmit={submit}
@@ -288,19 +289,19 @@ export function ServiceSessionFormSheet({
       </FormSection>
 
       <FormSection title="Subject">
-        <FormField label="Person" required error={errors.person_id?.message}>
-          {lockedPersonId ? (
-            <LockedPersonSummary personId={lockedPersonId} person={person ?? null} />
+        <FormField label="Member" required error={errors.member_id?.message}>
+          {lockedMemberId ? (
+            <LockedMemberSummary memberId={lockedMemberId} member={member ?? null} />
           ) : (
-            <PersonPicker
-              value={watchedPerson ?? ""}
+            <MemberPicker
+              value={watchedMember ?? ""}
               onChange={(id) =>
-                setValue("person_id", id, { shouldValidate: true, shouldDirty: true })
+                setValue("member_id", id, { shouldValidate: true, shouldDirty: true })
               }
             />
           )}
         </FormField>
-        <Input type="hidden" {...register("person_id")} />
+        <Input type="hidden" {...register("member_id")} />
         <FormField label="Client type" optional error={errors.client_type?.message}>
           <Controller
             control={control}
@@ -361,7 +362,7 @@ export function ServiceSessionFormSheet({
           <FormField
             label="Session number"
             optional
-            description="Position in the person's episode, e.g. 3 of 6."
+            description="Position in the member's episode, e.g. 3 of 6."
             error={errors.session_number?.message}
             htmlFor="ss-session-no"
           >
@@ -507,7 +508,7 @@ function EnumSelect<T extends string>({
 function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
-    person_id: s.person_id,
+    member_id: s.member_id,
     service_provider_id: s.provider_id ?? "",
     scheduled_at: toLocalDatetime(s.scheduled_at),
     location: s.location ?? "",
@@ -579,34 +580,28 @@ function LockedServiceSummary({
   )
 }
 
-function LockedPersonSummary({ personId, person }: { personId: string; person: Person | null }) {
-  const enabled = !person && Boolean(personId)
-  const detail = useEntityList<Person>({
-    resource: "persons",
-    params: { page: 1, limit: 1, search: personId },
-    listFn: personsApi.list,
+function LockedMemberSummary({ memberId, member }: { memberId: string; member: Member | null }) {
+  const enabled = !member && Boolean(memberId)
+  const detail = useQuery({
+    queryKey: ["members", "detail", memberId],
+    queryFn: () => membersApi.getById(memberId),
     enabled,
   })
-  const resolved = person ?? (detail.data?.items ?? []).find((p) => p.id === personId) ?? null
+  const resolved = member ?? detail.data ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
       >
-        {resolved ? personInitials(resolved) : "··"}
+        {resolved ? nameInitials(memberLabel(resolved)) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
-          {resolved ? displayName(resolved) : "Selected person"}
+          {resolved ? memberLabel(resolved) : "Selected member"}
         </p>
-        <p
-          className={cn(
-            "truncate text-[11px] text-fg-muted",
-            !resolved?.person_type && "font-mono",
-          )}
-        >
-          {resolved?.person_type ?? personId.slice(0, 8)}
+        <p className={cn("truncate text-[11px] text-fg-muted", !resolved?.relation && "font-mono")}>
+          {resolved?.relation ?? "Member"}
         </p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">

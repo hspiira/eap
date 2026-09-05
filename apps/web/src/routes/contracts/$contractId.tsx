@@ -22,6 +22,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
+import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,8 +46,8 @@ export const Route = createFileRoute("/contracts/$contractId")({
   component: ContractDetailPage,
 })
 
-type TabValue = "overview" | "services" | "billing" | "history"
-const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "billing", "history"]
+type TabValue = "overview" | "services" | "attachments" | "billing" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "attachments", "billing", "history"]
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
@@ -177,6 +178,7 @@ function ContractDetailPage() {
                   Services
                 </Tab>
                 <Tab value="billing">Billing</Tab>
+                <Tab value="attachments">Attachments</Tab>
                 <Tab value="history">History</Tab>
               </TabsList>
 
@@ -218,6 +220,7 @@ function ContractDetailPage() {
                 />
               </TabPanel>
 
+              <TabPanel value="attachments"><ContractAttachments key={contractId} contractId={contractId} /></TabPanel>
               <TabPanel value="billing">
                 <DetailCard title="Billing terms">
                   <DetailGrid>

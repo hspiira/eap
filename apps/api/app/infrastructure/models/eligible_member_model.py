@@ -56,6 +56,9 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[MemberGender | None] = mapped_column(String(30), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    staff_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    national_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    passport_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_imported_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

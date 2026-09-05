@@ -5,8 +5,10 @@ FastAPI routes for Document operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import (
     PageParams,
@@ -36,17 +38,27 @@ from app.application.use_cases.transitions import (
     TransitionUseCase,
 )
 from app.core.authorization import (
+    get_contract_for_current_tenant,
     get_document_for_current_tenant,
+    require_not_viewer,
     require_same_tenant,
 )
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
+from app.domain.entities.contract import ContractEntity
 from app.domain.entities.document import DocumentEntity
 from app.domain.enums import DocumentStatus, DocumentType
 from app.domain.exceptions import NotFoundError
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.contract_files import (
+    MAX_ATTACHMENT_BYTES,
+    attachment_metadata,
+    attachment_path,
+    write_attachment,
+)
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
@@ -86,6 +98,72 @@ def _to_document_response(document: DocumentEntity) -> DocumentResponse:
 
 
 # ==================== COMMANDS (Use Cases) ====================
+
+
+@router.post(
+    "/contracts/{contract_id}/attachments",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_not_viewer)],
+)
+@transactional(commit=False)
+async def upload_contract_attachment(
+    request: Request,
+    file: UploadFile,
+    contract: ContractEntity = Depends(get_contract_for_current_tenant),
+    current_user: TokenData = Depends(get_current_user),
+    document_repo: DocumentRepository = Depends(get_document_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    content = await file.read(MAX_ATTACHMENT_BYTES + 1)
+    if len(content) > MAX_ATTACHMENT_BYTES:
+        raise HTTPException(status_code=413, detail="Attachments must be 10 MB or smaller")
+    name, mime_type = attachment_metadata(file.filename or "", content)
+    document_id = generate_cuid()
+    path = await run_in_threadpool(
+        attachment_path, settings.DOCUMENT_STORAGE_PATH, current_user.tenant_id, document_id
+    )
+    await run_in_threadpool(write_attachment, path, content)
+    try:
+        document = await CreateDocumentUseCase(document_repo).execute(
+            document_id=DocumentId(document_id),
+            tenant_id=contract.tenant_id,
+            name=name,
+            document_type=DocumentType.CONTRACT,
+            file_path=str(path.relative_to(path.parent.parent)),
+            file_size=len(content),
+            mime_type=mime_type,
+            uploaded_by=UserId(current_user.user_id),
+            client_id=contract.client_id.value,
+            contract_id=contract.id.value,
+            is_confidential=True,
+        )
+        await audit_change(document, audit_handler, current_user, request)
+        response = _to_document_response(document)
+        await db.commit()
+    except Exception:
+        await run_in_threadpool(path.unlink, missing_ok=True)
+        raise
+    return response
+
+
+@router.get("/{document_id}/download", response_class=FileResponse)
+async def download_attachment(
+    document: DocumentEntity = Depends(get_document_for_current_tenant),
+):
+    path = await run_in_threadpool(
+        attachment_path, settings.DOCUMENT_STORAGE_PATH, document.tenant_id.value, document.id.value
+    )
+    relative_path = str(path.relative_to(path.parent.parent))
+    if document.file_path != relative_path or not await run_in_threadpool(path.is_file):
+        raise HTTPException(status_code=404, detail="Attachment file not found")
+    return FileResponse(
+        path,
+        filename=document.name,
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @router.post(

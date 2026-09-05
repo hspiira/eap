@@ -59,7 +59,7 @@ const COLUMNS: ListColumn[] = [
     className: "w-8 px-2",
   },
   { header: "Member", sortField: "display_label" },
-  { header: "Member ID", className: "text-fg/65" },
+  { header: "Member code", className: "text-fg/65" },
   { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },
   { header: "Work email", className: "text-fg/65" },

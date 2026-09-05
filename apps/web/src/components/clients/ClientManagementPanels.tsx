@@ -1,22 +1,32 @@
 import { useEffect, useState } from "react"
 
-import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { useQuery, type UseQueryResult } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 
 import { contactsApi } from "@/api/endpoints/contacts"
+import { contractsApi } from "@/api/endpoints/contracts"
 import { documentsApi } from "@/api/endpoints/documents"
+import { membersApi } from "@/api/endpoints/members"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import { utilisationApi } from "@/api/endpoints/utilisation"
 import type { PaginatedResponse } from "@/api/types"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { DocumentFileLink } from "@/components/common/DocumentFileLink"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityListKey } from "@/lib/queries"
-import type { Client, Contact, Contract, Document, Member, Service } from "@/types/entities"
+import type { Client, Contact, Document, Member } from "@/types/entities"
+import { contractLabel, memberLabel } from "@/lib/display"
+import { MemberRelation, EligibilityStatus } from "@/types/enums"
+import { formatDay } from "@/lib/format"
+import { getStatusLabel } from "@/utils/statusColors"
 
 function Panel({
   title,
@@ -35,51 +45,6 @@ function Panel({
       </div>
       {children}
     </section>
-  )
-}
-
-export function ClientHealthCard({
-  client,
-  stats,
-  contacts,
-  memberCount,
-  contracts,
-}: {
-  client: Client
-  stats: { child_clients_count?: number; active_contracts_count?: number } | null
-  contacts: Contact[]
-  memberCount?: number
-  contracts: Contract[]
-}) {
-  const signals = [
-    { label: "Verified", ok: Boolean(client.is_verified) },
-    {
-      label: "Contact details",
-      ok: Boolean(client.contact_info?.email || client.contact_info?.phone || contacts.length > 0),
-    },
-    {
-      label: "Active contract",
-      ok: Boolean(
-        stats?.active_contracts_count ?? contracts.some((contract) => contract.is_active),
-      ),
-    },
-    { label: "Roster started", ok: memberCount == null ? undefined : memberCount > 0 },
-  ]
-  const score = Math.round((signals.filter((signal) => signal.ok).length / signals.length) * 100)
-  return (
-    <Panel title="Client health">
-      <div className="flex items-end gap-3">
-        <span className="text-3xl font-semibold text-fg">{memberCount == null ? "-" : score}</span>
-        <span className="pb-1 text-xs text-fg-muted">/ 100 engagement readiness</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {signals.map((signal) => (
-          <div key={signal.label} className={signal.ok ? "text-primary" : "text-fg-muted"}>
-            {signal.ok == null ? "?" : signal.ok ? "✓" : "○"} {signal.label}
-          </div>
-        ))}
-      </div>
-    </Panel>
   )
 }
 
@@ -246,6 +211,21 @@ export function ClientRosterPanel({
   query: UseQueryResult<PaginatedResponse<Member>>
   onAdd?: () => void
 }) {
+  const [search, setSearch] = useState("")
+  const [relation, setRelation] = useState<MemberRelation | "all">("all")
+  const [status, setStatus] = useState<EligibilityStatus | "all">("all")
+  const [page, setPage] = useState(1)
+  const debouncedSearch = useDebouncedValue(search.trim())
+  const params = { client_id: clientId, page, limit: 20, search: debouncedSearch || undefined,
+    relation: relation === "all" ? undefined : relation,
+    status: status === "all" ? undefined : status }
+  const filtered = Boolean(debouncedSearch || relation !== "all" || status !== "all" || page !== 1)
+  const filteredQuery = useQuery({
+    queryKey: entityListKey("members", params),
+    queryFn: () => membersApi.list(params),
+    enabled: filtered,
+  })
+  const roster = filtered ? filteredQuery : query
   return (
     <Panel
       title="Members"
@@ -263,19 +243,37 @@ export function ClientRosterPanel({
         ) : null
       }
     >
-      <ClientRosterContent query={query} />
-      <Link
-        to="/members"
-        search={{ client_id: clientId }}
-        className="text-xs text-primary hover:underline"
-      >
-        View all members
-      </Link>
+      <p className="text-sm text-fg-muted">Employees and beneficiaries covered by this client. Open a member to manage their details and dependants.</p>
+      <div className="flex flex-col gap-3 border-y border-fg/10 py-4 sm:flex-row">
+        <Input aria-label="Search members" placeholder="Search name, employee number or email" value={search}
+          onChange={(event) => { setSearch(event.target.value); setPage(1) }} className="sm:flex-1" />
+        <Select value={relation} onValueChange={(value) => { setRelation(value as MemberRelation | "all"); setPage(1) }}>
+          <SelectTrigger aria-label="Relationship" className="sm:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All relationships</SelectItem>
+            {Object.values(MemberRelation).map((value) => <SelectItem key={value} value={value}>{getStatusLabel(value)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={status} onValueChange={(value) => { setStatus(value as EligibilityStatus | "all"); setPage(1) }}>
+          <SelectTrigger aria-label="Eligibility status" className="sm:w-40"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All statuses</SelectItem>
+            {Object.values(EligibilityStatus).map((value) => <SelectItem key={value} value={value}>{getStatusLabel(value)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {(search || relation !== "all" || status !== "all") && <Button variant="ghost" onClick={() => { setSearch(""); setRelation("all"); setStatus("all"); setPage(1) }}>Clear filters</Button>}
+      </div>
+      <ClientRosterContent query={roster} filtered={filtered} />
+      {roster.data && roster.data.total > 20 && <div className="flex items-center justify-between border-t border-fg/10 pt-3 text-sm">
+        <span>Page {page} of {Math.ceil(roster.data.total / 20)}</span>
+        <div className="flex gap-2">
+          <Button variant="outline" disabled={page === 1 || roster.isFetching} onClick={() => setPage(page - 1)}>Previous</Button>
+          <Button variant="outline" disabled={page * 20 >= roster.data.total || roster.isFetching} onClick={() => setPage(page + 1)}>Next</Button>
+        </div>
+      </div>}
     </Panel>
   )
 }
 
-function ClientRosterContent({ query }: { query: UseQueryResult<PaginatedResponse<Member>> }) {
+function ClientRosterContent({ query, filtered }: { query: UseQueryResult<PaginatedResponse<Member>>, filtered: boolean }) {
   if (query.isPending) return <p className="text-xs text-fg-muted">Loading members…</p>
   if (query.isError) {
     return (
@@ -294,153 +292,281 @@ function ClientRosterContent({ query }: { query: UseQueryResult<PaginatedRespons
     )
   }
   const { items, total } = query.data
-  if (total === 0) return <p className="text-xs text-fg-muted">No members yet.</p>
+  if (total === 0) return <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">{filtered ? "No members match these filters." : "No members yet."}</p>
   return (
     <>
       <p className="text-xs text-fg-muted">
         Showing {items.length} of {total} members · employees and beneficiaries
       </p>
-      <div className="grid items-start gap-2 sm:grid-cols-2">
-        {items.map((member) => (
-          <RosterRow key={member.id} member={member} />
-        ))}
-      </div>
+      <Table>
+        <TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Relationship</TableHead><TableHead>Contact</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+        <TableBody>{items.map((member) => <RosterRow key={member.id} member={member} />)}</TableBody>
+      </Table>
     </>
   )
 }
 
 function RosterRow({ member }: { member: Member }) {
   return (
-    <Link
-      to="/members/$memberId"
-      params={{ memberId: member.id }}
-      className="border border-fg/8 p-2 text-xs hover:border-primary/40"
-    >
-      <div className="font-medium text-fg">{member.display_label ?? member.employer_member_id}</div>
-      <div className="text-fg-muted">
-        {member.employer_member_id} · {member.relation}
-      </div>
-      <StatusBadge status={member.status} />
-    </Link>
+    <TableRow>
+      <TableCell><Link to="/members/$memberId" params={{ memberId: member.id }} className="font-medium text-primary hover:underline">{memberLabel(member)}</Link>
+        <p className="mt-1 text-xs text-fg-muted">{member.employer_member_id}</p>
+      </TableCell>
+      <TableCell>{getStatusLabel(member.relation)}</TableCell>
+      <TableCell><p>{member.work_email || member.personal_email || "No email"}</p><p className="mt-1 text-xs text-fg-muted">{member.phone || "No phone"}</p></TableCell>
+      <TableCell><StatusBadge status={member.status} /></TableCell>
+    </TableRow>
   )
 }
 
-export function ClientServicesPanel({ contracts }: { contracts: Contract[] }) {
-  const assignmentQueries = useQueries({
-    queries: contracts.map((contract) => ({
-      queryKey: entityListKey("service-assignments", { contract_id: contract.id, limit: 50 }),
-      queryFn: () => serviceAssignmentsApi.list({ contract_id: contract.id, limit: 50 }),
-    })),
-  })
-  const assignments = assignmentQueries.flatMap((query) => query.data?.items ?? [])
-  const serviceIds = [...new Set(assignments.map((assignment) => assignment.service_id))]
-  const serviceQueries = useQueries({
-    queries: serviceIds.map((serviceId) => ({
-      queryKey: ["services", serviceId],
-      queryFn: () => servicesApi.getById(serviceId),
-    })),
-  })
-  const services = serviceQueries.map(
-    (query, index) => query.data ?? ({ id: serviceIds[index], name: serviceIds[index] } as Service),
-  )
+async function allPages<T>(
+  fetchPage: (page: number) => Promise<PaginatedResponse<T>>,
+): Promise<T[]> {
+  const items: T[] = []
+  for (let page = 1; ; page++) {
+    const result = await fetchPage(page)
+    items.push(...result.items)
+    if (items.length >= result.total || !result.items.length) return items
+  }
+}
+
+function ClientQueryPanel<T>({
+  title,
+  description,
+  query,
+  children,
+}: {
+  title: string
+  description: string
+  query: UseQueryResult<T>
+  children: (data: T) => ReactNode
+}) {
   return (
-    <Panel title="Services">
-      <p className="text-xs text-fg-muted">
-        {assignments.length} service assignments across {contracts.length} contracts.
-      </p>
-      {services.length === 0 ? (
-        <p className="text-xs text-fg-muted">No services assigned.</p>
-      ) : (
-        <div className="grid items-start gap-2 sm:grid-cols-2">
-          {services.map((service) => (
-            <Link
-              key={service.id}
-              to="/services/$serviceId"
-              params={{ serviceId: service.id }}
-              className="border border-fg/8 p-2 text-xs hover:border-primary/40"
-            >
-              <div className="font-medium text-fg">{service.name}</div>
-              <div className="text-fg-muted">{service.category ?? "Service"}</div>
-            </Link>
-          ))}
+    <Panel title={title}>
+      <p className="text-sm text-fg-muted">{description}</p>
+      {query.isPending ? (
+        <p role="status" className="py-8 text-sm text-fg-muted">
+          Loading…
+        </p>
+      ) : query.isError ? (
+        <div role="alert" className="border border-danger-fg/20 p-4 text-sm">
+          <p>{normalizeErrorMessage(query.error, "Could not load records")}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 rounded-none"
+            onClick={() => void query.refetch()}
+          >
+            Retry
+          </Button>
         </div>
+      ) : (
+        children(query.data)
       )}
     </Panel>
+  )
+}
+
+const clientContracts = (clientId: string) =>
+  allPages((page) => contractsApi.list({ client_id: clientId, page, limit: 100 }))
+
+export function ClientServicesPanel({ clientId }: { clientId: string }) {
+  const query = useQuery({
+    queryKey: ["clients", "services", clientId],
+    queryFn: async () => {
+      const contracts = await clientContracts(clientId)
+      const groups = await Promise.all(
+        contracts.map(async (contract) => ({
+          contract,
+          assignments: await allPages((page) =>
+            serviceAssignmentsApi.list({ contract_id: contract.id, page, limit: 100 }),
+          ),
+        })),
+      )
+      const serviceIds = [
+        ...new Set(groups.flatMap(({ assignments }) => assignments.map((a) => a.service_id))),
+      ]
+      const services = new Map(await Promise.all(serviceIds.map(async (id) => [id, await servicesApi.getById(id)] as const)))
+      return groups.map(({contract, assignments}) => ({contract, assignments: assignments.map((assignment) => ({assignment, service: services.get(assignment.service_id)!}))}))
+    },
+  })
+  return (
+    <ClientQueryPanel
+      title="Services by contract"
+      description="Each contract has its own service assignments and coverage. Open a contract to manage its services."
+      query={query}
+    >
+      {(rows) =>
+        !rows.length ? (
+          <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
+            Add a contract before assigning services.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {rows.map(({ contract, assignments }) => (
+              <article key={contract.id} className="border border-fg/10">
+                <header className="flex items-center justify-between gap-3 border-b border-fg/10 bg-fg/3 p-4">
+                  <div><p className="mb-1 text-xs text-fg-muted">Contract term · {assignments.length} services</p>
+                  <Link to="/contracts/$contractId" params={{ contractId: contract.id }} search={{tab: "services"}} className="font-medium text-primary hover:underline">{contractLabel(contract)}</Link></div>
+                  <StatusBadge status={contract.status} />
+                </header>
+                {assignments.length ? <div className="divide-y divide-fg/10">{assignments.map(({assignment, service}) => <div key={assignment.id ?? service.id} className="flex items-center justify-between gap-4 p-4">
+                  <div><Link to="/services/$serviceId" params={{serviceId: service.id}} className="text-sm font-medium text-primary hover:underline">{service.name}</Link>
+                  <p className="mt-1 text-xs text-fg-muted">{getStatusLabel(service.category ?? "Service")}</p>
+                  {assignment.notes && <p className="mt-2 text-sm text-fg-muted">{assignment.notes}</p>}</div>
+                  <StatusBadge status={assignment.status} />
+                </div>)}</div> : <p className="p-6 text-sm text-fg-muted">No services assigned to this contract yet.</p>}
+              </article>
+            ))}
+          </div>
+        )
+      }
+    </ClientQueryPanel>
   )
 }
 
 export function ClientDocumentsPanel({ clientId }: { clientId: string }) {
-  const documentsQuery = useQuery({
-    queryKey: entityListKey("documents", { client_id: clientId, limit: 100 }),
-    queryFn: () => documentsApi.list({ client_id: clientId, limit: 100 }),
+  const [page, setPage] = useState(1)
+  const query = useQuery({
+    queryKey: entityListKey("documents", { client_id: clientId, page, limit: 20 }),
+    queryFn: () => documentsApi.list({ client_id: clientId, page, limit: 20 }),
   })
-  const documents = documentsQuery.data?.items ?? []
   return (
-    <Panel title="Documents">
-      <p className="text-xs text-fg-muted">{documents.length} client documents.</p>
-      {documents.length === 0 ? (
-        <p className="text-xs text-fg-muted">No documents linked to this client.</p>
-      ) : (
-        <div className="space-y-2">
-          {documents.map((document) => (
-            <DocumentRow key={document.id} document={document} />
-          ))}
-        </div>
+    <ClientQueryPanel
+      title="Documents"
+      description="Files and records linked to this client."
+      query={query}
+    >
+      {(data) => (
+        <>
+          {data.total === 0 ? (
+            <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
+              No documents linked yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-fg/10">
+              {data.items.map((document) => (
+                <DocumentRow key={document.id} document={document} />
+              ))}
+            </div>
+          )}
+          {data.total > 20 && (
+            <div className="flex items-center justify-between border-t border-fg/10 pt-3 text-sm">
+              <span>
+                Page {page} of {Math.ceil(data.total / 20)} · {data.total} documents
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={page * 20 >= data.total}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
-    </Panel>
+    </ClientQueryPanel>
   )
 }
 
 function DocumentRow({ document }: { document: Document }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-fg/8 pb-2 text-xs">
-      <div>
-        <div className="font-medium text-fg">{document.name}</div>
-        <div className="text-fg-muted">
-          {document.document_type} · v{document.version ?? 1}
-        </div>
+    <div className="flex items-center justify-between gap-4 py-4">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-fg">{document.name}</p>
+        <p className="mt-1 text-xs text-fg-muted">
+          {getStatusLabel(document.document_type)} · Version {document.version ?? 1}
+        </p>
       </div>
-      {document.file_url ? (
-        <a href={document.file_url} target="_blank" rel="noreferrer" className="text-primary">
-          Open
-        </a>
-      ) : null}
+      <DocumentFileLink document={document} />
     </div>
   )
 }
 
-export function ClientUtilisationPanel({ contracts }: { contracts: Contract[] }) {
-  const eventQueries = useQueries({
-    queries: contracts.map((contract) => ({
-      queryKey: ["utilisation-events", contract.id],
-      queryFn: () => utilisationApi.byContract(contract.id),
-    })),
+export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
+  const query = useQuery({
+    queryKey: ["clients", "utilisation", clientId],
+    queryFn: async () => {
+      const contracts = await clientContracts(clientId)
+      const groups = await Promise.all(
+        contracts.map(async (contract) => ({
+          contract,
+          events: await utilisationApi.byContract(contract.id),
+        })),
+      )
+      return groups
+        .flatMap(({ contract, events }) => events.map((event) => ({ contract, event })))
+        .sort((a, b) => b.event.occurred_on.localeCompare(a.event.occurred_on))
+    },
   })
-  const events = eventQueries.flatMap((query) => query.data ?? [])
-  const units = events.reduce((sum, event) => sum + event.units, 0)
   return (
-    <Panel title="Utilisation">
-      <div className="flex items-end gap-3">
-        <span className="text-2xl font-semibold text-fg">{units}</span>
-        <span className="pb-0.5 text-xs text-fg-muted">units across {events.length} events</span>
-      </div>
-      {events.length === 0 ? (
-        <p className="text-xs text-fg-muted">No utilisation recorded.</p>
-      ) : (
-        <div className="space-y-1 text-xs text-fg-muted">
-          {events
-            .slice(-8)
-            .reverse()
-            .map((event) => (
-              <div key={event.id} className="flex justify-between">
-                <span>
-                  {event.occurred_on} · {event.service_code ?? event.event_type}
-                </span>
-                <span>{event.units}</span>
+    <ClientQueryPanel
+      title="Sessions"
+      description="Recorded service usage across all contract terms."
+      query={query}
+    >
+      {(rows) =>
+        !rows.length ? (
+          <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
+            No service delivery recorded yet.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 border-y border-fg/10 py-4">
+              <div>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {rows.reduce((sum, { event }) => sum + event.units, 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-fg-muted">Recorded units</p>
               </div>
-            ))}
-        </div>
-      )}
-    </Panel>
+              <div>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {rows.length.toLocaleString()}
+                </p>
+                <p className="text-xs text-fg-muted">Recorded events</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <Table className="w-full text-left text-sm">
+                <TableHeader className="border-b border-fg/10 text-xs text-fg-muted">
+                  <TableRow>
+                    <TableHead className="py-3">Date</TableHead>
+                    <TableHead>Service event</TableHead>
+                    <TableHead>Contract term</TableHead>
+                    <TableHead className="text-right">Units</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-fg/10">
+                  {rows.map(({ event, contract }) => (
+                    <TableRow key={event.id}>
+                      <TableCell className="whitespace-nowrap py-3 pr-4">
+                        {formatDay(event.occurred_on)}
+                      </TableCell>
+                      <TableCell className="pr-4">{getStatusLabel(event.event_type)}</TableCell>
+                      <TableCell>
+                        <Link
+                          to="/contracts/$contractId"
+                          params={{ contractId: contract.id }}
+                          className="text-primary hover:underline"
+                        >
+                          {contractLabel(contract)}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{event.units}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )
+      }
+    </ClientQueryPanel>
   )
 }

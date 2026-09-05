@@ -44,7 +44,7 @@ export interface Service extends BaseEntity {
 /** Mirrors BE `ServiceSessionResponse`: field names and types are wire-true. */
 export interface ServiceSession extends BaseEntity {
   service_id: string
-  person_id: string
+  member_id: string
   provider_id?: string | null
   status: SessionStatus
   scheduled_at: string

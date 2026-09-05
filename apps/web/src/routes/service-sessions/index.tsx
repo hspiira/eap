@@ -4,10 +4,9 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { CalendarClock, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
-import { usersApi } from "@/api/endpoints/users"
 import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
@@ -41,7 +40,7 @@ import {
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
-import { displayName } from "@/lib/display"
+import { memberLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -56,7 +55,7 @@ export const Route = createFileRoute("/service-sessions/")({
   validateSearch: listSearchSchema({
     status: enumParam(SessionStatus),
     service_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
-    person_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    member_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
     range: (v): Exclude<RangeFilter, "all"> | undefined =>
       v === "today" || v === "7d" || v === "30d" || v === "past" ? v : undefined,
   }),
@@ -108,7 +107,7 @@ function ServiceSessionsListPage() {
   const canWrite = useCanWrite()
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
-  const activePersonId = searchParams.person_id
+  const activeMemberId = searchParams.member_id
   const activeRange: RangeFilter = searchParams.range ?? "all"
 
   // Anchored to the selected range, not to render: `new Date()` inline would mint
@@ -119,7 +118,7 @@ function ServiceSessionsListPage() {
     setFilter("status", next === "all" ? undefined : next)
 
   const clearService = () => setFilter("service_id", undefined)
-  const clearPerson = () => setFilter("person_id", undefined)
+  const clearMember = () => setFilter("member_id", undefined)
 
   const handleRangeChange = (next: RangeFilter) =>
     setFilter("range", next === "all" ? undefined : next)
@@ -135,10 +134,10 @@ function ServiceSessionsListPage() {
     return m
   }, [servicesData])
 
-  const { data: activePersonForChip = null } = useQuery({
-    queryKey: queryKeys.persons.detail(activePersonId ?? ""),
-    queryFn: () => personsApi.getById(activePersonId!),
-    enabled: !!activePersonId,
+  const { data: activeMemberForChip = null } = useQuery({
+    queryKey: queryKeys.members.detail(activeMemberId ?? ""),
+    queryFn: () => membersApi.getById(activeMemberId!),
+    enabled: !!activeMemberId,
     staleTime: 10 * 60_000,
   })
 
@@ -150,7 +149,7 @@ function ServiceSessionsListPage() {
       search: activeSearch,
       status: activeStatus,
       service_id: activeServiceId,
-      person_id: activePersonId,
+      member_id: activeMemberId,
       ...rangeParams,
       ...sortParams,
     },
@@ -165,16 +164,16 @@ function ServiceSessionsListPage() {
     Boolean(activeSearch) ||
     Boolean(activeStatus) ||
     Boolean(activeServiceId) ||
-    Boolean(activePersonId) ||
+    Boolean(activeMemberId) ||
     activeRange !== "all"
 
   const activeServiceLabel = activeServiceId
     ? (servicesById.get(activeServiceId)?.name ?? activeServiceId.slice(0, 8))
     : null
-  const activePersonLabel = activePersonId
-    ? activePersonForChip
-      ? displayName(activePersonForChip, null)
-      : activePersonId.slice(0, 8)
+  const activeMemberLabel = activeMemberId
+    ? activeMemberForChip
+      ? memberLabel(activeMemberForChip)
+      : "Selected member"
     : null
 
   return (
@@ -204,8 +203,8 @@ function ServiceSessionsListPage() {
         {activeServiceLabel ? (
           <FilterChip label={`Service: ${activeServiceLabel}`} onRemove={clearService} />
         ) : null}
-        {activePersonLabel ? (
-          <FilterChip label={`Person: ${activePersonLabel}`} onRemove={clearPerson} />
+        {activeMemberLabel ? (
+          <FilterChip label={`Member: ${activeMemberLabel}`} onRemove={clearMember} />
         ) : null}
         <FilterTrigger
           label="All statuses"
@@ -232,7 +231,7 @@ function ServiceSessionsListPage() {
         open={addOpen}
         onOpenChange={setAddOpen}
         serviceId={activeServiceId}
-        personId={activePersonId}
+        memberId={activeMemberId}
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
@@ -300,8 +299,8 @@ function ServiceSessionsListPage() {
                       </SortHeader>
                     </TableHead>
                     <TableHead>
-                      <SortHeader field="person_id" sort={sort} onToggle={toggleSort}>
-                        Person
+                      <SortHeader field="member_id" sort={sort} onToggle={toggleSort}>
+                        Member
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -352,20 +351,12 @@ function SessionRow({
   onToggle: () => void
 }) {
   const linkedService = servicesById.get(row.service_id) ?? null
-  const { data: linkedPerson = null } = useQuery({
-    queryKey: queryKeys.persons.detail(row.person_id),
-    queryFn: () => personsApi.getById(row.person_id),
+  const { data: linkedMember = null } = useQuery({
+    queryKey: queryKeys.members.detail(row.member_id),
+    queryFn: () => membersApi.getById(row.member_id),
     staleTime: 10 * 60_000,
   })
-  const { data: linkedPersonUser = null } = useQuery({
-    queryKey: queryKeys.users.detail(linkedPerson?.user_id ?? ""),
-    queryFn: () => usersApi.getById(linkedPerson!.user_id!),
-    enabled: !!linkedPerson?.user_id,
-    staleTime: 10 * 60_000,
-  })
-  const personLabel = linkedPerson
-    ? displayName(linkedPerson, linkedPersonUser)
-    : row.person_id.slice(0, 8)
+  const personLabel = linkedMember ? memberLabel(linkedMember) : "Member unavailable"
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -412,8 +403,8 @@ function SessionRow({
       </TableCell>
       <TableCell>
         <Link
-          to="/persons/$personId"
-          params={{ personId: row.person_id }}
+          to="/members/$memberId"
+          params={{ memberId: row.member_id }}
           className="text-xs text-fg/75 hover:text-primary"
         >
           {personLabel}
@@ -454,8 +445,8 @@ function SessionRow({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/persons/$personId" params={{ personId: row.person_id }}>
-                  View person
+                <Link to="/members/$memberId" params={{ memberId: row.member_id }}>
+                  View member
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

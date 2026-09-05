@@ -60,6 +60,9 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.date_of_birth = new_model.date_of_birth
             existing.gender = new_model.gender
             existing.phone = new_model.phone
+            existing.staff_number = new_model.staff_number
+            existing.national_id = new_model.national_id
+            existing.passport_number = new_model.passport_number
             existing.last_imported_at = new_model.last_imported_at
             existing.suspended_at = new_model.suspended_at
             existing.terminated_at = new_model.terminated_at
@@ -210,6 +213,30 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             search=search,
         )
         return int((await self._session.execute(stmt)).scalar_one())
+
+    async def next_member_sequence(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        prefix: str,
+    ) -> int:
+        """Highest numeric suffix already issued under ``prefix``, plus one.
+
+        Reads existing ids rather than a counter table so a client whose members
+        were imported with hand-written ids still continues from the top.
+        """
+        stmt = select(EligibleMemberModel.employer_member_id).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.employer_member_id.like(f"{prefix}-%"),
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        highest = 0
+        for value in rows:
+            suffix = value[len(prefix) + 1 :]
+            if suffix.isdigit():
+                highest = max(highest, int(suffix))
+        return highest + 1
 
     async def find_by_employer_member_id(
         self,

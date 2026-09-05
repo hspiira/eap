@@ -22,28 +22,28 @@ import { entityListKey } from "@/lib/queries"
 import type { Service } from "@/types/entities"
 
 /**
- * Recent-session history for one person or one provider. Self-contained:
+ * Recent-session history for one member or one provider. Self-contained:
  * runs its own query and resolves service names, so detail pages embed it
  * as a single line. Service names render as names, never id fragments.
  */
 export function SessionHistory({
-  personId,
+  memberId,
   providerId,
   limit = 10,
 }: {
-  personId?: string
+  memberId?: string
   providerId?: string
   limit?: number
 }) {
   const params = {
-    ...(personId ? { person_id: personId } : {}),
+    ...(memberId ? { member_id: memberId } : {}),
     ...(providerId ? { provider_id: providerId } : {}),
     limit: 20,
   }
   const query = useQuery({
     queryKey: entityListKey("service-sessions", params),
     queryFn: () => serviceSessionsApi.list(params),
-    enabled: Boolean(personId || providerId),
+    enabled: Boolean(memberId || providerId),
     staleTime: 30_000,
   })
   const sessions = query.data?.items ?? []
@@ -66,15 +66,15 @@ export function SessionHistory({
         icon={CalendarClock}
         title="No sessions yet"
         description={
-          personId
-            ? "Sessions delivered to this person will show up here."
+          memberId
+            ? "Sessions delivered to this member will show up here."
             : "Sessions delivered by this provider will show up here."
         }
         action={
-          personId ? (
+          memberId ? (
             <Link
               to="/service-sessions"
-              search={{ new: true, person_id: personId }}
+              search={{ new: true, member_id: memberId }}
               className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-fg/15 bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-hover"
             >
               <Plus className="size-4" />
@@ -90,10 +90,10 @@ export function SessionHistory({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs text-fg-muted">{sessions.length} recent sessions.</p>
-        {personId ? (
+        {memberId ? (
           <Link
             to="/service-sessions"
-            search={{ person_id: personId }}
+            search={{ member_id: memberId }}
             className="text-xs font-medium text-primary hover:underline"
           >
             View all
