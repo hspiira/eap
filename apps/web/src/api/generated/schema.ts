@@ -2061,6 +2061,42 @@ export interface paths {
         /** List diagnoses, optionally filtered by type */
         get: operations["list_diagnoses_diagnoses_get"];
         put?: never;
+        /** Create Diagnosis */
+        post: operations["create_diagnosis_diagnoses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diagnosis Capabilities */
+        get: operations["diagnosis_capabilities_diagnoses_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Diagnosis Settings */
+        get: operations["list_diagnosis_settings_diagnoses_settings_get"];
+        /** Set Diagnosis Setting */
+        put: operations["set_diagnosis_setting_diagnoses_settings_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2095,7 +2131,76 @@ export interface paths {
         /** List diagnosis types */
         get: operations["list_diagnosis_types_diagnoses_types_get"];
         put?: never;
+        /** Create Diagnosis Type */
+        post: operations["create_diagnosis_type_diagnoses_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/types/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Diagnosis Type */
+        patch: operations["update_diagnosis_type_diagnoses_types__type_id__patch"];
+        trace?: never;
+    };
+    "/diagnoses/types/{type_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Diagnosis Type Active */
+        post: operations["set_diagnosis_type_active_diagnoses_types__type_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/{diagnosis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Diagnosis */
+        patch: operations["update_diagnosis_diagnoses__diagnosis_id__patch"];
+        trace?: never;
+    };
+    "/diagnoses/{diagnosis_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Diagnosis Active */
+        post: operations["set_diagnosis_active_diagnoses__diagnosis_id__active_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3067,23 +3172,6 @@ export interface paths {
         put?: never;
         /** Create Member */
         post: operations["create_member_members_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/duplicates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Scan Member Duplicates */
-        get: operations["scan_member_duplicates_members_duplicates_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7456,6 +7544,92 @@ export interface components {
             /** @description Relationship type */
             relationship: components["schemas"]["RelationType"];
         };
+        /**
+         * DiagnosisCapabilitiesResponse
+         * @description What the caller may change, so the UI can hide controls it cannot use.
+         */
+        DiagnosisCapabilitiesResponse: {
+            /**
+             * Can Manage Overlay
+             * @description Hide, reorder and relabel rows for this tenant (tenant admin)
+             */
+            can_manage_overlay: boolean;
+            /**
+             * Can Manage Taxonomy
+             * @description Create, edit and retire shared taxonomy rows (platform admin)
+             */
+            can_manage_taxonomy: boolean;
+        };
+        /** DiagnosisCreate */
+        DiagnosisCreate: {
+            /**
+             * Code
+             * @description Stable diagnosis code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order within the type
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Type Id
+             * @description Parent diagnosis type identifier
+             */
+            type_id: string;
+        };
+        /** DiagnosisOverlayResponse */
+        DiagnosisOverlayResponse: {
+            /** Diagnosis Id */
+            diagnosis_id: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id: string;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Local Label */
+            local_label: string | null;
+            /** Sort Order */
+            sort_order: number | null;
+        };
+        /** DiagnosisOverlayUpdate */
+        DiagnosisOverlayUpdate: {
+            /**
+             * Diagnosis Id
+             * @description Leave null to target the whole type
+             */
+            diagnosis_id?: string | null;
+            /**
+             * Diagnosis Type Id
+             * @description Taxonomy type this applies to
+             */
+            diagnosis_type_id: string;
+            /**
+             * Is Enabled
+             * @description Hide or show for this tenant
+             */
+            is_enabled?: boolean | null;
+            /**
+             * Local Label
+             * @description Tenant-specific label
+             */
+            local_label?: string | null;
+            /**
+             * Sort Order
+             * @description Tenant-specific ordering
+             */
+            sort_order?: number | null;
+        };
         /** DiagnosisResponse */
         DiagnosisResponse: {
             /**
@@ -7497,6 +7671,30 @@ export interface components {
              */
             types: components["schemas"]["DiagnosisTypeWithChildrenResponse"][];
         };
+        /** DiagnosisTypeCreate */
+        DiagnosisTypeCreate: {
+            /**
+             * Code
+             * @description Stable type code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
         /** DiagnosisTypeResponse */
         DiagnosisTypeResponse: {
             /**
@@ -7524,6 +7722,15 @@ export interface components {
              * @description Sort order
              */
             sort_order: number;
+        };
+        /** DiagnosisTypeUpdate */
+        DiagnosisTypeUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /** DiagnosisTypeWithChildrenResponse */
         DiagnosisTypeWithChildrenResponse: {
@@ -7557,6 +7764,15 @@ export interface components {
              * @description Sort order
              */
             sort_order: number;
+        };
+        /** DiagnosisUpdate */
+        DiagnosisUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /**
          * DocumentCreate
@@ -8968,17 +9184,6 @@ export interface components {
             /** Work Email */
             work_email?: string | null;
         };
-        /** MemberDuplicateCandidate */
-        MemberDuplicateCandidate: {
-            /** Matched On */
-            matched_on: string[];
-            member: components["schemas"]["MemberResponse"];
-        };
-        /** MemberDuplicateListResponse */
-        MemberDuplicateListResponse: {
-            /** Candidates */
-            candidates: components["schemas"]["MemberDuplicateCandidate"][];
-        };
         /**
          * MemberGender
          * @description Optional demographic value captured for member-facing wellness context.
@@ -9854,11 +10059,8 @@ export interface components {
          * @description Request schema for creating a service.
          */
         ServiceCreate: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -9922,11 +10124,8 @@ export interface components {
          * @description Response schema for service.
          */
         ServiceResponse: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -10337,11 +10536,8 @@ export interface components {
          * @description Request schema for updating service information.
          */
         ServiceUpdate: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -15463,6 +15659,112 @@ export interface operations {
             };
         };
     };
+    create_diagnosis_diagnoses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnosis_capabilities_diagnoses_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    list_diagnosis_settings_diagnoses_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisOverlayResponse"][];
+                };
+            };
+        };
+    };
+    set_diagnosis_setting_diagnoses_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisOverlayUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisOverlayResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     diagnosis_tree_diagnoses_tree_get: {
         parameters: {
             query?: {
@@ -15514,6 +15816,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnosisTypeResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_diagnosis_type_diagnoses_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisTypeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_diagnosis_type_diagnoses_types__type_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisTypeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_diagnosis_type_active_diagnoses_types__type_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the type */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_diagnosis_diagnoses__diagnosis_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                diagnosis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_diagnosis_active_diagnoses__diagnosis_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the diagnosis */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                diagnosis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
                 };
             };
             /** @description Validation Error */
@@ -17517,7 +17990,7 @@ export interface operations {
                 status?: components["schemas"]["EligibilityStatus"] | null;
                 relation?: components["schemas"]["MemberRelation"] | null;
                 search?: string | null;
-                sort_by?: string;
+                sort_by?: "created_at" | "updated_at" | "employer_member_id" | "display_label" | "status" | "relation";
                 sort_desc?: boolean;
                 /** @description Page number */
                 page?: number;
@@ -17570,37 +18043,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    scan_member_duplicates_members_duplicates_get: {
-        parameters: {
-            query?: {
-                client_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberDuplicateListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20126,7 +20568,7 @@ export interface operations {
                 /** @description Search in service name */
                 search?: string | null;
                 /** @description Filter by category */
-                category?: string | null;
+                category?: components["schemas"]["ServiceCategory"] | null;
                 /** @description Filter by group service */
                 is_group_service?: boolean | null;
                 /** @description Field to sort by */

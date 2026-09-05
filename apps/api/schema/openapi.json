@@ -4723,6 +4723,192 @@
         "title": "DependentInfoSchema",
         "type": "object"
       },
+      "DiagnosisCapabilitiesResponse": {
+        "description": "What the caller may change, so the UI can hide controls it cannot use.",
+        "properties": {
+          "can_manage_overlay": {
+            "description": "Hide, reorder and relabel rows for this tenant (tenant admin)",
+            "title": "Can Manage Overlay",
+            "type": "boolean"
+          },
+          "can_manage_taxonomy": {
+            "description": "Create, edit and retire shared taxonomy rows (platform admin)",
+            "title": "Can Manage Taxonomy",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_manage_taxonomy",
+          "can_manage_overlay"
+        ],
+        "title": "DiagnosisCapabilitiesResponse",
+        "type": "object"
+      },
+      "DiagnosisCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable diagnosis code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order within the type",
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "type_id": {
+            "description": "Parent diagnosis type identifier",
+            "title": "Type Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type_id",
+          "code",
+          "name"
+        ],
+        "title": "DiagnosisCreate",
+        "type": "object"
+      },
+      "DiagnosisOverlayResponse": {
+        "properties": {
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "title": "Diagnosis Type Id",
+            "type": "string"
+          },
+          "is_enabled": {
+            "title": "Is Enabled",
+            "type": "boolean"
+          },
+          "local_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Label"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "required": [
+          "diagnosis_type_id",
+          "diagnosis_id",
+          "is_enabled",
+          "sort_order",
+          "local_label"
+        ],
+        "title": "DiagnosisOverlayResponse",
+        "type": "object"
+      },
+      "DiagnosisOverlayUpdate": {
+        "properties": {
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Leave null to target the whole type",
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "description": "Taxonomy type this applies to",
+            "title": "Diagnosis Type Id",
+            "type": "string"
+          },
+          "is_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Hide or show for this tenant",
+            "title": "Is Enabled"
+          },
+          "local_label": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tenant-specific label",
+            "title": "Local Label"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tenant-specific ordering",
+            "title": "Sort Order"
+          }
+        },
+        "required": [
+          "diagnosis_type_id"
+        ],
+        "title": "DiagnosisOverlayUpdate",
+        "type": "object"
+      },
       "DiagnosisResponse": {
         "properties": {
           "code": {
@@ -4790,6 +4976,48 @@
         "title": "DiagnosisTreeResponse",
         "type": "object"
       },
+      "DiagnosisTypeCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable type code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "DiagnosisTypeCreate",
+        "type": "object"
+      },
       "DiagnosisTypeResponse": {
         "properties": {
           "code": {
@@ -4832,6 +5060,47 @@
           "sort_order"
         ],
         "title": "DiagnosisTypeResponse",
+        "type": "object"
+      },
+      "DiagnosisTypeUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "DiagnosisTypeUpdate",
         "type": "object"
       },
       "DiagnosisTypeWithChildrenResponse": {
@@ -4884,6 +5153,47 @@
           "sort_order"
         ],
         "title": "DiagnosisTypeWithChildrenResponse",
+        "type": "object"
+      },
+      "DiagnosisUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "DiagnosisUpdate",
         "type": "object"
       },
       "DocumentCreate": {
@@ -7883,42 +8193,6 @@
         "title": "MemberCreate",
         "type": "object"
       },
-      "MemberDuplicateCandidate": {
-        "properties": {
-          "matched_on": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Matched On",
-            "type": "array"
-          },
-          "member": {
-            "$ref": "#/components/schemas/MemberResponse"
-          }
-        },
-        "required": [
-          "member",
-          "matched_on"
-        ],
-        "title": "MemberDuplicateCandidate",
-        "type": "object"
-      },
-      "MemberDuplicateListResponse": {
-        "properties": {
-          "candidates": {
-            "items": {
-              "$ref": "#/components/schemas/MemberDuplicateCandidate"
-            },
-            "title": "Candidates",
-            "type": "array"
-          }
-        },
-        "required": [
-          "candidates"
-        ],
-        "title": "MemberDuplicateListResponse",
-        "type": "object"
-      },
       "MemberGender": {
         "description": "Optional demographic value captured for member-facing wellness context.",
         "enum": [
@@ -10082,15 +10356,13 @@
           "category": {
             "anyOf": [
               {
-                "maxLength": 100,
-                "type": "string"
+                "$ref": "#/components/schemas/ServiceCategory"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Service category",
-            "title": "Category"
+            "description": "Programme category this service is delivered under"
           },
           "description": {
             "anyOf": [
@@ -10199,14 +10471,13 @@
           "category": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/ServiceCategory"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Service category",
-            "title": "Category"
+            "description": "Programme category this service is delivered under"
           },
           "description": {
             "anyOf": [
@@ -11066,15 +11337,13 @@
           "category": {
             "anyOf": [
               {
-                "maxLength": 100,
-                "type": "string"
+                "$ref": "#/components/schemas/ServiceCategory"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Service category",
-            "title": "Category"
+            "description": "Programme category this service is delivered under"
           },
           "description": {
             "anyOf": [
@@ -20525,6 +20794,150 @@
         "tags": [
           "diagnoses"
         ]
+      },
+      "post": {
+        "operationId": "create_diagnosis_diagnoses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Diagnosis",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/capabilities": {
+      "get": {
+        "operationId": "diagnosis_capabilities_diagnoses_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisCapabilitiesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Diagnosis Capabilities",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/settings": {
+      "get": {
+        "operationId": "list_diagnosis_settings_diagnoses_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiagnosisOverlayResponse"
+                  },
+                  "title": "Response List Diagnosis Settings Diagnoses Settings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Diagnosis Settings",
+        "tags": [
+          "diagnoses"
+        ]
+      },
+      "put": {
+        "operationId": "set_diagnosis_setting_diagnoses_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisOverlayUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisOverlayResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Diagnosis Setting",
+        "tags": [
+          "diagnoses"
+        ]
       }
     },
     "/diagnoses/tree": {
@@ -20626,6 +21039,280 @@
           }
         ],
         "summary": "List diagnosis types",
+        "tags": [
+          "diagnoses"
+        ]
+      },
+      "post": {
+        "operationId": "create_diagnosis_type_diagnoses_types_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisTypeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Diagnosis Type",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/types/{type_id}": {
+      "patch": {
+        "operationId": "update_diagnosis_type_diagnoses_types__type_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisTypeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Diagnosis Type",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/types/{type_id}/active": {
+      "post": {
+        "operationId": "set_diagnosis_type_active_diagnoses_types__type_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the type",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the type",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Diagnosis Type Active",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/{diagnosis_id}": {
+      "patch": {
+        "operationId": "update_diagnosis_diagnoses__diagnosis_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diagnosis_id",
+            "required": true,
+            "schema": {
+              "title": "Diagnosis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Diagnosis",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/{diagnosis_id}/active": {
+      "post": {
+        "operationId": "set_diagnosis_active_diagnoses__diagnosis_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "diagnosis_id",
+            "required": true,
+            "schema": {
+              "title": "Diagnosis Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the diagnosis",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the diagnosis",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Diagnosis Active",
         "tags": [
           "diagnoses"
         ]
@@ -24195,6 +24882,14 @@
             "required": false,
             "schema": {
               "default": "created_at",
+              "enum": [
+                "created_at",
+                "updated_at",
+                "employer_member_id",
+                "display_label",
+                "status",
+                "relation"
+              ],
               "title": "Sort By",
               "type": "string"
             }
@@ -24309,60 +25004,6 @@
           }
         ],
         "summary": "Create Member",
-        "tags": [
-          "members"
-        ]
-      }
-    },
-    "/members/duplicates": {
-      "get": {
-        "operationId": "scan_member_duplicates_members_duplicates_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "client_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Client Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemberDuplicateListResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Scan Member Duplicates",
         "tags": [
           "members"
         ]
@@ -28850,7 +29491,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ServiceCategory"
                 },
                 {
                   "type": "null"
