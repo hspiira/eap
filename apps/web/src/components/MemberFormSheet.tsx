@@ -130,6 +130,7 @@ export function MemberFormSheet({
       return saved
     },
     successToast: { create: "Member added", update: "Member updated" },
+    extraInvalidations: [{ queryKey: ["clients", "list"] }],
     onSaved,
   })
 

@@ -101,7 +101,7 @@ const COLUMNS: ListColumn[] = [
   { header: "Status", sortField: "status" },
   { header: "Contact", className: "text-fg/65" },
   { header: "Contracts", className: "text-fg/65" },
-  { header: "Staff", className: "text-fg/65" },
+  { header: "Employees", className: "text-fg/65" },
   { header: "Last activity", className: "text-fg/65" },
   { header: "Renewal", className: "text-fg/65" },
 ]

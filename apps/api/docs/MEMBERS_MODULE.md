@@ -61,6 +61,17 @@ foreign-tenant IDs, and escapes spreadsheet formula prefixes.
 
 ## Compatibility retirement
 
+Client detail uses the Members roster, including employees and beneficiaries,
+with a 20-row preview, the full server count, and a link to the client-filtered
+Members list. Contextual creation preselects the client and refreshes the roster
+and client list. Viewers have read-only access. Existing `tab=staff` links still
+open the renamed Members tab.
+
+The client list's Employees column counts canonical employee members across
+all roster statuses, excluding beneficiaries. The response keeps the existing
+`staff_count` field for compatibility. Legacy Persons records are not included;
+identity migration remains separate work.
+
 Keep `/persons` until Providers/panel, counsellor assignment, the user-detail
 person link, and other legacy person consumers have replacement contracts and
 verified data migration. A person ID is not a member ID; do not blindly redirect

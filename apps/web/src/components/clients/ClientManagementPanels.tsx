@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react"
 
-import { useQueries, useQuery } from "@tanstack/react-query"
+import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 
 import { contactsApi } from "@/api/endpoints/contacts"
 import { documentsApi } from "@/api/endpoints/documents"
-import { personsApi } from "@/api/endpoints/persons"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import { utilisationApi } from "@/api/endpoints/utilisation"
+import type { PaginatedResponse } from "@/api/types"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityListKey } from "@/lib/queries"
-import type { Client, Contact, Contract, Document, Person, Service } from "@/types/entities"
-import { PersonType } from "@/types/enums"
+import type { Client, Contact, Contract, Document, Member, Service } from "@/types/entities"
 
 function Panel({
   title,
@@ -42,13 +42,13 @@ export function ClientHealthCard({
   client,
   stats,
   contacts,
-  staffCount,
+  memberCount,
   contracts,
 }: {
   client: Client
   stats: { child_clients_count?: number; active_contracts_count?: number } | null
   contacts: Contact[]
-  staffCount: number
+  memberCount?: number
   contracts: Contract[]
 }) {
   const signals = [
@@ -63,19 +63,19 @@ export function ClientHealthCard({
         stats?.active_contracts_count ?? contracts.some((contract) => contract.is_active),
       ),
     },
-    { label: "Roster started", ok: staffCount > 0 },
+    { label: "Roster started", ok: memberCount == null ? undefined : memberCount > 0 },
   ]
   const score = Math.round((signals.filter((signal) => signal.ok).length / signals.length) * 100)
   return (
     <Panel title="Client health">
       <div className="flex items-end gap-3">
-        <span className="text-3xl font-semibold text-fg">{score}</span>
+        <span className="text-3xl font-semibold text-fg">{memberCount == null ? "-" : score}</span>
         <span className="pb-1 text-xs text-fg-muted">/ 100 engagement readiness</span>
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs">
         {signals.map((signal) => (
-          <div key={signal.label} className={signal.ok ? "text-emerald-700" : "text-fg-muted"}>
-            {signal.ok ? "✓" : "○"} {signal.label}
+          <div key={signal.label} className={signal.ok ? "text-primary" : "text-fg-muted"}>
+            {signal.ok == null ? "?" : signal.ok ? "✓" : "○"} {signal.label}
           </div>
         ))}
       </div>
@@ -237,50 +237,90 @@ export function ClientContactsPanel({
   )
 }
 
-export function ClientRosterPanel({ clientId, onAdd }: { clientId: string; onAdd: () => void }) {
-  const rosterQuery = useQuery({
-    queryKey: entityListKey("persons", { client_id: clientId, limit: 100 }),
-    queryFn: () => personsApi.list({ client_id: clientId, limit: 100 }),
-  })
-  const people = rosterQuery.data?.items ?? []
+export function ClientRosterPanel({
+  clientId,
+  query,
+  onAdd,
+}: {
+  clientId: string
+  query: UseQueryResult<PaginatedResponse<Member>>
+  onAdd?: () => void
+}) {
   return (
     <Panel
-      title="Employee and dependent roster"
+      title="Members"
       action={
-        <Button type="button" size="sm" variant="outline" className="h-7" onClick={onAdd}>
-          Add person
-        </Button>
+        onAdd ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 rounded-none"
+            onClick={onAdd}
+          >
+            Add member
+          </Button>
+        ) : null
       }
     >
-      <p className="text-xs text-fg-muted">
-        {people.length} linked people · employees and dependents
-      </p>
-      {people.length === 0 ? (
-        <p className="text-xs text-fg-muted">No roster records yet.</p>
-      ) : (
-        <div className="grid items-start gap-2 sm:grid-cols-2">
-          {people.map((person) => (
-            <RosterRow key={person.id} person={person} />
-          ))}
-        </div>
-      )}
+      <ClientRosterContent query={query} />
+      <Link
+        to="/members"
+        search={{ client_id: clientId }}
+        className="text-xs text-primary hover:underline"
+      >
+        View all members
+      </Link>
     </Panel>
   )
 }
 
-function RosterRow({ person }: { person: Person }) {
-  const detail =
-    person.person_type === PersonType.CLIENT_EMPLOYEE
-      ? (person.employment_info?.role ?? person.employment_info?.department)
-      : person.dependent_info?.relationship
+function ClientRosterContent({ query }: { query: UseQueryResult<PaginatedResponse<Member>> }) {
+  if (query.isPending) return <p className="text-xs text-fg-muted">Loading members…</p>
+  if (query.isError) {
+    return (
+      <div role="alert" className="space-y-2 text-xs text-danger-fg">
+        <p>{normalizeErrorMessage(query.error, "Could not load members")}</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="rounded-none"
+          onClick={() => void query.refetch()}
+        >
+          Retry
+        </Button>
+      </div>
+    )
+  }
+  const { items, total } = query.data
+  if (total === 0) return <p className="text-xs text-fg-muted">No members yet.</p>
+  return (
+    <>
+      <p className="text-xs text-fg-muted">
+        Showing {items.length} of {total} members · employees and beneficiaries
+      </p>
+      <div className="grid items-start gap-2 sm:grid-cols-2">
+        {items.map((member) => (
+          <RosterRow key={member.id} member={member} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function RosterRow({ member }: { member: Member }) {
   return (
     <Link
-      to="/persons/$personId"
-      params={{ personId: person.id }}
+      to="/members/$memberId"
+      params={{ memberId: member.id }}
       className="border border-fg/8 p-2 text-xs hover:border-primary/40"
     >
-      <div className="font-medium text-fg">{person.person_type}</div>
-      <div className="text-fg-muted">{detail ?? person.user_id}</div>
+      <div className="font-medium text-fg">{member.display_label ?? member.employer_member_id}</div>
+      <div className="text-fg-muted">
+        {member.employer_member_id} · {member.relation}
+      </div>
+      <StatusBadge status={member.status} />
     </Link>
   )
 }

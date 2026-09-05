@@ -99,7 +99,7 @@ from app.domain.enums import (
     ClientTier,
     ContactMethod,
     ContractStatus,
-    PersonType,
+    MemberRelation,
     TenantRole,
 )
 from app.domain.exceptions import EvexiaException
@@ -237,18 +237,18 @@ async def _client_list_metrics(
                 occurred_at.isoformat() if occurred_at else None
             )
 
-    people = await db.execute(
-        select(PersonModel.employment_info).where(
-            PersonModel.tenant_id == tenant_id,
-            PersonModel.person_type == PersonType.CLIENT_EMPLOYEE,
-            PersonModel.status != BaseStatus.ARCHIVED,
-            PersonModel.deleted_at.is_(None),
+    member_table = ClientModel.metadata.tables["eligible_members"]
+    employees = await db.execute(
+        select(member_table.c.client_id, func.count(member_table.c.id))
+        .where(
+            member_table.c.tenant_id == tenant_id,
+            member_table.c.client_id.in_(client_ids),
+            member_table.c.relation == MemberRelation.EMPLOYEE,
         )
+        .group_by(member_table.c.client_id)
     )
-    for (employment_info,) in people:
-        client_id = employment_info.get("client_id") if employment_info else None
-        if client_id in metrics:
-            metrics[client_id]["staff_count"] = int(metrics[client_id]["staff_count"] or 0) + 1
+    for client_id, count in employees:
+        metrics[client_id]["staff_count"] = int(count)
     return metrics
 
 
@@ -943,9 +943,7 @@ async def merge_client(
         if result.rowcount:
             transferred[table_name] = int(result.rowcount)
 
-    # Client employees and platform staff keep their client association inside
-    # JSON profile fields rather than a relational client_id column. Re-point
-    # both fields so staff counts and person detail pages follow the merge.
+    # Preserve client associations on legacy person profiles.
     people_result = await db.execute(
         select(PersonModel).where(
             PersonModel.tenant_id == target.tenant_id.value,

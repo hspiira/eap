@@ -7,7 +7,7 @@ import { Building2, Pencil } from "lucide-react"
 import { clientsApi } from "@/api/endpoints/clients"
 import { contactsApi } from "@/api/endpoints/contacts"
 import { contractsApi } from "@/api/endpoints/contracts"
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { ClientActivityCard } from "@/components/clients/ClientActivityCard"
 import type { ClientAlert } from "@/components/clients/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
@@ -31,10 +31,11 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
-import { PersonFormSheet } from "@/components/PersonFormSheet"
+import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
@@ -42,7 +43,6 @@ import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
-import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -70,6 +70,7 @@ const CLIENTS_LIST_SEARCH = {
 } as const
 
 const CONTRACTS_PAGE = 10
+const MEMBERS_PREVIEW = 20
 const UPCOMING_DAYS = 90
 const ALERT_DAYS = 30
 /** The list endpoint caps limit at 100. Past that the window is reported as partial. */
@@ -81,12 +82,13 @@ function ClientDetailPage() {
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
+  const canWrite = useCanWrite()
   const userId = useAuthStore((s) => s.user_id)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
-  const [addPersonOpen, setAddPersonOpen] = useState(false)
+  const [addMemberOpen, setAddMemberOpen] = useState(false)
 
   const clientQuery = useEntityDetail<Client>({
     resource: "clients",
@@ -128,11 +130,11 @@ function ClientDetailPage() {
   })
   const contacts = contactsQuery.data ?? []
   const rosterQuery = useQuery({
-    queryKey: entityListKey("persons", { client_id: clientId, limit: 100 }),
-    queryFn: () => personsApi.list({ client_id: clientId, limit: 100 }),
+    queryKey: entityListKey("members", { client_id: clientId, limit: MEMBERS_PREVIEW }),
+    queryFn: () => membersApi.list({ client_id: clientId, limit: MEMBERS_PREVIEW }),
     enabled,
   })
-  const rosterCount = rosterQuery.data?.total ?? rosterQuery.data?.items.length ?? 0
+  const rosterCount = rosterQuery.data?.total
 
   // Alerts and the upcoming list need every contract ending in the window, not
   // the first page of all of them. Anchored to the day so the key is stable.
@@ -374,12 +376,11 @@ function ClientDetailPage() {
         }}
       />
 
-      <PersonFormSheet
-        open={addPersonOpen}
-        onOpenChange={setAddPersonOpen}
-        clientId={clientId}
+      <MemberFormSheet
+        key={clientId}
+        open={canWrite && addMemberOpen}
+        onOpenChange={setAddMemberOpen}
         client={client}
-        lockType={PersonType.CLIENT_EMPLOYEE}
         onSaved={() => {
           setTab("staff")
         }}
@@ -396,7 +397,9 @@ function ClientDetailPage() {
                   <Tab value="contracts" count={contractsTotal}>
                     Contracts
                   </Tab>
-                  <Tab value="staff">Staff</Tab>
+                  <Tab value="staff" count={rosterCount}>
+                    Members
+                  </Tab>
                   <Tab value="services">Services</Tab>
                   <Tab value="documents">Documents</Tab>
                   <Tab value="utilisation">Usage</Tab>
@@ -410,7 +413,7 @@ function ClientDetailPage() {
                       client={client}
                       stats={stats}
                       contacts={contacts}
-                      staffCount={rosterCount}
+                      memberCount={rosterCount}
                       contracts={contracts}
                     />
                     <ClientAlertsCard alerts={alerts} />
@@ -445,7 +448,11 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="staff">
-                <ClientRosterPanel clientId={clientId} onAdd={() => setAddPersonOpen(true)} />
+                <ClientRosterPanel
+                  clientId={clientId}
+                  query={rosterQuery}
+                  onAdd={canWrite ? () => setAddMemberOpen(true) : undefined}
+                />
               </TabPanel>
 
               <TabPanel value="services">
