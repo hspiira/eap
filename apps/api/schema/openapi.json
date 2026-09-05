@@ -1658,6 +1658,18 @@
             "$ref": "#/components/schemas/ContactInfoCreate",
             "description": "Contact information"
           },
+          "contact_person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the main contact person",
+            "title": "Contact Person Name"
+          },
           "industry_id": {
             "anyOf": [
               {

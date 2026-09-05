@@ -67,6 +67,7 @@ const clientSchema = z
     preferred_contact_method: z
       .enum(["", ...CONTACT_METHOD_OPTIONS.map((o) => o.value)] as readonly [string, ...string[]])
       .optional(),
+    contact_person_name: z.string().trim().optional(),
     email: z
       .string()
       .trim()
@@ -101,6 +102,7 @@ const EMPTY: ClientFormValues = {
   tier: "",
   billing_address_different: false,
   preferred_contact_method: "",
+  contact_person_name: "",
   email: "",
   phone: "",
   address: "",
@@ -147,6 +149,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       tier: c.tier ?? "",
       billing_address_different: !!c.billing_address,
       preferred_contact_method: c.preferred_contact_method ?? "",
+      contact_person_name: "",
       email: c.contact_info?.email ?? "",
       phone: c.contact_info?.phone ?? "",
       address: c.contact_info?.address ?? "",
@@ -164,6 +167,7 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         phone: values.phone || null,
         address: values.address || null,
       },
+      contact_person_name: values.contact_person_name || null,
       billing_address:
         values.billing_address_different &&
         values.billing_street &&
@@ -376,9 +380,22 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
       </FormSection>
 
       <FormSection
-        title="Primary contact"
-        description="Used for billing and account notifications."
+        title="Contact details"
+        description="Add the organisation’s contact details and, when creating a client, the contact person’s name."
       >
+        {!isEdit ? (
+          <FormField
+            label="Contact person name"
+            error={errors.contact_person_name?.message}
+            htmlFor="cs-contact-person-name"
+          >
+            <Input
+              id="cs-contact-person-name"
+              placeholder="e.g. Doreen Muwulya"
+              {...register("contact_person_name")}
+            />
+          </FormField>
+        ) : null}
         <FormField label="Email" error={errors.email?.message} htmlFor="cs-email">
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
         </FormField>

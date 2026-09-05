@@ -34,6 +34,7 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_client_alias_repository,
     get_client_repository,
+    get_contact_repository,
     get_contract_repository,
     get_industry_repository,
     get_tenant_repository,
@@ -70,6 +71,7 @@ from app.application.use_cases.client_use_cases import (
     CreateClientUseCase,
     UpdateClientUseCase,
 )
+from app.application.use_cases.contact_use_cases import CreateContactUseCase
 from app.application.use_cases.transitions import (
     ClientTransition,
     TransitionUseCase,
@@ -87,6 +89,7 @@ from app.domain.enums import BaseStatus, ClientTier, ContactMethod, ContractStat
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_alias_repository import ClientAliasRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
@@ -94,6 +97,7 @@ from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     Address,
     ClientId,
+    ContactId,
     ContactInfo,
     Email,
     IndustryId,
@@ -174,6 +178,7 @@ async def create_client(
     current_user: TokenData = Depends(require_same_tenant),
     _write_access: TokenData = Depends(require_not_viewer),
     client_repo: ClientRepository = Depends(get_client_repository),
+    contact_repo: ContactRepository = Depends(get_contact_repository),
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -211,6 +216,16 @@ async def create_client(
         raise HTTPException(status_code=e.http_status, detail=e.message) from e
 
     await audit_change(client, audit_handler, current_user, request, tenant_id=tenant_id)
+    if data.contact_person_name:
+        await CreateContactUseCase(contact_repo).execute(
+            contact_id=ContactId(generate_cuid()),
+            tenant_id=TenantId(tenant_id),
+            client_id=client.id.value,
+            name=data.contact_person_name,
+            email=data.contact_info.email,
+            phone=data.contact_info.phone,
+            is_primary=True,
+        )
     return _to_client_response(client)
 
 

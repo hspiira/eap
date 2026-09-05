@@ -5785,6 +5785,11 @@ export interface components {
             /** @description Contact information */
             contact_info: components["schemas"]["ContactInfoCreate"];
             /**
+             * Contact Person Name
+             * @description Name of the main contact person
+             */
+            contact_person_name?: string | null;
+            /**
              * Industry Id
              * @description Industry identifier
              */

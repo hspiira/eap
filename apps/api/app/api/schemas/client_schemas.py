@@ -63,6 +63,9 @@ class ClientCreate(BaseModel):
         description="Client code (3-5 characters, unique per tenant)",
     )
     contact_info: ContactInfoCreate = Field(..., description="Contact information")
+    contact_person_name: OptionalSanitizedStr = Field(
+        None, description="Name of the main contact person"
+    )
     billing_address: AddressCreate | None = Field(None, description="Billing address")
     industry_id: str | None = Field(None, description="Industry identifier")
     parent_client_id: str | None = Field(None, description="Parent client identifier")
