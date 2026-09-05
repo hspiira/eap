@@ -105,7 +105,7 @@ class TestGetService:
         response = await client.get("/services/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetServiceByName:

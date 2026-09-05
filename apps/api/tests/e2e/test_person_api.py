@@ -44,7 +44,7 @@ class TestGetPerson:
         response = await client.get("/persons/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetPersonByUserId:
@@ -253,7 +253,7 @@ class TestActivatePerson:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already active" in response.json()["detail"].lower()
+        assert "already active" in response.json()["message"].lower()
 
     async def test_activate_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test activating non-existent person returns 404."""
@@ -298,7 +298,7 @@ class TestDeactivatePerson:
 
         # 409 Conflict for state conflicts ("already" conditions)
         assert response.status_code == 409
-        assert "already inactive" in response.json()["detail"].lower()
+        assert "already inactive" in response.json()["message"].lower()
 
     async def test_deactivate_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test deactivating non-existent person returns 404."""
@@ -374,7 +374,7 @@ class TestArchivePerson:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already archived" in response.json()["detail"].lower()
+        assert "already archived" in response.json()["message"].lower()
 
     async def test_archive_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test archiving non-existent person returns 404."""
@@ -607,7 +607,7 @@ class TestAddSecondaryRole:
         )
 
         assert response.status_code == 400
-        assert "license info required" in response.json()["detail"].lower()
+        assert "license info required" in response.json()["message"].lower()
 
     async def test_add_secondary_role_same_as_primary_fails(
         self,

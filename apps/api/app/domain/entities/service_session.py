@@ -15,7 +15,7 @@ from app.domain.enums import (
     SessionType,
 )
 from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import PersonId, ServiceId, SessionId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -154,7 +154,7 @@ class ServiceSessionEntity:
     def restore(self) -> None:
         """Restore an archived session"""
         if not self.deleted_at:
-            raise DomainError("Session is not archived and does not need restoration")
+            raise ConflictError("Session is not archived and does not need restoration")
         self.deleted_at = None
         self.updated_at = utc_now()
 

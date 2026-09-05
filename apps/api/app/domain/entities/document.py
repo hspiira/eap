@@ -15,7 +15,7 @@ from app.domain.events import (
     DocumentVersionCreated,
     DomainEvent,
 )
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
@@ -62,7 +62,7 @@ class DocumentEntity:
         if self.status == DocumentStatus.ARCHIVED:
             raise DomainError("Cannot publish archived document")
         if self.status == DocumentStatus.PUBLISHED:
-            raise DomainError("Document is already published")
+            raise ConflictError("Document is already published")
         if self.deleted_at:
             raise DomainError("Cannot publish deleted document")
 
@@ -75,7 +75,7 @@ class DocumentEntity:
     def archive(self) -> None:
         """Archive document."""
         if self.status == DocumentStatus.ARCHIVED:
-            raise DomainError("Document is already archived")
+            raise ConflictError("Document is already archived")
         if self.deleted_at:
             raise DomainError("Cannot archive deleted document")
 

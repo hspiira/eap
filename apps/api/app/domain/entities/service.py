@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app.domain.enums import BaseStatus, ServiceCategory
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -39,7 +39,7 @@ class ServiceEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted service")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Service is already active")
+            raise ConflictError("Service is already active")
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
 
@@ -48,7 +48,7 @@ class ServiceEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted service")
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Service is already inactive")
+            raise ConflictError("Service is already inactive")
         self.status = BaseStatus.INACTIVE
         self.updated_at = utc_now()
 
@@ -57,7 +57,7 @@ class ServiceEntity:
         if self.deleted_at:
             raise DomainError("Cannot archive deleted service")
         if self.status == BaseStatus.ARCHIVED:
-            raise DomainError("Service is already archived")
+            raise ConflictError("Service is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
 
@@ -68,7 +68,7 @@ class ServiceEntity:
         cannot be restored as deletion is permanent.
         """
         if self.status == BaseStatus.ACTIVE and not self.deleted_at:
-            raise DomainError("Service is already active and does not need restoration")
+            raise ConflictError("Service is already active and does not need restoration")
         if self.deleted_at:
             self.deleted_at = None
             self.status = BaseStatus.ACTIVE

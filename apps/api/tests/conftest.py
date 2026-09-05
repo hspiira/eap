@@ -783,8 +783,8 @@ def sample_contract_data(contract_test_client: dict) -> dict[str, Any]:
     """Sample contract creation data."""
     from datetime import datetime, timedelta
 
-    start_date = datetime.now(UTC).isoformat()
-    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).date().isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).date().isoformat()
 
     return {
         "client_id": contract_test_client["id"],
@@ -807,8 +807,8 @@ async def test_contract(
     from datetime import datetime, timedelta
 
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(UTC).isoformat()
-    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).date().isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).date().isoformat()
 
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
@@ -836,8 +836,8 @@ async def test_contract_active(
     from datetime import datetime, timedelta
 
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(UTC).isoformat()
-    end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+    start_date = datetime.now(UTC).date().isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=365)).date().isoformat()
 
     # Create contract
     create_response = await client.post(
@@ -872,8 +872,8 @@ async def test_contract_2(
     from datetime import datetime, timedelta
 
     tenant_id = contract_test_tenant["id"]
-    start_date = datetime.now(UTC).isoformat()
-    end_date = (datetime.now(UTC) + timedelta(days=180)).isoformat()
+    start_date = datetime.now(UTC).date().isoformat()
+    end_date = (datetime.now(UTC) + timedelta(days=180)).date().isoformat()
 
     response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
@@ -998,7 +998,7 @@ async def test_service(client: AsyncClient, service_test_tenant: dict) -> dict[s
         json={
             "name": "Individual Counseling",
             "description": "One-on-one counseling session",
-            "category": "Counseling",
+            "category": "ShortTermCounselling",
             "duration_minutes": 60,
             "is_group_service": False,
         },
@@ -1018,7 +1018,7 @@ async def test_service_active(client: AsyncClient, service_test_tenant: dict) ->
         json={
             "name": "Active Counseling Service",
             "description": "An active service",
-            "category": "Counseling",
+            "category": "ShortTermCounselling",
             "duration_minutes": 45,
             "is_group_service": False,
         },
@@ -1042,7 +1042,7 @@ async def test_group_service(client: AsyncClient, service_test_tenant: dict) -> 
         json={
             "name": "Group Therapy",
             "description": "Group therapy session",
-            "category": "Therapy",
+            "category": "ShortTermCounselling",
             "duration_minutes": 90,
             "is_group_service": True,
             "max_participants": 10,
@@ -1061,7 +1061,7 @@ async def test_service_2(client: AsyncClient, service_test_tenant: dict) -> dict
         json={
             "name": "Crisis Intervention",
             "description": "Emergency counseling service",
-            "category": "Emergency",
+            "category": "CrisisIntervention",
             "duration_minutes": 30,
             "is_group_service": False,
         },
@@ -1099,7 +1099,7 @@ async def session_test_service(client: AsyncClient, session_test_tenant: dict) -
         json={
             "name": "Session Test Service",
             "description": "Service for session tests",
-            "category": "Testing",
+            "category": "WellnessCoaching",
             "duration_minutes": 60,
             "is_group_service": False,
         },

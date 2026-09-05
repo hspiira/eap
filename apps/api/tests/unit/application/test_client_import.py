@@ -146,9 +146,11 @@ class TestValidationResult:
         )
         assert len(result.errors) == 1
 
-    def test_an_issue_without_a_severity_counts_as_an_error(self):
+    def test_severity_is_required_on_every_issue(self):
+        # Issue is a TypedDict with a required severity, so errors need not
+        # guess a default. This guards the contract rather than a fallback.
         result = client_import.ValidationResult(
-            issues=[{"row": 1, "field": "name", "message": "bad"}]
+            issues=[{"row": 1, "field": "name", "message": "bad", "severity": "error"}]
         )
         assert len(result.errors) == 1
 

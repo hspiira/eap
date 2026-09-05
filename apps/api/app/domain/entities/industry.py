@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -66,7 +66,7 @@ class IndustryEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted industry")
         if self._is_active:
-            raise DomainError("Industry is already active")
+            raise ConflictError("Industry is already active")
         self._is_active = True
         self.updated_at = utc_now()
 
@@ -75,7 +75,7 @@ class IndustryEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted industry")
         if not self._is_active:
-            raise DomainError("Industry is already inactive")
+            raise ConflictError("Industry is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
 

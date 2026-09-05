@@ -185,7 +185,7 @@ class TestGetTenant:
         response = await client.get("/tenants/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetTenantByCode:
@@ -209,7 +209,7 @@ class TestGetTenantByCode:
         response = await client.get("/tenants/code/nonexistent-code")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 # =============================================================================
@@ -521,7 +521,7 @@ class TestActivateTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already active" in response.json()["detail"].lower()
+        assert "already active" in response.json()["message"].lower()
 
     async def test_activate_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -587,7 +587,7 @@ class TestSuspendTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already suspended" in response.json()["detail"].lower()
+        assert "already suspended" in response.json()["message"].lower()
 
     async def test_suspend_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -723,7 +723,7 @@ class TestArchiveTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already archived" in response.json()["detail"].lower()
+        assert "already archived" in response.json()["message"].lower()
 
     async def test_archive_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -779,8 +779,8 @@ class TestRestoreTenant:
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
         assert (
-            "does not need restoration" in response.json()["detail"].lower()
-            or "already active" in response.json()["detail"].lower()
+            "does not need restoration" in response.json()["message"].lower()
+            or "already active" in response.json()["message"].lower()
         )
 
     async def test_restore_terminated_tenant_fails(

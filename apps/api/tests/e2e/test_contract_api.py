@@ -138,7 +138,7 @@ class TestGetContract:
         response = await client.get("/contracts/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetContractsByClient:
@@ -216,7 +216,7 @@ class TestGetActiveContractByClient:
         response = await client.get(f"/contracts/client/{client_id}/active?tenant_id={tenant_id}")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 # =============================================================================
@@ -343,7 +343,7 @@ class TestActivateContract:
         response = await client.post(f"/contracts/{contract_id}/activate")
 
         assert response.status_code == 409
-        assert "already active" in response.json()["detail"].lower()
+        assert "already active" in response.json()["message"].lower()
 
     async def test_activate_not_found(self, client: AsyncClient):
         """Test activating non-existent contract returns 404."""
@@ -400,7 +400,7 @@ class TestSignContract:
 
         # 409 Conflict for state conflicts ("already" conditions)
         assert response.status_code == 409
-        assert "already signed" in response.json()["detail"].lower()
+        assert "already signed" in response.json()["message"].lower()
 
     async def test_sign_not_found(self, client: AsyncClient):
         """Test signing non-existent contract returns 404."""

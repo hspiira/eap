@@ -16,7 +16,7 @@ from app.domain.events import (
     ClientVerified,
     DomainEvent,
 )
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -66,7 +66,7 @@ class ClientEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot activate deleted client")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Client is already active")
+            raise ConflictError("Client is already active")
         self.status = BaseStatus.ACTIVE
         self.suspension_reason = None
         self.updated_at = utc_now()
@@ -77,7 +77,7 @@ class ClientEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot deactivate deleted client")
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Client is already inactive")
+            raise ConflictError("Client is already inactive")
         self.status = BaseStatus.INACTIVE
         self.suspension_reason = None
         self.updated_at = utc_now()
@@ -94,7 +94,7 @@ class ClientEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot suspend deleted client")
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Client is already inactive")
+            raise ConflictError("Client is already inactive")
         self.status = BaseStatus.INACTIVE
         self.suspension_reason = reason.strip()
         self.updated_at = utc_now()
@@ -105,7 +105,7 @@ class ClientEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self.status == BaseStatus.DELETED:
-            raise DomainError("Client is already terminated")
+            raise ConflictError("Client is already terminated")
         self.status = BaseStatus.DELETED
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
@@ -118,7 +118,7 @@ class ClientEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot archive deleted client")
         if self.status == BaseStatus.ARCHIVED:
-            raise DomainError("Client is already archived")
+            raise ConflictError("Client is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
 

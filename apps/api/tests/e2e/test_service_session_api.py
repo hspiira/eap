@@ -104,7 +104,7 @@ class TestGetServiceSession:
         response = await client.get("/service-sessions/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetSessionsByPerson:
@@ -292,11 +292,15 @@ class TestCompleteServiceSession:
         )
 
         assert response.status_code == 200
-        data = response.json()
+        # /complete now returns the session alongside the authorization drawdown.
+        body = response.json()
+        data = body["session"]
         assert data["status"] == "Completed"
         assert data["duration"] == 60
         assert data["notes"] == "Session completed successfully"
         assert data["completed_at"] is not None
+        # No case_id was supplied, so no authorization was consumed.
+        assert body["drawdown"]["consumed"] is False
 
     async def test_complete_not_found(self, client: AsyncClient):
         """Test completing non-existent session returns 404."""
@@ -549,8 +553,8 @@ class TestServiceSessionLifecycleFlow:
             f"/service-sessions/{session_id}/complete",
             json={"duration": 55, "notes": "Good progress made"},
         )
-        assert complete_response.json()["status"] == "Completed"
-        assert complete_response.json()["duration"] == 55
+        assert complete_response.json()["session"]["status"] == "Completed"
+        assert complete_response.json()["session"]["duration"] == 55
 
         # Add feedback
         feedback_response = await client.patch(

@@ -44,7 +44,7 @@ from app.domain.events import (
     ProviderPanelStatusChanged,
     ProviderTierChanged,
 )
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import (
     ClientId,
     DependentInfo,
@@ -98,7 +98,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot activate deleted person")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Person is already active")
+            raise ConflictError("Person is already active")
         self.status = BaseStatus.ACTIVE
         now = utc_now()
         self.updated_at = now
@@ -111,7 +111,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot deactivate deleted person")
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Person is already inactive")
+            raise ConflictError("Person is already inactive")
         self.status = BaseStatus.INACTIVE
         now = utc_now()
         self.updated_at = now
@@ -122,7 +122,7 @@ class PersonEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self.status == BaseStatus.DELETED:
-            raise DomainError("Person is already terminated")
+            raise ConflictError("Person is already terminated")
         self.status = BaseStatus.DELETED
         now = utc_now()
         self.deleted_at = now
@@ -395,7 +395,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot archive deleted person")
         if self.status == BaseStatus.ARCHIVED:
-            raise DomainError("Person is already archived")
+            raise ConflictError("Person is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
 
@@ -408,7 +408,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot restore deleted person")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Person is already active")
+            raise ConflictError("Person is already active")
         if self.status != BaseStatus.ARCHIVED:
             raise DomainError("Person must be archived to restore")
         self.status = BaseStatus.ACTIVE

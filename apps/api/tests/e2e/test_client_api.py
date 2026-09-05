@@ -98,7 +98,7 @@ class TestCreateClient:
 
         # 409 Conflict for duplicate resource creation
         assert response.status_code == 409
-        assert "already exists" in response.json()["detail"].lower()
+        assert "already exists" in response.json()["message"].lower()
 
     async def test_create_client_requires_tenant_id(
         self, client: AsyncClient, sample_client_data: dict
@@ -153,7 +153,7 @@ class TestGetClient:
         response = await client.get("/clients/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetClientByName:
@@ -370,7 +370,7 @@ class TestActivateClient:
         response = await client.post(f"/clients/{client_id}/activate")
 
         assert response.status_code == 409
-        assert "already active" in response.json()["detail"].lower()
+        assert "already active" in response.json()["message"].lower()
 
     async def test_activate_not_found(self, client: AsyncClient):
         """Test activating non-existent client returns 404."""
@@ -415,7 +415,7 @@ class TestDeactivateClient:
 
         # 409 Conflict for state conflicts ("already" conditions)
         assert response.status_code == 409
-        assert "already inactive" in response.json()["detail"].lower()
+        assert "already inactive" in response.json()["message"].lower()
 
     async def test_deactivate_not_found(self, client: AsyncClient):
         """Test deactivating non-existent client returns 404."""
@@ -525,7 +525,7 @@ class TestArchiveClient:
         response = await client.post(f"/clients/{client_id}/archive")
 
         assert response.status_code == 409
-        assert "already archived" in response.json()["detail"].lower()
+        assert "already archived" in response.json()["message"].lower()
 
     async def test_archive_not_found(self, client: AsyncClient):
         """Test archiving non-existent client returns 404."""

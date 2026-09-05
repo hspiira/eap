@@ -26,7 +26,7 @@ from datetime import date, datetime
 
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.events import ContractRenewed, ContractTerminated, DomainEvent
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import ClientId, ContractId, DateRange, Money, TenantId
 from app.domain.value_objects.pricing import ContractPricing
 from app.shared.utils.datetime import utc_now
@@ -88,7 +88,7 @@ class ContractEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted contract")
         if self.status == ContractStatus.ACTIVE:
-            raise DomainError("Contract is already active")
+            raise ConflictError("Contract is already active")
         if self.status == ContractStatus.TERMINATED:
             raise DomainError("Cannot activate terminated contract")
         if self.status == ContractStatus.EXPIRED:
@@ -105,7 +105,7 @@ class ContractEntity:
         if self.status == ContractStatus.TERMINATED:
             raise DomainError("Cannot sign terminated contract")
         if self.signed_at:
-            raise DomainError("Contract is already signed")
+            raise ConflictError("Contract is already signed")
         self.signed_by = signed_by
         self.signed_at = utc_now()
         self.updated_at = utc_now()
@@ -120,7 +120,7 @@ class ContractEntity:
         if self.deleted_at:
             raise DomainError("Cannot terminate deleted contract")
         if self.status == ContractStatus.TERMINATED:
-            raise DomainError("Contract is already terminated")
+            raise ConflictError("Contract is already terminated")
         self.status = ContractStatus.TERMINATED
         self.termination_reason = reason
         now = utc_now()
@@ -141,7 +141,7 @@ class ContractEntity:
         """Restore a terminated or expired contract"""
         # Check if contract is already active and not deleted
         if self.status == ContractStatus.ACTIVE and self.deleted_at is None:
-            raise DomainError("Contract is already active and does not need restoration")
+            raise ConflictError("Contract is already active and does not need restoration")
         # Restore soft-deleted contract
         if self.deleted_at:
             self.deleted_at = None

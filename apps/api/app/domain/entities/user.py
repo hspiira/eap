@@ -21,7 +21,7 @@ from app.domain.events import (
     UserSuspended,
     UserTerminated,
 )
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
@@ -101,7 +101,7 @@ class UserEntity:
         if self.status in (UserStatus.BANNED, UserStatus.TERMINATED):
             raise DomainError("Cannot deactivate banned or terminated user")
         if self.status == UserStatus.INACTIVE:
-            raise DomainError("User is already inactive")
+            raise ConflictError("User is already inactive")
         self.status = UserStatus.INACTIVE
         now = utc_now()
         self.status_changed_at = now
@@ -113,7 +113,7 @@ class UserEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self.status == UserStatus.TERMINATED:
-            raise DomainError("User is already terminated")
+            raise ConflictError("User is already terminated")
         self.status = UserStatus.TERMINATED
         now = utc_now()
         self.status_changed_at = now
@@ -149,7 +149,7 @@ class UserEntity:
         if self.deleted_at:
             raise DomainError("Cannot enable 2FA for deleted user")
         if self.is_two_factor_enabled:
-            raise DomainError("Two-factor authentication is already enabled")
+            raise ConflictError("Two-factor authentication is already enabled")
         self.is_two_factor_enabled = True
         self.updated_at = utc_now()
 
@@ -263,7 +263,7 @@ class UserEntity:
             raise DomainError("Cannot link Azure identity to deleted user")
         cleaned = azure_oid.strip()
         if self.azure_oid and self.azure_oid != cleaned:
-            raise DomainError(
+            raise ConflictError(
                 "User is already linked to a different Azure identity; an administrator must unlink it before re-linking"
             )
         self.azure_oid = cleaned
