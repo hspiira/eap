@@ -10,6 +10,7 @@ import csv
 import difflib
 import io
 import json
+from datetime import timedelta
 
 from fastapi import (
     APIRouter,
@@ -137,11 +138,14 @@ from app.shared.utils.client_csv import (
     ClientCsvRow,
     parse_client_csv,
 )
-from app.shared.utils.datetime import utc_now
+from app.shared.utils.datetime import ensure_utc, utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/clients", tags=["clients"])
+
+# A job still marked processing after this long has lost its worker.
+STALE_IMPORT_AFTER = timedelta(hours=1)
 
 
 def _to_client_response(client: ClientEntity) -> ClientResponse:
@@ -1445,6 +1449,23 @@ async def get_client_import_job(
     return _to_import_job_response(job)
 
 
+def _is_retryable(job: ClientImportJobModel) -> bool:
+    """A job is retryable once it failed, or once it was abandoned mid-run.
+
+    A worker killed between claiming a job and recording its outcome leaves the
+    row in `processing` with nothing left to advance it. Without the staleness
+    window such a job can never be retried.
+    """
+    if job.status == "failed":
+        return True
+    if job.status != "processing":
+        return False
+    started = job.started_at
+    if started is None:
+        return True
+    return utc_now() - ensure_utc(started) > STALE_IMPORT_AFTER
+
+
 @router.post(
     "/import/jobs/{job_id}/retry",
     response_model=ClientImportJobResponse,
@@ -1460,12 +1481,14 @@ async def retry_client_import_job(
     _write_access: TokenData = Depends(require_not_viewer),
     db: AsyncSession = Depends(get_db),
 ) -> ClientImportJobResponse:
-    """Requeue a failed import using its original file and decisions."""
+    """Requeue a failed or abandoned import using its file and decisions."""
     job = await db.get(ClientImportJobModel, job_id)
     if not job or job.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Import job not found")
-    if job.status != "failed":
-        raise HTTPException(status_code=409, detail="Only failed imports can be retried")
+    if not _is_retryable(job):
+        raise HTTPException(
+            status_code=409, detail="Only failed or abandoned imports can be retried"
+        )
     job.status = "queued"
     job.error_message = None
     job.completed_at = None

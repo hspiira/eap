@@ -225,6 +225,27 @@ One push deploys both from the same commit, so the frontend and the API cannot
 drift apart. Point the primary domain at the **web** project: the frontend
 serves the landing page at `/`, and the API stays reachable on its own domain.
 
+### The API needs a second, long-running process
+
+Two pieces of work outlive a request and cannot run on a serverless function:
+
+- **The outbox worker** (`scripts/outbox_worker.py`). Every audited mutation
+  writes a row to `outbox_events` inside the request transaction; this worker
+  drains those rows into `audit_logs` and `entity_changes`. Nothing else does.
+  If it is not running, the audit trail stays empty while the API looks
+  healthy. Run exactly one replica: the dispatcher is safe under concurrency
+  but not yet efficient, as it has no `SKIP LOCKED`.
+- **Queued client imports**, handed to FastAPI `BackgroundTasks` by
+  `POST /clients/import/jobs`. A function frozen after the response leaves the
+  job in `processing`; it becomes retryable again after `STALE_IMPORT_AFTER`.
+
+`docker-compose.yml` defines both worker services (`outbox-worker` and, under
+the `production` profile, `outbox-worker-prod`) from the same image as the API.
+On a platform without a worker process type, the outbox worker has to run
+somewhere else, such as a small VM or a scheduled container. Moving the queued
+import onto the outbox worker would remove the second constraint, but that has
+not been done.
+
 ### Optional: serve the API under the web domain
 
 The frontend reads its API base from `VITE_API_BASE_URL`. If you add a Vercel

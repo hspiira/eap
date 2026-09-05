@@ -1041,7 +1041,7 @@ export interface paths {
         put?: never;
         /**
          * Retry a failed client import
-         * @description Requeue a failed import using its original file and decisions.
+         * @description Requeue a failed or abandoned import using its file and decisions.
          */
         post: operations["retry_client_import_job_clients_import_jobs__job_id__retry_post"];
         delete?: never;
