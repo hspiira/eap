@@ -46,3 +46,19 @@ class TenantOverlay:
     is_enabled: bool
     sort_order: int | None
     local_label: str | None
+
+
+@dataclass(frozen=True)
+class DiagnosisAlias:
+    """A legacy spelling and the taxonomy row it resolves to.
+
+    ``diagnosis_id`` is None when the source only named a type.
+    """
+
+    id: str
+    raw_value: str
+    normalised_key: str
+    diagnosis_type_id: str
+    diagnosis_id: str | None
+    source: str
+    confidence: str

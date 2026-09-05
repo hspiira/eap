@@ -7,7 +7,12 @@ change the shared rows.
 
 from abc import ABC, abstractmethod
 
-from app.domain.entities.diagnosis import Diagnosis, DiagnosisType, TenantOverlay
+from app.domain.entities.diagnosis import (
+    Diagnosis,
+    DiagnosisAlias,
+    DiagnosisType,
+    TenantOverlay,
+)
 
 
 class DiagnosisRepository(ABC):
@@ -85,3 +90,23 @@ class DiagnosisRepository(ABC):
         sort_order: int | None = None,
         local_label: str | None = None,
     ) -> TenantOverlay: ...
+
+    # === Legacy aliases ===
+
+    @abstractmethod
+    async def list_aliases(self, *, confidence: str | None = None) -> list[DiagnosisAlias]: ...
+
+    @abstractmethod
+    async def upsert_alias(
+        self,
+        *,
+        raw_value: str,
+        diagnosis_type_id: str,
+        diagnosis_id: str | None,
+        source: str,
+        confidence: str,
+    ) -> DiagnosisAlias: ...
+
+    @abstractmethod
+    async def alias_lookup(self) -> dict[str, tuple[str, str | None]]:
+        """Normalised key to (type id, diagnosis id), shaped for the importer."""

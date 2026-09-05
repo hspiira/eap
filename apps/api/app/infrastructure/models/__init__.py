@@ -31,6 +31,7 @@ from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
 from app.infrastructure.models.diagnosis_model import (
+    DiagnosisAliasModel,
     DiagnosisModel,
     DiagnosisTypeModel,
     TenantDiagnosisSettingModel,
@@ -104,6 +105,7 @@ __all__ = [
     "EligibleMemberClinicalLinkModel",
     "EligibleMemberModel",
     "MemberNextOfKinModel",
+    "DiagnosisAliasModel",
     "DiagnosisTypeModel",
     "TenantDiagnosisSettingModel",
     "DocumentModel",
