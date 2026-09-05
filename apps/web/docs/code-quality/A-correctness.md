@@ -456,7 +456,7 @@ alike: `Service.category` is free text (`types/entities/delivery.ts:22`, `catego
 while `ProgrammeSessionCap.service_category` and `AuthorizationModel.service_category` are the
 `ServiceCategory` enum (`types/entities/clinical.ts:116`). Nothing links them, so a completed session
 cannot be mapped to the programme cap it consumes. That gap is logged separately in
-`apps/api/docs/SERVICES_MIGRATION.md`.
+`apps/api/docs/SERVICES_MODULE.md`, section 3.6.
 
 The check that distinguishes them: an enum-backed field has a `$ref` in the contract and a CHECK
 constraint or enum column in the model. `person_type` has both, which is why the other six sites are
@@ -495,7 +495,7 @@ assertion, which is the intended signal rather than a problem.
 **One display question this raised.** Preserving a run of capitals means a value that is entirely
 capitals is now left alone, so `ActivityType` values render as `CALL` and `EMAIL` rather than `Call`
 and `Email`. That is correct for `DAP` and `SOAP`, and shouty for the rest.
-`components/ClientActivityCard.tsx:93` renders `activity_type` raw as a fallback title, so it
+`components/clients/ClientActivityCard.tsx:93` renders `activity_type` raw as a fallback title, so it
 already shows the capitals; routing it through the helper would not fix it. Those enums want a label
 map rather than a derived label, which is a copy decision.
 
