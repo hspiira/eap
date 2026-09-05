@@ -187,6 +187,43 @@ association not yet wired in v1". The columns exist on `service_sessions`, so
 the association is present in the schema. The report is the reason the taxonomy
 needs to be clean before the legacy import runs.
 
+### 3.6 The service catalogue is not connected to the entitlement engine
+
+`services.category` is a free-text `String(100)`
+(`apps/api/app/infrastructure/models/service_model.py:41`, schema max_length 100
+at `apps/api/app/api/schemas/service_schemas.py:23`). The contract types it
+`{"anyOf": [{"type": "string"}, {"type": "null"}]}` with no `$ref`, and
+`apps/web/src/types/entities/delivery.ts:22` types it `category?: string | null`.
+
+`ProgrammeSessionCap.service_category`
+(`apps/api/app/domain/value_objects/programme.py:18`) and
+`AuthorizationModel.service_category`
+(`apps/api/app/infrastructure/models/eap_programme_model.py:50`) are the
+`ServiceCategory` enum (`apps/api/app/domain/enums/session.py:51`), indexed, and
+they drive programme session caps.
+
+Nothing derives one from the other. Two consequences:
+
+- Given a completed session you cannot determine which programme cap it should
+  draw down, because the only route from the catalogue to the cap is a
+  free-text string a user typed.
+- `Authorization.consume_session`
+  (`apps/api/app/domain/entities/authorization.py:89`) has no callers other than
+  the manual route at `apps/api/app/api/routes/eap_programmes.py:203`.
+  Entitlement drawdown is manual today.
+
+Typing the column is the prerequisite for automating drawdown. It needs a data
+audit of existing values first; there is no seed for this column, so the current
+contents are unknown and unmappable values must be decided rather than
+defaulted.
+
+**Two different fields are spelled alike, and the confusion is live.** A
+frontend session read `service.category` as the `ServiceCategory` enum and
+routed it through a label helper in `9b950c3`, which title-cased what users had
+typed (`eap` rendered as `Eap`). Corrected in `166f221`. Before treating a field
+as enum-backed, confirm it has a `$ref` in the contract and a CHECK constraint
+or enum column in the model; `service.category` has neither.
+
 ## 4. Recommendation
 
 ### 4.1 Add a `diagnosis_aliases` table
