@@ -1,6 +1,6 @@
 """Selecting and consuming the authorization a completed session draws down."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 
@@ -77,7 +77,9 @@ class TestSelection:
         assert select_authorization(rows, service_category=COUNSELLING) is None
 
     def test_an_expired_authorization_is_not_selected(self):
-        rows = [_auth(expires_on=date.today() - timedelta(days=1))]
+        # utc_now(), not date.today(): the production check is in UTC, so a
+        # local date makes this fail for anyone east of UTC around midnight.
+        rows = [_auth(expires_on=utc_now().date() - timedelta(days=1))]
         assert select_authorization(rows, service_category=COUNSELLING) is None
 
     def test_a_closed_authorization_is_not_selected(self):
