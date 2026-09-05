@@ -17,6 +17,7 @@ import pytest
 import pytest_asyncio
 from fastapi import Depends, Request
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -83,6 +84,18 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.drop_all)
 
 
+async def _only_tenant_id(session: AsyncSession) -> str:
+    """The tenant a test created, for routes that do not name one in the URL.
+
+    Returns a placeholder when no tenant exists yet, so tests asserting 404 or
+    401 before any setup still get a well-formed token.
+    """
+    from app.infrastructure.models.tenant_model import TenantModel
+
+    result = await session.execute(select(TenantModel.id).limit(1))
+    return result.scalar_one_or_none() or "test-tenant-id"
+
+
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
@@ -93,11 +106,18 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield db_session
 
     async def override_get_current_user(request: Request) -> TokenData:
-        """Mock authentication for tests - returns a test user token with tenant_id from path or query."""
-        # Path params (e.g. /tenants/{tenant_id}) take precedence so require_same_tenant passes
-        tenant_id = request.path_params.get("tenant_id") or request.query_params.get(
-            "tenant_id", "test-tenant-id"
-        )
+        """Mock authentication, resolving the tenant the way the request does.
+
+        Path params (e.g. /tenants/{tenant_id}) take precedence so
+        require_same_tenant passes, then an explicit query param. Routes that
+        carry neither (e.g. /persons/{person_id}) previously fell back to the
+        literal "test-tenant-id", which never matches the CUID a fixture
+        creates, so every by-ID route answered 404. Fall back to the tenant in
+        the database instead: these tests create exactly one.
+        """
+        tenant_id = request.path_params.get("tenant_id") or request.query_params.get("tenant_id")
+        if not tenant_id:
+            tenant_id = await _only_tenant_id(db_session)
         return TokenData(
             user_id="test-user-id",
             tenant_id=tenant_id,
@@ -273,6 +293,32 @@ async def test_user(db_session: AsyncSession, test_tenant: dict) -> dict[str, An
 
 
 @pytest_asyncio.fixture
+async def test_person_client(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
+    """A client for person employment_info to point at.
+
+    PersonMapper requires employment_info to carry client_id and a well-formed
+    employee_code, so a person fixture cannot stand alone.
+    """
+    from app.domain.enums import BaseStatus
+    from app.infrastructure.models.client_model import ClientModel
+
+    client_id = generate_cuid()
+    db_session.add(
+        ClientModel(
+            id=client_id,
+            tenant_id=test_tenant["id"],
+            name="Person Test Client",
+            code="PTC",
+            status=BaseStatus.ACTIVE,
+            contact_info={"phone": "+441234567890", "email": "ops@person-test.example"},
+            is_verified=True,
+        )
+    )
+    await db_session.commit()
+    return {"id": client_id, "code": "PTC"}
+
+
+@pytest_asyncio.fixture
 async def test_user_2(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
     """Create a second test user directly in the database."""
     from app.domain.enums import UserStatus
@@ -299,7 +345,7 @@ async def test_user_2(db_session: AsyncSession, test_tenant: dict) -> dict[str, 
 
 @pytest_asyncio.fixture
 async def test_client_employee(
-    db_session: AsyncSession, test_tenant: dict, test_user: dict
+    db_session: AsyncSession, test_tenant: dict, test_user: dict, test_person_client: dict
 ) -> dict[str, Any]:
     """Create a test client employee person directly in the database."""
     from app.domain.enums import BaseStatus, PersonType, WorkStatus
@@ -314,6 +360,8 @@ async def test_client_employee(
         is_dual_role=False,
         status=BaseStatus.ACTIVE,
         employment_info={
+            "client_id": test_person_client["id"],
+            "employee_code": f"{test_person_client['code']}-01-01",
             "role": "Software Engineer",
             "start_date": date.today().isoformat(),
             "status": WorkStatus.ACTIVE.value,
@@ -368,7 +416,9 @@ async def test_service_provider(
 
 
 @pytest_asyncio.fixture
-async def test_pending_person(db_session: AsyncSession, test_tenant: dict) -> dict[str, Any]:
+async def test_pending_person(
+    db_session: AsyncSession, test_tenant: dict, test_person_client: dict
+) -> dict[str, Any]:
     """Create a test person in PENDING status."""
     from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
     from app.infrastructure.models.person_model import PersonModel
@@ -395,6 +445,8 @@ async def test_pending_person(db_session: AsyncSession, test_tenant: dict) -> di
         is_dual_role=False,
         status=BaseStatus.PENDING,
         employment_info={
+            "client_id": test_person_client["id"],
+            "employee_code": f"{test_person_client['code']}-01-02",
             "role": "New Hire",
             "start_date": date.today().isoformat(),
             "status": WorkStatus.ACTIVE.value,
@@ -414,9 +466,15 @@ async def test_pending_person(db_session: AsyncSession, test_tenant: dict) -> di
 
 
 @pytest.fixture
-def sample_employment_info() -> dict[str, Any]:
-    """Sample employment information."""
+def sample_employment_info(test_person_client: dict) -> dict[str, Any]:
+    """Sample employment information.
+
+    EmploymentInfoSchema forbids extra keys and requires client_id and
+    employee_code, so this has to name a real client.
+    """
     return {
+        "client_id": test_person_client["id"],
+        "employee_code": f"{test_person_client['code']}-02-01",
         "role": "Senior Developer",
         "start_date": date.today().isoformat(),
         "status": "Active",
@@ -1104,10 +1162,24 @@ async def session_test_client_person(
     from datetime import date
 
     from app.domain.enums import BaseStatus, PersonType, UserStatus, WorkStatus
+    from app.infrastructure.models.client_model import ClientModel
     from app.infrastructure.models.person_model import PersonModel
     from app.infrastructure.models.user_model import UserModel
 
-    # Create user first
+    # employment_info must name a client and a well-formed employee_code.
+    employer_id = generate_cuid()
+    db_session.add(
+        ClientModel(
+            id=employer_id,
+            tenant_id=session_test_tenant["id"],
+            name="Session Test Employer",
+            code="STE",
+            status=BaseStatus.ACTIVE,
+            contact_info={"phone": "+441234567890", "email": "ops@session-test.example"},
+            is_verified=True,
+        )
+    )
+
     user_id = generate_cuid()
     user = UserModel(
         id=user_id,
@@ -1129,6 +1201,8 @@ async def session_test_client_person(
         is_dual_role=False,
         status=BaseStatus.ACTIVE,
         employment_info={
+            "client_id": employer_id,
+            "employee_code": "STE-01-01",
             "role": "Test Employee",
             "start_date": date.today().isoformat(),
             "status": WorkStatus.ACTIVE.value,
