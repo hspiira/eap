@@ -16,7 +16,22 @@ vi.mock("@/hooks/useCanWrite", () => ({ useCanWrite: () => mocks.canWrite }))
 vi.mock("@/components/MemberFormSheet", () => ({ MemberFormSheet: () => null }))
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => ({ options }),
-  Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
+  // Forwards aria-label and className so tests can assert on the rendered
+  // anchor the way a user's screen reader would find it.
+  Link: ({
+    children,
+    to: _to,
+    params: _params,
+    ...rest
+  }: {
+    children: React.ReactNode
+    to?: string
+    params?: unknown
+  }) => (
+    <a href={_to} {...rest}>
+      {children}
+    </a>
+  ),
   useNavigate: () => vi.fn(),
   useSearch: () => mocks.search,
 }))
@@ -62,6 +77,62 @@ describe("member roster", () => {
     expect(mocks.exportCsv).toHaveBeenCalledWith(
       expect.objectContaining({ client_id: "client-1", relation: "Employee" }),
     )
+  })
+
+  it("shows contact detail as plain copyable text, not inside a link", async () => {
+    mocks.list.mockResolvedValue({
+      items: [
+        makeMember({
+          client_name: "Acme Ltd",
+          work_email: "amina@acme.test",
+          personal_email: "amina@personal.test",
+          phone: "+256700000000",
+        }),
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    })
+    renderWithProviders(<Page />)
+
+    // The name is no longer a link, so a click-drag selects rather than navigates.
+    const name = await screen.findByText("Amina Namukasa")
+    expect(name.closest("a")).toBeNull()
+
+    for (const value of [
+      "Acme Ltd",
+      "HR-1",
+      "amina@acme.test",
+      "amina@personal.test",
+      "+256700000000",
+    ]) {
+      expect(screen.getByText(value).closest("a")).toBeNull()
+    }
+    // The client column shows the name, never the raw id.
+    expect(screen.queryByText("client-1")).not.toBeInTheDocument()
+  })
+
+  it("shows status as an icon with an accessible label rather than a badge column", async () => {
+    renderWithProviders(<Page />)
+    // Visually an icon, but still announced, and the column header stays
+    // screen-reader-only so the icon column has a name without a visible label.
+    expect(await screen.findByRole("img", { name: "Active" })).toBeInTheDocument()
+    expect(screen.queryByText("Suspended")).not.toBeInTheDocument()
+  })
+
+  it("keeps row actions behind the ellipsis and offers a direct open icon", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+    await screen.findByText("Amina Namukasa")
+
+    expect(screen.getByRole("link", { name: "Open Amina Namukasa" })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: "Edit" })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "More actions for Amina Namukasa" }))
+
+    expect(await screen.findByRole("menuitem", { name: "Edit" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "View details" })).toBeInTheDocument()
   })
 
   it("hides create and edit controls from viewers", async () => {
