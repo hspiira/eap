@@ -177,9 +177,6 @@ that rewrote them with CRLF would fail those gates:
 
 ## Known gaps
 
-- The integration and E2E suite (`pytest tests --ignore=tests/unit`) is
-  currently red and runs with `continue-on-error: true` in CI. It does not gate
-  merges until that is fixed.
 - Backend type coverage is ratcheting. `app/domain` is a strict zero-error
   pyright gate; the rest of the project is reported but not enforced.
 - Backend test coverage sits just above the 60% floor (63%), so a moderately

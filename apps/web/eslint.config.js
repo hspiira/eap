@@ -81,12 +81,12 @@ export default tseslint.config(
         {
           selector: "Literal[value=/#[0-9a-fA-F]{3,6}\\b/]",
           message:
-            "No raw hex literals in components/routes: use a CSS-var-backed Tailwind class (defined in src/theme/). See docs/CODING_GUIDELINES.md §1.8.",
+            "No raw hex literals in components/routes: use a CSS-var-backed Tailwind class, defined in src/theme/.",
         },
         {
           selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,6}\\b/]",
           message:
-            "No raw hex literals in components/routes: use a CSS var (defined in src/theme/). See docs/CODING_GUIDELINES.md §1.8.",
+            "No raw hex literals in components/routes: use a CSS var, defined in src/theme/.",
         },
         // C22: Shadcn-only UI primitives. Use Input, Select, Textarea, Button,
         // Table, Dialog, Collapsible, Progress, Checkbox, RadioGroup from
@@ -96,7 +96,7 @@ export default tseslint.config(
           selector:
             "JSXOpeningElement[name.type='JSXIdentifier'][name.name=/^(input|select|textarea|button|table|dialog|details|progress)$/]",
           message:
-            "No native HTML primitive in components/routes: use the shadcn equivalent from @/components/ui/. See docs/IMPLEMENTATION_PLAN.md (C22).",
+            "No native HTML primitive in components/routes: use the shadcn equivalent from @/components/ui/.",
         },
       ],
     },
