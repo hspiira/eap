@@ -184,8 +184,10 @@ that rewrote them with CRLF would fail those gates:
 - The audit trail covers lifecycle transitions and little else. Auditing is
   event-driven, so a mutating entity method that appends no domain event never
   reaches `audit_logs`: creating a client and changing its name or contact
-  details both leave no record, while suspending it does. 33 of 137 mutating
-  entity methods emit an event; nine entities emit none at all.
+  details both leave no record, while suspending it does. 54 of 196 mutating
+  entity methods emit an event, leaving 142 silent across 32 classes;
+  17 classes emit nothing at all, including `ServiceEntity`, `ContactEntity`
+  and `EligibleMember`.
   `tests/unit/domain/test_audit_coverage.py` pins that number and names the
   silent methods, so the gap cannot widen unnoticed. Widening the audit scope
   is a product decision, not a bug fix.

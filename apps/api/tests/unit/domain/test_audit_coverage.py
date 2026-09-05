@@ -22,16 +22,22 @@ import app.domain.entities as entities_pkg
 
 # Methods that assign to self but emit no domain event, per entity. Lower is
 # better. Raise this only with a reason; lower it freely.
-KNOWN_SILENT_MUTATORS = 104
+KNOWN_SILENT_MUTATORS = 142
 
 
 def _entity_classes():
+    """Every domain entity dataclass.
+
+    Not filtered on an "Entity" suffix: most aggregates do not use one
+    (Case, Authorization, EligibleMember), and filtering on it hides two
+    thirds of the domain.
+    """
     for module_info in pkgutil.iter_modules(entities_pkg.__path__):
         module = importlib.import_module(f"app.domain.entities.{module_info.name}")
         for name, obj in vars(module).items():
-            if not (inspect.isclass(obj) and name.endswith("Entity")):
+            if not inspect.isclass(obj) or obj.__module__ != module.__name__:
                 continue
-            if obj.__module__ != module.__name__:
+            if not hasattr(obj, "__dataclass_fields__"):
                 continue
             yield name, obj
 
