@@ -15,6 +15,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import sys
+from pathlib import Path
+
+# Running as a script puts scripts/ on sys.path, not the repo root.
+_project_root = Path(__file__).resolve().parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from app.application.services.outbox_consumers import make_audit_consumer
 from app.application.services.outbox_dispatcher import OutboxDispatcher
