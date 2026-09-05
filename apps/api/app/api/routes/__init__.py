@@ -27,6 +27,7 @@ from app.api.routes.eligible_members import router as eligible_members_router
 from app.api.routes.engagements import router as engagements_router
 from app.api.routes.industries import router as industries_router
 from app.api.routes.kpis import router as kpis_router
+from app.api.routes.members import router as members_router
 from app.api.routes.non_compete_clauses import router as non_compete_router
 from app.api.routes.panel import router as panel_router
 from app.api.routes.persons import router as persons_router
@@ -71,6 +72,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(dsar_router)
     app.include_router(benchmark_router)
     app.include_router(eligible_members_router)
+    app.include_router(members_router)
     app.include_router(eap_programmes_router)
     app.include_router(kpis_router)
     app.include_router(audit_router)
@@ -98,6 +100,7 @@ __all__ = [
     "engagements_router",
     "industries_router",
     "kpis_router",
+    "members_router",
     "non_compete_router",
     "panel_router",
     "persons_router",

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
     get_audit_event_handler,
+    get_client_repository,
     get_clinical_subject_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
@@ -21,10 +22,13 @@ from app.api.schemas.eligible_member_schemas import (
 from app.application.use_cases.eligible_member_use_cases import (
     EnrolEligibleMemberUseCase,
 )
+from app.core.authorization import require_not_viewer
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.enums import MemberRelation
+from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
     EligibleMemberClinicalLinkRepository,
@@ -84,7 +88,8 @@ def _tenant_pseudonym_secret(tenant_id: str) -> str:
 async def enrol_eligible_member(
     data: EligibleMemberEnrol,
     request: Request,
-    current_user: TokenData = Depends(get_current_user),
+    current_user: TokenData = Depends(require_not_viewer),
+    client_repo: ClientRepository = Depends(get_client_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
     link_repo: EligibleMemberClinicalLinkRepository = Depends(
@@ -93,6 +98,20 @@ async def enrol_eligible_member(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    client = await client_repo.get_by_id(ClientId(data.client_id))
+    if client is None or client.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Client not found")
+    if data.primary_employee_member_id:
+        primary = await member_repo.get_by_id(EligibleMemberId(data.primary_employee_member_id))
+        if (
+            primary is None
+            or primary.tenant_id.value != current_user.tenant_id
+            or primary.client_id.value != data.client_id
+            or primary.relation != MemberRelation.EMPLOYEE
+        ):
+            raise HTTPException(
+                status_code=422, detail="Primary employee is not valid for this client"
+            )
     use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
     member, _ = await use_case.execute(
         tenant_id=TenantId(current_user.tenant_id),

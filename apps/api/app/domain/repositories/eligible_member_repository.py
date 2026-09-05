@@ -2,6 +2,7 @@
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.enums import EligibilityStatus, MemberRelation
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -20,6 +21,39 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         limit: int = 200,
         offset: int = 0,
     ) -> list[EligibleMember]: ...
+
+    async def list_for_primary(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        primary_employee_member_id: EligibleMemberId,
+        *,
+        limit: int = 100,
+    ) -> list[EligibleMember]: ...
+
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> list[EligibleMember]: ...
+
+    async def count(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+    ) -> int: ...
 
     async def find_by_employer_member_id(
         self,

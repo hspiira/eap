@@ -2,11 +2,12 @@
 
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.enums import EligibilityStatus, MemberRelation
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
     EligibleMemberClinicalLinkRepository,
@@ -92,6 +93,112 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return [EligibleMemberMapper.to_entity(r) for r in rows]
+
+    async def list_for_primary(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        primary_employee_member_id: EligibleMemberId,
+        *,
+        limit: int = 100,
+    ) -> list[EligibleMember]:
+        stmt = (
+            select(EligibleMemberModel)
+            .where(
+                EligibleMemberModel.tenant_id == tenant_id.value,
+                EligibleMemberModel.client_id == client_id.value,
+                EligibleMemberModel.primary_employee_member_id == primary_employee_member_id.value,
+            )
+            .order_by(EligibleMemberModel.employer_member_id, EligibleMemberModel.id)
+            .limit(limit)
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return [EligibleMemberMapper.to_entity(r) for r in rows]
+
+    @staticmethod
+    def _filters(
+        stmt,
+        *,
+        tenant_id: TenantId,
+        client_id: ClientId | None,
+        status: EligibilityStatus | None,
+        relation: MemberRelation | None,
+        search: str | None,
+    ):
+        stmt = stmt.where(EligibleMemberModel.tenant_id == tenant_id.value)
+        if client_id:
+            stmt = stmt.where(EligibleMemberModel.client_id == client_id.value)
+        if status:
+            stmt = stmt.where(EligibleMemberModel.status == status)
+        if relation:
+            stmt = stmt.where(EligibleMemberModel.relation == relation)
+        if search:
+            pattern = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    EligibleMemberModel.employer_member_id.ilike(pattern),
+                    EligibleMemberModel.display_label.ilike(pattern),
+                    EligibleMemberModel.work_email.ilike(pattern),
+                    EligibleMemberModel.personal_email.ilike(pattern),
+                )
+            )
+        return stmt
+
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> list[EligibleMember]:
+        allowed = {"created_at", "updated_at", "employer_member_id", "display_label", "status"}
+        if sort_by not in allowed:
+            raise ValueError(f"Invalid member sort column: {sort_by}")
+        stmt = self._filters(
+            select(EligibleMemberModel),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            relation=relation,
+            search=search,
+        )
+        column = getattr(EligibleMemberModel, sort_by)
+        order = column.desc() if sort_desc else column.asc()
+        rows = (
+            (
+                await self._session.execute(
+                    stmt.order_by(order, EligibleMemberModel.id.asc()).limit(limit).offset(offset)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return [EligibleMemberMapper.to_entity(r) for r in rows]
+
+    async def count(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+    ) -> int:
+        stmt = self._filters(
+            select(func.count(EligibleMemberModel.id)),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            relation=relation,
+            search=search,
+        )
+        return int((await self._session.execute(stmt)).scalar_one())
 
     async def find_by_employer_member_id(
         self,

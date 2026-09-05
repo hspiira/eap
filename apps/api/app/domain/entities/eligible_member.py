@@ -86,6 +86,38 @@ class EligibleMember:
         self.last_imported_at = when or utc_now()
         self.updated_at = self.last_imported_at
 
+    def update_roster_details(
+        self,
+        *,
+        employer_member_id: str,
+        relation: MemberRelation,
+        primary_employee_member_id: EligibleMemberId | None = None,
+        coverage_start: date | None = None,
+        coverage_end: date | None = None,
+        work_email: Email | None = None,
+        personal_email: Email | None = None,
+        display_label: str | None = None,
+    ) -> None:
+        """Update current roster details without creating a User account."""
+        if not employer_member_id:
+            raise DomainError("EligibleMember requires an employer_member_id")
+        if coverage_end and coverage_start and coverage_end < coverage_start:
+            raise DomainError("coverage_end must be on or after coverage_start")
+        if relation == MemberRelation.EMPLOYEE and primary_employee_member_id is not None:
+            raise DomainError("Employees cannot have a primary employee member")
+        if relation != MemberRelation.EMPLOYEE and primary_employee_member_id is None:
+            raise DomainError(f"{relation.value} requires a primary_employee_member_id")
+
+        self.employer_member_id = employer_member_id
+        self.relation = relation
+        self.primary_employee_member_id = primary_employee_member_id
+        self.coverage_start = coverage_start
+        self.coverage_end = coverage_end
+        self.work_email = work_email
+        self.personal_email = personal_email
+        self.display_label = display_label
+        self.updated_at = utc_now()
+
     def is_currently_eligible(self, *, today: date | None = None) -> bool:
         today = today or utc_now().date()
         if self.status != EligibilityStatus.ACTIVE:

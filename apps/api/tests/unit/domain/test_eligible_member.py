@@ -109,6 +109,35 @@ class TestEligibleMemberFSM:
         m.coverage_end = utc_now().date() + timedelta(days=1)
         assert m.is_currently_eligible() is True
 
+    def test_roster_update_can_clear_optional_values(self):
+        m = _member()
+        m.coverage_start = date(2026, 1, 1)
+        m.coverage_end = date(2026, 12, 31)
+        m.display_label = "Former label"
+        m.update_roster_details(
+            employer_member_id="HR-987",
+            relation=MemberRelation.EMPLOYEE,
+            primary_employee_member_id=None,
+            coverage_start=None,
+            coverage_end=None,
+            work_email=None,
+            personal_email=None,
+            display_label=None,
+        )
+        assert m.employer_member_id == "HR-987"
+        assert m.coverage_start is None
+        assert m.coverage_end is None
+        assert m.display_label is None
+
+    def test_roster_update_preserves_relationship_invariants(self):
+        m = _member()
+        with pytest.raises(DomainError, match="primary_employee_member_id"):
+            m.update_roster_details(
+                employer_member_id="HR-12345",
+                relation=MemberRelation.SPOUSE,
+                primary_employee_member_id=None,
+            )
+
 
 class TestClinicalSubject:
     def test_pseudonym_required(self):
