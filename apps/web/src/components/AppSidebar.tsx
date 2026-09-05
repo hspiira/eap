@@ -63,7 +63,7 @@ const TOP_ITEMS: ReadonlyArray<NavItem> = [{ to: "/", label: "Home", icon: Home 
 /** Day-to-day operational navigation: flat, no section label. */
 const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/clients", label: "Clients", icon: Building2 },
-  { to: "/persons", label: "Persons", icon: Users },
+  { to: "/members", label: "Members", icon: Users },
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
   { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },

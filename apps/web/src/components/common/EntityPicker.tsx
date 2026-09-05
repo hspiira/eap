@@ -25,6 +25,7 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   emptyNoMatch,
   renderRow,
   renderSelected,
+  selectedItem,
   params,
   filter,
 }: {
@@ -39,6 +40,8 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   emptyNoMatch: string
   renderRow: (item: T) => React.ReactNode
   renderSelected: (item: T) => React.ReactNode
+  /** Optional resolved value for records not present in the first search page. */
+  selectedItem?: T | null
   /** Merged into the list query, e.g. a person_type narrowing. */
   params?: Omit<P, keyof ListParams> & Partial<ListParams>
   /** Last-resort client-side narrowing for resources the API can't filter. */
@@ -53,7 +56,8 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   })
   const all = list.data?.items ?? []
   const items = filter ? all.filter(filter) : all
-  const selected = items.find((i) => i.id === value)
+  const selected =
+    selectedItem?.id === value ? selectedItem : items.find((item) => item.id === value)
 
   if (selected) {
     return (
@@ -137,9 +141,11 @@ export function PickerRow({
 export function ClientPicker({
   value,
   onChange,
+  selected,
 }: {
   value: string
   onChange: (id: string) => void
+  selected?: Client | null
 }) {
   return (
     <EntityPicker<Client>
@@ -156,6 +162,7 @@ export function ClientPicker({
       renderRow={(c) => (
         <PickerRow initials={nameInitials(c.name)} primary={c.name} secondary={c.code} />
       )}
+      selectedItem={selected}
     />
   )
 }

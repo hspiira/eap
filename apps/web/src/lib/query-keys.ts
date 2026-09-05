@@ -47,6 +47,7 @@ export const queryKeys = {
   serviceSessions: resourceKeys("service-sessions"),
   tenants: resourceKeys("tenants"),
   providers: resourceKeys("providers"),
+  members: resourceKeys("members"),
   incidents: resourceKeys("incidents"),
   surveys: resourceKeys("surveys"),
   questionnaires: resourceKeys("questionnaires"),

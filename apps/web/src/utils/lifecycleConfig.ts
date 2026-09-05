@@ -30,6 +30,7 @@ export function getAllowedLifecycleActions(
     | "user"
     | "tenant"
     | "client"
+    | "member"
     | "contract"
     | "service"
     | "session"
@@ -57,6 +58,12 @@ export function getAllowedLifecycleActions(
     if (s === "pending") return ["activate", "archive"]
     if (s === "deleted" || s === "terminated") return []
     return BASE_ACTIVE_ACTIONS
+  }
+  if (kind === "member") {
+    if (s === "active") return ["suspend", "terminate"]
+    if (s === "suspended" || s === "pending") return ["activate"]
+    if (s === "terminated") return []
+    return []
   }
   if (kind === "contract") {
     if (s === "active") return ["terminate", "renew"]

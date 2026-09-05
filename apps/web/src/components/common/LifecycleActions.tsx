@@ -29,7 +29,16 @@ const DESTRUCTIVE_ACTIONS: LifecycleAction[] = ["terminate", "archive", "ban", "
 export interface LifecycleActionsProps {
   entityId: string
   currentStatus: string
-  kind: "base" | "user" | "tenant" | "client" | "contract" | "service" | "session" | "document"
+  kind:
+    | "base"
+    | "user"
+    | "tenant"
+    | "client"
+    | "member"
+    | "contract"
+    | "service"
+    | "session"
+    | "document"
   onAction: (entityId: string, action: LifecycleAction) => void | Promise<void>
   loading?: boolean
   adminOnlyActions?: ReadonlyArray<LifecycleAction>

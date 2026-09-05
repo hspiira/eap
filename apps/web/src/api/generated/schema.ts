@@ -3055,6 +3055,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["list_members_members_get"];
+        put?: never;
+        /** Create Member */
+        post: operations["create_member_members_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scan Member Duplicates */
+        get: operations["scan_member_duplicates_members_duplicates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Members */
+        get: operations["export_members_members_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Member */
+        get: operations["get_member_members__member_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Member */
+        patch: operations["update_member_members__member_id__patch"];
+        trace?: never;
+    };
+    "/members/{member_id}/beneficiaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Beneficiaries */
+        get: operations["list_member_beneficiaries_members__member_id__beneficiaries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reinstate Member */
+        post: operations["reinstate_member_members__member_id__reinstate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend Member */
+        post: operations["suspend_member_members__member_id__suspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Terminate Member */
+        post: operations["terminate_member_members__member_id__terminate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/non-compete-clauses": {
         parameters: {
             query?: never;
@@ -8771,11 +8909,122 @@ export interface components {
             user_id: string;
         };
         /**
+         * MemberCreate
+         * @description Create a covered member; a login account is optional and separate.
+         */
+        MemberCreate: {
+            /** Client Id */
+            client_id: string;
+            /** Coverage End */
+            coverage_end?: string | null;
+            /** Coverage Start */
+            coverage_start?: string | null;
+            /** Display Label */
+            display_label: string;
+            /** Employer Member Id */
+            employer_member_id: string;
+            /** Personal Email */
+            personal_email?: string | null;
+            /** Primary Employee Member Id */
+            primary_employee_member_id?: string | null;
+            relation: components["schemas"]["MemberRelation"];
+            /** Work Email */
+            work_email?: string | null;
+        };
+        /** MemberDuplicateCandidate */
+        MemberDuplicateCandidate: {
+            /** Matched On */
+            matched_on: string[];
+            member: components["schemas"]["MemberResponse"];
+        };
+        /** MemberDuplicateListResponse */
+        MemberDuplicateListResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["MemberDuplicateCandidate"][];
+        };
+        /** MemberListResponse */
+        MemberListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["MemberResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /**
          * MemberRelation
          * @description Relationship of an eligible member to the primary employee.
          * @enum {string}
          */
         MemberRelation: "Employee" | "Spouse" | "Child" | "DomesticPartner" | "DependentOther";
+        /** MemberResponse */
+        MemberResponse: {
+            /** Client Id */
+            client_id: string;
+            /** Coverage End */
+            coverage_end: string | null;
+            /** Coverage Start */
+            coverage_start: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Label */
+            display_label: string | null;
+            /** Employer Member Id */
+            employer_member_id: string;
+            /** Id */
+            id: string;
+            /** Is Currently Eligible */
+            is_currently_eligible: boolean;
+            /** Last Imported At */
+            last_imported_at: string | null;
+            /** Personal Email */
+            personal_email: string | null;
+            /** Primary Employee Member Id */
+            primary_employee_member_id: string | null;
+            relation: components["schemas"]["MemberRelation"];
+            status: components["schemas"]["EligibilityStatus"];
+            /** Suspended At */
+            suspended_at: string | null;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Terminated At */
+            terminated_at: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Work Email */
+            work_email: string | null;
+        };
+        /**
+         * MemberUpdate
+         * @description Patch current roster details. Null clears an optional field.
+         */
+        MemberUpdate: {
+            /** Coverage End */
+            coverage_end?: string | null;
+            /** Coverage Start */
+            coverage_start?: string | null;
+            /** Display Label */
+            display_label?: string | null;
+            /** Employer Member Id */
+            employer_member_id?: string | null;
+            /** Personal Email */
+            personal_email?: string | null;
+            /** Primary Employee Member Id */
+            primary_employee_member_id?: string | null;
+            relation?: components["schemas"]["MemberRelation"] | null;
+            /** Work Email */
+            work_email?: string | null;
+        };
         /**
          * MoneyCreate
          * @description Money for creation.
@@ -17141,6 +17390,333 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KPIResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_members_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["EligibilityStatus"] | null;
+                relation?: components["schemas"]["MemberRelation"] | null;
+                search?: string | null;
+                sort_by?: string;
+                sort_desc?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_member_members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_member_duplicates_members_duplicates_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDuplicateListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_members_members_export_get: {
+        parameters: {
+            query?: {
+                member_ids?: string[] | null;
+                client_id?: string | null;
+                status?: components["schemas"]["EligibilityStatus"] | null;
+                relation?: components["schemas"]["MemberRelation"] | null;
+                search?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_member_members__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_members__member_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_beneficiaries_members__member_id__beneficiaries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reinstate_member_members__member_id__reinstate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suspend_member_members__member_id__suspend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    terminate_member_members__member_id__terminate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
                 };
             };
             /** @description Validation Error */

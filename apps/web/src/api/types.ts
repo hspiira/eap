@@ -50,6 +50,7 @@ export type {
   InvoiceLinePreview,
   KPI,
   KPIAssignment,
+  Member,
   NonCompeteClause,
   OutreachRecord,
   Person,

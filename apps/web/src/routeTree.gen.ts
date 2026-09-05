@@ -26,6 +26,7 @@ import { Route as IncidentsRouteImport } from './routes/incidents'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as MeRouteImport } from './routes/me'
+import { Route as MembersRouteImport } from './routes/members'
 import { Route as PersonsRouteImport } from './routes/persons'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -56,6 +57,8 @@ import { Route as EngagementsNewRouteImport } from './routes/engagements/new'
 import { Route as IncidentsIndexRouteImport } from './routes/incidents/index'
 import { Route as IncidentsIncidentIdRouteImport } from './routes/incidents/$incidentId'
 import { Route as IncidentsNewRouteImport } from './routes/incidents/new'
+import { Route as MembersIndexRouteImport } from './routes/members/index'
+import { Route as MembersMemberIdRouteImport } from './routes/members/$memberId'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
@@ -171,6 +174,11 @@ const KpisRoute = KpisRouteImport.update({
 const MeRoute = MeRouteImport.update({
   id: '/me',
   path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembersRoute = MembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonsRoute = PersonsRouteImport.update({
@@ -322,6 +330,16 @@ const IncidentsNewRoute = IncidentsNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => IncidentsRoute,
+} as any)
+const MembersIndexRoute = MembersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MembersRoute,
+} as any)
+const MembersMemberIdRoute = MembersMemberIdRouteImport.update({
+  id: '/$memberId',
+  path: '/$memberId',
+  getParentRoute: () => MembersRoute,
 } as any)
 const PersonsIndexRoute = PersonsIndexRouteImport.update({
   id: '/',
@@ -501,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
   '/me': typeof MeRoute
+  '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -525,6 +544,7 @@ export interface FileRoutesByFullPath {
   '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
+  '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
@@ -549,6 +569,7 @@ export interface FileRoutesByFullPath {
   '/contracts/': typeof ContractsIndexRoute
   '/engagements/': typeof EngagementsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
+  '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
@@ -590,6 +611,7 @@ export interface FileRoutesByTo {
   '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
+  '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
@@ -614,6 +636,7 @@ export interface FileRoutesByTo {
   '/contracts': typeof ContractsIndexRoute
   '/engagements': typeof EngagementsIndexRoute
   '/incidents': typeof IncidentsIndexRoute
+  '/members': typeof MembersIndexRoute
   '/persons': typeof PersonsIndexRoute
   '/providers': typeof ProvidersIndexRoute
   '/reports': typeof ReportsIndexRoute
@@ -647,6 +670,7 @@ export interface FileRoutesById {
   '/industries': typeof IndustriesRoute
   '/kpis': typeof KpisRoute
   '/me': typeof MeRoute
+  '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -671,6 +695,7 @@ export interface FileRoutesById {
   '/engagements/new': typeof EngagementsNewRoute
   '/incidents/$incidentId': typeof IncidentsIncidentIdRoute
   '/incidents/new': typeof IncidentsNewRoute
+  '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
@@ -695,6 +720,7 @@ export interface FileRoutesById {
   '/contracts/': typeof ContractsIndexRoute
   '/engagements/': typeof EngagementsIndexRoute
   '/incidents/': typeof IncidentsIndexRoute
+  '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
@@ -729,6 +755,7 @@ export interface FileRouteTypes {
     | '/industries'
     | '/kpis'
     | '/me'
+    | '/members'
     | '/persons'
     | '/providers'
     | '/reports'
@@ -753,6 +780,7 @@ export interface FileRouteTypes {
     | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
+    | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
     | '/providers/$providerId'
@@ -777,6 +805,7 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/engagements/'
     | '/incidents/'
+    | '/members/'
     | '/persons/'
     | '/providers/'
     | '/reports/'
@@ -818,6 +847,7 @@ export interface FileRouteTypes {
     | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
+    | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
     | '/providers/$providerId'
@@ -842,6 +872,7 @@ export interface FileRouteTypes {
     | '/contracts'
     | '/engagements'
     | '/incidents'
+    | '/members'
     | '/persons'
     | '/providers'
     | '/reports'
@@ -874,6 +905,7 @@ export interface FileRouteTypes {
     | '/industries'
     | '/kpis'
     | '/me'
+    | '/members'
     | '/persons'
     | '/providers'
     | '/reports'
@@ -898,6 +930,7 @@ export interface FileRouteTypes {
     | '/engagements/new'
     | '/incidents/$incidentId'
     | '/incidents/new'
+    | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
     | '/providers/$providerId'
@@ -922,6 +955,7 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/engagements/'
     | '/incidents/'
+    | '/members/'
     | '/persons/'
     | '/providers/'
     | '/reports/'
@@ -955,6 +989,7 @@ export interface RootRouteChildren {
   IndustriesRoute: typeof IndustriesRoute
   KpisRoute: typeof KpisRoute
   MeRoute: typeof MeRoute
+  MembersRoute: typeof MembersRouteWithChildren
   PersonsRoute: typeof PersonsRouteWithChildren
   ProvidersRoute: typeof ProvidersRouteWithChildren
   ReportsRoute: typeof ReportsRouteWithChildren
@@ -1090,6 +1125,13 @@ declare module '@tanstack/react-router' {
       path: '/me'
       fullPath: '/me'
       preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/members': {
+      id: '/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof MembersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/persons': {
@@ -1301,6 +1343,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/incidents/new'
       preLoaderRoute: typeof IncidentsNewRouteImport
       parentRoute: typeof IncidentsRoute
+    }
+    '/members/': {
+      id: '/members/'
+      path: '/'
+      fullPath: '/members/'
+      preLoaderRoute: typeof MembersIndexRouteImport
+      parentRoute: typeof MembersRoute
+    }
+    '/members/$memberId': {
+      id: '/members/$memberId'
+      path: '/$memberId'
+      fullPath: '/members/$memberId'
+      preLoaderRoute: typeof MembersMemberIdRouteImport
+      parentRoute: typeof MembersRoute
     }
     '/persons/': {
       id: '/persons/'
@@ -1634,6 +1690,19 @@ const IncidentsRouteWithChildren = IncidentsRoute._addFileChildren(
   IncidentsRouteChildren,
 )
 
+interface MembersRouteChildren {
+  MembersMemberIdRoute: typeof MembersMemberIdRoute
+  MembersIndexRoute: typeof MembersIndexRoute
+}
+
+const MembersRouteChildren: MembersRouteChildren = {
+  MembersMemberIdRoute: MembersMemberIdRoute,
+  MembersIndexRoute: MembersIndexRoute,
+}
+
+const MembersRouteWithChildren =
+  MembersRoute._addFileChildren(MembersRouteChildren)
+
 interface PersonsRouteChildren {
   PersonsPersonIdRoute: typeof PersonsPersonIdRoute
   PersonsNewRoute: typeof PersonsNewRoute
@@ -1784,6 +1853,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndustriesRoute: IndustriesRoute,
   KpisRoute: KpisRoute,
   MeRoute: MeRoute,
+  MembersRoute: MembersRouteWithChildren,
   PersonsRoute: PersonsRouteWithChildren,
   ProvidersRoute: ProvidersRouteWithChildren,
   ReportsRoute: ReportsRouteWithChildren,
