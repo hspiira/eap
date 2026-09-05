@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
@@ -81,8 +81,15 @@ export function ClientHealthCard({
   )
 }
 
-export function ClientContactsPanel({ clientId }: { clientId: string }) {
+export function ClientContactsPanel({
+  clientId,
+  contacts,
+}: {
+  clientId: string
+  contacts: Contact[]
+}) {
   const toast = useToast()
+  const [manageOpen, setManageOpen] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
@@ -91,14 +98,25 @@ export function ClientContactsPanel({ clientId }: { clientId: string }) {
   const contactsQuery = useQuery({
     queryKey: entityListKey("contacts", { client_id: clientId }),
     queryFn: () => contactsApi.byClient(clientId),
+    enabled: manageOpen,
   })
   const primaryQuery = useQuery({
     queryKey: ["contacts", "primary", clientId],
     queryFn: () => contactsApi.primary(clientId),
     retry: false,
   })
-  const contacts = contactsQuery.data ?? []
-  const primaryContact = primaryQuery.data ?? contacts.find((contact) => contact.is_primary) ?? null
+  const managedContacts = contactsQuery.data ?? contacts
+  const primaryContact =
+    primaryQuery.data ?? managedContacts.find((contact) => contact.is_primary) ?? null
+
+  useEffect(() => {
+    if (manageOpen) return
+    setName("")
+    setEmail("")
+    setPhone("")
+    setMakePrimary(false)
+  }, [manageOpen])
+
   const save = async () => {
     if (!name.trim()) return
     setSaving(true)
@@ -108,13 +126,10 @@ export function ClientContactsPanel({ clientId }: { clientId: string }) {
         name: name.trim(),
         email: email || null,
         phone: phone || null,
-        is_primary: contacts.length === 0 || makePrimary,
+        is_primary: managedContacts.length === 0 || makePrimary,
       })
-      setName("")
-      setEmail("")
-      setPhone("")
-      setMakePrimary(false)
-      await Promise.all([contactsQuery.refetch(), primaryQuery.refetch()])
+      await contactsQuery.refetch()
+      await primaryQuery.refetch()
       toast.showSuccess("Contact added")
     } catch (error) {
       toast.showError(normalizeErrorMessage(error, "Could not add contact"))
@@ -122,15 +137,18 @@ export function ClientContactsPanel({ clientId }: { clientId: string }) {
       setSaving(false)
     }
   }
+
   const setPrimary = async (contact: Contact) => {
     try {
       await contactsApi.update(contact.id, { is_primary: true })
-      await Promise.all([contactsQuery.refetch(), primaryQuery.refetch()])
+      await contactsQuery.refetch()
+      await primaryQuery.refetch()
       toast.showSuccess("Primary contact updated")
     } catch (error) {
       toast.showError(normalizeErrorMessage(error, "Could not update primary contact"))
     }
   }
+
   return (
     <Panel title="Contacts and primary contact">
       <div className="rounded-sm border border-primary/20 bg-primary/5 p-3">
@@ -152,75 +170,93 @@ export function ClientContactsPanel({ clientId }: { clientId: string }) {
           <p className="mt-1 text-xs text-fg-muted">No primary contact has been assigned.</p>
         )}
       </div>
-      {contacts.length === 0 ? (
-        <p className="text-xs text-fg-muted">No contact people added yet.</p>
-      ) : null}
-      <div className="space-y-2">
-        {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="flex items-center justify-between gap-3 border-b border-fg/8 pb-2 text-xs"
-          >
-            <div>
-              <div className="font-medium text-fg">
-                {contact.name}
-                {contact.is_primary ? " · Primary" : ""}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-fg-muted">
+          {contacts.length} contact{contacts.length === 1 ? "" : "s"} on file
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7"
+          onClick={() => setManageOpen((open) => !open)}
+        >
+          {manageOpen ? "Done" : "Manage contacts"}
+        </Button>
+      </div>
+      {manageOpen ? (
+        <div className="space-y-3 border-t border-fg/10 pt-3">
+          <p className="text-xs font-medium text-fg">Contact people</p>
+          {managedContacts.length === 0 ? (
+            <p className="text-xs text-fg-muted">No contacts yet.</p>
+          ) : null}
+          {managedContacts.map((contact) => (
+            <div
+              key={contact.id}
+              className="flex items-center justify-between gap-3 border-b border-fg/8 pb-2 text-xs"
+            >
+              <div>
+                <p className="font-medium text-fg">
+                  {contact.name}
+                  {contact.is_primary ? " · Primary" : ""}
+                </p>
+                <p className="text-fg-muted">
+                  {contact.title ?? "Contact"} · {contact.email ?? contact.phone ?? "No details"}
+                </p>
               </div>
-              <div className="text-fg-muted">
-                {contact.title ?? "Contact"} · {contact.email ?? contact.phone ?? "No details"}
-              </div>
+              {!contact.is_primary ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => void setPrimary(contact)}
+                >
+                  Make primary
+                </Button>
+              ) : null}
             </div>
-            {!contact.is_primary ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => void setPrimary(contact)}
-              >
-                Make primary
-              </Button>
-            ) : null}
+          ))}
+          <div className="space-y-3 border-t border-fg/10 pt-3">
+            <p className="text-xs font-medium text-fg">Add contact person</p>
+            <Input
+              aria-label="Contact name"
+              placeholder="Name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+            <Input
+              aria-label="Contact email"
+              placeholder="Email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+            <Input
+              aria-label="Contact phone"
+              placeholder="Phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
+            <label className="flex items-center gap-2 text-xs text-fg-muted">
+              <Checkbox
+                checked={makePrimary}
+                onCheckedChange={(checked) => setMakePrimary(checked === true)}
+              />
+              Make this contact primary
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving || !name.trim()}
+              onClick={() => void save()}
+            >
+              {saving ? "Adding…" : "Add contact"}
+            </Button>
           </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Input
-          aria-label="Contact name"
-          placeholder="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <Input
-          aria-label="Contact email"
-          placeholder="Email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-        <div className="flex gap-2">
-          <Input
-            aria-label="Contact phone"
-            placeholder="Phone"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-          />
-          <Button
-            type="button"
-            size="sm"
-            disabled={saving || !name.trim()}
-            onClick={() => void save()}
-          >
-            Add
-          </Button>
         </div>
-      </div>
-      <label className="flex items-center gap-2 text-xs text-fg-muted">
-        <Checkbox
-          checked={makePrimary}
-          onCheckedChange={(checked) => setMakePrimary(checked === true)}
-        />
-        Make this contact primary
-      </label>
+      ) : null}
     </Panel>
   )
 }

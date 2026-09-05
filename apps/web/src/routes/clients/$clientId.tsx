@@ -402,25 +402,29 @@ function ClientDetailPage() {
               </TabsList>
 
               <TabPanel value="overview">
-                <div className="grid items-start grid-cols-1 gap-4 lg:grid-cols-2">
-                  <ClientHealthCard
-                    client={client}
-                    stats={stats}
-                    contacts={contacts}
-                    staffCount={rosterCount}
-                    contracts={contracts}
-                  />
-                  <ClientContactsPanel clientId={clientId} />
-                  <ClientAlertsCard alerts={alerts} />
-                  <ClientUpcomingCard items={upcomingItems} />
-                  <ClientOnboardingCard steps={onboardingSteps} />
-                  <ClientTodaysTodoCard items={todaysTodoItems} />
-                  <ClientAliasesCard
-                    client={client}
-                    onSaved={(updated) =>
-                      queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
-                    }
-                  />
+                <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+                  <div className="space-y-4">
+                    <ClientHealthCard
+                      client={client}
+                      stats={stats}
+                      contacts={contacts}
+                      staffCount={rosterCount}
+                      contracts={contracts}
+                    />
+                    <ClientAlertsCard alerts={alerts} />
+                    <ClientOnboardingCard steps={onboardingSteps} />
+                    <ClientAliasesCard
+                      client={client}
+                      onSaved={(updated) =>
+                        queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <ClientContactsPanel clientId={clientId} contacts={contacts} />
+                    <ClientUpcomingCard items={upcomingItems} />
+                    <ClientTodaysTodoCard items={todaysTodoItems} />
+                  </div>
                 </div>
               </TabPanel>
 
@@ -489,11 +493,12 @@ function ClientAliasesCard({
   const [sourceClientId, setSourceClientId] = useState("")
   const [sourceSearch, setSourceSearch] = useState("")
   const [saving, setSaving] = useState(false)
+  const [manageOpen, setManageOpen] = useState(false)
   const toast = useToast()
   const sourceQuery = useQuery({
     queryKey: ["clients", "alias-merge-search", sourceSearch],
     queryFn: () => clientsApi.list({ search: sourceSearch.trim(), limit: 8 }),
-    enabled: sourceSearch.trim().length >= 2 && !sourceClientId,
+    enabled: manageOpen && sourceSearch.trim().length >= 2 && !sourceClientId,
   })
 
   useEffect(() => setDraft((client.aliases ?? []).join(", ")), [client.aliases])
@@ -509,6 +514,7 @@ function ClientAliasesCard({
           .filter(Boolean),
       )
       onSaved(updated)
+      setManageOpen(false)
       toast.showSuccess("Aliases updated")
     } catch (error) {
       toast.showError(normalizeErrorMessage(error, "Could not update aliases"))
@@ -526,6 +532,7 @@ function ClientAliasesCard({
       onSaved(updated)
       setSourceClientId("")
       setSourceSearch("")
+      setManageOpen(false)
       toast.showSuccess("Aliases merged")
     } catch (error) {
       toast.showError(normalizeErrorMessage(error, "Could not merge aliases"))
@@ -534,74 +541,103 @@ function ClientAliasesCard({
     }
   }
 
+  const aliases = client.aliases ?? []
+
   return (
     <section className="space-y-3 border border-fg/10 bg-surface p-4">
-      <div>
+      <div className="flex items-start justify-between gap-3">
         <h2 className="text-sm font-semibold text-fg">Alternate names</h2>
-        <p className="mt-0.5 text-xs text-fg-muted">
-          Use aliases to recognise this client during imports and search.
-        </p>
-      </div>
-      <div className="flex gap-2">
-        <Input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="Separate aliases with commas"
-          aria-label="Client aliases"
-          className="h-8 text-xs"
-        />
         <Button
           type="button"
           size="sm"
-          className="h-8 shrink-0"
-          disabled={saving}
-          onClick={() => void save()}
+          variant="outline"
+          className="h-7 shrink-0"
+          onClick={() => setManageOpen((open) => !open)}
         >
-          {saving ? "Saving…" : "Save"}
+          {manageOpen ? "Done" : "Manage names"}
         </Button>
       </div>
-      <div className="relative border-t border-fg/8 pt-3">
-        <div className="flex gap-2">
-          <Input
-            value={sourceSearch}
-            onChange={(event) => {
-              setSourceSearch(event.target.value)
-              setSourceClientId("")
-            }}
-            placeholder="Find another client to merge aliases from"
-            aria-label="Find client for alias merge"
-            className="h-8 text-xs"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 shrink-0"
-            disabled={saving || !sourceClientId}
-            onClick={() => void merge()}
-          >
-            Merge aliases
-          </Button>
+      <p className="text-xs text-fg-muted">
+        {aliases.length === 0
+          ? "No alternate names added."
+          : `${aliases.length} alternate name${aliases.length === 1 ? "" : "s"}`}
+      </p>
+      {aliases.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {aliases.map((alias) => (
+            <span
+              key={alias}
+              className="rounded-sm border border-fg/10 bg-bg px-2 py-1 text-xs text-fg"
+            >
+              {alias}
+            </span>
+          ))}
         </div>
-        {sourceQuery.data?.items.length && !sourceClientId ? (
-          <div className="absolute inset-x-0 top-12 z-10 border border-fg/15 bg-surface p-1 shadow-lg">
-            {sourceQuery.data.items.map((candidate) => (
-              <Button
-                key={candidate.id}
-                type="button"
-                variant="ghost"
-                className="block h-auto w-full justify-start rounded-none px-2 py-1.5 text-left text-xs font-normal text-fg"
-                onClick={() => {
-                  setSourceClientId(candidate.id)
-                  setSourceSearch(candidate.name)
-                }}
-              >
-                {candidate.name} <span className="text-fg-muted">{candidate.code}</span>
-              </Button>
-            ))}
+      ) : null}
+      {manageOpen ? (
+        <div className="space-y-3 border-t border-fg/8 pt-3">
+          <div className="flex gap-2">
+            <Input
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Separate aliases with commas"
+              aria-label="Client aliases"
+              className="h-8 text-xs"
+            />
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 shrink-0"
+              disabled={saving}
+              onClick={() => void save()}
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
           </div>
-        ) : null}
-      </div>
+          <div className="relative border-t border-fg/8 pt-3">
+            <div className="flex gap-2">
+              <Input
+                value={sourceSearch}
+                onChange={(event) => {
+                  setSourceSearch(event.target.value)
+                  setSourceClientId("")
+                }}
+                placeholder="Find another client to merge aliases from"
+                aria-label="Find client for alias merge"
+                className="h-8 text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0"
+                disabled={saving || !sourceClientId}
+                onClick={() => void merge()}
+              >
+                Merge aliases
+              </Button>
+            </div>
+            {sourceQuery.data?.items.length && !sourceClientId ? (
+              <div className="absolute inset-x-0 top-12 z-10 border border-fg/15 bg-surface p-1 shadow-lg">
+                {sourceQuery.data.items.map((candidate) => (
+                  <Button
+                    key={candidate.id}
+                    type="button"
+                    variant="ghost"
+                    className="block h-auto w-full justify-start rounded-none px-2 py-1.5 text-left text-xs font-normal text-fg"
+                    onClick={() => {
+                      setSourceClientId(candidate.id)
+                      setSourceSearch(candidate.name)
+                    }}
+                  >
+                    {candidate.name} <span className="text-fg-muted">{candidate.code}</span>
+                  </Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }
