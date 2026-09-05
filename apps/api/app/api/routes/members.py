@@ -12,6 +12,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
@@ -197,8 +198,12 @@ async def _issue_member_id(
 ) -> str:
     """Issue the next ``{client code}-###`` id for this client.
 
-    Retries on collision because two concurrent enrolments can read the same
-    sequence before either has committed.
+    Skips codes already taken, so a roster imported with hand-written codes
+    under the same prefix continues from the top rather than colliding.
+
+    This sees only committed rows, so it cannot resolve a race between two
+    in-flight enrolments. The unique constraint is what actually guarantees
+    uniqueness; ``create_member`` turns that violation into a 409.
     """
     prefix = client_code.strip().upper()
     sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
@@ -264,7 +269,33 @@ async def create_member(
     if duplicate is not None:
         raise HTTPException(status_code=409, detail="Member code already exists for this client")
     use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
-    member, _ = await use_case.execute(
+    try:
+        member, _ = await _enrol(use_case, data, current_user, employer_member_id)
+    except IntegrityError as error:
+        # Two concurrent enrolments can pass the check above and still collide
+        # on uq_eligible_member_employer_id_per_client. Report the conflict
+        # rather than letting it surface as a 500.
+        raise HTTPException(
+            status_code=409, detail="Member code already exists for this client"
+        ) from error
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="CREATE",
+        operation="Created",
+    )
+    return _response(member)
+
+
+async def _enrol(
+    use_case: EnrolEligibleMemberUseCase,
+    data: MemberCreate,
+    current_user: TokenData,
+    employer_member_id: str,
+):
+    return await use_case.execute(
         tenant_id=TenantId(current_user.tenant_id),
         client_id=ClientId(data.client_id),
         employer_member_id=employer_member_id,
@@ -286,15 +317,6 @@ async def create_member(
         national_id=data.national_id,
         passport_number=data.passport_number,
     )
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="CREATE",
-        operation="Created",
-    )
-    return _response(member)
 
 
 def _tenant_secret(tenant_id: str) -> str:

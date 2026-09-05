@@ -1,6 +1,8 @@
 """Run with MEMBER_TEST_DATABASE_URL pointing at local PostgreSQL."""
 
 import asyncio
+import csv
+import io
 import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -315,3 +317,108 @@ async def test_duplicate_member_code_is_rejected_not_500(member_http):
     duplicate = await http.post("/members", json={**payload, "display_label": "Second"})
 
     assert duplicate.status_code == 409, duplicate.text
+
+
+async def test_patching_one_identity_number_preserves_the_others(member_http, isolated_members_db):
+    """PATCH was never exercised for these columns; create alone proves nothing here."""
+    http, _ = member_http
+    created = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "display_label": "Amina",
+            "relation": "Employee",
+            "staff_number": "EMP-9",
+            "national_id": "CM12345",
+        },
+    )
+    assert created.status_code == 201, created.text
+    member_id = created.json()["id"]
+
+    changed = await http.patch(
+        f"/members/{member_id}",
+        json={"national_id": "CM99999", "passport_number": "B0987654"},
+    )
+
+    assert changed.status_code == 200, changed.text
+    body = changed.json()
+    assert body["national_id"] == "CM99999"
+    assert body["passport_number"] == "B0987654"
+    # The untouched field must survive the partial update's merge.
+    assert body["staff_number"] == "EMP-9"
+    async with isolated_members_db() as session:
+        row = await session.get(EligibleMemberModel, member_id)
+        assert row.national_id == "CM99999"
+        assert row.passport_number == "B0987654"
+        assert row.staff_number == "EMP-9"
+
+
+async def test_patching_another_field_keeps_the_issued_member_code(member_http):
+    """MemberUpdate leaves the code out, so the merge must fall back to the stored one."""
+    http, _ = member_http
+    created = await http.post(
+        "/members",
+        json={"client_id": "c1", "display_label": "Amina", "relation": "Employee"},
+    )
+    assert created.status_code == 201, created.text
+    member_id = created.json()["id"]
+    assert created.json()["employer_member_id"] == "ACM-001"
+
+    changed = await http.patch(f"/members/{member_id}", json={"phone": "+256700000000"})
+
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["employer_member_id"] == "ACM-001"
+
+
+async def test_export_csv_carries_the_identity_columns(member_http):
+    http, _ = member_http
+    created = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "display_label": "Amina",
+            "relation": "Employee",
+            "staff_number": "EMP-9",
+            "national_id": "CM12345",
+            "passport_number": "B0987654",
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    response = await http.get("/members/export")
+
+    assert response.status_code == 200, response.text
+    rows = list(csv.DictReader(io.StringIO(response.text)))
+    assert rows[0]["staff_number"] == "EMP-9"
+    assert rows[0]["national_id"] == "CM12345"
+    assert rows[0]["passport_number"] == "B0987654"
+    assert rows[0]["employer_member_id"] == "ACM-001"
+
+
+async def test_concurrent_auto_issue_does_not_produce_duplicate_codes(
+    member_http, isolated_members_db
+):
+    """Two enrolments in flight at once against the real unique constraint.
+
+    Documents the actual behaviour: the in-request retry only sees committed
+    rows, so this is where the guarantee has to come from the database.
+    """
+    http, _ = member_http
+    payload = {"client_id": "c1", "display_label": "Concurrent", "relation": "Employee"}
+
+    responses = await asyncio.gather(
+        http.post("/members", json=payload),
+        http.post("/members", json=payload),
+        return_exceptions=True,
+    )
+
+    statuses = sorted(r.status_code for r in responses if not isinstance(r, BaseException))
+    # The loser must be told it conflicted, never handed a 500.
+    assert 500 not in statuses, statuses
+    created = [r for r in responses if not isinstance(r, BaseException) and r.status_code == 201]
+    async with isolated_members_db() as session:
+        stored = list(await session.scalars(select(EligibleMemberModel.employer_member_id)))
+
+    # Whatever the outcome, the roster must never end up with a duplicate code.
+    assert len(stored) == len(set(stored)), stored
+    assert len(stored) == len(created)
