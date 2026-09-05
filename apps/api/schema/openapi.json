@@ -1594,6 +1594,45 @@
         "title": "ClientAliasMergeRequest",
         "type": "object"
       },
+      "ClientBulkTagRequest": {
+        "description": "Apply a tag set to selected clients.",
+        "properties": {
+          "client_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Client Ids",
+            "type": "array"
+          },
+          "mode": {
+            "default": "add",
+            "enum": [
+              "add",
+              "remove",
+              "replace"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Tag Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "client_ids",
+          "tag_ids"
+        ],
+        "title": "ClientBulkTagRequest",
+        "type": "object"
+      },
       "ClientCreate": {
         "description": "Request schema for creating a client.",
         "properties": {
@@ -2248,6 +2287,31 @@
           "reason"
         ],
         "title": "ClientSuspendRequest",
+        "type": "object"
+      },
+      "ClientTagAssignmentRequest": {
+        "description": "Replace or extend the tags assigned to one or more clients.",
+        "properties": {
+          "mode": {
+            "default": "add",
+            "enum": [
+              "add",
+              "remove",
+              "replace"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Tag Ids",
+            "type": "array"
+          }
+        },
+        "title": "ClientTagAssignmentRequest",
         "type": "object"
       },
       "ClientTagCreate": {
@@ -15358,6 +15422,68 @@
         ]
       }
     },
+    "/clients/bulk/tags": {
+      "post": {
+        "description": "Apply one tag operation atomically across selected clients.",
+        "operationId": "bulk_update_client_tags_clients_bulk_tags_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientBulkTagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Bulk Update Client Tags Clients Bulk Tags Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply tags to selected clients",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
     "/clients/check-name/{name}": {
       "get": {
         "description": "Check if a client name is available within a tenant.",
@@ -15425,6 +15551,27 @@
             "schema": {
               "title": "Tenant Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Export only selected client IDs",
+            "in": "query",
+            "name": "client_ids",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Export only selected client IDs",
+              "title": "Client Ids"
             }
           },
           {
@@ -16676,6 +16823,120 @@
           }
         ],
         "summary": "Suspend a client",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/{client_id}/tags": {
+      "get": {
+        "description": "Return the tenant-scoped tags assigned to a client.",
+        "operationId": "get_client_tags_clients__client_id__tags_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Get Client Tags Clients  Client Id  Tags Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get tags assigned to a client",
+        "tags": [
+          "clients"
+        ]
+      },
+      "put": {
+        "description": "Replace, add, or remove tags for one client.",
+        "operationId": "update_client_tags_clients__client_id__tags_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientTagAssignmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response Update Client Tags Clients  Client Id  Tags Put",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update tags assigned to a client",
         "tags": [
           "clients"
         ]
@@ -18561,6 +18822,67 @@
         "summary": "Terminate a contract",
         "tags": [
           "contracts"
+        ]
+      }
+    },
+    "/contracts/{contract_id}/utilisation-events": {
+      "get": {
+        "description": "Return billable usage for one tenant-owned contract.",
+        "operationId": "list_contract_utilisation_events_contracts__contract_id__utilisation_events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contract_id",
+            "required": true,
+            "schema": {
+              "title": "Contract Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UtilisationEventResponse"
+                  },
+                  "title": "Response List Contract Utilisation Events Contracts  Contract Id  Utilisation Events Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List utilisation events for a contract",
+        "tags": [
+          "pricing"
         ]
       }
     },

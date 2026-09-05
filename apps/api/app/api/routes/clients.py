@@ -25,7 +25,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
@@ -43,6 +43,7 @@ from app.api.dependencies import (
 from app.api.schemas.client_schemas import (
     AddressSchema,
     ClientAliasMergeRequest,
+    ClientBulkTagRequest,
     ClientCreate,
     ClientDeactivateRequest,
     ClientImportCreated,
@@ -55,6 +56,7 @@ from app.api.schemas.client_schemas import (
     ClientResponse,
     ClientStatsResponse,
     ClientSuspendRequest,
+    ClientTagAssignmentRequest,
     ClientTerminateRequest,
     ClientUpdate,
     ClientUpdateAliases,
@@ -101,6 +103,8 @@ from app.domain.value_objects.core import (
 from app.infrastructure.mappers.client_mapper import ClientMapper
 from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.models.client_tag_assignment_model import ClientTagAssignmentModel
+from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.client_alias import normalize_client_alias
 from app.shared.utils.client_csv import (
@@ -624,6 +628,7 @@ def _client_export_row(client: ClientEntity) -> dict[str, str | bool | None]:
 @readonly()
 async def export_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
+    client_ids: list[str] | None = Query(None, description="Export only selected client IDs"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
     parent_client_id: str | None = Query(None, description="Filter by parent client"),
@@ -636,17 +641,27 @@ async def export_clients(
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """Export the tenant's matching clients without exposing other tenants."""
-    clients = await client_repo.list_all(
-        tenant_id=TenantId(tenant_id),
-        status=status,
-        tier=tier,
-        parent_client_id=ClientId(parent_client_id) if parent_client_id else None,
-        include_archived=include_archived,
-        search=search,
-        limit=10_000,
-        sort_by=sort_by,
-        sort_desc=sort_desc,
-    )
+    if client_ids:
+        selected = await db.execute(
+            select(ClientModel).where(
+                ClientModel.tenant_id == tenant_id,
+                ClientModel.id.in_(set(client_ids)),
+                ClientModel.deleted_at.is_(None),
+            )
+        )
+        clients = [ClientMapper.to_entity(model) for model in selected.scalars().all()]
+    else:
+        clients = await client_repo.list_all(
+            tenant_id=TenantId(tenant_id),
+            status=status,
+            tier=tier,
+            parent_client_id=ClientId(parent_client_id) if parent_client_id else None,
+            include_archived=include_archived,
+            search=search,
+            limit=10_000,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+        )
     output = io.StringIO(newline="")
     writer = csv.DictWriter(output, fieldnames=CLIENT_EXPORT_HEADERS)
     writer.writeheader()
@@ -1436,6 +1451,156 @@ async def retry_client_import_job(
     await db.flush()
     background_tasks.add_task(_run_client_import_job, job.id)
     return _to_import_job_response(job)
+
+
+def _tag_response(tag: ClientTagModel) -> dict[str, object]:
+    """Map a client tag model to the lightweight detail/list representation."""
+    return {
+        "id": tag.id,
+        "tenant_id": tag.tenant_id,
+        "name": tag.name,
+        "description": tag.description,
+        "color": tag.color,
+        "is_active": tag.is_active,
+        "created_at": tag.created_at.isoformat(),
+        "updated_at": tag.updated_at.isoformat(),
+    }
+
+
+@router.get("/{client_id}/tags", summary="Get tags assigned to a client")
+@readonly()
+async def get_client_tags(
+    client: ClientEntity = Depends(get_client_for_current_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, object]]:
+    """Return the tenant-scoped tags assigned to a client."""
+    tag_ids = select(ClientTagAssignmentModel.tag_id).where(
+        ClientTagAssignmentModel.client_id == client.id.value,
+        ClientTagAssignmentModel.tenant_id == client.tenant_id.value,
+    )
+    result = await db.execute(
+        select(ClientTagModel)
+        .where(ClientTagModel.id.in_(tag_ids), ClientTagModel.deleted_at.is_(None))
+        .order_by(ClientTagModel.name.asc())
+    )
+    return [_tag_response(tag) for tag in result.scalars().all()]
+
+
+@router.put("/{client_id}/tags", summary="Update tags assigned to a client")
+@transactional()
+async def update_client_tags(
+    payload: ClientTagAssignmentRequest,
+    request: Request,
+    client: ClientEntity = Depends(get_client_for_current_tenant),
+    current_user: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, object]]:
+    """Replace, add, or remove tags for one client."""
+    tag_ids = set(payload.tag_ids)
+    valid_tags = await db.execute(
+        select(ClientTagModel.id).where(
+            ClientTagModel.tenant_id == client.tenant_id.value,
+            ClientTagModel.id.in_(tag_ids),
+            ClientTagModel.deleted_at.is_(None),
+        )
+    )
+    valid_ids = set(valid_tags.scalars().all())
+    if valid_ids != tag_ids:
+        raise HTTPException(status_code=400, detail="One or more tags were not found")
+    assignment_filter = (
+        ClientTagAssignmentModel.client_id == client.id.value,
+        ClientTagAssignmentModel.tenant_id == client.tenant_id.value,
+    )
+    if payload.mode == "replace":
+        await db.execute(delete(ClientTagAssignmentModel).where(*assignment_filter))
+    elif payload.mode == "remove" and tag_ids:
+        await db.execute(
+            delete(ClientTagAssignmentModel).where(
+                *assignment_filter, ClientTagAssignmentModel.tag_id.in_(tag_ids)
+            )
+        )
+    if payload.mode in {"add", "replace"}:
+        existing = await db.execute(
+            select(ClientTagAssignmentModel.tag_id).where(*assignment_filter)
+        )
+        existing_ids = set(existing.scalars().all())
+        now = utc_now()
+        db.add_all(
+            ClientTagAssignmentModel(
+                id=generate_cuid(),
+                tenant_id=client.tenant_id.value,
+                client_id=client.id.value,
+                tag_id=tag_id,
+                created_at=now,
+                updated_at=now,
+            )
+            for tag_id in sorted(tag_ids - existing_ids)
+        )
+    await db.flush()
+    return await get_client_tags(client, db)
+
+
+@router.post("/bulk/tags", summary="Apply tags to selected clients")
+@transactional()
+async def bulk_update_client_tags(
+    payload: ClientBulkTagRequest,
+    request: Request,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    _write_access: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Apply one tag operation atomically across selected clients."""
+    client_ids = set(payload.client_ids)
+    tag_ids = set(payload.tag_ids)
+    found_clients = await db.execute(
+        select(ClientModel.id).where(
+            ClientModel.tenant_id == tenant_id, ClientModel.id.in_(client_ids)
+        )
+    )
+    if set(found_clients.scalars().all()) != client_ids:
+        raise HTTPException(status_code=400, detail="One or more clients were not found")
+    found_tags = await db.execute(
+        select(ClientTagModel.id).where(
+            ClientTagModel.tenant_id == tenant_id,
+            ClientTagModel.id.in_(tag_ids),
+            ClientTagModel.deleted_at.is_(None),
+        )
+    )
+    if set(found_tags.scalars().all()) != tag_ids:
+        raise HTTPException(status_code=400, detail="One or more tags were not found")
+    assignment_filter = (
+        ClientTagAssignmentModel.tenant_id == tenant_id,
+        ClientTagAssignmentModel.client_id.in_(client_ids),
+    )
+    if payload.mode in {"remove", "replace"}:
+        remove_filter = assignment_filter
+        if payload.mode == "remove":
+            remove_filter = (*assignment_filter, ClientTagAssignmentModel.tag_id.in_(tag_ids))
+        await db.execute(delete(ClientTagAssignmentModel).where(*remove_filter))
+    if payload.mode in {"add", "replace"}:
+        existing = await db.execute(
+            select(ClientTagAssignmentModel.client_id, ClientTagAssignmentModel.tag_id).where(
+                *assignment_filter
+            )
+        )
+        existing_pairs = set(existing.all())
+        now = utc_now()
+        db.add_all(
+            ClientTagAssignmentModel(
+                id=generate_cuid(),
+                tenant_id=tenant_id,
+                client_id=client_id,
+                tag_id=tag_id,
+                created_at=now,
+                updated_at=now,
+            )
+            for client_id in client_ids
+            for tag_id in tag_ids
+            if (client_id, tag_id) not in existing_pairs
+        )
+    await db.flush()
+    return {"clients_updated": len(client_ids), "tags_applied": len(tag_ids)}
 
 
 @router.patch(

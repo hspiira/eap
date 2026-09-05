@@ -136,14 +136,34 @@ export interface KPIAssignment extends BaseEntity {
  */
 export interface Document extends BaseEntity {
   name: string
+  description?: string | null
   document_type: DocumentType
   status: DocumentStatus
+  version?: number | null
+  is_latest?: boolean
   file_path?: string | null
+  file_url?: string | null
   file_size?: number | null
   mime_type?: string | null
-  version?: number | null
-  confidentiality_level?: string | null
-  expiry_date?: string | null
+  previous_version_id?: string | null
+  uploaded_by?: string | null
+  client_id?: string | null
+  contract_id?: string | null
+  person_id?: string | null
+  expires_at?: string | null
+  is_confidential?: boolean
   published_at?: string | null
-  metadata?: Record<string, unknown> | null
+  archived_at?: string | null
+  is_active?: boolean
+}
+
+/** Billable usage recorded against a contract. */
+export interface UtilisationEvent extends BaseEntity {
+  contract_id: string
+  event_type: string
+  occurred_on: string
+  units: number
+  service_code?: string | null
+  source_id?: string | null
+  notes?: string | null
 }

@@ -23,6 +23,7 @@ from app.infrastructure.models.case_model import CaseModel
 from app.infrastructure.models.client_alias_model import ClientAliasModel
 from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.models.client_tag_assignment_model import ClientTagAssignmentModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
 from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
 from app.infrastructure.models.contact_model import ContactModel
@@ -85,6 +86,7 @@ __all__ = [
     "ClientImportJobModel",
     "ClientAliasModel",
     "ClientTagModel",
+    "ClientTagAssignmentModel",
     "ContactModel",
     "ContractModel",
     "CriticalIncidentModel",

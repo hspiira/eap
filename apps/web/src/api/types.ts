@@ -68,5 +68,6 @@ export type {
   SurveyQuestionSummary,
   Tenant,
   User,
+  UtilisationEvent,
 } from "@/types/entities"
 export * from "@/types/enums"

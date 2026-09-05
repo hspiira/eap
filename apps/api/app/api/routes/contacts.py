@@ -1,6 +1,6 @@
 """Contact API Routes - FastAPI routes for Contact operations."""
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -248,7 +248,7 @@ async def get_primary_contact(
     """Get primary contact for a specific client."""
     contact = await contact_repo.get_primary_contact(client_id, TenantId(tenant_id))
     if not contact:
-        raise ValueError("Primary contact not found")
+        raise HTTPException(status_code=404, detail="Primary contact not found")
     return _to_contact_response(contact)
 
 

@@ -1,5 +1,5 @@
 import type { ActivityType, BaseStatus, ClientTier } from "../enums"
-import type { BaseEntity, ContactInfo } from "./base"
+import type { BaseEntity } from "./base"
 
 /**
  * Client contact info (phone, email, address line)
@@ -63,13 +63,14 @@ export interface ClientTag extends BaseEntity {
  */
 export interface Contact extends BaseEntity {
   client_id: string
-  first_name: string
-  last_name: string
+  name: string
   title?: string | null
+  email?: string | null
+  phone?: string | null
+  department?: string | null
   is_primary: boolean
-  status: BaseStatus
-  contact_info?: ContactInfo | null
-  metadata?: Record<string, unknown> | null
+  notes?: string | null
+  is_active?: boolean
 }
 
 /**

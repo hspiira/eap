@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   Bookmark,
@@ -13,6 +13,7 @@ import {
   Plus,
 } from "lucide-react"
 
+import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { clientsApi } from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
@@ -35,6 +36,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
@@ -111,6 +119,7 @@ function ClientsListPage() {
   const [archiveLoading, setArchiveLoading] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [savedViews, setSavedViews] = useState<ClientSavedView[]>(() => clientViewsStorage.read())
+  const [bulkTagId, setBulkTagId] = useState("")
 
   const saveCurrentView = () => {
     const name = window.prompt("Name this client view")?.trim()
@@ -203,6 +212,11 @@ function ClientsListPage() {
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const selection = useTableSelection(items)
+  const tagsQuery = useQuery({
+    queryKey: ["client-tags", "active"],
+    queryFn: () => clientTagsApi.list({ limit: 100 }),
+    enabled: canWrite,
+  })
   const loading = query.isPending
   const error = query.isError ? normalizeErrorMessage(query.error, "Failed to load data") : null
   const hasFilters =
@@ -413,6 +427,58 @@ function ClientsListPage() {
         onToggleSelectAll={selection.toggleSelectAll}
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+            {selection.selectedIds.size > 0 ? (
+              <>
+                <Select value={bulkTagId} onValueChange={setBulkTagId}>
+                  <SelectTrigger aria-label="Tag selected clients" className="h-7 w-36 text-xs">
+                    <SelectValue placeholder="Choose tag…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(tagsQuery.data?.items ?? []).map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5"
+                  disabled={!bulkTagId}
+                  onClick={() => {
+                    void clientsApi
+                      .bulkUpdateTags([...selection.selectedIds], [bulkTagId], "add")
+                      .then(() => {
+                        toast.showSuccess("Tag applied to selected clients")
+                        setBulkTagId("")
+                        void queryClient.invalidateQueries({ queryKey: ["client-tags"] })
+                      })
+                      .catch((err) =>
+                        toast.showError(normalizeErrorMessage(err, "Could not apply tag")),
+                      )
+                  }}
+                >
+                  Apply tag
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5"
+                  onClick={() =>
+                    void download(
+                      clientsApi.exportSelected([...selection.selectedIds]),
+                      "selected-clients.csv",
+                    )
+                  }
+                >
+                  <Download className="mr-1.5 size-3.5" />
+                  Export selected
+                </Button>
+              </>
+            ) : null}
             {canArchive ? (
               <BulkAction
                 ids={selection.selectedIds}

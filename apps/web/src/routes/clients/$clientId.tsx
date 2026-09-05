@@ -2,18 +2,27 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Building2, Pencil, Plus } from "lucide-react"
+import { Building2, Pencil } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { contactsApi } from "@/api/endpoints/contacts"
 import { contractsApi } from "@/api/endpoints/contracts"
+import { personsApi } from "@/api/endpoints/persons"
 import { ClientActivityCard } from "@/components/clients/ClientActivityCard"
 import type { ClientAlert } from "@/components/clients/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
 import { ContractsPanel, DetailRail, Hero } from "@/components/clients/ClientDetailWidgets"
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
+import {
+  ClientContactsPanel,
+  ClientDocumentsPanel,
+  ClientHealthCard,
+  ClientRosterPanel,
+  ClientServicesPanel,
+  ClientUtilisationPanel,
+} from "@/components/clients/ClientManagementPanels"
 import type { ClientOnboardingStep } from "@/components/clients/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/clients/ClientOnboardingCard"
-import { ClientStaffSummaryCard } from "@/components/clients/ClientStaffSummaryCard"
 import type { ClientTodaysTodoItem } from "@/components/clients/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/clients/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/clients/ClientUpcomingCard"
@@ -40,8 +49,17 @@ export const Route = createFileRoute("/clients/$clientId")({
   component: ClientDetailPage,
 })
 
-type TabValue = "overview" | "activity" | "contracts" | "staff"
-const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "activity", "contracts", "staff"]
+type TabValue =
+  "overview" | "activity" | "contracts" | "staff" | "services" | "documents" | "utilisation"
+const TAB_VALUES: ReadonlyArray<TabValue> = [
+  "overview",
+  "activity",
+  "contracts",
+  "staff",
+  "services",
+  "documents",
+  "utilisation",
+]
 
 const CLIENTS_LIST_SEARCH = {
   page: undefined,
@@ -102,6 +120,19 @@ function ClientDetailPage() {
   })
   const contracts = contractsQuery.data?.items ?? []
   const contractsTotal = contractsQuery.data?.total ?? 0
+
+  const contactsQuery = useQuery({
+    queryKey: entityListKey("contacts", { client_id: clientId }),
+    queryFn: () => contactsApi.byClient(clientId),
+    enabled,
+  })
+  const contacts = contactsQuery.data ?? []
+  const rosterQuery = useQuery({
+    queryKey: entityListKey("persons", { client_id: clientId, limit: 100 }),
+    queryFn: () => personsApi.list({ client_id: clientId, limit: 100 }),
+    enabled,
+  })
+  const rosterCount = rosterQuery.data?.total ?? rosterQuery.data?.items.length ?? 0
 
   // Alerts and the upcoming list need every contract ending in the window, not
   // the first page of all of them. Anchored to the day so the key is stable.
@@ -365,10 +396,21 @@ function ClientDetailPage() {
                   Contracts
                 </Tab>
                 <Tab value="staff">Staff</Tab>
+                <Tab value="services">Services</Tab>
+                <Tab value="documents">Documents</Tab>
+                <Tab value="utilisation">Usage</Tab>
               </TabsList>
 
               <TabPanel value="overview">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="grid items-start grid-cols-1 gap-4 lg:grid-cols-2">
+                  <ClientHealthCard
+                    client={client}
+                    stats={stats}
+                    contacts={contacts}
+                    staffCount={rosterCount}
+                    contracts={contracts}
+                  />
+                  <ClientContactsPanel clientId={clientId} />
                   <ClientAlertsCard alerts={alerts} />
                   <ClientUpcomingCard items={upcomingItems} />
                   <ClientOnboardingCard steps={onboardingSteps} />
@@ -397,23 +439,19 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="staff">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-fg-muted">
-                      Employees, dependents and providers linked to this client.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1.5 px-2.5"
-                      onClick={() => setAddPersonOpen(true)}
-                    >
-                      <Plus className="size-3.5" />
-                      Add person
-                    </Button>
-                  </div>
-                  <ClientStaffSummaryCard clientId={clientId} />
-                </div>
+                <ClientRosterPanel clientId={clientId} onAdd={() => setAddPersonOpen(true)} />
+              </TabPanel>
+
+              <TabPanel value="services">
+                <ClientServicesPanel contracts={contracts} />
+              </TabPanel>
+
+              <TabPanel value="documents">
+                <ClientDocumentsPanel clientId={clientId} />
+              </TabPanel>
+
+              <TabPanel value="utilisation">
+                <ClientUtilisationPanel contracts={contracts} />
               </TabPanel>
             </Tabs>
           </div>

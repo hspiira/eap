@@ -122,6 +122,21 @@ class ClientAliasMergeRequest(BaseModel):
     source_client_id: str = Field(..., min_length=1, max_length=25)
 
 
+class ClientTagAssignmentRequest(BaseModel):
+    """Replace or extend the tags assigned to one or more clients."""
+
+    tag_ids: list[str] = Field(default_factory=list, max_length=50)
+    mode: Literal["add", "remove", "replace"] = "add"
+
+
+class ClientBulkTagRequest(BaseModel):
+    """Apply a tag set to selected clients."""
+
+    client_ids: list[str] = Field(..., min_length=1, max_length=500)
+    tag_ids: list[str] = Field(..., min_length=1, max_length=50)
+    mode: Literal["add", "remove", "replace"] = "add"
+
+
 class ClientUpdateContactInfo(BaseModel):
     """Request schema for updating client contact information."""
 

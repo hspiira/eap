@@ -159,6 +159,41 @@ async def invoice_preview(
     )
 
 
+@router.get(
+    "/contracts/{contract_id}/utilisation-events",
+    response_model=list[UtilisationEventResponse],
+    summary="List utilisation events for a contract",
+)
+@readonly()
+async def list_contract_utilisation_events(
+    contract_id: str,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    utilisation_repo: UtilisationEventRepository = Depends(get_utilisation_event_repository),
+    db: AsyncSession = Depends(get_db),
+) -> list[UtilisationEventResponse]:
+    """Return billable usage for one tenant-owned contract."""
+    contract = await contract_repo.get_by_id(ContractId(contract_id))
+    if contract is None or contract.tenant_id.value != tenant_id:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    events = await utilisation_repo.list_for_contract(contract.tenant_id, contract.id)
+    return [
+        UtilisationEventResponse(
+            id=event.id.value,
+            tenant_id=event.tenant_id.value,
+            contract_id=event.contract_id.value,
+            event_type=event.event_type,
+            occurred_on=event.occurred_on,
+            units=event.units,
+            service_code=event.service_code,
+            source_id=event.source_id,
+            notes=event.notes,
+        )
+        for event in events
+    ]
+
+
 @router.post(
     "/utilisation-events",
     response_model=UtilisationEventResponse,

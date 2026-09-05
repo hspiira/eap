@@ -458,6 +458,14 @@ class ApiClient {
     })
   }
 
+  async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PUT",
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    })
+  }
+
   /**
    * DELETE request
    */

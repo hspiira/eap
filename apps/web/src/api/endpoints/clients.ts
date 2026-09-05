@@ -144,6 +144,26 @@ export const clientsApi = {
     return apiClient.getBlob("/clients/export", params)
   },
 
+  async exportSelected(clientIds: string[]): Promise<Blob> {
+    return apiClient.getBlob("/clients/export", { client_ids: clientIds })
+  },
+
+  async updateTags(
+    clientId: string,
+    tagIds: string[],
+    mode: "add" | "remove" | "replace" = "replace",
+  ): Promise<unknown> {
+    return apiClient.put(`/clients/${clientId}/tags`, { tag_ids: tagIds, mode })
+  },
+
+  async bulkUpdateTags(
+    clientIds: string[],
+    tagIds: string[],
+    mode: "add" | "remove" | "replace" = "add",
+  ): Promise<{ clients_updated: number; tags_applied: number }> {
+    return apiClient.post("/clients/bulk/tags", { client_ids: clientIds, tag_ids: tagIds, mode })
+  },
+
   /**
    * Update client
    */

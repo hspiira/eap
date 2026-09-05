@@ -886,6 +886,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clients/bulk/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply tags to selected clients
+         * @description Apply one tag operation atomically across selected clients.
+         */
+        post: operations["bulk_update_client_tags_clients_bulk_tags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clients/check-name/{name}": {
         parameters: {
             query?: never;
@@ -940,6 +960,70 @@ export interface paths {
          * @description Validate and create a batch of clients in one transaction.
          */
         post: operations["import_clients_clients_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/import/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List client import history
+         * @description Return recent imports for the current tenant.
+         */
+        get: operations["list_client_import_jobs_clients_import_jobs_get"];
+        put?: never;
+        /**
+         * Queue a background client import
+         * @description Queue imports larger than the synchronous request limit.
+         */
+        post: operations["queue_client_import_clients_import_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/import/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get client import progress
+         * @description Return one tenant-scoped import job.
+         */
+        get: operations["get_client_import_job_clients_import_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/import/jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a failed client import
+         * @description Requeue a failed import using its original file and decisions.
+         */
+        post: operations["retry_client_import_job_clients_import_jobs__job_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1224,6 +1308,30 @@ export interface paths {
          * @description Suspend a client.
          */
         post: operations["suspend_client_clients__client_id__suspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/{client_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get tags assigned to a client
+         * @description Return the tenant-scoped tags assigned to a client.
+         */
+        get: operations["get_client_tags_clients__client_id__tags_get"];
+        /**
+         * Update tags assigned to a client
+         * @description Replace, add, or remove tags for one client.
+         */
+        put: operations["update_client_tags_clients__client_id__tags_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1747,6 +1855,26 @@ export interface paths {
          * @description Terminate a contract.
          */
         post: operations["terminate_contract_contracts__contract_id__terminate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{contract_id}/utilisation-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List utilisation events for a contract
+         * @description Return billable usage for one tenant-owned contract.
+         */
+        get: operations["list_contract_utilisation_events_contracts__contract_id__utilisation_events_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5393,6 +5521,26 @@ export interface components {
         /** Body_import_clients_clients_import_post */
         Body_import_clients_clients_import_post: {
             /**
+             * Decisions Json
+             * @description JSON row actions from the server preview
+             * @default
+             */
+            decisions_json: string;
+            /**
+             * File
+             * @description UTF-8 CSV using the client import template
+             */
+            file: string;
+        };
+        /** Body_queue_client_import_clients_import_jobs_post */
+        Body_queue_client_import_clients_import_jobs_post: {
+            /**
+             * Decisions Json
+             * @description JSON row actions from the server preview
+             * @default
+             */
+            decisions_json: string;
+            /**
              * File
              * @description UTF-8 CSV using the client import template
              */
@@ -5607,6 +5755,22 @@ export interface components {
             source_client_id: string;
         };
         /**
+         * ClientBulkTagRequest
+         * @description Apply a tag set to selected clients.
+         */
+        ClientBulkTagRequest: {
+            /** Client Ids */
+            client_ids: string[];
+            /**
+             * Mode
+             * @default add
+             * @enum {string}
+             */
+            mode: "add" | "remove" | "replace";
+            /** Tag Ids */
+            tag_ids: string[];
+        };
+        /**
          * ClientCreate
          * @description Request schema for creating a client.
          */
@@ -5687,6 +5851,55 @@ export interface components {
             severity: string;
         };
         /**
+         * ClientImportJobListResponse
+         * @description Paginated import history.
+         */
+        ClientImportJobListResponse: {
+            /** Items */
+            items: components["schemas"]["ClientImportJobResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ClientImportJobResponse
+         * @description Progress and result metadata for a background client import.
+         */
+        ClientImportJobResponse: {
+            /** Completed At */
+            completed_at?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Error Message */
+            error_message?: string | null;
+            /** Failed */
+            failed: number;
+            /** File Size */
+            file_size: number;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Imported */
+            imported: number;
+            /** Issues */
+            issues?: components["schemas"]["ClientImportIssue"][];
+            /** Processed Rows */
+            processed_rows: number;
+            /** Retry Count */
+            retry_count: number;
+            /** Skipped */
+            skipped: number;
+            /** Started At */
+            started_at?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "processing" | "completed" | "failed";
+            /** Total Rows */
+            total_rows: number;
+        };
+        /**
          * ClientImportResponse
          * @description Result of a client CSV import.
          */
@@ -5699,8 +5912,41 @@ export interface components {
             imported: number;
             /** Issues */
             issues: components["schemas"]["ClientImportIssue"][];
+            /** Rows */
+            rows?: components["schemas"]["ClientImportRowPreview"][];
             /** Skipped */
             skipped: number;
+        };
+        /**
+         * ClientImportRowPreview
+         * @description Server-side classification and decision state for one imported row.
+         */
+        ClientImportRowPreview: {
+            /** Aliases */
+            aliases?: string[];
+            /** Code */
+            code?: string | null;
+            /** Contact */
+            contact?: string | null;
+            /**
+             * Default Action
+             * @default create
+             * @enum {string}
+             */
+            default_action: "create" | "skip";
+            /** Matched Client Id */
+            matched_client_id?: string | null;
+            /** Matched Client Name */
+            matched_client_name?: string | null;
+            /** Name */
+            name: string;
+            /** Row */
+            row: number;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "new" | "duplicate" | "similar" | "invalid";
         };
         /**
          * ClientListResponse
@@ -5842,6 +6088,20 @@ export interface components {
              * @description Suspension reason
              */
             reason: string;
+        };
+        /**
+         * ClientTagAssignmentRequest
+         * @description Replace or extend the tags assigned to one or more clients.
+         */
+        ClientTagAssignmentRequest: {
+            /**
+             * Mode
+             * @default add
+             * @enum {string}
+             */
+            mode: "add" | "remove" | "replace";
+            /** Tag Ids */
+            tag_ids?: string[];
         };
         /**
          * ClientTagCreate
@@ -12321,6 +12581,43 @@ export interface operations {
             };
         };
     };
+    bulk_update_client_tags_clients_bulk_tags_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientBulkTagRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     check_name_availability_clients_check_name__name__get: {
         parameters: {
             query: {
@@ -12358,6 +12655,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Export only selected client IDs */
+                client_ids?: string[] | null;
                 /** @description Filter by client status */
                 status?: components["schemas"]["BaseStatus"] | null;
                 /** @description Filter by engagement tier (A/B/C) */
@@ -12423,6 +12722,139 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_client_import_jobs_clients_import_jobs_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientImportJobListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_client_import_clients_import_jobs_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_queue_client_import_clients_import_jobs_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientImportJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_client_import_job_clients_import_jobs__job_id__get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientImportJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_client_import_job_clients_import_jobs__job_id__retry_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientImportJobResponse"];
                 };
             };
             /** @description Validation Error */
@@ -12916,6 +13348,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_client_tags_clients__client_id__tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_client_tags_clients__client_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientTagAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -13948,6 +14450,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_contract_utilisation_events_contracts__contract_id__utilisation_events_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventResponse"][];
                 };
             };
             /** @description Validation Error */
