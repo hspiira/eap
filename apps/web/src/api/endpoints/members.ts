@@ -30,11 +30,6 @@ export interface MemberListParams extends ListParams {
   relation?: MemberRelation
 }
 
-export interface MemberDuplicateCandidate {
-  member: Member
-  matched_on: string[]
-}
-
 export interface MemberNextOfKinRequest {
   name: string
   relationship: NextOfKinRelationship
@@ -106,12 +101,5 @@ export const membersApi = {
     } = {},
   ): Promise<Blob> {
     return apiClient.getBlob("/members/export", params)
-  },
-
-  async scanDuplicates(client_id?: string): Promise<{ candidates: MemberDuplicateCandidate[] }> {
-    return apiClient.get<{ candidates: MemberDuplicateCandidate[] }>(
-      "/members/duplicates",
-      client_id ? { client_id } : undefined,
-    )
   },
 }

@@ -53,7 +53,7 @@ export function SheetForm({
       const first = bodyRef.current?.querySelector<HTMLElement>(
         "input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea:not([disabled])",
       )
-      first?.focus()
+      if (!bodyRef.current?.contains(document.activeElement)) first?.focus()
     }, 80)
     return () => clearTimeout(t)
   }, [open])
@@ -70,7 +70,7 @@ export function SheetForm({
       <SheetContent
         side="right"
         className={cn(
-          "flex h-full w-full flex-col gap-0 rounded-none border-l border-fg/15 bg-bg p-0 shadow-lg",
+          "flex h-full w-full flex-col gap-0 rounded-none border-l border-fg/15 bg-bg p-0 shadow-none",
           SIZE_CLASS[size],
         )}
       >
@@ -98,7 +98,7 @@ export function SheetForm({
             {serverError ? (
               <div
                 role="alert"
-                className="mb-4 rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
+                className="mb-4 rounded-none border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
               >
                 {serverError}
               </div>

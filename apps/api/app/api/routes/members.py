@@ -7,24 +7,25 @@ also the only identity-bearing side allowed to link to clinical subjects.
 
 import csv
 import io
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.api.dependencies import (
     PageParams,
-    get_audit_event_handler,
     get_client_repository,
     get_clinical_subject_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
+    get_outbox_repository,
     pagination,
 )
 from app.api.schemas.member_schemas import (
     MemberCreate,
-    MemberDuplicateCandidate,
-    MemberDuplicateListResponse,
     MemberListResponse,
     MemberNextOfKinCreate,
     MemberNextOfKinResponse,
@@ -32,8 +33,10 @@ from app.api.schemas.member_schemas import (
     MemberResponse,
     MemberUpdate,
 )
+from app.application.services.member_audit import record_member_change
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_not_viewer
+from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
@@ -45,6 +48,7 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberRepository,
 )
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
+from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -56,7 +60,6 @@ from app.domain.value_objects.core import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -101,6 +104,60 @@ def _next_of_kin_response(contact: MemberNextOfKin) -> MemberNextOfKinResponse:
     )
 
 
+async def _get_member(
+    member_id: str, tenant_id: str, member_repo: EligibleMemberRepository
+) -> EligibleMember:
+    member = await member_repo.get_by_id(EligibleMemberId(member_id))
+    if member is None or member.tenant_id.value != tenant_id:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
+
+async def _get_contact(
+    member_id: str,
+    contact_id: str,
+    tenant_id: str,
+    member_repo: EligibleMemberRepository,
+    next_of_kin_repo: MemberNextOfKinRepository,
+) -> MemberNextOfKin:
+    member = await _get_member(member_id, tenant_id, member_repo)
+    contact = await next_of_kin_repo.get_by_id(MemberNextOfKinId(contact_id))
+    if contact is None or contact.tenant_id != member.tenant_id or contact.member_id != member.id:
+        raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
+    return contact
+
+
+async def _validate_roster_update(
+    member: EligibleMember,
+    updated: MemberCreate,
+    member_repo: EligibleMemberRepository,
+) -> None:
+    if updated.primary_employee_member_id == member.id.value:
+        raise HTTPException(status_code=422, detail="A member cannot be their own primary employee")
+    if member.relation == MemberRelation.EMPLOYEE and updated.relation != member.relation:
+        beneficiaries = await member_repo.list_for_primary(
+            member.tenant_id, member.client_id, member.id, limit=1
+        )
+        if beneficiaries:
+            raise HTTPException(
+                status_code=409,
+                detail="Reassign this employee's beneficiaries before changing their relationship",
+            )
+    duplicate = await member_repo.find_by_employer_member_id(
+        member.tenant_id, member.client_id, updated.employer_member_id
+    )
+    if duplicate is not None and duplicate.id != member.id:
+        raise HTTPException(
+            status_code=409, detail="Company member ID already exists for this client"
+        )
+    await _validate_primary(
+        member_repo,
+        updated.primary_employee_member_id,
+        tenant_id=member.tenant_id.value,
+        client_id=member.client_id.value,
+    )
+
+
 async def _client_in_tenant(
     client_id: str,
     tenant_id: str,
@@ -134,7 +191,6 @@ async def _validate_primary(
 @transactional()
 async def create_member(
     data: MemberCreate,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
@@ -142,7 +198,8 @@ async def create_member(
     link_repo: EligibleMemberClinicalLinkRepository = Depends(
         get_eligible_member_clinical_link_repository
     ),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
     await _validate_primary(
@@ -171,7 +228,14 @@ async def create_member(
         gender=data.gender,
         phone=data.phone,
     )
-    await audit_change(member, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="CREATE",
+        operation="Created",
+    )
     return _response(member)
 
 
@@ -191,7 +255,9 @@ async def list_members(
     relation: MemberRelation | None = Query(None),
     search: str | None = Query(None),
     pg: PageParams = Depends(pagination()),
-    sort_by: str = Query("created_at"),
+    sort_by: Literal[
+        "created_at", "updated_at", "employer_member_id", "display_label", "status", "relation"
+    ] = Query("created_at"),
     sort_desc: bool = Query(True),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
 ):
@@ -236,23 +302,28 @@ async def export_members(
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
 ):
     tenant = TenantId(current_user.tenant_id)
+    members: list[EligibleMember] = []
     if member_ids:
-        members = []
         for raw_id in dict.fromkeys(member_ids):
             member = await member_repo.get_by_id(EligibleMemberId(raw_id))
             if member and member.tenant_id == tenant:
                 members.append(member)
     else:
-        members = await member_repo.list_all(
-            tenant,
-            client_id=ClientId(client_id) if client_id else None,
-            status=member_status,
-            relation=relation,
-            search=search,
-            limit=10_000,
-            sort_by="created_at",
-            sort_desc=True,
-        )
+        while True:
+            batch = await member_repo.list_all(
+                tenant,
+                client_id=ClientId(client_id) if client_id else None,
+                status=member_status,
+                relation=relation,
+                search=search,
+                limit=1000,
+                offset=len(members),
+                sort_by="created_at",
+                sort_desc=True,
+            )
+            members.extend(batch)
+            if len(batch) < 1000:
+                break
     output = io.StringIO(newline="")
     fields = [
         "id",
@@ -272,7 +343,8 @@ async def export_members(
     writer.writeheader()
     for member in members:
         item = _response(member)
-        writer.writerow({field: getattr(item, field) for field in fields})
+        values = item.model_dump(mode="json")
+        writer.writerow({field: _csv_cell(values[field]) for field in fields})
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
@@ -280,59 +352,56 @@ async def export_members(
     )
 
 
+def _csv_cell(value: str | None) -> str | None:
+    # Spreadsheet applications interpret these prefixes even in quoted CSV cells.
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@", "\t", "\r", "\n")):
+        return "'" + value
+    return value
+
+
 @router.patch("/{member_id}", response_model=MemberResponse)
 @transactional()
 async def update_member(
     member_id: str,
     data: MemberUpdate,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    client_repo: ClientRepository = Depends(get_client_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
-    fields = data.model_fields_set
-    relation = data.relation if "relation" in fields and data.relation else member.relation
-    primary = (
-        data.primary_employee_member_id
-        if "primary_employee_member_id" in fields
-        else (
-            member.primary_employee_member_id.value if member.primary_employee_member_id else None
-        )
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
+    values = _response(member).model_dump(include=set(MemberCreate.model_fields))
+    values.update(data.model_dump(exclude_unset=True))
+    try:
+        updated = MemberCreate.model_validate(values)
+    except ValidationError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="Member update must retain a valid name, company ID and beneficiary relationship",
+        ) from error
+    await _validate_roster_update(member, updated, member_repo)
+    details = updated.model_dump(exclude={"client_id"})
+    details["primary_employee_member_id"] = (
+        EligibleMemberId(updated.primary_employee_member_id)
+        if updated.primary_employee_member_id
+        else None
     )
-    await _validate_primary(
-        member_repo,
-        primary,
-        tenant_id=current_user.tenant_id,
-        client_id=member.client_id.value,
+    details["work_email"] = Email(str(updated.work_email)) if updated.work_email else None
+    details["personal_email"] = (
+        Email(str(updated.personal_email)) if updated.personal_email else None
     )
-    await _client_in_tenant(member.client_id.value, current_user.tenant_id, client_repo)
     member.update_roster_details(
-        employer_member_id=(
-            data.employer_member_id
-            if "employer_member_id" in fields and data.employer_member_id is not None
-            else member.employer_member_id
-        ),
-        relation=relation,
-        primary_employee_member_id=EligibleMemberId(primary) if primary else None,
-        coverage_start=member.coverage_start,
-        coverage_end=member.coverage_end,
-        work_email=(Email(str(data.work_email)) if data.work_email else None)
-        if "work_email" in fields
-        else member.work_email,
-        personal_email=(Email(str(data.personal_email)) if data.personal_email else None)
-        if "personal_email" in fields
-        else member.personal_email,
-        display_label=data.display_label if "display_label" in fields else member.display_label,
-        date_of_birth=data.date_of_birth if "date_of_birth" in fields else member.date_of_birth,
-        gender=data.gender if "gender" in fields else member.gender,
-        phone=data.phone if "phone" in fields else member.phone,
+        **details, coverage_start=member.coverage_start, coverage_end=member.coverage_end
     )
     await member_repo.save(member)
-    await audit_change(member, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="Updated",
+    )
     return _response(member)
 
 
@@ -342,9 +411,7 @@ async def _transition_member(
     current_user: TokenData,
     member_repo: EligibleMemberRepository,
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
     getattr(member, action)()
     await member_repo.save(member)
     return member
@@ -354,13 +421,20 @@ async def _transition_member(
 @transactional()
 async def suspend_member(
     member_id: str,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "suspend", current_user, member_repo)
-    await audit_change(member, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="Suspended",
+    )
     return _response(member)
 
 
@@ -368,13 +442,20 @@ async def suspend_member(
 @transactional()
 async def reinstate_member(
     member_id: str,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "reinstate", current_user, member_repo)
-    await audit_change(member, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="Reinstated",
+    )
     return _response(member)
 
 
@@ -382,64 +463,21 @@ async def reinstate_member(
 @transactional()
 async def terminate_member(
     member_id: str,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "terminate", current_user, member_repo)
-    await audit_change(member, audit_handler, current_user, request)
-    return _response(member)
-
-
-@router.get("/duplicates", response_model=MemberDuplicateListResponse)
-@readonly()
-async def scan_member_duplicates(
-    current_user: TokenData = Depends(get_current_user),
-    client_id: str | None = Query(None),
-    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-):
-    members = await member_repo.list_all(
-        TenantId(current_user.tenant_id),
-        client_id=ClientId(client_id) if client_id else None,
-        limit=10_000,
-        sort_by="display_label",
-        sort_desc=False,
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="Terminated",
     )
-    groups: dict[str, list[EligibleMember]] = {}
-    for member in members:
-        keys = {member.employer_member_id.casefold()}
-        if member.work_email:
-            keys.add(f"email:{member.work_email.value.casefold()}")
-        if member.personal_email:
-            keys.add(f"email:{member.personal_email.value.casefold()}")
-        if member.phone:
-            keys.add(f"phone:{member.phone.casefold()}")
-        if member.display_label:
-            normalized_label = " ".join(member.display_label.casefold().split())
-            keys.add(f"name:{normalized_label}")
-        for key in keys:
-            groups.setdefault(key, []).append(member)
-    candidates: list[MemberDuplicateCandidate] = []
-    seen: set[str] = set()
-    for key, grouped in groups.items():
-        unique = {member.id.value: member for member in grouped}
-        if len(unique) < 2:
-            continue
-        for member in unique.values():
-            if member.id.value in seen:
-                continue
-            matches = [m for m in unique.values() if m.id.value != member.id.value]
-            fields = ["email"] if key.startswith("email:") else ["employer_member_id"]
-            if key.startswith("phone:"):
-                fields = ["phone"]
-            if key.startswith("name:"):
-                fields = ["display_label"]
-            candidates.append(MemberDuplicateCandidate(member=_response(member), matched_on=fields))
-            seen.add(member.id.value)
-            if not matches:
-                continue
-    return MemberDuplicateListResponse(candidates=candidates)
+    return _response(member)
 
 
 @router.get("/{member_id}/beneficiaries", response_model=list[MemberResponse])
@@ -449,9 +487,7 @@ async def list_member_beneficiaries(
     current_user: TokenData = Depends(get_current_user),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
     if member.relation != MemberRelation.EMPLOYEE:
         return []
     beneficiaries = await member_repo.list_for_primary(
@@ -470,9 +506,7 @@ async def list_member_next_of_kin(
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
     contacts = await next_of_kin_repo.list_for_member(TenantId(current_user.tenant_id), member.id)
     return [_next_of_kin_response(contact) for contact in contacts]
 
@@ -486,15 +520,13 @@ async def list_member_next_of_kin(
 async def create_member_next_of_kin(
     member_id: str,
     data: MemberNextOfKinCreate,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
     now = utc_now()
     contact = MemberNextOfKin(
         id=MemberNextOfKinId(generate_cuid()),
@@ -509,7 +541,15 @@ async def create_member_next_of_kin(
         updated_at=now,
     )
     await next_of_kin_repo.save(contact)
-    await audit_change(contact, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=contact.id.value,
+        member_id=contact.member_id.value,
+        action="CREATE",
+        operation="Created",
+    )
     return _next_of_kin_response(contact)
 
 
@@ -519,22 +559,15 @@ async def update_member_next_of_kin(
     member_id: str,
     contact_id: str,
     data: MemberNextOfKinUpdate,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    contact = await next_of_kin_repo.get_by_id(MemberNextOfKinId(contact_id))
-    if (
-        member is None
-        or member.tenant_id.value != current_user.tenant_id
-        or contact is None
-        or contact.tenant_id.value != current_user.tenant_id
-        or contact.member_id != member.id
-    ):
-        raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
+    contact = await _get_contact(
+        member_id, contact_id, current_user.tenant_id, member_repo, next_of_kin_repo
+    )
     contact.update(
         name=data.name.strip(),
         relationship=data.relationship,
@@ -544,7 +577,15 @@ async def update_member_next_of_kin(
         now=utc_now(),
     )
     await next_of_kin_repo.save(contact)
-    await audit_change(contact, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=contact.id.value,
+        member_id=contact.member_id.value,
+        action="UPDATE",
+        operation="Updated",
+    )
     return _next_of_kin_response(contact)
 
 
@@ -553,24 +594,25 @@ async def update_member_next_of_kin(
 async def delete_member_next_of_kin(
     member_id: str,
     contact_id: str,
-    request: Request,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
-    audit_handler=Depends(get_audit_event_handler),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    contact = await next_of_kin_repo.get_by_id(MemberNextOfKinId(contact_id))
-    if (
-        member is None
-        or member.tenant_id.value != current_user.tenant_id
-        or contact is None
-        or contact.tenant_id.value != current_user.tenant_id
-        or contact.member_id != member.id
-    ):
-        raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
+    contact = await _get_contact(
+        member_id, contact_id, current_user.tenant_id, member_repo, next_of_kin_repo
+    )
     await next_of_kin_repo.delete(contact.id)
-    await audit_change(contact, audit_handler, current_user, request)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=contact.id.value,
+        member_id=contact.member_id.value,
+        action="DELETE",
+        operation="Deleted",
+    )
     return None
 
 
@@ -581,7 +623,5 @@ async def get_member(
     current_user: TokenData = Depends(get_current_user),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
 ):
-    member = await member_repo.get_by_id(EligibleMemberId(member_id))
-    if member is None or member.tenant_id.value != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
     return _response(member)

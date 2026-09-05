@@ -48,12 +48,16 @@ class EligibleMember:
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
-        if not self.employer_member_id:
+        if not self.employer_member_id.strip():
             raise DomainError("EligibleMember requires an employer_member_id")
         if self.coverage_end and self.coverage_start and self.coverage_end < self.coverage_start:
             raise DomainError("coverage_end must be on or after coverage_start")
         if self.relation != MemberRelation.EMPLOYEE and self.primary_employee_member_id is None:
             raise DomainError(f"{self.relation.value} requires a primary_employee_member_id")
+        if self.relation == MemberRelation.EMPLOYEE and self.primary_employee_member_id is not None:
+            raise DomainError("Employees cannot have a primary employee member")
+        if self.primary_employee_member_id == self.id:
+            raise DomainError("A member cannot be their own primary employee")
 
     def suspend(self, now: datetime | None = None) -> None:
         if self.status == EligibilityStatus.TERMINATED:
@@ -105,7 +109,7 @@ class EligibleMember:
         phone: str | None = None,
     ) -> None:
         """Update current roster details without creating a User account."""
-        if not employer_member_id:
+        if not employer_member_id.strip():
             raise DomainError("EligibleMember requires an employer_member_id")
         if coverage_end and coverage_start and coverage_end < coverage_start:
             raise DomainError("coverage_end must be on or after coverage_start")
@@ -113,6 +117,8 @@ class EligibleMember:
             raise DomainError("Employees cannot have a primary employee member")
         if relation != MemberRelation.EMPLOYEE and primary_employee_member_id is None:
             raise DomainError(f"{relation.value} requires a primary_employee_member_id")
+        if primary_employee_member_id == self.id:
+            raise DomainError("A member cannot be their own primary employee")
 
         self.employer_member_id = employer_member_id
         self.relation = relation

@@ -153,12 +153,3 @@ class MemberListResponse(BaseModel):
     page: int
     limit: int
     has_more: bool
-
-
-class MemberDuplicateCandidate(BaseModel):
-    member: MemberResponse
-    matched_on: list[str]
-
-
-class MemberDuplicateListResponse(BaseModel):
-    candidates: list[MemberDuplicateCandidate]

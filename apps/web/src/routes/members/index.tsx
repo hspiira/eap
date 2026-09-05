@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Download, ExternalLink, Plus, ScanSearch, Users } from "lucide-react"
+import { Download, ExternalLink, Plus, Users } from "lucide-react"
 
-import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
+import { membersApi } from "@/api/endpoints/members"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -15,13 +15,6 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
@@ -79,12 +72,6 @@ function MembersListPage() {
   const queryClient = useQueryClient()
   const toast = useToast()
   const [editing, setEditing] = useState<Member | null>(null)
-  const [duplicatesOpen, setDuplicatesOpen] = useState(false)
-  const duplicatesQuery = useQuery({
-    queryKey: ["members", "duplicates", searchParams.client_id],
-    queryFn: () => membersApi.scanDuplicates(searchParams.client_id),
-    enabled: false,
-  })
   const query = useEntityList({
     resource: "members",
     params: {
@@ -134,14 +121,6 @@ function MembersListPage() {
       breadcrumb="Members"
       actions={
         <>
-          <IconButton
-            label="Scan duplicates"
-            icon={ScanSearch}
-            onClick={() => {
-              setDuplicatesOpen(true)
-              void duplicatesQuery.refetch()
-            }}
-          />
           <IconButton
             label="Export members"
             icon={Download}
@@ -209,18 +188,12 @@ function MembersListPage() {
           }
         }}
         member={editing}
+        clientId={searchParams.client_id}
         onSaved={() => {
           void queryClient.invalidateQueries({ queryKey: ["members"] })
           list.setAddOpen(false)
           setEditing(null)
         }}
-      />
-
-      <DuplicateDialog
-        open={duplicatesOpen}
-        onOpenChange={setDuplicatesOpen}
-        loading={duplicatesQuery.isFetching}
-        candidates={duplicatesQuery.data?.candidates ?? []}
       />
 
       <EntityListView
@@ -358,45 +331,5 @@ function MemberRow({
         </Link>
       </TableCell>
     </TableRow>
-  )
-}
-
-function DuplicateDialog({
-  open,
-  onOpenChange,
-  loading,
-  candidates,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  loading: boolean
-  candidates: MemberDuplicateCandidate[]
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-y-auto rounded-none sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Possible duplicate members</DialogTitle>
-          <DialogDescription>
-            {loading
-              ? "Scanning the member roster…"
-              : `${candidates.length} possible duplicate records found.`}
-          </DialogDescription>
-        </DialogHeader>
-        {!loading && candidates.length === 0 ? (
-          <p className="text-sm text-fg-muted">No likely duplicates found.</p>
-        ) : null}
-        <div className="space-y-2">
-          {candidates.map((candidate) => (
-            <div key={candidate.member.id} className="border border-fg/15 bg-surface p-3">
-              <p className="text-sm font-medium text-fg">
-                {candidate.member.display_label ?? candidate.member.employer_member_id}
-              </p>
-              <p className="text-xs text-fg-muted">Matched on {candidate.matched_on.join(", ")}</p>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
   )
 }

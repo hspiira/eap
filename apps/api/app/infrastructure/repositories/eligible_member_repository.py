@@ -161,7 +161,14 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         sort_by: str = "created_at",
         sort_desc: bool = True,
     ) -> list[EligibleMember]:
-        allowed = {"created_at", "updated_at", "employer_member_id", "display_label", "status"}
+        allowed = {
+            "created_at",
+            "updated_at",
+            "employer_member_id",
+            "display_label",
+            "status",
+            "relation",
+        }
         if sort_by not in allowed:
             raise ValueError(f"Invalid member sort column: {sort_by}")
         stmt = self._filters(
