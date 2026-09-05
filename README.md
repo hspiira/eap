@@ -181,6 +181,14 @@ that rewrote them with CRLF would fail those gates:
   pyright gate; the rest of the project is reported but not enforced.
 - Backend test coverage sits just above the 60% floor (63%), so a moderately
   sized untested addition can fail the gate.
+- The audit trail covers lifecycle transitions and little else. Auditing is
+  event-driven, so a mutating entity method that appends no domain event never
+  reaches `audit_logs`: creating a client and changing its name or contact
+  details both leave no record, while suspending it does. 33 of 137 mutating
+  entity methods emit an event; nine entities emit none at all.
+  `tests/unit/domain/test_audit_coverage.py` pins that number and names the
+  silent methods, so the gap cannot widen unnoticed. Widening the audit scope
+  is a product decision, not a bug fix.
 
 ## The API contract
 
