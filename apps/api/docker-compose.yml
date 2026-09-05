@@ -2,6 +2,35 @@
 # Evexía API Docker Compose
 # =============================================================================
 
+# The API and the outbox worker must agree on database and secret configuration:
+# they are the same application, split across two processes. Anchors keep them
+# from drifting apart.
+x-dev-env: &dev-env
+  APP_NAME: Evexía
+  APP_VERSION: 0.1.0
+  DEBUG: "true"
+  ENVIRONMENT: development
+  DATABASE_URL: postgresql+asyncpg://evexia:evexia@db:5432/evexia
+  DATABASE_ECHO: "false"
+  SECRET_KEY: dev-secret-key-change-in-production-at-least-32-chars
+  ALGORITHM: HS256
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  CORS_ORIGINS: http://localhost:3000,http://localhost:8000
+  LOG_LEVEL: INFO
+
+x-prod-env: &prod-env
+  APP_NAME: Evexía
+  APP_VERSION: 0.1.0
+  DEBUG: "false"
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql+asyncpg://evexia:evexia@db:5432/evexia
+  DATABASE_ECHO: "false"
+  SECRET_KEY: ${SECRET_KEY:?Secret key is required}
+  ALGORITHM: HS256
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+  LOG_LEVEL: INFO
+
 services:
   # ---------------------------------------------------------------------------
   # API Service
@@ -16,18 +45,7 @@ services:
       - ./app:/app/app:ro
       - ./tests:/app/tests:ro
       - ./alembic:/app/alembic
-    environment:
-      - APP_NAME=Evexía
-      - APP_VERSION=0.1.0
-      - DEBUG=true
-      - ENVIRONMENT=development
-      - DATABASE_URL=postgresql+asyncpg://evexia:evexia@db:5432/evexia
-      - DATABASE_ECHO=false
-      - SECRET_KEY=dev-secret-key-change-in-production-at-least-32-chars
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
-      - LOG_LEVEL=INFO
+    environment: *dev-env
     depends_on:
       db:
         condition: service_healthy
@@ -40,6 +58,27 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
+  # Outbox Worker
+  # ---------------------------------------------------------------------------
+  # Drains outbox_events into audit_logs / entity_changes. Without this process
+  # running, every audited mutation enqueues a row that is never delivered and
+  # the audit trail stays empty. Run exactly one replica: the dispatcher is safe
+  # under concurrency but not yet efficient (no SKIP LOCKED).
+  outbox-worker:
+    build:
+      context: .
+      target: development
+    command: ["python", "scripts/outbox_worker.py"]
+    volumes:
+      - ./app:/app/app:ro
+      - ./scripts:/app/scripts:ro
+    environment: *dev-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
   # API Service (Production with PostgreSQL)
   # ---------------------------------------------------------------------------
   api-prod:
@@ -48,18 +87,7 @@ services:
       target: production
     ports:
       - "8000:8000"
-    environment:
-      - APP_NAME=Evexía
-      - APP_VERSION=0.1.0
-      - DEBUG=false
-      - ENVIRONMENT=production
-      - DATABASE_URL=postgresql+asyncpg://evexia:evexia@db:5432/evexia
-      - DATABASE_ECHO=false
-      - SECRET_KEY=${SECRET_KEY:?Secret key is required}
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
-      - LOG_LEVEL=INFO
+    environment: *prod-env
     depends_on:
       db:
         condition: service_healthy
@@ -69,6 +97,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # ---------------------------------------------------------------------------
+  # Outbox Worker (Production)
+  # ---------------------------------------------------------------------------
+  outbox-worker-prod:
+    build:
+      context: .
+      target: production
+    command: ["python", "scripts/outbox_worker.py"]
+    environment: *prod-env
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     profiles:
       - production

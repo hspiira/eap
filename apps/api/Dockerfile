@@ -42,6 +42,7 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --chown=evexia:evexia app/ ./app/
 COPY --chown=evexia:evexia alembic/ ./alembic/
 COPY --chown=evexia:evexia alembic.ini ./
+COPY --chown=evexia:evexia scripts/ ./scripts/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
@@ -59,7 +60,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"
 
-# Run the application
+# Run the API. The outbox worker runs from this same image with
+# CMD ["python", "scripts/outbox_worker.py"]; see docker-compose.yml.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # -----------------------------------------------------------------------------
