@@ -420,6 +420,28 @@ async def restore_tenant(
 # ==================== QUERIES (Direct Repository) ====================
 
 
+def _matches_filters(
+    tenant: TenantEntity,
+    status: TenantStatus | None,
+    subscription_tier: SubscriptionTier | None,
+    search: str | None,
+) -> bool:
+    """Apply the list filters to a single tenant.
+
+    A non-platform user's list is their own tenant, so the filters have to be
+    applied here rather than in the repository query.
+    """
+    if status is not None and tenant.status != status:
+        return False
+    if subscription_tier is not None and tenant.subscription_tier != subscription_tier:
+        return False
+    if search:
+        needle = search.casefold()
+        if needle not in tenant.name.casefold() and needle not in tenant.code.value.casefold():
+            return False
+    return True
+
+
 @router.get(
     "/",
     response_model=TenantListResponse,
@@ -448,7 +470,7 @@ async def list_tenants(
 
     if not is_platform_admin:
         own = await tenant_repo.get_by_id(TenantId(current_user.tenant_id))
-        items = [own] if own else []
+        items = [own] if own and _matches_filters(own, status, subscription_tier, search) else []
         return TenantListResponse(
             items=[_to_tenant_response(t) for t in items],
             total=len(items),

@@ -10,6 +10,7 @@ from decimal import Decimal
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory, KPIMeasurementUnit
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
@@ -44,7 +45,7 @@ class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
         # Check if KPI with same name already exists
         existing = await self.kpi_repository.get_by_name(name, tenant_id)
         if existing:
-            raise ValueError(f"KPI with name '{name}' already exists")
+            raise ConflictError(f"KPI with name '{name}' already exists")
 
         # Create KPI entity
         kpi = KPIEntity(
@@ -95,7 +96,7 @@ class UpdateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
         if name and name != kpi.name:
             existing = await self.kpi_repository.get_by_name(name, kpi.tenant_id)
             if existing:
-                raise ValueError(f"KPI with name '{name}' already exists")
+                raise ConflictError(f"KPI with name '{name}' already exists")
 
         kpi.update_definition(
             name=name,

@@ -2,6 +2,7 @@
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client_tag import ClientTagEntity
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.shared.utils.datetime import utc_now
@@ -27,7 +28,7 @@ class CreateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
         """Create a new client tag."""
         existing = await self.tag_repository.get_by_name(name, tenant_id)
         if existing:
-            raise ValueError(f"Tag with name '{name}' already exists")
+            raise ConflictError(f"Tag with name '{name}' already exists")
 
         tag = ClientTagEntity(
             id=tag_id,
@@ -73,7 +74,7 @@ class UpdateClientTagUseCase(BaseUseCase[ClientTagEntity, ClientTagId]):
         if name and name != tag.name:
             existing = await self.tag_repository.get_by_name(name, tag.tenant_id)
             if existing:
-                raise ValueError(f"Tag with name '{name}' already exists")
+                raise ConflictError(f"Tag with name '{name}' already exists")
 
         if name:
             tag.update_name(name)

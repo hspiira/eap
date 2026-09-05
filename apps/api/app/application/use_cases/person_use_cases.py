@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.person import PersonEntity
 from app.domain.enums import PersonType
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.person_repository import PersonRepository
 from app.domain.services.employee_code_generator import EmployeeCodeGenerator
@@ -84,7 +85,7 @@ class CreateClientEmployeeUseCase(BaseUseCase[PersonEntity, PersonId]):
         """
         existing = await self.person_repository.get_by_user_id(user_id)
         if existing:
-            raise ValueError(f"Person already exists for user {user_id.value}")
+            raise ConflictError(f"Person already exists for user {user_id.value}")
 
         employee_code = await self.code_generator.generate_code(
             client_id=client_id,
@@ -153,7 +154,7 @@ class CreateDependentUseCase(BaseUseCase[PersonEntity, PersonId]):
         """
         existing = await self.person_repository.get_by_user_id(user_id)
         if existing:
-            raise ValueError(f"Person already exists for user {user_id.value}")
+            raise ConflictError(f"Person already exists for user {user_id.value}")
 
         primary_employee = await self.person_repository.get_by_id(
             dependent_info.primary_employee_id

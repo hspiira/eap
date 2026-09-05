@@ -8,7 +8,7 @@ Refactored to use base use case classes to eliminate boilerplate.
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.user import UserEntity
 from app.domain.enums import TenantRole, UserStatus
-from app.domain.exceptions import SubscriptionLimitError
+from app.domain.exceptions import ConflictError, SubscriptionLimitError
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
@@ -72,7 +72,7 @@ class CreateUserUseCase(BaseUseCase[UserEntity, UserId]):
         # Check if user already exists
         existing = await self.user_repository.get_by_email(email, tenant_id)
         if existing:
-            raise ValueError(f"User with email {email.value} already exists")
+            raise ConflictError(f"User with email {email.value} already exists")
 
         # Create user entity
         user = UserEntity(

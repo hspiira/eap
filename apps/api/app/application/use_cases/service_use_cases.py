@@ -8,6 +8,7 @@ Refactored to use base use case classes.
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service import ServiceEntity
 from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
@@ -37,7 +38,7 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         # Check if service already exists
         existing = await self.service_repository.get_by_name(tenant_id, name)
         if existing:
-            raise ValueError(f"Service with name '{name}' already exists")
+            raise ConflictError(f"Service with name '{name}' already exists")
 
         # Create service entity
         now = utc_now()
