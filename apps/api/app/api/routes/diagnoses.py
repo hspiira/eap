@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_diagnosis_repository
 from app.api.schemas.diagnosis_schemas import (
+    DiagnosisCapabilitiesResponse,
     DiagnosisCreate,
     DiagnosisOverlayResponse,
     DiagnosisOverlayUpdate,
@@ -16,7 +17,11 @@ from app.api.schemas.diagnosis_schemas import (
     DiagnosisTypeWithChildrenResponse,
     DiagnosisUpdate,
 )
-from app.core.authorization import require_platform_admin, require_tenant_role
+from app.core.authorization import (
+    is_platform_admin,
+    require_platform_admin,
+    require_tenant_role,
+)
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import TenantRole
@@ -229,6 +234,18 @@ async def set_diagnosis_active(
 ):
     updated = await repo.set_diagnosis_active(diagnosis_id, is_active=is_active)
     return DiagnosisResponse.model_validate(_found(updated, "Diagnosis"))
+
+
+@router.get("/capabilities", response_model=DiagnosisCapabilitiesResponse)
+@readonly()
+async def diagnosis_capabilities(
+    user: TokenData = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return DiagnosisCapabilitiesResponse(
+        can_manage_taxonomy=is_platform_admin(user),
+        can_manage_overlay=user.role == TenantRole.ADMIN.value,
+    )
 
 
 # === Tenant overlay (tenant admin) ===

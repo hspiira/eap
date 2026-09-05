@@ -85,3 +85,14 @@ class DiagnosisOverlayResponse(BaseModel):
     local_label: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DiagnosisCapabilitiesResponse(BaseModel):
+    """What the caller may change, so the UI can hide controls it cannot use."""
+
+    can_manage_taxonomy: bool = Field(
+        ..., description="Create, edit and retire shared taxonomy rows (platform admin)"
+    )
+    can_manage_overlay: bool = Field(
+        ..., description="Hide, reorder and relabel rows for this tenant (tenant admin)"
+    )

@@ -17,6 +17,7 @@ import {
   PhoneCall,
   Search,
   ShieldCheck,
+  Stethoscope,
   Tag,
   UserCog,
   Users,
@@ -81,6 +82,7 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
 /** Configuration & admin: shown under a "Settings" label. */
 const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/industries", label: "Industries", icon: BarChart3 },
+  { to: "/diagnoses", label: "Diagnoses", icon: Stethoscope },
   { to: "/tags", label: "Tags", icon: Tag },
   { to: "/users", label: "Platform Users", icon: UserCog },
   { to: "/audit", label: "Audits", icon: ClipboardCheck, flag: "audit" },
