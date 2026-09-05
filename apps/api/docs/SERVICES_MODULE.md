@@ -3,6 +3,12 @@
 Scope: the service catalogue, the diagnosis taxonomy, and the mapping data in
 `services.csv`. Written 2026-09-05.
 
+The source data is not in this repository. It was supplied at
+`/Users/piira/Downloads/services.csv` and every count below is taken from that
+file. If it is not to hand, section 2 records its shape and section 3.4 its
+defects, and a copy should be committed somewhere durable before phase 5 of
+`SERVICES_MIGRATION.md` runs.
+
 ## 1. What exists today
 
 Three separate concepts are already modelled. They are not currently connected
@@ -288,7 +294,7 @@ the reporting path.
 ### 4.5 Then enable prevalence reporting
 
 Once 4.1 through 4.4 are in place, replace the `no_data` stub in
-`report_query_runner.py:67` with a group-by over
+`apps/api/app/infrastructure/services/report_query_runner.py:67` with a group-by over
 `service_sessions.diagnosis_type_id`. Report at type level by default. With 52
 leaves over the volumes in this file, leaf-level counts will be too sparse to be
 meaningful, and small cell counts in clinical reporting are a privacy exposure
