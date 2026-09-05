@@ -29,11 +29,10 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 from app.shared.utils.client_alias import normalize_client_alias
-from app.shared.utils.client_csv import ClientCsvRow, generated_client_code
+from app.shared.utils.client_csv import ClientCsvRow, Issue, generated_client_code
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
-Issue = dict[str, str | int]
 Decisions = dict[int, dict[str, str | None]]
 ResolvedRow = tuple[ClientCsvRow, str, IndustryId | None, ClientId | None]
 
@@ -69,7 +68,7 @@ class ValidationResult:
 
     @property
     def errors(self) -> list[Issue]:
-        return [issue for issue in self.issues if issue.get("severity", "error") == "error"]
+        return [issue for issue in self.issues if issue["severity"] == "error"]
 
     @property
     def all_matches(self) -> dict[int, ClientEntity]:
@@ -94,10 +93,24 @@ def parse_decisions(raw: str | None, issues: list[Issue]) -> Decisions | None:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError:
-        issues.append({"row": 0, "field": "decisions", "message": "Invalid import decisions"})
+        issues.append(
+            {
+                "row": 0,
+                "field": "decisions",
+                "message": "Invalid import decisions",
+                "severity": "error",
+            }
+        )
         return {}
     if not isinstance(payload, dict):
-        issues.append({"row": 0, "field": "decisions", "message": "Invalid import decisions"})
+        issues.append(
+            {
+                "row": 0,
+                "field": "decisions",
+                "message": "Invalid import decisions",
+                "severity": "error",
+            }
+        )
         return {}
 
     decisions: Decisions = {}
@@ -105,7 +118,14 @@ def parse_decisions(raw: str | None, issues: list[Issue]) -> Decisions | None:
         try:
             row_number = int(key)
         except (TypeError, ValueError):
-            issues.append({"row": 0, "field": "decisions", "message": "Invalid row decision"})
+            issues.append(
+                {
+                    "row": 0,
+                    "field": "decisions",
+                    "message": "Invalid row decision",
+                    "severity": "error",
+                }
+            )
             continue
         if not isinstance(value, dict) or value.get("action") not in _MERGE_ACTIONS:
             issues.append(
@@ -477,7 +497,7 @@ async def create_clients(
     audit_handler,
     request=None,
     progress_callback: Callable[[int], Awaitable[None]] | None = None,
-) -> tuple[list[CreatedClient], int, int]:
+) -> tuple[list[CreatedClient], int]:
     """Create and audit the prevalidated rows."""
     created: list[CreatedClient] = []
     failed = 0
@@ -518,4 +538,4 @@ async def create_clients(
         await repos.alias.replace_for_client(client.id, tenant_id, row.aliases)
         await audit_change(client, audit_handler, current_user, request, tenant_id=tenant_id)
         created.append(CreatedClient(name=client.name, code=client.code))
-    return created, 0, failed
+    return created, failed
