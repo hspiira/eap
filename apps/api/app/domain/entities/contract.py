@@ -133,7 +133,7 @@ class ContractEntity:
         if self.deleted_at:
             raise DomainError("Cannot archive deleted contract")
         # Archive is a soft operation - mark expired contracts
-        if self.period.end_date < utc_now() and self.status == ContractStatus.ACTIVE:
+        if self.period.end_date < utc_now().date() and self.status == ContractStatus.ACTIVE:
             self.status = ContractStatus.EXPIRED
         self.updated_at = utc_now()
 
@@ -147,7 +147,7 @@ class ContractEntity:
             self.deleted_at = None
         # Restore terminated/expired contract to active if period is still valid
         if self.status in (ContractStatus.TERMINATED, ContractStatus.EXPIRED):
-            if self.period.end_date >= utc_now():
+            if self.period.end_date >= utc_now().date():
                 self.status = ContractStatus.ACTIVE
                 self.termination_reason = None
         self.updated_at = utc_now()
