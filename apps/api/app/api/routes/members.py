@@ -7,6 +7,7 @@ also the only identity-bearing side allowed to link to clinical subjects.
 
 import csv
 import io
+from collections.abc import Sequence
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -64,11 +65,12 @@ from app.shared.utils.generators import generate_cuid
 router = APIRouter(prefix="/members", tags=["members"])
 
 
-def _response(member: EligibleMember) -> MemberResponse:
+def _response(member: EligibleMember, client_name: str | None = None) -> MemberResponse:
     return MemberResponse(
         id=member.id.value,
         tenant_id=member.tenant_id.value,
         client_id=member.client_id.value,
+        client_name=client_name,
         employer_member_id=member.employer_member_id,
         relation=member.relation,
         status=member.status,
@@ -87,6 +89,21 @@ def _response(member: EligibleMember) -> MemberResponse:
         created_at=member.created_at,
         updated_at=member.updated_at,
     )
+
+
+async def _client_names(
+    client_repo: ClientRepository, members: Sequence[EligibleMember]
+) -> dict[str, str]:
+    """Resolve client display names for a page of members, one lookup per client."""
+    names: dict[str, str] = {}
+    for member in members:
+        key = member.client_id.value
+        if key in names:
+            continue
+        client = await client_repo.get_by_id(member.client_id)
+        if client:
+            names[key] = client.name
+    return names
 
 
 def _next_of_kin_response(contact: MemberNextOfKin) -> MemberNextOfKinResponse:
@@ -260,6 +277,7 @@ async def list_members(
     ] = Query("created_at"),
     sort_desc: bool = Query(True),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
 ):
     client = ClientId(client_id) if client_id else None
     tenant = TenantId(current_user.tenant_id)
@@ -281,8 +299,9 @@ async def list_members(
         relation=relation,
         search=search,
     )
+    names = await _client_names(client_repo, items)
     return MemberListResponse(
-        items=[_response(item) for item in items],
+        items=[_response(item, names.get(item.client_id.value)) for item in items],
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -622,6 +641,8 @@ async def get_member(
     member_id: str,
     current_user: TokenData = Depends(get_current_user),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
 ):
     member = await _get_member(member_id, current_user.tenant_id, member_repo)
-    return _response(member)
+    names = await _client_names(client_repo, [member])
+    return _response(member, names.get(member.client_id.value))

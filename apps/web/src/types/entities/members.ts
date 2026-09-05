@@ -23,6 +23,7 @@ export interface Member {
   id: string
   tenant_id: string
   client_id: string
+  client_name?: string | null
   employer_member_id: string
   relation: MemberRelation
   status: EligibilityStatus

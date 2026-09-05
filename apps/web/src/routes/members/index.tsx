@@ -333,8 +333,8 @@ function MemberRow({
         {member.employer_member_id}
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
-      <TableCell className="py-1.5 font-mono text-xs text-fg/60">
-        {member.client_id.slice(0, 10)}
+      <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
+        {member.client_name ?? "—"}
       </TableCell>
       <TableCell className="max-w-[15rem] truncate py-1.5 text-xs text-fg/70">{contact}</TableCell>
       <TableCell className="py-1.5 text-right">

@@ -128,6 +128,7 @@ class MemberResponse(BaseModel):
     id: str
     tenant_id: str
     client_id: str
+    client_name: str | None = None
     employer_member_id: str
     relation: MemberRelation
     status: EligibilityStatus
