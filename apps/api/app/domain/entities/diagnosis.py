@@ -44,5 +44,5 @@ class TenantOverlay:
     diagnosis_type_id: str
     diagnosis_id: str | None
     is_enabled: bool
-    sort_order: int
+    sort_order: int | None
     local_label: str | None

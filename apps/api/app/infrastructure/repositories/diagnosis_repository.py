@@ -214,7 +214,7 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
                 diagnosis_type_id=diagnosis_type_id,
                 diagnosis_id=diagnosis_id,
                 is_enabled=True if is_enabled is None else is_enabled,
-                sort_order=sort_order or 0,
+                sort_order=sort_order,
                 local_label=local_label,
             )
             self._session.add(model)

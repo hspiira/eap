@@ -72,5 +72,5 @@ class TenantDiagnosisSettingModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         ForeignKey("diagnoses.id", ondelete="CASCADE"), nullable=True, index=True
     )
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     local_label: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -67,28 +67,64 @@ async def list_diagnoses(
 @readonly()
 async def diagnosis_tree(
     active_only: bool = Query(True, description="Return only active rows"),
-    _user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(get_current_user),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
     db: AsyncSession = Depends(get_db),
 ):
     types = await repo.list_types(active_only=active_only)
     diagnoses = await repo.list_diagnoses(active_only=active_only)
-    by_type: dict[str, list[DiagnosisResponse]] = {}
-    for d in diagnoses:
-        by_type.setdefault(d.type_id, []).append(DiagnosisResponse.model_validate(d))
-    return DiagnosisTreeResponse(
-        types=[
-            DiagnosisTypeWithChildrenResponse(
-                id=t.id,
-                code=t.code,
-                name=t.name,
-                description=t.description,
-                sort_order=t.sort_order,
-                diagnoses=by_type.get(t.id, []),
-            )
-            for t in types
-        ]
-    )
+    overlay = await repo.tenant_overlay(user.tenant_id)
+    return DiagnosisTreeResponse(types=_build_tree(types, diagnoses, overlay))
+
+
+def _visible(overlay: dict, type_id: str, diagnosis_id: str | None) -> bool:
+    row = overlay.get((type_id, diagnosis_id))
+    return True if row is None else row.is_enabled
+
+
+def _label(overlay: dict, type_id: str, diagnosis_id: str | None, default: str) -> str:
+    row = overlay.get((type_id, diagnosis_id))
+    return row.local_label if row is not None and row.local_label else default
+
+
+def _order(overlay: dict, type_id: str, diagnosis_id: str | None, default: int) -> int:
+    row = overlay.get((type_id, diagnosis_id))
+    if row is None or row.sort_order is None:
+        return default
+    return row.sort_order
+
+
+def _children(diagnoses, type_id: str, overlay: dict) -> list[DiagnosisResponse]:
+    rows = [
+        DiagnosisResponse(
+            id=d.id,
+            type_id=d.type_id,
+            code=d.code,
+            name=_label(overlay, d.type_id, d.id, d.name),
+            description=d.description,
+            sort_order=_order(overlay, d.type_id, d.id, d.sort_order),
+        )
+        for d in diagnoses
+        if d.type_id == type_id and _visible(overlay, d.type_id, d.id)
+    ]
+    return sorted(rows, key=lambda r: (r.sort_order, r.name))
+
+
+def _build_tree(types, diagnoses, overlay: dict) -> list[DiagnosisTypeWithChildrenResponse]:
+    """Apply the tenant overlay to the shared taxonomy without mutating it."""
+    rows = [
+        DiagnosisTypeWithChildrenResponse(
+            id=t.id,
+            code=t.code,
+            name=_label(overlay, t.id, None, t.name),
+            description=t.description,
+            sort_order=_order(overlay, t.id, None, t.sort_order),
+            diagnoses=_children(diagnoses, t.id, overlay),
+        )
+        for t in types
+        if _visible(overlay, t.id, None)
+    ]
+    return sorted(rows, key=lambda r: (r.sort_order, r.name))
 
 
 def _found(entity, label: str):

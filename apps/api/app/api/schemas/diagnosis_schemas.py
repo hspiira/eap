@@ -81,7 +81,7 @@ class DiagnosisOverlayResponse(BaseModel):
     diagnosis_type_id: str
     diagnosis_id: str | None
     is_enabled: bool
-    sort_order: int
+    sort_order: int | None
     local_label: str | None
 
     model_config = ConfigDict(from_attributes=True)
