@@ -21,7 +21,11 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
+import {
+  CATEGORY_LABELS,
+  humanizeServiceType,
+  ServiceFormSheet,
+} from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -169,7 +173,10 @@ function ServiceDetailPage() {
                           service.service_type ? humanizeServiceType(service.service_type) : null
                         }
                       />
-                      <DetailRow label="Category" value={service.category} />
+                      <DetailRow
+                        label="Category"
+                        value={service.category ? CATEGORY_LABELS[service.category] : null}
+                      />
                     </DetailGrid>
                   </DetailCard>
 

@@ -8,7 +8,7 @@ Examples: Individual Counseling, Group Therapy, Crisis Intervention, etc.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ServiceId, TenantId
@@ -27,7 +27,7 @@ class ServiceEntity:
     updated_at: datetime
 
     # Optional fields (with defaults)
-    category: str | None = None
+    category: ServiceCategory | None = None
     duration_minutes: int | None = None
     is_group_service: bool = False
     max_participants: int | None = None
@@ -92,8 +92,8 @@ class ServiceEntity:
         self.description = description
         self.updated_at = utc_now()
 
-    def update_category(self, category: str | None) -> None:
-        """Update service category"""
+    def update_category(self, category: ServiceCategory | None) -> None:
+        """Update the programme category this service is delivered under."""
         if self.deleted_at:
             raise DomainError("Cannot update category for deleted service")
         self.category = category

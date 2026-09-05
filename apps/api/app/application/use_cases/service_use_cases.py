@@ -7,7 +7,7 @@ Refactored to use base use case classes.
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
@@ -28,7 +28,7 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         tenant_id: TenantId,
         name: str,
         description: str | None = None,
-        category: str | None = None,
+        category: ServiceCategory | None = None,
         duration_minutes: int | None = None,
         is_group_service: bool = False,
         max_participants: int | None = None,
@@ -74,7 +74,7 @@ class UpdateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         service_id: ServiceId,
         name: str | None = None,
         description: str | None = None,
-        category: str | None = None,
+        category: ServiceCategory | None = None,
         duration_minutes: int | None = None,
     ) -> ServiceEntity:
         """Update service information."""

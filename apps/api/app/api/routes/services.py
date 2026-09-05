@@ -37,7 +37,7 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -248,7 +248,7 @@ async def list_services(
     current_user: TokenData = Depends(require_same_tenant),
     status: BaseStatus | None = Query(None, description="Filter by service status"),
     search: str | None = Query(None, description="Search in service name"),
-    category: str | None = Query(None, description="Filter by category"),
+    category: ServiceCategory | None = Query(None, description="Filter by category"),
     is_group_service: bool | None = Query(None, description="Filter by group service"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),

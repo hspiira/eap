@@ -5,6 +5,7 @@ import type {
   DocumentType,
   KPICategory,
   MeasurementUnit,
+  ServiceCategory,
   SessionCategory,
   SessionClinicalStatus,
   SessionStatus,
@@ -19,7 +20,7 @@ export interface Service extends BaseEntity {
   name: string
   description?: string | null
   status: BaseStatus
-  category?: string | null
+  category?: ServiceCategory | null
   duration_minutes?: number | null
   /** Whether this is a group service per BE `ServiceResponse.is_group_service`. */
   is_group_service?: boolean
