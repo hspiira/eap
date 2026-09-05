@@ -598,6 +598,68 @@ at 00:21. Caught by eap-85. The diagnosis above replaces it.
 
 ---
 
+## BE-A12: `routes/clients.py` breaks the layering contract, and CI is red
+
+**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo
+
+**Problem.** `pnpm lint:api` fails on committed code. `lint-imports` reports
+2 contracts kept, 1 broken:
+
+```
+app.api.routes is not allowed to import app.infrastructure:
+  app.api.routes.clients -> app.infrastructure.mappers.client_mapper
+  app.api.routes.clients -> app.infrastructure.models.client_import_job_model
+  app.api.routes.clients -> app.infrastructure.models.client_model
+  app.api.routes.clients -> app.infrastructure.models.client_tag_assignment_model
+  app.api.routes.clients -> app.infrastructure.models.client_tag_model
+  app.api.routes.clients -> app.infrastructure.repositories.client_alias_repository
+  app.api.routes.clients -> app.infrastructure.repositories.client_repository
+  app.api.routes.clients -> app.infrastructure.repositories.industry_repository
+  app.api.routes.clients -> app.infrastructure.repositories.outbox_repository
+  app.api.routes.clients -> app.infrastructure.repositories.tenant_repository
+```
+
+Ten direct edges: five module-level at lines 107 to 111, five function-level at
+1243 to 1247. Introduced by `ff75256 feat(clients): add reviewed import
+workflow`. The file is committed and clean in the working tree, so this is not
+in-flight work that will resolve itself.
+
+**This is the contract working, not a false positive.** `pyproject.toml` lists
+grandfathered direct edges for `auth.py`, `auth_azure.py` and `tenants.py` under
+`ignore_imports`, with a comment stating the policy explicitly: those are
+existing tech debt to remove in Phase 1 and Phase 2, and "Adding *new* direct
+edges must fail CI." These ten are new. The gate is doing exactly what it was
+built to do.
+
+Worth noting what this costs beyond a red build. The same `pyproject.toml`
+comment names `app.api.dependencies` as the composition root, and the review's
+own summary records enforced layering as one of the codebase's genuine
+strengths. Ten direct edges in the largest route module is the point where that
+stops being true.
+
+**Recommended fix.** Route them through the composition root like every other
+module does. Repositories become `Depends(get_client_repository)` and friends in
+`app/api/dependencies/`, which already has the pattern for fourteen other
+repositories. The mapper and model imports want more thought: a route reaching
+for `ClientModel` and `ClientMapper` suggests query or mapping logic that
+belongs in a repository, and moving the imports without moving that logic would
+satisfy the linter while leaving the layering violation in place.
+
+Do not add these to `ignore_imports`. That list is explicitly for grandfathered
+debt, and the comment beside it forbids exactly this use.
+
+**Acceptance criteria**
+
+- [ ] `uv run lint-imports` reports 3 kept, 0 broken.
+- [ ] No new entry in `ignore_imports`.
+- [ ] Repositories reach the route through `app/api/dependencies/`.
+- [ ] Any query logic that needed `ClientModel` directly lives in a repository.
+
+**Ownership.** The clients lane. Not this session; my only commits touching
+`apps/api` are docs and the BE-A01 to BE-A03 fixes.
+
+---
+
 ## BE-A08: Outbox dispatcher cannot run on more than one replica
 
 **Severity:** 🟡 Medium · **Effort:** M · **Status:** ⬜ Todo
