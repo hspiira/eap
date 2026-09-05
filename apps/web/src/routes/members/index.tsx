@@ -62,7 +62,9 @@ const COLUMNS: ListColumn[] = [
   { header: "Member ID", className: "text-fg/65" },
   { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },
-  { header: "Contact", className: "text-fg/65" },
+  { header: "Work email", className: "text-fg/65" },
+  { header: "Personal email", className: "text-fg/65" },
+  { header: "Phone", className: "text-fg/65" },
 ]
 
 const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; className: string }> = {
@@ -311,7 +313,6 @@ function MemberRow({
   onEdit?: () => void
 }) {
   const label = member.display_label ?? member.employer_member_id
-  const contact = member.work_email ?? member.personal_email ?? "—"
   return (
     <TableRow className={`group h-9 ${ROW_BORDER}`}>
       <TableCell className="px-3 py-1.5">
@@ -320,25 +321,35 @@ function MemberRow({
       <TableCell className="px-2 py-1.5">
         <StatusIcon status={member.status} />
       </TableCell>
-      <TableCell className="py-1.5">
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          className="block truncate text-sm font-medium text-fg group-hover:text-primary"
-        >
-          {label}
-        </Link>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
+        {label}
       </TableCell>
       <TableCell className="py-1.5 font-mono text-xs text-fg/60">
         {member.employer_member_id}
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
       <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
-        {member.client_name ?? "—"}
+        {member.client_name ?? "-"}
       </TableCell>
-      <TableCell className="max-w-[15rem] truncate py-1.5 text-xs text-fg/70">{contact}</TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
+        {member.work_email ?? "-"}
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
+        {member.personal_email ?? "-"}
+      </TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
+        {member.phone ?? "-"}
+      </TableCell>
       <TableCell className="py-1.5 text-right">
-        <div className="flex items-center justify-end opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/members/$memberId"
+            params={{ memberId: member.id }}
+            aria-label={`Open ${label}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -354,7 +365,6 @@ function MemberRow({
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link to="/members/$memberId" params={{ memberId: member.id }}>
-                  <ExternalLink className="mr-2 size-3.5" />
                   View details
                 </Link>
               </DropdownMenuItem>
