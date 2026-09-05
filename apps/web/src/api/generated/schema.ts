@@ -4307,7 +4307,7 @@ export interface paths {
         put?: never;
         /**
          * Complete a service session
-         * @description Complete a service session.
+         * @description Complete a service session, drawing it down when a case is supplied.
          */
         post: operations["complete_service_session_service_sessions__session_id__complete_post"];
         delete?: never;
@@ -10186,6 +10186,11 @@ export interface components {
          */
         ServiceSessionCompleteRequest: {
             /**
+             * Case Id
+             * @description Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side person id. Omit to leave the authorization untouched and consume it through the manual route.
+             */
+            case_id?: string | null;
+            /**
              * Duration
              * @description Session duration in minutes
              */
@@ -10195,6 +10200,14 @@ export interface components {
              * @description Session notes
              */
             notes: string;
+        };
+        /**
+         * ServiceSessionCompleteResponse
+         * @description A completed session and what the completion did to the authorization.
+         */
+        ServiceSessionCompleteResponse: {
+            drawdown: components["schemas"]["SessionDrawdownResponse"];
+            session: components["schemas"]["ServiceSessionResponse"];
         };
         /**
          * ServiceSessionCreate
@@ -10586,6 +10599,32 @@ export interface components {
          * @enum {string}
          */
         SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed";
+        /**
+         * SessionDrawdownResponse
+         * @description What the completion did, or did not do, to the programme authorization.
+         */
+        SessionDrawdownResponse: {
+            /**
+             * Authorization Id
+             * @description Authorization consumed, if any
+             */
+            authorization_id?: string | null;
+            /**
+             * Consumed
+             * @description Whether a session was drawn down
+             */
+            consumed: boolean;
+            /**
+             * Reason
+             * @description Why no drawdown happened
+             */
+            reason?: string | null;
+            /**
+             * Sessions Remaining
+             * @description Remaining after the drawdown
+             */
+            sessions_remaining?: number | null;
+        };
         /**
          * SessionStatus
          * @enum {string}
@@ -20413,7 +20452,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ServiceSessionResponse"];
+                    "application/json": components["schemas"]["ServiceSessionCompleteResponse"];
                 };
             };
             /** @description Validation Error */

@@ -10575,6 +10575,18 @@
       "ServiceSessionCompleteRequest": {
         "description": "Request schema for completing a session.",
         "properties": {
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side person id. Omit to leave the authorization untouched and consume it through the manual route.",
+            "title": "Case Id"
+          },
           "duration": {
             "description": "Session duration in minutes",
             "exclusiveMinimum": 0.0,
@@ -10593,6 +10605,23 @@
           "notes"
         ],
         "title": "ServiceSessionCompleteRequest",
+        "type": "object"
+      },
+      "ServiceSessionCompleteResponse": {
+        "description": "A completed session and what the completion did to the authorization.",
+        "properties": {
+          "drawdown": {
+            "$ref": "#/components/schemas/SessionDrawdownResponse"
+          },
+          "session": {
+            "$ref": "#/components/schemas/ServiceSessionResponse"
+          }
+        },
+        "required": [
+          "session",
+          "drawdown"
+        ],
+        "title": "ServiceSessionCompleteResponse",
         "type": "object"
       },
       "ServiceSessionCreate": {
@@ -11436,6 +11465,57 @@
         ],
         "title": "SessionClinicalStatus",
         "type": "string"
+      },
+      "SessionDrawdownResponse": {
+        "description": "What the completion did, or did not do, to the programme authorization.",
+        "properties": {
+          "authorization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Authorization consumed, if any",
+            "title": "Authorization Id"
+          },
+          "consumed": {
+            "description": "Whether a session was drawn down",
+            "title": "Consumed",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why no drawdown happened",
+            "title": "Reason"
+          },
+          "sessions_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Remaining after the drawdown",
+            "title": "Sessions Remaining"
+          }
+        },
+        "required": [
+          "consumed"
+        ],
+        "title": "SessionDrawdownResponse",
+        "type": "object"
       },
       "SessionStatus": {
         "enum": [
@@ -29165,7 +29245,7 @@
     },
     "/service-sessions/{session_id}/complete": {
       "post": {
-        "description": "Complete a service session.",
+        "description": "Complete a service session, drawing it down when a case is supplied.",
         "operationId": "complete_service_session_service_sessions__session_id__complete_post",
         "parameters": [
           {
@@ -29193,7 +29273,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ServiceSessionResponse"
+                  "$ref": "#/components/schemas/ServiceSessionCompleteResponse"
                 }
               }
             },

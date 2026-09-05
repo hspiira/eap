@@ -121,9 +121,13 @@ function ServiceSessionDetailPage() {
   const confirmComplete = useCallback(
     async (duration: number, notes: string) => {
       if (!session) return
-      await serviceSessionsApi.complete(session.id, { duration, notes })
+      const { drawdown } = await serviceSessionsApi.complete(session.id, { duration, notes })
       await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
-      showSuccess("Session completed")
+      showSuccess(
+        drawdown.consumed
+          ? `Session completed. ${drawdown.sessions_remaining} authorized sessions left.`
+          : "Session completed",
+      )
     },
     [session, queryClient, showSuccess],
   )

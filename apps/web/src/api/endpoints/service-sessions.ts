@@ -15,6 +15,13 @@ import type { ListParams, PaginatedResponse, ServiceSession } from "../types"
 export type { ServiceSessionCreate }
 export type ServiceSessionUpdate = Schemas["ServiceSessionUpdate"]
 export type ServiceSessionCompleteRequest = Schemas["ServiceSessionCompleteRequest"]
+export type SessionDrawdown = Schemas["SessionDrawdownResponse"]
+
+/** `session` is typed as the entity, matching how the other endpoints here cast. */
+export interface ServiceSessionCompleteResult {
+  session: ServiceSession
+  drawdown: SessionDrawdown
+}
 export type ServiceSessionCancelRequest = Schemas["ServiceSessionCancelRequest"]
 export type ServiceSessionRescheduleRequest = Schemas["ServiceSessionRescheduleRequest"]
 export type ServiceSessionUpdateFeedback = Schemas["ServiceSessionUpdateFeedback"]
@@ -72,8 +79,14 @@ export const serviceSessionsApi = {
   /**
    * Complete service session. BE requires `{duration: int>0, notes: str≥1}`.
    */
-  async complete(sessionId: string, data: ServiceSessionCompleteRequest): Promise<ServiceSession> {
-    return apiClient.post<ServiceSession>(`/service-sessions/${sessionId}/complete`, data)
+  async complete(
+    sessionId: string,
+    data: ServiceSessionCompleteRequest,
+  ): Promise<ServiceSessionCompleteResult> {
+    return apiClient.post<ServiceSessionCompleteResult>(
+      `/service-sessions/${sessionId}/complete`,
+      data,
+    )
   },
 
   /**

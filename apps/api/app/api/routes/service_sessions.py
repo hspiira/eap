@@ -13,18 +13,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import (
     PageParams,
     get_audit_event_handler,
+    get_authorization_repository,
+    get_service_repository,
     get_service_session_repository,
     pagination,
 )
 from app.api.schemas.service_session_schemas import (
     ServiceSessionCancelRequest,
     ServiceSessionCompleteRequest,
+    ServiceSessionCompleteResponse,
     ServiceSessionCreate,
     ServiceSessionListResponse,
     ServiceSessionRescheduleRequest,
     ServiceSessionResponse,
     ServiceSessionUpdate,
     ServiceSessionUpdateFeedback,
+    SessionDrawdownResponse,
+)
+from app.application.use_cases.authorization_drawdown import (
+    ConsumeAuthorizationForSessionUseCase,
 )
 from app.application.use_cases.service_session_use_cases import (
     CreateServiceSessionUseCase,
@@ -45,10 +52,13 @@ from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     SessionStatus,
 )
+from app.domain.repositories.eap_programme_repository import AuthorizationRepository
+from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
+    CaseId,
     PersonId,
     ServiceId,
     SessionId,
@@ -145,7 +155,7 @@ async def create_service_session(
 
 @router.post(
     "/{session_id}/complete",
-    response_model=ServiceSessionResponse,
+    response_model=ServiceSessionCompleteResponse,
     summary="Complete a service session",
 )
 @transactional()
@@ -155,10 +165,12 @@ async def complete_service_session(
     current_user: TokenData = Depends(get_current_user),
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    service_repo: ServiceRepository = Depends(get_service_repository),
+    authorization_repo: AuthorizationRepository = Depends(get_authorization_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Complete a service session."""
+    """Complete a service session, drawing it down when a case is supplied."""
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
         session.id,
@@ -167,7 +179,44 @@ async def complete_service_session(
         notes=body.notes,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    drawdown = await _draw_down(
+        session,
+        case_id=body.case_id,
+        tenant_id=current_user.tenant_id,
+        service_repo=service_repo,
+        authorization_repo=authorization_repo,
+    )
+    return ServiceSessionCompleteResponse(
+        session=_to_service_session_response(session), drawdown=drawdown
+    )
+
+
+async def _draw_down(
+    session: ServiceSessionEntity,
+    *,
+    case_id: str | None,
+    tenant_id: str,
+    service_repo: ServiceRepository,
+    authorization_repo: AuthorizationRepository,
+) -> SessionDrawdownResponse:
+    """Consume one authorized session, when the caller named the case."""
+    if not case_id:
+        return SessionDrawdownResponse(
+            consumed=False, reason="No case supplied; authorization untouched"
+        )
+    service = await service_repo.get_by_id(session.service_id)
+    result = await ConsumeAuthorizationForSessionUseCase(authorization_repo).execute(
+        tenant_id=TenantId(tenant_id),
+        case_id=CaseId(case_id),
+        service_category=service.category if service else None,
+    )
+    if not result.consumed:
+        return SessionDrawdownResponse(consumed=False, reason=result.reason)
+    return SessionDrawdownResponse(
+        consumed=True,
+        authorization_id=result.authorization.id.value,
+        sessions_remaining=result.authorization.sessions_remaining,
+    )
 
 
 @router.post(

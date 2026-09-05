@@ -190,10 +190,11 @@ export function ServiceSessionFormSheet({
           // A backfilled session is complete by definition. Duration comes
           // from the service's configured length; the reason becomes the note.
           const svc = await servicesApi.getById(body.service_id).catch(() => null)
-          result = await serviceSessionsApi.complete(result.id, {
+          const completed = await serviceSessionsApi.complete(result.id, {
             duration: svc?.duration_minutes ?? 60,
             notes: __backfillReason ?? "Backfilled from manual entry",
           })
+          result = completed.session
         }
         return result
       },
