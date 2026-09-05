@@ -153,14 +153,14 @@ export function ClientPicker({
       listFn={clientsApi.list}
       value={value}
       onChange={onChange}
-      placeholder="Search clients by name or code…"
+      placeholder="Search clients by name…"
       emptyPrompt="Start typing to search clients."
       emptyNoMatch="No clients match."
       renderSelected={(c) => (
-        <PickerRow initials={nameInitials(c.name)} primary={c.name} secondary={c.code} size="md" />
+        <PickerRow initials={nameInitials(c.name)} primary={c.name} size="md" />
       )}
       renderRow={(c) => (
-        <PickerRow initials={nameInitials(c.name)} primary={c.name} secondary={c.code} />
+        <PickerRow initials={nameInitials(c.name)} primary={c.name} />
       )}
       selectedItem={selected}
     />

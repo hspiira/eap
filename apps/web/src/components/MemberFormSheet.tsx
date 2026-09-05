@@ -4,7 +4,6 @@ import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { type MemberListParams, membersApi } from "@/api/endpoints/members"
-import { DatePicker } from "@/components/common/DatePicker"
 import { ClientPicker, EntityPicker, PickerRow } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -44,8 +43,6 @@ const memberSchema = z
     employer_member_id: z.string().trim().min(1, "Member ID is required"),
     relation: z.enum(RELATION_VALUES),
     primary_employee_member_id: optionalText(),
-    coverage_start: optionalText(),
-    coverage_end: optionalText(),
     work_email: optionalEmail(),
     personal_email: optionalEmail(),
     display_label: z.string().trim().min(1, "Name is required"),
@@ -58,9 +55,6 @@ const memberSchema = z
         message: "Primary employee is required for a beneficiary",
       })
     }
-    if (value.coverage_start && value.coverage_end && value.coverage_end < value.coverage_start) {
-      ctx.addIssue({ code: "custom", path: ["coverage_end"], message: "Must be after start date" })
-    }
   })
 
 type MemberFormValues = z.infer<typeof memberSchema>
@@ -70,8 +64,6 @@ const EMPTY: MemberFormValues = {
   employer_member_id: "",
   relation: MemberRelation.EMPLOYEE,
   primary_employee_member_id: "",
-  coverage_start: "",
-  coverage_end: "",
   work_email: "",
   personal_email: "",
   display_label: "",
@@ -166,11 +158,11 @@ export function MemberFormSheet({
             </div>
           </FormField>
         )}
-        <FormField label="Member ID" required error={errors.employer_member_id?.message}>
+        <FormField label="Company member ID" required error={errors.employer_member_id?.message}>
           <Input {...form.register("employer_member_id")} placeholder="e.g. EMP-1042" />
         </FormField>
         <FormField label="Name" required error={errors.display_label?.message}>
-          <Input {...form.register("display_label")} placeholder="Name or privacy-safe label" />
+          <Input {...form.register("display_label")} placeholder="e.g. Amina Namukasa" />
         </FormField>
         <FormField label="Relationship" required error={errors.relation?.message}>
           <Controller
@@ -213,41 +205,6 @@ export function MemberFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Coverage">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Coverage starts" error={errors.coverage_start?.message}>
-            <Controller
-              control={form.control}
-              name="coverage_start"
-              render={({ field }) => (
-                <DatePicker
-                  id="member-coverage-start"
-                  aria-label="Coverage starts"
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="No start date"
-                />
-              )}
-            />
-          </FormField>
-          <FormField label="Coverage ends" error={errors.coverage_end?.message}>
-            <Controller
-              control={form.control}
-              name="coverage_end"
-              render={({ field }) => (
-                <DatePicker
-                  id="member-coverage-end"
-                  aria-label="Coverage ends"
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="No end date"
-                />
-              )}
-            />
-          </FormField>
-        </div>
-      </FormSection>
-
       <FormSection title="Contact">
         <FormField label="Work email" error={errors.work_email?.message}>
           <Input type="email" {...form.register("work_email")} />
@@ -266,8 +223,6 @@ function toValues(member: Member): MemberFormValues {
     employer_member_id: member.employer_member_id,
     relation: member.relation,
     primary_employee_member_id: member.primary_employee_member_id ?? "",
-    coverage_start: member.coverage_start ?? "",
-    coverage_end: member.coverage_end ?? "",
     work_email: member.work_email ?? "",
     personal_email: member.personal_email ?? "",
     display_label: member.display_label ?? "",
@@ -283,11 +238,9 @@ function toRequest(values: MemberFormValues) {
       values.relation === MemberRelation.EMPLOYEE
         ? null
         : optionalValue(values.primary_employee_member_id),
-    coverage_start: optionalValue(values.coverage_start),
-    coverage_end: optionalValue(values.coverage_end),
     work_email: optionalValue(values.work_email),
     personal_email: optionalValue(values.personal_email),
-    display_label: optionalValue(values.display_label),
+    display_label: values.display_label.trim(),
   }
 }
 
