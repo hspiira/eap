@@ -757,7 +757,9 @@ class TestPersonLifecycleFlow:
         assert get_response.json()["is_dual_role"] is True
 
         # Remove secondary role
-        remove_response = await client.delete(f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}")
+        remove_response = await client.delete(
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}"
+        )
         assert remove_response.json()["is_dual_role"] is False
 
         # Verify removal persisted

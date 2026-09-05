@@ -238,9 +238,7 @@ class TestListTenants:
         """
         from app.core.config import settings
 
-        seed = await client.post(
-            "/tenants/", json={"name": "Platform", "code": "platform-admin"}
-        )
+        seed = await client.post("/tenants/", json={"name": "Platform", "code": "platform-admin"})
         assert seed.status_code == 201
         monkeypatch.setattr(settings, "PLATFORM_TENANT_ID", seed.json()["id"], raising=False)
 

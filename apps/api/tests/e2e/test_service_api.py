@@ -241,7 +241,9 @@ class TestListServices:
         """Test filtering services by category."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(f"/services/?tenant_id={tenant_id}&category=ShortTermCounselling")
+        response = await client.get(
+            f"/services/?tenant_id={tenant_id}&category=ShortTermCounselling"
+        )
         data = response.json()
 
         assert response.status_code == 200
