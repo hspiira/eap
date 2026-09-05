@@ -64,7 +64,7 @@ class TestDiagnosisResolution:
             assert result.diagnosis_type_id is None
 
     def test_a_spelling_with_no_alias_is_rejected_even_when_it_reads_familiar(self):
-        """"Work Stress, Fatigue, Burnout" normalises to a key no alias covers."""
+        """ "Work Stress, Fatigue, Burnout" normalises to a key no alias covers."""
         result = _validate(_row(diagnosis_text="Work Stress, Fatigue, Burnout"))
         assert isinstance(result, RejectedRow)
         assert result.classification is ImportClassification.REJECTED_UNMAPPED_DIAGNOSIS
