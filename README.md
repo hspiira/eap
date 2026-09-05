@@ -181,9 +181,6 @@ that rewrote them with CRLF would fail those gates:
   pyright gate; the rest of the project is reported but not enforced.
 - Backend test coverage sits just above the 60% floor (63%), so a moderately
   sized untested addition can fail the gate.
-- `apps/web` depends on `nitro-nightly@latest`, which is unpinned and can change
-  under you between installs. The lockfile holds it steady until something
-  forces a re-resolve.
 
 ## The API contract
 
