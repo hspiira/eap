@@ -178,7 +178,7 @@ class PersonEntity:
             raise DomainError("Cannot add dependent as secondary role")
 
         if role == self.person_type:
-            raise DomainError(
+            raise ConflictError(
                 f"Cannot add {role.value} as secondary role when it is already the primary role"
             )
 

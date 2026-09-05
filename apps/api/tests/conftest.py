@@ -434,6 +434,9 @@ async def test_pending_person(
         is_two_factor_enabled=False,
     )
     db_session.add(user)
+    # persons.user_id is a foreign key, so the user must exist before the
+    # person is flushed.
+    await db_session.flush()
 
     # Create pending person
     person_id = generate_cuid()

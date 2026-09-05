@@ -48,7 +48,7 @@ class TestGetPerson:
 
 
 class TestGetPersonByUserId:
-    """Tests for GET /persons/user/{user_id} endpoint."""
+    """Tests for GET /persons/by-user/{user_id} endpoint."""
 
     async def test_get_person_by_user_id_success(
         self, client: AsyncClient, test_client_employee: dict, test_user: dict
@@ -56,7 +56,7 @@ class TestGetPersonByUserId:
         """Test getting a person by user ID."""
         user_id = test_user["id"]
 
-        response = await client.get(f"/persons/user/{user_id}")
+        response = await client.get(f"/persons/by-user/{user_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -65,7 +65,7 @@ class TestGetPersonByUserId:
 
     async def test_get_person_by_user_id_not_found(self, client: AsyncClient, test_tenant: dict):
         """Test getting person by non-existent user ID returns 404."""
-        response = await client.get("/persons/user/nonexistent-user-id")
+        response = await client.get("/persons/by-user/nonexistent-user-id")
 
         assert response.status_code == 404
 
@@ -579,9 +579,10 @@ class TestAddSecondaryRole:
     ):
         """Test adding SERVICE_PROVIDER as secondary role to CLIENT_EMPLOYEE."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
         response = await client.post(
-            f"/persons/{person_id}/secondary-role",
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}",
             json={
                 "role": "ServiceProvider",
                 "license_info": sample_license_info,
@@ -599,15 +600,18 @@ class TestAddSecondaryRole:
     ):
         """Test that adding secondary role without required info fails."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
         # Try to add SERVICE_PROVIDER role without license_info
         response = await client.post(
-            f"/persons/{person_id}/secondary-role",
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}",
             json={"role": "ServiceProvider"},
         )
 
-        assert response.status_code == 400
-        assert "license info required" in response.json()["message"].lower()
+        # The request schema rejects the missing license_info before the route
+        # runs, so this is a body validation failure rather than a domain error.
+        assert response.status_code == 422
+        assert "license_info" in response.json()["message"].lower()
 
     async def test_add_secondary_role_same_as_primary_fails(
         self,
@@ -617,9 +621,10 @@ class TestAddSecondaryRole:
     ):
         """Test that adding same role as primary fails."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
         response = await client.post(
-            f"/persons/{person_id}/secondary-role",
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}",
             json={
                 "role": "ClientEmployee",
                 "employment_info": sample_employment_info,
@@ -655,10 +660,11 @@ class TestRemoveSecondaryRole:
     ):
         """Test removing secondary role."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
         # First add a secondary role
         await client.post(
-            f"/persons/{person_id}/secondary-role",
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}",
             json={
                 "role": "ServiceProvider",
                 "license_info": sample_license_info,
@@ -666,7 +672,7 @@ class TestRemoveSecondaryRole:
         )
 
         # Then remove it
-        response = await client.delete(f"/persons/{person_id}/secondary-role")
+        response = await client.delete(f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -678,8 +684,9 @@ class TestRemoveSecondaryRole:
     ):
         """Test that removing secondary role when none exists fails."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
-        response = await client.delete(f"/persons/{person_id}/secondary-role")
+        response = await client.delete(f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}")
 
         assert response.status_code == 400
 
@@ -728,6 +735,7 @@ class TestPersonLifecycleFlow:
     ):
         """Test adding and removing secondary roles."""
         person_id = test_client_employee["id"]
+        tenant_id = test_client_employee["tenant_id"]
 
         # Verify initially not dual role
         get_response = await client.get(f"/persons/{person_id}")
@@ -735,7 +743,7 @@ class TestPersonLifecycleFlow:
 
         # Add secondary role
         add_response = await client.post(
-            f"/persons/{person_id}/secondary-role",
+            f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}",
             json={
                 "role": "ServiceProvider",
                 "license_info": sample_license_info,
@@ -749,7 +757,7 @@ class TestPersonLifecycleFlow:
         assert get_response.json()["is_dual_role"] is True
 
         # Remove secondary role
-        remove_response = await client.delete(f"/persons/{person_id}/secondary-role")
+        remove_response = await client.delete(f"/persons/{person_id}/secondary-role?tenant_id={tenant_id}")
         assert remove_response.json()["is_dual_role"] is False
 
         # Verify removal persisted
