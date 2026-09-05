@@ -43,8 +43,9 @@ class ServiceEntity:
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
 
-    def deactivate(self) -> None:
-        """Deactivate service"""
+    def deactivate(self, reason: str | None = None) -> None:
+        """Deactivate service. `reason` is accepted for parity with the other
+        deactivate transitions; the service does not record it."""
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted service")
         if self.status == BaseStatus.INACTIVE:
