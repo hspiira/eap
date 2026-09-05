@@ -386,20 +386,22 @@ function ClientDetailPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
-        <div className="grid grid-cols-12 gap-5 px-5 py-5">
+        <div className="grid grid-cols-12 gap-5 px-5 pb-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-              <TabsList className="sticky top-0 z-20 -mx-3 mb-4 bg-bg/95 px-3 backdrop-blur">
-                <Tab value="overview">Overview</Tab>
-                <Tab value="activity">Activity</Tab>
-                <Tab value="contracts" count={contractsTotal}>
-                  Contracts
-                </Tab>
-                <Tab value="staff">Staff</Tab>
-                <Tab value="services">Services</Tab>
-                <Tab value="documents">Documents</Tab>
-                <Tab value="utilisation">Usage</Tab>
-              </TabsList>
+              <div className="sticky top-0 z-20 -mx-3 mb-4 bg-bg/95 px-3 backdrop-blur">
+                <TabsList className="px-0">
+                  <Tab value="overview">Overview</Tab>
+                  <Tab value="activity">Activity</Tab>
+                  <Tab value="contracts" count={contractsTotal}>
+                    Contracts
+                  </Tab>
+                  <Tab value="staff">Staff</Tab>
+                  <Tab value="services">Services</Tab>
+                  <Tab value="documents">Documents</Tab>
+                  <Tab value="utilisation">Usage</Tab>
+                </TabsList>
+              </div>
 
               <TabPanel value="overview">
                 <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
