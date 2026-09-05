@@ -2231,6 +2231,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents/contracts/{contract_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Contract Attachment */
+        post: operations["upload_contract_attachment_documents_contracts__contract_id__attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/{document_id}": {
         parameters: {
             query?: never;
@@ -2293,6 +2310,23 @@ export interface paths {
          * @description Set document confidentiality.
          */
         patch: operations["set_document_confidentiality_documents__document_id__confidentiality_patch"];
+        trace?: never;
+    };
+    "/documents/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Attachment */
+        get: operations["download_attachment_documents__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/documents/{document_id}/expiry": {
@@ -4172,7 +4206,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/service-sessions/person/{person_id}": {
+    "/service-sessions/member/{member_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -4183,7 +4217,7 @@ export interface paths {
          * Get all sessions for a person
          * @description Get all sessions for a person.
          */
-        get: operations["get_sessions_by_person_service_sessions_person__person_id__get"];
+        get: operations["get_sessions_by_member_service_sessions_member__member_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5890,6 +5924,11 @@ export interface components {
              * File
              * @description UTF-8 CSV using the client import template
              */
+            file: string;
+        };
+        /** Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post */
+        Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post: {
+            /** File */
             file: string;
         };
         /** BulkPanelStatusResponse */
@@ -9171,9 +9210,16 @@ export interface components {
             date_of_birth?: string | null;
             /** Display Label */
             display_label: string;
-            /** Employer Member Id */
-            employer_member_id: string;
+            /**
+             * Employer Member Id
+             * @description Optional. Left blank, the server issues {client code}-001, -002, and so on.
+             */
+            employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email?: string | null;
             /** Phone */
@@ -9181,6 +9227,8 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation: components["schemas"]["MemberRelation"];
+            /** Staff Number */
+            staff_number?: string | null;
             /** Work Email */
             work_email?: string | null;
         };
@@ -9289,6 +9337,10 @@ export interface components {
             id: string;
             /** Last Imported At */
             last_imported_at: string | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email: string | null;
             /** Phone */
@@ -9296,6 +9348,8 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id: string | null;
             relation: components["schemas"]["MemberRelation"];
+            /** Staff Number */
+            staff_number?: string | null;
             status: components["schemas"]["EligibilityStatus"];
             /** Suspended At */
             suspended_at: string | null;
@@ -9323,6 +9377,10 @@ export interface components {
             /** Employer Member Id */
             employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email?: string | null;
             /** Phone */
@@ -9330,6 +9388,8 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation?: components["schemas"]["MemberRelation"] | null;
+            /** Staff Number */
+            staff_number?: string | null;
             /** Work Email */
             work_email?: string | null;
         };
@@ -10189,7 +10249,7 @@ export interface components {
         ServiceSessionCompleteRequest: {
             /**
              * Case Id
-             * @description Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side person id. Omit to leave the authorization untouched and consume it through the manual route.
+             * @description Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side member id. Omit to leave the authorization untouched and consume it through the manual route.
              */
             case_id?: string | null;
             /**
@@ -10253,6 +10313,11 @@ export interface components {
              */
             location?: string | null;
             /**
+             * Member Id
+             * @description Member identifier
+             */
+            member_id: string;
+            /**
              * Partner Name
              * @description Partner name (couples/family sessions)
              */
@@ -10262,11 +10327,6 @@ export interface components {
              * @description Partner's relationship to client
              */
             partner_relationship?: string | null;
-            /**
-             * Person Id
-             * @description Person identifier
-             */
-            person_id: string;
             /**
              * Provider Id
              * @description Provider (person) identifier
@@ -10411,6 +10471,11 @@ export interface components {
              */
             location?: string | null;
             /**
+             * Member Id
+             * @description Member identifier
+             */
+            member_id: string;
+            /**
              * Notes
              * @description Session notes
              */
@@ -10425,11 +10490,6 @@ export interface components {
              * @description Partner's relationship to client
              */
             partner_relationship?: string | null;
-            /**
-             * Person Id
-             * @description Person identifier
-             */
-            person_id: string;
             /**
              * Provider Id
              * @description Provider (person) identifier
@@ -16131,6 +16191,41 @@ export interface operations {
             };
         };
     };
+    upload_contract_attachment_documents_contracts__contract_id__attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_document_documents__document_id__get: {
         parameters: {
             query?: never;
@@ -16251,6 +16346,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DocumentResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_attachment_documents__document_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -20120,8 +20244,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
-                /** @description Filter by person identifier */
-                person_id?: string | null;
+                /** @description Filter by member identifier */
+                member_id?: string | null;
                 /** @description Filter by provider identifier */
                 provider_id?: string | null;
                 /** @description Filter by service identifier */
@@ -20202,14 +20326,14 @@ export interface operations {
             };
         };
     };
-    get_sessions_by_person_service_sessions_person__person_id__get: {
+    get_sessions_by_member_service_sessions_member__member_id__get: {
         parameters: {
             query: {
                 tenant_id: string;
             };
             header?: never;
             path: {
-                person_id: string;
+                member_id: string;
             };
             cookie?: never;
         };

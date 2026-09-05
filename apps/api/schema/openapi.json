@@ -1033,6 +1033,20 @@
         "title": "Body_queue_client_import_clients_import_jobs_post",
         "type": "object"
       },
+      "Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post",
+        "type": "object"
+      },
       "BulkPanelStatusResponse": {
         "properties": {
           "not_found": {
@@ -8118,10 +8132,18 @@
             "type": "string"
           },
           "employer_member_id": {
-            "maxLength": 255,
-            "minLength": 1,
-            "title": "Employer Member Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+            "title": "Employer Member Id"
           },
           "gender": {
             "anyOf": [
@@ -8132,6 +8154,30 @@
                 "type": "null"
               }
             ]
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "passport_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passport Number"
           },
           "personal_email": {
             "anyOf": [
@@ -8171,6 +8217,18 @@
           "relation": {
             "$ref": "#/components/schemas/MemberRelation"
           },
+          "staff_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
+          },
           "work_email": {
             "anyOf": [
               {
@@ -8186,7 +8244,6 @@
         },
         "required": [
           "client_id",
-          "employer_member_id",
           "relation",
           "display_label"
         ],
@@ -8499,6 +8556,28 @@
             ],
             "title": "Last Imported At"
           },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "passport_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passport Number"
+          },
           "personal_email": {
             "anyOf": [
               {
@@ -8534,6 +8613,17 @@
           },
           "relation": {
             "$ref": "#/components/schemas/MemberRelation"
+          },
+          "staff_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
           },
           "status": {
             "$ref": "#/components/schemas/EligibilityStatus"
@@ -8656,6 +8746,30 @@
               }
             ]
           },
+          "national_id": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "passport_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passport Number"
+          },
           "personal_email": {
             "anyOf": [
               {
@@ -8700,6 +8814,18 @@
                 "type": "null"
               }
             ]
+          },
+          "staff_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
           },
           "work_email": {
             "anyOf": [
@@ -10595,7 +10721,7 @@
                 "type": "null"
               }
             ],
-            "description": "Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side person id. Omit to leave the authorization untouched and consume it through the manual route.",
+            "description": "Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side member id. Omit to leave the authorization untouched and consume it through the manual route.",
             "title": "Case Id"
           },
           "duration": {
@@ -10744,6 +10870,11 @@
             "description": "Session location",
             "title": "Location"
           },
+          "member_id": {
+            "description": "Member identifier",
+            "title": "Member Id",
+            "type": "string"
+          },
           "partner_name": {
             "anyOf": [
               {
@@ -10767,11 +10898,6 @@
             ],
             "description": "Partner's relationship to client",
             "title": "Partner Relationship"
-          },
-          "person_id": {
-            "description": "Person identifier",
-            "title": "Person Id",
-            "type": "string"
           },
           "provider_id": {
             "description": "Provider (person) identifier",
@@ -10830,7 +10956,7 @@
         "required": [
           "service_id",
           "provider_id",
-          "person_id",
+          "member_id",
           "scheduled_at"
         ],
         "title": "ServiceSessionCreate",
@@ -11061,6 +11187,11 @@
             "description": "Session location",
             "title": "Location"
           },
+          "member_id": {
+            "description": "Member identifier",
+            "title": "Member Id",
+            "type": "string"
+          },
           "notes": {
             "anyOf": [
               {
@@ -11096,11 +11227,6 @@
             ],
             "description": "Partner's relationship to client",
             "title": "Partner Relationship"
-          },
-          "person_id": {
-            "description": "Person identifier",
-            "title": "Person Id",
-            "type": "string"
           },
           "provider_id": {
             "description": "Provider (person) identifier",
@@ -11173,7 +11299,7 @@
           "tenant_id",
           "service_id",
           "provider_id",
-          "person_id",
+          "member_id",
           "scheduled_at",
           "status",
           "reschedule_count",
@@ -21708,6 +21834,63 @@
         ]
       }
     },
+    "/documents/contracts/{contract_id}/attachments": {
+      "post": {
+        "operationId": "upload_contract_attachment_documents_contracts__contract_id__attachments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contract_id",
+            "required": true,
+            "schema": {
+              "title": "Contract Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload Contract Attachment",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/documents/{document_id}": {
       "get": {
         "description": "Get document by ID.",
@@ -21913,6 +22096,46 @@
           }
         ],
         "summary": "Set document confidentiality",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/documents/{document_id}/download": {
+      "get": {
+        "operationId": "download_attachment_documents__document_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Download Attachment",
         "tags": [
           "documents"
         ]
@@ -28611,9 +28834,9 @@
             }
           },
           {
-            "description": "Filter by person identifier",
+            "description": "Filter by member identifier",
             "in": "query",
-            "name": "person_id",
+            "name": "member_id",
             "required": false,
             "schema": {
               "anyOf": [
@@ -28624,8 +28847,8 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by person identifier",
-              "title": "Person Id"
+              "description": "Filter by member identifier",
+              "title": "Member Id"
             }
           },
           {
@@ -28861,17 +29084,17 @@
         ]
       }
     },
-    "/service-sessions/person/{person_id}": {
+    "/service-sessions/member/{member_id}": {
       "get": {
         "description": "Get all sessions for a person.",
-        "operationId": "get_sessions_by_person_service_sessions_person__person_id__get",
+        "operationId": "get_sessions_by_member_service_sessions_member__member_id__get",
         "parameters": [
           {
             "in": "path",
-            "name": "person_id",
+            "name": "member_id",
             "required": true,
             "schema": {
-              "title": "Person Id",
+              "title": "Member Id",
               "type": "string"
             }
           },
@@ -28893,7 +29116,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ServiceSessionResponse"
                   },
-                  "title": "Response Get Sessions By Person Service Sessions Person  Person Id  Get",
+                  "title": "Response Get Sessions By Member Service Sessions Member  Member Id  Get",
                   "type": "array"
                 }
               }
