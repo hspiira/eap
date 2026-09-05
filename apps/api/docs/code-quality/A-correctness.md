@@ -331,7 +331,14 @@ in the first place.
 
 ## BE-A11: `alembic_version` holds three rows, so `upgrade head` fails
 
-**Severity:** 🔴 Critical · **Effort:** XS · **Status:** ⬜ Todo
+**Severity:** 🔴 Critical · **Effort:** XS · **Status:** ✅ Done · **Owner:** the clients lane · **PR:** -
+
+**Resolved 2026-09-05.** Fixed by the same repair as BE-A10, without a
+manual write to the version table. The new merge revision `b6c8d0e2f4a6`
+consumes all three heads, so alembic collapsed the row set itself. Verified
+read-only: `alembic_version` holds one row, `d8e1f3a5b7c9`, and
+`alembic upgrade head` reports nothing pending.
+
 
 **Problem.** `alembic upgrade head` fails against the shared database:
 
@@ -439,7 +446,42 @@ the DDL unconditionally.
 
 ## BE-A10: A revision id was applied, then redefined
 
-**Severity:** 🔴 Critical · **Effort:** S · **Status:** ⬜ Todo
+**Severity:** 🔴 Critical · **Effort:** S · **Status:** ✅ Done · **Owner:** the clients lane · **PR:** -
+
+**Resolved 2026-09-05.** The feature's owner repaired this while the four
+sessions were still establishing who they were, and they did it the right way
+rather than the way this ticket proposed.
+
+`a5b7c9d1e3f4` was reverted to exactly what had been applied: `add_column
+clients.aliases`, single parent `z4u7v9w1q3s6`. So the file and the database
+agree again. A new revision, `b6c8d0e2f4a6_migrate_client_aliases_to_table.py`,
+merges the three heads through a `down_revision` tuple and does the real work:
+creates `client_aliases`, backfills from the JSON column, drops it.
+
+That is better than the repair recommended above, which was to delete a row from
+`alembic_version` and re-run. Writing a new revision leaves the history honest,
+needs no manual edit of the version table, and is replayable on a fresh
+database. The rule this ticket states, never edit a revision that has been
+applied, is what the fix ended up following.
+
+Verified independently by this session, read-only:
+
+```
+alembic_version rows:                       ['d8e1f3a5b7c9']   single row
+client_aliases table:                       exists
+clients.aliases column:                     dropped
+client read via ORM with eager alias_records: OK, alias_records loaded
+```
+
+The last line matters most, because it exercises the `lazy="selectin"` path that
+was the actual break rather than only inspecting the catalogue. `GET /clients`
+no longer fails on a missing table.
+
+**Still open from this ticket.** The new `b6c8d0e2f4a6` calls `sa.inspect(bind)`
+at line 46, so the offline-render break in BE-A09 survives the repair and now
+lives in the follow-up revision instead. BE-A09 stays open and should be checked
+against that file.
+
 
 **Problem.** `GET /clients` returns 500. Every client read fails with
 `UndefinedTableError: relation "client_aliases" does not exist`, and because
