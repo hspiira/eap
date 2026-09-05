@@ -17,6 +17,7 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberClinicalLinkRepository,
     EligibleMemberRepository,
 )
+from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
 
 
 async def get_case_repository(
@@ -87,3 +88,13 @@ async def get_eligible_member_clinical_link_repository(
     )
 
     return EligibleMemberClinicalLinkRepositoryImpl(db)
+
+
+async def get_member_next_of_kin_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "MemberNextOfKinRepository":
+    from app.infrastructure.repositories.member_next_of_kin_repository import (
+        MemberNextOfKinRepositoryImpl,
+    )
+
+    return MemberNextOfKinRepositoryImpl(db)

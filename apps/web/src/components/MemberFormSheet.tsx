@@ -38,10 +38,7 @@ const GENDERS = [
   { value: MemberGender.PREFER_NOT_TO_SAY, label: "Prefer not to say" },
   { value: MemberGender.UNKNOWN, label: "Unknown" },
 ] as const
-const GENDER_VALUES = GENDERS.map(({ value }) => value) as [
-  MemberGender,
-  ...MemberGender[],
-]
+const GENDER_VALUES = GENDERS.map(({ value }) => value) as [MemberGender, ...MemberGender[]]
 const optionalText = () => z.string().trim().optional()
 const optionalEmail = () =>
   optionalText().refine(

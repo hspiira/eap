@@ -1,4 +1,22 @@
-import type { EligibilityStatus, MemberGender, MemberRelation } from "../enums"
+import type {
+  EligibilityStatus,
+  MemberGender,
+  MemberRelation,
+  NextOfKinRelationship,
+} from "../enums"
+
+export interface MemberNextOfKin {
+  id: string
+  tenant_id: string
+  member_id: string
+  name: string
+  relationship: NextOfKinRelationship
+  phone?: string | null
+  email?: string | null
+  is_primary: boolean
+  created_at: string
+  updated_at: string
+}
 
 /** Employer-side member covered by a client's wellness programme. */
 export interface Member {

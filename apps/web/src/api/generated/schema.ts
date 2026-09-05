@@ -3142,6 +3142,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/{member_id}/next-of-kin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Next Of Kin */
+        get: operations["list_member_next_of_kin_members__member_id__next_of_kin_get"];
+        put?: never;
+        /** Create Member Next Of Kin */
+        post: operations["create_member_next_of_kin_members__member_id__next_of_kin_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/next-of-kin/{contact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Member Next Of Kin */
+        delete: operations["delete_member_next_of_kin_members__member_id__next_of_kin__contact_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Member Next Of Kin */
+        patch: operations["update_member_next_of_kin_members__member_id__next_of_kin__contact_id__patch"];
+        trace?: never;
+    };
     "/members/{member_id}/reinstate": {
         parameters: {
             query?: never;
@@ -8962,6 +8998,64 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** MemberNextOfKinCreate */
+        MemberNextOfKinCreate: {
+            /** Email */
+            email?: string | null;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+            relationship: components["schemas"]["NextOfKinRelationship"];
+        };
+        /** MemberNextOfKinResponse */
+        MemberNextOfKinResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string | null;
+            /** Id */
+            id: string;
+            /** Is Primary */
+            is_primary: boolean;
+            /** Member Id */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string | null;
+            relationship: components["schemas"]["NextOfKinRelationship"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** MemberNextOfKinUpdate */
+        MemberNextOfKinUpdate: {
+            /** Email */
+            email?: string | null;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone?: string | null;
+            relationship: components["schemas"]["NextOfKinRelationship"];
+        };
         /**
          * MemberRelation
          * @description Relationship of an eligible member to the primary employee.
@@ -9048,6 +9142,12 @@ export interface components {
              */
             currency: string;
         };
+        /**
+         * NextOfKinRelationship
+         * @description Relationship of a restricted emergency contact to a member.
+         * @enum {string}
+         */
+        NextOfKinRelationship: "Spouse" | "Child" | "Parent" | "Sibling" | "Guardian" | "Partner" | "Other";
         /** NonCompeteCreate */
         NonCompeteCreate: {
             /**
@@ -17631,6 +17731,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_next_of_kin_members__member_id__next_of_kin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberNextOfKinResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_member_next_of_kin_members__member_id__next_of_kin_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberNextOfKinCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberNextOfKinResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_member_next_of_kin_members__member_id__next_of_kin__contact_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_next_of_kin_members__member_id__next_of_kin__contact_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+                contact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberNextOfKinUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberNextOfKinResponse"];
                 };
             };
             /** @description Validation Error */

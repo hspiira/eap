@@ -63,6 +63,18 @@ class MemberGender(str, Enum):
     UNKNOWN = "Unknown"
 
 
+class NextOfKinRelationship(str, Enum):
+    """Relationship of a restricted emergency contact to a member."""
+
+    SPOUSE = "Spouse"
+    CHILD = "Child"
+    PARENT = "Parent"
+    SIBLING = "Sibling"
+    GUARDIAN = "Guardian"
+    PARTNER = "Partner"
+    OTHER = "Other"
+
+
 class EligibilityStatus(str, Enum):
     """Lifecycle of an EAP-eligible member as supplied by the employer."""
 

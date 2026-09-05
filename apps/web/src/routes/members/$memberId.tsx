@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Pencil, Users } from "lucide-react"
+import { ArrowLeft, Pencil, Plus, Trash2, Users } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import {
@@ -16,12 +16,14 @@ import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
+import { MemberNextOfKinFormSheet } from "@/components/MemberNextOfKinFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey } from "@/lib/queries"
+import type { MemberNextOfKin } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/members/$memberId")({ component: MemberDetailPage })
@@ -33,6 +35,8 @@ function MemberDetailPage() {
   const canWrite = useCanWrite()
   const toast = useToast()
   const [editing, setEditing] = useState(false)
+  const [nextOfKinFormOpen, setNextOfKinFormOpen] = useState(false)
+  const [nextOfKinEditing, setNextOfKinEditing] = useState<MemberNextOfKin | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const query = useQuery({
     queryKey: entityDetailKey("members", memberId),
@@ -62,6 +66,10 @@ function MemberDetailPage() {
     queryFn: () => membersApi.listBeneficiaries(member.id),
     enabled: member.relation === "Employee",
   })
+  const nextOfKinQuery = useQuery({
+    queryKey: ["members", "next-of-kin", member.id],
+    queryFn: () => membersApi.listNextOfKin(member.id),
+  })
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
       setActionLoading(true)
@@ -83,6 +91,20 @@ function MemberDetailPage() {
     },
     [queryClient, toast],
   )
+  const openNextOfKinForm = (contact?: MemberNextOfKin) => {
+    setNextOfKinEditing(contact ?? null)
+    setNextOfKinFormOpen(true)
+  }
+  const handleNextOfKinDelete = async (contact: MemberNextOfKin) => {
+    if (!window.confirm(`Remove ${contact.name} as a next-of-kin contact?`)) return
+    try {
+      await membersApi.deleteNextOfKin(member.id, contact.id)
+      await queryClient.invalidateQueries({ queryKey: ["members", "next-of-kin", member.id] })
+      toast.showSuccess("Next-of-kin contact removed")
+    } catch (error) {
+      toast.showError(normalizeErrorMessage(error, "Could not remove next-of-kin contact"))
+    }
+  }
 
   return (
     <PageShell
@@ -123,6 +145,18 @@ function MemberDetailPage() {
           queryClient.setQueryData(entityDetailKey("members", updated.id), updated)
         }
       />
+      <MemberNextOfKinFormSheet
+        open={nextOfKinFormOpen}
+        onOpenChange={(open) => {
+          setNextOfKinFormOpen(open)
+          if (!open) setNextOfKinEditing(null)
+        }}
+        memberId={member.id}
+        contact={nextOfKinEditing}
+        onSaved={() => {
+          void queryClient.invalidateQueries({ queryKey: ["members", "next-of-kin", member.id] })
+        }}
+      />
       <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
@@ -161,6 +195,77 @@ function MemberDetailPage() {
                   <DetailRow label="Work email" value={member.work_email} />
                   <DetailRow label="Personal email" value={member.personal_email} />
                 </DetailGrid>
+              </DetailCard>
+              <DetailCard
+                title="Next of kin"
+                action={
+                  canWrite ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 rounded-none gap-1 px-2"
+                      onClick={() => openNextOfKinForm()}
+                    >
+                      <Plus className="size-3.5" />
+                      Add
+                    </Button>
+                  ) : null
+                }
+              >
+                {nextOfKinQuery.isPending ? (
+                  <p className="text-xs text-fg-muted">Loading contacts…</p>
+                ) : nextOfKinQuery.data?.length ? (
+                  <div className="space-y-2">
+                    {nextOfKinQuery.data.map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="flex items-start justify-between gap-3 border border-fg/10 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-fg">
+                            {contact.name}
+                            {contact.is_primary ? (
+                              <span className="ml-2 text-[10px] font-medium uppercase tracking-wide text-primary">
+                                Primary
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="text-xs text-fg-muted">{contact.relationship}</p>
+                          <p className="truncate text-xs text-fg-muted">
+                            {[contact.phone, contact.email].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        {canWrite ? (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="size-7 rounded-none p-0"
+                              onClick={() => openNextOfKinForm(contact)}
+                              aria-label={`Edit ${contact.name}`}
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="size-7 rounded-none p-0 text-danger hover:text-danger"
+                              onClick={() => void handleNextOfKinDelete(contact)}
+                              aria-label={`Remove ${contact.name}`}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-fg-muted">No next-of-kin contacts recorded.</p>
+                )}
               </DetailCard>
             </div>
           </div>

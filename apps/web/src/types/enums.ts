@@ -259,6 +259,17 @@ export enum MemberGender {
   UNKNOWN = "Unknown",
 }
 
+/** Relationships used by restricted member next-of-kin contacts. */
+export enum NextOfKinRelationship {
+  SPOUSE = "Spouse",
+  CHILD = "Child",
+  PARENT = "Parent",
+  SIBLING = "Sibling",
+  GUARDIAN = "Guardian",
+  PARTNER = "Partner",
+  OTHER = "Other",
+}
+
 /**
  * Client tier: assigned by ops, drives reporting and SLA expectations.
  * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.

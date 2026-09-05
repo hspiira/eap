@@ -135,6 +135,7 @@ ignore_imports = [
     "app.api.dependencies.clinical -> app.infrastructure.repositories.clinical_note_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.eap_programme_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.eligible_member_repository",
+    "app.api.dependencies.clinical -> app.infrastructure.repositories.member_next_of_kin_repository",
     "app.api.dependencies.commercial -> app.infrastructure.repositories.contract_repository",
     "app.api.dependencies.consultancy -> app.infrastructure.repositories.engagement_repository",
     "app.api.dependencies.crisis -> app.infrastructure.repositories.critical_incident_repository",

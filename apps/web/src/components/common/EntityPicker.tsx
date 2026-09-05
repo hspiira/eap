@@ -159,9 +159,7 @@ export function ClientPicker({
       renderSelected={(c) => (
         <PickerRow initials={nameInitials(c.name)} primary={c.name} size="md" />
       )}
-      renderRow={(c) => (
-        <PickerRow initials={nameInitials(c.name)} primary={c.name} />
-      )}
+      renderRow={(c) => <PickerRow initials={nameInitials(c.name)} primary={c.name} />}
       selectedItem={selected}
     />
   )

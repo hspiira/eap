@@ -51,6 +51,7 @@ export type {
   KPI,
   KPIAssignment,
   Member,
+  MemberNextOfKin,
   NonCompeteClause,
   OutreachRecord,
   Person,

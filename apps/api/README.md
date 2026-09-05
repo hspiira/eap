@@ -85,6 +85,7 @@ Once running, the API is available at:
 | `/users` | User accounts |
 | `/clients` | Client companies |
 | `/members` | Client employees and beneficiaries |
+| `/members/{id}/next-of-kin` | Restricted emergency contacts for a member |
 | `/persons` | Legacy people/provider compatibility API |
 | `/contracts` | Service agreements |
 | `/services` | Service catalog |

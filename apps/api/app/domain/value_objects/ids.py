@@ -101,6 +101,11 @@ class ClientTagId(Id):
 
 
 @dataclass(frozen=True)
+class MemberNextOfKinId(Id):
+    pass
+
+
+@dataclass(frozen=True)
 class ContactId(Id):
     pass
 

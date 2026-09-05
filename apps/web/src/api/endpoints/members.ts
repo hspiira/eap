@@ -1,5 +1,10 @@
-import type { Member } from "@/types/entities"
-import type { EligibilityStatus, MemberGender, MemberRelation } from "@/types/enums"
+import type { Member, MemberNextOfKin } from "@/types/entities"
+import type {
+  EligibilityStatus,
+  MemberGender,
+  MemberRelation,
+  NextOfKinRelationship,
+} from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse } from "../types"
@@ -30,6 +35,14 @@ export interface MemberDuplicateCandidate {
   matched_on: string[]
 }
 
+export interface MemberNextOfKinRequest {
+  name: string
+  relationship: NextOfKinRelationship
+  phone?: string | null
+  email?: string | null
+  is_primary?: boolean
+}
+
 export const membersApi = {
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {
     return apiClient.get<PaginatedResponse<Member>>("/members", params)
@@ -41,6 +54,26 @@ export const membersApi = {
 
   async listBeneficiaries(id: string): Promise<Member[]> {
     return apiClient.get<Member[]>(`/members/${id}/beneficiaries`)
+  },
+
+  async listNextOfKin(id: string): Promise<MemberNextOfKin[]> {
+    return apiClient.get<MemberNextOfKin[]>(`/members/${id}/next-of-kin`)
+  },
+
+  async createNextOfKin(id: string, data: MemberNextOfKinRequest): Promise<MemberNextOfKin> {
+    return apiClient.post<MemberNextOfKin>(`/members/${id}/next-of-kin`, data)
+  },
+
+  async updateNextOfKin(
+    memberId: string,
+    contactId: string,
+    data: MemberNextOfKinRequest,
+  ): Promise<MemberNextOfKin> {
+    return apiClient.patch<MemberNextOfKin>(`/members/${memberId}/next-of-kin/${contactId}`, data)
+  },
+
+  async deleteNextOfKin(memberId: string, contactId: string): Promise<void> {
+    await apiClient.delete(`/members/${memberId}/next-of-kin/${contactId}`)
   },
 
   async create(data: MemberCreateRequest): Promise<Member> {

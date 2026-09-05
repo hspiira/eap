@@ -18,6 +18,7 @@ from app.api.dependencies import (
     get_clinical_subject_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
+    get_member_next_of_kin_repository,
     pagination,
 )
 from app.api.schemas.member_schemas import (
@@ -25,6 +26,9 @@ from app.api.schemas.member_schemas import (
     MemberDuplicateCandidate,
     MemberDuplicateListResponse,
     MemberListResponse,
+    MemberNextOfKinCreate,
+    MemberNextOfKinResponse,
+    MemberNextOfKinUpdate,
     MemberResponse,
     MemberUpdate,
 )
@@ -32,6 +36,7 @@ from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMem
 from app.core.authorization import require_not_viewer
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.enums import EligibilityStatus, MemberRelation
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
@@ -39,14 +44,18 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberClinicalLinkRepository,
     EligibleMemberRepository,
 )
+from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
     Email,
+    MemberNextOfKinId,
     TenantId,
     UserId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.datetime import utc_now
+from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/members", tags=["members"])
@@ -74,6 +83,21 @@ def _response(member: EligibleMember) -> MemberResponse:
         terminated_at=member.terminated_at,
         created_at=member.created_at,
         updated_at=member.updated_at,
+    )
+
+
+def _next_of_kin_response(contact: MemberNextOfKin) -> MemberNextOfKinResponse:
+    return MemberNextOfKinResponse(
+        id=contact.id.value,
+        tenant_id=contact.tenant_id.value,
+        member_id=contact.member_id.value,
+        name=contact.name,
+        relationship=contact.relationship,
+        phone=contact.phone,
+        email=contact.email.value if contact.email else None,
+        is_primary=contact.is_primary,
+        created_at=contact.created_at,
+        updated_at=contact.updated_at,
     )
 
 
@@ -436,6 +460,118 @@ async def list_member_beneficiaries(
         member.id,
     )
     return [_response(item) for item in beneficiaries]
+
+
+@router.get("/{member_id}/next-of-kin", response_model=list[MemberNextOfKinResponse])
+@readonly()
+async def list_member_next_of_kin(
+    member_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+):
+    member = await member_repo.get_by_id(EligibleMemberId(member_id))
+    if member is None or member.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Member not found")
+    contacts = await next_of_kin_repo.list_for_member(TenantId(current_user.tenant_id), member.id)
+    return [_next_of_kin_response(contact) for contact in contacts]
+
+
+@router.post(
+    "/{member_id}/next-of-kin",
+    response_model=MemberNextOfKinResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+@transactional()
+async def create_member_next_of_kin(
+    member_id: str,
+    data: MemberNextOfKinCreate,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+    audit_handler=Depends(get_audit_event_handler),
+):
+    member = await member_repo.get_by_id(EligibleMemberId(member_id))
+    if member is None or member.tenant_id.value != current_user.tenant_id:
+        raise HTTPException(status_code=404, detail="Member not found")
+    now = utc_now()
+    contact = MemberNextOfKin(
+        id=MemberNextOfKinId(generate_cuid()),
+        tenant_id=TenantId(current_user.tenant_id),
+        member_id=member.id,
+        name=data.name.strip(),
+        relationship=data.relationship,
+        phone=data.phone.strip() if data.phone else None,
+        email=Email(str(data.email)) if data.email else None,
+        is_primary=data.is_primary,
+        created_at=now,
+        updated_at=now,
+    )
+    await next_of_kin_repo.save(contact)
+    await audit_change(contact, audit_handler, current_user, request)
+    return _next_of_kin_response(contact)
+
+
+@router.patch("/{member_id}/next-of-kin/{contact_id}", response_model=MemberNextOfKinResponse)
+@transactional()
+async def update_member_next_of_kin(
+    member_id: str,
+    contact_id: str,
+    data: MemberNextOfKinUpdate,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+    audit_handler=Depends(get_audit_event_handler),
+):
+    member = await member_repo.get_by_id(EligibleMemberId(member_id))
+    contact = await next_of_kin_repo.get_by_id(MemberNextOfKinId(contact_id))
+    if (
+        member is None
+        or member.tenant_id.value != current_user.tenant_id
+        or contact is None
+        or contact.tenant_id.value != current_user.tenant_id
+        or contact.member_id != member.id
+    ):
+        raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
+    contact.update(
+        name=data.name.strip(),
+        relationship=data.relationship,
+        phone=data.phone.strip() if data.phone else None,
+        email=Email(str(data.email)) if data.email else None,
+        is_primary=data.is_primary,
+        now=utc_now(),
+    )
+    await next_of_kin_repo.save(contact)
+    await audit_change(contact, audit_handler, current_user, request)
+    return _next_of_kin_response(contact)
+
+
+@router.delete("/{member_id}/next-of-kin/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+@transactional()
+async def delete_member_next_of_kin(
+    member_id: str,
+    contact_id: str,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+    audit_handler=Depends(get_audit_event_handler),
+):
+    member = await member_repo.get_by_id(EligibleMemberId(member_id))
+    contact = await next_of_kin_repo.get_by_id(MemberNextOfKinId(contact_id))
+    if (
+        member is None
+        or member.tenant_id.value != current_user.tenant_id
+        or contact is None
+        or contact.tenant_id.value != current_user.tenant_id
+        or contact.member_id != member.id
+    ):
+        raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
+    await next_of_kin_repo.delete(contact.id)
+    await audit_change(contact, audit_handler, current_user, request)
+    return None
 
 
 @router.get("/{member_id}", response_model=MemberResponse)

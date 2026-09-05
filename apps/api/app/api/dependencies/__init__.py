@@ -19,6 +19,7 @@ from app.api.dependencies.clinical import (
     get_eap_programme_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
+    get_member_next_of_kin_repository,
 )
 from app.api.dependencies.commercial import get_contract_repository
 from app.api.dependencies.consultancy import get_engagement_repository
@@ -100,6 +101,7 @@ __all__ = [
     "get_eap_programme_repository",
     "get_eligible_member_clinical_link_repository",
     "get_eligible_member_repository",
+    "get_member_next_of_kin_repository",
     "get_engagement_repository",
     "get_industry_repository",
     "get_kpi_assignment_repository",

@@ -53,6 +53,7 @@ from app.infrastructure.models.json_schemas import (
     StaffInfoDict,
 )
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
+from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
 from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
@@ -98,6 +99,7 @@ __all__ = [
     "DiagnosisModel",
     "EligibleMemberClinicalLinkModel",
     "EligibleMemberModel",
+    "MemberNextOfKinModel",
     "DiagnosisTypeModel",
     "DocumentModel",
     "EmergencyContactDict",

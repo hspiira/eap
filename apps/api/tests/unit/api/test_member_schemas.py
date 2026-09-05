@@ -3,8 +3,8 @@ from datetime import date, timedelta
 import pytest
 from pydantic import ValidationError
 
-from app.api.schemas.member_schemas import MemberCreate, MemberUpdate
-from app.domain.enums import MemberGender, MemberRelation
+from app.api.schemas.member_schemas import MemberCreate, MemberNextOfKinCreate, MemberUpdate
+from app.domain.enums import MemberGender, MemberRelation, NextOfKinRelationship
 
 
 def test_member_name_is_required():
@@ -44,3 +44,29 @@ def test_member_profile_fields_are_supported():
 def test_member_date_of_birth_cannot_be_in_the_future():
     with pytest.raises(ValidationError, match="future"):
         MemberUpdate(date_of_birth=date.today() + timedelta(days=1))
+
+
+def test_next_of_kin_requires_name_and_contact_method():
+    with pytest.raises(ValidationError, match="phone or email"):
+        MemberNextOfKinCreate(
+            name="Jane Doe",
+            relationship=NextOfKinRelationship.SPOUSE,
+        )
+
+    with pytest.raises(ValidationError, match="name"):
+        MemberNextOfKinCreate(
+            name=" ",
+            relationship=NextOfKinRelationship.SPOUSE,
+            phone="+256700000000",
+        )
+
+
+def test_next_of_kin_accepts_phone_or_email():
+    contact = MemberNextOfKinCreate(
+        name="Jane Doe",
+        relationship=NextOfKinRelationship.SPOUSE,
+        email="jane@example.com",
+        is_primary=True,
+    )
+    assert contact.email == "jane@example.com"
+    assert contact.is_primary is True

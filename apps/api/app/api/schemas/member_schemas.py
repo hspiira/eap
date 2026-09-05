@@ -5,7 +5,54 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
+from app.domain.enums import (
+    EligibilityStatus,
+    MemberGender,
+    MemberRelation,
+    NextOfKinRelationship,
+)
+
+
+class MemberNextOfKinCreate(BaseModel):
+    name: SanitizedStr = Field(..., min_length=1, max_length=255)
+    relationship: NextOfKinRelationship
+    phone: SanitizedStr | None = Field(None, max_length=50)
+    email: EmailStr | None = None
+    is_primary: bool = False
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Next-of-kin name is required")
+        return value
+
+    @model_validator(mode="after")
+    def validate_contact_method(self) -> "MemberNextOfKinCreate":
+        if not self.phone and not self.email:
+            raise ValueError("Next-of-kin needs phone or email")
+        return self
+
+
+class MemberNextOfKinUpdate(MemberNextOfKinCreate):
+    pass
+
+
+class MemberNextOfKinResponse(BaseModel):
+    id: str
+    tenant_id: str
+    member_id: str
+    name: str
+    relationship: NextOfKinRelationship
+    phone: str | None
+    email: str | None
+    is_primary: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MemberCreate(BaseModel):
