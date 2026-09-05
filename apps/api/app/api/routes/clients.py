@@ -136,6 +136,7 @@ from app.shared.utils.client_csv import (
     CLIENT_EXPORT_HEADERS,
     CLIENT_IMPORT_HEADERS,
     ClientCsvRow,
+    Issue,
     parse_client_csv,
 )
 from app.shared.utils.datetime import ensure_utc, utc_now
@@ -1190,16 +1191,14 @@ async def export_clients(
 def _import_row_previews(
     rows: list[ClientCsvRow],
     candidates: list[tuple[ClientCsvRow, str]],
-    issues: list[dict[str, str | int]],
+    issues: list[Issue],
     matches: dict[int, ClientEntity],
     similar_matches: dict[int, ClientEntity],
 ) -> list[ClientImportRowPreview]:
     """Build the server-authoritative preview shown before confirmation."""
     codes = {row.row_number: code for row, code in candidates}
     error_rows = {
-        int(issue["row"])
-        for issue in issues
-        if issue.get("severity", "error") == "error" and int(issue["row"]) > 0
+        issue["row"] for issue in issues if issue["severity"] == "error" and issue["row"] > 0
     }
     previews: list[ClientImportRowPreview] = []
     for row in rows:
@@ -1270,9 +1269,44 @@ async def _read_import_file(file: UploadFile, *, limit_bytes: int) -> bytes:
     return content
 
 
+class _ImportJobGateway:
+    """Binds the import runner to this application's infrastructure.
+
+    The runner is in the application layer and must not import infrastructure;
+    the route is the composition root, so the wiring lives here.
+    """
+
+    def session(self):
+        return AsyncSessionLocal()
+
+    async def load(self, session, job_id: str):
+        return await session.get(ClientImportJobModel, job_id)
+
+    def repositories(self, session) -> ImportRepositories:
+        from app.infrastructure.repositories.client_alias_repository import (
+            ClientAliasRepositoryImpl,
+        )
+        from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+        from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
+        from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+
+        return ImportRepositories(
+            client=ClientRepositoryImpl(session),
+            alias=ClientAliasRepositoryImpl(session),
+            industry=IndustryRepositoryImpl(session),
+            tenant=TenantRepositoryImpl(session),
+        )
+
+    def audit_handler(self, session):
+        from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+        from app.shared.handlers.audit_event_handler import AuditEventHandler
+
+        return AuditEventHandler(OutboxRepositoryImpl(session))
+
+
 async def _run_client_import_job(job_id: str) -> None:
     """Run a queued import against a fresh session, outside the request."""
-    await run_import_job(job_id, AsyncSessionLocal)
+    await run_import_job(job_id, _ImportJobGateway())
 
 
 @router.post(
@@ -1332,7 +1366,7 @@ async def import_clients(
             rows=previews,
         )
 
-    created, decision_skipped, decision_failed = await client_import.create_clients(
+    created, failed = await client_import.create_clients(
         result.ready,
         TenantId(tenant_id),
         repos,
@@ -1346,8 +1380,8 @@ async def import_clients(
 
     return ClientImportResponse(
         imported=len(created),
-        skipped=result.skipped + decision_skipped,
-        failed=decision_failed,
+        skipped=result.skipped,
+        failed=failed,
         clients=_created_response(created),
         issues=[ClientImportIssue(**issue) for issue in issues],
         rows=previews,

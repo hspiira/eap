@@ -18,12 +18,19 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.application.services import client_import_job
+from app.application.services.client_import import ImportRepositories
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.infrastructure.models.base import Base
 from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.tenant_model import TenantModel
+from app.infrastructure.repositories.client_alias_repository import ClientAliasRepositoryImpl
+from app.infrastructure.repositories.client_repository import ClientRepositoryImpl
+from app.infrastructure.repositories.industry_repository import IndustryRepositoryImpl
+from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+from app.infrastructure.repositories.tenant_repository import TenantRepositoryImpl
+from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.generators import generate_cuid
 
 TENANT_ID = "tenant-import-test"
@@ -79,6 +86,34 @@ async def import_db():
         await admin.dispose()
 
 
+class _Gateway:
+    """The infrastructure wiring the runner takes, bound to the test schema.
+
+    Mirrors _ImportJobGateway in the clients route; the runner itself imports
+    no infrastructure.
+    """
+
+    def __init__(self, sessions):
+        self._sessions = sessions
+
+    def session(self):
+        return self._sessions()
+
+    async def load(self, session, job_id: str):
+        return await session.get(ClientImportJobModel, job_id)
+
+    def repositories(self, session) -> ImportRepositories:
+        return ImportRepositories(
+            client=ClientRepositoryImpl(session),
+            alias=ClientAliasRepositoryImpl(session),
+            industry=IndustryRepositoryImpl(session),
+            tenant=TenantRepositoryImpl(session),
+        )
+
+    def audit_handler(self, session):
+        return AuditEventHandler(OutboxRepositoryImpl(session))
+
+
 async def _queue_job(session_factory, content: bytes) -> str:
     job_id = generate_cuid()
     async with session_factory() as session:
@@ -111,7 +146,7 @@ class TestImportJob:
     async def test_successful_import_creates_clients_and_completes_the_job(self, import_db):
         job_id = await _queue_job(import_db, _csv("Acme Corp", "Globex"))
 
-        await client_import_job.run_import_job(job_id, import_db)
+        await client_import_job.run_import_job(job_id, _Gateway(import_db))
 
         job = await _job(import_db, job_id)
         assert job.status == "completed"
@@ -138,7 +173,7 @@ class TestImportJob:
     async def test_audit_events_are_enqueued_in_the_import_transaction(self, import_db):
         job_id = await _queue_job(import_db, _csv("Acme Corp"))
 
-        await client_import_job.run_import_job(job_id, import_db)
+        await client_import_job.run_import_job(job_id, _Gateway(import_db))
 
         async with import_db() as session:
             events = (await session.execute(select(OutboxEventModel))).scalars().all()
@@ -158,7 +193,7 @@ class TestImportJob:
 
         monkeypatch.setattr(client_import_job.client_import, "create_clients", explode)
 
-        await client_import_job.run_import_job(job_id, import_db)
+        await client_import_job.run_import_job(job_id, _Gateway(import_db))
 
         job = await _job(import_db, job_id)
         assert job.status == "failed"
@@ -179,7 +214,7 @@ class TestImportJob:
         content = (CSV_HEADER + "Acme Corp,,,,,1 High St,,,,,,,\n").encode()
         job_id = await _queue_job(import_db, content)
 
-        await client_import_job.run_import_job(job_id, import_db)
+        await client_import_job.run_import_job(job_id, _Gateway(import_db))
 
         job = await _job(import_db, job_id)
         assert job.status == "completed"
@@ -191,4 +226,4 @@ class TestImportJob:
             assert await session.scalar(select(func.count(ClientModel.id))) == 0
 
     async def test_a_missing_job_is_ignored(self, import_db):
-        await client_import_job.run_import_job("does-not-exist", import_db)
+        await client_import_job.run_import_job("does-not-exist", _Gateway(import_db))
