@@ -3,8 +3,7 @@
 Routes the :class:`ReportQueryType` enum to a concrete async runner that
 returns a JSON-serialisable result. The Phase 3 v1 renewal pack adds end-to-end
 implementations for ``CONTRACT_UTILISATION``, ``CARE_CALLBACK_OUTCOMES``, and
-``SATISFACTION_DISTRIBUTION``. ``DIAGNOSIS_PREVALENCE`` returns ``no_data``
-until the session ⇄ diagnosis link lands (tracked separately).
+``SATISFACTION_DISTRIBUTION`` and ``DIAGNOSIS_PREVALENCE``.
 """
 
 from __future__ import annotations
@@ -28,12 +27,34 @@ from app.infrastructure.models.care_callback_model import (
     OutreachRecordModel,
 )
 from app.infrastructure.models.contract_model import ContractModel
+from app.infrastructure.models.diagnosis_model import DiagnosisTypeModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
     SurveyResponseModel,
 )
 from app.infrastructure.models.utilisation_event_model import UtilisationEventModel
+
+
+def prevalence_payload(
+    rows: list[tuple[str, str, int]],
+    *,
+    unclassified: int,
+    floor: int = DEFAULT_MIN_CELL_SIZE,
+) -> dict[str, Any]:
+    """Shape and suppress a diagnosis-prevalence result.
+
+    ``unclassified`` is reported alongside the buckets so a small total is not
+    read as low demand when it is really low recording.
+    """
+    buckets = [{"code": code, "label": name, "count": count} for code, name, count in rows]
+    return {
+        "query_type": ReportQueryType.DIAGNOSIS_PREVALENCE.value,
+        "status": "ok" if rows else "no_data",
+        "buckets": suppress_bucket_list(buckets, floor=floor),
+        "total": suppress_count(sum(c for _, _, c in rows), floor=floor),
+        "unclassified_sessions": suppress_count(unclassified, floor=floor),
+    }
 
 
 class ReportQueryRunner:
@@ -65,18 +86,91 @@ class ReportQueryRunner:
         if section.query_type == ReportQueryType.SATISFACTION_DISTRIBUTION:
             return await self._satisfaction_distribution(tenant_id=tenant_id, params=params)
         if section.query_type == ReportQueryType.DIAGNOSIS_PREVALENCE:
-            return {
-                "query_type": ReportQueryType.DIAGNOSIS_PREVALENCE.value,
-                "status": "no_data",
-                "note": "Session ⇄ diagnosis association not yet wired in v1.",
-                "buckets": [],
-                "total": 0,
-            }
+            return await self._diagnosis_prevalence(tenant_id=tenant_id, params=params)
         return {
             "query_type": section.query_type.value,
             "status": "not_implemented",
             "note": "Implementation lands with the providing aggregate (see SAD §5.2.10).",
         }
+
+    async def _diagnosis_prevalence(
+        self, *, tenant_id: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Session counts per diagnosis type within an optional date window.
+
+        Grouped at type level rather than by leaf diagnosis. There are 52 leaves
+        against the seeded taxonomy, so leaf counts are sparse enough that most
+        would fall under the suppression floor and say nothing.
+        """
+        stmt = (
+            select(
+                DiagnosisTypeModel.code.label("code"),
+                DiagnosisTypeModel.name.label("name"),
+                func.count().label("count"),
+            )
+            .join(
+                ServiceSessionModel,
+                ServiceSessionModel.diagnosis_type_id == DiagnosisTypeModel.id,
+            )
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id,
+                ServiceSessionModel.deleted_at.is_(None),
+            )
+            .group_by(DiagnosisTypeModel.code, DiagnosisTypeModel.name)
+            .order_by(func.count().desc(), DiagnosisTypeModel.name)
+        )
+
+        if params.get("status_in"):
+            statuses = [SessionStatus(s).value for s in params["status_in"]]
+            stmt = stmt.where(ServiceSessionModel.status.in_(statuses))
+        else:
+            stmt = stmt.where(ServiceSessionModel.status == SessionStatus.COMPLETED.value)
+
+        from_date = _parse_date(params.get("from"))
+        to_date = _parse_date(params.get("to"))
+        if from_date:
+            stmt = stmt.where(ServiceSessionModel.scheduled_at >= from_date)
+        if to_date:
+            stmt = stmt.where(ServiceSessionModel.scheduled_at <= to_date)
+
+        rows = (await self._session.execute(stmt)).all()
+        unclassified = await self._unclassified_session_count(
+            tenant_id=tenant_id, params=params, from_date=from_date, to_date=to_date
+        )
+        return prevalence_payload(
+            [(r.code, r.name, int(r.count)) for r in rows],
+            unclassified=unclassified,
+            floor=self._min_cell_size,
+        )
+
+    async def _unclassified_session_count(
+        self,
+        *,
+        tenant_id: str,
+        params: dict[str, Any],
+        from_date: date | None,
+        to_date: date | None,
+    ) -> int:
+        """Sessions in scope with no diagnosis type recorded.
+
+        Reported alongside the buckets so a small total is not read as low
+        demand when it is really low recording.
+        """
+        stmt = select(func.count()).where(
+            ServiceSessionModel.tenant_id == tenant_id,
+            ServiceSessionModel.deleted_at.is_(None),
+            ServiceSessionModel.diagnosis_type_id.is_(None),
+        )
+        if params.get("status_in"):
+            statuses = [SessionStatus(s).value for s in params["status_in"]]
+            stmt = stmt.where(ServiceSessionModel.status.in_(statuses))
+        else:
+            stmt = stmt.where(ServiceSessionModel.status == SessionStatus.COMPLETED.value)
+        if from_date:
+            stmt = stmt.where(ServiceSessionModel.scheduled_at >= from_date)
+        if to_date:
+            stmt = stmt.where(ServiceSessionModel.scheduled_at <= to_date)
+        return int((await self._session.execute(stmt)).scalar() or 0)
 
     async def _sessions_by_month(self, *, tenant_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """Count completed sessions per ``YYYY-MM`` within an optional date window."""
