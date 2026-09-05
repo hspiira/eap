@@ -51,6 +51,12 @@ Run from the repository root:
 ```bash
 pnpm setup            # first-run bootstrap; safe to re-run
 pnpm bootstrap        # just the env/database/migrate/seed part, no installs
+pnpm migrate          # apply pending Alembic migrations to DATABASE_URL
+pnpm migrate:make     # autogenerate a revision; pass -m "message"
+pnpm migrate:down     # roll back one revision
+pnpm migrate:current  # show the database's current migration revision
+pnpm migrate:heads    # show every head; more than one means a branch to merge
+pnpm migrate:history  # show the migration history
 
 pnpm dev              # both dev servers, one terminal
 pnpm dev:api          # uvicorn with reload, port 8000
@@ -74,6 +80,37 @@ pnpm contracts:check  # fail if the committed contract or client is stale
 deliberate: if it passes locally it passes in CI. It is slower than `pnpm lint`
 because it includes pyright and the coverage gate, so `lint` and `test` stay
 the fast inner loop and `verify` is the pre-push check.
+
+### Production migrations
+
+The migration commands use the `DATABASE_URL` loaded from the repo-root `.env`.
+For a production deployment, verify that `.env` targets the production database,
+check the current revision, and then apply migrations:
+
+```bash
+pnpm migrate:heads
+pnpm migrate:current
+pnpm migrate
+pnpm migrate:current
+```
+
+Check `migrate:heads` first. `pnpm migrate` resolves `head`, which fails outright
+when the history has more than one, and a branch is easy to create by accident
+when several people add revisions in parallel. One line of output means one head
+and the upgrade is unambiguous.
+
+`pnpm migrate` only applies committed Alembic migrations; it does not seed data
+or modify application configuration. Take the normal database backup and follow
+the deployment rollback procedure before applying migrations to a shared or
+production database.
+
+Two habits that matter more on a shared database than a local one. Commit a
+migration before applying it anywhere others use, so the record of what ran
+exists in the history rather than only in one working tree. And never edit a
+revision after it has been applied; write a new one instead. Alembic decides
+what to run from the version table alone, so a revision that is edited after
+running leaves the database marked done for work it never did, and no later
+`pnpm migrate` will notice.
 
 ### Pre-commit hooks
 
