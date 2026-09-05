@@ -64,7 +64,7 @@ not executed.
 | BE-A09 | `alembic upgrade --sql` crashes a twelfth of the way through | 🟡 Medium | S | - | ⬜ | | |
 | BE-A10 | A revision id was applied, then redefined | 🔴 Critical | S | - | ✅ | clients lane | - |
 | BE-A11 | `alembic_version` holds three rows, so `upgrade head` fails | 🔴 Critical | XS | BE-A10 | ✅ | clients lane | - |
-| BE-A12 | `routes/clients.py` breaks the layering contract, and CI is red | 🟠 High | M | - | ⬜ | clients lane | - |
+| BE-A12 | `routes/clients.py` breaks the layering contract, and CI is red | 🟠 High | L | - | ⬜ | clients lane | - |
 
 ### Track B: Test Coverage ([B-coverage.md](./B-coverage.md))
 

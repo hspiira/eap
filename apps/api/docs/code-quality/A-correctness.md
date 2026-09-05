@@ -600,7 +600,7 @@ at 00:21. Caught by eap-85. The diagnosis above replaces it.
 
 ## BE-A12: `routes/clients.py` breaks the layering contract, and CI is red
 
-**Severity:** 🟠 High · **Effort:** M · **Status:** ⬜ Todo
+**Severity:** 🟠 High · **Effort:** L · **Status:** ⬜ Todo
 
 **Problem.** `pnpm lint:api` fails on committed code. `lint-imports` reports
 2 contracts kept, 1 broken:
@@ -637,13 +637,40 @@ own summary records enforced layering as one of the codebase's genuine
 strengths. Ten direct edges in the largest route module is the point where that
 stops being true.
 
-**Recommended fix.** Route them through the composition root like every other
-module does. Repositories become `Depends(get_client_repository)` and friends in
-`app/api/dependencies/`, which already has the pattern for fourteen other
-repositories. The mapper and model imports want more thought: a route reaching
-for `ClientModel` and `ClientMapper` suggests query or mapping logic that
-belongs in a repository, and moving the imports without moving that logic would
-satisfy the linter while leaving the layering violation in place.
+**This is an extraction, not a move.** Measured in the file, which is 1837
+lines:
+
+| Symbol | Uses |
+|--------|-----:|
+| `ClientModel` | 20 |
+| `ClientTagAssignmentModel` | 17 |
+| `ClientTagModel` | 13 |
+| `ClientImportJobModel` | 12 |
+| `ClientMapper` | 3 |
+| `select()` / `db.execute` / `db.get` statements | 32 |
+
+That is a repository's worth of query logic living in the HTTP layer. Relocating
+the ten imports would turn the gate green and leave all 32 queries exactly where
+they are, which satisfies the linter while preserving the violation it exists to
+catch. Effort is L for that reason. Measurements by eap-44.
+
+**The two halves need different fixes.** This is the part to read before
+starting, because the obvious approach only works for one of them.
+
+*Module-level, lines 107 to 111.* These are in request-scoped handlers, so the
+composition root applies. Repositories become `Depends(get_client_repository)`
+and friends in `app/api/dependencies/`, which already has the pattern for
+fourteen other repositories.
+
+*Function-level, lines 1243 to 1247.* These sit inside `_run_client_import_job`
+at line 1241, which is queued with `background_tasks.add_task` at lines 1388 and
+1467 and opens its own `AsyncSessionLocal()` at line 1250. It runs after the
+response is returned, outside request scope, so it has no `Depends` to receive
+anything through. The composition root as it stands cannot reach it. That half
+needs either a factory in the composition root that a detached task can call, or
+the job runner moved into the application layer, where a background job
+arguably belongs anyway. Anyone starting with `Depends` here will spend the time
+discovering why it cannot work. Found by eap-44.
 
 Do not add these to `ignore_imports`. That list is explicitly for grandfathered
 debt, and the comment beside it forbids exactly this use.
@@ -655,8 +682,9 @@ debt, and the comment beside it forbids exactly this use.
 - [ ] Repositories reach the route through `app/api/dependencies/`.
 - [ ] Any query logic that needed `ClientModel` directly lives in a repository.
 
-**Ownership.** The clients lane. Not this session; my only commits touching
-`apps/api` are docs and the BE-A01 to BE-A03 fixes.
+**Ownership.** Whoever wrote `ff75256`. Not this session, and not eap-44, whose
+lane is the web UI. None of the four sessions running when this was filed claims
+the module.
 
 ---
 
