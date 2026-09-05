@@ -30,7 +30,11 @@ from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
 from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
-from app.infrastructure.models.diagnosis_model import DiagnosisModel, DiagnosisTypeModel
+from app.infrastructure.models.diagnosis_model import (
+    DiagnosisModel,
+    DiagnosisTypeModel,
+    TenantDiagnosisSettingModel,
+)
 from app.infrastructure.models.document_model import DocumentModel
 from app.infrastructure.models.dsar_model import DSARRequestModel
 from app.infrastructure.models.eap_programme_model import (
@@ -101,6 +105,7 @@ __all__ = [
     "EligibleMemberModel",
     "MemberNextOfKinModel",
     "DiagnosisTypeModel",
+    "TenantDiagnosisSettingModel",
     "DocumentModel",
     "EmergencyContactDict",
     "EmploymentInfoDict",

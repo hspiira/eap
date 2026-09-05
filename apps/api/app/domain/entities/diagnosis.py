@@ -31,3 +31,18 @@ class Diagnosis:
     is_active: bool
     version: int
     effective_until: datetime | None
+
+
+@dataclass(frozen=True)
+class TenantOverlay:
+    """One tenant's preference for a taxonomy row.
+
+    A missing overlay means enabled at the taxonomy's own sort order.
+    """
+
+    tenant_id: str
+    diagnosis_type_id: str
+    diagnosis_id: str | None
+    is_enabled: bool
+    sort_order: int
+    local_label: str | None

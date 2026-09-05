@@ -12,7 +12,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.models.base import Base, CuidMixin, TimestampMixin
+from app.infrastructure.models.base import Base, CuidMixin, TenantMixin, TimestampMixin
 
 
 class DiagnosisTypeModel(CuidMixin, Base, TimestampMixin):
@@ -54,3 +54,23 @@ class DiagnosisModel(CuidMixin, Base, TimestampMixin):
     diagnosis_type: Mapped["DiagnosisTypeModel"] = relationship(
         "DiagnosisTypeModel", back_populates="diagnoses"
     )
+
+
+class TenantDiagnosisSettingModel(CuidMixin, TenantMixin, Base, TimestampMixin):
+    """Per-tenant overlay on the shared taxonomy.
+
+    The taxonomy itself stays global so prevalence remains comparable across
+    tenants. A missing row means enabled at the taxonomy's own sort order.
+    """
+
+    __tablename__ = "tenant_diagnosis_settings"
+
+    diagnosis_type_id: Mapped[str] = mapped_column(
+        ForeignKey("diagnosis_types.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    diagnosis_id: Mapped[str | None] = mapped_column(
+        ForeignKey("diagnoses.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    local_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
