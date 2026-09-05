@@ -181,9 +181,6 @@ that rewrote them with CRLF would fail those gates:
   pyright gate; the rest of the project is reported but not enforced.
 - Backend test coverage sits just above the 60% floor (63%), so a moderately
   sized untested addition can fail the gate.
-- `apps/web/eslint.config.js` points developers at `docs/CODING_GUIDELINES.md`
-  and `docs/IMPLEMENTATION_PLAN.md` in two of its error messages. Neither file
-  exists anywhere in the repository.
 - `apps/web` depends on `nitro-nightly@latest`, which is unpinned and can change
   under you between installs. The lockfile holds it steady until something
   forces a re-resolve.
