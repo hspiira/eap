@@ -407,16 +407,30 @@ sqlalchemy.exc.NoInspectionAvailable: No inspection system is available for
 object of type <class 'sqlalchemy.engine.mock.MockConnection'>
 ```
 
-Two migrations branch on the live schema by calling `inspect()` on the bound
-connection:
+Three migrations branch on the live schema by calling `inspect()` on the bound
+connection. Fix all three; fixing only one leaves the render dying in the same
+place:
 
-- `alembic/versions/32b395f52e9f_add_missing_service_tables.py:45`
-- `alembic/versions/3ae4af283411_add_client_code_and_employee_code_fields.py:25`
+| File | Line | Reached by the render? |
+|------|-----:|------------------------|
+| `32b395f52e9f_add_missing_service_tables.py` | 25 | yes, this is where it dies |
+| `3ae4af283411_add_client_code_and_employee_code_fields.py` | 25 | no, never reached |
+| `b6c8d0e2f4a6_migrate_client_aliases_to_table.py` | 46 | no, never reached |
 
 Offline mode binds a `MockConnection`, which records SQL instead of executing
 it and cannot be inspected, so the first of those aborts the run. The pattern is
 `if 'code' not in columns:`, which is a migration deciding at runtime whether it
 has already been applied.
+
+`32b395f52e9f` is early in the history, so the render dies there long before
+reaching the other two. Anyone who fixes only the newest file, reruns the render
+and sees the identical crash at the identical line will reasonably conclude
+their fix did not work.
+
+Grep for this carefully. The three instances use three different names for the
+same object, `inspect(conn)`, `inspect(connection)` and `sa.inspect(bind)`, so a
+search for any one spelling finds one file and reports the problem as smaller
+than it is. Search for `inspect(`.
 
 The consequence is that nobody can review the SQL before it reaches a database,
 and no offline or DBA-gated deploy path works. It also removes the one check
@@ -429,7 +443,7 @@ the run had aborted before reaching the revision in question. Two things made
 that easy: the output begins with a plausible `CREATE TABLE alembic_version`
 bootstrap, and piping through `grep` replaces alembic's exit code with grep's.
 
-**Recommended fix.** Make the two migrations declarative. A migration should
+**Recommended fix.** Make the three migrations declarative. A migration should
 know what it does from its own position in the history rather than asking the
 database, and the conditional in `3ae4af283411` exists to make a re-run safe,
 which the version table already guarantees. If a guard is genuinely wanted,
@@ -441,6 +455,13 @@ the DDL unconditionally.
 - [ ] `alembic upgrade head --sql` exits 0 and emits every revision.
 - [ ] No migration calls `inspect()` on the bound connection.
 - [ ] CI runs the offline render, so a future migration cannot reintroduce it.
+
+**The CI check matters more than the three fixes.** Three independent authors
+have now reached for `inspect()` to ask the database whether a migration has
+already run, which is the question the version table exists to answer. The
+pattern has also survived two rewrites of the aliases migration. The codebase
+teaches it by example, so fixing the current three does nothing to prevent a
+fourth. Only the render running in CI does.
 
 ---
 
