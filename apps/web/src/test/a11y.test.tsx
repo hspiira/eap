@@ -8,7 +8,7 @@ import { fireEvent, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { configureAxe } from "vitest-axe"
 
-import { ClientFormSheet } from "@/components/ClientFormSheet"
+import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { PersonFormSheet } from "@/components/PersonFormSheet"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
 import { renderWithProviders } from "@/test/utils"

@@ -14,8 +14,8 @@ import {
 } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
-import { ClientFormSheet } from "@/components/ClientFormSheet"
-import { ClientImportDialog } from "@/components/ClientImportDialog"
+import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
+import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
