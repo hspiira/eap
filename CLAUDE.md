@@ -12,6 +12,13 @@ without being asked.
 - Keep comments short and grammatical. No verbose block comments.
 - While editing a file, delete comments that are unnecessary.
 
+## Implementation
+
+- Read and follow the project agent rules before starting work, including
+  `CLAUDE.md` and any applicable app-specific agent and design rules.
+- Reduce cyclomatic complexity when writing or touching code. Prefer small,
+  focused functions and components over long branching handlers.
+
 ## Writing
 
 - Avoid em dashes.
