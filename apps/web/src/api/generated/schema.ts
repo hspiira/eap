@@ -9271,6 +9271,8 @@ export interface components {
         MemberResponse: {
             /** Client Id */
             client_id: string;
+            /** Client Name */
+            client_name?: string | null;
             /**
              * Created At
              * Format: date-time

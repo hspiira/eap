@@ -8430,6 +8430,17 @@
             "title": "Client Id",
             "type": "string"
           },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
