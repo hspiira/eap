@@ -104,8 +104,12 @@ export function ClientContactsPanel({
     enabled: manageOpen,
   })
   const managedContacts = contactsQuery.data ?? contacts
+  const hasClientContactInfo = Boolean(
+    client.contact_info?.email || client.contact_info?.phone || client.contact_info?.address,
+  )
   const primaryContact =
-    managedContacts.find((contact) => contact.is_primary) ?? managedContacts[0] ?? null
+    managedContacts.find((contact) => contact.is_primary) ??
+    (!hasClientContactInfo ? managedContacts[0] : null)
   const otherContacts = primaryContact
     ? managedContacts.filter((contact) => contact.id !== primaryContact.id)
     : managedContacts
@@ -126,7 +130,7 @@ export function ClientContactsPanel({
         name: name.trim(),
         email: email || null,
         phone: phone || null,
-        is_primary: managedContacts.length === 0,
+        is_primary: managedContacts.length === 0 && !hasClientContactInfo,
       })
       await contactsQuery.refetch()
       toast.showSuccess("Contact added")

@@ -36,6 +36,10 @@ export interface Client extends BaseEntity {
   preferred_contact_method?: string | null
   aliases?: string[]
   metadata?: Record<string, unknown> | null
+  active_contracts_count?: number | null
+  staff_count?: number | null
+  last_activity_at?: string | null
+  next_renewal_date?: string | null
 }
 
 /**

@@ -25,7 +25,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
@@ -47,6 +47,9 @@ from app.api.schemas.client_schemas import (
     ClientBulkTagRequest,
     ClientCreate,
     ClientDeactivateRequest,
+    ClientDuplicateCandidate,
+    ClientDuplicateClient,
+    ClientDuplicateListResponse,
     ClientImportCreated,
     ClientImportIssue,
     ClientImportJobListResponse,
@@ -54,7 +57,13 @@ from app.api.schemas.client_schemas import (
     ClientImportResponse,
     ClientImportRowPreview,
     ClientListResponse,
+    ClientMergeRequest,
+    ClientMergeResponse,
     ClientResponse,
+    ClientSavedViewCreate,
+    ClientSavedViewFilters,
+    ClientSavedViewListResponse,
+    ClientSavedViewResponse,
     ClientStatsResponse,
     ClientSuspendRequest,
     ClientTagAssignmentRequest,
@@ -71,7 +80,7 @@ from app.application.use_cases.client_use_cases import (
     CreateClientUseCase,
     UpdateClientUseCase,
 )
-from app.application.use_cases.contact_use_cases import CreateContactUseCase
+from app.application.use_cases.contact_use_cases import CreateContactUseCase, UpdateContactUseCase
 from app.application.use_cases.transitions import (
     ClientTransition,
     TransitionUseCase,
@@ -85,7 +94,14 @@ from app.core.authorization import (
 from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod, ContractStatus, TenantRole
+from app.domain.enums import (
+    BaseStatus,
+    ClientTier,
+    ContactMethod,
+    ContractStatus,
+    PersonType,
+    TenantRole,
+)
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_alias_repository import ClientAliasRepository
 from app.domain.repositories.client_repository import ClientRepository
@@ -105,10 +121,14 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.infrastructure.mappers.client_mapper import ClientMapper
+from app.infrastructure.models.client_alias_model import ClientAliasModel
 from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.models.client_saved_view_model import ClientSavedViewModel
 from app.infrastructure.models.client_tag_assignment_model import ClientTagAssignmentModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
+from app.infrastructure.models.contact_model import ContactModel
+from app.infrastructure.models.person_model import PersonModel
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.client_alias import normalize_client_alias
 from app.shared.utils.client_csv import (
@@ -158,6 +178,90 @@ def _to_client_response(client: ClientEntity) -> ClientResponse:
         suspension_reason=client.suspension_reason,
         is_active=client.is_active(),
         aliases=client.aliases,
+    )
+
+
+async def _client_list_metrics(
+    db: AsyncSession, tenant_id: str, client_ids: list[str]
+) -> dict[str, dict[str, int | str | None]]:
+    """Load list-card metrics in a fixed number of queries for the current page."""
+    metrics = {
+        client_id: {
+            "active_contracts_count": 0,
+            "staff_count": 0,
+            "last_activity_at": None,
+            "next_renewal_date": None,
+        }
+        for client_id in client_ids
+    }
+    if not client_ids:
+        return metrics
+
+    contract_table = ClientModel.metadata.tables.get("contracts")
+    if contract_table is not None:
+        contract_rows = await db.execute(
+            select(
+                contract_table.c.client_id,
+                func.count(contract_table.c.id),
+                func.min(contract_table.c.end_date),
+            )
+            .where(
+                contract_table.c.tenant_id == tenant_id,
+                contract_table.c.client_id.in_(client_ids),
+                contract_table.c.deleted_at.is_(None),
+                contract_table.c.status.in_(
+                    [ContractStatus.ACTIVE.value, ContractStatus.RENEWED.value]
+                ),
+            )
+            .group_by(contract_table.c.client_id)
+        )
+        for client_id, count, renewal_date in contract_rows:
+            metrics[client_id]["active_contracts_count"] = int(count)
+            metrics[client_id]["next_renewal_date"] = (
+                renewal_date.isoformat() if renewal_date else None
+            )
+
+    activity_table = ClientModel.metadata.tables.get("activities")
+    if activity_table is not None:
+        activity_rows = await db.execute(
+            select(activity_table.c.client_id, func.max(activity_table.c.occurred_at))
+            .where(
+                activity_table.c.tenant_id == tenant_id,
+                activity_table.c.client_id.in_(client_ids),
+                activity_table.c.deleted_at.is_(None),
+            )
+            .group_by(activity_table.c.client_id)
+        )
+        for client_id, occurred_at in activity_rows:
+            metrics[client_id]["last_activity_at"] = (
+                occurred_at.isoformat() if occurred_at else None
+            )
+
+    people = await db.execute(
+        select(PersonModel.employment_info).where(
+            PersonModel.tenant_id == tenant_id,
+            PersonModel.person_type == PersonType.CLIENT_EMPLOYEE,
+            PersonModel.status != BaseStatus.ARCHIVED,
+            PersonModel.deleted_at.is_(None),
+        )
+    )
+    for (employment_info,) in people:
+        client_id = employment_info.get("client_id") if employment_info else None
+        if client_id in metrics:
+            metrics[client_id]["staff_count"] = int(metrics[client_id]["staff_count"] or 0) + 1
+    return metrics
+
+
+def _saved_view_response(view: ClientSavedViewModel) -> ClientSavedViewResponse:
+    return ClientSavedViewResponse(
+        id=view.id,
+        tenant_id=view.tenant_id,
+        name=view.name,
+        filters=ClientSavedViewFilters.model_validate(view.filters),
+        created_by=view.created_by,
+        is_shared=view.is_shared,
+        created_at=view.created_at.isoformat(),
+        updated_at=view.updated_at.isoformat(),
     )
 
 
@@ -401,6 +505,7 @@ async def update_client(
     current_user: TokenData = Depends(require_not_viewer),
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
+    contact_repo: ContactRepository = Depends(get_contact_repository),
     industry_repo: IndustryRepository = Depends(get_industry_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -441,6 +546,23 @@ async def update_client(
         industry_repository=industry_repo,
     )
     await audit_change(client, audit_handler, current_user, request)
+    if "contact_person_name" in fields and data.contact_person_name:
+        contacts = await contact_repo.get_by_client_id(client.id.value, client.tenant_id)
+        primary = next((contact for contact in contacts if contact.is_primary), None)
+        if primary:
+            await UpdateContactUseCase(contact_repo).execute(
+                primary.id, name=data.contact_person_name
+            )
+        else:
+            await CreateContactUseCase(contact_repo).execute(
+                contact_id=ContactId(generate_cuid()),
+                tenant_id=client.tenant_id,
+                client_id=client.id.value,
+                name=data.contact_person_name,
+                email=client.contact_info.email.value if client.contact_info.email else None,
+                phone=client.contact_info.phone,
+                is_primary=True,
+            )
     return _to_client_response(client)
 
 
@@ -533,6 +655,376 @@ async def update_client_tier(
 
 
 @router.get(
+    "/views",
+    response_model=ClientSavedViewListResponse,
+    summary="List client views visible to the current user",
+)
+@readonly()
+async def list_client_views(
+    current_user: TokenData = Depends(require_same_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> ClientSavedViewListResponse:
+    """Return the user's views and views shared by other users in the tenant."""
+    stmt = (
+        select(ClientSavedViewModel)
+        .where(
+            ClientSavedViewModel.tenant_id == current_user.tenant_id,
+            or_(
+                ClientSavedViewModel.created_by == current_user.user_id,
+                ClientSavedViewModel.is_shared.is_(True),
+            ),
+        )
+        .order_by(ClientSavedViewModel.name.asc())
+    )
+    result = await db.execute(stmt)
+    items = [_saved_view_response(view) for view in result.scalars().all()]
+    return ClientSavedViewListResponse(items=items, total=len(items))
+
+
+@router.post(
+    "/views",
+    response_model=ClientSavedViewResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save a client list view",
+)
+@transactional()
+async def create_client_view(
+    data: ClientSavedViewCreate,
+    current_user: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> ClientSavedViewResponse:
+    """Create a tenant-scoped saved view."""
+    existing = await db.execute(
+        select(ClientSavedViewModel).where(
+            ClientSavedViewModel.tenant_id == current_user.tenant_id,
+            ClientSavedViewModel.created_by == current_user.user_id,
+            func.lower(ClientSavedViewModel.name) == data.name.lower(),
+        )
+    )
+    view = existing.scalar_one_or_none()
+    if view:
+        view.filters = data.filters.model_dump()
+        view.is_shared = data.is_shared
+    else:
+        view = ClientSavedViewModel(
+            id=generate_cuid(),
+            tenant_id=current_user.tenant_id,
+            name=data.name,
+            filters=data.filters.model_dump(),
+            created_by=current_user.user_id,
+            is_shared=data.is_shared,
+        )
+        db.add(view)
+    await db.flush()
+    return _saved_view_response(view)
+
+
+@router.delete(
+    "/views/{view_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a client list view",
+)
+@transactional()
+async def delete_client_view(
+    view_id: str,
+    current_user: TokenData = Depends(require_not_viewer),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a view owned by the current user."""
+    result = await db.execute(
+        select(ClientSavedViewModel).where(
+            ClientSavedViewModel.id == view_id,
+            ClientSavedViewModel.tenant_id == current_user.tenant_id,
+            ClientSavedViewModel.created_by == current_user.user_id,
+        )
+    )
+    view = result.scalar_one_or_none()
+    if not view:
+        raise HTTPException(status_code=404, detail="Saved view not found")
+    await db.delete(view)
+
+
+@router.get(
+    "/duplicates",
+    response_model=ClientDuplicateListResponse,
+    summary="Scan the tenant client list for likely duplicates",
+)
+@readonly()
+async def scan_client_duplicates(
+    current_user: TokenData = Depends(require_same_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> ClientDuplicateListResponse:
+    """Find close names and repeated contact emails for an explicit review."""
+    result = await db.execute(
+        select(ClientModel).where(
+            ClientModel.tenant_id == current_user.tenant_id,
+            ClientModel.status != BaseStatus.ARCHIVED,
+            ClientModel.deleted_at.is_(None),
+        )
+    )
+    clients = result.scalars().all()
+    candidates: list[ClientDuplicateCandidate] = []
+    for index, first in enumerate(clients):
+        first_name = normalize_client_alias(first.name)
+        first_email = (first.contact_info or {}).get("email")
+        for second in clients[index + 1 :]:
+            second_name = normalize_client_alias(second.name)
+            second_email = (second.contact_info or {}).get("email")
+            similarity = difflib.SequenceMatcher(None, first_name, second_name).ratio()
+            same_email = bool(
+                first_email and second_email and first_email.casefold() == second_email.casefold()
+            )
+            if not same_email and (len(first_name) < 4 or similarity < 0.84):
+                continue
+            candidates.append(
+                ClientDuplicateCandidate(
+                    first=ClientDuplicateClient(
+                        id=first.id,
+                        name=first.name,
+                        code=first.code,
+                        contact_email=first_email,
+                    ),
+                    second=ClientDuplicateClient(
+                        id=second.id,
+                        name=second.name,
+                        code=second.code,
+                        contact_email=second_email,
+                    ),
+                    reason="Matching contact email" if same_email else "Very similar client names",
+                    similarity=round(max(similarity, 1.0 if same_email else similarity), 3),
+                )
+            )
+    candidates.sort(key=lambda candidate: candidate.similarity, reverse=True)
+    return ClientDuplicateListResponse(items=candidates[:100], scanned=len(clients))
+
+
+@router.post(
+    "/{client_id}/merge",
+    response_model=ClientMergeResponse,
+    summary="Merge a duplicate client into this client",
+)
+@transactional()
+async def merge_client(
+    payload: ClientMergeRequest,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    target: ClientEntity = Depends(get_client_for_current_tenant),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+) -> ClientMergeResponse:
+    """Move operational records to the target and archive the source client."""
+    if payload.source_client_id == target.id.value:
+        raise HTTPException(status_code=400, detail="A client cannot be merged into itself")
+    if target.status == BaseStatus.ARCHIVED:
+        raise HTTPException(status_code=400, detail="An archived client cannot be a merge target")
+    source_result = await db.execute(
+        select(ClientModel).where(
+            ClientModel.id == payload.source_client_id,
+            ClientModel.tenant_id == target.tenant_id.value,
+            ClientModel.status != BaseStatus.ARCHIVED,
+            ClientModel.deleted_at.is_(None),
+        )
+    )
+    source = source_result.scalar_one_or_none()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source client not found")
+
+    transferred: dict[str, int] = {}
+    conflicts: list[str] = []
+    target_aliases = await db.execute(
+        select(ClientAliasModel).where(ClientAliasModel.client_id == target.id.value)
+    )
+    alias_norms = {alias.normalized_alias for alias in target_aliases.scalars().all()}
+    source_aliases = await db.execute(
+        select(ClientAliasModel).where(ClientAliasModel.client_id == source.id)
+    )
+    for alias in source_aliases.scalars().all():
+        if alias.normalized_alias in alias_norms:
+            conflicts.append(f"Alias '{alias.alias}' already exists on the target")
+            await db.delete(alias)
+        else:
+            alias.client_id = target.id.value
+            alias_norms.add(alias.normalized_alias)
+            transferred["aliases"] = transferred.get("aliases", 0) + 1
+
+    target_contacts = await db.execute(
+        select(ContactModel).where(
+            ContactModel.client_id == target.id.value,
+            ContactModel.deleted_at.is_(None),
+        )
+    )
+    target_contact_models = target_contacts.scalars().all()
+    has_primary = any(contact.is_primary for contact in target_contact_models)
+    has_legacy_contact = bool(
+        target.contact_info.email or target.contact_info.phone or target.contact_info.address
+    )
+    source_contacts = await db.execute(
+        select(ContactModel).where(
+            ContactModel.client_id == source.id,
+            ContactModel.deleted_at.is_(None),
+        )
+    )
+    contact_count = 0
+    for contact in source_contacts.scalars().all():
+        contact.client_id = target.id.value
+        contact.is_primary = contact.is_primary and not has_primary and not has_legacy_contact
+        has_primary = has_primary or contact.is_primary
+        contact_count += 1
+    if contact_count:
+        transferred["contacts"] = contact_count
+
+    # The legacy profile contact fields are not represented by ContactModel.
+    # Preserve them when the target has a blank field so a merge cannot lose
+    # the source client's only phone, email, or address.
+    target_model_result = await db.execute(
+        select(ClientModel).where(ClientModel.id == target.id.value)
+    )
+    target_model = target_model_result.scalar_one()
+    target_contact_info = dict(target_model.contact_info or {})
+    source_contact_info = source.contact_info or {}
+    contact_info_changed = False
+    for field in ("phone", "email", "address"):
+        if not target_contact_info.get(field) and source_contact_info.get(field):
+            target_contact_info[field] = source_contact_info[field]
+            contact_info_changed = True
+    if contact_info_changed:
+        target_model.contact_info = target_contact_info
+        transferred["profile_contact_fields"] = sum(
+            1
+            for field in ("phone", "email", "address")
+            if target_contact_info.get(field) == source_contact_info.get(field)
+        )
+    if target_model.billing_address is None and source.billing_address is not None:
+        target_model.billing_address = source.billing_address
+        transferred["billing_address"] = 1
+
+    target_tags = await db.execute(
+        select(ClientTagAssignmentModel.tag_id).where(
+            ClientTagAssignmentModel.client_id == target.id.value
+        )
+    )
+    tag_ids = set(target_tags.scalars().all())
+    source_tags = await db.execute(
+        select(ClientTagAssignmentModel).where(ClientTagAssignmentModel.client_id == source.id)
+    )
+    tag_count = 0
+    for assignment in source_tags.scalars().all():
+        if assignment.tag_id in tag_ids:
+            await db.delete(assignment)
+        else:
+            assignment.client_id = target.id.value
+            tag_ids.add(assignment.tag_id)
+            tag_count += 1
+    if tag_count:
+        transferred["tags"] = tag_count
+
+    related_tables = (
+        "contracts",
+        "activities",
+        "documents",
+        "kpi_assignments",
+        "care_callback_campaigns",
+        "cases",
+        "critical_incidents",
+        "eligible_members",
+        "engagements",
+        "survey_campaigns",
+    )
+    for table_name in related_tables:
+        table = ClientModel.metadata.tables.get(table_name)
+        if table is None or "client_id" not in table.c:
+            continue
+        result = await db.execute(
+            update(table)
+            .where(table.c.client_id == source.id, table.c.tenant_id == target.tenant_id.value)
+            .values(client_id=target.id.value)
+        )
+        if result.rowcount:
+            transferred[table_name] = int(result.rowcount)
+
+    # Client employees and platform staff keep their client association inside
+    # JSON profile fields rather than a relational client_id column. Re-point
+    # both fields so staff counts and person detail pages follow the merge.
+    people_result = await db.execute(
+        select(PersonModel).where(
+            PersonModel.tenant_id == target.tenant_id.value,
+            PersonModel.deleted_at.is_(None),
+            or_(
+                PersonModel.employment_info["client_id"].as_string() == source.id,
+                PersonModel.staff_info["client_id"].as_string() == source.id,
+            ),
+        )
+    )
+    people_transferred = 0
+    for person in people_result.scalars().all():
+        person_changed = False
+        for field in ("employment_info", "staff_info"):
+            profile = getattr(person, field)
+            if isinstance(profile, dict) and profile.get("client_id") == source.id:
+                setattr(person, field, {**profile, "client_id": target.id.value})
+                person_changed = True
+        if person_changed:
+            people_transferred += 1
+    if people_transferred:
+        transferred["staff"] = people_transferred
+
+    await db.execute(
+        update(ClientModel)
+        .where(
+            ClientModel.tenant_id == target.tenant_id.value,
+            ClientModel.parent_client_id == source.id,
+            ClientModel.deleted_at.is_(None),
+        )
+        .values(parent_client_id=target.id.value)
+    )
+    if normalize_client_alias(source.name) != normalize_client_alias(target.name):
+        source_name_norm = normalize_client_alias(source.name)
+        existing_alias = await db.execute(
+            select(ClientAliasModel).where(
+                ClientAliasModel.tenant_id == target.tenant_id.value,
+                ClientAliasModel.normalized_alias == source_name_norm,
+            )
+        )
+        if source_name_norm not in alias_norms and existing_alias.scalar_one_or_none() is None:
+            db.add(
+                ClientAliasModel(
+                    id=generate_cuid(),
+                    tenant_id=target.tenant_id.value,
+                    client_id=target.id.value,
+                    alias=source.name,
+                    normalized_alias=source_name_norm,
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
+                )
+            )
+            transferred["aliases"] = transferred.get("aliases", 0) + 1
+        else:
+            conflicts.append(f"Canonical name '{source.name}' already exists as an alias")
+
+    source.status = BaseStatus.ARCHIVED
+    source.updated_at = utc_now()
+    await db.flush()
+    merged = await client_repo.get_by_id(target.id)
+    if not merged:
+        raise HTTPException(status_code=404, detail="Merged client could not be reloaded")
+    merged_aliases = await db.execute(
+        select(ClientAliasModel.alias).where(
+            ClientAliasModel.tenant_id == target.tenant_id.value,
+            ClientAliasModel.client_id == target.id.value,
+        )
+    )
+    merged.aliases = list(merged_aliases.scalars().all())
+    await audit_change(merged, audit_handler, current_user, request)
+    return ClientMergeResponse(
+        client=_to_client_response(merged),
+        source_client_id=source.id,
+        transferred=transferred,
+        conflicts=conflicts,
+    )
+
+
+@router.get(
     "/",
     response_model=ClientListResponse,
     summary="List clients with filtering and pagination",
@@ -579,8 +1071,14 @@ async def list_clients(
         search=search,
     )
 
+    metrics = await _client_list_metrics(db, tenant_id, [client.id.value for client in clients])
+    response_items = [
+        _to_client_response(client).model_copy(update=metrics[client.id.value])
+        for client in clients
+    ]
+
     return ClientListResponse(
-        items=[_to_client_response(client) for client in clients],
+        items=response_items,
         total=total,
         page=pg.page,
         limit=pg.limit,

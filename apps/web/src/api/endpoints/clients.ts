@@ -78,6 +78,29 @@ export interface ClientListParams extends ListParams {
   include_archived?: boolean
 }
 
+export interface ClientSavedView {
+  id: string
+  tenant_id: string
+  name: string
+  filters: {
+    search?: string | null
+    tier?: ClientTier | null
+    archived: boolean
+    parent_client_id?: string | null
+  }
+  created_by: string
+  is_shared: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ClientDuplicateCandidate {
+  first: { id: string; name: string; code: string; contact_email?: string | null }
+  second: { id: string; name: string; code: string; contact_email?: string | null }
+  reason: string
+  similarity: number
+}
+
 export const clientsApi = {
   /**
    * Create a new client
@@ -98,6 +121,48 @@ export const clientsApi = {
    */
   async list(params?: ClientListParams): Promise<PaginatedResponse<Client>> {
     return apiClient.get<PaginatedResponse<Client>>("/clients", params)
+  },
+
+  async listViews(): Promise<{ items: ClientSavedView[]; total: number }> {
+    return apiClient.get<{ items: ClientSavedView[]; total: number }>("/clients/views")
+  },
+
+  async saveView(data: {
+    name: string
+    filters: ClientSavedView["filters"]
+    is_shared: boolean
+  }): Promise<ClientSavedView> {
+    return apiClient.post<ClientSavedView>("/clients/views", data)
+  },
+
+  async deleteView(viewId: string): Promise<void> {
+    await apiClient.delete(`/clients/views/${viewId}`)
+  },
+
+  async scanDuplicates(): Promise<{
+    items: ClientDuplicateCandidate[]
+    scanned: number
+  }> {
+    return apiClient.get("/clients/duplicates")
+  },
+
+  async mergeDuplicate(
+    targetClientId: string,
+    sourceClientId: string,
+  ): Promise<{
+    client: Client
+    source_client_id: string
+    transferred: Record<string, number>
+    conflicts: string[]
+  }> {
+    return apiClient.post<{
+      client: Client
+      source_client_id: string
+      transferred: Record<string, number>
+      conflicts: string[]
+    }>(`/clients/${targetClientId}/merge`, {
+      source_client_id: sourceClientId,
+    })
   },
 
   async importCsv(

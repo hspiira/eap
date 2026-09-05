@@ -1740,6 +1740,87 @@
         "title": "ClientDeactivateRequest",
         "type": "object"
       },
+      "ClientDuplicateCandidate": {
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/ClientDuplicateClient"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "second": {
+            "$ref": "#/components/schemas/ClientDuplicateClient"
+          },
+          "similarity": {
+            "title": "Similarity",
+            "type": "number"
+          }
+        },
+        "required": [
+          "first",
+          "second",
+          "reason",
+          "similarity"
+        ],
+        "title": "ClientDuplicateCandidate",
+        "type": "object"
+      },
+      "ClientDuplicateClient": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code"
+        ],
+        "title": "ClientDuplicateClient",
+        "type": "object"
+      },
+      "ClientDuplicateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClientDuplicateCandidate"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "scanned": {
+            "title": "Scanned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "scanned"
+        ],
+        "title": "ClientDuplicateListResponse",
+        "type": "object"
+      },
       "ClientImportCreated": {
         "description": "Identity assigned to an imported client.",
         "properties": {
@@ -2109,9 +2190,69 @@
         "title": "ClientListResponse",
         "type": "object"
       },
+      "ClientMergeRequest": {
+        "properties": {
+          "source_client_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Source Client Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_client_id"
+        ],
+        "title": "ClientMergeRequest",
+        "type": "object"
+      },
+      "ClientMergeResponse": {
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/ClientResponse"
+          },
+          "conflicts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflicts",
+            "type": "array"
+          },
+          "source_client_id": {
+            "title": "Source Client Id",
+            "type": "string"
+          },
+          "transferred": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Transferred",
+            "type": "object"
+          }
+        },
+        "required": [
+          "client",
+          "source_client_id",
+          "transferred",
+          "conflicts"
+        ],
+        "title": "ClientMergeResponse",
+        "type": "object"
+      },
       "ClientResponse": {
         "description": "Response schema for client.",
         "properties": {
+          "active_contracts_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active contracts on the client",
+            "title": "Active Contracts Count"
+          },
           "aliases": {
             "description": "Alternative client names",
             "items": {
@@ -2167,10 +2308,34 @@
             "title": "Is Verified",
             "type": "boolean"
           },
+          "last_activity_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Most recent client activity",
+            "title": "Last Activity At"
+          },
           "name": {
             "description": "Client name",
             "title": "Name",
             "type": "string"
+          },
+          "next_renewal_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Next active contract renewal date",
+            "title": "Next Renewal Date"
           },
           "parent_client_id": {
             "anyOf": [
@@ -2194,6 +2359,18 @@
               }
             ],
             "description": "Preferred contact method"
+          },
+          "staff_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client employees on the client",
+            "title": "Staff Count"
           },
           "status": {
             "$ref": "#/components/schemas/BaseStatus",
@@ -2239,6 +2416,145 @@
           "is_active"
         ],
         "title": "ClientResponse",
+        "type": "object"
+      },
+      "ClientSavedViewCreate": {
+        "description": "Create a named client list view.",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/ClientSavedViewFilters"
+          },
+          "is_shared": {
+            "default": false,
+            "title": "Is Shared",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "filters"
+        ],
+        "title": "ClientSavedViewCreate",
+        "type": "object"
+      },
+      "ClientSavedViewFilters": {
+        "description": "Filters captured by a client list view.",
+        "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "parent_client_id": {
+            "anyOf": [
+              {
+                "maxLength": 25,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Client Id"
+          },
+          "search": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientTier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ClientSavedViewFilters",
+        "type": "object"
+      },
+      "ClientSavedViewListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClientSavedViewResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ClientSavedViewListResponse",
+        "type": "object"
+      },
+      "ClientSavedViewResponse": {
+        "description": "A client list view visible to its owner or tenant users when shared.",
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ClientSavedViewFilters"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_shared": {
+            "title": "Is Shared",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "name",
+          "filters",
+          "created_by",
+          "is_shared",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ClientSavedViewResponse",
         "type": "object"
       },
       "ClientStatsResponse": {
@@ -2589,6 +2905,18 @@
               }
             ],
             "description": "Contact information"
+          },
+          "contact_person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the main contact person",
+            "title": "Contact Person Name"
           },
           "industry_id": {
             "anyOf": [
@@ -15551,6 +15879,54 @@
         ]
       }
     },
+    "/clients/duplicates": {
+      "get": {
+        "description": "Find close names and repeated contact emails for an explicit review.",
+        "operationId": "scan_client_duplicates_clients_duplicates_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDuplicateListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Scan the tenant client list for likely duplicates",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
     "/clients/export": {
       "get": {
         "description": "Export the tenant's matching clients without exposing other tenants.",
@@ -16098,6 +16474,140 @@
           }
         ],
         "summary": "Get client by name",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/views": {
+      "get": {
+        "description": "Return the user's views and views shared by other users in the tenant.",
+        "operationId": "list_client_views_clients_views_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSavedViewListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List client views visible to the current user",
+        "tags": [
+          "clients"
+        ]
+      },
+      "post": {
+        "description": "Create a tenant-scoped saved view.",
+        "operationId": "create_client_view_clients_views_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientSavedViewCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSavedViewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save a client list view",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/views/{view_id}": {
+      "delete": {
+        "description": "Delete a view owned by the current user.",
+        "operationId": "delete_client_view_clients_views__view_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "view_id",
+            "required": true,
+            "schema": {
+              "title": "View Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a client list view",
         "tags": [
           "clients"
         ]
@@ -16681,6 +17191,64 @@
           }
         ],
         "summary": "Deactivate a client",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/{client_id}/merge": {
+      "post": {
+        "description": "Move operational records to the target and archive the source client.",
+        "operationId": "merge_client_clients__client_id__merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMergeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Merge a duplicate client into this client",
         "tags": [
           "clients"
         ]

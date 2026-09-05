@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
@@ -11,10 +11,15 @@ import {
   FileUp,
   MoreHorizontal,
   Plus,
+  ScanSearch,
 } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
-import { clientsApi } from "@/api/endpoints/clients"
+import {
+  type ClientDuplicateCandidate,
+  clientsApi,
+  type ClientSavedView,
+} from "@/api/endpoints/clients"
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
@@ -29,6 +34,13 @@ import { ROW_BORDER } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,9 +62,10 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDateTime, formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
-import { type ClientSavedView, clientViewsStorage } from "@/lib/storage"
+import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
 import { ClientTier, TenantRole } from "@/types/enums"
 
@@ -87,6 +100,10 @@ const COLUMNS: ListColumn[] = [
   { header: "Tier", sortField: "tier" },
   { header: "Status", sortField: "status" },
   { header: "Contact", className: "text-fg/65" },
+  { header: "Contracts", className: "text-fg/65" },
+  { header: "Staff", className: "text-fg/65" },
+  { header: "Last activity", className: "text-fg/65" },
+  { header: "Renewal", className: "text-fg/65" },
 ]
 
 function ClientsListPage() {
@@ -113,40 +130,67 @@ function ClientsListPage() {
   const toast = useToast()
   const canWrite = useCanWrite()
   const currentRole = useCurrentRole()
+  const currentUserId = useAuthStore((state) => state.user_id)
   const canArchive = currentRole === TenantRole.ADMIN
   const [editing, setEditing] = useState<Client | null>(null)
   const [archiving, setArchiving] = useState<Client | null>(null)
   const [archiveLoading, setArchiveLoading] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-  const [savedViews, setSavedViews] = useState<ClientSavedView[]>(() => clientViewsStorage.read())
+  const [savedViews, setSavedViews] = useState<ClientSavedView[]>([])
   const [bulkTagId, setBulkTagId] = useState("")
+  const [duplicatesOpen, setDuplicatesOpen] = useState(false)
+  const [mergeSelection, setMergeSelection] = useState<{
+    targetId: string
+    targetName: string
+    sourceId: string
+    sourceName: string
+  } | null>(null)
+  const [mergeLoading, setMergeLoading] = useState(false)
+
+  const savedViewsQuery = useQuery({
+    queryKey: ["client-views"],
+    queryFn: clientsApi.listViews,
+  })
+  const duplicatesQuery = useQuery({
+    queryKey: ["client-duplicates"],
+    queryFn: clientsApi.scanDuplicates,
+    enabled: false,
+  })
+
+  useEffect(() => {
+    setSavedViews(savedViewsQuery.data?.items ?? [])
+  }, [savedViewsQuery.data])
 
   const saveCurrentView = () => {
     const name = window.prompt("Name this client view")?.trim()
     if (!name) return
-    const view: ClientSavedView = {
-      id: `${Date.now()}`,
-      name,
-      search: activeSearch,
-      tier: activeTier,
-      archived: includeArchived,
-      parent_client_id: activeParentClientId,
-    }
-    const next = [...savedViews.filter((item) => item.name !== name), view]
-    setSavedViews(next)
-    clientViewsStorage.write(next)
-    toast.showSuccess("Client view saved")
+    void clientsApi
+      .saveView({
+        name,
+        filters: {
+          search: activeSearch ?? null,
+          tier: activeTier ?? null,
+          archived: includeArchived,
+          parent_client_id: activeParentClientId ?? null,
+        },
+        is_shared: window.confirm("Share this view with other users in your tenant?"),
+      })
+      .then(() => {
+        toast.showSuccess("Client view saved")
+        return savedViewsQuery.refetch()
+      })
+      .catch((err) => toast.showError(normalizeErrorMessage(err, "Could not save this view")))
   }
 
   const applyView = (view: ClientSavedView) => {
-    setSearchInput(view.search ?? "")
+    setSearchInput(view.filters.search ?? "")
     navigate({
       search: (prev) => ({
         ...prev,
-        search: view.search,
-        tier: view.tier as ClientTier | undefined,
-        archived: view.archived || undefined,
-        parent_client_id: view.parent_client_id,
+        search: view.filters.search ?? undefined,
+        tier: view.filters.tier ?? undefined,
+        archived: view.filters.archived || undefined,
+        parent_client_id: view.filters.parent_client_id ?? undefined,
       }),
       replace: true,
     })
@@ -154,9 +198,33 @@ function ClientsListPage() {
   }
 
   const removeView = (id: string) => {
-    const next = savedViews.filter((view) => view.id !== id)
-    setSavedViews(next)
-    clientViewsStorage.write(next)
+    void clientsApi
+      .deleteView(id)
+      .then(() => savedViewsQuery.refetch())
+      .catch((err) => toast.showError(normalizeErrorMessage(err, "Could not remove this view")))
+  }
+
+  const scanDuplicates = () => {
+    setDuplicatesOpen(true)
+    void duplicatesQuery.refetch()
+  }
+
+  const mergeDuplicate = async () => {
+    if (!mergeSelection) return
+    setMergeLoading(true)
+    try {
+      await clientsApi.mergeDuplicate(mergeSelection.targetId, mergeSelection.sourceId)
+      toast.showSuccess(`${mergeSelection.sourceName} merged into ${mergeSelection.targetName}`)
+      setMergeSelection(null)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["clients"] }),
+        duplicatesQuery.refetch(),
+      ])
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, "Could not merge these clients"))
+    } finally {
+      setMergeLoading(false)
+    }
   }
 
   const download = useCallback(
@@ -229,15 +297,27 @@ function ClientsListPage() {
       title="Clients"
       actions={
         <>
+          {canWrite ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2"
+              onClick={saveCurrentView}
+            >
+              <Bookmark className="size-3.5" />
+              Save view
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="h-7 gap-1.5 px-2"
-            onClick={saveCurrentView}
+            onClick={scanDuplicates}
           >
-            <Bookmark className="size-3.5" />
-            Save view
+            <ScanSearch className="size-3.5" />
+            Find duplicates
           </Button>
           {savedViews.length > 0 ? (
             <DropdownMenu>
@@ -252,12 +332,21 @@ function ClientsListPage() {
                     {view.name}
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuSeparator />
-                {savedViews.map((view) => (
-                  <DropdownMenuItem key={`remove-${view.id}`} onSelect={() => removeView(view.id)}>
-                    Remove &ldquo;{view.name}&rdquo;
-                  </DropdownMenuItem>
-                ))}
+                {savedViews.some((view) => view.created_by === currentUserId) ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    {savedViews
+                      .filter((view) => view.created_by === currentUserId)
+                      .map((view) => (
+                        <DropdownMenuItem
+                          key={`remove-${view.id}`}
+                          onSelect={() => removeView(view.id)}
+                        >
+                          Remove &ldquo;{view.name}&rdquo;
+                        </DropdownMenuItem>
+                      ))}
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -352,6 +441,42 @@ function ClientsListPage() {
       />
 
       <ClientFormSheet open={addModalOpen} onOpenChange={setAddModalOpen} />
+
+      <DuplicateScanDialog
+        open={duplicatesOpen}
+        onOpenChange={setDuplicatesOpen}
+        loading={duplicatesQuery.isFetching}
+        scanned={duplicatesQuery.data?.scanned ?? 0}
+        items={duplicatesQuery.data?.items ?? []}
+        onMerge={
+          canWrite
+            ? (target, source) =>
+                setMergeSelection({
+                  targetId: target.id,
+                  targetName: target.name,
+                  sourceId: source.id,
+                  sourceName: source.name,
+                })
+            : undefined
+        }
+      />
+
+      <ConfirmDialog
+        open={mergeSelection !== null}
+        onOpenChange={(open) => {
+          if (!open) setMergeSelection(null)
+        }}
+        title="Merge duplicate clients"
+        description={
+          mergeSelection
+            ? `${mergeSelection.sourceName} will be archived and its contacts, contracts, activities, documents, tags, and aliases will move to ${mergeSelection.targetName}.`
+            : ""
+        }
+        confirmLabel="Merge clients"
+        destructive
+        loading={mergeLoading}
+        onConfirm={mergeDuplicate}
+      />
 
       <ClientFormSheet
         open={editing !== null}
@@ -503,6 +628,87 @@ function ClientsListPage() {
   )
 }
 
+function DuplicateScanDialog({
+  open,
+  onOpenChange,
+  loading,
+  scanned,
+  items,
+  onMerge,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  loading: boolean
+  scanned: number
+  items: ClientDuplicateCandidate[]
+  onMerge?: (
+    target: ClientDuplicateCandidate["first"],
+    source: ClientDuplicateCandidate["second"],
+  ) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Possible duplicate clients</DialogTitle>
+          <DialogDescription>
+            {loading
+              ? "Scanning the client list…"
+              : `${items.length} possible matches in ${scanned} clients.`}
+          </DialogDescription>
+        </DialogHeader>
+        {!loading && items.length === 0 ? (
+          <p className="text-sm text-fg-muted">No likely duplicates found.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div key={`${item.first.id}-${item.second.id}`} className="rounded-md border p-3">
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                  <DuplicateClientCard client={item.first} />
+                  <span className="text-center text-xs text-fg-muted">{item.reason}</span>
+                  <DuplicateClientCard client={item.second} />
+                </div>
+                {onMerge ? (
+                  <div className="mt-3 flex flex-wrap justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onMerge(item.first, item.second)}
+                    >
+                      Keep {item.first.name}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onMerge(item.second, item.first)}
+                    >
+                      Keep {item.second.name}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DuplicateClientCard({ client }: { client: ClientDuplicateCandidate["first"] }) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-sm font-medium text-fg">{client.name}</p>
+      <p className="text-xs text-fg-muted">
+        {client.code}
+        {client.contact_email ? ` · ${client.contact_email}` : ""}
+      </p>
+    </div>
+  )
+}
+
 function ClientRow({
   row,
   isSelected,
@@ -562,6 +768,18 @@ function ClientRow({
         ) : (
           <span className="text-fg-subtle">-</span>
         )}
+      </TableCell>
+      <TableCell className="text-xs text-fg/70">
+        {row.active_contracts_count == null ? "-" : row.active_contracts_count}
+      </TableCell>
+      <TableCell className="text-xs text-fg/70">
+        {row.staff_count == null ? "-" : row.staff_count}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDateTime(row.last_activity_at)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDay(row.next_renewal_date)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

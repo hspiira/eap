@@ -926,6 +926,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clients/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Scan the tenant client list for likely duplicates
+         * @description Find close names and repeated contact emails for an explicit review.
+         */
+        get: operations["scan_client_duplicates_clients_duplicates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clients/export": {
         parameters: {
             query?: never;
@@ -1065,6 +1085,50 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List client views visible to the current user
+         * @description Return the user's views and views shared by other users in the tenant.
+         */
+        get: operations["list_client_views_clients_views_get"];
+        put?: never;
+        /**
+         * Save a client list view
+         * @description Create a tenant-scoped saved view.
+         */
+        post: operations["create_client_view_clients_views_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/views/{view_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a client list view
+         * @description Delete a view owned by the current user.
+         */
+        delete: operations["delete_client_view_clients_views__view_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1248,6 +1312,26 @@ export interface paths {
          * @description Deactivate a client.
          */
         post: operations["deactivate_client_clients__client_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clients/{client_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge a duplicate client into this client
+         * @description Move operational records to the target and archive the source client.
+         */
+        post: operations["merge_client_clients__client_id__merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5818,6 +5902,33 @@ export interface components {
              */
             reason?: string | null;
         };
+        /** ClientDuplicateCandidate */
+        ClientDuplicateCandidate: {
+            first: components["schemas"]["ClientDuplicateClient"];
+            /** Reason */
+            reason: string;
+            second: components["schemas"]["ClientDuplicateClient"];
+            /** Similarity */
+            similarity: number;
+        };
+        /** ClientDuplicateClient */
+        ClientDuplicateClient: {
+            /** Code */
+            code: string;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** ClientDuplicateListResponse */
+        ClientDuplicateListResponse: {
+            /** Items */
+            items: components["schemas"]["ClientDuplicateCandidate"][];
+            /** Scanned */
+            scanned: number;
+        };
         /**
          * ClientImportCreated
          * @description Identity assigned to an imported client.
@@ -5984,11 +6095,33 @@ export interface components {
              */
             total: number;
         };
+        /** ClientMergeRequest */
+        ClientMergeRequest: {
+            /** Source Client Id */
+            source_client_id: string;
+        };
+        /** ClientMergeResponse */
+        ClientMergeResponse: {
+            client: components["schemas"]["ClientResponse"];
+            /** Conflicts */
+            conflicts: string[];
+            /** Source Client Id */
+            source_client_id: string;
+            /** Transferred */
+            transferred: {
+                [key: string]: number;
+            };
+        };
         /**
          * ClientResponse
          * @description Response schema for client.
          */
         ClientResponse: {
+            /**
+             * Active Contracts Count
+             * @description Active contracts on the client
+             */
+            active_contracts_count?: number | null;
             /**
              * Aliases
              * @description Alternative client names
@@ -6024,10 +6157,20 @@ export interface components {
              */
             is_verified: boolean;
             /**
+             * Last Activity At
+             * @description Most recent client activity
+             */
+            last_activity_at?: string | null;
+            /**
              * Name
              * @description Client name
              */
             name: string;
+            /**
+             * Next Renewal Date
+             * @description Next active contract renewal date
+             */
+            next_renewal_date?: string | null;
             /**
              * Parent Client Id
              * @description Parent client identifier
@@ -6035,6 +6178,11 @@ export interface components {
             parent_client_id?: string | null;
             /** @description Preferred contact method */
             preferred_contact_method?: components["schemas"]["ContactMethod"] | null;
+            /**
+             * Staff Count
+             * @description Client employees on the client
+             */
+            staff_count?: number | null;
             /** @description Client status */
             status: components["schemas"]["BaseStatus"];
             /**
@@ -6049,6 +6197,64 @@ export interface components {
             tenant_id: string;
             /** @description Engagement tier (A/B/C) */
             tier?: components["schemas"]["ClientTier"] | null;
+        };
+        /**
+         * ClientSavedViewCreate
+         * @description Create a named client list view.
+         */
+        ClientSavedViewCreate: {
+            filters: components["schemas"]["ClientSavedViewFilters"];
+            /**
+             * Is Shared
+             * @default false
+             */
+            is_shared: boolean;
+            /** Name */
+            name: string;
+        };
+        /**
+         * ClientSavedViewFilters
+         * @description Filters captured by a client list view.
+         */
+        ClientSavedViewFilters: {
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Parent Client Id */
+            parent_client_id?: string | null;
+            /** Search */
+            search?: string | null;
+            tier?: components["schemas"]["ClientTier"] | null;
+        };
+        /** ClientSavedViewListResponse */
+        ClientSavedViewListResponse: {
+            /** Items */
+            items: components["schemas"]["ClientSavedViewResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ClientSavedViewResponse
+         * @description A client list view visible to its owner or tenant users when shared.
+         */
+        ClientSavedViewResponse: {
+            /** Created At */
+            created_at: string;
+            /** Created By */
+            created_by: string;
+            filters: components["schemas"]["ClientSavedViewFilters"];
+            /** Id */
+            id: string;
+            /** Is Shared */
+            is_shared: boolean;
+            /** Name */
+            name: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Updated At */
+            updated_at: string;
         };
         /**
          * ClientStatsResponse
@@ -6264,6 +6470,11 @@ export interface components {
             billing_address?: components["schemas"]["AddressCreate"] | null;
             /** @description Contact information */
             contact_info?: components["schemas"]["ContactInfoCreate"] | null;
+            /**
+             * Contact Person Name
+             * @description Name of the main contact person
+             */
+            contact_person_name?: string | null;
             /**
              * Industry Id
              * @description Industry identifier
@@ -12656,6 +12867,37 @@ export interface operations {
             };
         };
     };
+    scan_client_duplicates_clients_duplicates_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDuplicateListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_clients_clients_export_get: {
         parameters: {
             query: {
@@ -12914,6 +13156,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ClientResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_client_views_clients_views_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientSavedViewListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_client_view_clients_views_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientSavedViewCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientSavedViewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_client_view_clients_views__view_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                view_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -13256,6 +13591,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_client_clients__client_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientMergeResponse"];
                 };
             };
             /** @description Validation Error */

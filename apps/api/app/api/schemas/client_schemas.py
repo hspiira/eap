@@ -103,6 +103,9 @@ class ClientUpdate(BaseModel):
     )
     tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
     contact_info: ContactInfoCreate | None = Field(None, description="Contact information")
+    contact_person_name: OptionalSanitizedStr = Field(
+        None, description="Name of the main contact person"
+    )
     billing_address: AddressCreate | None = Field(None, description="Billing address")
     industry_id: str | None = Field(None, description="Industry identifier")
 
@@ -175,6 +178,10 @@ class ClientResponse(BaseModel):
     suspension_reason: str | None = Field(None, description="Reason for suspension")
     aliases: list[str] = Field(default_factory=list, description="Alternative client names")
     is_active: bool = Field(..., description="Whether client is active")
+    active_contracts_count: int | None = Field(None, description="Active contracts on the client")
+    staff_count: int | None = Field(None, description="Client employees on the client")
+    last_activity_at: str | None = Field(None, description="Most recent client activity")
+    next_renewal_date: str | None = Field(None, description="Next active contract renewal date")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -187,6 +194,71 @@ class ClientListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     limit: int = Field(..., description="Items per page")
     has_more: bool = Field(..., description="Whether there are more items")
+
+
+class ClientSavedViewFilters(BaseModel):
+    """Filters captured by a client list view."""
+
+    search: OptionalSanitizedStr = None
+    tier: ClientTier | None = None
+    archived: bool = False
+    parent_client_id: str | None = Field(None, max_length=25)
+
+
+class ClientSavedViewCreate(BaseModel):
+    """Create a named client list view."""
+
+    name: SanitizedStr = Field(..., min_length=1, max_length=120)
+    filters: ClientSavedViewFilters
+    is_shared: bool = False
+
+
+class ClientSavedViewResponse(BaseModel):
+    """A client list view visible to its owner or tenant users when shared."""
+
+    id: str
+    tenant_id: str
+    name: str
+    filters: ClientSavedViewFilters
+    created_by: str
+    is_shared: bool
+    created_at: str
+    updated_at: str
+
+
+class ClientSavedViewListResponse(BaseModel):
+    items: list[ClientSavedViewResponse]
+    total: int
+
+
+class ClientDuplicateClient(BaseModel):
+    id: str
+    name: str
+    code: str
+    contact_email: str | None = None
+
+
+class ClientDuplicateCandidate(BaseModel):
+    first: ClientDuplicateClient
+    second: ClientDuplicateClient
+    reason: str
+    similarity: float
+
+
+class ClientDuplicateListResponse(BaseModel):
+    items: list[ClientDuplicateCandidate]
+    scanned: int
+
+
+class ClientMergeRequest(BaseModel):
+    source_client_id: str = Field(..., min_length=1, max_length=25)
+
+
+class ClientMergeResponse(BaseModel):
+    client: ClientResponse
+    source_client_id: str
+    transferred: dict[str, int]
+    conflicts: list[str]
 
 
 class ClientImportIssue(BaseModel):

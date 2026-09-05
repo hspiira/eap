@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { useQuery } from "@tanstack/react-query"
@@ -7,6 +7,7 @@ import { Controller, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { contactsApi } from "@/api/endpoints/contacts"
 import { industriesApi } from "@/api/endpoints/industries"
 import type { ClientCreate, ClientUpdate } from "@/api/generated"
 import { FormField } from "@/components/common/FormField"
@@ -131,85 +132,101 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
   })
   const industryOptions = industriesPage?.items ?? []
 
-  const { register, control, formState, submit, serverError, isEdit } = useEntityFormSheet<
-    ClientFormValues,
-    ClientCreate & { __tier?: ClientTier | null },
-    Client,
-    Client
-  >({
-    resource: "clients",
-    schema: clientSchema,
-    defaultValues: EMPTY,
-    open,
-    onOpenChange,
-    entity: client,
-    toFormValues: (c) => ({
-      name: c.name,
-      code: c.code,
-      tier: c.tier ?? "",
-      billing_address_different: !!c.billing_address,
-      preferred_contact_method: c.preferred_contact_method ?? "",
-      contact_person_name: "",
-      email: c.contact_info?.email ?? "",
-      phone: c.contact_info?.phone ?? "",
-      address: c.contact_info?.address ?? "",
-      billing_street: c.billing_address?.street ?? "",
-      billing_city: c.billing_address?.city ?? "",
-      billing_postal: c.billing_address?.postal_code ?? "",
-      billing_country: c.billing_address?.country ?? "",
-      industry_id: c.industry_id ?? "",
-    }),
-    parsePayload: (values) => ({
-      name: values.name,
-      code: values.code,
-      contact_info: {
-        email: values.email || null,
-        phone: values.phone || null,
-        address: values.address || null,
-      },
-      contact_person_name: values.contact_person_name || null,
-      billing_address:
-        values.billing_address_different &&
-        values.billing_street &&
-        values.billing_city &&
-        values.billing_country
-          ? {
-              street: values.billing_street,
-              city: values.billing_city,
-              country: values.billing_country,
-              postal_code: values.billing_postal || null,
-            }
+  const { register, control, formState, submit, serverError, isEdit, setValue } =
+    useEntityFormSheet<
+      ClientFormValues,
+      ClientCreate & { __tier?: ClientTier | null },
+      Client,
+      Client
+    >({
+      resource: "clients",
+      schema: clientSchema,
+      defaultValues: EMPTY,
+      open,
+      onOpenChange,
+      entity: client,
+      toFormValues: (c) => ({
+        name: c.name,
+        code: c.code,
+        tier: c.tier ?? "",
+        billing_address_different: !!c.billing_address,
+        preferred_contact_method: c.preferred_contact_method ?? "",
+        contact_person_name: "",
+        email: c.contact_info?.email ?? "",
+        phone: c.contact_info?.phone ?? "",
+        address: c.contact_info?.address ?? "",
+        billing_street: c.billing_address?.street ?? "",
+        billing_city: c.billing_address?.city ?? "",
+        billing_postal: c.billing_address?.postal_code ?? "",
+        billing_country: c.billing_address?.country ?? "",
+        industry_id: c.industry_id ?? "",
+      }),
+      parsePayload: (values) => ({
+        name: values.name,
+        code: values.code,
+        contact_info: {
+          email: values.email || null,
+          phone: values.phone || null,
+          address: values.address || null,
+        },
+        contact_person_name: values.contact_person_name || null,
+        billing_address:
+          values.billing_address_different &&
+          values.billing_street &&
+          values.billing_city &&
+          values.billing_country
+            ? {
+                street: values.billing_street,
+                city: values.billing_city,
+                country: values.billing_country,
+                postal_code: values.billing_postal || null,
+              }
+            : null,
+        industry_id: values.industry_id || null,
+        preferred_contact_method: values.preferred_contact_method
+          ? (values.preferred_contact_method as ContactMethod)
           : null,
-      industry_id: values.industry_id || null,
-      preferred_contact_method: values.preferred_contact_method
-        ? (values.preferred_contact_method as ContactMethod)
-        : null,
-      __tier: values.tier ? (values.tier as ClientTier) : null,
-    }),
-    save: async ({ payload, entity, isEdit }) => {
-      const { __tier, ...createPayload } = payload
-      let saved: Client
-      if (isEdit && entity) {
-        const update: ClientUpdate = {
-          name: createPayload.name,
-          contact_info: createPayload.contact_info,
-          billing_address: createPayload.billing_address,
-          industry_id: createPayload.industry_id,
-          preferred_contact_method: createPayload.preferred_contact_method,
-          tier: __tier,
+        __tier: values.tier ? (values.tier as ClientTier) : null,
+      }),
+      save: async ({ payload, entity, isEdit }) => {
+        const { __tier, ...createPayload } = payload
+        let saved: Client
+        if (isEdit && entity) {
+          const update: ClientUpdate = {
+            name: createPayload.name,
+            contact_info: createPayload.contact_info,
+            contact_person_name: createPayload.contact_person_name,
+            billing_address: createPayload.billing_address,
+            industry_id: createPayload.industry_id,
+            preferred_contact_method: createPayload.preferred_contact_method,
+            tier: __tier,
+          }
+          saved = await clientsApi.update(entity.id, update)
+        } else {
+          saved = await clientsApi.create(createPayload)
+          if (__tier) {
+            saved = await clientsApi.setTier(saved.id, __tier)
+          }
         }
-        saved = await clientsApi.update(entity.id, update)
-      } else {
-        saved = await clientsApi.create(createPayload)
-        if (__tier) {
-          saved = await clientsApi.setTier(saved.id, __tier)
-        }
-      }
-      return saved
-    },
-    successToast: { create: "Client created", update: "Client updated" },
-    onSaved,
+        return saved
+      },
+      successToast: { create: "Client created", update: "Client updated" },
+      onSaved,
+    })
+
+  const contactsQuery = useQuery({
+    queryKey: ["contacts", "client", client?.id],
+    queryFn: () => contactsApi.byClient(client!.id),
+    enabled: open && isEdit && Boolean(client?.id),
   })
+
+  const primaryContactName = contactsQuery.data?.find((contact) => contact.is_primary)?.name ?? ""
+
+  useEffect(() => {
+    if (open && isEdit && contactsQuery.isSuccess) {
+      setValue("contact_person_name", primaryContactName)
+    }
+  }, [contactsQuery.isSuccess, isEdit, open, primaryContactName, setValue])
 
   const billingAddressDifferent = useWatch({ control, name: "billing_address_different" })
 
@@ -383,19 +400,17 @@ export function ClientFormSheet({ open, onOpenChange, client, onSaved }: ClientF
         title="Contact details"
         description="Add the organisation’s contact details and, when creating a client, the contact person’s name."
       >
-        {!isEdit ? (
-          <FormField
-            label="Contact person name"
-            error={errors.contact_person_name?.message}
-            htmlFor="cs-contact-person-name"
-          >
-            <Input
-              id="cs-contact-person-name"
-              placeholder="e.g. Doreen Muwulya"
-              {...register("contact_person_name")}
-            />
-          </FormField>
-        ) : null}
+        <FormField
+          label="Contact person name"
+          error={errors.contact_person_name?.message}
+          htmlFor="cs-contact-person-name"
+        >
+          <Input
+            id="cs-contact-person-name"
+            placeholder="e.g. Doreen Muwulya"
+            {...register("contact_person_name")}
+          />
+        </FormField>
         <FormField label="Email" error={errors.email?.message} htmlFor="cs-email">
           <Input id="cs-email" type="email" placeholder="contact@acme.com" {...register("email")} />
         </FormField>
