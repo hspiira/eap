@@ -439,10 +439,28 @@ redeclaring it, as `routes/clients/index.tsx` now does.
 the user sees the wire form. This stayed invisible while values read as English, and became visible
 when they were corrected to the PascalCase forms the API accepts.
 
-Seven sites were live defects, showing `ClientEmployee` and `ShortTermCounselling` rather than
-"Client Employee" and "Short Term Counselling". Those are fixed by routing through
-`getStatusLabel`, with a test asserting no value of `PersonType` or `ServiceCategory` survives
+Six sites were live defects, showing `ClientEmployee` rather than "Client Employee". Those are
+fixed by routing through `getStatusLabel`, with a test asserting no value of `PersonType` survives
 labelling with a case boundary intact.
+
+**Correction, and one of the seven was my error.** I also routed `service.category` on the service
+detail page through `getStatusLabel`, on the stated grounds that it is a `ServiceCategory` enum
+holding PascalCase values. It is not. `service_model.py:41` declares it
+`Mapped[str | None] = mapped_column(String(100), nullable=True)`, free text, and the contract types
+it `{"anyOf": [{"type": "string"}, {"type": "null"}]}`, a plain string with no `$ref`. Labelling free
+text silently rewrites what a user typed: `eap` displayed as `Eap`, `wellness` as `Wellness`. That
+site now shows the value as entered.
+
+The confusion is real and worth knowing about, not just mine. There are two different fields spelled
+alike: `Service.category` is free text (`types/entities/delivery.ts:22`, `category?: string | null`),
+while `ProgrammeSessionCap.service_category` and `AuthorizationModel.service_category` are the
+`ServiceCategory` enum (`types/entities/clinical.ts:116`). Nothing links them, so a completed session
+cannot be mapped to the programme cap it consumes. That gap is logged separately in
+`apps/api/docs/SERVICES_MIGRATION.md`.
+
+The check that distinguishes them: an enum-backed field has a `$ref` in the contract and a CHECK
+constraint or enum column in the model. `person_type` has both, which is why the other six sites are
+correct. Confirm that before routing any field through a label helper.
 
 **What remains.** About thirty further raw renders exist across the app. Each is currently correct
 only because its enum happens to hold single-word values, so each is a latent defect that becomes
