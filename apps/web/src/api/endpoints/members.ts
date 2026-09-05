@@ -1,5 +1,5 @@
 import type { Member } from "@/types/entities"
-import type { EligibilityStatus, MemberRelation } from "@/types/enums"
+import type { EligibilityStatus, MemberGender, MemberRelation } from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse } from "../types"
@@ -9,11 +9,12 @@ export interface MemberCreateRequest {
   employer_member_id: string
   relation: MemberRelation
   primary_employee_member_id?: string | null
-  coverage_start?: string | null
-  coverage_end?: string | null
   work_email?: string | null
   personal_email?: string | null
-  display_label?: string | null
+  display_label: string
+  date_of_birth?: string | null
+  gender?: MemberGender | null
+  phone?: string | null
 }
 
 export type MemberUpdateRequest = Partial<Omit<MemberCreateRequest, "client_id">>

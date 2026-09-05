@@ -2,7 +2,7 @@
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
 from app.domain.value_objects.core import (
     ClientId,
     ClinicalSubjectId,
@@ -36,6 +36,9 @@ class EligibleMemberMapper:
             work_email=Email(model.work_email) if model.work_email else None,
             personal_email=Email(model.personal_email) if model.personal_email else None,
             display_label=model.display_label,
+            date_of_birth=model.date_of_birth,
+            gender=MemberGender(model.gender) if model.gender else None,
+            phone=model.phone,
             last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
             suspended_at=ensure_utc(model.suspended_at) if model.suspended_at else None,
             terminated_at=ensure_utc(model.terminated_at) if model.terminated_at else None,
@@ -65,6 +68,9 @@ class EligibleMemberMapper:
             work_email=entity.work_email.value if entity.work_email else None,
             personal_email=entity.personal_email.value if entity.personal_email else None,
             display_label=entity.display_label,
+            date_of_birth=entity.date_of_birth,
+            gender=entity.gender,
+            phone=entity.phone,
             last_imported_at=ensure_utc(entity.last_imported_at)
             if entity.last_imported_at
             else None,

@@ -93,7 +93,7 @@ The frontend connects to a FastAPI backend (same API locally and deployed). API 
 - Multi-tenant support
 - Authentication & authorization
 - Client management
-- Person management (employees, dependents, service providers)
+- Member management (client employees and beneficiaries)
 - Contract management
 - Service catalog and delivery
 - Document management

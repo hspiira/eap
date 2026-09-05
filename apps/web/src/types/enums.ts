@@ -250,6 +250,15 @@ export enum MemberRelation {
   DEPENDENT_OTHER = "DependentOther",
 }
 
+/** Optional member demographic values. */
+export enum MemberGender {
+  FEMALE = "Female",
+  MALE = "Male",
+  NON_BINARY = "NonBinary",
+  PREFER_NOT_TO_SAY = "PreferNotToSay",
+  UNKNOWN = "Unknown",
+}
+
 /**
  * Client tier: assigned by ops, drives reporting and SLA expectations.
  * Tier A = anchor/strategic, Tier B = standard, Tier C = transactional.

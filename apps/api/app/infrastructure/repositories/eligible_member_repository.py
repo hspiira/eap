@@ -57,6 +57,9 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.work_email = new_model.work_email
             existing.personal_email = new_model.personal_email
             existing.display_label = new_model.display_label
+            existing.date_of_birth = new_model.date_of_birth
+            existing.gender = new_model.gender
+            existing.phone = new_model.phone
             existing.last_imported_at = new_model.last_imported_at
             existing.suspended_at = new_model.suspended_at
             existing.terminated_at = new_model.terminated_at
@@ -140,6 +143,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
                     EligibleMemberModel.display_label.ilike(pattern),
                     EligibleMemberModel.work_email.ilike(pattern),
                     EligibleMemberModel.personal_email.ilike(pattern),
+                    EligibleMemberModel.phone.ilike(pattern),
                 )
             )
         return stmt

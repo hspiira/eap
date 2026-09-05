@@ -7789,7 +7789,7 @@
             "title": "Client Id",
             "type": "string"
           },
-          "coverage_end": {
+          "date_of_birth": {
             "anyOf": [
               {
                 "format": "date",
@@ -7799,19 +7799,7 @@
                 "type": "null"
               }
             ],
-            "title": "Coverage End"
-          },
-          "coverage_start": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage Start"
+            "title": "Date Of Birth"
           },
           "display_label": {
             "maxLength": 255,
@@ -7825,6 +7813,16 @@
             "title": "Employer Member Id",
             "type": "string"
           },
+          "gender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberGender"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "personal_email": {
             "anyOf": [
               {
@@ -7836,6 +7834,18 @@
               }
             ],
             "title": "Personal Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
           "primary_employee_member_id": {
             "anyOf": [
@@ -7909,6 +7919,18 @@
         "title": "MemberDuplicateListResponse",
         "type": "object"
       },
+      "MemberGender": {
+        "description": "Optional demographic value captured for member-facing wellness context.",
+        "enum": [
+          "Female",
+          "Male",
+          "NonBinary",
+          "PreferNotToSay",
+          "Unknown"
+        ],
+        "title": "MemberGender",
+        "type": "string"
+      },
       "MemberListResponse": {
         "properties": {
           "has_more": {
@@ -7963,34 +7985,22 @@
             "title": "Client Id",
             "type": "string"
           },
-          "coverage_end": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage End"
-          },
-          "coverage_start": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage Start"
-          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
             "type": "string"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
           },
           "display_label": {
             "anyOf": [
@@ -8007,13 +8017,19 @@
             "title": "Employer Member Id",
             "type": "string"
           },
+          "gender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberGender"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"
-          },
-          "is_currently_eligible": {
-            "title": "Is Currently Eligible",
-            "type": "boolean"
           },
           "last_imported_at": {
             "anyOf": [
@@ -8037,6 +8053,17 @@
               }
             ],
             "title": "Personal Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
           "primary_employee_member_id": {
             "anyOf": [
@@ -8108,17 +8135,17 @@
           "relation",
           "status",
           "primary_employee_member_id",
-          "coverage_start",
-          "coverage_end",
           "work_email",
           "personal_email",
           "display_label",
+          "date_of_birth",
+          "gender",
+          "phone",
           "last_imported_at",
           "suspended_at",
           "terminated_at",
           "created_at",
-          "updated_at",
-          "is_currently_eligible"
+          "updated_at"
         ],
         "title": "MemberResponse",
         "type": "object"
@@ -8127,7 +8154,7 @@
         "additionalProperties": false,
         "description": "Patch current roster details. Null clears an optional field.",
         "properties": {
-          "coverage_end": {
+          "date_of_birth": {
             "anyOf": [
               {
                 "format": "date",
@@ -8137,19 +8164,7 @@
                 "type": "null"
               }
             ],
-            "title": "Coverage End"
-          },
-          "coverage_start": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage Start"
+            "title": "Date Of Birth"
           },
           "display_label": {
             "anyOf": [
@@ -8175,6 +8190,16 @@
             ],
             "title": "Employer Member Id"
           },
+          "gender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberGender"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "personal_email": {
             "anyOf": [
               {
@@ -8186,6 +8211,18 @@
               }
             ],
             "title": "Personal Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
           "primary_employee_member_id": {
             "anyOf": [

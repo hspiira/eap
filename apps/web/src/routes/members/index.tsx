@@ -47,7 +47,7 @@ const COLUMNS: ListColumn[] = [
   { header: "Member", sortField: "display_label" },
   { header: "Relationship", sortField: "relation" },
   { header: "Client" },
-  { header: "Eligibility", sortField: "status" },
+  { header: "Status", sortField: "status" },
   { header: "Contact" },
 ]
 
@@ -334,9 +334,6 @@ function MemberRow({
       </TableCell>
       <TableCell>
         <StatusBadge status={member.status} />
-        {member.is_currently_eligible ? (
-          <span className="ml-2 text-xs text-primary">Eligible</span>
-        ) : null}
       </TableCell>
       <TableCell className="text-xs text-fg/70">{contact}</TableCell>
       <TableCell className="text-right">

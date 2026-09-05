@@ -63,17 +63,17 @@ def _response(member: EligibleMember) -> MemberResponse:
         primary_employee_member_id=(
             member.primary_employee_member_id.value if member.primary_employee_member_id else None
         ),
-        coverage_start=member.coverage_start,
-        coverage_end=member.coverage_end,
         work_email=member.work_email.value if member.work_email else None,
         personal_email=member.personal_email.value if member.personal_email else None,
         display_label=member.display_label,
+        date_of_birth=member.date_of_birth,
+        gender=member.gender,
+        phone=member.phone,
         last_imported_at=member.last_imported_at,
         suspended_at=member.suspended_at,
         terminated_at=member.terminated_at,
         created_at=member.created_at,
         updated_at=member.updated_at,
-        is_currently_eligible=member.is_currently_eligible(),
     )
 
 
@@ -140,11 +140,12 @@ async def create_member(
             if data.primary_employee_member_id
             else None
         ),
-        coverage_start=data.coverage_start,
-        coverage_end=data.coverage_end,
         work_email=Email(str(data.work_email)) if data.work_email else None,
         personal_email=Email(str(data.personal_email)) if data.personal_email else None,
         display_label=data.display_label,
+        date_of_birth=data.date_of_birth,
+        gender=data.gender,
+        phone=data.phone,
     )
     await audit_change(member, audit_handler, current_user, request)
     return _response(member)
@@ -239,9 +240,9 @@ async def export_members(
         "work_email",
         "personal_email",
         "primary_employee_member_id",
-        "coverage_start",
-        "coverage_end",
-        "is_currently_eligible",
+        "date_of_birth",
+        "gender",
+        "phone",
     ]
     writer = csv.DictWriter(output, fieldnames=fields)
     writer.writeheader()
@@ -293,8 +294,8 @@ async def update_member(
         ),
         relation=relation,
         primary_employee_member_id=EligibleMemberId(primary) if primary else None,
-        coverage_start=data.coverage_start if "coverage_start" in fields else member.coverage_start,
-        coverage_end=data.coverage_end if "coverage_end" in fields else member.coverage_end,
+        coverage_start=member.coverage_start,
+        coverage_end=member.coverage_end,
         work_email=(Email(str(data.work_email)) if data.work_email else None)
         if "work_email" in fields
         else member.work_email,
@@ -302,6 +303,9 @@ async def update_member(
         if "personal_email" in fields
         else member.personal_email,
         display_label=data.display_label if "display_label" in fields else member.display_label,
+        date_of_birth=data.date_of_birth if "date_of_birth" in fields else member.date_of_birth,
+        gender=data.gender if "gender" in fields else member.gender,
+        phone=data.phone if "phone" in fields else member.phone,
     )
     await member_repo.save(member)
     await audit_change(member, audit_handler, current_user, request)
@@ -385,6 +389,8 @@ async def scan_member_duplicates(
             keys.add(f"email:{member.work_email.value.casefold()}")
         if member.personal_email:
             keys.add(f"email:{member.personal_email.value.casefold()}")
+        if member.phone:
+            keys.add(f"phone:{member.phone.casefold()}")
         if member.display_label:
             normalized_label = " ".join(member.display_label.casefold().split())
             keys.add(f"name:{normalized_label}")
@@ -401,6 +407,8 @@ async def scan_member_duplicates(
                 continue
             matches = [m for m in unique.values() if m.id.value != member.id.value]
             fields = ["email"] if key.startswith("email:") else ["employer_member_id"]
+            if key.startswith("phone:"):
+                fields = ["phone"]
             if key.startswith("name:"):
                 fields = ["display_label"]
             candidates.append(MemberDuplicateCandidate(member=_response(member), matched_on=fields))

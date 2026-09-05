@@ -4,6 +4,14 @@
 > Companion to the frontend backlog in `apps/web/docs/code-quality/`, and it
 > follows the same ticket format so the two can be worked the same way.
 
+## Members migration note
+
+`/members` is the canonical API for client employees and beneficiaries. The
+legacy `/persons` findings below remain relevant to compatibility cleanup, but
+provider/practitioner and tenant-user work must stay outside the Members
+aggregate. See [MEMBERS_MODULE.md](../MEMBERS_MODULE.md) for the boundary and
+privacy rules.
+
 ## How to use this backlog
 
 1. Pick a ticket (respect **Depends on**).

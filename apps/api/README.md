@@ -6,7 +6,7 @@ A multi-tenant Employee Assistance Program (EAP) management platform.
 
 - **Multi-tenancy** - Isolated data for each organization
 - **Client Management** - Organizational clients with hierarchy support
-- **Person Management** - Employees, dependents, and service providers
+- **Member Management** - Client employees and beneficiaries covered by a wellness programme
 - **Contract Management** - Service agreements with billing and renewals
 - **Service Delivery** - Service catalog, sessions, and scheduling
 - **Document Management** - File storage with versioning
@@ -84,7 +84,8 @@ Once running, the API is available at:
 | `/tenants` | Organization management |
 | `/users` | User accounts |
 | `/clients` | Client companies |
-| `/persons` | People (employees, providers, dependents) |
+| `/members` | Client employees and beneficiaries |
+| `/persons` | Legacy people/provider compatibility API |
 | `/contracts` | Service agreements |
 | `/services` | Service catalog |
 | `/service-sessions` | Session scheduling |

@@ -12,7 +12,7 @@ from datetime import date
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
@@ -58,6 +58,9 @@ class EnrolEligibleMemberUseCase:
         work_email: Email | None = None,
         personal_email: Email | None = None,
         display_label: str | None = None,
+        date_of_birth: date | None = None,
+        gender: MemberGender | None = None,
+        phone: str | None = None,
     ) -> tuple[EligibleMember, ClinicalSubject]:
         existing = await self._members.find_by_employer_member_id(
             tenant_id, client_id, employer_member_id
@@ -80,6 +83,9 @@ class EnrolEligibleMemberUseCase:
             work_email=work_email,
             personal_email=personal_email,
             display_label=display_label,
+            date_of_birth=date_of_birth,
+            gender=gender,
+            phone=phone,
             created_by=created_by,
             created_at=now,
             updated_at=now,

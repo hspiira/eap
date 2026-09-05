@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -53,6 +53,9 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     work_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     personal_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     display_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    gender: Mapped[MemberGender | None] = mapped_column(String(30), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     last_imported_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

@@ -53,6 +53,16 @@ class MemberRelation(str, Enum):
     DEPENDENT_OTHER = "DependentOther"
 
 
+class MemberGender(str, Enum):
+    """Optional demographic value captured for member-facing wellness context."""
+
+    FEMALE = "Female"
+    MALE = "Male"
+    NON_BINARY = "NonBinary"
+    PREFER_NOT_TO_SAY = "PreferNotToSay"
+    UNKNOWN = "Unknown"
+
+
 class EligibilityStatus(str, Enum):
     """Lifecycle of an EAP-eligible member as supplied by the employer."""
 

@@ -2,10 +2,10 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
 
 
 class MemberCreate(BaseModel):
@@ -15,13 +15,28 @@ class MemberCreate(BaseModel):
     employer_member_id: SanitizedStr = Field(..., min_length=1, max_length=255)
     relation: MemberRelation
     primary_employee_member_id: str | None = None
-    coverage_start: date | None = None
-    coverage_end: date | None = None
     work_email: EmailStr | None = None
     personal_email: EmailStr | None = None
     display_label: SanitizedStr = Field(..., min_length=1, max_length=255)
+    date_of_birth: date | None = None
+    gender: MemberGender | None = None
+    phone: SanitizedStr | None = Field(None, max_length=50)
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("display_label", mode="before")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Member name is required")
+        return value
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_date_of_birth(cls, value: date | None) -> date | None:
+        if value and value > date.today():
+            raise ValueError("Date of birth cannot be in the future")
+        return value
 
     @model_validator(mode="after")
     def validate_relationship(self) -> "MemberCreate":
@@ -29,8 +44,6 @@ class MemberCreate(BaseModel):
             raise ValueError("Employees cannot have a primary employee member")
         if self.relation != MemberRelation.EMPLOYEE and not self.primary_employee_member_id:
             raise ValueError("A beneficiary relation requires a primary employee member")
-        if self.coverage_end and self.coverage_start and self.coverage_end < self.coverage_start:
-            raise ValueError("coverage_end must be on or after coverage_start")
         return self
 
 
@@ -40,13 +53,28 @@ class MemberUpdate(BaseModel):
     employer_member_id: SanitizedStr | None = Field(None, min_length=1, max_length=255)
     relation: MemberRelation | None = None
     primary_employee_member_id: str | None = None
-    coverage_start: date | None = None
-    coverage_end: date | None = None
     work_email: EmailStr | None = None
     personal_email: EmailStr | None = None
     display_label: OptionalSanitizedStr = None
+    date_of_birth: date | None = None
+    gender: MemberGender | None = None
+    phone: SanitizedStr | None = Field(None, max_length=50)
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("display_label", mode="before")
+    @classmethod
+    def validate_name(cls, value: str | None) -> str | None:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Member name cannot be blank")
+        return value
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_date_of_birth(cls, value: date | None) -> date | None:
+        if value and value > date.today():
+            raise ValueError("Date of birth cannot be in the future")
+        return value
 
 
 class MemberResponse(BaseModel):
@@ -57,17 +85,17 @@ class MemberResponse(BaseModel):
     relation: MemberRelation
     status: EligibilityStatus
     primary_employee_member_id: str | None
-    coverage_start: date | None
-    coverage_end: date | None
     work_email: str | None
     personal_email: str | None
     display_label: str | None
+    date_of_birth: date | None
+    gender: MemberGender | None
+    phone: str | None
     last_imported_at: datetime | None
     suspended_at: datetime | None
     terminated_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    is_currently_eligible: bool
 
     model_config = ConfigDict(from_attributes=True)
 

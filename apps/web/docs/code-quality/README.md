@@ -4,6 +4,13 @@
 > Scope: frontend only (`evexia/`). Each ticket lives in its track file with evidence,
 > recommended fix, and acceptance criteria.
 
+## Members migration note
+
+The new `/members` module is the canonical UI for client employees and
+beneficiaries. The older Persons tickets below describe the compatibility route
+and should not be used to reintroduce provider or tenant-staff creation into
+Members. Providers and tenant users remain separate product boundaries.
+
 ## How to use this backlog
 
 1. Pick a ticket (respect **Depends on** - waves below give a safe order).

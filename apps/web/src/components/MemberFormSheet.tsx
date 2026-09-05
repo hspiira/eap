@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { type MemberListParams, membersApi } from "@/api/endpoints/members"
+import { DatePicker } from "@/components/common/DatePicker"
 import { ClientPicker, EntityPicker, PickerRow } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -19,7 +20,7 @@ import {
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { nameInitials } from "@/lib/display"
 import type { Client, Member } from "@/types/entities"
-import { MemberRelation } from "@/types/enums"
+import { MemberGender, MemberRelation } from "@/types/enums"
 
 const RELATIONS = [
   { value: MemberRelation.EMPLOYEE, label: "Employee" },
@@ -30,6 +31,17 @@ const RELATIONS = [
 ] as const
 
 const RELATION_VALUES = RELATIONS.map(({ value }) => value) as [MemberRelation, ...MemberRelation[]]
+const GENDERS = [
+  { value: MemberGender.FEMALE, label: "Female" },
+  { value: MemberGender.MALE, label: "Male" },
+  { value: MemberGender.NON_BINARY, label: "Non-binary" },
+  { value: MemberGender.PREFER_NOT_TO_SAY, label: "Prefer not to say" },
+  { value: MemberGender.UNKNOWN, label: "Unknown" },
+] as const
+const GENDER_VALUES = GENDERS.map(({ value }) => value) as [
+  MemberGender,
+  ...MemberGender[],
+]
 const optionalText = () => z.string().trim().optional()
 const optionalEmail = () =>
   optionalText().refine(
@@ -46,6 +58,9 @@ const memberSchema = z
     work_email: optionalEmail(),
     personal_email: optionalEmail(),
     display_label: z.string().trim().min(1, "Name is required"),
+    date_of_birth: optionalText(),
+    gender: z.enum(GENDER_VALUES).optional(),
+    phone: optionalText(),
   })
   .superRefine((value, ctx) => {
     if (value.relation !== MemberRelation.EMPLOYEE && !value.primary_employee_member_id?.trim()) {
@@ -67,6 +82,9 @@ const EMPTY: MemberFormValues = {
   work_email: "",
   personal_email: "",
   display_label: "",
+  date_of_birth: "",
+  gender: undefined,
+  phone: "",
 }
 
 interface MemberFormSheetProps {
@@ -205,7 +223,50 @@ export function MemberFormSheet({
         ) : null}
       </FormSection>
 
+      <FormSection title="Personal details">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Date of birth" error={errors.date_of_birth?.message}>
+            <Controller
+              control={form.control}
+              name="date_of_birth"
+              render={({ field }) => (
+                <DatePicker
+                  id="member-date-of-birth"
+                  aria-label="Date of birth"
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select date"
+                />
+              )}
+            />
+          </FormField>
+          <FormField label="Gender" error={errors.gender?.message}>
+            <Controller
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <Select value={field.value ?? ""} onValueChange={(value) => field.onChange(value)}>
+                  <SelectTrigger className="rounded-none">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none">
+                    {GENDERS.map((option) => (
+                      <SelectItem key={option.value} value={option.value} className="rounded-none">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FormField>
+        </div>
+      </FormSection>
+
       <FormSection title="Contact">
+        <FormField label="Phone" error={errors.phone?.message}>
+          <Input type="tel" {...form.register("phone")} />
+        </FormField>
         <FormField label="Work email" error={errors.work_email?.message}>
           <Input type="email" {...form.register("work_email")} />
         </FormField>
@@ -226,6 +287,9 @@ function toValues(member: Member): MemberFormValues {
     work_email: member.work_email ?? "",
     personal_email: member.personal_email ?? "",
     display_label: member.display_label ?? "",
+    date_of_birth: member.date_of_birth ?? "",
+    gender: member.gender ?? undefined,
+    phone: member.phone ?? "",
   }
 }
 
@@ -241,6 +305,9 @@ function toRequest(values: MemberFormValues) {
     work_email: optionalValue(values.work_email),
     personal_email: optionalValue(values.personal_email),
     display_label: values.display_label.trim(),
+    date_of_birth: optionalValue(values.date_of_birth),
+    gender: values.gender ?? null,
+    phone: optionalValue(values.phone),
   }
 }
 

@@ -9,7 +9,7 @@ aggregate directly. The pseudonymous join goes via ``EligibleMemberClinicalLink`
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError, InvalidStateError
 from app.domain.value_objects.core import (
@@ -38,6 +38,9 @@ class EligibleMember:
     work_email: Email | None = None
     personal_email: Email | None = None
     display_label: str | None = None
+    date_of_birth: date | None = None
+    gender: MemberGender | None = None
+    phone: str | None = None
     last_imported_at: datetime | None = None
     suspended_at: datetime | None = None
     terminated_at: datetime | None = None
@@ -97,6 +100,9 @@ class EligibleMember:
         work_email: Email | None = None,
         personal_email: Email | None = None,
         display_label: str | None = None,
+        date_of_birth: date | None = None,
+        gender: MemberGender | None = None,
+        phone: str | None = None,
     ) -> None:
         """Update current roster details without creating a User account."""
         if not employer_member_id:
@@ -116,6 +122,9 @@ class EligibleMember:
         self.work_email = work_email
         self.personal_email = personal_email
         self.display_label = display_label
+        self.date_of_birth = date_of_birth
+        self.gender = gender
+        self.phone = phone
         self.updated_at = utc_now()
 
     def is_currently_eligible(self, *, today: date | None = None) -> bool:

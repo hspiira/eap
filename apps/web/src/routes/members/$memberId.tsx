@@ -21,7 +21,6 @@ import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { formatDay } from "@/lib/format"
 import { entityDetailKey } from "@/lib/queries"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -148,16 +147,17 @@ function MemberDetailPage() {
                     label="Client"
                     value={<span className="font-mono text-xs">{member.client_id}</span>}
                   />
-                  <DetailRow
-                    label="Currently eligible"
-                    value={member.is_currently_eligible ? "Yes" : "No"}
-                  />
-                  <DetailRow label="Coverage starts" value={formatDay(member.coverage_start)} />
-                  <DetailRow label="Coverage ends" value={formatDay(member.coverage_end)} />
+                </DetailGrid>
+              </DetailCard>
+              <DetailCard title="Personal details">
+                <DetailGrid>
+                  <DetailRow label="Date of birth" value={member.date_of_birth} />
+                  <DetailRow label="Gender" value={member.gender} />
                 </DetailGrid>
               </DetailCard>
               <DetailCard title="Contact">
                 <DetailGrid>
+                  <DetailRow label="Phone" value={member.phone} />
                   <DetailRow label="Work email" value={member.work_email} />
                   <DetailRow label="Personal email" value={member.personal_email} />
                 </DetailGrid>

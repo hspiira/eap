@@ -8915,16 +8915,17 @@ export interface components {
         MemberCreate: {
             /** Client Id */
             client_id: string;
-            /** Coverage End */
-            coverage_end?: string | null;
-            /** Coverage Start */
-            coverage_start?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
             /** Display Label */
             display_label: string;
             /** Employer Member Id */
             employer_member_id: string;
+            gender?: components["schemas"]["MemberGender"] | null;
             /** Personal Email */
             personal_email?: string | null;
+            /** Phone */
+            phone?: string | null;
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation: components["schemas"]["MemberRelation"];
@@ -8942,6 +8943,12 @@ export interface components {
             /** Candidates */
             candidates: components["schemas"]["MemberDuplicateCandidate"][];
         };
+        /**
+         * MemberGender
+         * @description Optional demographic value captured for member-facing wellness context.
+         * @enum {string}
+         */
+        MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
         /** MemberListResponse */
         MemberListResponse: {
             /** Has More */
@@ -8965,27 +8972,26 @@ export interface components {
         MemberResponse: {
             /** Client Id */
             client_id: string;
-            /** Coverage End */
-            coverage_end: string | null;
-            /** Coverage Start */
-            coverage_start: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /** Date Of Birth */
+            date_of_birth: string | null;
             /** Display Label */
             display_label: string | null;
             /** Employer Member Id */
             employer_member_id: string;
+            gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
-            /** Is Currently Eligible */
-            is_currently_eligible: boolean;
             /** Last Imported At */
             last_imported_at: string | null;
             /** Personal Email */
             personal_email: string | null;
+            /** Phone */
+            phone: string | null;
             /** Primary Employee Member Id */
             primary_employee_member_id: string | null;
             relation: components["schemas"]["MemberRelation"];
@@ -9009,16 +9015,17 @@ export interface components {
          * @description Patch current roster details. Null clears an optional field.
          */
         MemberUpdate: {
-            /** Coverage End */
-            coverage_end?: string | null;
-            /** Coverage Start */
-            coverage_start?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
             /** Display Label */
             display_label?: string | null;
             /** Employer Member Id */
             employer_member_id?: string | null;
+            gender?: components["schemas"]["MemberGender"] | null;
             /** Personal Email */
             personal_email?: string | null;
+            /** Phone */
+            phone?: string | null;
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation?: components["schemas"]["MemberRelation"] | null;
