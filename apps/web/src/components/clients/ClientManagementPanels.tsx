@@ -11,7 +11,6 @@ import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import { utilisationApi } from "@/api/endpoints/utilisation"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -54,7 +53,10 @@ export function ClientHealthCard({
 }) {
   const signals = [
     { label: "Verified", ok: Boolean(client.is_verified) },
-    { label: "Primary contact", ok: contacts.some((contact) => contact.is_primary) },
+    {
+      label: "Contact details",
+      ok: Boolean(client.contact_info?.email || client.contact_info?.phone || contacts.length > 0),
+    },
     {
       label: "Active contract",
       ok: Boolean(
@@ -83,9 +85,11 @@ export function ClientHealthCard({
 
 export function ClientContactsPanel({
   clientId,
+  client,
   contacts,
 }: {
   clientId: string
+  client: Client
   contacts: Contact[]
 }) {
   const toast = useToast()
@@ -93,28 +97,24 @@ export function ClientContactsPanel({
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
-  const [makePrimary, setMakePrimary] = useState(false)
   const [saving, setSaving] = useState(false)
   const contactsQuery = useQuery({
     queryKey: entityListKey("contacts", { client_id: clientId }),
     queryFn: () => contactsApi.byClient(clientId),
     enabled: manageOpen,
   })
-  const primaryQuery = useQuery({
-    queryKey: ["contacts", "primary", clientId],
-    queryFn: () => contactsApi.primary(clientId),
-    retry: false,
-  })
   const managedContacts = contactsQuery.data ?? contacts
   const primaryContact =
-    primaryQuery.data ?? managedContacts.find((contact) => contact.is_primary) ?? null
+    managedContacts.find((contact) => contact.is_primary) ?? managedContacts[0] ?? null
+  const otherContacts = primaryContact
+    ? managedContacts.filter((contact) => contact.id !== primaryContact.id)
+    : managedContacts
 
   useEffect(() => {
     if (manageOpen) return
     setName("")
     setEmail("")
     setPhone("")
-    setMakePrimary(false)
   }, [manageOpen])
 
   const save = async () => {
@@ -126,10 +126,9 @@ export function ClientContactsPanel({
         name: name.trim(),
         email: email || null,
         phone: phone || null,
-        is_primary: managedContacts.length === 0 || makePrimary,
+        is_primary: managedContacts.length === 0,
       })
       await contactsQuery.refetch()
-      await primaryQuery.refetch()
       toast.showSuccess("Contact added")
     } catch (error) {
       toast.showError(normalizeErrorMessage(error, "Could not add contact"))
@@ -138,41 +137,54 @@ export function ClientContactsPanel({
     }
   }
 
-  const setPrimary = async (contact: Contact) => {
-    try {
-      await contactsApi.update(contact.id, { is_primary: true })
-      await contactsQuery.refetch()
-      await primaryQuery.refetch()
-      toast.showSuccess("Primary contact updated")
-    } catch (error) {
-      toast.showError(normalizeErrorMessage(error, "Could not update primary contact"))
-    }
-  }
-
   return (
-    <Panel title="Contacts and primary contact">
-      <div className="rounded-sm border border-primary/20 bg-primary/5 p-3">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
-          Primary contact
-        </p>
+    <Panel title="Contacts">
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-fg">Main contact</p>
         {primaryContact ? (
-          <div className="mt-1">
+          <div>
             <p className="text-sm font-medium text-fg">{primaryContact.name}</p>
             <p className="text-xs text-fg-muted">
               {[primaryContact.title, primaryContact.department].filter(Boolean).join(" · ") ||
-                "Primary contact"}
+                "Contact"}
             </p>
             <p className="text-xs text-fg-muted">
-              {primaryContact.email ?? primaryContact.phone ?? "No contact details"}
+              {[primaryContact.email, primaryContact.phone].filter(Boolean).join(" · ") ||
+                "No contact details"}
             </p>
           </div>
+        ) : client.contact_info?.email ||
+          client.contact_info?.phone ||
+          client.contact_info?.address ? (
+          <div>
+            <p className="text-xs text-fg-muted">
+              {[client.contact_info.email, client.contact_info.phone].filter(Boolean).join(" · ") ||
+                "No email or phone"}
+            </p>
+            {client.contact_info.address ? (
+              <p className="text-xs text-fg-muted">{client.contact_info.address}</p>
+            ) : null}
+          </div>
         ) : (
-          <p className="mt-1 text-xs text-fg-muted">No primary contact has been assigned.</p>
+          <p className="mt-1 text-xs text-fg-muted">No contact details have been added.</p>
         )}
       </div>
+      {otherContacts.length > 0 ? (
+        <div className="space-y-2 border-t border-fg/10 pt-3">
+          <p className="text-xs font-medium text-fg">Other contacts</p>
+          {otherContacts.map((contact) => (
+            <div key={contact.id} className="border-b border-fg/8 pb-2 text-xs last:border-b-0">
+              <p className="font-medium text-fg">{contact.name}</p>
+              <p className="text-fg-muted">
+                {contact.title ?? "Contact"} · {contact.email ?? contact.phone ?? "No details"}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-fg-muted">
-          {contacts.length} contact{contacts.length === 1 ? "" : "s"} on file
+          {contacts.length} contact person{contacts.length === 1 ? "" : "s"} on file
         </p>
         <Button
           type="button"
@@ -186,75 +198,35 @@ export function ClientContactsPanel({
       </div>
       {manageOpen ? (
         <div className="space-y-3 border-t border-fg/10 pt-3">
-          <p className="text-xs font-medium text-fg">Contact people</p>
-          {managedContacts.length === 0 ? (
-            <p className="text-xs text-fg-muted">No contacts yet.</p>
-          ) : null}
-          {managedContacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="flex items-center justify-between gap-3 border-b border-fg/8 pb-2 text-xs"
-            >
-              <div>
-                <p className="font-medium text-fg">
-                  {contact.name}
-                  {contact.is_primary ? " · Primary" : ""}
-                </p>
-                <p className="text-fg-muted">
-                  {contact.title ?? "Contact"} · {contact.email ?? contact.phone ?? "No details"}
-                </p>
-              </div>
-              {!contact.is_primary ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => void setPrimary(contact)}
-                >
-                  Make primary
-                </Button>
-              ) : null}
-            </div>
-          ))}
-          <div className="space-y-3 border-t border-fg/10 pt-3">
-            <p className="text-xs font-medium text-fg">Add contact person</p>
-            <Input
-              aria-label="Contact name"
-              placeholder="Name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-            />
-            <Input
-              aria-label="Contact email"
-              placeholder="Email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <Input
-              aria-label="Contact phone"
-              placeholder="Phone"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-            />
-            <label className="flex items-center gap-2 text-xs text-fg-muted">
-              <Checkbox
-                checked={makePrimary}
-                onCheckedChange={(checked) => setMakePrimary(checked === true)}
-              />
-              Make this contact primary
-            </label>
-            <Button
-              type="button"
-              size="sm"
-              disabled={saving || !name.trim()}
-              onClick={() => void save()}
-            >
-              {saving ? "Adding…" : "Add contact"}
-            </Button>
-          </div>
+          <p className="text-xs font-medium text-fg">Add contact person</p>
+          <Input
+            aria-label="Contact name"
+            placeholder="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+          <Input
+            aria-label="Contact email"
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <Input
+            aria-label="Contact phone"
+            placeholder="Phone"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+          />
+          <Button
+            type="button"
+            size="sm"
+            disabled={saving || !name.trim()}
+            onClick={() => void save()}
+          >
+            {saving ? "Adding…" : "Add contact"}
+          </Button>
         </div>
       ) : null}
     </Panel>

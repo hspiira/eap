@@ -389,7 +389,7 @@ function ClientDetailPage() {
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-              <TabsList className="-mx-3 mb-4 px-3">
+              <TabsList className="sticky top-0 z-20 -mx-3 mb-4 bg-bg/95 px-3 backdrop-blur">
                 <Tab value="overview">Overview</Tab>
                 <Tab value="activity">Activity</Tab>
                 <Tab value="contracts" count={contractsTotal}>
@@ -421,7 +421,7 @@ function ClientDetailPage() {
                     />
                   </div>
                   <div className="space-y-4">
-                    <ClientContactsPanel clientId={clientId} contacts={contacts} />
+                    <ClientContactsPanel clientId={clientId} client={client} contacts={contacts} />
                     <ClientUpcomingCard items={upcomingItems} />
                     <ClientTodaysTodoCard items={todaysTodoItems} />
                   </div>

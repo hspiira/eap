@@ -1,3 +1,4 @@
+import { screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
 import { ClientContactsPanel } from "@/components/clients/ClientManagementPanels"
@@ -7,9 +8,6 @@ import type { Client, Contact } from "@/types/entities"
 vi.mock("@/api/endpoints/contacts", () => ({
   contactsApi: {
     byClient: vi.fn().mockResolvedValue([]),
-    // Resolving null is the "no primary assigned" answer; the panel then falls
-    // back to the list it was given.
-    primary: vi.fn().mockResolvedValue(null),
     create: vi.fn(),
     setPrimary: vi.fn(),
     remove: vi.fn(),
@@ -53,5 +51,19 @@ describe("ClientContactsPanel", () => {
         <ClientContactsPanel clientId="client-1" client={c} contacts={contacts} />,
       ),
     ).not.toThrow()
+  })
+
+  it("shows contact details entered during client creation", () => {
+    renderWithProviders(
+      <ClientContactsPanel
+        clientId="client-1"
+        client={client({ contact_info: { email: "hello@example.com", phone: "+256700000000" } })}
+        contacts={[]}
+      />,
+    )
+
+    expect(screen.getByText("Main contact")).toBeInTheDocument()
+    expect(screen.queryByText("Client contact")).not.toBeInTheDocument()
+    expect(screen.getByText("hello@example.com · +256700000000")).toBeInTheDocument()
   })
 })
