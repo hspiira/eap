@@ -29,6 +29,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
 from app.domain.enums import BaseStatus
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.service_assignment_repository import ServiceAssignmentRepository
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -215,7 +216,7 @@ async def get_service_assignment(
         ServiceAssignmentId(assignment_id)
     )
     if not assignment:
-        raise ValueError("Assignment not found")
+        raise NotFoundError("Assignment not found")
     return _to_service_assignment_response(assignment)
 
 

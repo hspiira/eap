@@ -43,6 +43,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.document import DocumentEntity
 from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.decorators import readonly, transactional
@@ -381,5 +382,5 @@ async def get_latest_document_version(
     """Get the latest version of a document."""
     latest = await document_repo.get_latest_version(DocumentId(document_id), TenantId(tenant_id))
     if not latest:
-        raise ValueError("Document not found")
+        raise NotFoundError("Document not found")
     return _to_document_response(latest)

@@ -46,6 +46,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
@@ -290,8 +291,6 @@ async def update_tenant(
 ):
     """Update tenant basic information."""
     if data.name is None:
-        from app.domain.exceptions import NotFoundError
-
         tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
         if tenant is None:
             raise NotFoundError(f"Tenant not found: {tenant_id}")
@@ -515,7 +514,7 @@ async def get_tenant_stats(
     """Get tenant statistics including user and client counts."""
     tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise NotFoundError("Tenant not found")
     user_count = await user_repo.count(tenant_id=TenantId(tenant_id))
     client_count = await client_repo.count(tenant_id=TenantId(tenant_id))
 
@@ -556,7 +555,7 @@ async def get_tenant(
     """Get tenant by ID."""
     tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise NotFoundError("Tenant not found")
     return _to_tenant_response(tenant)
 
 

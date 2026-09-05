@@ -26,6 +26,7 @@ from app.core.authorization import require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.activity import ActivityEntity
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.value_objects.core import ActivityId, TenantId, UserId
 from app.shared.decorators import readonly, transactional
@@ -185,7 +186,7 @@ async def get_activity(
     """Get activity by ID."""
     activity = await GetActivityUseCase(activity_repo).execute(ActivityId(activity_id))
     if not activity:
-        raise ValueError("Activity not found")
+        raise NotFoundError("Activity not found")
     return _to_activity_response(activity)
 
 

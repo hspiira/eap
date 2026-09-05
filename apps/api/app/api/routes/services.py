@@ -38,6 +38,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service import ServiceEntity
 from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -317,7 +318,7 @@ async def get_service_by_name(
     """Get service by name within a tenant."""
     service = await service_repo.get_by_name(TenantId(tenant_id), name)
     if not service:
-        raise ValueError("Service not found")
+        raise NotFoundError("Service not found")
     return _to_service_response(service)
 
 
