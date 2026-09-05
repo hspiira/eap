@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -209,9 +216,8 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
     }
   }
 
-  const progress = job && job.total_rows > 0
-    ? Math.round((job.processed_rows / job.total_rows) * 100)
-    : 0
+  const progress =
+    job && job.total_rows > 0 ? Math.round((job.processed_rows / job.total_rows) * 100) : 0
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -242,14 +248,19 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
             </p>
           </div>
 
-          {previewLoading ? <p className="text-xs text-fg-muted">Checking rows on the server…</p> : null}
+          {previewLoading ? (
+            <p className="text-xs text-fg-muted">Checking rows on the server…</p>
+          ) : null}
           {previewError ? <p className="text-xs text-destructive">{previewError}</p> : null}
 
           {preview ? (
             <div className="space-y-2 border-t border-fg/10 pt-4">
               <p className="text-sm">
-                <strong>{preview.rows.length}</strong> rows checked · <strong>{preview.failed}</strong>{" "}
-                errors · <strong>{preview.issues.filter((issue) => issue.severity === "warning").length}</strong>{" "}
+                <strong>{preview.rows.length}</strong> rows checked ·{" "}
+                <strong>{preview.failed}</strong> errors ·{" "}
+                <strong>
+                  {preview.issues.filter((issue) => issue.severity === "warning").length}
+                </strong>{" "}
                 possible matches
               </p>
               <div className="max-h-[28rem] overflow-auto rounded-sm border border-fg/10">
@@ -273,22 +284,31 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
                             {row.code ? <div className="text-fg-muted">{row.code}</div> : null}
                           </TableCell>
                           <TableCell className="max-w-48 px-2 py-1.5 text-fg-muted">
-                            {row.matched_client_name ?? (row.state === "invalid" ? "Invalid" : "New")}
+                            {row.matched_client_name ??
+                              (row.state === "invalid" ? "Invalid" : "New")}
                           </TableCell>
                           <TableCell className="px-2 py-1.5">
-                            <select
+                            <Select
                               value={decision}
-                              aria-label={`Decision for row ${row.row}`}
                               disabled={row.state === "invalid"}
-                              onChange={(event) =>
-                                updateDecision(row, event.target.value as ClientImportDecision["action"])
+                              onValueChange={(value) =>
+                                updateDecision(row, value as ClientImportDecision["action"])
                               }
-                              className="h-8 rounded-sm border border-fg/15 bg-bg px-2 text-xs text-fg"
                             >
-                              <option value="create">Create</option>
-                              <option value="skip">Skip</option>
-                              {row.matched_client_id ? <option value="merge">Merge</option> : null}
-                            </select>
+                              <SelectTrigger
+                                aria-label={`Decision for row ${row.row}`}
+                                className="h-8 rounded-sm border-fg/15 bg-bg px-2 text-xs text-fg"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="create">Create</SelectItem>
+                                <SelectItem value="skip">Skip</SelectItem>
+                                {row.matched_client_id ? (
+                                  <SelectItem value="merge">Merge</SelectItem>
+                                ) : null}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
                         </TableRow>
                       )
@@ -315,10 +335,15 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
             <div className="space-y-2 border-t border-fg/10 pt-4 text-sm">
               <div className="flex justify-between text-xs text-fg-muted">
                 <span>{job.status === "queued" ? "Queued" : "Importing"}</span>
-                <span>{job.processed_rows}/{job.total_rows} rows · {progress}%</span>
+                <span>
+                  {job.processed_rows}/{job.total_rows} rows · {progress}%
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-fg/10">
-                <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
           ) : null}
@@ -326,8 +351,8 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
           {result ? (
             <div className="space-y-2 border-t border-fg/10 pt-4 text-sm">
               <p>
-                <strong>{result.imported}</strong> processed · <strong>{result.skipped}</strong> skipped ·{" "}
-                <strong>{result.failed}</strong> errors
+                <strong>{result.imported}</strong> processed · <strong>{result.skipped}</strong>{" "}
+                skipped · <strong>{result.failed}</strong> errors
               </p>
               {result.issues.length > 0 ? (
                 <Button
@@ -349,13 +374,24 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
               <h2 className="text-sm font-semibold text-fg">Recent imports</h2>
               <div className="space-y-1 text-xs">
                 {history.slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-3 border-b border-fg/8 py-2">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 border-b border-fg/8 py-2"
+                  >
                     <div className="min-w-0">
                       <div className="truncate text-fg">{item.filename}</div>
-                      <div className="text-fg-muted">{item.status} · {item.imported} processed · {formatBytes(item.file_size)}</div>
+                      <div className="text-fg-muted">
+                        {item.status} · {item.imported} processed · {formatBytes(item.file_size)}
+                      </div>
                     </div>
                     {item.status === "failed" ? (
-                      <Button type="button" variant="ghost" size="sm" disabled={loading} onClick={() => void retryJob(item)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={loading}
+                        onClick={() => void retryJob(item)}
+                      >
                         <RefreshCw className="size-3" />
                         Retry
                       </Button>
@@ -373,7 +409,14 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
           </Button>
           <Button
             type="button"
-            disabled={!file || !preview || previewError !== null || previewLoading || loading || preview?.failed !== 0}
+            disabled={
+              !file ||
+              !preview ||
+              previewError !== null ||
+              previewLoading ||
+              loading ||
+              preview?.failed !== 0
+            }
             onClick={() => void importFile()}
           >
             <FileInput className="mr-1.5 size-4" />

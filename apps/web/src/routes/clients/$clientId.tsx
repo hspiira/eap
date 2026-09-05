@@ -465,7 +465,10 @@ function ClientAliasesCard({
     try {
       const updated = await clientsApi.updateAliases(
         client.id,
-        draft.split(",").map((alias) => alias.trim()).filter(Boolean),
+        draft
+          .split(",")
+          .map((alias) => alias.trim())
+          .filter(Boolean),
       )
       onSaved(updated)
       toast.showSuccess("Aliases updated")
@@ -509,7 +512,13 @@ function ClientAliasesCard({
           aria-label="Client aliases"
           className="h-8 text-xs"
         />
-        <Button type="button" size="sm" className="h-8 shrink-0" disabled={saving} onClick={() => void save()}>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 shrink-0"
+          disabled={saving}
+          onClick={() => void save()}
+        >
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
@@ -539,17 +548,18 @@ function ClientAliasesCard({
         {sourceQuery.data?.items.length && !sourceClientId ? (
           <div className="absolute inset-x-0 top-12 z-10 border border-fg/15 bg-surface p-1 shadow-lg">
             {sourceQuery.data.items.map((candidate) => (
-              <button
+              <Button
                 key={candidate.id}
                 type="button"
-                className="block w-full px-2 py-1.5 text-left text-xs text-fg hover:bg-surface-hover"
+                variant="ghost"
+                className="block h-auto w-full justify-start rounded-none px-2 py-1.5 text-left text-xs font-normal text-fg"
                 onClick={() => {
                   setSourceClientId(candidate.id)
                   setSourceSearch(candidate.name)
                 }}
               >
                 {candidate.name} <span className="text-fg-muted">{candidate.code}</span>
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
