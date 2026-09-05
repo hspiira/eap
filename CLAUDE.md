@@ -56,3 +56,8 @@ without being asked.
 - Several agents work in this repo at once. Before editing shared paths, check
   who holds what with `ListAgents` and `SendMessage`, and say where you are
   working.
+- Focus on your own work. Message another agent when there is a reason to:
+  a shared path, a handoff, a correction they need. Not to acknowledge, agree,
+  or continue a thread that has nothing left in it.
+- Prefer one message that closes the loop over several that keep it open.
+  Correspondence is not progress on the task.
