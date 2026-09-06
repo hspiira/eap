@@ -229,6 +229,27 @@ async def test_roster_preview_honours_explicit_skip_for_new_rows(api):
     assert body["rows"][0]["state"] == "skipped"
 
 
+async def test_roster_preview_preserves_parser_issue_fields(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+    response = await api.http.post(
+        "/members/import?dry_run=true",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["issues"] == [
+        {"row": 2, "field": "Staff_ID", "message": "Stable Staff_ID is required"}
+    ]
+
+
 @pytest.mark.parametrize(
     "method,path,payload",
     [

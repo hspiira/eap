@@ -509,6 +509,10 @@ async def import_members(
     errors: dict[int, str] = {
         int(issue["row"]): str(issue["message"]) for issue in parse_issues
     }
+    error_fields: dict[int, str | None] = {
+        int(issue["row"]): str(issue.get("field")) if issue.get("field") else None
+        for issue in parse_issues
+    }
     prepared: list[tuple[MemberCsvRow, ClientEntity, MemberCreate]] = []
     seen: set[tuple[str, str]] = set()
     for row in rows:
@@ -564,7 +568,11 @@ async def import_members(
             skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
             failed=sum(preview.state == "invalid" for preview in previews.values()),
             issues=[
-                {"row": preview.row, "field": None, "message": preview.message or "Invalid row"}
+                {
+                    "row": preview.row,
+                    "field": error_fields.get(preview.row),
+                    "message": preview.message or "Invalid row",
+                }
                 for preview in previews.values()
                 if preview.state == "invalid"
             ],
