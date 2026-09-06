@@ -1,9 +1,14 @@
 """Practitioner aliases, scoped by tenant and source system (decision 5)."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums.provider_network import AliasResolutionState
+from app.domain.events import DomainEvent
+from app.domain.events.provider_network import (
+    ProviderAliasRejected,
+    ProviderAliasResolved,
+)
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import ProviderAliasId
@@ -32,6 +37,7 @@ class ProviderAliasEntity:
     resolved_by: UserId | None = None
     resolved_at: datetime | None = None
     review_note: str | None = None
+    events: list[DomainEvent] = field(default_factory=list["DomainEvent"])
 
     def __post_init__(self) -> None:
         if not self.source_system or not self.source_system.strip():
@@ -54,9 +60,27 @@ class ProviderAliasEntity:
         self.resolved_by = actor
         self.resolved_at = at
         self.updated_at = at
+        self.events.append(
+            ProviderAliasResolved(
+                occurred_at=at,
+                alias_id=self.id,
+                tenant_id=self.tenant_id,
+                source_system=self.source_system,
+                source_value=self.source_value,
+                provider_id=provider_id,
+                actor=actor,
+            )
+        )
 
     def mark_ambiguous(self, candidates: tuple[str, ...], *, at: datetime) -> None:
-        """Several candidates and no decision. Distinct from unmapped."""
+        """Several candidates and no decision. Distinct from unmapped.
+
+        Deliberately emits no event: this is the staging classifier's output,
+        not a human decision, and one event per unmatched name would flood the
+        audit log for a file of several thousand rows. The reviewable state and
+        its candidates are persisted on the row, and `resolve` and `reject`,
+        which are decisions, do emit.
+        """
         if len(candidates) < 2:
             raise DomainError("Ambiguous alias requires at least two candidates")
         self.state = AliasResolutionState.AMBIGUOUS
@@ -82,3 +106,17 @@ class ProviderAliasEntity:
         self.resolved_at = at
         self.review_note = note
         self.updated_at = at
+        self.events.append(
+            ProviderAliasRejected(
+                occurred_at=at,
+                alias_id=self.id,
+                tenant_id=self.tenant_id,
+                source_system=self.source_system,
+                source_value=self.source_value,
+                actor=actor,
+                reason=note,
+            )
+        )
+
+    def clear_events(self) -> None:
+        self.events.clear()

@@ -12,6 +12,11 @@ from app.domain.enums.provider_network import (
     ImportBatchStatus,
     ImportRowOutcome,
 )
+from app.domain.events import DomainEvent
+from app.domain.events.provider_network import (
+    SessionImportBatchAbandoned,
+    SessionImportBatchApplied,
+)
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import (
@@ -54,6 +59,7 @@ class SessionImportBatchEntity:
     applied_at: datetime | None = None
     applied_by: UserId | None = None
     notes: str | None = None
+    events: list[DomainEvent] = field(default_factory=list["DomainEvent"])
 
     def __post_init__(self) -> None:
         if not self.file_hash or not self.file_hash.strip():
@@ -68,13 +74,22 @@ class SessionImportBatchEntity:
         """True when the source has no stable id, so replay is per exact file."""
         return self.source_record_key_field is None
 
-    def mark_applied(self, actor: UserId, *, at: datetime) -> None:
+    def mark_applied(self, actor: UserId, *, at: datetime, accepted_count: int) -> None:
         if self.status is not ImportBatchStatus.STAGED:
             raise DomainError(f"Cannot apply a batch in status {self.status.value}")
         self.status = ImportBatchStatus.APPLIED
         self.applied_by = actor
         self.applied_at = at
         self.updated_at = at
+        self.events.append(
+            SessionImportBatchApplied(
+                occurred_at=at,
+                batch_id=self.id,
+                tenant_id=self.tenant_id,
+                accepted_count=accepted_count,
+                actor=actor,
+            )
+        )
 
     def abandon(self, actor: UserId, reason: str, *, at: datetime) -> None:
         if not reason or not reason.strip():
@@ -85,6 +100,18 @@ class SessionImportBatchEntity:
         self.notes = reason
         self.applied_by = actor
         self.updated_at = at
+        self.events.append(
+            SessionImportBatchAbandoned(
+                occurred_at=at,
+                batch_id=self.id,
+                tenant_id=self.tenant_id,
+                actor=actor,
+                reason=reason,
+            )
+        )
+
+    def clear_events(self) -> None:
+        self.events.clear()
 
 
 @dataclass

@@ -51,7 +51,7 @@ class TestNormalisation:
         assert is_usable_name("-") is False
 
     def test_a_title_alone_is_not_a_usable_name(self):
-        """"Dr" on its own names nobody, so it must not become a lookup key."""
+        """ "Dr" on its own names nobody, so it must not become a lookup key."""
         assert normalise_practitioner_name("Dr.") == ""
         assert is_usable_name("Dr.") is False
 
@@ -99,6 +99,25 @@ class TestStates:
         assert alias.state is AliasResolutionState.REJECTED
         assert alias.candidate_provider_ids == ()
         assert alias.review_note == "Not a person, a workshop title"
+
+    def test_resolving_emits_an_auditable_decision(self):
+        alias = _alias()
+        alias.resolve(ProviderId("prov-1"), ACTOR, at=AT)
+        assert [type(e).__name__ for e in alias.events] == ["ProviderAliasResolved"]
+        assert alias.events[0].source_value == "Dr Alice  Nakato"
+
+    def test_rejecting_emits_an_auditable_decision(self):
+        alias = _alias()
+        alias.reject(ACTOR, "Workshop title, not a person", at=AT)
+        assert [type(e).__name__ for e in alias.events] == ["ProviderAliasRejected"]
+
+    def test_classification_emits_nothing(self):
+        """Staging output is not a decision; see the ratchet note in test_audit_coverage."""
+        unmapped = _alias()
+        unmapped.mark_unmapped(at=AT)
+        ambiguous = _alias()
+        ambiguous.mark_ambiguous(("prov-1", "prov-2"), at=AT)
+        assert unmapped.events == [] and ambiguous.events == []
 
     def test_the_raw_source_value_is_never_rewritten(self):
         alias = _alias()

@@ -76,20 +76,32 @@ class TestProvenance:
 class TestBatchLifecycle:
     def test_applying_records_actor_and_time(self):
         batch = _batch()
-        batch.mark_applied(ACTOR, at=AT)
+        batch.mark_applied(ACTOR, at=AT, accepted_count=7)
         assert batch.status is ImportBatchStatus.APPLIED
         assert (batch.applied_by, batch.applied_at) == (ACTOR, AT)
+
+    def test_applying_emits_an_auditable_event_with_the_accepted_count(self):
+        batch = _batch()
+        batch.mark_applied(ACTOR, at=AT, accepted_count=7)
+        assert [type(e).__name__ for e in batch.events] == ["SessionImportBatchApplied"]
+        assert batch.events[0].accepted_count == 7
+
+    def test_abandoning_emits_an_auditable_event_with_the_reason(self):
+        batch = _batch()
+        batch.abandon(ACTOR, "Wrong file", at=AT)
+        assert [type(e).__name__ for e in batch.events] == ["SessionImportBatchAbandoned"]
+        assert batch.events[0].reason == "Wrong file"
 
     def test_a_batch_cannot_be_applied_twice(self):
         """Replaying an applied batch must not silently reimport it."""
         batch = _batch()
-        batch.mark_applied(ACTOR, at=AT)
+        batch.mark_applied(ACTOR, at=AT, accepted_count=7)
         with pytest.raises(DomainError):
-            batch.mark_applied(ACTOR, at=AT)
+            batch.mark_applied(ACTOR, at=AT, accepted_count=7)
 
     def test_an_applied_batch_cannot_be_abandoned(self):
         batch = _batch()
-        batch.mark_applied(ACTOR, at=AT)
+        batch.mark_applied(ACTOR, at=AT, accepted_count=7)
         with pytest.raises(DomainError):
             batch.abandon(ACTOR, "Wrong file", at=AT)
 

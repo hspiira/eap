@@ -31,7 +31,13 @@ import app.domain.entities as entities_pkg
 # instead, which is what actually reaches audit_logs: route-level audit_change
 # is driven by entity.events, so a call on an entity that emits nothing is a
 # no-op. panel.py advertised itself as audit-trailed while doing exactly that.
-KNOWN_SILENT_MUTATORS = 145
+# ProviderAliasEntity.mark_ambiguous and mark_unmapped are the staging
+# classifier's output, not decisions: one event per unmatched name would flood
+# audit_logs for a file of several thousand rows, and the reviewable state plus
+# candidates are persisted on the row. The alias decisions that a person makes,
+# resolve and reject, do emit, as do specialty retire/restore and import batch
+# apply/abandon.
+KNOWN_SILENT_MUTATORS = 147
 
 
 def _entity_classes():
