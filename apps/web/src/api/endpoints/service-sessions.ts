@@ -1,12 +1,3 @@
-/**
- * Service Sessions API Endpoints
- *
- * Create payload sourced from BE OpenAPI (`@/api/generated.ServiceSessionCreate`).
- * Fields beyond `{service_id, provider_id, member_id, scheduled_at, location}`
- * are not accepted by the BE. Lifecycle mutations (complete/cancel/no-show)
- * have dedicated request schemas; see ServiceSessionCompleteRequest etc.
- */
-
 import type { Schemas, ServiceSessionCreate } from "@/api/generated"
 
 import apiClient from "../client"

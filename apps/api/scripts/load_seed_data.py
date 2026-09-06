@@ -349,7 +349,7 @@ def build_service_sessions(rows: list[dict]) -> list[ServiceSessionModel]:
             tenant_id=r["tenant_id"],
             service_id=r["service_id"],
             provider_id=r["provider_id"],
-            person_id=r["person_id"],
+            member_id=r["member_id"],
             scheduled_at=parse_dt(r["scheduled_at"]) or datetime.now(UTC),
             status=SessionStatus(r["status"]),
             reschedule_count=r.get("reschedule_count", 0),

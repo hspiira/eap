@@ -29086,7 +29086,7 @@
     },
     "/service-sessions/member/{member_id}": {
       "get": {
-        "description": "Get all sessions for a person.",
+        "description": "Get all sessions for a member.",
         "operationId": "get_sessions_by_member_service_sessions_member__member_id__get",
         "parameters": [
           {
@@ -29139,7 +29139,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Get all sessions for a person",
+        "summary": "Get all sessions for a member",
         "tags": [
           "service-sessions"
         ]

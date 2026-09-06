@@ -33,7 +33,8 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN groupadd --gid 1000 evexia && \
-    useradd --uid 1000 --gid evexia --shell /bin/bash --create-home evexia
+    useradd --uid 1000 --gid evexia --shell /bin/bash --create-home evexia && \
+    install -d -o evexia -g evexia -m 0700 /app/uploads
 
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv

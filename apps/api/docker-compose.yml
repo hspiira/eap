@@ -45,6 +45,7 @@ services:
       - ./app:/app/app:ro
       - ./tests:/app/tests:ro
       - ./alembic:/app/alembic
+      - contract_files_dev:/app/uploads
     environment: *dev-env
     depends_on:
       db:
@@ -88,6 +89,8 @@ services:
     ports:
       - "8000:8000"
     environment: *prod-env
+    volumes:
+      - contract_files_prod:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -139,5 +142,9 @@ services:
 # Volumes
 # =============================================================================
 volumes:
+  contract_files_dev:
+    driver: local
+  contract_files_prod:
+    driver: local
   postgres-data:
     driver: local

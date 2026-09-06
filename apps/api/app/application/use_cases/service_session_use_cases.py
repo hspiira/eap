@@ -162,7 +162,7 @@ class GetServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
     async def execute_by_member(
         self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
-        """Get all sessions for a person."""
+        """Get all sessions for a member."""
         return await self.session_repository.get_by_member_id(tenant_id, member_id)
 
     async def execute_by_provider(

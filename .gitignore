@@ -66,6 +66,9 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
+# Contract attachments are private runtime data, not source files.
+uploads/
+
 # --- Scratch ---------------------------------------------------------------
 count.txt
 todos.json

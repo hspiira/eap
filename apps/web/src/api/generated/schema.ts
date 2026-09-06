@@ -4214,8 +4214,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get all sessions for a person
-         * @description Get all sessions for a person.
+         * Get all sessions for a member
+         * @description Get all sessions for a member.
          */
         get: operations["get_sessions_by_member_service_sessions_member__member_id__get"];
         put?: never;

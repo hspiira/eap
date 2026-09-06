@@ -28,14 +28,14 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
         """
-        Get all sessions for a person within a tenant.
+        Get all sessions for a member within a tenant.
 
         Args:
             tenant_id: Tenant identifier
             member_id: Member identifier
 
         Returns:
-            List of ServiceSessionEntity for the person
+            List of ServiceSessionEntity for the member
         """
         pass
 

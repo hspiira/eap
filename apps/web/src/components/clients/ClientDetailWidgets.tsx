@@ -11,6 +11,7 @@ interface DetailRailProps {
   statsLoading: boolean
   memberCount?: number
   nextRenewal?: string
+  milestonesState?: "loading" | "error" | "ready"
   tags: ClientTag[]
   tagsLoading: boolean
   children: Client[]
@@ -260,6 +261,7 @@ export function DetailRail({
   statsLoading,
   memberCount,
   nextRenewal,
+  milestonesState = "ready",
   tags,
   tagsLoading,
   children,
@@ -291,9 +293,15 @@ export function DetailRail({
           />
         </div>
         <div className="mt-4 border-t border-fg/10 pt-3 text-sm">
-          <p className="text-xs text-fg-muted">Next contract milestone</p>
+          <p className="text-xs text-fg-muted">Next contract milestone · 90 days</p>
           <p className="mt-1 font-medium">
-            {nextRenewal ? formatDay(nextRenewal) : "No upcoming contract dates"}
+            {milestonesState === "loading"
+              ? "Loading…"
+              : milestonesState === "error"
+                ? "Contract dates unavailable"
+                : nextRenewal
+                  ? formatDay(nextRenewal)
+                  : "No contract dates in the next 90 days"}
           </p>
         </div>
       </RailSection>

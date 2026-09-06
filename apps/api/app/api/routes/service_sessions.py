@@ -502,7 +502,7 @@ async def get_service_session(
 @router.get(
     "/member/{member_id}",
     response_model=list[ServiceSessionResponse],
-    summary="Get all sessions for a person",
+    summary="Get all sessions for a member",
 )
 @readonly()
 async def get_sessions_by_member(
@@ -512,7 +512,7 @@ async def get_sessions_by_member(
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get all sessions for a person."""
+    """Get all sessions for a member."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
         TenantId(tenant_id), EligibleMemberId(member_id)
     )

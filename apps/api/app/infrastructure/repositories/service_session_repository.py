@@ -59,7 +59,7 @@ class ServiceSessionRepositoryImpl(
     async def get_by_member_id(
         self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
-        """Get all sessions for a person within tenant, excluding soft-deleted."""
+        """Get all sessions for a member within tenant, excluding soft-deleted."""
         stmt = select(ServiceSessionModel).where(
             ServiceSessionModel.tenant_id == tenant_id.value,
             ServiceSessionModel.member_id == member_id.value,

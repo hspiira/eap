@@ -62,8 +62,8 @@ foreign-tenant IDs, and escapes spreadsheet formula prefixes.
 ## Compatibility retirement
 
 Client detail uses the Members roster, including employees and beneficiaries,
-with a 20-row preview, the full server count, and a link to the client-filtered
-Members list. Contextual creation preselects the client and refreshes the roster
+with a searchable, paginated roster, relationship/status filters and the full
+server count. Contextual creation preselects the client and refreshes the roster
 and client list. Viewers have read-only access. Existing `tab=staff` links still
 open the renamed Members tab.
 
@@ -71,6 +71,24 @@ The client list's Employees column counts canonical employee members across
 all roster statuses, excluding beneficiaries. The response keeps the existing
 `staff_count` field for compatibility. Legacy Persons records are not included;
 identity migration remains separate work.
+
+Operational `service_sessions` now use `member_id -> eligible_members.id` for
+the client subject; `provider_id -> persons.id` remains unchanged. Session
+creation checks all referenced records against the current tenant and rejects
+non-provider Persons as providers. The session forms, lists, detail view and
+history links resolve Members directly, without requiring User accounts.
+
+Migration `a7c9e1f3b5d7` is deliberately an empty-table cutover. Both directions
+refuse to run if any service sessions exist. The current environment has no
+legacy sessions, so there is no Person/Member bridge or compatibility read to
+maintain. Do not run it against a populated deployment without a separately
+reviewed, tenant/client-scoped identity mapping and data migration.
+
+Historical import validation accepts `member_code` and produces `member_id`.
+Mappings are nested by canonical client ID, then company member code. The CLI
+remains validation-only; it neither creates Members nor persists sessions.
+Person DSAR exports include sessions in which that Person is the provider,
+not sessions belonging to an unrelated Member with a coincidentally equal ID.
 
 Keep `/persons` until Providers/panel, counsellor assignment, the user-detail
 person link, and other legacy person consumers have replacement contracts and
@@ -99,8 +117,9 @@ tests cover the member list, detail page and both roster/contact forms.
 
 ## Privacy model
 
-`eligible_members` is the employer-side identity record. Clinical records do
-not reference it directly; continuity uses the existing pseudonymous
+`eligible_members` is the employer-side identity record. The operational
+`service_sessions` workflow references it directly. The separate clinical
+case/session workflow retains pseudonymous continuity through
 `eligible_member_clinical_link`. Any future duplicate merge must preserve that
 link, emit an auditable reassignment, and prevent cross-tenant or cross-client
 merges before it is exposed in the UI.

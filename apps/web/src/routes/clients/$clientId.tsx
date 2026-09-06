@@ -565,6 +565,9 @@ function ClientDetailPage() {
                 statsLoading={statsQuery.isPending}
                 memberCount={rosterCount}
                 nextRenewal={upcomingItems[0]?.date}
+                milestonesState={
+                  endingQuery.isPending ? "loading" : endingQuery.isError ? "error" : "ready"
+                }
                 tags={tags}
                 tagsLoading={tagsQuery.isPending}
                 children={children}
