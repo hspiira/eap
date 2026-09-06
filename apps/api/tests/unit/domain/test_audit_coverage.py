@@ -25,13 +25,12 @@ import app.domain.entities as entities_pkg
 # Account linkage is audited by the Members route as an explicit operation
 # because it is an association between two aggregates, rather than a member
 # lifecycle event. Keep those two domain setters visible in this baseline.
-# ProviderEntity.replace_profile is a wholesale profile swap used by the
-# provider patch route, and it stays silent. The two operations that matter,
-# panel status and tier, emit ProviderPanelStatusChanged and ProviderTierChanged
-# instead, which is what actually reaches audit_logs: route-level audit_change
-# is driven by entity.events, so a call on an entity that emits nothing is a
-# no-op. panel.py advertised itself as audit-trailed while doing exactly that.
-KNOWN_SILENT_MUTATORS = 145
+# ProviderEntity has no silent mutator left. replace_profile, the wholesale
+# swap the patch route used to call, is gone; every provider mutation now runs
+# through a command that emits. Route-level audit_change is driven by
+# entity.events, so a call on an entity that emits nothing is a no-op, which is
+# what panel.py did while advertising itself as audit-trailed.
+KNOWN_SILENT_MUTATORS = 143
 
 
 def _entity_classes():

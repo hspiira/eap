@@ -18,7 +18,42 @@ from app.api.routes.service_sessions import router
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
-from app.domain.value_objects.core import ClientId, EligibleMemberId, TenantId
+from app.domain.entities.provider import ProviderEntity
+from app.domain.enums import (
+    AccreditationStatus,
+    BaseStatus,
+    PanelStatus,
+    ProviderTier,
+    UgandaRegion,
+)
+from app.domain.value_objects.core import (
+    ClientId,
+    EligibleMemberId,
+    ProviderId,
+    ProviderProfile,
+    TenantId,
+    UserId,
+)
+from app.shared.utils.datetime import utc_now
+
+
+def _bookable_provider() -> ProviderEntity:
+    """An active, accredited, on-panel practitioner: the booking gate passes."""
+    now = utc_now()
+    return ProviderEntity(
+        id=ProviderId("p1"),
+        tenant_id=TenantId("t1"),
+        status=BaseStatus.ACTIVE,
+        display_name="Amina Okello",
+        created_at=now,
+        updated_at=now,
+        provider_profile=ProviderProfile(
+            tier=ProviderTier.T2,
+            region=UgandaRegion.CENTRAL,
+            accreditation_status=AccreditationStatus.ACCREDITED,
+            panel_status=PanelStatus.ACTIVE,
+        ),
+    )
 
 
 @pytest_asyncio.fixture
@@ -38,7 +73,8 @@ async def api():
         user=TokenData(user_id="u1", tenant_id="t1", role="Admin"),
     )
     state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
-    state.providers.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    state.providers.get_by_id.return_value = _bookable_provider()
+    state.providers.get_for_booking.return_value = _bookable_provider()
     state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
     for dep, value in {
         get_eligible_member_repository: state.members,
@@ -72,11 +108,31 @@ async def test_create_uses_a_member_without_a_user_account(api):
     api.db.commit.assert_awaited_once()
 
 
-@pytest.mark.parametrize("resource", ["members", "providers", "services"])
+@pytest.mark.parametrize("resource", ["members", "services"])
 async def test_rejects_foreign_tenant_references(api, resource):
     getattr(api, resource).get_by_id.return_value.tenant_id = TenantId("other")
     response = await api.http.post("/service-sessions/?tenant_id=t1", json=PAYLOAD)
     assert response.status_code == 404
+    api.sessions.save.assert_not_awaited()
+
+
+async def test_rejects_foreign_tenant_provider(api):
+    """The provider read is tenant-scoped in SQL, so a foreign id resolves to nothing."""
+    api.providers.get_for_booking.return_value = None
+    response = await api.http.post("/service-sessions/?tenant_id=t1", json=PAYLOAD)
+    assert response.status_code == 404
+    api.sessions.save.assert_not_awaited()
+
+
+async def test_rejects_booking_an_ineligible_provider(api):
+    suspended = _bookable_provider()
+    suspended.change_panel_status(PanelStatus.SUSPENDED, UserId("admin"), "Quality review")
+    api.providers.get_for_booking.return_value = suspended
+    response = await api.http.post("/service-sessions/?tenant_id=t1", json=PAYLOAD)
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error"] == "PROVIDER_NOT_ELIGIBLE"
+    assert "panel_not_active" in [d["code"] for d in body["details"]]
     api.sessions.save.assert_not_awaited()
 
 

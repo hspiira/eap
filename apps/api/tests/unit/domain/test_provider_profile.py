@@ -1,4 +1,9 @@
-"""ProviderProfile + non-compete tests (Phase 2 #D-Provider)."""
+"""Non-compete clause tests.
+
+The panel-eligibility cases that used to live here moved to
+tests/unit/domain/test_provider_eligibility.py when ProviderProfile.is_panel_eligible
+was retired in favour of the one policy the write paths call.
+"""
 
 from datetime import UTC, date, datetime, timedelta
 
@@ -40,28 +45,6 @@ def _profile(
         accreditation_expiry=expiry,
         specialties=("MENTAL_ILL_HEALTH",),
     )
-
-
-class TestProviderProfile:
-    def test_panel_eligible_with_active_accredited_unexpired(self):
-        profile = _profile(expiry=utc_now().date() + timedelta(days=30))
-        assert profile.is_panel_eligible() is True
-
-    def test_panel_ineligible_when_panel_suspended(self):
-        profile = _profile(panel=PanelStatus.SUSPENDED)
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_ineligible_when_accreditation_lapsed(self):
-        profile = _profile(accreditation=AccreditationStatus.LAPSED)
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_ineligible_when_accreditation_expired(self):
-        profile = _profile(expiry=utc_now().date() - timedelta(days=1))
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_eligible_when_no_expiry(self):
-        profile = _profile(expiry=None)
-        assert profile.is_panel_eligible() is True
 
 
 def _clause(
