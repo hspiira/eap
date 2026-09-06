@@ -122,7 +122,7 @@ class TestEveryProviderErrorBody:
             message, field = detail["message"], detail["field"]
             assert message, f"{error.error_code} has an empty detail message"
             if field in _IDENTIFIER_FIELDS:
-                assert not message.strip()[0:1] in ("[", "{"), "a repr reached an id field"
+                assert message.strip()[0:1] not in ("[", "{"), "a repr reached an id field"
                 continue
             assert _is_prose(message), (
                 f"{error.error_code} puts {message!r} on {field!r}, which is not "
