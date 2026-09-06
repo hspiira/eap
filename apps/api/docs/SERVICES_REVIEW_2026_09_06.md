@@ -168,3 +168,31 @@ leave the moved row tied with rows that still inherit.
   tenant by design.
 - **Do not act on the 16 inferred assignments.** The clinical owner confirmed
   them; they are loaded as `confirmed` and the open risk entry is now stale.
+
+## 5. Verification against a running system
+
+Tests aside, the four changes were exercised against the live dev API rather
+than only in unit tests. The browser bridge needs a manual extension install,
+so the *rendered* pages are still covered by component tests only; everything
+below is real HTTP against a running server and the dev database.
+
+| Check | Observed |
+| --- | --- |
+| `/auth/me` with `PLATFORM_TENANT_ID` unset | `is_platform_admin: false`. This is the misconfiguration the old frontend failed open on. |
+| `/auth/me` with it set to the caller's tenant | `is_platform_admin: true` |
+| `GET /diagnoses/aliases` as a tenant admin | 403 |
+| `GET /diagnoses/tree` as the same caller | 200, so taxonomy reads stay open |
+| Either route unauthenticated | 401 |
+| `?confidence=inferred` after migration `c1e4a7b9d2f6` | the four question-4 values, no others |
+| `PUT` confirming one | same row, same mapping, confidence flipped; queue drops to three |
+| `PUT` with a leaf from another type | 422 |
+| `ServiceSessionCompleteRequest` | accepts `case_id`; drawdown returns `consumed`, `authorization_id`, `sessions_remaining`, `reason` |
+
+The dev database was one migration behind, so `c1e4a7b9d2f6` was applied to it
+during this check. The row confirmed while testing was reset, leaving the
+counts as they started: 42 confirmed, 4 inferred.
+
+Worth noting: the later migrations in the chain currently fail on this database
+(`CREATE TYPE basestatus` already exists), which is unrelated to this work but
+means `alembic upgrade head` does not complete there today.
+
