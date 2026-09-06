@@ -107,6 +107,20 @@ session's client, behind clinical scope. Backfill still sends no case, which is
 deliberate and now commented: it records history that already happened, so
 drawing down a live authorization would double count.
 
+Wiring the caller exposed two defects that were latent only because nothing
+ever sent `case_id`:
+
+- The picker fell through to *every* client's cases while the member query was
+  still resolving, since the filter was conditional on a `clientId` that starts
+  undefined. Now fails closed (`5419372`).
+- The API trusted the supplied `case_id` and only checked the tenant, so naming
+  another client's case would spend that client's entitlement. Both a case and
+  a member carry an employer-side `client_id`, so the check compares those and
+  never touches the pseudonymous subject link (`6900360`).
+
+Worth noting for anything similar: an unused parameter is not a safe
+parameter. Both of these had been sitting in a shipped API.
+
 ### Second: settle questions 4 and 5, or time-box them. Done, `7bc3daf`
 
 These are the only things standing between phase 5 and closure, and they are
