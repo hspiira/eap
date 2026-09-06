@@ -121,8 +121,12 @@ function ProvidersListPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="truncate text-sm font-semibold text-fg">{p.display_name || p.email}</h2>
-                        <p className="mt-0.5 text-xs text-fg/60">{p.email} · {profile.region}</p>
+                        <h2 className="truncate text-sm font-semibold text-fg">
+                          {p.display_name || p.email}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-fg/60">
+                          {p.email} · {profile.region}
+                        </p>
                       </div>
                       <ProviderTierBadge tier={profile.tier} />
                     </div>

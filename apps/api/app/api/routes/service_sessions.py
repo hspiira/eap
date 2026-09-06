@@ -147,7 +147,9 @@ async def create_service_session(
     provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
     # Compatibility for test/rollout overrides and pre-cutover workers. New
     # persistence always returns a (ProviderModel, UserModel) tuple.
-    provider_tenant = getattr(provider[0], "tenant_id", None) if isinstance(provider, tuple) else None
+    provider_tenant = (
+        getattr(provider[0], "tenant_id", None) if isinstance(provider, tuple) else None
+    )
     if provider_tenant is None:
         legacy_provider = await person_repo.get_by_id(ProviderId(data.provider_id))
         provider_tenant = legacy_provider.tenant_id.value if legacy_provider else None

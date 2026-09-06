@@ -7,7 +7,7 @@ from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,
     OutreachRecordId,
-    PersonId,
+    ProviderId,
     SurveyCampaignId,
     SurveyResponseId,
     TenantId,
@@ -43,7 +43,7 @@ class OutreachAssigned(DomainEvent):
     """Raised when an outreach record is routed to a counsellor."""
 
     outreach_id: "OutreachRecordId"
-    counsellor_id: PersonId
+    counsellor_id: ProviderId
 
 
 @dataclass(frozen=True)

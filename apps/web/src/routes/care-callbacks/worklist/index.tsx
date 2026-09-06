@@ -304,7 +304,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         <Link
           to="/care-callbacks/worklist/$caseId"
           params={{ caseId: row.id }}
-                    aria-label={`Open ${row.member_id}`}
+          aria-label={`Open ${row.member_id}`}
           className="inline-grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg group-hover:opacity-100"
         >
           <ChevronRight className="size-3.5" />

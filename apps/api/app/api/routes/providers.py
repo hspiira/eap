@@ -15,10 +15,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.value_objects.core import ProviderId, TenantId
-from app.infrastructure.models.provider_model import ProviderModel
-from app.infrastructure.models.user_model import UserModel
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.generators import generate_cuid
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
@@ -53,7 +50,11 @@ async def list_providers(
 ):
     rows = await repo.list_for_tenant(TenantId(tenant_id), limit=limit, offset=offset)
     total = await repo.count(TenantId(tenant_id))
-    return {"items": [_response(row) for row in rows], "total": total, "has_more": offset + len(rows) < total}
+    return {
+        "items": [_response(row) for row in rows],
+        "total": total,
+        "has_more": offset + len(rows) < total,
+    }
 
 
 @router.get("/{provider_id}", response_model=ProviderResponse)
@@ -70,7 +71,12 @@ async def get_provider(
     return _response(row)
 
 
-@router.post("", response_model=ProviderResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_not_viewer)])
+@router.post(
+    "",
+    response_model=ProviderResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_not_viewer)],
+)
 @transactional()
 async def create_provider(
     data: ProviderCreate,
@@ -79,18 +85,21 @@ async def create_provider(
     repo: ProviderRepository = Depends(get_provider_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await db.get(UserModel, data.user_id)
-    if user is None or user.tenant_id != tenant_id:
+    user = await repo.get_user_in_tenant(data.user_id, TenantId(tenant_id))
+    if user is None:
         raise HTTPException(status_code=404, detail="User not found in tenant")
-    provider = ProviderModel(
-        id=generate_cuid(), tenant_id=tenant_id, user_id=data.user_id,
-        provider_profile=data.provider_profile.model_dump(mode="json"), license_info=data.license_info,
+    provider = await repo.create(
+        tenant_id=TenantId(tenant_id),
+        user_id=data.user_id,
+        provider_profile=data.provider_profile.model_dump(mode="json"),
+        license_info=data.license_info,
     )
-    await repo.save(provider)
     return _response((provider, user))
 
 
-@router.patch("/{provider_id}", response_model=ProviderResponse, dependencies=[Depends(require_not_viewer)])
+@router.patch(
+    "/{provider_id}", response_model=ProviderResponse, dependencies=[Depends(require_not_viewer)]
+)
 @transactional()
 async def update_provider(
     provider_id: str,

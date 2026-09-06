@@ -70,6 +70,13 @@ class OutreachRecord:
         if self.contact_attempts < 0:
             raise DomainError("contact_attempts cannot be negative")
 
+    @property
+    def required_member_id(self) -> EligibleMemberId:
+        """`__post_init__` guarantees this; the property states it for the checker."""
+        if self.member_id is None:
+            raise DomainError("Outreach record requires a member_id")
+        return self.member_id
+
     def assign(self, counsellor_id: ProviderId, now: datetime | None = None) -> None:
         """Route this outreach to a counsellor."""
         if self.status in _TERMINAL_STATUSES:
@@ -130,7 +137,7 @@ class OutreachRecord:
                 CrisisFlagRaised(
                     occurred_at=now,
                     outreach_id=self.id,
-                    person_id=PersonId(self.member_id.value),
+                    person_id=PersonId(self.required_member_id.value),
                     risk_level=risk_level.value,
                     reason=crisis_reason or "Crisis indicator triggered by triage",
                 )

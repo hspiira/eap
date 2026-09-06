@@ -24,8 +24,7 @@ async def migration_db():
     engine = create_async_engine(url)
     spec = importlib.util.spec_from_file_location(
         "member_account_migration",
-        Path(__file__).parents[2]
-        / "alembic/versions/c9e1a3b5d7f9_add_member_account_links.py",
+        Path(__file__).parents[2] / "alembic/versions/c9e1a3b5d7f9_add_member_account_links.py",
     )
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -71,7 +70,9 @@ async def test_account_link_upgrade_preserves_members_and_enforces_one_to_one(mi
 async def test_account_link_migration_roundtrip(migration_db):
     connection, migration = migration_db
     await connection.run_sync(lambda conn: migrate(conn, migration.upgrade))
-    keys = await connection.run_sync(lambda conn: inspect(conn).get_foreign_keys("eligible_members"))
+    keys = await connection.run_sync(
+        lambda conn: inspect(conn).get_foreign_keys("eligible_members")
+    )
     assert {tuple(key["constrained_columns"]): key["referred_table"] for key in keys} == {
         ("user_id",): "users"
     }

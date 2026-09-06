@@ -190,9 +190,7 @@ async def test_reviewed_merge_moves_references_and_deletes_only_the_source(
             )
         await session.commit()
 
-    merged = await http.post(
-        f"/members/{target_id}/merge", json={"source_member_id": source_id}
-    )
+    merged = await http.post(f"/members/{target_id}/merge", json={"source_member_id": source_id})
     assert merged.status_code == 200, merged.text
     assert merged.json()["transferred"] == {
         "sessions": 1,
@@ -208,19 +206,30 @@ async def test_reviewed_merge_moves_references_and_deletes_only_the_source(
     async with isolated_members_db() as session:
         child_row = await session.get(EligibleMemberModel, child.json()["id"])
         assert child_row.primary_employee_member_id == target_id
-        assert (await session.get(MemberNextOfKinModel, contact.json()["id"])).member_id == target_id
-        assert await session.scalar(
-            text("SELECT member_id FROM service_sessions WHERE id = 'session-1'")
-        ) == target_id
+        assert (
+            await session.get(MemberNextOfKinModel, contact.json()["id"])
+        ).member_id == target_id
+        assert (
+            await session.scalar(
+                text("SELECT member_id FROM service_sessions WHERE id = 'session-1'")
+            )
+            == target_id
+        )
         for table in ("cases", "clinical_notes", "authorizations"):
-            assert await session.scalar(
-                text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
-                {"id": f"{table}-1"},
-            ) == subjects[target_id]
-            assert await session.scalar(
-                text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
-                {"id": f"foreign-{table}"},
-            ) == subjects[source_id]
+            assert (
+                await session.scalar(
+                    text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
+                    {"id": f"{table}-1"},
+                )
+                == subjects[target_id]
+            )
+            assert (
+                await session.scalar(
+                    text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
+                    {"id": f"foreign-{table}"},
+                )
+                == subjects[source_id]
+            )
         assert await session.get(ClinicalSubjectModel, subjects[source_id]) is None
 
 

@@ -619,9 +619,7 @@ async def import_members(
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=422, detail="decisions_json must be an object") from exc
     previews: dict[int, MemberImportRowPreview] = {}
-    errors: dict[int, str] = {
-        int(issue["row"]): str(issue["message"]) for issue in parse_issues
-    }
+    errors: dict[int, str] = {int(issue["row"]): str(issue["message"]) for issue in parse_issues}
     error_fields: dict[int, str | None] = {
         int(issue["row"]): str(issue.get("field")) if issue.get("field") else None
         for issue in parse_issues
@@ -629,9 +627,11 @@ async def import_members(
     prepared: list[tuple[MemberCsvRow, ClientEntity, MemberCreate]] = []
     seen: set[tuple[str, str]] = set()
     for row in rows:
-        client = await client_repo.get_by_code(
-            TenantId(current_user.tenant_id), row.client_code or ""
-        ) if row.client_code else None
+        client = (
+            await client_repo.get_by_code(TenantId(current_user.tenant_id), row.client_code or "")
+            if row.client_code
+            else None
+        )
         message = errors.get(row.row_number)
         if message is None and client is None:
             message = "Company Code does not resolve to a client in this tenant"
@@ -657,7 +657,9 @@ async def import_members(
                     work_email=row.work_email,
                     personal_email=row.personal_email,
                     gender=(MemberGender(row.gender.title()) if row.gender else None),
-                    date_of_birth=(date.fromisoformat(row.date_of_birth) if row.date_of_birth else None),
+                    date_of_birth=(
+                        date.fromisoformat(row.date_of_birth) if row.date_of_birth else None
+                    ),
                     phone=row.phone,
                     staff_number=row.staff_number,
                     national_id=row.national_id,
@@ -673,7 +675,11 @@ async def import_members(
         elif duplicate and decision not in (None, "skip"):
             message = "Existing members can only be skipped; they are never overwritten"
         skipped = decision == "skip"
-        state = "invalid" if message else ("duplicate" if duplicate else ("skipped" if skipped else "new"))
+        state = (
+            "invalid"
+            if message
+            else ("duplicate" if duplicate else ("skipped" if skipped else "new"))
+        )
         previews[row.row_number] = _member_import_row(
             row, client_name=client.name if client else None, state=state, message=message
         )

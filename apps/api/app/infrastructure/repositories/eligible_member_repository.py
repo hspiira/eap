@@ -385,7 +385,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         await self._session.execute(
             delete(EligibleMemberClinicalLinkModel).where(
                 EligibleMemberClinicalLinkModel.tenant_id == tenant_id.value,
-                EligibleMemberClinicalLinkModel.member_id == source_id.value
+                EligibleMemberClinicalLinkModel.member_id == source_id.value,
             )
         )
         await self._session.execute(

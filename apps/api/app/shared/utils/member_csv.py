@@ -82,9 +82,19 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
         )
         rows.append(parsed)
         if not parsed.client_code:
-            issues.append({"row": row_number, "field": "Company Code", "message": "Client code is required"})
+            issues.append(
+                {"row": row_number, "field": "Company Code", "message": "Client code is required"}
+            )
         if not parsed.employer_member_id or parsed.employer_member_id.endswith("-"):
-            issues.append({"row": row_number, "field": "Staff_ID", "message": "Stable Staff_ID is required"})
+            issues.append(
+                {"row": row_number, "field": "Staff_ID", "message": "Stable Staff_ID is required"}
+            )
         if not parsed.display_label:
-            issues.append({"row": row_number, "field": "Name of Employee", "message": "Member name is required"})
+            issues.append(
+                {
+                    "row": row_number,
+                    "field": "Name of Employee",
+                    "message": "Member name is required",
+                }
+            )
     return rows, issues

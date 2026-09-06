@@ -119,9 +119,15 @@ async def check_provider_eligibility(
     if row is None or row[0].tenant_id != current_user.tenant_id:
         raise NotFoundError(f"Provider not found: {provider_id}")
     profile = row[0].provider_profile
-    clauses = await clause_repo.list_for_provider(TenantId(current_user.tenant_id), ProviderId(provider_id))
+    clauses = await clause_repo.list_for_provider(
+        TenantId(current_user.tenant_id), ProviderId(provider_id)
+    )
     binding = [c for c in clauses if c.is_currently_binding()]
-    panel_eligible = bool(profile and profile.get("panel_status") == "Active" and profile.get("accreditation_status") == "Accredited")
+    panel_eligible = bool(
+        profile
+        and profile.get("panel_status") == "Active"
+        and profile.get("accreditation_status") == "Accredited"
+    )
     out = {
         "provider_id": provider_id,
         "client_id": client_id,
