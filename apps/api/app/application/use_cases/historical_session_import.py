@@ -22,7 +22,7 @@ from app.domain.enums import SessionDeliveryContext, SessionStatus
 from app.domain.exceptions import DomainError
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
-from app.domain.services.provider_calendar import boundary_day
+from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import (
     EligibleMemberId,
     ProviderId,

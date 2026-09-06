@@ -1,10 +1,12 @@
-"""The timezone a date-valued provider boundary is evaluated in.
+"""The timezone every date-valued provider boundary is evaluated in.
 
 Decision 7 adopts the configured tenant timezone with Africa/Kampala as this
-release's default, for accreditation expiry. An affiliation interval is the
-same kind of boundary, so agent 1 and agent 2 agreed to evaluate both here.
-Evaluating one in Kampala and the other in UTC would put a session scheduled
-just after midnight on different days in two halves of one eligibility answer.
+release's default, for accreditation expiry. An affiliation interval and a
+completed session's attribution are the same kind of boundary, so all of them
+resolve their day here. Evaluating one in Kampala and another in UTC would put
+a session scheduled just after midnight on different days in two halves of one
+answer. When a tenant timezone column lands, this constant is the only thing
+that changes.
 """
 
 from datetime import date, datetime

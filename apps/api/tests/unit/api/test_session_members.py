@@ -12,6 +12,7 @@ from app.api.dependencies import (
     get_provider_repository,
     get_service_repository,
     get_service_session_repository,
+    get_session_attribution_reader,
 )
 from app.api.dependencies.clinical import get_authorization_repository, get_case_repository
 from app.api.dependencies.provider_network import (
@@ -88,9 +89,8 @@ async def api():
     state.affiliations.get_valid_affiliation.return_value = SimpleNamespace(
         organisation_id=SimpleNamespace(value="org-1")
     )
-    state.affiliations.get_affiliation.return_value = SimpleNamespace(
-        organisation_id=SimpleNamespace(value="org-1")
-    )
+    state.attribution = AsyncMock()
+    state.attribution.organisation_ids_by_affiliation.return_value = {"aff-1": "org-1"}
     state.organisations.get_organisation.return_value = SimpleNamespace(
         is_active=True, approval_status=_APPROVED
     )
@@ -104,6 +104,7 @@ async def api():
         get_case_repository: state.cases,
         get_audit_event_handler: state.audit,
         get_provider_affiliation_repository: state.affiliations,
+        get_session_attribution_reader: state.attribution,
         get_provider_organisation_repository: state.organisations,
         get_db: state.db,
     }.items():

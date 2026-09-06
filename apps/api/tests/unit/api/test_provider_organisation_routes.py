@@ -222,6 +222,8 @@ class TestAffiliationEndUpdateShape:
         from app.api.schemas.provider_network_schemas import ProviderAffiliationEndUpdate
 
         assert ProviderAffiliationEndUpdate(reason="Extend", valid_until=None).valid_until is None
+
+
 # The UnwiredAttributionGuard placeholder and its two tests are gone: the real
 # check is registered in app/api/dependencies/provider_network.py and reads
 # session attribution, so there is no longer an unwired state to fail closed

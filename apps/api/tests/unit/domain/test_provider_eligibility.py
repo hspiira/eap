@@ -19,12 +19,12 @@ from app.domain.enums import (
     ProviderTier,
     UgandaRegion,
 )
-from app.domain.services.provider_calendar import boundary_day
 from app.domain.services.provider_eligibility import (
     ProviderNotEligibleError,
     evaluate_practitioner,
     require_eligible,
 )
+from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ProviderId, ProviderProfile, TenantId
 from app.shared.utils.datetime import utc_now
 

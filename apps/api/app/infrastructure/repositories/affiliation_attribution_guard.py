@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import SessionStatus
-from app.domain.services.provider_calendar import PROVIDER_BOUNDARY_TIMEZONE
+from app.domain.services.provider_network_calendar import PROVIDER_BOUNDARY_TIMEZONE
 from app.domain.value_objects.core import TenantId
 from app.domain.value_objects.provider_network import ProviderAffiliationId
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel

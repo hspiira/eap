@@ -163,6 +163,7 @@ ignore_imports = [
     "app.api.dependencies.provider_network -> app.infrastructure.repositories.affiliation_attribution_guard",
     "app.api.dependencies.provider_network -> app.infrastructure.repositories.provider_network_repository",
     "app.api.dependencies.provider -> app.infrastructure.repositories.provider_repository",
+    "app.api.dependencies.provider -> app.infrastructure.repositories.session_attribution_reader",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.report_repository",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.utilisation_event_repository",
     "app.api.dependencies.reporting -> app.infrastructure.services.report_query_runner",

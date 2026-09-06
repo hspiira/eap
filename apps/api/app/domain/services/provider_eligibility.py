@@ -6,7 +6,7 @@ here is consulted when accepting a historical record.
 
 Pure functions; no IO. Organisation approval and affiliation validity extend
 this in phase 3 through ``extend`` rather than a second rule set. Date-valued
-boundaries resolve their day through ``provider_calendar.boundary_day``.
+boundaries resolve their day through ``provider_network_calendar``.
 """
 
 from dataclasses import dataclass
@@ -15,7 +15,7 @@ from datetime import date, datetime
 from app.domain.entities.provider import ProviderEntity
 from app.domain.enums import AccreditationStatus, BaseStatus, PanelStatus
 from app.domain.exceptions import DomainError
-from app.domain.services.provider_calendar import boundary_day
+from app.domain.services.provider_network_calendar import boundary_day
 
 
 @dataclass(frozen=True)
