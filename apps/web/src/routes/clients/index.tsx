@@ -99,7 +99,8 @@ const COLUMNS: ListColumn[] = [
   { header: "Code", sortField: "code" },
   { header: "Tier", sortField: "tier" },
   { header: "Status", sortField: "status" },
-  { header: "Contact", className: "text-fg/65" },
+  { header: "Email", className: "text-fg/65" },
+  { header: "Phone", className: "text-fg/65" },
   { header: "Contracts", className: "text-fg/65" },
   { header: "Employees", className: "text-fg/65" },
   { header: "Last activity", className: "text-fg/65" },
@@ -722,10 +723,6 @@ function ClientRow({
   onEdit?: () => void
   onArchive?: () => void
 }) {
-  const contactPrimary = row.contact_info?.email ?? row.contact_info?.phone ?? null
-  const contactSecondary =
-    row.contact_info?.email && row.contact_info?.phone ? row.contact_info?.phone : null
-
   return (
     <TableRow className={`group cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
@@ -757,17 +754,11 @@ function ClientRow({
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell>
-        {contactPrimary ? (
-          <span className="block min-w-0">
-            <span className="block truncate text-sm text-fg">{contactPrimary}</span>
-            {contactSecondary ? (
-              <span className="block truncate text-xs text-fg-muted">{contactSecondary}</span>
-            ) : null}
-          </span>
-        ) : (
-          <span className="text-fg-subtle">-</span>
-        )}
+      <TableCell className="max-w-[14rem] truncate text-xs text-fg/70">
+        {row.contact_info?.email ?? <span className="text-fg-subtle">-</span>}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {row.contact_info?.phone ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
       <TableCell className="text-xs text-fg/70">
         {row.active_contracts_count == null ? "-" : row.active_contracts_count}
