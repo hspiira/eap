@@ -80,7 +80,7 @@ From `apps/web`, on Node 26.7.0, pnpm 10.9.0, against the integrated head.
 | --- | --- | --- |
 | Types | `pnpm typecheck` | pass |
 | Lint | `pnpm lint` | pass |
-| Tests | `pnpm test` | 70 files, 535 tests, all passed |
+| Tests | `pnpm test` | 70 files, 536 tests, all passed |
 | Build | `pnpm build` | pass |
 | Contract drift | `pnpm contracts:check` | pass, exit 0: regeneration is a no-op |
 
@@ -172,54 +172,69 @@ catalogue endpoint itself answers 200.
 - The specialty catalogue is empty on a fresh database, so linking a specialty
   is covered only by mocked tests.
 
-## Findings from the running API
+## Findings from the running API, and how they closed
 
 Three behaviours differed from what was published. None was a frontend fault.
+All three are now fixed, and the second turned out to be the shared cause of
+five separate errors across two modules.
 
 1. **The affiliation overlap `details` array was not field errors.** The API
-   returned
-   `[{"field": "field", "message": "valid_from", "code": null}, {"field": "conflicting_affiliation_id", "message": "<id>", "code": null}]`,
+   returned `[{"field": "field", "message": "valid_from", "code": null}, ...]`,
    a key/value bag in which `field` was the literal string `"field"` and the
-   message was the field's name. Reported and fixed by the organisations task
-   in `46dbba7`, which now returns one entry keyed by the real field carrying
-   the same sentence as the top-level message. The affiliation form uses it:
-   the overlap message now appears under the date input the server names, and
-   falls back to a banner when no usable field is given.
+   message was the field's name. Fixed by the organisations task in `46dbba7`:
+   one entry keyed by the real field, carrying the same sentence as the
+   top-level message. The affiliation form uses it, so the overlap message now
+   appears under the date input the server names, with a banner fallback when
+   no usable field is given.
 
-2. **The same defect is live in the shared exception serialiser, and is not
-   fixed.** `EvexiaException.to_api_response` at
-   `apps/api/app/domain/exceptions.py:55` maps each `details` key to a field
-   and its value to that field's message. `ValidationException.__init__` at
-   the same file, line 72, builds `details = {"field": field}`, so **every**
-   `ValidationException` raised with a field produces
-   `{"field": "field", "message": "<the field's name>", "code": null}`: the
-   error attaches to a field called `field`, and the message is a field name
-   rather than a sentence. Three live call sites:
-   `app/api/routes/service_sessions.py:147` (`delivery_context` on a booking
-   that states Unknown delivery),
-   `app/application/use_cases/client_use_cases.py:102` (`code`) and
-   `:121` (`parent_client_id`). The first is in this module's own booking
-   path. The consequence is contained rather than silent, because the shared
-   form hook now routes an unattachable error to the form-level banner where
-   the correct top-level message is shown, but no such error reaches the input
-   it is about, in providers or anywhere else. Owned by the core task; the
-   organisations task fixed its own call site by not using the pattern, which
-   leaves the class itself. `to_api_response` also hardcodes `code` to null,
-   so no domain error carries a machine-readable code. Eligibility failures
-   are unaffected: they come from a different path and do carry codes, which
-   was confirmed against the running API.
+2. **The same defect was in the shared exception serialiser.**
+   `EvexiaException.to_api_response` maps each `details` key to a field name
+   and its value to that field's message, and `ValidationException.__init__`
+   built `details = {"field": field}`. So **every** `ValidationException`
+   raised with a field produced
+   `{"field": "field", "message": "<the field's name>", "code": null}`. Three
+   live call sites, one of them the Unknown-delivery rejection in this
+   module's own booking path, and one the client-code validation on an
+   unrelated form. Fixed by the core task in `5ef385f`: the field error now
+   names the input, and `EvexiaException` takes an explicit `field_errors`
+   list for the two things a details dict cannot express, a machine-readable
+   code and several entries against one field. The eligibility error stopped
+   needing its own `to_api_response` override as a result.
 
-3. **A whitespace-only reason returns 400, not the documented 422, and carries
-   no `details`.** Traced to `_require_reason` at
-   `apps/api/app/domain/entities/provider.py:46`, which raises a `DomainError`
-   after the schema has let the whitespace through, so the practitioner
-   lifecycle commands answer 400 with an empty `details` array and nothing can
-   attach to the reason input. An empty string is caught earlier and returns
-   422 with a field error. The organisations task's own commands reject blank,
-   whitespace and tabs at the schema with 422, so this is the practitioner path
-   only. Owned by the core task. The reason dialogs disable their confirm
-   button until the reason is non-blank after trimming, so the UI does not
-   reach it; it matters for any other client.
+   Two consequences for this module. The Unknown-delivery message now attaches
+   to the booking form's delivery-context select rather than to a field that
+   does not exist, which is covered by a test asserting the message renders
+   inside that field. And the shared form hook's fallback, which routes an
+   unattachable error to the form-level banner, is no longer load-bearing for
+   these errors; it stays because it is the right behaviour for any error the
+   form cannot place.
+
+   The organisations task audited its own modules after this and found two
+   more instances of the same shape, an attribution conflict carrying a Python
+   list repr and an import conflict carrying a bare id, fixed in `a99e8a9`.
+   Neither is in a path this module currently reaches.
+
+   The provenance is worth separating, because two different mistakes share
+   one shape: the class defect predates this migration and is the core task's;
+   the call-site misuses were each owned by whoever wrote them. Finding the
+   class defect came from reading the serialiser to check the organisation
+   task's diagnosis, not from the frontend.
+
+3. **A whitespace-only reason returned 400 with no `details`.** Traced to
+   `_require_reason` in the provider entity raising a `DomainError` after the
+   schema had let the whitespace through, so the practitioner lifecycle
+   commands answered 400 with nothing to attach to the reason input. Fixed by
+   the core task at the schema: reason fields strip before checking, so `""`,
+   `"   "` and `"\t"` all return the same 422 against `reason`, and the reason
+   is stored stripped. The domain check stays as the invariant.
+
+   This is why the regenerated contract shows `minLength: 1` giving way to
+   `maxLength: 500` on the reason fields. Eight `minLength` constraints went
+   and six `maxLength` arrived, because two of the eight fields already had
+   `maxLength`. Every reason field checked individually: none lost all
+   constraints. The contract cannot express strip-then-validate, so the
+   disappearance of `minLength` reads as a loosening and is the opposite:
+   `minLength: 1` accepted `"   "` and the server did not.
 
 ## Carried items, with owners
 
@@ -227,14 +242,17 @@ Three behaviours differed from what was published. None was a frontend fault.
    organisation detail page resolves each one with a cached detail query.
    Requested of the organisations task; a `provider_display_name` would remove
    the per-row request.
-2. Findings 2 and 3 above, both owned by the core task. Finding 1 is closed.
-3. Historical import and alias review have no UI, deliberately. See below.
+2. Historical import and alias review have no UI, deliberately. See below.
+3. Linking a specialty is covered by mocked tests only, because the global
+   catalogue is platform-seeded and nothing seeds it yet, so a fresh database
+   has an empty catalogue. The endpoint itself answers 200.
 
-The two items previously carried here are closed: `PanelStatus` now has
+Closed since the first version of this document: `PanelStatus` now carries
 `Pending` and the `SessionCreateBody` extension is deleted, both against the
-generated contract. `ProviderApprovalStatus` was also renamed
-`OrganisationApprovalStatus`, which is what the API calls it; under the wrong
-name the bidirectional enum check had been silently skipping it.
+generated contract rather than ahead of it; `ProviderApprovalStatus` was
+renamed `OrganisationApprovalStatus`, which is what the API calls it, and
+under the wrong name the bidirectional enum check had been silently skipping
+it; and all three running-API findings above are fixed.
 
 ## Settled: one write path for specialties
 
