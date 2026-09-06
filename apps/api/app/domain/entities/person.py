@@ -52,6 +52,7 @@ from app.domain.value_objects.core import (
     EmploymentInfo,
     LicenseInfo,
     PersonId,
+    ProviderId,
     ProviderProfile,
     StaffInfo,
     TenantId,
@@ -328,7 +329,7 @@ class PersonEntity:
         self.events.append(
             ProviderPanelStatusChanged(
                 occurred_at=now,
-                provider_id=self.id,
+                provider_id=ProviderId(self.id.value),
                 old_status=old_status.value,
                 new_status=new_status.value,
                 actor=actor,
@@ -360,7 +361,7 @@ class PersonEntity:
         self.events.append(
             ProviderTierChanged(
                 occurred_at=now,
-                provider_id=self.id,
+                provider_id=ProviderId(self.id.value),
                 old_tier=old_tier.value,
                 new_tier=new_tier.value,
                 actor=actor,

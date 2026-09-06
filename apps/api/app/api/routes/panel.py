@@ -25,8 +25,10 @@ from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.value_objects.core import (
     ProviderId,
     TenantId,
+    UserId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/panel", tags=["panel"])
 
@@ -47,20 +49,20 @@ async def bulk_update_panel_status(
 ):
     updated, skipped, not_found, not_provider = [], [], [], []
     for provider_id in data.provider_ids:
-        row = await provider_repo.get_by_id(ProviderId(provider_id))
-        if row is None or row[0].tenant_id != current_user.tenant_id:
+        provider = await provider_repo.get_by_id(ProviderId(provider_id))
+        if provider is None or provider.tenant_id.value != current_user.tenant_id:
             not_found.append(provider_id)
             continue
-        provider, _user = row
         profile = provider.provider_profile
         if not profile:
             not_provider.append(provider_id)
             continue
-        if profile.get("panel_status") == data.new_status.value:
+        if profile.panel_status == data.new_status:
             skipped.append(provider_id)
             continue
-        provider.provider_profile = {**profile, "panel_status": data.new_status.value}
-        await db.flush()
+        provider.change_panel_status(data.new_status, UserId(current_user.user_id), data.reason)
+        await provider_repo.save(provider)
+        await audit_change(provider, audit_handler, current_user, request)
         updated.append(provider_id)
     return BulkPanelStatusResponse(
         updated=updated,
@@ -87,16 +89,16 @@ async def change_provider_tier(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await provider_repo.get_by_id(ProviderId(provider_id))
-    if row is None or row[0].tenant_id != current_user.tenant_id:
+    provider = await provider_repo.get_by_id(ProviderId(provider_id))
+    if provider is None or provider.tenant_id.value != current_user.tenant_id:
         raise NotFoundError(f"Provider not found: {provider_id}")
-    provider, _user = row
     if not provider.provider_profile:
         raise DomainError("Provider has no panel profile")
-    provider.provider_profile = {**provider.provider_profile, "tier": data.new_tier.value}
-    await db.flush()
+    provider.change_tier(data.new_tier, UserId(current_user.user_id), data.reason)
+    await provider_repo.save(provider)
+    await audit_change(provider, audit_handler, current_user, request)
     return TierChangeResponse(
-        provider_id=provider.id,
+        provider_id=provider.id.value,
         new_tier=data.new_tier,
     )
 
@@ -115,19 +117,15 @@ async def check_provider_eligibility(
     clause_repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    row = await provider_repo.get_by_id(ProviderId(provider_id))
-    if row is None or row[0].tenant_id != current_user.tenant_id:
+    provider = await provider_repo.get_by_id(ProviderId(provider_id))
+    if provider is None or provider.tenant_id.value != current_user.tenant_id:
         raise NotFoundError(f"Provider not found: {provider_id}")
-    profile = row[0].provider_profile
+    profile = provider.provider_profile
     clauses = await clause_repo.list_for_provider(
         TenantId(current_user.tenant_id), ProviderId(provider_id)
     )
     binding = [c for c in clauses if c.is_currently_binding()]
-    panel_eligible = bool(
-        profile
-        and profile.get("panel_status") == "Active"
-        and profile.get("accreditation_status") == "Accredited"
-    )
+    panel_eligible = profile is not None and profile.is_panel_eligible()
     out = {
         "provider_id": provider_id,
         "client_id": client_id,

@@ -27,6 +27,7 @@ from app.domain.value_objects.core import (
     LicenseInfo,
     NonCompeteClauseId,
     PersonId,
+    ProviderId,
     ProviderProfile,
     TenantId,
     UserId,
@@ -245,7 +246,7 @@ def _clause(*, status: NonCompeteStatus = NonCompeteStatus.ACTIVE) -> NonCompete
     return NonCompeteClauseEntity(
         id=NonCompeteClauseId("c-1"),
         tenant_id=TenantId("t-1"),
-        provider_id=PersonId("p1"),
+        provider_id=ProviderId("p1"),
         status=status,
         terms_summary="No competing assignments outside the platform.",
         effective_from=date(2026, 1, 1),

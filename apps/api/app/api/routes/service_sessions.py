@@ -8,7 +8,6 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request, status
-from sqlalchemy import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -17,7 +16,6 @@ from app.api.dependencies import (
     get_authorization_repository,
     get_case_repository,
     get_eligible_member_repository,
-    get_person_repository,
     get_provider_repository,
     get_service_repository,
     get_service_session_repository,
@@ -60,7 +58,6 @@ from app.domain.exceptions import NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
-from app.domain.repositories.person_repository import PersonRepository
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
@@ -120,22 +117,6 @@ def to_service_session_response(
 # ==================== COMMANDS (Use Cases) ====================
 
 
-def _provider_tenant_id(provider: object) -> str | None:
-    """Tenant of a provider row, or None when it cannot be read.
-
-    `ProviderRepository.get_by_id` selects two entities, so SQLAlchemy returns a
-    `Row`. A `Row` is not a `tuple` instance, so the isinstance check this
-    replaced never matched: every provider resolved to no tenant, took the
-    legacy person branch, and 404d. Anything that is not a Row is read
-    directly, which keeps test overrides and pre-cutover callers working.
-    """
-    if provider is None:
-        return None
-    candidate = provider[0] if isinstance(provider, Row) else provider
-    tenant_id = getattr(candidate, "tenant_id", None)
-    return tenant_id if isinstance(tenant_id, str) else None
-
-
 @router.post(
     "/",
     response_model=ServiceSessionResponse,
@@ -152,7 +133,6 @@ async def create_service_session(
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
-    person_repo: PersonRepository = Depends(get_person_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
@@ -162,11 +142,7 @@ async def create_service_session(
     if member is None or member.tenant_id.value != tenant_id:
         raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
     provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
-    provider_tenant = _provider_tenant_id(provider)
-    if provider_tenant is None:
-        legacy_provider = await person_repo.get_by_id(ProviderId(data.provider_id))
-        provider_tenant = legacy_provider.tenant_id.value if legacy_provider else None
-    if provider is None or provider_tenant != tenant_id:
+    if provider is None or provider.tenant_id.value != tenant_id:
         raise NotFoundError(
             "Provider not found", resource_type="Provider", resource_id=data.provider_id
         )

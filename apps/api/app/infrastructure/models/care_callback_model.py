@@ -56,7 +56,9 @@ class OutreachRecordModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     member_id: Mapped[str] = mapped_column(
         ForeignKey("eligible_members.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    counsellor_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    counsellor_id: Mapped[str | None] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     status: Mapped[OutreachStatus] = mapped_column(
         EnumValueType(OutreachStatus),
         nullable=False,

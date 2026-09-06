@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import NonCompeteStatus
@@ -20,7 +20,9 @@ class NonCompeteClauseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
 
     __tablename__ = "non_compete_clauses"
 
-    provider_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    provider_id: Mapped[str] = mapped_column(
+        ForeignKey("providers.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     status: Mapped[NonCompeteStatus] = mapped_column(
         EnumValueType(NonCompeteStatus),
         nullable=False,

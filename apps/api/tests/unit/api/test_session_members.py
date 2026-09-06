@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from app.api.dependencies import (
     get_audit_event_handler,
     get_eligible_member_repository,
-    get_person_repository,
+    get_provider_repository,
     get_service_repository,
     get_service_session_repository,
 )
@@ -18,7 +18,6 @@ from app.api.routes.service_sessions import router
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
-from app.domain.enums import PersonType
 from app.domain.value_objects.core import ClientId, EligibleMemberId, TenantId
 
 
@@ -29,7 +28,7 @@ async def api():
     register_exception_handlers(app)
     state = SimpleNamespace(
         members=AsyncMock(),
-        persons=AsyncMock(),
+        providers=AsyncMock(),
         services=AsyncMock(),
         sessions=AsyncMock(),
         authorizations=AsyncMock(),
@@ -39,13 +38,11 @@ async def api():
         user=TokenData(user_id="u1", tenant_id="t1", role="Admin"),
     )
     state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
-    state.persons.get_by_id.return_value = SimpleNamespace(
-        tenant_id=TenantId("t1"), person_type=PersonType.SERVICE_PROVIDER
-    )
+    state.providers.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
     state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
     for dep, value in {
         get_eligible_member_repository: state.members,
-        get_person_repository: state.persons,
+        get_provider_repository: state.providers,
         get_service_repository: state.services,
         get_service_session_repository: state.sessions,
         get_authorization_repository: state.authorizations,
@@ -75,7 +72,7 @@ async def test_create_uses_a_member_without_a_user_account(api):
     api.db.commit.assert_awaited_once()
 
 
-@pytest.mark.parametrize("resource", ["members", "persons", "services"])
+@pytest.mark.parametrize("resource", ["members", "providers", "services"])
 async def test_rejects_foreign_tenant_references(api, resource):
     getattr(api, resource).get_by_id.return_value.tenant_id = TenantId("other")
     response = await api.http.post("/service-sessions/?tenant_id=t1", json=PAYLOAD)

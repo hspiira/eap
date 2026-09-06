@@ -1,40 +1,29 @@
-"""Provider repository port.
-
-Providers have no domain entity yet, so this port still traffics in ORM rows
-rather than aggregates. The `Any` annotations state that plainly instead of
-leaving the shape unknown; give it a real entity and the signatures tighten.
-"""
+"""Provider repository port."""
 
 from abc import abstractmethod
-from typing import Any
+from collections.abc import Sequence
 
-from app.domain.value_objects.core import ProviderId, TenantId
+from app.domain.entities.provider import ProviderEntity
+from app.domain.entities.user import UserEntity
+from app.domain.repositories.base_repository import BaseRepository
+from app.domain.value_objects.core import ProviderId, TenantId, UserId
 
 
-class ProviderRepository:
-    @abstractmethod
-    async def get_by_id(self, provider_id: ProviderId) -> Any: ...
-
+class ProviderRepository(BaseRepository[ProviderEntity, ProviderId]):
     @abstractmethod
     async def list_for_tenant(
         self, tenant_id: TenantId, *, limit: int = 100, offset: int = 0
-    ) -> list[Any]: ...
+    ) -> Sequence[ProviderEntity]: ...
 
     @abstractmethod
     async def count(self, tenant_id: TenantId) -> int: ...
 
     @abstractmethod
-    async def save(self, provider: Any) -> None: ...
+    async def get_user_in_tenant(
+        self, user_id: UserId, tenant_id: TenantId
+    ) -> UserEntity | None: ...
 
     @abstractmethod
-    async def get_user_in_tenant(self, user_id: str, tenant_id: TenantId) -> Any: ...
-
-    @abstractmethod
-    async def create(
-        self,
-        *,
-        tenant_id: TenantId,
-        user_id: str,
-        provider_profile: dict[str, Any],
-        license_info: Any,
-    ) -> Any: ...
+    async def get_users_in_tenant(
+        self, user_ids: Sequence[UserId], tenant_id: TenantId
+    ) -> dict[str, UserEntity]: ...

@@ -21,6 +21,7 @@ from app.domain.repositories.person_repository import PersonRepository
 from app.domain.value_objects.core import (
     ClientId,
     PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -145,7 +146,7 @@ class CheckProviderEligibilityUseCase:
             )
         profile = person.provider_profile
         panel_eligible = profile is not None and profile.is_panel_eligible()
-        clauses = await self._clauses.list_for_provider(tenant_id, provider_id)
+        clauses = await self._clauses.list_for_provider(tenant_id, ProviderId(provider_id.value))
         binding = [c for c in clauses if c.is_currently_binding()]
         reasons: list[str] = []
         if profile is None:

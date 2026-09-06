@@ -15,7 +15,7 @@ from app.domain.enums import (
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     ProviderProfile,
     TenantId,
     UserId,
@@ -74,7 +74,7 @@ def _clause(
     return NonCompeteClauseEntity(
         id=NonCompeteClauseId("nc-1"),
         tenant_id=TenantId("t-1"),
-        provider_id=PersonId("p-1"),
+        provider_id=ProviderId("p-1"),
         status=status,
         terms_summary="No direct work with Minet clients for 12 months.",
         effective_from=effective_from or utc_now().date(),
@@ -144,7 +144,7 @@ class TestNonCompete:
             NonCompeteClauseEntity(
                 id=NonCompeteClauseId("nc-x"),
                 tenant_id=TenantId("t-1"),
-                provider_id=PersonId("p-1"),
+                provider_id=ProviderId("p-1"),
                 status=NonCompeteStatus.DRAFT,
                 terms_summary="x",
                 effective_from=date(2026, 6, 1),

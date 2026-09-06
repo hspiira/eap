@@ -3,14 +3,14 @@
 from dataclasses import dataclass
 
 from app.domain.events.base import DomainEvent
-from app.domain.value_objects.core import ClientId, PersonId, UserId
+from app.domain.value_objects.core import ClientId, ProviderId, UserId
 
 
 @dataclass(frozen=True)
 class ProviderPanelStatusChanged(DomainEvent):
     """Audit trail for the 80→8 panel cull and any other panel-status moves."""
 
-    provider_id: PersonId
+    provider_id: ProviderId
     old_status: str
     new_status: str
     actor: UserId
@@ -21,7 +21,7 @@ class ProviderPanelStatusChanged(DomainEvent):
 class ProviderTierChanged(DomainEvent):
     """Audit trail for provider tier upgrades / downgrades."""
 
-    provider_id: PersonId
+    provider_id: ProviderId
     old_tier: str
     new_tier: str
     actor: UserId
@@ -32,6 +32,6 @@ class ProviderTierChanged(DomainEvent):
 class ProviderAssignmentBlocked(DomainEvent):
     """Raised when an assignment is rejected by panel or non-compete enforcement."""
 
-    provider_id: PersonId
+    provider_id: ProviderId
     client_id: ClientId
     reason: str

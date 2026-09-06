@@ -9,7 +9,7 @@ from app.domain.repositories.non_compete_clause_repository import (
 )
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     TenantId,
 )
 from app.infrastructure.mappers.non_compete_clause_mapper import (
@@ -56,7 +56,7 @@ class NonCompeteClauseRepositoryImpl(NonCompeteClauseRepository):
         return existing is not None
 
     async def list_for_provider(
-        self, tenant_id: TenantId, provider_id: PersonId
+        self, tenant_id: TenantId, provider_id: ProviderId
     ) -> list[NonCompeteClauseEntity]:
         stmt = (
             select(NonCompeteClauseModel)
