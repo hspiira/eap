@@ -74,11 +74,21 @@ class EvexiaException(Exception):
 
 
 class ValidationException(EvexiaException):
-    """Raised when input validation fails."""
+    """Raised when input validation fails.
 
-    def __init__(self, message: str, field: str | None = None):
-        details = {"field": field} if field else {}
-        super().__init__(message, "VALIDATION_ERROR", details, http_status=422)
+    `field` names the input the message is about. It is carried as a field
+    error so a client can attach the message to that input: passing it as
+    ``details={"field": field}`` produced an entry against a field literally
+    called "field", whose message was a field name rather than a sentence.
+    """
+
+    def __init__(self, message: str, field: str | None = None, code: str | None = None):
+        super().__init__(
+            message,
+            "VALIDATION_ERROR",
+            http_status=422,
+            field_errors=[{"field": field, "message": message, "code": code}] if field else None,
+        )
 
 
 class AuthenticationException(EvexiaException):
