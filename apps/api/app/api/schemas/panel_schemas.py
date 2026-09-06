@@ -1,5 +1,7 @@
 """Provider panel-management schemas (Phase 4 #D-Provider)."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import SanitizedStr
@@ -31,13 +33,28 @@ class TierChangeResponse(BaseModel):
     new_tier: ProviderTier
 
 
+class EligibilityFailure(BaseModel):
+    code: str
+    message: str
+
+
 class ProviderEligibilityResponse(BaseModel):
+    """Preview of the booking gate.
+
+    ``eligible`` is the same rule the write paths apply, so a preview cannot
+    disagree with the booking it precedes. The non-compete counts are retained
+    for compatibility and are informational: non-compete is not live and does
+    not restrict booking.
+    """
+
     provider_id: str
     client_id: str | None
+    scheduled_at: datetime
     panel_eligible: bool
     binding_non_compete_count: int
     binding_non_compete_ids: list[str]
     eligible: bool
     reasons: list[str]
+    failures: list[EligibilityFailure]
 
     model_config = ConfigDict(from_attributes=True)

@@ -9,6 +9,7 @@ from app.api.dependencies import (
     get_care_callback_campaign_repository,
     get_eligible_member_repository,
     get_outreach_record_repository,
+    get_provider_repository,
     pagination,
 )
 from app.api.schemas.care_callback_schemas import (
@@ -49,6 +50,8 @@ from app.domain.repositories.care_callback_repository import (
     OutreachRecordRepository,
 )
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
+from app.domain.repositories.provider_repository import ProviderRepository
+from app.domain.services.provider_eligibility import evaluate_practitioner, require_eligible
 from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
@@ -60,6 +63,7 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
@@ -340,14 +344,26 @@ async def assign_outreach(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    """Assign an outreach record, applying the same gate as a new booking."""
+    counsellor_id = ProviderId(data.counsellor_id)
+    now = utc_now()
+    counsellor = await provider_repo.get_for_booking(
+        TenantId(current_user.tenant_id), counsellor_id
+    )
+    if counsellor is None:
+        raise HTTPException(status_code=404, detail="Counsellor not found in tenant")
+    require_eligible(
+        evaluate_practitioner(counsellor, scheduled_at=now, now=now), counsellor_id.value
+    )
     use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.ASSIGN,
-        counsellor_id=ProviderId(data.counsellor_id),
+        counsellor_id=counsellor_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)

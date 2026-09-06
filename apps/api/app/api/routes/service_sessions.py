@@ -63,6 +63,7 @@ from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
+from app.domain.services.provider_eligibility import evaluate_practitioner, require_eligible
 from app.domain.value_objects.core import (
     CaseId,
     EligibleMemberId,
@@ -72,6 +73,7 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.datetime import ensure_utc, utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
@@ -114,6 +116,26 @@ def to_service_session_response(
     )
 
 
+async def _require_bookable(
+    provider_repo: ProviderRepository,
+    tenant_id: TenantId,
+    provider_id: ProviderId,
+    scheduled_at: datetime,
+) -> None:
+    """Load the practitioner under a row lock and apply the booking gate.
+
+    The lock is what keeps a preview from authorising a booking that a
+    concurrent suspension has already invalidated.
+    """
+    provider = await provider_repo.get_for_booking(tenant_id, provider_id)
+    if provider is None:
+        raise NotFoundError(
+            "Provider not found", resource_type="Provider", resource_id=provider_id.value
+        )
+    decision = evaluate_practitioner(provider, scheduled_at=scheduled_at, now=utc_now())
+    require_eligible(decision, provider_id.value)
+
+
 # ==================== COMMANDS (Use Cases) ====================
 
 
@@ -141,11 +163,10 @@ async def create_service_session(
     member = await member_repo.get_by_id(EligibleMemberId(data.member_id))
     if member is None or member.tenant_id.value != tenant_id:
         raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
-    provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
-    if provider is None or provider.tenant_id.value != tenant_id:
-        raise NotFoundError(
-            "Provider not found", resource_type="Provider", resource_id=data.provider_id
-        )
+    scheduled_at = ensure_utc(data.scheduled_at)
+    await _require_bookable(
+        provider_repo, TenantId(tenant_id), ProviderId(data.provider_id), scheduled_at
+    )
     service = await service_repo.get_by_id(ServiceId(data.service_id))
     if service is None or service.tenant_id.value != tenant_id:
         raise NotFoundError(
@@ -157,7 +178,7 @@ async def create_service_session(
         service_id=ServiceId(data.service_id),
         provider_id=ProviderId(data.provider_id),
         member_id=EligibleMemberId(data.member_id),
-        scheduled_at=data.scheduled_at,
+        scheduled_at=scheduled_at,
         location=data.location,
         session_type=data.session_type,
         category=data.category,
@@ -297,15 +318,18 @@ async def reschedule_service_session(
     current_user: TokenData = Depends(get_current_user),
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Reschedule a service session."""
+    """Reschedule a service session, re-checking eligibility for the new date."""
+    new_scheduled_at = ensure_utc(body.new_scheduled_at)
+    await _require_bookable(provider_repo, session.tenant_id, session.provider_id, new_scheduled_at)
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
         session.id,
         ServiceSessionTransition.RESCHEDULE,
-        new_scheduled_at=body.new_scheduled_at,
+        new_scheduled_at=new_scheduled_at,
     )
     await audit_change(session, audit_handler, current_user, request)
     return to_service_session_response(session)
