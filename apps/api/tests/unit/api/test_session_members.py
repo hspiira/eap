@@ -13,13 +13,13 @@ from app.api.dependencies import (
     get_service_repository,
     get_service_session_repository,
 )
-from app.api.dependencies.clinical import get_authorization_repository
+from app.api.dependencies.clinical import get_authorization_repository, get_case_repository
 from app.api.routes.service_sessions import router
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import PersonType
-from app.domain.value_objects.core import EligibleMemberId, TenantId
+from app.domain.value_objects.core import ClientId, EligibleMemberId, TenantId
 
 
 @pytest_asyncio.fixture
@@ -33,6 +33,7 @@ async def api():
         services=AsyncMock(),
         sessions=AsyncMock(),
         authorizations=AsyncMock(),
+        cases=AsyncMock(),
         audit=AsyncMock(),
         db=AsyncMock(),
         user=TokenData(user_id="u1", tenant_id="t1", role="Admin"),
@@ -48,6 +49,7 @@ async def api():
         get_service_repository: state.services,
         get_service_session_repository: state.sessions,
         get_authorization_repository: state.authorizations,
+        get_case_repository: state.cases,
         get_audit_event_handler: state.audit,
         get_db: state.db,
     }.items():
@@ -162,6 +164,13 @@ async def completable(api):
     )
     api.sessions.get_by_id.return_value = session
     api.sessions.save.return_value = None
+    # The case and the member must agree on the client for a drawdown to run.
+    api.cases.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), client_id=ClientId("c1")
+    )
+    api.members.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), client_id=ClientId("c1")
+    )
     api.services.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), category=ServiceCategory.SHORT_TERM_COUNSELLING
     )
@@ -213,3 +222,52 @@ async def test_completion_reports_why_a_named_case_did_not_draw_down(completable
     assert body["drawdown"]["consumed"] is False
     assert "No active authorization" in body["drawdown"]["reason"]
     api.authorizations.save.assert_not_awaited()
+
+
+async def test_a_case_from_another_client_cannot_be_drawn_down(completable):
+    """The caller supplies the case, so it is checked rather than trusted."""
+    api = completable
+    api.cases.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), client_id=ClientId("some-other-client")
+    )
+
+    response = await api.http.post(
+        "/service-sessions/ss1/complete",
+        json={"duration": 60, "notes": "Attended", "case_id": "case-1"},
+    )
+
+    assert response.status_code == 200, response.text
+    drawdown = response.json()["drawdown"]
+    assert drawdown["consumed"] is False
+    assert "different client" in drawdown["reason"]
+    api.authorizations.list_for_case.assert_not_awaited()
+
+
+async def test_a_case_from_another_tenant_is_not_found(completable):
+    api = completable
+    api.cases.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("other"), client_id=ClientId("c1")
+    )
+
+    response = await api.http.post(
+        "/service-sessions/ss1/complete",
+        json={"duration": 60, "notes": "Attended", "case_id": "case-1"},
+    )
+
+    assert response.json()["drawdown"]["reason"] == "Case not found"
+    api.authorizations.list_for_case.assert_not_awaited()
+
+
+async def test_a_missing_case_does_not_fail_the_completion(completable):
+    """A session is a fact; a bad case reference must not lose it."""
+    api = completable
+    api.cases.get_by_id.return_value = None
+
+    response = await api.http.post(
+        "/service-sessions/ss1/complete",
+        json={"duration": 60, "notes": "Attended", "case_id": "nope"},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["session"]["status"] == "Completed"
+    assert response.json()["drawdown"]["consumed"] is False

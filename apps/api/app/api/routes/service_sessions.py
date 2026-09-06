@@ -14,6 +14,7 @@ from app.api.dependencies import (
     PageParams,
     get_audit_event_handler,
     get_authorization_repository,
+    get_case_repository,
     get_eligible_member_repository,
     get_person_repository,
     get_service_repository,
@@ -57,6 +58,7 @@ from app.domain.enums import (
     SessionStatus,
 )
 from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.person_repository import PersonRepository
@@ -194,6 +196,8 @@ async def complete_service_session(
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
     authorization_repo: AuthorizationRepository = Depends(get_authorization_repository),
+    case_repo: CaseRepository = Depends(get_case_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -212,6 +216,8 @@ async def complete_service_session(
         tenant_id=current_user.tenant_id,
         service_repo=service_repo,
         authorization_repo=authorization_repo,
+        case_repo=case_repo,
+        member_repo=member_repo,
     )
     return ServiceSessionCompleteResponse(
         session=to_service_session_response(session), drawdown=drawdown
@@ -225,11 +231,25 @@ async def _draw_down(
     tenant_id: str,
     service_repo: ServiceRepository,
     authorization_repo: AuthorizationRepository,
+    case_repo: CaseRepository,
+    member_repo: EligibleMemberRepository,
 ) -> SessionDrawdownResponse:
     """Consume one authorized session, when the caller named the case."""
     if not case_id:
         return SessionDrawdownResponse(
             consumed=False, reason="No case supplied; authorization untouched"
+        )
+    # The case is supplied by the caller, so it has to be checked rather than
+    # trusted: without this, naming another client's case would spend that
+    # client's entitlement. Both sides carry an employer-side client_id, so
+    # this compares them without touching the pseudonymous subject link.
+    case = await case_repo.get_by_id(CaseId(case_id))
+    if case is None or case.tenant_id.value != tenant_id:
+        return SessionDrawdownResponse(consumed=False, reason="Case not found")
+    member = await member_repo.get_by_id(session.member_id)
+    if member is None or member.client_id != case.client_id:
+        return SessionDrawdownResponse(
+            consumed=False, reason="Case belongs to a different client than this session"
         )
     service = await service_repo.get_by_id(session.service_id)
     result = await ConsumeAuthorizationForSessionUseCase(authorization_repo).execute(
