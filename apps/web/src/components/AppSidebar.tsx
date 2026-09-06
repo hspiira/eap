@@ -49,6 +49,8 @@ type NavItem = {
   icon: React.ElementType
   iconClassName?: string
   flag?: FeatureFlag
+  /** Rendered greyed out and non-navigable until the flag is on. */
+  comingSoon?: FeatureFlag
   platformAdmin?: boolean
   /** Requires the Clinical access scope, hidden entirely otherwise (privacy wall). */
   clinicalScope?: boolean
@@ -64,10 +66,15 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
   { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },
-  { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
-  { to: "/care-callbacks/worklist", label: "My Worklist", icon: Headphones },
-  { to: "/surveys", label: "Surveys", icon: MessageSquare },
-  { to: "/engagements", label: "Engagements", icon: Handshake },
+  { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall, comingSoon: "campaigns" },
+  {
+    to: "/care-callbacks/worklist",
+    label: "My Worklist",
+    icon: Headphones,
+    comingSoon: "worklist",
+  },
+  { to: "/surveys", label: "Surveys", icon: MessageSquare, comingSoon: "surveys" },
+  { to: "/engagements", label: "Engagements", icon: Handshake, comingSoon: "engagements" },
   { to: "/contracts", label: "Contracts", icon: FileSignature },
   { to: "/service-assignments", label: "Assignments", icon: FileCheck },
   { to: "/services", label: "Services", icon: Briefcase },
@@ -98,6 +105,10 @@ function isItemEnabled(
   if (item.platformAdmin && !isPlatformAdmin) return false
   if (item.clinicalScope && !hasClinicalScope) return false
   return true
+}
+
+function isComingSoon(item: NavItem): boolean {
+  return !!item.comingSoon && !featureFlags[item.comingSoon]
 }
 
 function toProperCase(s: string): string {
@@ -156,13 +167,27 @@ function ExpandedHeader() {
   )
 }
 
-function NavItem({
-  to,
-  label,
-  icon: Icon,
-  iconClassName,
-  isActive,
-}: NavItem & { isActive: boolean }) {
+function ComingSoonNavItem({ label, icon: Icon, iconClassName }: NavItem) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        disabled
+        title={`${label} is not available yet`}
+        className="cursor-not-allowed opacity-50 hover:bg-transparent"
+      >
+        <Icon className={iconClassName} />
+        <span>{label}</span>
+        <span className="ml-auto text-[10px] font-medium tracking-wide text-fg-subtle/70">
+          Soon
+        </span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+function NavItem(props: NavItem & { isActive: boolean }) {
+  const { to, label, icon: Icon, iconClassName, isActive } = props
+  if (isComingSoon(props)) return <ComingSoonNavItem {...props} />
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
@@ -240,21 +265,30 @@ function ExpandedSidebar() {
 const ICON_BTN =
   "relative grid h-7 w-7 mx-auto place-items-center rounded-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
 
-interface CollapsedNavLinkProps {
-  to: string
-  label: string
-  icon: React.ElementType
-  iconClassName?: string
-  isActive: boolean
+type CollapsedNavLinkProps = NavItem & { isActive: boolean }
+
+function ComingSoonCollapsedNavLink({ label, icon: Icon, iconClassName }: NavItem) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          aria-disabled="true"
+          aria-label={`${label}: not available yet`}
+          className={cn(ICON_BTN, "cursor-not-allowed opacity-40 hover:bg-transparent")}
+        >
+          <Icon className={cn("size-4", iconClassName)} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="font-medium">
+        {label} (soon)
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
-function CollapsedNavLink({
-  to,
-  label,
-  icon: Icon,
-  iconClassName,
-  isActive,
-}: CollapsedNavLinkProps) {
+function CollapsedNavLink(props: CollapsedNavLinkProps) {
+  const { to, label, icon: Icon, iconClassName, isActive } = props
+  if (isComingSoon(props)) return <ComingSoonCollapsedNavLink {...props} />
   return (
     <Tooltip>
       <TooltipTrigger asChild>
