@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_diagnosis_repository
 from app.api.schemas.diagnosis_schemas import (
+    DiagnosisAliasResponse,
+    DiagnosisAliasUpsert,
     DiagnosisCapabilitiesResponse,
     DiagnosisCreate,
     DiagnosisOverlayResponse,
@@ -24,7 +26,7 @@ from app.core.authorization import (
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
-from app.domain.enums import TenantRole
+from app.domain.enums import AliasConfidence, TenantRole
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.shared.decorators import readonly, transactional
 
@@ -279,3 +281,61 @@ async def set_diagnosis_setting(
         local_label=data.local_label,
     )
     return DiagnosisOverlayResponse.model_validate(saved)
+
+
+# === Legacy aliases (platform admin) ===
+#
+# Aliases exist because free-text diagnosis spellings keep arriving from the
+# field. Adding one used to mean writing an Alembic migration, which is why
+# values awaiting a clinical decision stayed unmapped and their rows kept
+# failing the import. These routes let the taxonomy owner resolve a value
+# without a deploy.
+
+
+@router.get("/aliases", response_model=list[DiagnosisAliasResponse])
+@readonly()
+async def list_diagnosis_aliases(
+    confidence: AliasConfidence | None = Query(
+        None, description="Filter to mappings still awaiting sign-off, or those confirmed"
+    ),
+    _user: TokenData = Depends(require_platform_admin),
+    repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    aliases = await repo.list_aliases(confidence=confidence.value if confidence else None)
+    return [DiagnosisAliasResponse.model_validate(a) for a in aliases]
+
+
+@router.put("/aliases", response_model=DiagnosisAliasResponse)
+@transactional()
+async def upsert_diagnosis_alias(
+    data: DiagnosisAliasUpsert,
+    _user: TokenData = Depends(require_platform_admin),
+    repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Map a legacy spelling onto the taxonomy, keyed on its normalised form."""
+    # An alias pointing at a row that does not exist would fail the import it
+    # was meant to unblock, so the reference is checked here rather than at
+    # import time.
+    types = await repo.list_types(active_only=False)
+    if not any(t.id == data.diagnosis_type_id for t in types):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Diagnosis type not found")
+    if data.diagnosis_id is not None:
+        diagnoses = await repo.list_diagnoses(active_only=False)
+        target = next((d for d in diagnoses if d.id == data.diagnosis_id), None)
+        if target is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Diagnosis not found")
+        if target.type_id != data.diagnosis_type_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Diagnosis does not belong to the given type",
+            )
+    saved = await repo.upsert_alias(
+        raw_value=data.raw_value,
+        diagnosis_type_id=data.diagnosis_type_id,
+        diagnosis_id=data.diagnosis_id,
+        source=data.source,
+        confidence=data.confidence.value,
+    )
+    return DiagnosisAliasResponse.model_validate(saved)

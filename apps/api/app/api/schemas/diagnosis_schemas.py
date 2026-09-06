@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.enums import AliasConfidence
+
 
 class DiagnosisResponse(BaseModel):
     id: str = Field(..., description="Diagnosis identifier")
@@ -83,6 +85,41 @@ class DiagnosisOverlayResponse(BaseModel):
     is_enabled: bool
     sort_order: int | None
     local_label: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# === Legacy aliases (platform admin) ===
+
+
+class DiagnosisAliasUpsert(BaseModel):
+    """Map a legacy spelling onto the taxonomy.
+
+    ``diagnosis_id`` stays optional because many legacy classifications name
+    only a type. Inventing a leaf to fill the gap would be worse than
+    recording the type alone.
+    """
+
+    raw_value: str = Field(..., min_length=1, description="The spelling as it arrives")
+    diagnosis_type_id: str = Field(..., description="Taxonomy type it resolves to")
+    diagnosis_id: str | None = Field(None, description="Leaf, when the source named one")
+    source: str = Field(
+        ..., min_length=1, max_length=50, description="Where this mapping came from"
+    )
+    confidence: AliasConfidence = Field(
+        AliasConfidence.INFERRED,
+        description="'confirmed' once a clinical owner has signed it off",
+    )
+
+
+class DiagnosisAliasResponse(BaseModel):
+    id: str
+    raw_value: str
+    normalised_key: str
+    diagnosis_type_id: str
+    diagnosis_id: str | None
+    source: str
+    confidence: str
 
     model_config = ConfigDict(from_attributes=True)
 

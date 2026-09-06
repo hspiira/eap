@@ -3,6 +3,7 @@
 """
 
 from app.domain.enums.clinical import (
+    AliasConfidence,
     AuthorizationStatus,
     CaseClosureReason,
     CaseReferralSource,
@@ -108,6 +109,7 @@ __all__ = [
     "CaringContactOutcome",
     "CaseClosureReason",
     "CaseReferralSource",
+    "AliasConfidence",
     "CaseStatus",
     "ClientTier",
     "ClientType",

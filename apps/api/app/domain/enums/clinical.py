@@ -133,3 +133,15 @@ class TriageInstrumentCode(str, Enum):
     WSAS = "WSAS"
     DASS21 = "DASS21"
     PCL5 = "PCL5"
+
+
+class AliasConfidence(str, Enum):
+    """How much weight a legacy alias mapping carries.
+
+    ``INFERRED`` is a reading of the label that nobody has signed off, so it
+    stays filterable: a reviewer can list exactly the mappings still awaiting
+    a clinical owner without re-deriving which ones those were.
+    """
+
+    CONFIRMED = "confirmed"
+    INFERRED = "inferred"
