@@ -49,17 +49,17 @@ _IDENTIFIER_FIELDS = {
 def _is_prose(message: str) -> bool:
     """Whether a message reads as text a person can act on.
 
-    Not a length rule: "Provider not found" is complete. A word count is the
-    wrong test entirely, because "batch b-1" passes one and is exactly the
-    shape being guarded against. Two alphabetic words is the weakest rule that
-    rejects an identifier paired with a label.
+    Not a length rule: "Provider not found" is complete. A token count is the
+    wrong test, because "batch b-1" passes one. So is counting letter runs,
+    because "sess-1 sess-2" contains two of them. The question is whether a
+    token is a word at all, so this counts whole alphabetic tokens.
     """
     stripped = message.strip()
     if not stripped or stripped[0] in "[{(":
         return False
     if _IDENTIFIER.match(stripped):
         return False
-    words = [token for token in re.findall(r"[A-Za-z]+", stripped) if len(token) > 1]
+    words = [token for token in stripped.split() if token.isalpha() and len(token) > 1]
     return len(words) >= 2
 
 
@@ -188,6 +188,8 @@ class TestTheProsePredicateDiscriminates:
             "['sess-1', 'sess-2']",
             "{'batch_id': 'b-1'}",
             "batch b-1",
+            "sess-1 sess-2",
+            "org o-9",
             "",
             "   ",
             "Suspended",
@@ -198,6 +200,8 @@ class TestTheProsePredicateDiscriminates:
             "list-repr",
             "dict-repr",
             "label-plus-id",
+            "two-bare-ids",
+            "label-plus-short-id",
             "empty",
             "whitespace",
             "single-word",
