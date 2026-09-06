@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { AlertTriangle, Check } from "lucide-react"
 
-import { diagnosesApi,type DiagnosisAlias } from "@/api/endpoints/diagnoses"
+import { diagnosesApi, type DiagnosisAlias } from "@/api/endpoints/diagnoses"
 import { ErrorState } from "@/components/common/ErrorState"
 import { Button } from "@/components/ui/button"
 import { normalizeErrorMessage } from "@/lib/errors"
