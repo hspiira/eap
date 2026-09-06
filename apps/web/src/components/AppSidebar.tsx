@@ -42,7 +42,7 @@ import { type FeatureFlag, featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 
-const PROJECT_LOGO = "/evex%C3%ADa.png"
+const PROJECT_LOGO = "/evexia.png"
 
 type NavItem = {
   to: string
