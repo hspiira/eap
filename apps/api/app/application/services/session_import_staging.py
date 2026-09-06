@@ -49,6 +49,8 @@ class SourceRow:
     session_date: date | None
     source_record_key: str | None = None
     organisation_affiliation_id: str | None = None
+    member_id: str | None = None
+    service_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,8 @@ class StagedRow:
     delivery_context: DeliveryContext
     provider_id: object | None
     provider_affiliation_id: ProviderAffiliationId | None
+    member_id: str | None
+    service_id: str | None
     reasons: tuple[str, ...]
     replay_key: str
     source_record_key: str | None
@@ -124,6 +128,11 @@ class SessionImportStagingService:
             return self._held(
                 row, _NAME_OUTCOMES[resolution.outcome], resolution.reasons, replay_key
             )
+
+        unresolved = _unresolved_subject(row)
+        if unresolved is not None:
+            outcome, reason = unresolved
+            return self._held(row, outcome, (reason,), replay_key)
 
         return await self._with_delivery_context(tenant_id, row, resolution, replay_key, now=now)
 
@@ -203,12 +212,35 @@ class SessionImportStagingService:
             delivery_context=context,
             provider_id=provider_id,
             provider_affiliation_id=affiliation_id,
+            member_id=row.member_id if outcome is ImportRowOutcome.ACCEPTED else None,
+            service_id=row.service_id if outcome is ImportRowOutcome.ACCEPTED else None,
             reasons=reasons,
             replay_key=replay_key,
             source_record_key=row.source_record_key,
             raw_practitioner_name=row.raw_practitioner_name,
             session_date=row.session_date,
         )
+
+
+def _unresolved_subject(row: SourceRow) -> tuple[ImportRowOutcome, str] | None:
+    """Whether the row still lacks a member or a service.
+
+    The write path requires both and staging cannot invent them. Member
+    identity belongs to the members migration and service identity to the
+    catalogue, so an unresolved one is quarantined here rather than guessed.
+    Kept as two outcomes because they need different people to resolve them.
+    """
+    if row.member_id is None:
+        return (
+            ImportRowOutcome.UNRESOLVED_MEMBER,
+            "No member resolved for this row; member reconciliation is not built",
+        )
+    if row.service_id is None:
+        return (
+            ImportRowOutcome.UNRESOLVED_SERVICE,
+            "No service resolved for this row; service reconciliation is not built",
+        )
+    return None
 
 
 def _replay_key(row: SourceRow, file_hash: str) -> str:

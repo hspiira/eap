@@ -36,8 +36,14 @@ import app.domain.entities as entities_pkg
 # audit_logs for a file of several thousand rows, and the reviewable state plus
 # candidates are persisted on the row. The alias decisions that a person makes,
 # resolve and reject, do emit, as do specialty retire/restore and import batch
-# apply/abandon. Those two add back to 145.
-KNOWN_SILENT_MUTATORS = 145
+# apply/abandon.
+# SessionImportRowEntity.mark_imported is bookkeeping under an already-audited
+# operation: applying a batch emits SessionImportBatchApplied with the actor and
+# the accepted count, and one event per imported row would flood audit_logs for
+# a file of several thousand. The batch is the auditable act; the rows are its
+# detail, and each carries its own imported_session_id.
+# Net of the two the provider work removed, that is 146.
+KNOWN_SILENT_MUTATORS = 146
 
 
 def _entity_classes():

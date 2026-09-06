@@ -187,6 +187,27 @@ class TestDeliveryContext:
         assert row.provider_affiliation_id == ProviderAffiliationId("aff-1")
 
 
+class TestImportMarking:
+    def test_an_unwritten_accepted_row_is_importable(self):
+        assert _row().is_importable is True
+
+    def test_a_row_already_written_is_not_importable_again(self):
+        """Idempotency on replay: applying twice must not write twice."""
+        row = _row(imported_session_id="sess-1")
+        assert row.is_importable is False
+
+    def test_marking_records_the_session(self):
+        row = _row()
+        row.mark_imported("sess-1")
+        assert row.imported_session_id == "sess-1"
+        assert row.is_importable is False
+
+    def test_marking_twice_is_refused(self):
+        row = _row(imported_session_id="sess-1")
+        with pytest.raises(DomainError):
+            row.mark_imported("sess-2")
+
+
 class TestReplayKey:
     def test_file_hash_and_row_number_when_no_stable_key(self):
         assert _row().replay_key(HASH) == f"file:{HASH}:row:1"

@@ -222,3 +222,12 @@ class SessionImportRowListResponse(BaseModel):
     page: int
     limit: int
     has_more: bool
+
+
+class SessionImportApplyResponse(BaseModel):
+    """Outcome of applying a batch. `imported` is the only write count."""
+
+    batch_id: str
+    imported: int
+    skipped_already_imported: int
+    not_importable: int

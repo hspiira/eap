@@ -46,6 +46,8 @@ def _row(**overrides) -> SourceRow:
         "row_number": 1,
         "raw_practitioner_name": "Dr Alice Nakato",
         "session_date": date(2025, 4, 2),
+        "member_id": "mem-1",
+        "service_id": "svc-1",
     }
     return SourceRow(**{**defaults, **overrides})
 
@@ -86,6 +88,50 @@ class TestHistoricalAcceptance:
         staged = await _stage(service, _row(session_date=None))
         assert staged.outcome is ImportRowOutcome.REJECTED
         assert staged.reasons
+
+
+class TestUnresolvedSubjects:
+    """The write path needs a member and a service; staging cannot invent either.
+
+    Member identity belongs to the members migration and service identity to
+    the catalogue, so an unresolved one is quarantined with a reason rather
+    than guessed. Two outcomes, because different people resolve them.
+    """
+
+    async def test_a_row_without_a_member_is_not_accepted(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(member_id=None))
+        assert staged.outcome is ImportRowOutcome.UNRESOLVED_MEMBER
+        assert "member reconciliation is not built" in staged.reasons[0]
+
+    async def test_a_row_without_a_service_is_not_accepted(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(service_id=None))
+        assert staged.outcome is ImportRowOutcome.UNRESOLVED_SERVICE
+
+    async def test_the_two_are_distinct_outcomes(self):
+        service, _ = _service()
+        no_member = await _stage(service, _row(member_id=None))
+        no_service = await _stage(service, _row(service_id=None))
+        assert no_member.outcome is not no_service.outcome
+
+    async def test_an_unresolved_row_carries_no_member_or_service(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(member_id=None))
+        assert (staged.member_id, staged.service_id) == (None, None)
+
+    async def test_an_accepted_row_carries_both(self):
+        service, _ = _service()
+        staged = await _stage(service, _row())
+        assert (staged.member_id, staged.service_id) == ("mem-1", "svc-1")
+
+    async def test_the_practitioner_is_resolved_before_the_subject_check(self):
+        """An unmapped name is reported as such, not masked by a missing member."""
+        service, _ = _service(
+            resolution=NameResolution(outcome=NameOutcome.UNMAPPED, reasons=("no mapping",))
+        )
+        staged = await _stage(service, _row(member_id=None))
+        assert staged.outcome is ImportRowOutcome.UNMAPPED_PRACTITIONER
 
 
 class TestNameOutcomesStaySeparate:
