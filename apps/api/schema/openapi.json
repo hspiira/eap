@@ -8216,6 +8216,20 @@
         "title": "MeResponse",
         "type": "object"
       },
+      "MemberAccountLinkRequest": {
+        "properties": {
+          "user_id": {
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "MemberAccountLinkRequest",
+        "type": "object"
+      },
       "MemberCreate": {
         "additionalProperties": false,
         "description": "Create a covered member; a login account is optional and separate.",
@@ -8408,6 +8422,45 @@
           "has_more"
         ],
         "title": "MemberListResponse",
+        "type": "object"
+      },
+      "MemberMergeRequest": {
+        "properties": {
+          "source_member_id": {
+            "minLength": 1,
+            "title": "Source Member Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_member_id"
+        ],
+        "title": "MemberMergeRequest",
+        "type": "object"
+      },
+      "MemberMergeResponse": {
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/MemberResponse"
+          },
+          "source_member_id": {
+            "title": "Source Member Id",
+            "type": "string"
+          },
+          "transferred": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Transferred",
+            "type": "object"
+          }
+        },
+        "required": [
+          "member",
+          "source_member_id",
+          "transferred"
+        ],
+        "title": "MemberMergeResponse",
         "type": "object"
       },
       "MemberNextOfKinCreate": {
@@ -8772,6 +8825,17 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
           },
           "work_email": {
             "anyOf": [
@@ -25756,6 +25820,108 @@
         ]
       }
     },
+    "/members/{member_id}/account": {
+      "delete": {
+        "operationId": "unlink_member_account_members__member_id__account_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unlink Member Account",
+        "tags": [
+          "members"
+        ]
+      },
+      "put": {
+        "operationId": "link_member_account_members__member_id__account_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberAccountLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Link Member Account",
+        "tags": [
+          "members"
+        ]
+      }
+    },
     "/members/{member_id}/beneficiaries": {
       "get": {
         "operationId": "list_member_beneficiaries_members__member_id__beneficiaries_get",
@@ -25802,6 +25968,63 @@
           }
         ],
         "summary": "List Member Beneficiaries",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/{member_id}/merge": {
+      "post": {
+        "operationId": "merge_members_members__member_id__merge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberMergeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Merge Members",
         "tags": [
           "members"
         ]
@@ -26068,6 +26291,80 @@
           }
         ],
         "summary": "Reinstate Member",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/{member_id}/sessions": {
+      "get": {
+        "operationId": "list_member_sessions_members__member_id__sessions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSessionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Member Sessions",
         "tags": [
           "members"
         ]

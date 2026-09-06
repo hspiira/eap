@@ -3268,6 +3268,24 @@ export interface paths {
         patch: operations["update_member_members__member_id__patch"];
         trace?: never;
     };
+    "/members/{member_id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link Member Account */
+        put: operations["link_member_account_members__member_id__account_put"];
+        post?: never;
+        /** Unlink Member Account */
+        delete: operations["unlink_member_account_members__member_id__account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}/beneficiaries": {
         parameters: {
             query?: never;
@@ -3279,6 +3297,23 @@ export interface paths {
         get: operations["list_member_beneficiaries_members__member_id__beneficiaries_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Members */
+        post: operations["merge_members_members__member_id__merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3332,6 +3367,23 @@ export interface paths {
         put?: never;
         /** Reinstate Member */
         post: operations["reinstate_member_members__member_id__reinstate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Sessions */
+        get: operations["list_member_sessions_members__member_id__sessions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -9288,6 +9340,11 @@ export interface components {
              */
             user_id: string;
         };
+        /** MemberAccountLinkRequest */
+        MemberAccountLinkRequest: {
+            /** User Id */
+            user_id: string;
+        };
         /**
          * MemberCreate
          * @description Create a covered member; a login account is optional and separate.
@@ -9339,6 +9396,21 @@ export interface components {
             page: number;
             /** Total */
             total: number;
+        };
+        /** MemberMergeRequest */
+        MemberMergeRequest: {
+            /** Source Member Id */
+            source_member_id: string;
+        };
+        /** MemberMergeResponse */
+        MemberMergeResponse: {
+            member: components["schemas"]["MemberResponse"];
+            /** Source Member Id */
+            source_member_id: string;
+            /** Transferred */
+            transferred: {
+                [key: string]: number;
+            };
         };
         /** MemberNextOfKinCreate */
         MemberNextOfKinCreate: {
@@ -9451,6 +9523,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** User Id */
+            user_id?: string | null;
             /** Work Email */
             work_email: string | null;
         };
@@ -18474,6 +18548,72 @@ export interface operations {
             };
         };
     };
+    link_member_account_members__member_id__account_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberAccountLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_member_account_members__member_id__account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_member_beneficiaries_members__member_id__beneficiaries_get: {
         parameters: {
             query?: never;
@@ -18492,6 +18632,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_members_members__member_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberMergeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -18655,6 +18830,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_sessions_members__member_id__sessions_get: {
+        parameters: {
+            query?: {
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionListResponse"];
                 };
             };
             /** @description Validation Error */
