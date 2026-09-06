@@ -232,6 +232,48 @@ describe("ServiceSessionFormSheet: create", () => {
     expect(args.provider_affiliation_id).toBeNull()
   })
 
+  it("puts a server field error on the delivery-context select", async () => {
+    // The API rejects Unknown delivery with a ValidationException naming
+    // delivery_context, so the message belongs on that input.
+    createMock.mockRejectedValue(
+      new ApiError(
+        "A booking must state Direct or Organisation delivery.",
+        "VALIDATION_ERROR",
+        422,
+        { delivery_context: "A booking must state Direct or Organisation delivery." },
+        undefined,
+        [
+          {
+            field: "delivery_context",
+            message: "A booking must state Direct or Organisation delivery.",
+            code: null,
+          },
+        ],
+      ),
+    )
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        memberId="p-1"
+        service={{ id: "svc-1", name: "Counselling" } as never}
+        member={{ id: "p-1", display_label: "Test member" } as never}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
+      target: { value: "2026-06-01T10:30" },
+    })
+    await choosePractitioner()
+    await chooseDirectDelivery()
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    const message = await screen.findByText(/must state Direct or Organisation delivery/i)
+    const field = screen.getByLabelText(/delivered through/i).closest("div")?.parentElement
+    expect(field).toContainElement(message)
+  })
+
   it("lists every eligibility reason the server returns", async () => {
     createMock.mockRejectedValue(
       new ApiError(

@@ -13,7 +13,7 @@
       "AccountLinkCommand": {
         "properties": {
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           },
@@ -32,7 +32,7 @@
       "AccountUnlinkCommand": {
         "properties": {
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           }
@@ -73,7 +73,7 @@
             "$ref": "#/components/schemas/AccreditationStatus"
           },
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           }
@@ -1202,7 +1202,6 @@
           },
           "reason": {
             "maxLength": 500,
-            "minLength": 1,
             "title": "Reason",
             "type": "string"
           }
@@ -9695,7 +9694,7 @@
             "$ref": "#/components/schemas/PanelStatus"
           },
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           }
@@ -12980,7 +12979,7 @@
       "StatusCommand": {
         "properties": {
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           },
@@ -13845,7 +13844,6 @@
           },
           "reason": {
             "maxLength": 500,
-            "minLength": 1,
             "title": "Reason",
             "type": "string"
           }
@@ -13877,7 +13875,7 @@
       "TierCommand": {
         "properties": {
           "reason": {
-            "minLength": 1,
+            "maxLength": 500,
             "title": "Reason",
             "type": "string"
           },
