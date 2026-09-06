@@ -19,7 +19,7 @@ from app.application.use_cases.provider_network_use_cases import (
     AffiliationOverlapError,
 )
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.value_objects.core import ProviderId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
@@ -43,20 +43,33 @@ _FORM_FIELDS = {
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]+$")
 
+# NotFoundError puts these in details, so every 404 in the app carries two
+# entries that look like field errors and are really diagnostic context. Same
+# category confusion as the defects fixed here, but it predates this migration,
+# it is shared by every not-found response, and repairing it changes all of
+# them. Exempted visibly rather than silently, and referred to review.
+_DIAGNOSTIC_FIELDS = {"resource_type", "resource_id"}
+
 
 def _is_prose(message: str) -> bool:
     """Whether a message reads as text a person can act on.
 
-    Rejects the three things that actually reached message fields here: a bare
-    identifier, a Python list or dict repr, and a single token. Deliberately
-    not a length rule, since "Provider not found" is complete.
+    Rejects what actually reached message fields here: a bare identifier, a
+    Python list or dict repr, and a label paired with an id. Deliberately not a
+    length rule, since "Provider not found" is complete.
+
+    The last check counts whole alphabetic tokens rather than tokens or letter
+    runs. A token count passes "batch b-1", and counting letter runs passes
+    "sess-1 sess-2", because both find two word-like pieces in what is really a
+    label and an identifier.
     """
     stripped = message.strip()
     if not stripped or stripped[0] in "[{(":
         return False
     if _IDENTIFIER.match(stripped):
         return False
-    return len(stripped.split()) >= 2
+    words = [token for token in stripped.split() if token.isalpha() and len(token) > 1]
+    return len(words) >= 2
 
 
 def _affiliation() -> ProviderAffiliationEntity:
@@ -78,6 +91,11 @@ def _errors() -> list[DomainError]:
         AffiliationOverlapError(_affiliation(), "valid_until"),
         AffiliationAttributionConflictError(["sess-1", "sess-2"]),
         ImportRowNotConvertible(4, "no session date"),
+        NotFoundError(
+            "Provider organisation not found",
+            resource_type="ProviderOrganisation",
+            resource_id="org-1",
+        ),
         DomainError(
             "This file was already staged as batch b-1",
             error_code="IMPORT_ALREADY_STAGED",
@@ -91,6 +109,8 @@ def _errors() -> list[DomainError]:
 class TestEveryErrorBody:
     def test_details_name_a_real_form_field(self, error):
         for detail in error.to_api_response().get("details", []):
+            if detail["field"] in _DIAGNOSTIC_FIELDS:
+                continue
             assert detail["field"] in _FORM_FIELDS, (
                 f"{error.error_code} attaches to {detail['field']!r}, "
                 "which is not a field a client can render against"
@@ -99,6 +119,8 @@ class TestEveryErrorBody:
     def test_detail_messages_read_as_sentences(self, error):
         """Not a bare id, and not a Python repr."""
         for detail in error.to_api_response().get("details", []):
+            if detail["field"] in _DIAGNOSTIC_FIELDS:
+                continue
             assert _is_prose(detail["message"]), (
                 f"{error.error_code} detail message is not prose: {detail['message']!r}"
             )
@@ -146,6 +168,11 @@ class TestTheProseCheckDiscriminates:
             "{'field': 'valid_from'}",
             "",
             "   ",
+            # A label paired with an id. Agent 1 found the first of these
+            # surviving a token count; the second survives counting letter runs.
+            "batch b-1",
+            "org o-9",
+            "sess-1 sess-2",
         ],
     )
     def test_it_rejects_what_is_not_prose(self, message):
@@ -158,6 +185,7 @@ class TestTheProseCheckDiscriminates:
             "Import batch not found",
             "Overlaps affiliation aff-1 (2026-01-01 to 2026-07-01)",
             "2 completed session(s) are attributed to this affiliation",
+            "This file was already staged as batch b-1",
         ],
     )
     def test_it_accepts_usable_messages_including_short_ones(self, message):
