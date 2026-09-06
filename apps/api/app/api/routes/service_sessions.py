@@ -79,7 +79,7 @@ from app.shared.utils.route_audit_helper import audit_change
 router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
 
-def _to_service_session_response(
+def to_service_session_response(
     session: ServiceSessionEntity,
 ) -> ServiceSessionResponse:
     """Map ServiceSessionEntity to API response using public properties."""
@@ -177,7 +177,7 @@ async def create_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, tenant_id=tenant_id)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.post(
@@ -214,7 +214,7 @@ async def complete_service_session(
         authorization_repo=authorization_repo,
     )
     return ServiceSessionCompleteResponse(
-        session=_to_service_session_response(session), drawdown=drawdown
+        session=to_service_session_response(session), drawdown=drawdown
     )
 
 
@@ -267,7 +267,7 @@ async def cancel_service_session(
         session.id, ServiceSessionTransition.CANCEL, reason=body.reason
     )
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.post(
@@ -293,7 +293,7 @@ async def reschedule_service_session(
         new_scheduled_at=body.new_scheduled_at,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.post(
@@ -314,7 +314,7 @@ async def mark_no_show_service_session(
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(session.id, ServiceSessionTransition.MARK_NO_SHOW)
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.patch(
@@ -351,7 +351,7 @@ async def update_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.patch(
@@ -377,7 +377,7 @@ async def update_service_session_feedback(
         feedback=body.feedback,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.post(
@@ -398,7 +398,7 @@ async def archive_service_session(
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(session.id, ServiceSessionTransition.ARCHIVE)
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.post(
@@ -419,7 +419,7 @@ async def restore_service_session(
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(session.id, ServiceSessionTransition.RESTORE)
     await audit_change(session, audit_handler, current_user, request)
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -477,7 +477,7 @@ async def list_service_sessions(
     )
 
     return ServiceSessionListResponse(
-        items=[_to_service_session_response(session) for session in sessions],
+        items=[to_service_session_response(session) for session in sessions],
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -496,7 +496,7 @@ async def get_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    return _to_service_session_response(session)
+    return to_service_session_response(session)
 
 
 @router.get(
@@ -516,7 +516,7 @@ async def get_sessions_by_member(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
         TenantId(tenant_id), EligibleMemberId(member_id)
     )
-    return [_to_service_session_response(session) for session in sessions]
+    return [to_service_session_response(session) for session in sessions]
 
 
 @router.get(
@@ -536,7 +536,7 @@ async def get_sessions_by_provider(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), PersonId(provider_id)
     )
-    return [_to_service_session_response(session) for session in sessions]
+    return [to_service_session_response(session) for session in sessions]
 
 
 @router.get(
@@ -556,4 +556,4 @@ async def get_sessions_by_service(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )
-    return [_to_service_session_response(session) for session in sessions]
+    return [to_service_session_response(session) for session in sessions]

@@ -24,26 +24,33 @@ from app.api.dependencies import (
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
     get_outbox_repository,
+    get_service_session_repository,
+    get_user_repository,
     pagination,
 )
+from app.api.routes.service_sessions import to_service_session_response
 from app.api.schemas.member_schemas import (
+    MemberAccountLinkRequest,
     MemberCreate,
     MemberListResponse,
+    MemberMergeRequest,
+    MemberMergeResponse,
     MemberNextOfKinCreate,
     MemberNextOfKinResponse,
     MemberNextOfKinUpdate,
     MemberResponse,
     MemberUpdate,
 )
+from app.api.schemas.service_session_schemas import ServiceSessionListResponse
 from app.application.services.member_audit import record_member_change
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
-from app.core.authorization import require_not_viewer
+from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
@@ -52,6 +59,8 @@ from app.domain.repositories.eligible_member_repository import (
 )
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
+from app.domain.repositories.service_session_repository import ServiceSessionRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -93,6 +102,7 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         terminated_at=member.terminated_at,
         created_at=member.created_at,
         updated_at=member.updated_at,
+        user_id=member.user_id.value if member.user_id else None,
     )
 
 
@@ -503,6 +513,103 @@ async def _transition_member(
     return member
 
 
+@router.put("/{member_id}/account", response_model=MemberResponse)
+@transactional()
+async def link_member_account(
+    member_id: str,
+    data: MemberAccountLinkRequest,
+    current_user: TokenData = Depends(get_current_user),
+    _admin=Depends(require_tenant_role(TenantRole.ADMIN)),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
+    user = await user_repo.get_by_id(UserId(data.user_id))
+    if user is None or user.tenant_id != member.tenant_id or user.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="User account not found")
+    linked = await member_repo.find_by_user_id(member.tenant_id, user.id)
+    if linked is not None and linked.id != member.id:
+        raise HTTPException(status_code=409, detail="User account is linked to another member")
+    member.link_account(user.id)
+    await member_repo.save(member)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="AccountLinked",
+    )
+    return _response(member)
+
+
+@router.delete("/{member_id}/account", response_model=MemberResponse)
+@transactional()
+async def unlink_member_account(
+    member_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    _admin=Depends(require_tenant_role(TenantRole.ADMIN)),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
+    member.unlink_account()
+    await member_repo.save(member)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=member.id.value,
+        action="UPDATE",
+        operation="AccountUnlinked",
+    )
+    return _response(member)
+
+
+@router.post("/{member_id}/merge", response_model=MemberMergeResponse)
+@transactional()
+async def merge_members(
+    member_id: str,
+    data: MemberMergeRequest,
+    current_user: TokenData = Depends(get_current_user),
+    _admin=Depends(require_tenant_role(TenantRole.ADMIN)),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.source_member_id == member_id:
+        raise HTTPException(status_code=422, detail="Source and target members must differ")
+    target = await _get_member(member_id, current_user.tenant_id, member_repo)
+    source = await _get_member(data.source_member_id, current_user.tenant_id, member_repo)
+    if target.client_id != source.client_id:
+        raise HTTPException(status_code=409, detail="Members must belong to the same client")
+    transferred = await member_repo.merge_into(target.tenant_id, source.id, target.id)
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=target.id.value,
+        action="UPDATE",
+        operation="Merged",
+    )
+    await record_member_change(
+        outbox,
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.user_id,
+        resource_id=source.id.value,
+        action="DELETE",
+        operation="MergedIntoMember",
+    )
+    return MemberMergeResponse(
+        member=_response(await _get_member(member_id, current_user.tenant_id, member_repo)),
+        source_member_id=source.id.value,
+        transferred=transferred,
+    )
+
+
 @router.post("/{member_id}/suspend", response_model=MemberResponse)
 @transactional()
 async def suspend_member(
@@ -582,6 +689,35 @@ async def list_member_beneficiaries(
         member.id,
     )
     return [_response(item) for item in beneficiaries]
+
+
+@router.get("/{member_id}/sessions", response_model=ServiceSessionListResponse)
+@readonly()
+async def list_member_sessions(
+    member_id: str,
+    current_user: TokenData = Depends(require_clinical_scope),
+    pg: PageParams = Depends(pagination()),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    member = await _get_member(member_id, current_user.tenant_id, member_repo)
+    items = await session_repo.list_all(
+        tenant_id=member.tenant_id,
+        member_id=member.id,
+        limit=pg.limit,
+        offset=pg.offset,
+        sort_by="scheduled_at",
+        sort_desc=True,
+    )
+    total = await session_repo.count(tenant_id=member.tenant_id, member_id=member.id)
+    return ServiceSessionListResponse(
+        items=[to_service_session_response(item) for item in items],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=pg.offset + pg.limit < total,
+    )
 
 
 @router.get("/{member_id}/next-of-kin", response_model=list[MemberNextOfKinResponse])

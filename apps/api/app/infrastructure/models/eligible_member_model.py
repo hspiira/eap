@@ -65,6 +65,9 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     terminated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, unique=True, index=True
+    )
 
 
 class ClinicalSubjectModel(CuidMixin, TenantMixin, Base, TimestampMixin):

@@ -1,4 +1,4 @@
-import type { Member, MemberNextOfKin } from "@/types/entities"
+import type { Member, MemberNextOfKin, ServiceSession } from "@/types/entities"
 import type {
   EligibilityStatus,
   MemberGender,
@@ -49,6 +49,25 @@ export const membersApi = {
 
   async getById(id: string): Promise<Member> {
     return apiClient.get<Member>(`/members/${id}`)
+  },
+
+  async listSessions(id: string, params?: ListParams): Promise<PaginatedResponse<ServiceSession>> {
+    return apiClient.get<PaginatedResponse<ServiceSession>>(`/members/${id}/sessions`, params)
+  },
+
+  async linkAccount(id: string, userId: string): Promise<Member> {
+    return apiClient.put<Member>(`/members/${id}/account`, { user_id: userId })
+  },
+
+  async unlinkAccount(id: string): Promise<Member> {
+    return apiClient.delete<Member>(`/members/${id}/account`)
+  },
+
+  async merge(
+    targetId: string,
+    sourceId: string,
+  ): Promise<{ member: Member; source_member_id: string; transferred: Record<string, number> }> {
+    return apiClient.post(`/members/${targetId}/merge`, { source_member_id: sourceId })
   },
 
   async listBeneficiaries(id: string): Promise<Member[]> {

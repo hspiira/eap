@@ -14,6 +14,7 @@ from app.domain.value_objects.core import (
     ClinicalSubjectId,
     EligibleMemberId,
     TenantId,
+    UserId,
 )
 from app.shared.utils.datetime import utc_now
 
@@ -75,6 +76,15 @@ class TestEligibleMemberInvariants:
 
 
 class TestEligibleMemberFSM:
+    def test_account_link_requires_unlink_before_replacement(self):
+        member = _member()
+        member.link_account(UserId("user-1"))
+        member.link_account(UserId("user-1"))
+        with pytest.raises(InvalidStateError, match="already has"):
+            member.link_account(UserId("user-2"))
+        member.unlink_account()
+        assert member.user_id is None
+
     def test_suspend_then_reinstate(self):
         m = _member()
         m.suspend()

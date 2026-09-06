@@ -9,10 +9,30 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   exportCsv: vi.fn(),
   canWrite: true,
+  role: "Admin",
   search: {} as Record<string, string>,
 }))
 vi.mock("@/api/endpoints/members", () => ({ membersApi: mocks }))
-vi.mock("@/hooks/useCanWrite", () => ({ useCanWrite: () => mocks.canWrite }))
+vi.mock("@/hooks/useCanWrite", () => ({
+  useCanWrite: () => mocks.canWrite,
+  useCurrentRole: () => mocks.role,
+}))
+vi.mock("@/components/MemberMergeDialog", () => ({
+  MemberMergeDialog: ({
+    open,
+    members,
+    onMerged,
+  }: {
+    open: boolean
+    members: unknown[] | null
+    onMerged: () => void
+  }) =>
+    open ? (
+      <span role="button" tabIndex={0} onClick={onMerged}>
+        Confirm merge {members?.length}
+      </span>
+    ) : null,
+}))
 vi.mock("@/components/MemberFormSheet", () => ({ MemberFormSheet: () => null }))
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: unknown) => ({ options }),
@@ -42,6 +62,7 @@ const Page = (Route as unknown as { options: { component: React.ComponentType } 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.canWrite = true
+  mocks.role = "Admin"
   mocks.search = {}
   mocks.list.mockResolvedValue({
     items: [makeMember()],
@@ -141,5 +162,22 @@ describe("member roster", () => {
     await screen.findByText("Amina Namukasa")
     expect(screen.queryByRole("button", { name: "Add member" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
+  })
+
+  it("offers manual merge only when an admin selects exactly two members", async () => {
+    mocks.list.mockResolvedValue({
+      items: [makeMember(), makeMember({ id: "member-2", display_label: "Amina duplicate" })],
+      total: 2,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    })
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+    await user.click(await screen.findByRole("checkbox", { name: "Select Amina Namukasa" }))
+    expect(screen.queryByRole("button", { name: "Merge selected" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("checkbox", { name: "Select Amina duplicate" }))
+    await user.click(screen.getByRole("button", { name: "Merge selected" }))
+    expect(screen.getByRole("button", { name: "Confirm merge 2" })).toBeInTheDocument()
   })
 })

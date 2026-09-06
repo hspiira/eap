@@ -24,6 +24,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
+import { MemberMergeDialog } from "@/components/MemberMergeDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -34,7 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -112,6 +113,8 @@ function MembersListPage() {
   const queryClient = useQueryClient()
   const toast = useToast()
   const [editing, setEditing] = useState<Member | null>(null)
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const role = useCurrentRole()
   const query = useEntityList({
     resource: "members",
     params: {
@@ -127,6 +130,8 @@ function MembersListPage() {
   })
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
+  const mergeMembers = items.filter((member) => selection.selectedIds.has(member.id))
+  const mergePair = mergeMembers.length === 2 ? (mergeMembers as [Member, Member]) : null
 
   const download = useCallback(
     async (promise: Promise<Blob>, filename: string) => {
@@ -235,6 +240,15 @@ function MembersListPage() {
           setEditing(null)
         }}
       />
+      <MemberMergeDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        members={mergePair}
+        onMerged={() => {
+          selection.clearSelection()
+          void queryClient.invalidateQueries({ queryKey: ["members"] })
+        }}
+      />
 
       <EntityListView
         columns={COLUMNS}
@@ -279,6 +293,17 @@ function MembersListPage() {
         onToggleSelectAll={selection.toggleSelectAll}
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+            {role === "Admin" && mergePair ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-7 rounded-none px-2.5"
+                onClick={() => setMergeOpen(true)}
+              >
+                Merge selected
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"

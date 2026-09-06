@@ -8,9 +8,14 @@ const api = vi.hoisted(() => ({
   getById: vi.fn(),
   listBeneficiaries: vi.fn(),
   listNextOfKin: vi.fn(),
+  listSessions: vi.fn(),
 }))
 vi.mock("@/api/endpoints/members", () => ({ membersApi: api }))
-vi.mock("@/hooks/useCanWrite", () => ({ useCanWrite: () => false, useCurrentRole: () => "Viewer" }))
+vi.mock("@/hooks/useCanWrite", () => ({
+  useCanWrite: () => false,
+  useCurrentRole: () => "Viewer",
+  useHasClinicalScope: () => ({ hasScope: false, isLoading: false }),
+}))
 vi.mock("@/components/MemberFormSheet", () => ({ MemberFormSheet: () => null }))
 vi.mock("@/components/MemberNextOfKinFormSheet", () => ({ MemberNextOfKinFormSheet: () => null }))
 vi.mock("@tanstack/react-router", () => ({
@@ -41,6 +46,9 @@ describe("member detail", () => {
     expect(await screen.findByText("No next-of-kin contacts recorded.")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Suspend" })).not.toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Service history" })).toBeDisabled()
+    expect(screen.getByRole("tab", { name: "Account access" })).toBeEnabled()
+    expect(screen.queryByText("client-1")).not.toBeInTheDocument()
   })
 
   it("shows contact and beneficiary failures separately from empty results", async () => {

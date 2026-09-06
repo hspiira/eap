@@ -13,13 +13,17 @@ import {
 } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
+import { MemberLink } from "@/components/common/MemberLink"
 import { PageShell } from "@/components/common/PageShell"
+import { SessionHistory } from "@/components/common/SessionHistory"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
+import { MemberAccountCard } from "@/components/MemberAccountCard"
 import { MemberBeneficiaries, MemberNextOfKinCard } from "@/components/MemberDetailSections"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useHasClinicalScope } from "@/hooks/useCanWrite"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey } from "@/lib/queries"
@@ -62,6 +66,8 @@ function MemberDetail({ member }: { member: Member }) {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+  const [tab, setTab] = useState("overview")
+  const { hasScope: hasClinicalScope, isLoading: clinicalScopeLoading } = useHasClinicalScope()
 
   const label = member.display_label ?? member.employer_member_id
   const handleAction = useCallback(
@@ -129,57 +135,81 @@ function MemberDetail({ member }: { member: Member }) {
       <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
-            <div className="mb-5 flex items-center gap-3 border-b border-fg/10 bg-surface px-4 py-3">
-              <span
-                aria-hidden
-                className="grid size-9 place-items-center bg-primary/10 text-xs font-semibold text-primary"
-              >
-                {nameInitials(label)}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-fg">{label}</p>
-                <p className="text-xs text-fg-muted">{member.employer_member_id}</p>
-              </div>
-              <StatusBadge status={member.status} />
-            </div>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <DetailCard title="Membership">
-                <DetailGrid>
-                  <DetailRow label="Relationship" value={member.relation} />
-                  <DetailRow
-                    label="Client"
-                    value={<span className="font-mono text-xs">{member.client_id}</span>}
-                  />
-                </DetailGrid>
-              </DetailCard>
-              <DetailCard title="Personal details">
-                <DetailGrid>
-                  <DetailRow label="Date of birth" value={member.date_of_birth} />
-                  <DetailRow label="Gender" value={member.gender} />
-                </DetailGrid>
-              </DetailCard>
-              <DetailCard title="Contact">
-                <DetailGrid>
-                  <DetailRow label="Phone" value={member.phone} />
-                  <DetailRow label="Work email" value={member.work_email} />
-                  <DetailRow label="Personal email" value={member.personal_email} />
-                </DetailGrid>
-              </DetailCard>
-              <MemberNextOfKinCard member={member} />
-            </div>
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="mb-5 px-0">
+                <Tab value="overview">Overview</Tab>
+                <Tab value="sessions" disabled={clinicalScopeLoading || !hasClinicalScope}>
+                  Service history
+                </Tab>
+                <Tab value="account">Account access</Tab>
+              </TabsList>
+              <TabPanel value="overview">
+                <div className="mb-5 flex items-center gap-3 border-b border-fg/10 bg-surface px-4 py-3">
+                  <span
+                    aria-hidden
+                    className="grid size-9 place-items-center bg-primary/10 text-xs font-semibold text-primary"
+                  >
+                    {nameInitials(label)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-fg">{label}</p>
+                    <p className="text-xs text-fg-muted">{member.employer_member_id}</p>
+                  </div>
+                  <StatusBadge status={member.status} />
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <DetailCard title="Membership">
+                    <DetailGrid>
+                      <DetailRow label="Relationship" value={member.relation} />
+                      <DetailRow
+                        label="Client"
+                        value={
+                          <Link
+                            to="/clients/$clientId"
+                            params={{ clientId: member.client_id }}
+                            className="text-primary hover:underline"
+                          >
+                            {member.client_name || "Open client"}
+                          </Link>
+                        }
+                      />
+                    </DetailGrid>
+                  </DetailCard>
+                  <DetailCard title="Personal details">
+                    <DetailGrid>
+                      <DetailRow label="Date of birth" value={member.date_of_birth} />
+                      <DetailRow label="Gender" value={member.gender} />
+                    </DetailGrid>
+                  </DetailCard>
+                  <DetailCard title="Contact">
+                    <DetailGrid>
+                      <DetailRow label="Phone" value={member.phone} />
+                      <DetailRow label="Work email" value={member.work_email} />
+                      <DetailRow label="Personal email" value={member.personal_email} />
+                    </DetailGrid>
+                  </DetailCard>
+                  <MemberNextOfKinCard member={member} />
+                </div>
+              </TabPanel>
+              <TabPanel value="sessions">
+                <SessionHistory memberId={member.id} limit={20} />
+              </TabPanel>
+              <TabPanel value="account">
+                <MemberAccountCard
+                  member={member}
+                  onChanged={(updated) =>
+                    queryClient.setQueryData(entityDetailKey("members", updated.id), updated)
+                  }
+                />
+              </TabPanel>
+            </Tabs>
           </div>
           <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
             <RailSection title="Beneficiary relationship">
               {member.relation === "Employee" ? (
                 <p className="text-xs text-fg-muted">This is a primary employee member.</p>
               ) : member.primary_employee_member_id ? (
-                <Link
-                  to="/members/$memberId"
-                  params={{ memberId: member.primary_employee_member_id }}
-                  className="font-mono text-xs text-primary hover:underline"
-                >
-                  {member.primary_employee_member_id}
-                </Link>
+                <MemberLink memberId={member.primary_employee_member_id} />
               ) : (
                 <p className="text-xs text-danger-fg">Primary employee missing</p>
               )}

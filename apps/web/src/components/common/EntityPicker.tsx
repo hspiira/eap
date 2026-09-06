@@ -6,13 +6,14 @@ import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"
+import { usersApi } from "@/api/endpoints/users"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { displayName, memberLabel, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client, Member, Person, Provider, Service } from "@/types/entities"
+import type { Client, Member, Person, Provider, Service, User } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
@@ -228,6 +229,44 @@ export function MemberPicker({
           initials={nameInitials(memberLabel(member))}
           primary={memberLabel(member)}
           secondary={member.relation}
+        />
+      )}
+    />
+  )
+}
+
+export function UserPicker({
+  value,
+  onChange,
+  selected,
+}: {
+  value: string
+  onChange: (id: string) => void
+  selected?: User | null
+}) {
+  return (
+    <EntityPicker<User>
+      resource="users"
+      listFn={usersApi.list}
+      value={value}
+      onChange={onChange}
+      selectedItem={selected}
+      placeholder="Search users by email…"
+      emptyPrompt="Search for an existing user account."
+      emptyNoMatch="No user accounts match."
+      renderSelected={(user) => (
+        <PickerRow
+          initials={nameInitials(user.display_name || user.email)}
+          primary={user.display_name || user.email}
+          secondary={user.display_name ? user.email : user.status}
+          size="md"
+        />
+      )}
+      renderRow={(user) => (
+        <PickerRow
+          initials={nameInitials(user.display_name || user.email)}
+          primary={user.display_name || user.email}
+          secondary={user.display_name ? user.email : user.status}
         />
       )}
     />

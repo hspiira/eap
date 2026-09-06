@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { CalendarClock, ChevronRight, Plus } from "lucide-react"
 
+import { membersApi } from "@/api/endpoints/members"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -42,7 +43,8 @@ export function SessionHistory({
   }
   const query = useQuery({
     queryKey: entityListKey("service-sessions", params),
-    queryFn: () => serviceSessionsApi.list(params),
+    queryFn: () =>
+      memberId ? membersApi.listSessions(memberId, { limit: 20 }) : serviceSessionsApi.list(params),
     enabled: Boolean(memberId || providerId),
     staleTime: 30_000,
   })

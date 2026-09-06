@@ -8,8 +8,9 @@ directory.
 
 - A member belongs to exactly one tenant and client.
 - A beneficiary may reference an employee member from the same client only.
-- A member does not need a User account. Portal access is an independent,
-  invite-only workflow.
+- A member does not need a User account. An administrator may explicitly link
+  one existing tenant user to one member; the link grants no role or access
+  scope and never matches on name or email.
 - Providers and counsellors use the Providers/panel workflow. Today this is
   backed by `/persons` records of type `ServiceProvider` with provider profiles;
   a separate organisation/practitioner persistence model is future work.
@@ -39,13 +40,17 @@ The canonical tenant-facing API is `/members`:
 - `GET/PATCH /members/{id}` — view/update current roster data
 - `POST /members/{id}/suspend`, `/reinstate`, `/terminate` - roster lifecycle
 - `GET /members/{id}/beneficiaries` - same-client employee relationships
+- `GET /members/{id}/sessions` - clinical-scope service history
+- `PUT/DELETE /members/{id}/account` - admin-only explicit User linkage
+- `POST /members/{id}/merge` - admin-only reviewed merge into the path member
 - `GET/POST /members/{id}/next-of-kin` - list or add contacts
 - `PATCH/DELETE /members/{id}/next-of-kin/{contact_id}` - update or remove contacts
 - `GET /members/export` — filtered or selected-ID CSV export
 
 The existing `/eligible-members` endpoints remain for clinical enrolment
-compatibility. The older `/persons` API and route are retained temporarily for
-existing provider and staff integrations while those boundaries are migrated.
+compatibility. The `/persons` API remains provider and care-callback
+infrastructure. Its product-facing list redirects to Providers, and tenant
+staff are managed only through Users & Invitations.
 
 Member mutations commit the member/contact and its audit outbox event in the
 same transaction. Audit metadata records actor, resource and operation without
@@ -90,15 +95,17 @@ remains validation-only; it neither creates Members nor persists sessions.
 Person DSAR exports include sessions in which that Person is the provider,
 not sessions belonging to an unrelated Member with a coincidentally equal ID.
 
-Keep `/persons` until Providers/panel, counsellor assignment, the user-detail
-person link, and other legacy person consumers have replacement contracts and
-verified data migration. A person ID is not a member ID; do not blindly redirect
-`/persons/{id}` to `/members/{id}`. Staff accounts continue through Platform Users
-and the passwordless invitation option in the user form.
+The `/persons` API and detail compatibility route can be removed only after two
+remaining consumers move: provider records need an independent practitioner
+contract, and care callbacks need a canonical Member subject. A person ID is
+not a member ID, so the detail route is not redirected blindly. Staff accounts
+no longer read or link legacy Person profiles.
 
-Account linking and clinical service history are not represented as placeholder
-panels on the member detail page. Add them only when their real workflows and
-authorization boundaries exist. Clinical history stays behind clinical scope.
+Member detail exposes persisted account linkage and service history. Only
+administrators can link accounts or merge records, and clinical history stays
+behind clinical scope. Merging requires two explicitly selected members in the
+same tenant, client and relationship context; it transfers dependent and
+clinical continuity references atomically and audits both records.
 
 ## Verification
 
@@ -110,16 +117,17 @@ MEMBER_TEST_DATABASE_URL=postgresql+asyncpg://USER@localhost/postgres \
   .venv/bin/pytest tests/integration/test_members_persistence.py -q
 ```
 
-They create and remove a uniquely named schema, without touching application
+They create and remove uniquely named schemas, without touching application
 tables. They verify persisted writes, audit rollback, concurrent primary
-contacts, tenant isolation and beneficiary filtering. Frontend interaction
-tests cover the member list, detail page and both roster/contact forms.
+contacts, tenant isolation, beneficiary filtering, and the account-link
+migration. Frontend interaction tests cover the member list, detail page,
+account workflow, and roster/contact forms.
 
 ## Privacy model
 
 `eligible_members` is the employer-side identity record. The operational
 `service_sessions` workflow references it directly. The separate clinical
 case/session workflow retains pseudonymous continuity through
-`eligible_member_clinical_link`. Any future duplicate merge must preserve that
-link, emit an auditable reassignment, and prevent cross-tenant or cross-client
-merges before it is exposed in the UI.
+`eligible_member_clinical_link`. The reviewed merge preserves the surviving
+link, reassigns clinical records in one transaction, emits audit events for the
+survivor and removed duplicate, and rejects cross-tenant or cross-client input.

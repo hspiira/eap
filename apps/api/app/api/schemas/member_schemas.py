@@ -158,6 +158,7 @@ class MemberResponse(BaseModel):
     terminated_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    user_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -168,3 +169,17 @@ class MemberListResponse(BaseModel):
     page: int
     limit: int
     has_more: bool
+
+
+class MemberAccountLinkRequest(BaseModel):
+    user_id: str = Field(..., min_length=1)
+
+
+class MemberMergeRequest(BaseModel):
+    source_member_id: str = Field(..., min_length=1)
+
+
+class MemberMergeResponse(BaseModel):
+    member: MemberResponse
+    source_member_id: str
+    transferred: dict[str, int]

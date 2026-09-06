@@ -6,11 +6,12 @@
 
 ## Members migration note
 
-`/members` is the canonical API for client employees and beneficiaries. The
-legacy `/persons` findings below remain relevant to compatibility cleanup, but
-provider/practitioner and tenant-user work must stay outside the Members
-aggregate. See [MEMBERS_MODULE.md](../MEMBERS_MODULE.md) for the boundary and
-privacy rules.
+`/members` is the canonical API for client employees and beneficiaries.
+`/persons` is retained only for providers and care callbacks; tenant users stay
+outside both aggregates. References below to broader Person responsibilities
+are historical audit evidence, not a supported product boundary. See
+[MEMBERS_MODULE.md](../MEMBERS_MODULE.md) for the retirement gate and privacy
+rules.
 
 ## How to use this backlog
 

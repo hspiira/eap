@@ -22,7 +22,10 @@ import app.domain.entities as entities_pkg
 
 # Methods that assign to self but emit no domain event, per entity. Lower is
 # better. Raise this only with a reason; lower it freely.
-KNOWN_SILENT_MUTATORS = 142
+# Account linkage is audited by the Members route as an explicit operation
+# because it is an association between two aggregates, rather than a member
+# lifecycle event. Keep those two domain setters visible in this baseline.
+KNOWN_SILENT_MUTATORS = 144
 
 
 def _entity_classes():

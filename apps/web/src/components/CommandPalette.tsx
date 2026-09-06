@@ -43,7 +43,8 @@ type NavEntry = {
 const NAV_ITEMS: ReadonlyArray<NavEntry> = [
   { to: "/", label: "Home", icon: Home, group: "Quick" },
   { to: "/clients", label: "Clients", icon: Building2, group: "Navigate" },
-  { to: "/persons", label: "Persons", icon: Users, group: "Navigate" },
+  { to: "/members", label: "Members", icon: Users, group: "Navigate" },
+  { to: "/providers", label: "Providers", icon: Users, group: "Navigate" },
   { to: "/service-sessions", label: "Sessions", icon: Calendar, group: "Navigate" },
   { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall, group: "Navigate" },
   { to: "/care-callbacks/worklist", label: "My Worklist", icon: Headphones, group: "Navigate" },

@@ -1,9 +1,9 @@
 """Eligible member aggregate.
 
 The HR-known view of one EAP-eligible person. Carries the employer's HRIS
-identifier and the relationship to the primary employee. Lives on the
-*employer* side of the privacy wall; clinical entities never reference this
-aggregate directly. The pseudonymous join goes via ``EligibleMemberClinicalLink``.
+identifier and the relationship to the primary employee. Operational service
+sessions reference the member directly. Clinical cases and notes stay behind
+the pseudonymous ``EligibleMemberClinicalLink`` boundary.
 """
 
 from dataclasses import dataclass, field
@@ -48,7 +48,22 @@ class EligibleMember:
     suspended_at: datetime | None = None
     terminated_at: datetime | None = None
     created_by: UserId | None = None
+    user_id: UserId | None = None
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
+
+    def link_account(self, user_id: UserId) -> None:
+        if self.user_id == user_id:
+            return
+        if self.user_id is not None:
+            raise InvalidStateError("Member already has a linked account")
+        self.user_id = user_id
+        self.updated_at = utc_now()
+
+    def unlink_account(self) -> None:
+        if self.user_id is None:
+            return
+        self.user_id = None
+        self.updated_at = utc_now()
 
     def __post_init__(self) -> None:
         if not self.employer_member_id.strip():

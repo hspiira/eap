@@ -12,19 +12,19 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.schema import CreateSchema, DropSchema
 
-from app.api.dependencies import get_client_repository, get_outbox_repository
+from app.api.dependencies import get_client_repository, get_outbox_repository, get_user_repository
 from app.api.routes.members import router
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
-from app.domain.enums import SubscriptionTier, TenantStatus
-from app.domain.value_objects.core import TenantId
+from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
+from app.domain.value_objects.core import TenantId, UserId
 from app.infrastructure.models.base import Base
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
@@ -65,7 +65,15 @@ async def isolated_members_db():
     ]
     try:
         async with engine.begin() as connection:
+            await connection.execute(text("CREATE TABLE users (id varchar(25) PRIMARY KEY)"))
             await connection.run_sync(lambda sync: Base.metadata.create_all(sync, tables=tables))
+            for ddl in (
+                "CREATE TABLE service_sessions (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, member_id varchar(25) NOT NULL REFERENCES eligible_members(id), updated_at timestamptz)",
+                "CREATE TABLE cases (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, clinical_subject_id varchar(25) NOT NULL, updated_at timestamptz)",
+                "CREATE TABLE clinical_notes (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, clinical_subject_id varchar(25) NOT NULL, updated_at timestamptz)",
+                "CREATE TABLE authorizations (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, clinical_subject_id varchar(25) NOT NULL, updated_at timestamptz)",
+            ):
+                await connection.execute(text(ddl))
         async with sessions() as session:
             session.add(
                 TenantModel(
@@ -100,27 +108,120 @@ async def member_http(isolated_members_db):
     clients.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
+    users = AsyncMock()
+    users.get_by_id.return_value = SimpleNamespace(
+        id=UserId("u1"), tenant_id=TenantId("t1"), role=TenantRole.ADMIN, deleted_at=None
+    )
     app.dependency_overrides[get_db] = session_dependency
     app.dependency_overrides[get_current_user] = lambda: TokenData(
         user_id="u1", tenant_id="t1", role="Admin"
     )
     app.dependency_overrides[get_client_repository] = lambda: clients
+    app.dependency_overrides[get_user_repository] = lambda: users
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         yield http, app
 
 
-async def create_member(http):
+async def create_member(http, employer_member_id="HR-1", display_label="Test member"):
     response = await http.post(
         "/members",
         json={
             "client_id": "c1",
-            "employer_member_id": "HR-1",
-            "display_label": "Test member",
+            "employer_member_id": employer_member_id,
+            "display_label": display_label,
             "relation": "Employee",
         },
     )
     assert response.status_code == 201, response.text
     return response.json()["id"]
+
+
+async def test_reviewed_merge_moves_references_and_deletes_only_the_source(
+    member_http, isolated_members_db
+):
+    http, _ = member_http
+    target_id = await create_member(http, "HR-1", "Member to keep")
+    source_id = await create_member(http, "HR-2", "Duplicate member")
+    child = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "employer_member_id": "HR-3",
+            "display_label": "Child",
+            "relation": "Child",
+            "primary_employee_member_id": source_id,
+        },
+    )
+    assert child.status_code == 201, child.text
+    contact = await http.post(
+        f"/members/{source_id}/next-of-kin",
+        json={"name": "Contact", "relationship": "Sibling", "phone": "123"},
+    )
+    assert contact.status_code == 201, contact.text
+
+    async with isolated_members_db() as session:
+        links = (
+            await session.execute(
+                select(
+                    EligibleMemberClinicalLinkModel.member_id,
+                    EligibleMemberClinicalLinkModel.subject_id,
+                ).where(EligibleMemberClinicalLinkModel.member_id.in_([source_id, target_id]))
+            )
+        ).all()
+        subjects = dict(links)
+        await session.execute(
+            text(
+                "INSERT INTO service_sessions (id, tenant_id, member_id) "
+                "VALUES ('session-1', 't1', :member_id)"
+            ),
+            {"member_id": source_id},
+        )
+        for table in ("cases", "clinical_notes", "authorizations"):
+            await session.execute(
+                text(
+                    f"INSERT INTO {table} (id, tenant_id, clinical_subject_id) "
+                    "VALUES (:id, 't1', :subject_id), (:foreign_id, 't2', :subject_id)"
+                ),
+                {
+                    "id": f"{table}-1",
+                    "foreign_id": f"foreign-{table}",
+                    "subject_id": subjects[source_id],
+                },
+            )
+        await session.commit()
+
+    merged = await http.post(
+        f"/members/{target_id}/merge", json={"source_member_id": source_id}
+    )
+    assert merged.status_code == 200, merged.text
+    assert merged.json()["transferred"] == {
+        "sessions": 1,
+        "beneficiaries": 1,
+        "next_of_kin": 1,
+        "cases": 1,
+        "clinical_notes": 1,
+        "authorizations": 1,
+        "account_links": 0,
+    }
+    assert (await http.get(f"/members/{source_id}")).status_code == 404
+
+    async with isolated_members_db() as session:
+        child_row = await session.get(EligibleMemberModel, child.json()["id"])
+        assert child_row.primary_employee_member_id == target_id
+        assert (await session.get(MemberNextOfKinModel, contact.json()["id"])).member_id == target_id
+        assert await session.scalar(
+            text("SELECT member_id FROM service_sessions WHERE id = 'session-1'")
+        ) == target_id
+        for table in ("cases", "clinical_notes", "authorizations"):
+            assert await session.scalar(
+                text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
+                {"id": f"{table}-1"},
+            ) == subjects[target_id]
+            assert await session.scalar(
+                text(f"SELECT clinical_subject_id FROM {table} WHERE id = :id"),
+                {"id": f"foreign-{table}"},
+            ) == subjects[source_id]
+        assert await session.get(ClinicalSubjectModel, subjects[source_id]) is None
 
 
 async def test_success_survives_request_session_and_preserves_clinical_link(

@@ -15,6 +15,8 @@ from app.api.dependencies import (
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
     get_outbox_repository,
+    get_service_session_repository,
+    get_user_repository,
 )
 from app.api.routes.members import router
 from app.core.database import get_db
@@ -22,13 +24,14 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation, NextOfKinRelationship
+from app.domain.enums import EligibilityStatus, MemberRelation, NextOfKinRelationship, TenantRole
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
     Email,
     MemberNextOfKinId,
     TenantId,
+    UserId,
 )
 from app.shared.utils.datetime import utc_now
 
@@ -64,6 +67,8 @@ async def api():
         links=AsyncMock(),
         contacts=AsyncMock(),
         outbox=AsyncMock(),
+        users=AsyncMock(),
+        sessions=AsyncMock(),
         db=AsyncMock(),
     )
     state.members.get_by_id.return_value = member()
@@ -71,10 +76,19 @@ async def api():
     state.members.list_for_primary.return_value = []
     state.members.list_all.return_value = []
     state.members.count.return_value = 0
+    state.members.find_by_user_id.return_value = None
     state.clients.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
     state.contacts.list_for_member.return_value = []
+    state.sessions.list_all.return_value = []
+    state.sessions.count.return_value = 0
+    state.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
+        id=user_id,
+        tenant_id=TenantId("t1"),
+        role=TenantRole.ADMIN,
+        deleted_at=None,
+    )
     dependencies = {
         get_eligible_member_repository: state.members,
         get_client_repository: state.clients,
@@ -82,6 +96,8 @@ async def api():
         get_eligible_member_clinical_link_repository: state.links,
         get_member_next_of_kin_repository: state.contacts,
         get_outbox_repository: state.outbox,
+        get_user_repository: state.users,
+        get_service_session_repository: state.sessions,
         get_db: state.db,
     }
     for dependency, value in dependencies.items():
@@ -204,6 +220,83 @@ async def test_other_tenant_member_is_hidden(api, method, path, payload):
     assert response.status_code == 404
     api.db.commit.assert_not_awaited()
     api.outbox.enqueue.assert_not_awaited()
+
+
+async def test_admin_links_and_unlinks_an_explicit_user_account(api):
+    response = await api.http.put("/members/m1/account", json={"user_id": "u2"})
+    assert response.status_code == 200, response.text
+    assert response.json()["user_id"] == "u2"
+    api.members.find_by_user_id.assert_awaited_once_with(TenantId("t1"), UserId("u2"))
+    response = await api.http.delete("/members/m1/account")
+    assert response.status_code == 200, response.text
+    assert response.json()["user_id"] is None
+
+
+async def test_account_link_rejects_cross_tenant_and_duplicate_user(api):
+    api.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
+        id=user_id,
+        tenant_id=TenantId("t1" if user_id.value == "u1" else "t2"),
+        role=TenantRole.ADMIN,
+        deleted_at=None,
+    )
+    assert (await api.http.put("/members/m1/account", json={"user_id": "u2"})).status_code == 404
+    api.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
+        id=user_id, tenant_id=TenantId("t1"), role=TenantRole.ADMIN, deleted_at=None
+    )
+    api.members.find_by_user_id.return_value = member("m2")
+    assert (await api.http.put("/members/m1/account", json={"user_id": "u2"})).status_code == 409
+
+
+async def test_only_admin_can_manage_account_links_and_merges(api):
+    api.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
+        id=user_id, tenant_id=TenantId("t1"), role=TenantRole.USER, deleted_at=None
+    )
+    assert (await api.http.put("/members/m1/account", json={"user_id": "u2"})).status_code == 403
+    assert (
+        await api.http.post("/members/m1/merge", json={"source_member_id": "m2"})
+    ).status_code == 403
+
+
+async def test_service_history_requires_clinical_scope_and_is_member_scoped(api):
+    assert (await api.http.get("/members/m1/sessions")).status_code == 403
+    api.user.access_scopes = ["Clinical"]
+    response = await api.http.get("/members/m1/sessions", params={"page": 2, "limit": 5})
+    assert response.status_code == 200, response.text
+    api.sessions.list_all.assert_awaited_once_with(
+        tenant_id=TenantId("t1"),
+        member_id=EligibleMemberId("m1"),
+        limit=5,
+        offset=5,
+        sort_by="scheduled_at",
+        sort_desc=True,
+    )
+
+
+async def test_merge_requires_explicit_same_client_members_and_audits(api):
+    api.members.get_by_id.side_effect = lambda member_id: member(member_id.value)
+    api.members.merge_into.return_value = {"sessions": 2, "beneficiaries": 1}
+    response = await api.http.post("/members/m1/merge", json={"source_member_id": "m2"})
+    assert response.status_code == 200, response.text
+    assert response.json()["source_member_id"] == "m2"
+    assert response.json()["transferred"]["sessions"] == 2
+    api.members.merge_into.assert_awaited_once_with(
+        TenantId("t1"), EligibleMemberId("m2"), EligibleMemberId("m1")
+    )
+    event_types = [call.kwargs["event_type"] for call in api.outbox.enqueue.await_args_list]
+    assert event_types[-2:] == ["EligibleMemberMerged", "EligibleMemberMergedIntoMember"]
+
+
+async def test_merge_rejects_self_and_cross_client(api):
+    assert (
+        await api.http.post("/members/m1/merge", json={"source_member_id": "m1"})
+    ).status_code == 422
+    api.members.get_by_id.side_effect = lambda member_id: member(
+        member_id.value, client_id=ClientId("c2" if member_id.value == "m2" else "c1")
+    )
+    assert (
+        await api.http.post("/members/m1/merge", json={"source_member_id": "m2"})
+    ).status_code == 409
+    api.members.merge_into.assert_not_awaited()
 
 
 async def test_foreign_client_rejects_creation(api):

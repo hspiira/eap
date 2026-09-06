@@ -58,10 +58,10 @@ const QUICK_ACTIONS: ReadonlyArray<QuickAction> = [
     description: "Onboard a new client organisation.",
   },
   {
-    to: "/persons/new",
-    label: "Add person",
+    to: "/members?new=true",
+    label: "Add member",
     icon: Users,
-    description: "Register an employee, dependent or provider.",
+    description: "Add a covered employee or beneficiary.",
   },
   {
     to: "/service-sessions/new",

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeft,
   BadgeCheck,
@@ -12,7 +12,6 @@ import {
   UserCog,
 } from "lucide-react"
 
-import { personsApi } from "@/api/endpoints/persons"
 import { usersApi } from "@/api/endpoints/users"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
@@ -36,14 +35,12 @@ import { AccessScopesCard, DetailRail, Hero, RoleCard } from "@/components/users
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { User } from "@/types/entities"
 import { AuthProvider } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
-import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/users/$userId")({
   component: UserDetailPage,
@@ -69,12 +66,6 @@ function UserDetailPage() {
     detailFn: usersApi.getById,
   })
   const user = userQuery.data ?? null
-
-  const { data: person = null } = useQuery({
-    queryKey: ["persons", "by-user", userId],
-    queryFn: () => personsApi.getByUserId(userId),
-    enabled: !!user,
-  })
 
   const [reasonPrompt, setReasonPrompt] = useState<{
     action: "suspend" | "ban" | "terminate" | "deactivate"
@@ -225,35 +216,6 @@ function UserDetailPage() {
                     </DetailGrid>
                   </DetailCard>
 
-                  <DetailCard title="Identity">
-                    {person ? (
-                      <Link
-                        to="/persons/$personId"
-                        params={{ personId: person.id }}
-                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-                      >
-                        <span
-                          aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-                        >
-                          {personInitials(person, user)}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {displayName(person, user)}
-                          </p>
-                          <p className="truncate text-[11px] text-fg-muted">
-                            {getStatusLabel(person.person_type)}
-                          </p>
-                        </div>
-                      </Link>
-                    ) : (
-                      <p className="text-xs text-fg-muted">
-                        No person profile linked to this account.
-                      </p>
-                    )}
-                  </DetailCard>
-
                   <div className="mt-4">
                     <RoleCard
                       user={user}
@@ -393,7 +355,6 @@ function UserDetailPage() {
           <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
             <DetailRail
               user={user}
-              person={person}
               onAction={handleAction}
               actionLoading={actionLoading}
               onVerifyEmail={handleVerifyEmail}

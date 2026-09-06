@@ -6,10 +6,12 @@
 
 ## Members migration note
 
-The new `/members` module is the canonical UI for client employees and
-beneficiaries. The older Persons tickets below describe the compatibility route
-and should not be used to reintroduce provider or tenant-staff creation into
-Members. Providers and tenant users remain separate product boundaries.
+The `/members` module is the canonical UI for client employees and
+beneficiaries. The old Persons list has been deleted and `/persons` now exists
+only as a provider/care-callback compatibility boundary. References to its
+former list/detail implementation in this dated audit are historical evidence,
+not active implementation guidance. Providers and tenant users remain separate
+product boundaries.
 
 ## How to use this backlog
 
