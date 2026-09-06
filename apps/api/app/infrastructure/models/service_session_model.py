@@ -7,7 +7,15 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import (
@@ -65,11 +73,17 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
             + ")",
             name="session_clinical_outcome_check",
         ),
+        ForeignKeyConstraint(
+            ["tenant_id", "provider_id"],
+            ["providers.tenant_id", "providers.id"],
+            name="fk_service_sessions_provider_tenant",
+            ondelete="RESTRICT",
+        ),
     )
 
     # Relationships
     service_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
-    provider_id: Mapped[str] = mapped_column(ForeignKey("providers.id"), nullable=False, index=True)
+    provider_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     member_id: Mapped[str] = mapped_column(
         ForeignKey("eligible_members.id"), nullable=False, index=True
     )
