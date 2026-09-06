@@ -11,7 +11,7 @@
  */
 
 import type { ProviderOrganisation } from "@/types/entities"
-import type { ProviderApprovalStatus } from "@/types/enums"
+import type { OrganisationApprovalStatus } from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse } from "../types"
@@ -20,7 +20,7 @@ export interface ProviderOrganisationListParams extends ListParams {
   /** Free text over name and registration number. */
   search?: string
   is_active?: boolean
-  approval_status?: ProviderApprovalStatus
+  approval_status?: OrganisationApprovalStatus
 }
 
 export interface ProviderOrganisationInput {

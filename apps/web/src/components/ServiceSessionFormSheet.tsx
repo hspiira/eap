@@ -118,19 +118,6 @@ const EMPTY: Values = {
   backfill_reason: "",
 }
 
-/**
- * The create body plus the agreed delivery-context fields.
- *
- * `ServiceSessionCreate` is generated from `apps/api/schema/openapi.json`,
- * which does not carry these two fields yet. The extension is explicit so it
- * can be deleted in the same commit that regenerates the contract; the literal
- * values are guarded by `enums.contract.test.ts` once the API declares them.
- */
-type SessionCreateBody = Parameters<typeof serviceSessionsApi.create>[0] & {
-  delivery_context: SessionDeliveryContext
-  provider_affiliation_id: string | null
-}
-
 interface ServiceSessionFormSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -164,7 +151,7 @@ export function ServiceSessionFormSheet({
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
       Values,
-      SessionCreateBody & {
+      Parameters<typeof serviceSessionsApi.create>[0] & {
         __isBackfill?: boolean
         __backfillReason?: string | null
         __notes?: string

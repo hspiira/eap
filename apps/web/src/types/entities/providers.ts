@@ -2,8 +2,8 @@ import type {
   AccreditationStatus,
   BaseStatus,
   NonCompeteStatus,
+  OrganisationApprovalStatus,
   PanelStatus,
-  ProviderApprovalStatus,
   ProviderTier,
   UgandaRegion,
 } from "../enums"
@@ -70,7 +70,7 @@ export interface ProviderOrganisation {
   contact_email: string | null
   contact_phone: string | null
   is_active: boolean
-  approval_status: ProviderApprovalStatus
+  approval_status: OrganisationApprovalStatus
   created_at: string
   updated_at: string
 }
@@ -93,7 +93,7 @@ export interface ProviderAffiliation {
   valid_until: string | null
   organisation_name: string
   organisation_is_active: boolean
-  organisation_approval_status: ProviderApprovalStatus
+  organisation_approval_status: OrganisationApprovalStatus
   created_at: string
   updated_at: string
 }

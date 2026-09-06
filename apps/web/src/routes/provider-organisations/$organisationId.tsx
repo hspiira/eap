@@ -18,7 +18,7 @@ import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { ProviderOrganisation } from "@/types/entities"
-import { ProviderApprovalStatus, TenantRole } from "@/types/enums"
+import { OrganisationApprovalStatus, TenantRole } from "@/types/enums"
 
 export const Route = createFileRoute("/provider-organisations/$organisationId")({
   component: ProviderOrganisationDetailPage,
@@ -60,7 +60,7 @@ function ApprovalCommands({
   organisation: ProviderOrganisation
   onSelect: (command: Command) => void
 }) {
-  const approved = organisation.approval_status === ProviderApprovalStatus.APPROVED
+  const approved = organisation.approval_status === OrganisationApprovalStatus.APPROVED
   return (
     <div className="flex flex-wrap gap-2">
       {approved ? null : (
@@ -133,7 +133,7 @@ function ProviderOrganisationDetailPage() {
   }
 
   const deliverable =
-    organisation.is_active && organisation.approval_status === ProviderApprovalStatus.APPROVED
+    organisation.is_active && organisation.approval_status === OrganisationApprovalStatus.APPROVED
 
   return (
     <PageShell

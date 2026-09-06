@@ -10,6 +10,81 @@
         "title": "AccessScope",
         "type": "string"
       },
+      "AccountLinkCommand": {
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "reason"
+        ],
+        "title": "AccountLinkCommand",
+        "type": "object"
+      },
+      "AccountUnlinkCommand": {
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "AccountUnlinkCommand",
+        "type": "object"
+      },
+      "AccreditationCommand": {
+        "properties": {
+          "accreditation_authority": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accreditation Authority"
+          },
+          "accreditation_expiry": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accreditation Expiry"
+          },
+          "accreditation_status": {
+            "$ref": "#/components/schemas/AccreditationStatus"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "accreditation_status",
+          "reason"
+        ],
+        "title": "AccreditationCommand",
+        "type": "object"
+      },
       "AccreditationStatus": {
         "description": "Where the provider sits in the accreditation pipeline.",
         "enum": [
@@ -405,6 +480,17 @@
           "inferred"
         ],
         "title": "AliasConfidence",
+        "type": "string"
+      },
+      "AliasResolutionState": {
+        "description": "Whether a source name has been reconciled to a practitioner.\n\n`AMBIGUOUS` and `UNMAPPED` are distinct review outcomes: the first has\ncandidates and no decision, the second has no candidate at all.",
+        "enum": [
+          "Unmapped",
+          "Ambiguous",
+          "Resolved",
+          "Rejected"
+        ],
+        "title": "AliasResolutionState",
         "type": "string"
       },
       "AmendClinicalNoteRequest": {
@@ -1020,6 +1106,20 @@
           "file"
         ],
         "title": "Body_queue_client_import_clients_import_jobs_post",
+        "type": "object"
+      },
+      "Body_stage_import_session_imports_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_stage_import_session_imports_post",
         "type": "object"
       },
       "Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post": {
@@ -4693,6 +4793,16 @@
         "title": "DeliverableStatusUpdate",
         "type": "object"
       },
+      "DeliveryContext": {
+        "description": "How a session was delivered.\n\n`UNKNOWN` records missing historical evidence and is never a valid choice\nfor a new booking.",
+        "enum": [
+          "Direct",
+          "Organisation",
+          "Unknown"
+        ],
+        "title": "DeliveryContext",
+        "type": "string"
+      },
       "DiagnosisAliasResponse": {
         "properties": {
           "confidence": {
@@ -5989,6 +6099,24 @@
         "title": "EAPProgrammeResponse",
         "type": "object"
       },
+      "EligibilityFailure": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "EligibilityFailure",
+        "type": "object"
+      },
       "EligibilityStatus": {
         "description": "Lifecycle of an EAP-eligible member as supplied by the employer.",
         "enum": [
@@ -6802,6 +6930,32 @@
         ],
         "title": "HoursLogResponse",
         "type": "object"
+      },
+      "ImportBatchStatus": {
+        "description": "Lifecycle of a staged import batch.",
+        "enum": [
+          "Staged",
+          "Applied",
+          "Abandoned"
+        ],
+        "title": "ImportBatchStatus",
+        "type": "string"
+      },
+      "ImportRowOutcome": {
+        "description": "Per-row result of a staged historical import.",
+        "enum": [
+          "Accepted",
+          "Duplicate",
+          "Conflicting",
+          "MissingPractitioner",
+          "UnmappedPractitioner",
+          "AmbiguousPractitioner",
+          "UnresolvedMember",
+          "UnresolvedService",
+          "Rejected"
+        ],
+        "title": "ImportRowOutcome",
+        "type": "string"
       },
       "IncidentClose": {
         "properties": {
@@ -9059,7 +9213,7 @@
             "title": "Effective Until"
           },
           "provider_id": {
-            "description": "Provider person identifier",
+            "description": "Provider identifier",
             "title": "Provider Id",
             "type": "string"
           },
@@ -9315,6 +9469,17 @@
         "title": "OpenCaseRequest",
         "type": "object"
       },
+      "OrganisationApprovalStatus": {
+        "description": "Supplier approval to deliver, held separately from the record's state.\n\nEligibility needs \"not active\" and \"not approved\" as distinct reasons, so a\ndeactivated record and a suspended supplier do not collapse into one value.",
+        "enum": [
+          "Pending",
+          "Approved",
+          "Suspended",
+          "Revoked"
+        ],
+        "title": "OrganisationApprovalStatus",
+        "type": "string"
+      },
       "OutreachAssignRequest": {
         "properties": {
           "counsellor_id": {
@@ -9516,12 +9681,31 @@
       "PanelStatus": {
         "description": "Whether the provider is currently on the active panel.",
         "enum": [
+          "Pending",
           "Active",
           "Suspended",
           "Removed"
         ],
         "title": "PanelStatus",
         "type": "string"
+      },
+      "PanelStatusCommand": {
+        "properties": {
+          "panel_status": {
+            "$ref": "#/components/schemas/PanelStatus"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "panel_status",
+          "reason"
+        ],
+        "title": "PanelStatusCommand",
+        "type": "object"
       },
       "PaymentFrequency": {
         "enum": [
@@ -9615,8 +9799,357 @@
         "title": "ProgrammeCapInput",
         "type": "object"
       },
-      "ProviderCreate": {
+      "ProviderAffiliationCreate": {
+        "description": "`valid_until` is exclusive: the last covered day is the day before.",
         "properties": {
+          "provider_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "valid_from": {
+            "format": "date",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          }
+        },
+        "required": [
+          "provider_id",
+          "valid_from"
+        ],
+        "title": "ProviderAffiliationCreate",
+        "type": "object"
+      },
+      "ProviderAffiliationEndUpdate": {
+        "description": "Move the end date. The practitioner and organisation are immutable.\n\n`valid_until` is required even though it is nullable. Defaulting it would\nmake an omitted field indistinguishable from an explicit null, so a caller\nsending only a reason would silently reopen a closed affiliation. Send null\ndeliberately to make it open-ended.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          }
+        },
+        "required": [
+          "reason",
+          "valid_until"
+        ],
+        "title": "ProviderAffiliationEndUpdate",
+        "type": "object"
+      },
+      "ProviderAffiliationListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderAffiliationResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "ProviderAffiliationListResponse",
+        "type": "object"
+      },
+      "ProviderAffiliationResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "organisation_approval_status": {
+            "$ref": "#/components/schemas/OrganisationApprovalStatus"
+          },
+          "organisation_id": {
+            "title": "Organisation Id",
+            "type": "string"
+          },
+          "organisation_is_active": {
+            "title": "Organisation Is Active",
+            "type": "boolean"
+          },
+          "organisation_name": {
+            "title": "Organisation Name",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "valid_from": {
+            "format": "date",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "provider_id",
+          "organisation_id",
+          "valid_from",
+          "valid_until",
+          "organisation_name",
+          "organisation_is_active",
+          "organisation_approval_status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProviderAffiliationResponse",
+        "type": "object"
+      },
+      "ProviderAliasListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderAliasResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "ProviderAliasListResponse",
+        "type": "object"
+      },
+      "ProviderAliasRejectRequest": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "ProviderAliasRejectRequest",
+        "type": "object"
+      },
+      "ProviderAliasResolveRequest": {
+        "description": "Explicit reconciliation. There is no automatic resolution endpoint.",
+        "properties": {
+          "provider_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Provider Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id"
+        ],
+        "title": "ProviderAliasResolveRequest",
+        "type": "object"
+      },
+      "ProviderAliasResponse": {
+        "properties": {
+          "candidate_provider_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Candidate Provider Ids",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "normalized_value": {
+            "title": "Normalized Value",
+            "type": "string"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "review_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Note"
+          },
+          "source_system": {
+            "title": "Source System",
+            "type": "string"
+          },
+          "source_value": {
+            "title": "Source Value",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AliasResolutionState"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "source_system",
+          "source_value",
+          "normalized_value",
+          "state",
+          "provider_id",
+          "candidate_provider_ids",
+          "review_note",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProviderAliasResponse",
+        "type": "object"
+      },
+      "ProviderCreate": {
+        "additionalProperties": false,
+        "description": "Create a practitioner. No account is linked and no lifecycle field is set.",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "display_name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
           "license_info": {
             "anyOf": [
               {
@@ -9629,22 +10162,35 @@
             ],
             "title": "License Info"
           },
-          "provider_profile": {
-            "$ref": "#/components/schemas/ProviderProfileSchema"
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
-          "user_id": {
-            "title": "User Id",
-            "type": "string"
+          "region": {
+            "$ref": "#/components/schemas/UgandaRegion"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/ProviderTier"
           }
         },
         "required": [
-          "user_id",
-          "provider_profile"
+          "display_name",
+          "tier",
+          "region"
         ],
         "title": "ProviderCreate",
         "type": "object"
       },
       "ProviderEligibilityResponse": {
+        "description": "Preview of the booking gate.\n\n``eligible`` is the same rule the write paths apply, so a preview cannot\ndisagree with the booking it precedes. The non-compete counts are retained\nfor compatibility and are informational: non-compete is not live and does\nnot restrict booking.",
         "properties": {
           "binding_non_compete_count": {
             "title": "Binding Non Compete Count",
@@ -9672,6 +10218,13 @@
             "title": "Eligible",
             "type": "boolean"
           },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/EligibilityFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
           "panel_eligible": {
             "title": "Panel Eligible",
             "type": "boolean"
@@ -9686,19 +10239,35 @@
             },
             "title": "Reasons",
             "type": "array"
+          },
+          "scheduled_at": {
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
           }
         },
         "required": [
           "provider_id",
           "client_id",
+          "scheduled_at",
           "panel_eligible",
           "binding_non_compete_count",
           "binding_non_compete_ids",
           "eligible",
-          "reasons"
+          "reasons",
+          "failures"
         ],
         "title": "ProviderEligibilityResponse",
         "type": "object"
+      },
+      "ProviderIdentityProvenance": {
+        "description": "Where a practitioner's owned name and contact details came from.",
+        "enum": [
+          "Owned",
+          "BackfilledFromUser"
+        ],
+        "title": "ProviderIdentityProvenance",
+        "type": "string"
       },
       "ProviderListResponse": {
         "properties": {
@@ -9713,6 +10282,101 @@
             "title": "Items",
             "type": "array"
           },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Count over the whole filtered dataset",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "ProviderListResponse",
+        "type": "object"
+      },
+      "ProviderOrganisationCreate": {
+        "properties": {
+          "contact_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "name": {
+            "maxLength": 255,
+            "title": "Name",
+            "type": "string"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProviderOrganisationCreate",
+        "type": "object"
+      },
+      "ProviderOrganisationListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderOrganisationResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -9721,9 +10385,147 @@
         "required": [
           "items",
           "total",
+          "page",
+          "limit",
           "has_more"
         ],
-        "title": "ProviderListResponse",
+        "title": "ProviderOrganisationListResponse",
+        "type": "object"
+      },
+      "ProviderOrganisationResponse": {
+        "properties": {
+          "approval_status": {
+            "$ref": "#/components/schemas/OrganisationApprovalStatus"
+          },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "name",
+          "registration_number",
+          "contact_email",
+          "contact_phone",
+          "is_active",
+          "approval_status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProviderOrganisationResponse",
+        "type": "object"
+      },
+      "ProviderOrganisationUpdate": {
+        "description": "Partial update. An explicit null clears an optional field.\n\n`is_active` and `approval_status` are deliberately absent: they move only\nthrough the audited lifecycle commands.",
+        "properties": {
+          "contact_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Phone"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "registration_number": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Number"
+          }
+        },
+        "title": "ProviderOrganisationUpdate",
         "type": "object"
       },
       "ProviderProfileSchema": {
@@ -9799,6 +10601,10 @@
             "type": "string"
           },
           "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
             "anyOf": [
               {
                 "type": "string"
@@ -9807,15 +10613,15 @@
                 "type": "null"
               }
             ],
-            "title": "Display Name"
-          },
-          "email": {
-            "title": "Email",
-            "type": "string"
+            "description": "Practitioner contact email, not a login",
+            "title": "Email"
           },
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "identity_provenance": {
+            "$ref": "#/components/schemas/ProviderIdentityProvenance"
           },
           "license_info": {
             "anyOf": [
@@ -9828,6 +10634,17 @@
               }
             ],
             "title": "License Info"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
           "provider_profile": {
             "$ref": "#/components/schemas/ProviderProfileSchema"
@@ -9845,22 +10662,142 @@
             "type": "string"
           },
           "user_id": {
-            "title": "User Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Linked account, if any",
+            "title": "User Id"
           }
         },
         "required": [
           "id",
           "tenant_id",
-          "user_id",
           "display_name",
-          "email",
+          "identity_provenance",
           "status",
           "provider_profile",
           "created_at",
           "updated_at"
         ],
         "title": "ProviderResponse",
+        "type": "object"
+      },
+      "ProviderSpecialtyCreate": {
+        "properties": {
+          "code": {
+            "maxLength": 100,
+            "title": "Code",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 255,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "title": "ProviderSpecialtyCreate",
+        "type": "object"
+      },
+      "ProviderSpecialtyLinkCreate": {
+        "properties": {
+          "provider_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "specialty_id": {
+            "maxLength": 25,
+            "minLength": 1,
+            "title": "Specialty Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "specialty_id"
+        ],
+        "title": "ProviderSpecialtyLinkCreate",
+        "type": "object"
+      },
+      "ProviderSpecialtyLinkResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "specialty_code": {
+            "title": "Specialty Code",
+            "type": "string"
+          },
+          "specialty_id": {
+            "title": "Specialty Id",
+            "type": "string"
+          },
+          "specialty_is_active": {
+            "title": "Specialty Is Active",
+            "type": "boolean"
+          },
+          "specialty_label": {
+            "title": "Specialty Label",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "provider_id",
+          "specialty_id",
+          "specialty_code",
+          "specialty_label",
+          "specialty_is_active"
+        ],
+        "title": "ProviderSpecialtyLinkResponse",
+        "type": "object"
+      },
+      "ProviderSpecialtyResponse": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "label",
+          "is_active"
+        ],
+        "title": "ProviderSpecialtyResponse",
         "type": "object"
       },
       "ProviderTier": {
@@ -9874,7 +10811,45 @@
         "type": "string"
       },
       "ProviderUpdate": {
+        "additionalProperties": false,
+        "description": "Partial update of ordinary contact and profile fields.\n\nAn omitted field stays unchanged; an explicit null clears a nullable field.\nA protected field present in the body is rejected rather than ignored.",
         "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
           "license_info": {
             "anyOf": [
               {
@@ -9887,20 +10862,22 @@
             ],
             "title": "License Info"
           },
-          "provider_profile": {
+          "phone": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProviderProfileSchema"
+                "maxLength": 50,
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Phone"
           },
-          "status": {
+          "region": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BaseStatus"
+                "$ref": "#/components/schemas/UgandaRegion"
               },
               {
                 "type": "null"
@@ -9926,6 +10903,21 @@
           "rate"
         ],
         "title": "RateCardEntrySchema",
+        "type": "object"
+      },
+      "ReasonRequest": {
+        "description": "Every lifecycle command records why, per decision 8.\n\nWhitespace is stripped before the length check, so a reason of spaces is a\n422 from the schema rather than a 400 from the domain.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReasonRequest",
         "type": "object"
       },
       "ReferOutCaseRequest": {
@@ -10806,6 +11798,10 @@
             ],
             "description": "Clinical continuation outcome"
           },
+          "delivery_context": {
+            "$ref": "#/components/schemas/SessionDeliveryContext",
+            "description": "Direct or Organisation. Unknown is rejected: it belongs to historical import"
+          },
           "diagnosis_id": {
             "anyOf": [
               {
@@ -10896,6 +11892,18 @@
             "description": "Partner's relationship to client",
             "title": "Partner Relationship"
           },
+          "provider_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for Organisation delivery, forbidden otherwise",
+            "title": "Provider Affiliation Id"
+          },
           "provider_id": {
             "description": "Provider (person) identifier",
             "title": "Provider Id",
@@ -10954,7 +11962,8 @@
           "service_id",
           "provider_id",
           "member_id",
-          "scheduled_at"
+          "scheduled_at",
+          "delivery_context"
         ],
         "title": "ServiceSessionCreate",
         "type": "object"
@@ -11089,6 +12098,10 @@
             ],
             "description": "Completion date and time",
             "title": "Completed At"
+          },
+          "delivery_context": {
+            "$ref": "#/components/schemas/SessionDeliveryContext",
+            "description": "How this was delivered"
           },
           "diagnosis_id": {
             "anyOf": [
@@ -11225,10 +12238,34 @@
             "description": "Partner's relationship to client",
             "title": "Partner Relationship"
           },
+          "provider_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The affiliation this session is attributed to, if any",
+            "title": "Provider Affiliation Id"
+          },
           "provider_id": {
             "description": "Provider (person) identifier",
             "title": "Provider Id",
             "type": "string"
+          },
+          "provider_organisation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved from this session's own affiliation, never from the practitioner's current affiliations",
+            "title": "Provider Organisation Id"
           },
           "rate_ugx": {
             "anyOf": [
@@ -11298,6 +12335,7 @@
           "provider_id",
           "member_id",
           "scheduled_at",
+          "delivery_context",
           "status",
           "reschedule_count",
           "is_active"
@@ -11600,6 +12638,16 @@
         "title": "SessionClinicalStatus",
         "type": "string"
       },
+      "SessionDeliveryContext": {
+        "description": "How the practitioner delivered, or will deliver, this session.\n\nUNKNOWN describes a historical record whose source carries no evidence of\nthe arrangement. It is never accepted on a live booking; inferring direct\ndelivery from a missing value would assert something the source does not say.",
+        "enum": [
+          "Direct",
+          "Organisation",
+          "Unknown"
+        ],
+        "title": "SessionDeliveryContext",
+        "type": "string"
+      },
       "SessionDrawdownResponse": {
         "description": "What the completion did, or did not do, to the programme authorization.",
         "properties": {
@@ -11649,6 +12697,230 @@
           "consumed"
         ],
         "title": "SessionDrawdownResponse",
+        "type": "object"
+      },
+      "SessionImportApplyResponse": {
+        "description": "Outcome of applying a batch. `imported` is the only write count.",
+        "properties": {
+          "batch_id": {
+            "title": "Batch Id",
+            "type": "string"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "not_importable": {
+            "title": "Not Importable",
+            "type": "integer"
+          },
+          "skipped_already_imported": {
+            "title": "Skipped Already Imported",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "batch_id",
+          "imported",
+          "skipped_already_imported",
+          "not_importable"
+        ],
+        "title": "SessionImportApplyResponse",
+        "type": "object"
+      },
+      "SessionImportBatchResponse": {
+        "properties": {
+          "applied_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "file_hash": {
+            "title": "File Hash",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Outcome Counts",
+            "type": "object"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "source_record_key_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Record Key Field"
+          },
+          "source_system": {
+            "title": "Source System",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportBatchStatus"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "source_system",
+          "file_name",
+          "file_hash",
+          "row_count",
+          "source_record_key_field",
+          "status",
+          "outcome_counts",
+          "created_at",
+          "applied_at"
+        ],
+        "title": "SessionImportBatchResponse",
+        "type": "object"
+      },
+      "SessionImportRowListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SessionImportRowPreview"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "SessionImportRowListResponse",
+        "type": "object"
+      },
+      "SessionImportRowPreview": {
+        "properties": {
+          "delivery_context": {
+            "$ref": "#/components/schemas/DeliveryContext"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ImportRowOutcome"
+          },
+          "provider_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Affiliation Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "raw_practitioner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Practitioner Name"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "session_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Date"
+          }
+        },
+        "required": [
+          "row_number",
+          "outcome",
+          "delivery_context",
+          "provider_id",
+          "provider_affiliation_id",
+          "raw_practitioner_name",
+          "session_date",
+          "reasons"
+        ],
+        "title": "SessionImportRowPreview",
         "type": "object"
       },
       "SessionStatus": {
@@ -11704,6 +12976,24 @@
         ],
         "title": "StageOfChange",
         "type": "string"
+      },
+      "StatusCommand": {
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BaseStatus"
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ],
+        "title": "StatusCommand",
+        "type": "object"
       },
       "SubscriptionTier": {
         "enum": [
@@ -12582,6 +13872,24 @@
           "new_tier"
         ],
         "title": "TierChangeResponse",
+        "type": "object"
+      },
+      "TierCommand": {
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/ProviderTier"
+          }
+        },
+        "required": [
+          "tier",
+          "reason"
+        ],
+        "title": "TierCommand",
         "type": "object"
       },
       "TriageInstrumentCode": {
@@ -26571,6 +27879,7 @@
     },
     "/outreach-records/{outreach_id}/assign": {
       "post": {
+        "description": "Assign an outreach record, applying the same gate as a new booking.",
         "operationId": "assign_outreach_outreach_records__outreach_id__assign_post",
         "parameters": [
           {
@@ -27055,7 +28364,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Bulk update panel status (audit-trailed; supports the 80\u21928 cull)",
+        "summary": "Bulk update panel status (audit-trailed; supports the 80 to 8 cull)",
         "tags": [
           "panel"
         ]
@@ -27091,6 +28400,25 @@
               "description": "Optional client scope for the check",
               "title": "Client Id"
             }
+          },
+          {
+            "description": "Service date to check; defaults to now",
+            "in": "query",
+            "name": "scheduled_at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Service date to check; defaults to now",
+              "title": "Scheduled At"
+            }
           }
         ],
         "responses": {
@@ -27120,7 +28448,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Pre-assignment eligibility check (panel + non-compete)",
+        "summary": "Pre-assignment eligibility preview; the write path re-evaluates it",
         "tags": [
           "panel"
         ]
@@ -27183,9 +28511,9 @@
         ]
       }
     },
-    "/providers": {
+    "/provider-affiliations": {
       "get": {
-        "operationId": "list_providers_providers_get",
+        "operationId": "list_affiliations_provider_affiliations_get",
         "parameters": [
           {
             "in": "query",
@@ -27198,10 +28526,1336 @@
           },
           {
             "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "organisation_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organisation Id"
+            }
+          },
+          {
+            "description": "Affiliations covering this day, end-exclusive",
+            "in": "query",
+            "name": "valid_at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Affiliations covering this day, end-exclusive",
+              "title": "Valid At"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_ended",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Ended",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
-              "default": 100,
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAffiliationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Affiliations",
+        "tags": [
+          "provider-affiliations"
+        ]
+      },
+      "post": {
+        "description": "Rejects an interval overlapping another affiliation for the same pair.\n\nConcurrent affiliations with different organisations are allowed.",
+        "operationId": "create_affiliation_provider_affiliations_post",
+        "parameters": [
+          {
+            "description": "Organisation the practitioner joins",
+            "in": "query",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "description": "Organisation the practitioner joins",
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderAffiliationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAffiliationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Affiliation",
+        "tags": [
+          "provider-affiliations"
+        ]
+      }
+    },
+    "/provider-affiliations/{affiliation_id}": {
+      "patch": {
+        "description": "Moves the end date only. The practitioner and organisation are immutable.\n\nNarrowing is rejected with 409 when it would stop covering a session\nalready attributed to this affiliation.",
+        "operationId": "change_affiliation_end_provider_affiliations__affiliation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "affiliation_id",
+            "required": true,
+            "schema": {
+              "title": "Affiliation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderAffiliationEndUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAffiliationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Affiliation End",
+        "tags": [
+          "provider-affiliations"
+        ]
+      }
+    },
+    "/provider-aliases": {
+      "get": {
+        "operationId": "list_aliases_provider_aliases_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_system",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source System"
+            }
+          },
+          {
+            "description": "Filter the review queue by outcome",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AliasResolutionState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter the review queue by outcome",
+              "title": "State"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAliasListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Aliases",
+        "tags": [
+          "provider-aliases"
+        ]
+      }
+    },
+    "/provider-aliases/{alias_id}/reject": {
+      "post": {
+        "description": "Record that this source value does not name a practitioner.",
+        "operationId": "reject_alias_provider_aliases__alias_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alias_id",
+            "required": true,
+            "schema": {
+              "title": "Alias Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderAliasRejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAliasResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reject Alias",
+        "tags": [
+          "provider-aliases"
+        ]
+      }
+    },
+    "/provider-aliases/{alias_id}/resolve": {
+      "post": {
+        "description": "Record that this source name is this practitioner.\n\nAdmin-only, because a wrong mapping silently reattributes historical work.",
+        "operationId": "resolve_alias_provider_aliases__alias_id__resolve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "alias_id",
+            "required": true,
+            "schema": {
+              "title": "Alias Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderAliasResolveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAliasResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resolve Alias",
+        "tags": [
+          "provider-aliases"
+        ]
+      }
+    },
+    "/provider-organisations": {
+      "get": {
+        "description": "Filtered and counted in SQL, so `total` covers the full matching set.",
+        "operationId": "list_organisations_provider_organisations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Matches name or registration number",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Matches name or registration number",
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "is_active",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "in": "query",
+            "name": "approval_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrganisationApprovalStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Approval Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "required": false,
+            "schema": {
+              "default": "name",
+              "pattern": "^(name|created_at|updated_at)$",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Sort Desc",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderOrganisationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Organisations",
+        "tags": [
+          "provider-organisations"
+        ]
+      },
+      "post": {
+        "operationId": "create_organisation_provider_organisations_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderOrganisationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderOrganisationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Organisation",
+        "tags": [
+          "provider-organisations"
+        ]
+      }
+    },
+    "/provider-organisations/{organisation_id}": {
+      "get": {
+        "operationId": "get_organisation_provider_organisations__organisation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderOrganisationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Organisation",
+        "tags": [
+          "provider-organisations"
+        ]
+      },
+      "patch": {
+        "description": "Partial update of descriptive fields only.\n\n`is_active` and `approval_status` are absent from the schema, so a general\nedit cannot move the supplier's approval or retire the record.",
+        "operationId": "update_organisation_provider_organisations__organisation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderOrganisationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderOrganisationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Organisation",
+        "tags": [
+          "provider-organisations"
+        ]
+      }
+    },
+    "/provider-organisations/{organisation_id}/{command}": {
+      "post": {
+        "description": "Admin-only approval and activation commands, each requiring a reason.",
+        "operationId": "run_approval_command_provider_organisations__organisation_id___command__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organisation_id",
+            "required": true,
+            "schema": {
+              "title": "Organisation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "command",
+            "required": true,
+            "schema": {
+              "title": "Command",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderOrganisationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run Approval Command",
+        "tags": [
+          "provider-organisations"
+        ]
+      }
+    },
+    "/provider-specialties": {
+      "get": {
+        "description": "Readable by any authenticated caller; the vocabulary carries no tenant.",
+        "operationId": "list_specialties_provider_specialties_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderSpecialtyResponse"
+                  },
+                  "title": "Response List Specialties Provider Specialties Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Specialties",
+        "tags": [
+          "provider-specialties"
+        ]
+      },
+      "post": {
+        "operationId": "create_specialty_provider_specialties_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderSpecialtyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSpecialtyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Specialty",
+        "tags": [
+          "provider-specialties"
+        ]
+      }
+    },
+    "/provider-specialties/links": {
+      "get": {
+        "description": "Includes links to retired specialties, flagged by specialty_is_active.",
+        "operationId": "list_links_provider_specialties_links_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProviderSpecialtyLinkResponse"
+                  },
+                  "title": "Response List Links Provider Specialties Links Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Links",
+        "tags": [
+          "provider-specialties"
+        ]
+      },
+      "post": {
+        "description": "A tenant selects an active catalogue entry for one of its practitioners.",
+        "operationId": "add_link_provider_specialties_links_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderSpecialtyLinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSpecialtyLinkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Link",
+        "tags": [
+          "provider-specialties"
+        ]
+      }
+    },
+    "/provider-specialties/links/{link_id}": {
+      "delete": {
+        "operationId": "remove_link_provider_specialties_links__link_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "title": "Link Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Link",
+        "tags": [
+          "provider-specialties"
+        ]
+      }
+    },
+    "/provider-specialties/{specialty_id}/retire": {
+      "post": {
+        "description": "Stops new selection. Existing links stay readable on historical records.",
+        "operationId": "retire_specialty_provider_specialties__specialty_id__retire_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "specialty_id",
+            "required": true,
+            "schema": {
+              "title": "Specialty Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderSpecialtyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retire Specialty",
+        "tags": [
+          "provider-specialties"
+        ]
+      }
+    },
+    "/providers": {
+      "get": {
+        "description": "Filter, search, sort and paginate over the whole tenant dataset.",
+        "operationId": "list_providers_providers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Matches display name or contact email",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Matches display name or contact email",
+              "title": "Search"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tier",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/ProviderTier"
+              },
+              "title": "Tier",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/UgandaRegion"
+              },
+              "title": "Region",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "panel_status",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/PanelStatus"
+              },
+              "title": "Panel Status",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "accreditation_status",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/AccreditationStatus"
+              },
+              "title": "Accreditation Status",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/BaseStatus"
+              },
+              "title": "Status",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_account",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Has Account"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
               "maximum": 200,
               "minimum": 1,
               "title": "Limit",
@@ -27210,13 +29864,23 @@
           },
           {
             "in": "query",
-            "name": "offset",
+            "name": "sort_by",
             "required": false,
             "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
+              "default": "display_name",
+              "pattern": "^(display_name|created_at|updated_at)$",
+              "title": "Sort By",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort_desc",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Sort Desc",
+              "type": "boolean"
             }
           }
         ],
@@ -27247,7 +29911,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "List independent providers",
+        "summary": "Practitioner directory",
         "tags": [
           "providers"
         ]
@@ -27302,7 +29966,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Create Provider",
+        "summary": "Create a practitioner, with no account and no lifecycle standing",
         "tags": [
           "providers"
         ]
@@ -27404,7 +30068,347 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Update Provider",
+        "summary": "Partial update of ordinary contact and profile fields",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/account-link": {
+      "delete": {
+        "operationId": "unlink_account_providers__provider_id__account_link_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountUnlinkCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unlink the account. The practitioner and their sessions remain visible",
+        "tags": [
+          "providers"
+        ]
+      },
+      "post": {
+        "operationId": "link_account_providers__provider_id__account_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountLinkCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Link a same-tenant user account. Grants no role and copies no contact data",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/accreditation": {
+      "patch": {
+        "operationId": "change_accreditation_providers__provider_id__accreditation_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccreditationCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audited accreditation change",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/panel-status": {
+      "patch": {
+        "operationId": "change_panel_status_providers__provider_id__panel_status_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PanelStatusCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audited panel-status change",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/status": {
+      "patch": {
+        "operationId": "change_status_providers__provider_id__status_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audited activation or deactivation",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/tier": {
+      "patch": {
+        "operationId": "change_tier_providers__provider_id__tier_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TierCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audited tier change",
         "tags": [
           "providers"
         ]
@@ -29077,7 +32081,7 @@
     },
     "/service-sessions/{session_id}/reschedule": {
       "post": {
-        "description": "Reschedule a service session.",
+        "description": "Reschedule a service session, re-checking eligibility for the new date.",
         "operationId": "reschedule_service_session_service_sessions__session_id__reschedule_post",
         "parameters": [
           {
@@ -29889,6 +32893,307 @@
         "summary": "Restore a service",
         "tags": [
           "services"
+        ]
+      }
+    },
+    "/session-imports": {
+      "post": {
+        "description": "Stage rows for review. Writes no sessions and has no billing side effects.\n\nRestaging the same file in one tenant is a conflict, not a second batch.",
+        "operationId": "stage_import_session_imports_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_system",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Source System",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Column holding a stable source id, if the source has one",
+            "in": "query",
+            "name": "source_record_key_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Column holding a stable source id, if the source has one",
+              "title": "Source Record Key Field"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_stage_import_session_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stage Import",
+        "tags": [
+          "session-imports"
+        ]
+      }
+    },
+    "/session-imports/{batch_id}": {
+      "get": {
+        "operationId": "get_batch_session_imports__batch_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Batch",
+        "tags": [
+          "session-imports"
+        ]
+      }
+    },
+    "/session-imports/{batch_id}/apply": {
+      "post": {
+        "description": "Write every importable row through the historical path, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. `imported` is zero today for every batch: no staged row can reach\nAccepted while member and service resolution does not exist, which the\nrow outcomes state per row rather than leaving to be discovered here.",
+        "operationId": "apply_batch_session_imports__batch_id__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionImportApplyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Batch",
+        "tags": [
+          "session-imports"
+        ]
+      }
+    },
+    "/session-imports/{batch_id}/rows": {
+      "get": {
+        "operationId": "list_rows_session_imports__batch_id__rows_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter the review queue",
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ImportRowOutcome"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter the review queue",
+              "title": "Outcome"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionImportRowListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Rows",
+        "tags": [
+          "session-imports"
         ]
       }
     },

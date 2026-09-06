@@ -354,12 +354,11 @@ export enum AccreditationStatus {
 /**
  * Whether a provider is currently on the active panel, mirrors BE `PanelStatus`.
  *
- * Only `ACTIVE` is panel-eligible for a booking. A `Pending` member is agreed
- * for phase 2 so a new practitioner is not shown as `REMOVED`; it lands here
- * with the regenerated contract, because `enums.contract.test.ts` checks this
- * enum against `apps/api/schema/openapi.json` in both directions.
+ * A newly created practitioner is `PENDING`, not `REMOVED`, and only `ACTIVE`
+ * is panel-eligible for a booking.
  */
 export enum PanelStatus {
+  PENDING = "Pending",
   ACTIVE = "Active",
   SUSPENDED = "Suspended",
   REMOVED = "Removed",
@@ -367,10 +366,10 @@ export enum PanelStatus {
 
 /**
  * Supplier approval of a provider organisation: mirrors BE
- * `ProviderApprovalStatus`. Independent of `is_active`; an organisation may
+ * `OrganisationApprovalStatus`. Independent of `is_active`; an organisation may
  * deliver only when it is active and approved.
  */
-export enum ProviderApprovalStatus {
+export enum OrganisationApprovalStatus {
   PENDING = "Pending",
   APPROVED = "Approved",
   SUSPENDED = "Suspended",
@@ -378,7 +377,16 @@ export enum ProviderApprovalStatus {
 }
 
 /**
- * How a session was delivered: mirrors BE `DeliveryContext`.
+ * Whether a practitioner's name was entered for them or taken from a linked
+ * account during migration: mirrors BE `ProviderIdentityProvenance`.
+ */
+export enum ProviderIdentityProvenance {
+  OWNED = "Owned",
+  BACKFILLED_FROM_USER = "BackfilledFromUser",
+}
+
+/**
+ * How a session was delivered: mirrors BE `SessionDeliveryContext`.
  *
  * `UNKNOWN` belongs to historical records whose source evidence does not say.
  * It is never selectable on a new booking and must never be shown as `DIRECT`.

@@ -13,7 +13,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { normalizeErrorMessage } from "@/lib/errors"
 import type { ProviderAffiliation } from "@/types/entities"
-import { ProviderApprovalStatus } from "@/types/enums"
+import { OrganisationApprovalStatus } from "@/types/enums"
 
 /**
  * Whether this firm could satisfy organisation delivery today. A display hint
@@ -22,7 +22,7 @@ import { ProviderApprovalStatus } from "@/types/enums"
 function deliverable(affiliation: ProviderAffiliation): boolean {
   return (
     affiliation.organisation_is_active &&
-    affiliation.organisation_approval_status === ProviderApprovalStatus.APPROVED
+    affiliation.organisation_approval_status === OrganisationApprovalStatus.APPROVED
   )
 }
 
