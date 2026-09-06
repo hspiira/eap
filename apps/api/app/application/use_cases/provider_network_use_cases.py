@@ -39,11 +39,15 @@ class AffiliationOverlapError(DomainError):
             f"Overlaps affiliation {conflict.id.value} "
             f"({conflict.valid_from.isoformat()} to {until})"
         )
+        # EvexiaException.to_api_response maps each details key to a field name
+        # and its value to that field's message. Passing {"field": ...} produced
+        # a detail attached to a field literally called "field", so a form could
+        # not attach it to the date input. One entry, keyed by the real field.
         super().__init__(
             message,
             error_code="AFFILIATION_OVERLAP",
             http_status=409,
-            details={"field": field, "conflicting_affiliation_id": conflict.id.value},
+            details={field: message},
         )
 
 

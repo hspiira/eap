@@ -324,3 +324,44 @@ class TestCreateOrganisation:
         assert result.name == "Firm"
         assert result.can_deliver() is False
         assert [type(e).__name__ for e in result.events] == ["ProviderOrganisationCreated"]
+
+
+class TestOverlapErrorWireShape:
+    """The 409 body a form actually receives.
+
+    details is serialised by EvexiaException.to_api_response, which maps each
+    key to a field name and its value to that field's message. Passing
+    {"field": ...} produced a detail attached to a field literally called
+    "field", so nothing could attach to the date input. Pinned here because the
+    published contract and the implementation had drifted apart.
+    """
+
+    def _body(self, field: str = "valid_from"):
+        return AffiliationOverlapError(_existing(), field).to_api_response()
+
+    def test_the_detail_names_the_real_form_field(self):
+        detail = self._body()["details"][0]
+        assert detail["field"] == "valid_from"
+
+    def test_the_detail_message_is_a_sentence_not_a_field_name(self):
+        detail = self._body()["details"][0]
+        assert detail["message"].startswith("Overlaps affiliation")
+        assert "aff-existing" in detail["message"]
+
+    def test_there_is_exactly_one_detail(self):
+        """A key/value bag produced one entry per key, which read as nonsense."""
+        assert len(self._body()["details"]) == 1
+
+    def test_no_detail_is_attached_to_a_field_called_field(self):
+        fields = {d["field"] for d in self._body()["details"]}
+        assert "field" not in fields
+        assert "conflicting_affiliation_id" not in fields
+
+    def test_the_end_date_variant_points_at_valid_until(self):
+        assert self._body("valid_until")["details"][0]["field"] == "valid_until"
+
+    def test_the_top_level_message_still_names_the_conflict(self):
+        assert "aff-existing" in self._body()["message"]
+
+    def test_the_error_code_is_the_published_one(self):
+        assert self._body()["error"] == "AFFILIATION_OVERLAP"
