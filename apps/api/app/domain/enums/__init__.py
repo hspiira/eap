@@ -86,6 +86,7 @@ from app.domain.enums.session import (
     ServiceCategory,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -158,6 +159,7 @@ __all__ = [
     "ServiceCategory",
     "SessionCategory",
     "SessionClinicalStatus",
+    "SessionDeliveryContext",
     "SessionStatus",
     "SessionType",
     "StaffRole",

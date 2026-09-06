@@ -21,6 +21,10 @@ from app.api.dependencies import (
     get_service_session_repository,
     pagination,
 )
+from app.api.dependencies.provider_network import (
+    get_provider_affiliation_repository,
+    get_provider_organisation_repository,
+)
 from app.api.schemas.service_session_schemas import (
     ServiceSessionCancelRequest,
     ServiceSessionCompleteRequest,
@@ -53,17 +57,31 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionStatus
-from app.domain.exceptions import NotFoundError
+from app.domain.enums import SessionDeliveryContext, SessionStatus
+from app.domain.enums.provider_network import OrganisationApprovalStatus
+from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
+from app.domain.repositories.provider_network_repository import (
+    ProviderAffiliationRepository,
+    ProviderOrganisationRepository,
+)
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
-from app.domain.services.provider_eligibility import evaluate_practitioner, require_eligible
+from app.domain.services.provider_eligibility import (
+    AFFILIATION_NOT_FOUND,
+    UNRESOLVED_AFFILIATION,
+    EligibilityReason,
+    direct_delivery_reasons,
+    evaluate_organisation_delivery,
+    evaluate_practitioner,
+    missing_affiliation_reasons,
+    require_eligible,
+)
 from app.domain.value_objects.core import (
     CaseId,
     EligibleMemberId,
@@ -72,6 +90,7 @@ from app.domain.value_objects.core import (
     SessionId,
     TenantId,
 )
+from app.domain.value_objects.provider_network import ProviderAffiliationId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import ensure_utc, utc_now
 from app.shared.utils.generators import generate_cuid
@@ -82,6 +101,7 @@ router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
 def to_service_session_response(
     session: ServiceSessionEntity,
+    provider_organisation_id: str | None = None,
 ) -> ServiceSessionResponse:
     """Map ServiceSessionEntity to API response using public properties."""
     return ServiceSessionResponse(
@@ -91,6 +111,9 @@ def to_service_session_response(
         provider_id=session.provider_id.value,
         member_id=session.member_id.value,
         scheduled_at=session.scheduled_at,
+        delivery_context=session.delivery_context,
+        provider_affiliation_id=session.provider_affiliation_id,
+        provider_organisation_id=provider_organisation_id,
         status=session.status,
         reschedule_count=session.reschedule_count,
         completed_at=session.completed_at,
@@ -116,16 +139,33 @@ def to_service_session_response(
     )
 
 
+def _reject_unknown_context(context: SessionDeliveryContext) -> None:
+    """Unknown delivery is historical evidence, never a live booking."""
+    if context is SessionDeliveryContext.UNKNOWN:
+        raise ValidationException(
+            "A booking must state Direct or Organisation delivery. Unknown records a "
+            "historical session whose source carries no evidence of the arrangement.",
+            field="delivery_context",
+        )
+
+
 async def _require_bookable(
     provider_repo: ProviderRepository,
     tenant_id: TenantId,
     provider_id: ProviderId,
     scheduled_at: datetime,
+    *,
+    delivery_context: SessionDeliveryContext,
+    affiliation_id: str | None,
+    affiliation_repo: ProviderAffiliationRepository,
+    organisation_repo: ProviderOrganisationRepository,
 ) -> None:
-    """Load the practitioner under a row lock and apply the booking gate.
+    """Apply the whole booking gate inside the caller's transaction.
 
-    The lock is what keeps a preview from authorising a booking that a
-    concurrent suspension has already invalidated.
+    The practitioner is read under a row lock, so a preview cannot authorise a
+    booking that a concurrent suspension has already invalidated. Organisation
+    delivery adds supplier approval and affiliation validity to the same
+    decision, and every failing reason is reported rather than the first.
     """
     provider = await provider_repo.get_for_booking(tenant_id, provider_id)
     if provider is None:
@@ -133,7 +173,69 @@ async def _require_bookable(
             "Provider not found", resource_type="Provider", resource_id=provider_id.value
         )
     decision = evaluate_practitioner(provider, scheduled_at=scheduled_at, now=utc_now())
+    decision = decision.extend(
+        await _delivery_reasons(
+            tenant_id,
+            provider_id,
+            scheduled_at,
+            delivery_context=delivery_context,
+            affiliation_id=affiliation_id,
+            affiliation_repo=affiliation_repo,
+            organisation_repo=organisation_repo,
+        )
+    )
     require_eligible(decision, provider_id.value)
+
+
+async def _delivery_reasons(
+    tenant_id: TenantId,
+    provider_id: ProviderId,
+    scheduled_at: datetime,
+    *,
+    delivery_context: SessionDeliveryContext,
+    affiliation_id: str | None,
+    affiliation_repo: ProviderAffiliationRepository,
+    organisation_repo: ProviderOrganisationRepository,
+) -> tuple[EligibilityReason, ...]:
+    """What the chosen delivery arrangement adds to the practitioner's own gate."""
+    if delivery_context is not SessionDeliveryContext.ORGANISATION:
+        return direct_delivery_reasons(affiliation_id)
+    missing = missing_affiliation_reasons(affiliation_id)
+    if missing:
+        return missing
+    affiliation = await affiliation_repo.get_valid_affiliation(
+        tenant_id,
+        ProviderAffiliationId(affiliation_id),
+        provider_id=provider_id,
+        at=scheduled_at,
+    )
+    if affiliation is None:
+        return (UNRESOLVED_AFFILIATION,)
+    organisation = await organisation_repo.get_organisation(tenant_id, affiliation.organisation_id)
+    if organisation is None:
+        return (AFFILIATION_NOT_FOUND,)
+    return evaluate_organisation_delivery(
+        organisation.is_active,
+        organisation.approval_status is OrganisationApprovalStatus.APPROVED,
+    )
+
+
+async def _resolve_organisation_id(
+    session: ServiceSessionEntity,
+    affiliation_repo: ProviderAffiliationRepository,
+) -> str | None:
+    """The organisation this session was delivered through, from its own affiliation.
+
+    Read through the affiliation stored on the session, never through the
+    practitioner's current affiliations, so moving firms does not reattribute
+    delivery that already happened.
+    """
+    if session.provider_affiliation_id is None:
+        return None
+    affiliation = await affiliation_repo.get_affiliation(
+        session.tenant_id, ProviderAffiliationId(session.provider_affiliation_id)
+    )
+    return affiliation.organisation_id.value if affiliation else None
 
 
 # ==================== COMMANDS (Use Cases) ====================
@@ -156,6 +258,10 @@ async def create_service_session(
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    affiliation_repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
+    organisation_repo: ProviderOrganisationRepository = Depends(
+        get_provider_organisation_repository
+    ),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -164,8 +270,16 @@ async def create_service_session(
     if member is None or member.tenant_id.value != tenant_id:
         raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
     scheduled_at = ensure_utc(data.scheduled_at)
+    _reject_unknown_context(data.delivery_context)
     await _require_bookable(
-        provider_repo, TenantId(tenant_id), ProviderId(data.provider_id), scheduled_at
+        provider_repo,
+        TenantId(tenant_id),
+        ProviderId(data.provider_id),
+        scheduled_at,
+        delivery_context=data.delivery_context,
+        affiliation_id=data.provider_affiliation_id,
+        affiliation_repo=affiliation_repo,
+        organisation_repo=organisation_repo,
     )
     service = await service_repo.get_by_id(ServiceId(data.service_id))
     if service is None or service.tenant_id.value != tenant_id:
@@ -179,6 +293,8 @@ async def create_service_session(
         provider_id=ProviderId(data.provider_id),
         member_id=EligibleMemberId(data.member_id),
         scheduled_at=scheduled_at,
+        delivery_context=data.delivery_context,
+        provider_affiliation_id=data.provider_affiliation_id,
         location=data.location,
         session_type=data.session_type,
         category=data.category,
@@ -195,7 +311,9 @@ async def create_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, tenant_id=tenant_id)
-    return to_service_session_response(session)
+    return to_service_session_response(
+        session, await _resolve_organisation_id(session, affiliation_repo)
+    )
 
 
 @router.post(

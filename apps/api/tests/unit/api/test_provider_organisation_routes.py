@@ -222,33 +222,8 @@ class TestAffiliationEndUpdateShape:
         from app.api.schemas.provider_network_schemas import ProviderAffiliationEndUpdate
 
         assert ProviderAffiliationEndUpdate(reason="Extend", valid_until=None).valid_until is None
-
-
-class TestUnwiredAttributionGuard:
-    """The default guard fails closed on the only risky direction.
-
-    Agent 1 owns the real check, which reads session attribution. Until it is
-    registered, narrowing an interval must not proceed unverified: an
-    unguarded narrowing silently invalidates completed attribution, which is
-    exactly what decision 2 forbids.
-    """
-
-    async def test_widening_to_open_ended_is_allowed(self):
-        from app.api.dependencies.provider_network import UnwiredAttributionGuard
-
-        guard = UnwiredAttributionGuard()
-        assert await guard.sessions_orphaned_by(None, None, new_valid_until=None) == []
-
-    async def test_narrowing_is_refused_rather_than_assumed_safe(self):
-        import datetime
-
-        import pytest as _pytest
-
-        from app.api.dependencies.provider_network import UnwiredAttributionGuard
-        from app.domain.exceptions import DomainError
-
-        guard = UnwiredAttributionGuard()
-        with _pytest.raises(DomainError) as caught:
-            await guard.sessions_orphaned_by(None, None, new_valid_until=datetime.date(2026, 2, 1))
-        assert caught.value.error_code == "attribution_check_unavailable"
-        assert caught.value.http_status == 503
+# The UnwiredAttributionGuard placeholder and its two tests are gone: the real
+# check is registered in app/api/dependencies/provider_network.py and reads
+# session attribution, so there is no longer an unwired state to fail closed
+# on. Its behaviour is covered against PostgreSQL in
+# tests/integration/test_affiliation_attribution_guard.py.

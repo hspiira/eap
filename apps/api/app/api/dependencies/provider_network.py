@@ -9,7 +9,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domain.exceptions import DomainError
+from app.domain.repositories.affiliation_attribution_guard import (
+    AffiliationAttributionGuard,
+)
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderAliasRepository,
@@ -69,26 +71,16 @@ async def get_session_import_repository(
     return SessionImportRepositoryImpl(db)
 
 
-class UnwiredAttributionGuard:
-    """Refuses to narrow an interval until agent 1's real check is registered.
+async def get_affiliation_attribution_guard(
+    db: AsyncSession = Depends(get_db),
+) -> AffiliationAttributionGuard:
+    """The real attribution check, reading session attribution.
 
-    Failing closed rather than open: an unguarded narrowing silently invalidates
-    completed attribution, which decision 2 forbids. Widening is safe and is
-    allowed through, so only the risky direction is blocked.
-
-    Agent 1 replaces this by overriding get_affiliation_attribution_guard.
+    This replaces the fail-closed placeholder that refused every narrowing
+    while the check was unwired. Widening is still answered without a query.
     """
+    from app.infrastructure.repositories.affiliation_attribution_guard import (
+        SqlAffiliationAttributionGuard,
+    )
 
-    async def sessions_orphaned_by(self, tenant_id, affiliation_id, *, new_valid_until):
-        if new_valid_until is None:
-            return []
-        raise DomainError(
-            "Cannot verify whether this change would orphan completed session "
-            "attribution: the attribution check is not wired yet",
-            error_code="attribution_check_unavailable",
-            http_status=503,
-        )
-
-
-async def get_affiliation_attribution_guard() -> UnwiredAttributionGuard:
-    return UnwiredAttributionGuard()
+    return SqlAffiliationAttributionGuard(db)

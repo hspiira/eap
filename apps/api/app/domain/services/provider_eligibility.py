@@ -136,3 +136,59 @@ def require_eligible(decision: EligibilityDecision, provider_id: str) -> None:
     """Raise the 409 when a write path is not permitted to proceed."""
     if not decision.eligible:
         raise ProviderNotEligibleError(provider_id, decision.reasons)
+
+
+def evaluate_organisation_delivery(
+    organisation_is_active: bool, organisation_is_approved: bool
+) -> tuple[EligibilityReason, ...]:
+    """Whether the supplier firm may take delivery, as two separate facts.
+
+    Decision 6 gates the initial booking on supplier approval and active
+    status, not on a clinical accreditation for the firm. Practitioner
+    accreditation is assessed independently and is never substituted by this.
+    """
+    reasons: list[EligibilityReason] = []
+    if not organisation_is_active:
+        reasons.append(
+            EligibilityReason("organisation_not_active", "Provider organisation is not active")
+        )
+    if not organisation_is_approved:
+        reasons.append(
+            EligibilityReason(
+                "organisation_not_approved", "Provider organisation is not an approved supplier"
+            )
+        )
+    return tuple(reasons)
+
+
+def direct_delivery_reasons(affiliation_id: str | None) -> tuple[EligibilityReason, ...]:
+    """Direct delivery inherits nothing from an unrelated affiliation."""
+    if affiliation_id is None:
+        return ()
+    return (
+        EligibilityReason(
+            "affiliation_not_permitted_for_direct",
+            "Direct delivery cannot cite a provider affiliation",
+        ),
+    )
+
+
+def missing_affiliation_reasons(affiliation_id: str | None) -> tuple[EligibilityReason, ...]:
+    """Organisation delivery must name an affiliation before one can be resolved."""
+    if affiliation_id is not None:
+        return ()
+    return (
+        EligibilityReason(
+            "affiliation_required", "Organisation delivery requires a provider affiliation"
+        ),
+    )
+
+
+UNRESOLVED_AFFILIATION = EligibilityReason(
+    "affiliation_not_valid_at_time",
+    "No affiliation of this practitioner with that organisation is valid at the scheduled time",
+)
+
+AFFILIATION_NOT_FOUND = EligibilityReason(
+    "affiliation_not_found", "Provider affiliation not found for this practitioner and tenant"
+)

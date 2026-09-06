@@ -11,6 +11,7 @@ from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -41,6 +42,8 @@ class ServiceSessionEntity:
     reschedule_count: int
 
     # Optional fields (with defaults)
+    delivery_context: SessionDeliveryContext = SessionDeliveryContext.UNKNOWN
+    provider_affiliation_id: str | None = None
     completed_at: datetime | None = None
     duration: int | None = None
     location: str | None = None

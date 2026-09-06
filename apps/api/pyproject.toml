@@ -160,6 +160,7 @@ ignore_imports = [
     "app.api.dependencies.privacy -> app.infrastructure.services.benchmark_collector",
     "app.api.dependencies.privacy -> app.infrastructure.services.dsar_service",
     "app.api.dependencies.provider -> app.infrastructure.repositories.non_compete_clause_repository",
+    "app.api.dependencies.provider_network -> app.infrastructure.repositories.affiliation_attribution_guard",
     "app.api.dependencies.provider_network -> app.infrastructure.repositories.provider_network_repository",
     "app.api.dependencies.provider -> app.infrastructure.repositories.provider_repository",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.report_repository",
