@@ -3,23 +3,21 @@ import { type ReactNode } from "react"
 import { ShieldAlert } from "lucide-react"
 
 import { RequireAuth } from "@/components/common/RequireAuth"
-import { useTenantStore } from "@/store/slices/tenantSlice"
+import { useIsPlatformAdmin } from "@/hooks/useCanWrite"
 
 interface RequirePlatformAdminProps {
   redirectAfterLogin?: string
   children: ReactNode
 }
 
-function platformTenantId(): string {
-  return (import.meta.env.VITE_PLATFORM_TENANT_ID ?? "").trim()
-}
-
 /**
  * Gate for platform-admin-only routes (tenants management, etc.).
  *
- * Wraps RequireAuth and additionally checks the current tenant matches the
- * configured PLATFORM_TENANT_ID. When the env var is empty (dev/single-tenant)
- * we skip the check entirely.
+ * Wraps RequireAuth and asks the API who the caller is, rather than comparing
+ * the current tenant against VITE_PLATFORM_TENANT_ID. The old check skipped
+ * itself when that variable was empty, so every tenant saw the surface and
+ * then got a 403 from an API that fails closed. One source of truth, and it
+ * is the one that actually enforces.
  */
 export function RequirePlatformAdmin({ redirectAfterLogin, children }: RequirePlatformAdminProps) {
   return (
@@ -30,12 +28,11 @@ export function RequirePlatformAdmin({ redirectAfterLogin, children }: RequirePl
 }
 
 function PlatformGate({ children }: { children: ReactNode }) {
-  const currentTenantId = useTenantStore((s) => s.currentTenantId)
-  const required = platformTenantId()
+  const { isPlatformAdmin, isLoading } = useIsPlatformAdmin()
 
-  if (required && currentTenantId !== required) {
-    return <Forbidden />
-  }
+  // Do not flash the forbidden screen before the answer arrives.
+  if (isLoading) return null
+  if (!isPlatformAdmin) return <Forbidden />
 
   return <>{children}</>
 }

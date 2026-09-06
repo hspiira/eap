@@ -26,6 +26,7 @@ from app.api.schemas.auth_schemas import (
     RefreshResponse,
     SetInitialPasswordRequest,
 )
+from app.core.authorization import is_platform_admin
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.login_rate_limit import check_login_rate_limit, record_login_attempt
@@ -131,6 +132,7 @@ async def auth_me(
         email=email,
         role=role,
         access_scopes=access_scopes,
+        is_platform_admin=is_platform_admin(current_user),
     )
 
 

@@ -36,7 +36,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useHasClinicalScope } from "@/hooks/useCanWrite"
+import { useHasClinicalScope, useIsPlatformAdmin } from "@/hooks/useCanWrite"
 import { type FeatureFlag, featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
@@ -52,10 +52,6 @@ type NavItem = {
   platformAdmin?: boolean
   /** Requires the Clinical access scope, hidden entirely otherwise (privacy wall). */
   clinicalScope?: boolean
-}
-
-function platformTenantId(): string {
-  return (import.meta.env.VITE_PLATFORM_TENANT_ID ?? "").trim()
 }
 
 /** Quick-access items: always visible at the top, no label. */
@@ -92,14 +88,14 @@ const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
 
 function isItemEnabled(
   item: NavItem,
-  currentTenantId: string | null,
+  isPlatformAdmin: boolean,
   hasClinicalScope: boolean,
 ): boolean {
   if (item.flag && !featureFlags[item.flag]) return false
-  if (item.platformAdmin) {
-    const required = platformTenantId()
-    if (required && currentTenantId !== required) return false
-  }
+  // Server-derived, not read from VITE_PLATFORM_TENANT_ID: the old check
+  // skipped itself when that variable was unset, so every tenant saw the link
+  // and got a 403 on using it.
+  if (item.platformAdmin && !isPlatformAdmin) return false
   if (item.clinicalScope && !hasClinicalScope) return false
   return true
 }
@@ -181,12 +177,12 @@ function NavItem({
 
 function ExpandedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { isPlatformAdmin } = useIsPlatformAdmin()
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, isPlatformAdmin, hasClinicalScope))
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
-    isItemEnabled(i, currentTenantId, hasClinicalScope),
+    isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
@@ -328,12 +324,12 @@ function CollapsedHeader() {
 
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { isPlatformAdmin } = useIsPlatformAdmin()
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, isPlatformAdmin, hasClinicalScope))
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
-    isItemEnabled(i, currentTenantId, hasClinicalScope),
+    isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)

@@ -106,6 +106,24 @@ export default tseslint.config(
     files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      // Keep the theming rules, drop only the shadcn-primitive one. That rule
+      // exists so the product has one set of UI primitives; a test stubbing a
+      // component out with a bare <button> is not making that choice, and
+      // forcing the real primitive into a mock drags its provider
+      // requirements into the test for no benefit.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/#[0-9a-fA-F]{3,6}\\b/]",
+          message:
+            "No raw hex literals in components/routes: use a CSS-var-backed Tailwind class, defined in src/theme/.",
+        },
+        {
+          selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,6}\\b/]",
+          message:
+            "No raw hex literals in components/routes: use a CSS var, defined in src/theme/.",
+        },
+      ],
     },
   },
   // Last: switches off every stylistic rule Prettier already decides, so the
