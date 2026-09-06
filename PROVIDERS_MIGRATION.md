@@ -277,6 +277,28 @@ relationships require recursive queries.
 Allowing multiple affiliations avoids duplicating a person for each firm. This
 is a chosen capability, not an assertion that the session extract evidences it.
 
+#### Navigation decision, 2026-09-07
+
+Use one top-level **Providers** navigation entry with **Practitioners** and
+**Organisations** tabs inside the module. Open Practitioners by default. Keep
+separate lists, detail pages, forms, permissions, and API resources, with links
+between an organisation and its affiliated practitioners.
+
+The existing sidebar exposes Practitioners and Provider Orgs as sibling entries
+at `apps/web/src/components/AppSidebar.tsx:68`. The entity decision above did
+not require that navigation layout. Separate records support different lifecycle
+and approval rules; they do not establish that users need two top-level modules.
+Grouping the related directories under Providers is a design judgment intended
+to improve discoverability and reduce sidebar clutter. No navigation usability
+study or usage-frequency measurement has been performed.
+
+Status: navigation policy adopted; frontend implementation and browser
+verification pending. This clarifies presentation without reopening entity or
+affiliation decisions. Frontend follow-up must preserve existing deep links,
+show Providers as active on both route families, and provide usable tab state
+and back navigation on list and detail pages. Do not add a third landing page
+that merely asks users to choose a directory.
+
 ### 2. Preserve the delivery context on each session
 
 Keep the session's practitioner ID. Add a delivery context of `direct`,
