@@ -116,8 +116,9 @@ left unattended.
 
 Recorded by the provider-core and integration agent on branch
 `codex/providers-agent1-core`, worktree `/Users/piira/Developer/sandbox/eap/wt-agent1`,
-base `e672b6f`. Implemented and locally tested. Not deployed, not pushed, and
-applied to no database other than the local throwaway `eap_test_agent1`.
+base `e672b6f`, head `ed91f56`. Implemented and locally tested. Not deployed,
+not pushed, and applied to no database other than the local throwaway
+`eap_test_agent1`.
 
 Checks run on the assembled branch:
 
@@ -125,8 +126,8 @@ Checks run on the assembled branch:
 - `ruff format --check app tests scripts`: 596 files already formatted.
 - `lint-imports`: 3 contracts kept, 0 broken.
 - `pyright_gate.py --run app/domain`: gate OK for `app/domain`.
-- `pytest tests/unit` with the 60% coverage gate: 1411 passed, 65.9% coverage.
-- `pytest tests --ignore=tests/unit` with every database URL set: 506 passed,
+- `pytest tests/unit` with the 60% coverage gate: 1415 passed, 65.98% coverage.
+- `pytest tests --ignore=tests/unit` with every database URL set: 501 passed,
   1 xfailed, 0 skipped. The zero matters: eight of those tests skipped silently
   before `IMPORT_TEST_DATABASE_URL` and `OUTBOX_TEST_DATABASE_URL` were wired.
 - `alembic upgrade head` on an empty database, then `downgrade f6a8c0e2b4d6`,
