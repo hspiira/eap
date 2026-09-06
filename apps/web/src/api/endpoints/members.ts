@@ -51,19 +51,32 @@ export interface MemberImportRow {
   display_label: string | null
   state: string
   message?: string | null
+  default_action: "import" | "skip"
+}
+
+export interface MemberImportIssue {
+  row: number
+  field?: string | null
+  message: string
 }
 
 export interface MemberImportResult {
   imported: number
   skipped: number
   failed: number
+  issues: MemberImportIssue[]
   rows: MemberImportRow[]
 }
 
 export const membersApi = {
-  async importRoster(file: File, dryRun = true): Promise<MemberImportResult> {
+  async importRoster(
+    file: File,
+    dryRun = true,
+    decisions?: Record<number, "import" | "skip">,
+  ): Promise<MemberImportResult> {
     const body = new FormData()
     body.append("file", file)
+    if (decisions) body.append("decisions_json", JSON.stringify(decisions))
     return apiClient.postFormData<MemberImportResult>(
       `/members/import?dry_run=${String(dryRun)}`,
       body,

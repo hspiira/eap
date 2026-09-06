@@ -180,6 +180,55 @@ async def test_create_records_optional_identification_numbers(api):
     assert body["passport_number"] == "B0987654"
 
 
+async def test_roster_preview_exposes_duplicate_as_safe_default_skip(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+    api.members.find_by_employer_member_id.return_value = member()
+
+    response = await api.http.post(
+        "/members/import?dry_run=true",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["imported"] == 0
+    assert body["skipped"] == 1
+    assert body["rows"][0]["state"] == "duplicate"
+    assert body["rows"][0]["default_action"] == "skip"
+
+
+async def test_roster_preview_honours_explicit_skip_for_new_rows(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+
+    response = await api.http.post(
+        "/members/import?dry_run=true",
+        data={"decisions_json": '{"2":"skip"}'},
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["imported"] == 0
+    assert body["skipped"] == 1
+    assert body["rows"][0]["state"] == "skipped"
+
+
 @pytest.mark.parametrize(
     "method,path,payload",
     [

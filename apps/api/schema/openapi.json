@@ -976,6 +976,18 @@
       },
       "Body_import_members_members_import_post": {
         "properties": {
+          "decisions_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Row decisions from the preview",
+            "title": "Decisions Json"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "description": "UTF-8 client member roster CSV",
@@ -8100,6 +8112,35 @@
         "title": "MemberGender",
         "type": "string"
       },
+      "MemberImportIssue": {
+        "properties": {
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row",
+          "message"
+        ],
+        "title": "MemberImportIssue",
+        "type": "object"
+      },
       "MemberImportResponse": {
         "properties": {
           "failed": {
@@ -8109,6 +8150,13 @@
           "imported": {
             "title": "Imported",
             "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportIssue"
+            },
+            "title": "Issues",
+            "type": "array"
           },
           "rows": {
             "items": {
@@ -8154,6 +8202,11 @@
               }
             ],
             "title": "Client Name"
+          },
+          "default_action": {
+            "default": "import",
+            "title": "Default Action",
+            "type": "string"
           },
           "display_label": {
             "anyOf": [

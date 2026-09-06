@@ -5712,6 +5712,11 @@ export interface components {
         /** Body_import_members_members_import_post */
         Body_import_members_members_import_post: {
             /**
+             * Decisions Json
+             * @description Row decisions from the preview
+             */
+            decisions_json?: string | null;
+            /**
              * File
              * @description UTF-8 client member roster CSV
              */
@@ -8963,12 +8968,23 @@ export interface components {
          * @enum {string}
          */
         MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
+        /** MemberImportIssue */
+        MemberImportIssue: {
+            /** Field */
+            field?: string | null;
+            /** Message */
+            message: string;
+            /** Row */
+            row: number;
+        };
         /** MemberImportResponse */
         MemberImportResponse: {
             /** Failed */
             failed: number;
             /** Imported */
             imported: number;
+            /** Issues */
+            issues?: components["schemas"]["MemberImportIssue"][];
             /** Rows */
             rows: components["schemas"]["MemberImportRowPreview"][];
             /** Skipped */
@@ -8980,6 +8996,11 @@ export interface components {
             client_code: string | null;
             /** Client Name */
             client_name: string | null;
+            /**
+             * Default Action
+             * @default import
+             */
+            default_action: string;
             /** Display Label */
             display_label: string | null;
             /** Employer Member Id */

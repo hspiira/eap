@@ -194,10 +194,18 @@ class MemberImportRowPreview(BaseModel):
     display_label: str | None
     state: str
     message: str | None = None
+    default_action: str = "import"
+
+
+class MemberImportIssue(BaseModel):
+    row: int
+    field: str | None = None
+    message: str
 
 
 class MemberImportResponse(BaseModel):
     imported: int
     skipped: int
     failed: int
+    issues: list[MemberImportIssue] = Field(default_factory=list)
     rows: list[MemberImportRowPreview]

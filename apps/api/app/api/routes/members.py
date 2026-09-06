@@ -7,10 +7,11 @@ also the only identity-bearing side allowed to link to clinical subjects.
 
 import csv
 import io
+import json
 from collections.abc import Sequence
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -85,6 +86,7 @@ def _member_import_row(
     client_name: str | None = None,
     state: str = "new",
     message: str | None = None,
+    default_action: str | None = None,
 ) -> MemberImportRowPreview:
     return MemberImportRowPreview(
         row=row.row_number,
@@ -95,6 +97,7 @@ def _member_import_row(
         display_label=row.display_label,
         state=state,
         message=message,
+        default_action=default_action or ("skip" if state == "duplicate" else "import"),
     )
 
 
@@ -473,6 +476,7 @@ async def export_members(
 @transactional()
 async def import_members(
     file: UploadFile = File(..., description="UTF-8 client member roster CSV"),
+    decisions_json: str | None = Form(None, description="Row decisions from the preview"),
     dry_run: bool = Query(True, description="Preview only; set false to create members"),
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -495,6 +499,12 @@ async def import_members(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    try:
+        decisions = json.loads(decisions_json) if decisions_json else {}
+        if not isinstance(decisions, dict):
+            raise ValueError
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=422, detail="decisions_json must be an object") from exc
     previews: dict[int, MemberImportRowPreview] = {}
     errors: dict[int, str] = {
         int(issue["row"]): str(issue["message"]) for issue in parse_issues
@@ -511,13 +521,14 @@ async def import_members(
         key = (client.id.value, row.employer_member_id or "") if client else None
         if message is None and key in seen:
             message = "Staff_ID is duplicated in this file for this client"
+        duplicate = False
         if message is None and key:
             seen.add(key)
             existing = await member_repo.find_by_employer_member_id(
                 TenantId(current_user.tenant_id), client.id, row.employer_member_id or ""
             )
             if existing is not None:
-                message = "Staff_ID already exists for this client"
+                duplicate = True
         data: MemberCreate | None = None
         if message is None and client is not None:
             try:
@@ -534,23 +545,38 @@ async def import_members(
                 )
             except (ValueError, ValidationError) as exc:
                 message = str(exc).split("\n", 1)[-1]
-        state = "invalid" if message else "ready"
+        decision = decisions.get(str(row.row_number), decisions.get(row.row_number))
+        if decision is not None and decision not in {"import", "skip"}:
+            message = "Decision must be import or skip"
+        elif duplicate and decision not in (None, "skip"):
+            message = "Existing members can only be skipped; they are never overwritten"
+        skipped = decision == "skip"
+        state = "invalid" if message else ("duplicate" if duplicate else ("skipped" if skipped else "new"))
         previews[row.row_number] = _member_import_row(
             row, client_name=client.name if client else None, state=state, message=message
         )
-        if data is not None and message is None:
+        if data is not None and message is None and not duplicate and not skipped:
             prepared.append((row, client, data))
 
     if errors or any(preview.state == "invalid" for preview in previews.values()):
         return MemberImportResponse(
             imported=0,
-            skipped=0,
+            skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
             failed=sum(preview.state == "invalid" for preview in previews.values()),
+            issues=[
+                {"row": preview.row, "field": None, "message": preview.message or "Invalid row"}
+                for preview in previews.values()
+                if preview.state == "invalid"
+            ],
             rows=list(previews.values()),
         )
     if dry_run:
         return MemberImportResponse(
-            imported=len(prepared), skipped=0, failed=0, rows=list(previews.values())
+            imported=len(prepared),
+            skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
+            failed=0,
+            issues=[],
+            rows=list(previews.values()),
         )
 
     use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
@@ -574,7 +600,11 @@ async def import_members(
             operation="Imported",
         )
     return MemberImportResponse(
-        imported=len(prepared), skipped=0, failed=0, rows=list(previews.values())
+        imported=len(prepared),
+        skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
+        failed=0,
+        issues=[],
+        rows=list(previews.values()),
     )
 
 
