@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { ChevronDown, ChevronRight, Eye, EyeOff, Pencil, Plus, Stethoscope } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Stethoscope,
+} from "lucide-react"
 
 import {
   diagnosesApi,
@@ -106,6 +115,38 @@ function DiagnosesPage() {
   const isHidden = (typeId: string, diagnosisId: string | null) =>
     overlay.get(keyOf(typeId, diagnosisId))?.is_enabled === false
 
+  /**
+   * Move a row one place within its siblings.
+   *
+   * Every sibling is written, not just the two that swap. A null sort_order
+   * means "inherit the shared order", so a partial write would leave the moved
+   * row tied with rows that still inherit, and the tie then breaks on name
+   * rather than on what the user asked for. Writing the whole list makes the
+   * tenant's order explicit and independent of the shared one.
+   */
+  const move = async (
+    siblings: ReadonlyArray<{ id: string }>,
+    index: number,
+    direction: -1 | 1,
+    typeId: string,
+    asDiagnosis: boolean,
+  ) => {
+    const swapIndex = index + direction
+    if (swapIndex < 0 || swapIndex >= siblings.length) return
+    const next = [...siblings]
+    ;[next[index], next[swapIndex]] = [next[swapIndex], next[index]]
+    await Promise.all(
+      next.map((row, position) =>
+        diagnosesApi.setOverlay({
+          diagnosis_type_id: asDiagnosis ? typeId : row.id,
+          diagnosis_id: asDiagnosis ? row.id : null,
+          sort_order: position,
+        }),
+      ),
+    )
+    await reload()
+  }
+
   const counts = useMemo(() => {
     const t = tree?.types ?? []
     return { types: t.length, diagnoses: t.reduce((n, x) => n + x.diagnoses.length, 0) }
@@ -157,7 +198,7 @@ function DiagnosesPage() {
           />
         ) : (
           <div>
-            {types.map((type) => (
+            {types.map((type, typeIndex) => (
               <TypeRow
                 key={type.id}
                 type={type}
@@ -172,7 +213,14 @@ function DiagnosesPage() {
                   setSheet({ target: { kind: "diagnosis", typeId: type.id }, editing: null })
                 }
                 onSetVisible={(v) => void setVisible(type.id, null, v)}
-                renderChild={(d) => (
+                onMove={
+                  canOverlay && !search.trim()
+                    ? (direction) => void move(types, typeIndex, direction, type.id, false)
+                    : undefined
+                }
+                isFirst={typeIndex === 0}
+                isLast={typeIndex === types.length - 1}
+                renderChild={(d, diagnosisIndex) => (
                   <DiagnosisRow
                     key={d.id}
                     diagnosis={d}
@@ -184,6 +232,14 @@ function DiagnosesPage() {
                       setSheet({ target: { kind: "diagnosis", typeId: type.id }, editing: d })
                     }
                     onSetVisible={(v) => void setVisible(type.id, d.id, v)}
+                    onMove={
+                      canOverlay && !search.trim()
+                        ? (direction) =>
+                            void move(type.diagnoses, diagnosisIndex, direction, type.id, true)
+                        : undefined
+                    }
+                    isFirst={diagnosisIndex === 0}
+                    isLast={diagnosisIndex === type.diagnoses.length - 1}
                   />
                 )}
               />
@@ -216,7 +272,11 @@ interface TypeRowProps {
   onEdit: () => void
   onAddChild: () => void
   onSetVisible: (visible: boolean) => void
-  renderChild: (d: Diagnosis) => React.ReactNode
+  renderChild: (d: Diagnosis, index: number) => React.ReactNode
+  /** Omitted when the caller may not reorder, or while a search is filtering. */
+  onMove?: (direction: -1 | 1) => void
+  isFirst: boolean
+  isLast: boolean
 }
 
 function TypeRow({
@@ -231,6 +291,9 @@ function TypeRow({
   onAddChild,
   onSetVisible,
   renderChild,
+  onMove,
+  isFirst,
+  isLast,
 }: TypeRowProps) {
   const Chevron = expanded ? ChevronDown : ChevronRight
   return (
@@ -254,9 +317,15 @@ function TypeRow({
           onEdit={onEdit}
           onSetVisible={onSetVisible}
           onAdd={canManage ? onAddChild : undefined}
+          onMove={onMove}
+          isFirst={isFirst}
+          isLast={isLast}
+          label={type.name}
         />
       </div>
-      {expanded && <div className="bg-surface">{type.diagnoses.map(renderChild)}</div>}
+      {expanded && (
+        <div className="bg-surface">{type.diagnoses.map((d, i) => renderChild(d, i))}</div>
+      )}
     </div>
   )
 }
@@ -269,6 +338,9 @@ function DiagnosisRow({
   localLabel,
   onEdit,
   onSetVisible,
+  onMove,
+  isFirst,
+  isLast,
 }: {
   diagnosis: Diagnosis
   hidden: boolean
@@ -277,6 +349,9 @@ function DiagnosisRow({
   localLabel: string | null
   onEdit: () => void
   onSetVisible: (visible: boolean) => void
+  onMove?: (direction: -1 | 1) => void
+  isFirst: boolean
+  isLast: boolean
 }) {
   return (
     <div
@@ -295,6 +370,10 @@ function DiagnosisRow({
         canOverlay={canOverlay}
         onEdit={onEdit}
         onSetVisible={onSetVisible}
+        onMove={onMove}
+        isFirst={isFirst}
+        isLast={isLast}
+        label={diagnosis.name}
       />
     </div>
   )
@@ -315,6 +394,10 @@ function RowActions({
   onEdit,
   onSetVisible,
   onAdd,
+  onMove,
+  isFirst,
+  isLast,
+  label,
 }: {
   hidden: boolean
   canManage: boolean
@@ -322,9 +405,29 @@ function RowActions({
   onEdit: () => void
   onSetVisible: (visible: boolean) => void
   onAdd?: () => void
+  onMove?: (direction: -1 | 1) => void
+  isFirst?: boolean
+  isLast?: boolean
+  label?: string
 }) {
   return (
     <div className="flex items-center gap-1">
+      {onMove && (
+        <>
+          <IconButton
+            label={`Move ${label ?? "row"} up`}
+            icon={ChevronUp}
+            disabled={isFirst}
+            onClick={() => onMove(-1)}
+          />
+          <IconButton
+            label={`Move ${label ?? "row"} down`}
+            icon={ChevronDown}
+            disabled={isLast}
+            onClick={() => onMove(1)}
+          />
+        </>
+      )}
       {canOverlay && (
         <IconButton
           label={hidden ? "Show for this tenant" : "Hide for this tenant"}
