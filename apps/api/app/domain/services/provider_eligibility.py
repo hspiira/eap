@@ -47,18 +47,14 @@ class ProviderNotEligibleError(DomainError):
             "Provider is not eligible for this booking",
             error_code="PROVIDER_NOT_ELIGIBLE",
             http_status=409,
+            field_errors=[
+                {"field": "provider_id", "message": provider_id, "code": "provider_id"},
+                *(
+                    {"field": "eligibility", "message": reason.message, "code": reason.code}
+                    for reason in reasons
+                ),
+            ],
         )
-
-    def to_api_response(self, path: str | None = None, request_id: str | None = None):
-        body = super().to_api_response(path, request_id)
-        body["details"] = [
-            {"field": "provider_id", "message": self.provider_id, "code": "provider_id"},
-            *(
-                {"field": "eligibility", "message": reason.message, "code": reason.code}
-                for reason in self.reasons
-            ),
-        ]
-        return body
 
 
 def evaluate_practitioner(

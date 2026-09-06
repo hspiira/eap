@@ -343,3 +343,60 @@ async def test_unlinking_keeps_the_practitioner_visible(api):
     assert body["user_id"] is None
     assert body["display_name"] == "Amina Okello"
     assert "ProviderAccountUnlinked" in _event_names(api.audit)
+
+
+# --------------------------------------------------------------------------
+# A blank reason is one shape, whatever kind of blank it is.
+#
+# min_length is checked before stripping, so "   " satisfied it, reached the
+# domain, and came back as a 400 with nothing a form could attach to a field,
+# while "" came back as a 422 field error. A client could not handle both with
+# one path, and spaces are the variant a real user types.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("blank", ["", "   ", "\t", "\n  \t "])
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/providers/prov-1/tier", {"tier": "T2"}),
+        ("/providers/prov-1/panel-status", {"panel_status": "Removed"}),
+        ("/providers/prov-1/accreditation", {"accreditation_status": "Lapsed"}),
+        ("/providers/prov-1/status", {"status": "Inactive"}),
+    ],
+)
+async def test_every_blank_reason_is_the_same_422(api, path, body, blank):
+    response = await api.http.patch(path, json={**body, "reason": blank})
+
+    assert response.status_code == 422, response.text
+    assert any("reason" in str(d.get("field", "")) for d in response.json()["details"])
+    api.providers.save.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_reason_is_stored_stripped(api):
+    response = await api.http.patch(
+        "/providers/prov-1/tier", json={"tier": "T2", "reason": "  Panel review  "}
+    )
+
+    assert response.status_code == 200, response.text
+    events = api.audit.handle_events.await_args
+    reasons = [
+        e.reason for e in (events.kwargs.get("events") or events.args[0]) if hasattr(e, "reason")
+    ]
+    assert reasons == ["Panel review"]
+
+
+@pytest.mark.asyncio
+async def test_the_account_link_commands_reject_a_blank_reason_the_same_way(api):
+    link = await api.http.post(
+        "/providers/prov-1/account-link", json={"user_id": "u9", "reason": "   "}
+    )
+    unlink = await api.http.request(
+        "DELETE", "/providers/prov-1/account-link", json={"reason": "   "}
+    )
+
+    assert link.status_code == 422, link.text
+    assert unlink.status_code == 422, unlink.text
+    api.providers.save.assert_not_awaited()

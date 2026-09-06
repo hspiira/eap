@@ -162,3 +162,39 @@ class TestRequireEligible:
     def test_passes_silently_when_eligible(self):
         decision = evaluate_practitioner(_provider(), scheduled_at=SOON, now=NOW)
         require_eligible(decision, "prov-1")
+
+
+class TestErrorEnvelope:
+    """The 409 body a client branches on.
+
+    Several reasons attach to the same field, which a dict of field names
+    cannot express, so the exception supplies ordered field_errors instead of
+    overriding the serialiser.
+    """
+
+    def test_every_reason_gets_its_own_entry_with_a_stable_code(self):
+        provider = _provider(
+            _profile(panel=PanelStatus.REMOVED, accreditation=AccreditationStatus.LAPSED)
+        )
+        decision = evaluate_practitioner(provider, scheduled_at=SOON, now=NOW)
+
+        with pytest.raises(ProviderNotEligibleError) as caught:
+            require_eligible(decision, provider.id.value)
+
+        details = caught.value.to_api_response()["details"]
+        assert [d["code"] for d in details] == [
+            "provider_id",
+            "panel_not_active",
+            "not_accredited",
+        ]
+        assert [d["field"] for d in details] == ["provider_id", "eligibility", "eligibility"]
+
+    def test_no_code_is_null(self):
+        """A client branching on code must never meet a null."""
+        decision = evaluate_practitioner(
+            _provider(_profile(panel=PanelStatus.SUSPENDED)), scheduled_at=SOON, now=NOW
+        )
+        with pytest.raises(ProviderNotEligibleError) as caught:
+            require_eligible(decision, "prov-1")
+
+        assert all(d["code"] for d in caught.value.to_api_response()["details"])

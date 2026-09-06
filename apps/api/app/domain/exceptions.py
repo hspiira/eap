@@ -18,8 +18,13 @@ class EvexiaException(Exception):
     Attributes:
         message: Human-readable error description
         error_code: Machine-readable error code for API responses
-        details: Additional error context
+        details: Additional error context, one entry per field name
         http_status: HTTP status code for API responses (default 400)
+        field_errors: Explicit ordered detail entries, each with field, message
+            and an optional machine-readable code. Use this where `details`
+            cannot express the error: a code the client branches on, or several
+            entries against the same field. When set it replaces `details` in
+            the response body.
     """
 
     def __init__(
@@ -28,11 +33,13 @@ class EvexiaException(Exception):
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
         http_status: int = 400,
+        field_errors: list[dict[str, Any]] | None = None,
     ):
         self.message = message
         self.error_code = error_code or self.__class__.__name__
         self.details = details or {}
         self.http_status = http_status
+        self.field_errors = field_errors
         super().__init__(self.message)
 
     def to_dict(self) -> dict[str, Any]:
@@ -52,8 +59,8 @@ class EvexiaException(Exception):
         Build API error body in the same shape as create_error_response.
         Used by the single exception handler for consistent JSON responses.
         """
-        details_list: list[dict[str, Any]] | None = None
-        if self.details:
+        details_list: list[dict[str, Any]] | None = self.field_errors
+        if details_list is None and self.details:
             details_list = [
                 {"field": k, "message": str(v), "code": None} for k, v in self.details.items()
             ]
@@ -151,8 +158,11 @@ class DomainError(EvexiaException):
         error_code: str = "DOMAIN_ERROR",
         http_status: int = 400,
         details: dict[str, Any] | None = None,
+        field_errors: list[dict[str, Any]] | None = None,
     ):
-        super().__init__(message, error_code, details, http_status=http_status)
+        super().__init__(
+            message, error_code, details, http_status=http_status, field_errors=field_errors
+        )
 
 
 class NotFoundError(DomainError):

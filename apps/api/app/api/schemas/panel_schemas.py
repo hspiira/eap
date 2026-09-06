@@ -4,14 +4,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.schemas.base import SanitizedStr
+from app.api.schemas.base import NonBlankReason
 from app.domain.enums import PanelStatus, ProviderTier
 
 
 class BulkPanelStatusUpdate(BaseModel):
     provider_ids: list[str] = Field(..., min_length=1, max_length=500)
     new_status: PanelStatus
-    reason: SanitizedStr = Field(..., min_length=1, max_length=500)
+    reason: NonBlankReason
 
 
 class BulkPanelStatusResponse(BaseModel):
@@ -25,7 +25,7 @@ class BulkPanelStatusResponse(BaseModel):
 
 class TierChangeRequest(BaseModel):
     new_tier: ProviderTier
-    reason: SanitizedStr = Field(..., min_length=1, max_length=500)
+    reason: NonBlankReason
 
 
 class TierChangeResponse(BaseModel):

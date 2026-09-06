@@ -18,7 +18,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
-from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+from app.api.schemas.base import NonBlankReason, OptionalSanitizedStr, SanitizedStr
 from app.api.schemas.provider_profile_schemas import ProviderProfileSchema
 from app.domain.enums import (
     AccreditationStatus,
@@ -112,33 +112,33 @@ class ProviderUpdate(BaseModel):
 
 class TierCommand(BaseModel):
     tier: ProviderTier
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class PanelStatusCommand(BaseModel):
     panel_status: PanelStatus
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class AccreditationCommand(BaseModel):
     accreditation_status: AccreditationStatus
     accreditation_authority: OptionalSanitizedStr = Field(None, max_length=200)
     accreditation_expiry: date | None = None
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class StatusCommand(BaseModel):
     status: BaseStatus
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class AccountLinkCommand(BaseModel):
     user_id: str
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class AccountUnlinkCommand(BaseModel):
-    reason: SanitizedStr = Field(..., min_length=1)
+    reason: NonBlankReason
 
 
 class ProviderListResponse(BaseModel):
