@@ -29,8 +29,15 @@ import app.domain.entities as entities_pkg
 # swap the patch route used to call, is gone; every provider mutation now runs
 # through a command that emits. Route-level audit_change is driven by
 # entity.events, so a call on an entity that emits nothing is a no-op, which is
-# what panel.py did while advertising itself as audit-trailed.
-KNOWN_SILENT_MUTATORS = 143
+# what panel.py did while advertising itself as audit-trailed. That removed two
+# from the baseline of 145.
+# ProviderAliasEntity.mark_ambiguous and mark_unmapped are the staging
+# classifier's output, not decisions: one event per unmatched name would flood
+# audit_logs for a file of several thousand rows, and the reviewable state plus
+# candidates are persisted on the row. The alias decisions that a person makes,
+# resolve and reject, do emit, as do specialty retire/restore and import batch
+# apply/abandon. Those two add back to 145.
+KNOWN_SILENT_MUTATORS = 145
 
 
 def _entity_classes():
