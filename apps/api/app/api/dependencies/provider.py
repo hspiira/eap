@@ -8,6 +8,7 @@ from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
 )
 from app.domain.repositories.provider_repository import ProviderRepository
+from app.domain.repositories.session_attribution_reader import SessionAttributionReader
 
 
 async def get_non_compete_clause_repository(
@@ -24,3 +25,13 @@ async def get_provider_repository(db: AsyncSession = Depends(get_db)) -> Provide
     from app.infrastructure.repositories.provider_repository import ProviderRepositoryImpl
 
     return ProviderRepositoryImpl(db)
+
+
+async def get_session_attribution_reader(
+    db: AsyncSession = Depends(get_db),
+) -> SessionAttributionReader:
+    from app.infrastructure.repositories.session_attribution_reader import (
+        SqlSessionAttributionReader,
+    )
+
+    return SqlSessionAttributionReader(db)

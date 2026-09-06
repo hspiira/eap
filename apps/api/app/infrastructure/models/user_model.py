@@ -7,7 +7,7 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,6 +32,7 @@ class UserModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
 
     __tablename__ = "users"
     __table_args__ = (
+        UniqueConstraint("tenant_id", "id", name="uq_users_tenant_id"),
         CheckConstraint(
             "status IN (" + ", ".join(f"'{e.value}'" for e in UserStatus) + ")",
             name="user_status_check",

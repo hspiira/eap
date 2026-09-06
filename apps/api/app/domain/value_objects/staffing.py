@@ -37,21 +37,11 @@ class ProviderProfile:
     tier: ProviderTier
     region: UgandaRegion
     accreditation_status: AccreditationStatus
-    panel_status: PanelStatus = PanelStatus.ACTIVE
+    panel_status: PanelStatus = PanelStatus.PENDING
     accreditation_authority: str | None = None
     accreditation_expiry: date | None = None
     specialties: tuple[str, ...] = ()
     bio: str | None = None
-
-    def is_panel_eligible(self) -> bool:
-        """Whether the provider can currently take new assignments."""
-        if self.panel_status != PanelStatus.ACTIVE:
-            return False
-        if self.accreditation_status != AccreditationStatus.ACCREDITED:
-            return False
-        if self.accreditation_expiry is not None and self.accreditation_expiry < utc_now().date():
-            return False
-        return True
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -56,6 +57,12 @@ class ServiceSessionMapper:
             provider_id=provider_id,
             member_id=member_id,
             scheduled_at=ensure_utc(model.scheduled_at),
+            # An absent value reads as Unknown, never as Direct: decision 2 forbids
+            # inferring a direct arrangement from a missing one.
+            delivery_context=SessionDeliveryContext(
+                model.delivery_context or SessionDeliveryContext.UNKNOWN
+            ),
+            provider_affiliation_id=model.provider_affiliation_id,
             status=status,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
@@ -104,6 +111,8 @@ class ServiceSessionMapper:
             provider_id=entity.provider_id.value,
             member_id=entity.member_id.value,
             scheduled_at=ensure_utc(entity.scheduled_at),
+            delivery_context=entity.delivery_context,
+            provider_affiliation_id=entity.provider_affiliation_id,
             status=entity.status,
             reschedule_count=entity.reschedule_count,
             completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,

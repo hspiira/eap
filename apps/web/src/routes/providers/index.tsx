@@ -1,162 +1,279 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
-import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { ExternalLink, MoreHorizontal, Plus, Stethoscope } from "lucide-react"
 
-import { providersApi } from "@/api/endpoints/providers"
+import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
+import { EmptyState } from "@/components/common/EmptyState"
+import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { StatusBadge } from "@/components/common/StatusBadge"
+import { ROW_BORDER } from "@/components/common/tableStyles"
+import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
+import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { enumParam, listSearchSchema } from "@/lib/search-params"
-import { AccreditationStatus, PanelStatus, ProviderRegion, ProviderTier } from "@/types/enums"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { TableCell, TableRow } from "@/components/ui/table"
+import { useCanWrite } from "@/hooks/useCanWrite"
+import { useListPage } from "@/hooks/useListPage"
+import { normalizeErrorMessage } from "@/lib/errors"
+import { useEntityList } from "@/lib/queries"
+import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
+import type { Provider } from "@/types/entities"
+import { AccreditationStatus, PanelStatus, ProviderTier, UgandaRegion } from "@/types/enums"
 
-const REGIONS = Object.values(ProviderRegion)
-const TIERS = Object.values(ProviderTier)
-
-const parseTier = enumParam(ProviderTier)
-const parseRegion = enumParam(ProviderRegion)
+const TIER_OPTIONS = enumOptions(ProviderTier, "All tiers")
+const REGION_OPTIONS = enumOptions(UgandaRegion, "All regions")
+const PANEL_OPTIONS = enumOptions(PanelStatus, "All panel states")
+const ACCREDITATION_OPTIONS = enumOptions(AccreditationStatus, "All accreditation")
 
 export const Route = createFileRoute("/providers/")({
   component: ProvidersListPage,
-  validateSearch: listSearchSchema({ tier: parseTier, region: parseRegion }),
+  validateSearch: listSearchSchema({
+    tier: enumParam(ProviderTier),
+    region: enumParam(UgandaRegion),
+    panel_status: enumParam(PanelStatus),
+    accreditation_status: enumParam(AccreditationStatus),
+  }),
 })
 
-function ProvidersListPage() {
-  const params = useSearch({ from: "/providers/" })
-  const navigate = useNavigate({ from: "/providers/" })
-  const [page] = useState(1)
+const COLUMNS: ListColumn[] = [
+  { header: "Practitioner", sortField: "display_name" },
+  { header: "Tier", className: "text-fg/65" },
+  { header: "Region", className: "text-fg/65" },
+  { header: "Panel", className: "text-fg/65" },
+  { header: "Accreditation", className: "text-fg/65" },
+  { header: "Contact", className: "text-fg/65" },
+  { header: "Account", className: "text-fg/65" },
+]
 
-  // BE persons-list doesn't filter by tier/region yet; we fetch the full page
-  // and filter client-side. Acceptable until BE adds those filters.
-  const query = useQuery({
-    queryKey: ["providers", "list", page],
-    queryFn: () => providersApi.list({ page, limit: 100 }),
-    staleTime: 60_000,
+/** The API filters are repeatable; the URL carries at most one value each. */
+function one<T>(value: T | undefined): T[] | undefined {
+  return value ? [value] : undefined
+}
+
+function ProvidersListPage() {
+  const searchParams = useSearch({ from: "/providers/" })
+  const navigate = useNavigate({ from: "/providers/" })
+  const list = useListPage({
+    searchParams,
+    navigate,
+    initialSort: { field: "display_name", desc: false },
+  })
+  const canWrite = useCanWrite()
+  const [editing, setEditing] = useState<Provider | null>(null)
+
+  const query = useEntityList<Provider, ProviderListParams>({
+    resource: "providers",
+    params: {
+      page: list.page,
+      limit: list.limit,
+      search: list.activeSearch,
+      tier: one(searchParams.tier),
+      region: one(searchParams.region),
+      panel_status: one(searchParams.panel_status),
+      accreditation_status: one(searchParams.accreditation_status),
+      ...list.sortParams,
+    },
+    listFn: providersApi.list,
   })
 
-  const items = useMemo(() => {
-    const all = query.data?.items ?? []
-    return all.filter((p) => {
-      if (params.tier && p.provider_profile.tier !== params.tier) return false
-      if (params.region && p.provider_profile.region !== params.region) return false
-      return true
-    })
-  }, [query.data?.items, params.tier, params.region])
+  const items = query.data?.items ?? []
+  const hasFilters = Boolean(
+    list.activeSearch ||
+    searchParams.tier ||
+    searchParams.region ||
+    searchParams.panel_status ||
+    searchParams.accreditation_status,
+  )
 
-  const setTier = (v: string) => {
-    const tier = parseTier(v)
-    navigate({ search: (prev) => ({ ...prev, tier }), replace: true })
-  }
-  const setRegion = (v: string) => {
-    const region = parseRegion(v)
-    navigate({ search: (prev) => ({ ...prev, region }), replace: true })
-  }
+  const clear = (key: string) => () => list.setFilter(key, undefined)
+  const set = (key: string) => (value: string) =>
+    list.setFilter(key, value === "all" ? undefined : value)
 
   return (
-    <div className="content-area-scroll flex-1 min-h-0 overflow-y-auto p-6">
-      <div className="mx-auto max-w-5xl space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold text-fg">Providers</h1>
-            <p className="mt-1 text-sm text-fg/70">
-              Counsellors, agencies, and clinics on the panel: tier T1/T2/T3 and region.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={params.tier ?? "all"} onValueChange={setTier}>
-              <SelectTrigger className="rounded-none h-9 w-30 border-fg/30 bg-white text-fg [&>svg]:text-fg">
-                <SelectValue placeholder="All tiers" />
-              </SelectTrigger>
-              <SelectContent className="rounded-none border-fg/30 bg-white">
-                <SelectItem value="all" className="rounded-none">
-                  All tiers
-                </SelectItem>
-                {TIERS.map((t) => (
-                  <SelectItem key={t} value={t} className="rounded-none">
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={params.region ?? "all"} onValueChange={setRegion}>
-              <SelectTrigger className="rounded-none h-9 w-45 border-fg/30 bg-white text-fg [&>svg]:text-fg">
-                <SelectValue placeholder="All regions" />
-              </SelectTrigger>
-              <SelectContent className="rounded-none border-fg/30 bg-white">
-                <SelectItem value="all" className="rounded-none">
-                  All regions
-                </SelectItem>
-                {REGIONS.map((r) => (
-                  <SelectItem key={r} value={r} className="rounded-none">
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </header>
+    <PageShell
+      icon={Stethoscope}
+      breadcrumb="Practitioners"
+      actions={
+        canWrite ? (
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 rounded-none px-2.5"
+            onClick={() => list.setAddOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Add practitioner
+          </Button>
+        ) : null
+      }
+    >
+      <FilterBar>
+        {searchParams.tier ? (
+          <FilterChip label={`Tier: ${searchParams.tier}`} onRemove={clear("tier")} />
+        ) : null}
+        {searchParams.region ? (
+          <FilterChip label={`Region: ${searchParams.region}`} onRemove={clear("region")} />
+        ) : null}
+        {searchParams.panel_status ? (
+          <FilterChip
+            label={`Panel: ${searchParams.panel_status}`}
+            onRemove={clear("panel_status")}
+          />
+        ) : null}
+        {searchParams.accreditation_status ? (
+          <FilterChip
+            label={`Accreditation: ${searchParams.accreditation_status}`}
+            onRemove={clear("accreditation_status")}
+          />
+        ) : null}
+        <FilterTrigger
+          label="All tiers"
+          value={searchParams.tier ?? "all"}
+          options={TIER_OPTIONS}
+          onChange={set("tier")}
+        />
+        <FilterTrigger
+          label="All regions"
+          value={searchParams.region ?? "all"}
+          options={REGION_OPTIONS}
+          onChange={set("region")}
+        />
+        <FilterTrigger
+          label="All panel states"
+          value={searchParams.panel_status ?? "all"}
+          options={PANEL_OPTIONS}
+          onChange={set("panel_status")}
+        />
+        <FilterTrigger
+          label="All accreditation"
+          value={searchParams.accreditation_status ?? "all"}
+          options={ACCREDITATION_OPTIONS}
+          onChange={set("accreditation_status")}
+        />
+        <div className="ml-auto" />
+        <FilterSearch
+          value={list.searchInput}
+          onChange={list.setSearchInput}
+          placeholder="Search practitioners…"
+        />
+      </FilterBar>
 
-        {query.isPending ? (
-          <p className="text-sm text-fg/60">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-fg/60">No providers match the current filters.</p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {items.map((p) => {
-              const profile = p.provider_profile
-              const off = profile.panel_status !== PanelStatus.ACTIVE
-              const accreditationOK =
-                profile.accreditation_status === AccreditationStatus.ACCREDITED
-              return (
-                <li key={p.id}>
-                  <Link
-                    to="/providers/$providerId"
-                    params={{ providerId: p.id }}
-                    className="flex h-full flex-col gap-2 border border-fg/20 bg-white p-4 hover:border-primary hover:bg-surface/30"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="truncate text-sm font-semibold text-fg">
-                          {p.display_name || p.email}
-                        </h2>
-                        <p className="mt-0.5 text-xs text-fg/60">
-                          {p.email} · {profile.region}
-                        </p>
-                      </div>
-                      <ProviderTierBadge tier={profile.tier} />
-                    </div>
-                    <div className="flex flex-wrap gap-1 text-xs">
-                      <span
-                        className={
-                          off
-                            ? "border border-danger/30 bg-danger-soft px-1.5 py-0.5 text-danger-fg"
-                            : "border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-primary"
-                        }
-                      >
-                        Panel: {profile.panel_status}
-                      </span>
-                      <span
-                        className={
-                          accreditationOK
-                            ? "border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-primary"
-                            : "border border-fg/20 bg-bg px-1.5 py-0.5 text-fg/70"
-                        }
-                      >
-                        Accred: {profile.accreditation_status}
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+      <ProviderFormSheet
+        open={list.addOpen || editing !== null}
+        provider={editing}
+        onOpenChange={(open) => {
+          if (!open) {
+            list.setAddOpen(false)
+            setEditing(null)
+          }
+        }}
+      />
+
+      <EntityListView
+        columns={COLUMNS}
+        items={items}
+        rowKey={(row) => row.id}
+        selectable={false}
+        renderRow={(row) => (
+          <ProviderRow provider={row} onEdit={canWrite ? () => setEditing(row) : undefined} />
         )}
-      </div>
-    </div>
+        loading={query.isPending}
+        error={
+          query.isError ? normalizeErrorMessage(query.error, "Failed to load practitioners") : null
+        }
+        onRetry={() => void query.refetch()}
+        empty={
+          <EmptyState
+            icon={Stethoscope}
+            title={hasFilters ? "No practitioners match your filters" : "No practitioners yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear a filter."
+                : "Add the counsellors who deliver sessions. A practitioner does not need a login."
+            }
+            action={
+              canWrite && !hasFilters ? (
+                <Button size="sm" className="rounded-none" onClick={() => list.setAddOpen(true)}>
+                  Add practitioner
+                </Button>
+              ) : null
+            }
+          />
+        }
+        sort={list.sort}
+        onToggleSort={list.toggleSort}
+        page={list.page}
+        total={query.data?.total ?? 0}
+        limit={list.limit}
+        onPageChange={list.setPage}
+      />
+    </PageShell>
+  )
+}
+
+function ProviderRow({ provider, onEdit }: { provider: Provider; onEdit?: () => void }) {
+  const profile = provider.provider_profile
+  return (
+    <TableRow className={`group h-9 ${ROW_BORDER}`}>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
+        {provider.display_name}
+      </TableCell>
+      <TableCell className="py-1.5">
+        <ProviderTierBadge tier={profile.tier} />
+      </TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">{profile.region}</TableCell>
+      <TableCell className="py-1.5">
+        <StatusBadge status={profile.panel_status} size="sm" />
+      </TableCell>
+      <TableCell className="py-1.5">
+        <StatusBadge status={profile.accreditation_status} size="sm" />
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
+        {provider.email ?? provider.phone ?? "-"}
+      </TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">
+        {provider.user_id ? "Linked" : "None"}
+      </TableCell>
+      <TableCell className="py-1.5 text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <Link
+            to="/providers/$providerId"
+            params={{ providerId: provider.id }}
+            aria-label={`Open ${provider.display_name}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
+          >
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${provider.display_name}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/providers/$providerId" params={{ providerId: provider.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              {onEdit ? <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TableCell>
+    </TableRow>
   )
 }

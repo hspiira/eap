@@ -58,3 +58,16 @@ class ServiceCategory(str, Enum):
     WORK_LIFE_REFERRAL = "WorkLifeReferral"
     CISM_RESPONSE = "CISMResponse"
     WELLNESS_COACHING = "WellnessCoaching"
+
+
+class SessionDeliveryContext(str, Enum):
+    """How the practitioner delivered, or will deliver, this session.
+
+    UNKNOWN describes a historical record whose source carries no evidence of
+    the arrangement. It is never accepted on a live booking; inferring direct
+    delivery from a missing value would assert something the source does not say.
+    """
+
+    DIRECT = "Direct"
+    ORGANISATION = "Organisation"
+    UNKNOWN = "Unknown"

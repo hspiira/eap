@@ -4,7 +4,7 @@ import { useState } from "react"
 import { clientsApi } from "@/api/endpoints/clients"
 import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
-import { providersApi } from "@/api/endpoints/providers"
+import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
@@ -322,18 +322,18 @@ export function ProviderPicker({
   onChange: (id: string) => void
 }) {
   return (
-    <EntityPicker<Provider>
+    <EntityPicker<Provider, ProviderListParams>
       resource="providers"
       listFn={providersApi.list}
       value={value}
       onChange={onChange}
-      placeholder="Search providers…"
-      emptyPrompt="Start typing to search providers."
-      emptyNoMatch="No providers match."
+      placeholder="Search practitioners…"
+      emptyPrompt="Start typing to search practitioners."
+      emptyNoMatch="No practitioners match."
       renderSelected={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.display_name || p.email}
+          primary={p.display_name}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
           size="md"
         />
@@ -341,7 +341,7 @@ export function ProviderPicker({
       renderRow={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.display_name || p.email}
+          primary={p.display_name}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
         />
       )}

@@ -1115,13 +1115,25 @@ async def session_test_service(client: AsyncClient, session_test_tenant: dict) -
 async def session_test_provider(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
-    """Create a provider for session tests.
+    """Create a bookable provider for session tests.
 
     `service_sessions.provider_id` points at `providers`, not `persons`, since
     `e5g7i9k1m3o5_independent_providers`. A provider person does not satisfy
     that constraint.
+
+    Active, accredited and on-panel, because the booking gate refuses anything
+    less and these tests are about the session lifecycle, not eligibility.
+    Eligibility refusals are covered in tests/unit/domain/test_provider_eligibility.py.
     """
-    from app.domain.enums import BaseStatus, UserStatus
+    from app.domain.enums import (
+        AccreditationStatus,
+        BaseStatus,
+        PanelStatus,
+        ProviderIdentityProvenance,
+        ProviderTier,
+        UgandaRegion,
+        UserStatus,
+    )
     from app.infrastructure.models.provider_model import ProviderModel
     from app.infrastructure.models.user_model import UserModel
 
@@ -1141,7 +1153,20 @@ async def session_test_provider(
         id=provider_id,
         tenant_id=session_test_tenant["id"],
         user_id=user_id,
+        display_name="Test Practitioner",
+        contact_email=f"provider-{user_id[:8]}@example.com",
+        identity_provenance=ProviderIdentityProvenance.OWNED,
         status=BaseStatus.ACTIVE,
+        provider_profile={
+            "tier": ProviderTier.T2.value,
+            "region": UgandaRegion.CENTRAL.value,
+            "accreditation_status": AccreditationStatus.ACCREDITED.value,
+            "panel_status": PanelStatus.ACTIVE.value,
+            "accreditation_authority": "Test Board",
+            "accreditation_expiry": None,
+            "specialties": [],
+            "bio": None,
+        },
         license_info={
             "number": "LIC-TEST-001",
             "issuing_authority": "Test Board",
@@ -1222,6 +1247,7 @@ async def test_service_session(
             "provider_id": session_test_provider["id"],
             "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
+            "delivery_context": "Direct",
             "location": "Office A",
         },
     )
@@ -1250,6 +1276,7 @@ async def test_service_session_2(
             "provider_id": session_test_provider["id"],
             "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
+            "delivery_context": "Direct",
             "location": "Office B",
         },
     )

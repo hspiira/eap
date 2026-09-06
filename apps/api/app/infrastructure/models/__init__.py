@@ -63,7 +63,14 @@ from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseM
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
 from app.infrastructure.models.person_model import PersonModel
+from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
+from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_model import ProviderModel
+from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
+from app.infrastructure.models.provider_specialty_model import (
+    ProviderSpecialtyLinkModel,
+    ProviderSpecialtyModel,
+)
 from app.infrastructure.models.report_model import (
     ReportRunModel,
     ReportTemplateModel,
@@ -71,6 +78,10 @@ from app.infrastructure.models.report_model import (
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
 from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
+from app.infrastructure.models.session_import_model import (
+    SessionImportBatchModel,
+    SessionImportRowModel,
+)
 from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
     SurveyResponseModel,
@@ -124,13 +135,20 @@ __all__ = [
     "OutreachRecordModel",
     "PasswordSetTokenModel",
     "PersonModel",
+    "ProviderAffiliationModel",
+    "ProviderAliasModel",
     "ProviderModel",
+    "ProviderOrganisationModel",
+    "ProviderSpecialtyLinkModel",
+    "ProviderSpecialtyModel",
     "ProviderProfileDict",
     "ReportRunModel",
     "ReportTemplateModel",
     "ServiceAssignmentModel",
     "ServiceModel",
     "ServiceSessionModel",
+    "SessionImportBatchModel",
+    "SessionImportRowModel",
     "SoftDeleteMixin",
     "StaffInfoDict",
     "SurveyCampaignModel",

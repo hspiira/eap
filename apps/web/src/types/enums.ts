@@ -322,13 +322,22 @@ export enum ProviderTier {
   T3 = "T3",
 }
 
-export enum ProviderRegion {
-  KAMPALA = "Kampala",
+/**
+ * Region a practitioner covers: mirrors BE `UgandaRegion`.
+ *
+ * The earlier `ProviderRegion` listed "Kampala" and "Remote / Telehealth",
+ * neither of which the API accepts, and omitted three real regions. See
+ * `UgandaRegion` in `src/api/generated/schema.ts`.
+ */
+export enum UgandaRegion {
   CENTRAL = "Central",
+  KAMPALA_METRO = "KampalaMetro",
   EASTERN = "Eastern",
-  WESTERN = "Western",
   NORTHERN = "Northern",
-  REMOTE = "Remote / Telehealth",
+  WEST_NILE = "WestNile",
+  WESTERN = "Western",
+  SOUTH_WESTERN = "SouthWestern",
+  KARAMOJA = "Karamoja",
 }
 
 /**
@@ -344,11 +353,48 @@ export enum AccreditationStatus {
 
 /**
  * Whether a provider is currently on the active panel, mirrors BE `PanelStatus`.
+ *
+ * A newly created practitioner is `PENDING`, not `REMOVED`, and only `ACTIVE`
+ * is panel-eligible for a booking.
  */
 export enum PanelStatus {
+  PENDING = "Pending",
   ACTIVE = "Active",
   SUSPENDED = "Suspended",
   REMOVED = "Removed",
+}
+
+/**
+ * Supplier approval of a provider organisation: mirrors BE
+ * `OrganisationApprovalStatus`. Independent of `is_active`; an organisation may
+ * deliver only when it is active and approved.
+ */
+export enum OrganisationApprovalStatus {
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  SUSPENDED = "Suspended",
+  REVOKED = "Revoked",
+}
+
+/**
+ * Whether a practitioner's name was entered for them or taken from a linked
+ * account during migration: mirrors BE `ProviderIdentityProvenance`.
+ */
+export enum ProviderIdentityProvenance {
+  OWNED = "Owned",
+  BACKFILLED_FROM_USER = "BackfilledFromUser",
+}
+
+/**
+ * How a session was delivered: mirrors BE `SessionDeliveryContext`.
+ *
+ * `UNKNOWN` belongs to historical records whose source evidence does not say.
+ * It is never selectable on a new booking and must never be shown as `DIRECT`.
+ */
+export enum SessionDeliveryContext {
+  DIRECT = "Direct",
+  ORGANISATION = "Organisation",
+  UNKNOWN = "Unknown",
 }
 
 /**

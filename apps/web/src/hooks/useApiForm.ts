@@ -54,12 +54,16 @@ export function useApiForm<TValues extends FieldValues>(
       await opts.onSubmit(values as TValues)
       if (opts.successToast) showSuccess(opts.successToast)
     } catch (err) {
-      if (isApiError(err) && err.fieldErrors) {
-        for (const [field, message] of Object.entries(err.fieldErrors)) {
-          form.setError(field as Path<TValues>, { type: "server", message })
-        }
-        return
+      const fields = new Set(Object.keys(form.getValues() ?? {}))
+      const fieldErrors = isApiError(err) ? (err.fieldErrors ?? {}) : {}
+      const attached = Object.entries(fieldErrors).filter(([field]) => fields.has(field))
+      for (const [field, message] of attached) {
+        form.setError(field as Path<TValues>, { type: "server", message })
       }
+      // A rejection whose fields the form does not have would otherwise be
+      // silent, so anything unattached still surfaces as a form-level error.
+      if (attached.length === Object.keys(fieldErrors).length && attached.length > 0) return
+
       const message = defaultErrorMessage(err)
       form.setError("root.serverError" as Path<TValues>, { type: "server", message })
       if (opts.errorToast !== false) showError(message)

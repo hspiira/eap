@@ -14,6 +14,7 @@ from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -28,6 +29,13 @@ class ServiceSessionCreate(BaseModel):
     provider_id: str = Field(..., description="Provider (person) identifier")
     member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
+    delivery_context: SessionDeliveryContext = Field(
+        ...,
+        description="Direct or Organisation. Unknown is rejected: it belongs to historical import",
+    )
+    provider_affiliation_id: str | None = Field(
+        None, description="Required for Organisation delivery, forbidden otherwise"
+    )
     location: OptionalSanitizedStr = Field(None, description="Session location")
 
     # Care Activity Log fields
@@ -153,6 +161,17 @@ class ServiceSessionResponse(BaseModel):
     provider_id: str = Field(..., description="Provider (person) identifier")
     member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
+    delivery_context: SessionDeliveryContext = Field(..., description="How this was delivered")
+    provider_affiliation_id: str | None = Field(
+        None, description="The affiliation this session is attributed to, if any"
+    )
+    provider_organisation_id: str | None = Field(
+        None,
+        description=(
+            "Resolved from this session's own affiliation, never from the "
+            "practitioner's current affiliations"
+        ),
+    )
     status: SessionStatus = Field(..., description="Session status")
     reschedule_count: int = Field(..., description="Number of times rescheduled")
     completed_at: datetime | None = Field(None, description="Completion date and time")

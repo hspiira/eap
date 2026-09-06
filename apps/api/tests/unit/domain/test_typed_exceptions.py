@@ -75,3 +75,58 @@ class TestExceptionHttpStatuses:
         assert body["details"]
         fields = {d["field"] for d in body["details"]}
         assert {"resource_type", "resource_id"}.issubset(fields)
+
+
+class TestFieldErrorsReachTheirField:
+    """A field error must name the input it is about.
+
+    ValidationException carried its field as details={"field": field}, and the
+    serialiser reads details keys as field names, so every such error arrived
+    against a field literally called "field" with a field name for a message.
+    No client could attach it to the input it described.
+    """
+
+    def test_a_validation_error_names_the_real_field(self):
+        error = ValidationException("Delivery context is required", field="delivery_context")
+
+        details = error.to_api_response()["details"]
+
+        assert details == [
+            {
+                "field": "delivery_context",
+                "message": "Delivery context is required",
+                "code": None,
+            }
+        ]
+
+    def test_a_validation_error_can_carry_a_machine_readable_code(self):
+        error = ValidationException("Bad code", field="code", code="invalid_client_code")
+
+        assert error.to_api_response()["details"][0]["code"] == "invalid_client_code"
+
+    def test_a_validation_error_without_a_field_has_no_details(self):
+        body = ValidationException("Something is wrong").to_api_response()
+
+        assert "details" not in body
+        assert body["message"] == "Something is wrong"
+
+    def test_field_errors_may_repeat_a_field_which_a_details_dict_cannot(self):
+        error = DomainError(
+            "Provider is not eligible",
+            field_errors=[
+                {"field": "eligibility", "message": "Panel status is Suspended", "code": "panel"},
+                {"field": "eligibility", "message": "Accreditation lapsed", "code": "accred"},
+            ],
+        )
+
+        details = error.to_api_response()["details"]
+
+        assert [d["code"] for d in details] == ["panel", "accred"]
+
+    def test_a_plain_details_dict_is_unchanged(self):
+        """Errors that never asked for codes must serialise as they always did."""
+        error = DomainError("x", details={"resource_id": "abc"})
+
+        assert error.to_api_response()["details"] == [
+            {"field": "resource_id", "message": "abc", "code": None}
+        ]

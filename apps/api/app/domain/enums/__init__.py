@@ -69,6 +69,7 @@ from app.domain.enums.provider import (
     AccreditationStatus,
     NonCompeteStatus,
     PanelStatus,
+    ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
 )
@@ -85,6 +86,7 @@ from app.domain.enums.session import (
     ServiceCategory,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -147,6 +149,7 @@ __all__ = [
     "PersonType",
     "PresentingProblem",
     "PricingModel",
+    "ProviderIdentityProvenance",
     "ProviderTier",
     "RelationType",
     "ReportQueryType",
@@ -156,6 +159,7 @@ __all__ = [
     "ServiceCategory",
     "SessionCategory",
     "SessionClinicalStatus",
+    "SessionDeliveryContext",
     "SessionStatus",
     "SessionType",
     "StaffRole",
