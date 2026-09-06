@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { documentsApi } from "@/api/endpoints/documents"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
+import { MAX_ATTACHMENT_BYTES } from "@/components/contracts/ContractAttachmentQueue"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCanWrite } from "@/hooks/useCanWrite"
@@ -23,7 +24,7 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
   })
   const upload = async (file: File) => {
     setError(null)
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_ATTACHMENT_BYTES) {
       setError("Attachments must be 10 MB or smaller")
       return
     }
