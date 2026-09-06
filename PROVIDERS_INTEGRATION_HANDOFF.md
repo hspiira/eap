@@ -1,0 +1,151 @@
+# Provider migration: integration handoff
+
+From the provider-core and integration agent, for the review task
+`Review providers migration`, ID `01a076a5-c023-74a2-b32c-c49bb68f0387`.
+
+Passing checks below are inputs to review, not approval. Nothing here is
+deployed, pushed, or applied to any database other than a local throwaway.
+
+## Branch
+
+    Branch:   codex/providers-agent1-core
+    Worktree: /Users/piira/Developer/sandbox/eap/wt-agent1
+    Base:     e672b6f
+    Head:     7cb7fb5
+    Commits:  34 (31 non-merge, 3 merges)
+
+Included, by merge:
+
+- `codex/providers-agent2-organisations`, twelve commits through `fcf9375`:
+  organisations, dated affiliations, the specialty vocabulary, tenant- and
+  source-scoped aliases, staged historical import, and migration
+  `a2n1o0r2k4s6`.
+- `codex/providers-agent3-frontend`, through `b5bf6b2`: the practitioner
+  directory and forms, organisation and affiliation management, delivery
+  context on booking, and the specialty picker. Merged with no conflicts.
+
+Two merge conflicts arose and were resolved, both in shared counters rather
+than in logic: the audit ratchet in `test_audit_coverage.py`, resolved to the
+real count of 146 with both agents' reasons retained, and the attribution guard
+dependency, resolved to keep the real implementation over the fail-closed
+placeholder it replaced.
+
+## Migration order
+
+One chain, one head, 68 revisions:
+
+    f6a8c0e2b4d6 -> a1p1c0d2e4f6 -> a1p2i0d2e4f6 -> a2n1o0r2k4s6 -> a1p3d0d2e4f6
+
+- `a1p1c0d2e4f6` composite tenant keys on every provider reference.
+- `a1p2i0d2e4f6` owned practitioner identity, optional account link.
+- `a2n1o0r2k4s6` provider network tables (agent 2).
+- `a1p3d0d2e4f6` session delivery context and affiliation attribution.
+
+Each revision id was reserved in writing before authoring and none was
+rewritten after another agent chained from it.
+
+## Checks and results
+
+Backend, on the committed tree:
+
+| Check | Result |
+| --- | --- |
+| `ruff check app tests scripts` | passed |
+| `ruff format --check app tests scripts` | 600 files formatted |
+| `lint-imports` | 3 contracts kept, 0 broken |
+| `pyright_gate.py --run app/domain` | gate OK |
+| `pytest tests/unit`, 60% coverage gate | 1415 passed, 65.98% |
+| `pytest tests --ignore=tests/unit`, all DB URLs | 501 passed, 1 xfailed, 0 skipped |
+| `alembic upgrade head` on an empty database | applied, single head |
+| `downgrade f6a8c0e2b4d6` then `upgrade head` | applied both ways |
+
+Frontend, on the assembled branch:
+
+| Check | Result |
+| --- | --- |
+| `pnpm typecheck:web` | passed |
+| `pnpm lint:web` | passed |
+| `pnpm test:web` | 70 files, 528 tests passed |
+
+The zero skips matter. Eight integration tests skipped silently for want of
+`IMPORT_TEST_DATABASE_URL` and `OUTBOX_TEST_DATABASE_URL`, and the provider
+migration tests skipped for want of `MEMBER_TEST_DATABASE_URL`. All are now set
+in CI, and `REQUIRE_DATABASE_TESTS` turns a missing URL into a failure so a
+release gate cannot pass on tests that never ran.
+
+## Changed API contracts
+
+Not yet generated. `apps/api/schema/openapi.json` and
+`apps/web/src/api/generated/schema.ts` are stale against these routes by
+design; agent 3 regenerates from head `7cb7fb5`.
+
+Breaking:
+
+- Practitioner response: `display_name` required, `email` and `user_id`
+  nullable. `email` is now practitioner contact data, not a login.
+- `PATCH /providers/{id}` rejects eight fields with 422: `provider_profile`,
+  `specialties`, `tier`, `panel_status`, `accreditation_status`,
+  `accreditation_authority`, `accreditation_expiry`, `status`, `user_id`.
+- `ServiceSessionCreate` requires `delivery_context`.
+- `GET /providers` replaces `limit`/`offset` with `page`/`limit`, and adds
+  `search`, five repeatable filters, `has_account`, `sort_by`, `sort_desc`.
+
+Additive: four Admin-only lifecycle commands, account link and unlink,
+`PanelStatus.Pending`, `SessionDeliveryContext`, and `provider_affiliation_id`
+and `provider_organisation_id` on the session response.
+
+## The four reviewed defects
+
+- **Viewer mutation.** 403 on every provider and panel mutation, and non-Admin
+  roles separately refused on the four lifecycle commands. Proved against
+  PostgreSQL: the stored row is unchanged and no outbox row exists afterwards.
+- **Silent create and PATCH audits.** Both emit. The persistence test drains
+  the outbox and asserts the `audit_logs` row with tenant, actor, resource and
+  IP. A separate test injects a commit failure after the audit enqueue and
+  asserts the state change, outbox row and audit row are all absent.
+- **Missing tenant constraints.** Composite keys on `(tenant_id, id)` for every
+  provider reference and `(tenant_id, affiliation_id, provider_id)` for session
+  attribution. Each test asserts the specific constraint name that rejected the
+  write. Replacing one composite key with an existence-only key was verified to
+  make two tests fail.
+- **Invalid migration fixture.** Replaced. The new tests upgrade the real chain
+  into a scratch schema; `alembic/env.py` now honours an injected connection,
+  which is what makes that possible.
+
+## Blockers and gaps, stated plainly
+
+- **No contract regeneration and no real user-flow verification.** Every web
+  check is against mocked endpoints. Nothing has been exercised against a
+  running API.
+- **Applying a staged import imports zero rows.** Staging and review work. A
+  staged row cannot name a member or a service, because neither aggregate has a
+  reconciliation mechanism for this extract. Decided out of scope, unowned.
+- **Typed profile promotion not done.** Tier, region, panel and accreditation
+  fields remain in the `provider_profile` JSON column.
+- **Suspension does not flag future bookings for review.** Decision 7 requires
+  it; it is unimplemented.
+- **The attribution correction path is not built.** Only the rejection half of
+  decision 2 is implemented.
+- **Stale eligibility is prevented structurally**, by a `FOR UPDATE` read
+  inside the booking transaction, not proved by a concurrency test.
+- **No target environment has been inspected or migrated.**
+
+## Findings referred to review
+
+Recorded in `PROVIDERS_MIGRATION.md` with `file:line`:
+
+1. A `PersonId` carries a user id in the clinical case module
+   (`case.py:79`, `case_use_cases.py:107`). Phase 5's PersonId check should not
+   be closed by reading provider code alone. Needs an owner in that module.
+2. Member and service identity for the historical extract have no owner.
+3. The same defect shape, a rule correct in one path and absent in another,
+   occurred three times: the panel routes that started this migration, the
+   delivering organisation resolved only on create, and the booking gate
+   applied on create but not reschedule. All three are fixed. The pattern
+   deserves attention more than the instances do.
+
+## Remaining unchecked document items
+
+`PROVIDERS_MIGRATION.md` carries 16 unchecked items with a note on each saying
+what was and was not done. Phases 1 to 3 are largely complete; phase 4 is not,
+and phase 5 is partial.
