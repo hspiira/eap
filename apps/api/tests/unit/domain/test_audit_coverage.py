@@ -37,7 +37,12 @@ import app.domain.entities as entities_pkg
 # candidates are persisted on the row. The alias decisions that a person makes,
 # resolve and reject, do emit, as do specialty retire/restore and import batch
 # apply/abandon.
-KNOWN_SILENT_MUTATORS = 147
+# SessionImportRowEntity.mark_imported is bookkeeping under an already-audited
+# operation: applying a batch emits SessionImportBatchApplied with the actor and
+# the accepted count, and one event per imported row would flood audit_logs for
+# a file of several thousand. The batch is the auditable act; the rows are its
+# detail, and each carries its own imported_session_id.
+KNOWN_SILENT_MUTATORS = 148
 
 
 def _entity_classes():

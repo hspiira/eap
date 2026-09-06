@@ -7,17 +7,19 @@ historical acceptance, which decision 7 keeps apart.
 
 import hashlib
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_audit_event_handler
 from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
+    get_historical_session_writer,
     get_provider_affiliation_repository,
     get_provider_alias_repository,
     get_session_import_repository,
 )
 from app.api.schemas.provider_network_schemas import (
+    SessionImportApplyResponse,
     SessionImportBatchResponse,
     SessionImportRowListResponse,
     SessionImportRowPreview,
@@ -28,6 +30,7 @@ from app.application.services.provider_alias_reconciliation import (
 from app.application.services.session_import_staging import (
     SessionImportStagingService,
 )
+from app.application.use_cases.apply_session_import import ApplyImportBatchUseCase
 from app.core.authorization import require_same_tenant, require_tenant_role
 from app.core.database import get_db
 from app.core.security import TokenData
@@ -219,15 +222,36 @@ async def list_rows(
     )
 
 
-@router.post("/{batch_id}/apply", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-async def apply_batch(batch_id: str):
-    """Not implemented, deliberately.
+@router.post(
+    "/{batch_id}/apply",
+    response_model=SessionImportApplyResponse,
+    dependencies=[Depends(require_tenant_role(TenantRole.ADMIN))],
+)
+@transactional()
+async def apply_batch(
+    batch_id: str,
+    tenant_id: str = Query(...),
+    current_user: TokenData = Depends(require_same_tenant),
+    imports: SessionImportRepository = Depends(get_session_import_repository),
+    writer=Depends(get_historical_session_writer),
+    db: AsyncSession = Depends(get_db),
+):
+    """Write every importable row through the historical path, then close the batch.
 
-    Applying needs the Admin-only historical write entry point agent 1 owns.
-    Returning 501 keeps the gap visible rather than letting a caller believe a
-    staged batch has been imported.
+    Applying a second time is refused, so a replayed request cannot write
+    twice. `imported` is zero today for every batch: no staged row can reach
+    Accepted while member and service resolution does not exist, which the
+    row outcomes state per row rather than leaving to be discovered here.
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Applying a staged import awaits the historical session write path",
+    result, _ = await ApplyImportBatchUseCase(imports, writer).execute(
+        TenantId(tenant_id),
+        SessionImportBatchId(batch_id),
+        UserId(current_user.user_id),
+        now=utc_now(),
+    )
+    return SessionImportApplyResponse(
+        batch_id=batch_id,
+        imported=result.imported,
+        skipped_already_imported=result.skipped_already_imported,
+        not_importable=result.not_importable,
     )

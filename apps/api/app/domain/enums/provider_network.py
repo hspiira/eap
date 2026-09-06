@@ -50,6 +50,8 @@ class ImportRowOutcome(str, Enum):
     MISSING_PRACTITIONER = "MissingPractitioner"
     UNMAPPED_PRACTITIONER = "UnmappedPractitioner"
     AMBIGUOUS_PRACTITIONER = "AmbiguousPractitioner"
+    UNRESOLVED_MEMBER = "UnresolvedMember"
+    UNRESOLVED_SERVICE = "UnresolvedService"
     REJECTED = "Rejected"
 
 

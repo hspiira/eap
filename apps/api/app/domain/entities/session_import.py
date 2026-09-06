@@ -30,6 +30,8 @@ _REVIEW_OUTCOMES = frozenset(
         ImportRowOutcome.MISSING_PRACTITIONER,
         ImportRowOutcome.UNMAPPED_PRACTITIONER,
         ImportRowOutcome.AMBIGUOUS_PRACTITIONER,
+        ImportRowOutcome.UNRESOLVED_MEMBER,
+        ImportRowOutcome.UNRESOLVED_SERVICE,
         ImportRowOutcome.CONFLICTING,
         ImportRowOutcome.REJECTED,
     }
@@ -135,6 +137,7 @@ class SessionImportRowEntity:
     delivery_context: DeliveryContext = DeliveryContext.UNKNOWN
     provider_id: ProviderId | None = None
     provider_affiliation_id: ProviderAffiliationId | None = None
+    imported_session_id: str | None = None
     reasons: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
@@ -159,7 +162,15 @@ class SessionImportRowEntity:
 
     @property
     def is_importable(self) -> bool:
-        return self.outcome is ImportRowOutcome.ACCEPTED
+        """Accepted and not already written. Both halves matter on replay."""
+        return self.outcome is ImportRowOutcome.ACCEPTED and self.imported_session_id is None
+
+    def mark_imported(self, session_id: str) -> None:
+        if self.imported_session_id is not None:
+            raise DomainError(
+                f"Row {self.row_number} was already imported as {self.imported_session_id}"
+            )
+        self.imported_session_id = session_id
 
     @property
     def needs_review(self) -> bool:

@@ -210,6 +210,14 @@ class SessionImportRepository(ABC):
     ) -> tuple[Sequence[SessionImportRowEntity], int]: ...
 
     @abstractmethod
+    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> None:
+        """Record which session a staged row produced.
+
+        An update, not a second insert: the row already exists and its replay
+        key is unique per tenant.
+        """
+
+    @abstractmethod
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str
     ) -> SessionImportRowEntity | None: ...

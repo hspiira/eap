@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from datetime import date, datetime
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
@@ -430,6 +430,18 @@ class SessionImportRepositoryImpl(SessionImportRepository):
             statement.order_by(SessionImportRowModel.row_number).limit(limit).offset(offset)
         )
         return [SessionImportMapper.row_to_entity(m) for m in rows], total
+
+    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> None:
+        await self.session.execute(
+            update(SessionImportRowModel)
+            .where(
+                SessionImportRowModel.id == row_id,
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.imported_session_id.is_(None),
+            )
+            .values(imported_session_id=session_id)
+        )
+        await self.session.flush()
 
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str

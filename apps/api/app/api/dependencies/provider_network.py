@@ -92,3 +92,17 @@ class UnwiredAttributionGuard:
 
 async def get_affiliation_attribution_guard() -> UnwiredAttributionGuard:
     return UnwiredAttributionGuard()
+
+
+async def get_historical_session_writer():
+    """The adapter onto agent 1's historical write path.
+
+    Application-layer, not infrastructure: it is pure translation between a
+    staged row and their record, with no database or transport concern. That
+    also keeps it off the routes-to-infrastructure allowlist.
+    """
+    from app.application.services.historical_session_writer import (
+        HistoricalSessionWriterAdapter,
+    )
+
+    return HistoricalSessionWriterAdapter(record_use_case=None)

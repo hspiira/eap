@@ -241,6 +241,7 @@ class SessionImportMapper:
             provider_affiliation_id=ProviderAffiliationId(model.provider_affiliation_id)
             if model.provider_affiliation_id
             else None,
+            imported_session_id=model.imported_session_id,
             reasons=tuple(model.reasons or ()),
             created_at=ensure_utc(model.created_at),
         )
@@ -262,6 +263,7 @@ class SessionImportMapper:
             provider_affiliation_id=entity.provider_affiliation_id.value
             if entity.provider_affiliation_id
             else None,
+            imported_session_id=entity.imported_session_id,
             reasons=list(entity.reasons) or None,
             created_at=entity.created_at,
         )
