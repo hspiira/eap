@@ -180,14 +180,14 @@ The remaining retirement slices are now complete:
 - [x] ~~Final `/persons` API removal~~ — the legacy Persons router is no longer
   registered. Provider/session/callback paths no longer require its API.
 
-## Deferred import phase
+## Roster import reference
 
 The sample roster at `/Users/piira/Downloads/persons.csv` is handled by the
 preview-first importer. Its safe mapping is:
 
 | Sample column | Member field | Decision |
 | --- | --- | --- |
-| `Company Code` / `Company` | client lookup | Match the tenant client by code first, then review name matches. |
+| `Company Code` | client lookup | Required tenant-scoped client code; `Company` is informational and is not used as an identity fallback. |
 | `Staff_ID` | `employer_member_id` | Use the stable company-supplied identifier; do not create a second `external_id`. |
 | `Name of Employee` | `display_label` | Required member name. |
 | `Email Address` | `work_email` | Normalize `N/A` and blanks to null. |
@@ -197,6 +197,9 @@ preview-first importer. Its safe mapping is:
 | `Job Title`, `Job Classification`, `Skill`, `Department`, `Unit`, `Contract type` | — | Exclude: these are employment-history/workforce fields, not wellness member data. |
 | `Column2`, `Column3` | — | Ignore. |
 
-The import phase must include preview, duplicate review, client resolution,
+~~The import phase must include preview, duplicate review, client resolution,
 row-level errors, and an explicit decision about whether `Staff_ID` or `Staff
-Number` is the client's canonical member ID.
+Number` is the client's canonical member ID.~~ The importer now provides all of
+those safeguards. `Staff_ID` is the required canonical identifier; rows with
+placeholders or blanks remain errors and `Staff Number` is retained only as
+reference data, never used as an identity fallback.
