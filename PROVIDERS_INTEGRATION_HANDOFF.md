@@ -139,19 +139,37 @@ and `provider_organisation_id` on the session response.
   inside the booking transaction, not proved by a concurrency test.
 - **No target environment has been inspected or migrated.**
 
-## Findings referred to review
+## Findings
 
-Recorded in `PROVIDERS_MIGRATION.md` with `file:line`:
+Recorded in `PROVIDERS_MIGRATION.md` with `file:line`. Three were fixed here;
+three are referred with an owner named or missing.
 
-1. A `PersonId` carries a user id in the clinical case module
-   (`case.py:79`, `case_use_cases.py:107`). Phase 5's PersonId check should not
-   be closed by reading provider code alone. Needs an owner in that module.
-2. Member and service identity for the historical extract have no owner.
-3. The same defect shape, a rule correct in one path and absent in another,
-   occurred three times: the panel routes that started this migration, the
-   delivering organisation resolved only on create, and the booking gate
-   applied on create but not reschedule. All three are fixed. The pattern
-   deserves attention more than the instances do.
+Fixed on this branch:
+
+- `ValidationException` attached every field error to a field literally named
+  "field", so no such error could reach the input it described. Three call
+  sites, one of them this migration's own booking path.
+- A whitespace-only reason returned 400 with nothing attachable, while an empty
+  string returned 422 with a field error.
+- A Viewer could reschedule a session and assign outreach. Decision 7 names
+  both paths.
+
+Referred:
+
+- A `PersonId` carries a user id in the clinical case module (`case.py:79`,
+  `case_use_cases.py:107`). Phase 5's PersonId check should not be closed by
+  reading provider code alone. Needs an owner in that module.
+- Member and service identity for the historical extract have no owner.
+- Twenty further mutating routes in `service_sessions.py` and
+  `care_callbacks.py` have no Viewer guard. Pre-existing; the base commit has
+  the same gap. Fixing them means changing authorization across two modules
+  this migration does not own.
+
+The recurring shape is a rule correct in one path and absent in another. It
+occurred five times across this work and was fixed each time. Two instances
+were found by peers reading the branch, one only by an end-to-end test, and one
+by auditing every mutating route for a guard. That pattern deserves more of the
+reviewer's attention than any single instance.
 
 ## Remaining unchecked document items
 

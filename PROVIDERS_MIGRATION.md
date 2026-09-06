@@ -106,11 +106,40 @@ left unattended.
    provider module does not own. Unowned and unscoped, recorded so that
    "staging and review work" is not read as "import works".
 
-3. Three times in this branch a rule was correct in one path and absent in
-   another: the panel routes that started this migration, the delivering
-   organisation resolved only on the create response, and the booking gate
-   applied on session creation but not on reschedule. All three are fixed. The
-   pattern is worth the reviewer's attention rather than the three instances.
+3. `ValidationException` attached every field error to a field literally named
+   "field". It passed its field as `details={"field": field}`, and the
+   serialiser reads details keys as field names, so the entry was named "field"
+   and carried a field name as its message. Three live call sites, including
+   this migration's own rejection of Unknown delivery on a live booking. Fixed:
+   the class carries a real field error and an optional code, and errors built
+   from a plain details dict serialise unchanged. Found by agent 3 reading the
+   branch after agent 2 fixed the same shape at their own call site.
+
+4. A whitespace-only reason returned 400 with nothing attachable to an input,
+   while an empty string returned 422 with a field error, because `min_length`
+   is checked before stripping. Fixed at the schema, so every blank variant is
+   one 422 against `reason`; the domain check stays as the invariant. Agent 2
+   had the same defect on four of their fields and fixed it independently,
+   which is how this one was traced to the provider commands.
+
+5. Twenty mutating routes have no Viewer guard, and it is pre-existing: the
+   base commit `e672b6f` has the same guards this branch does.
+   `service_sessions.py` guards create but not complete, cancel, no-show,
+   update, feedback, archive or restore; `care_callbacks.py` guards nothing.
+   Decision 7 says plainly that Viewers cannot mutate. Two of those routes were
+   in this migration's scope because decision 7 names them, rescheduling and
+   outreach assignment, and both are now guarded and tested. The remaining
+   twenty are referred rather than fixed here, because changing authorization
+   across two other modules is a wider decision than a provider release should
+   take alone.
+
+6. The same defect shape, a rule correct in one path and absent in another,
+   recurred through this work: the panel routes that started the migration, the
+   delivering organisation resolved only on the create response, the booking
+   gate applied on creation but not reschedule, and findings 3 and 4 above. All
+   are fixed. Two were found by peers reading the branch and one only by an
+   end-to-end test. The pattern deserves more of the reviewer's attention than
+   any single instance.
 
 ### Phase 1 to 4 verification, 2026-09-06
 
