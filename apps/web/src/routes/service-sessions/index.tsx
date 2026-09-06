@@ -125,7 +125,7 @@ function ServiceSessionsListPage() {
 
   const { data: servicesData } = useQuery({
     queryKey: ["services", "lookup"],
-    queryFn: () => servicesApi.list({ limit: 200 }),
+    queryFn: () => servicesApi.list({ limit: 100 }),
     staleTime: 5 * 60_000,
   })
   const servicesById = useMemo(() => {

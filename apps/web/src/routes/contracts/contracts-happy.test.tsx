@@ -65,9 +65,23 @@ const { Route } = await import("@/routes/contracts/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
 describe("contracts list: happy path", () => {
-  it("resolves the client name instead of showing an id fragment", async () => {
+  /**
+   * The limit assertion rides along with this render because the clients
+   * endpoint caps limit at 100: asking for more 422s, the lookup resolves to
+   * nothing, and every row silently reads "Unknown client" while the detail
+   * page resolves the same client fine.
+   */
+  it("resolves the client name from a lookup the endpoint will accept", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Stanbic Bank Uganda")).toBeInTheDocument()
     expect(screen.queryByText("cl_1")).not.toBeInTheDocument()
+    expect(screen.queryByText("Unknown client")).not.toBeInTheDocument()
+
+    const { clientsApi } = await import("@/api/endpoints/clients")
+    const list = clientsApi.list as unknown as { mock: { calls: [{ limit?: number }][] } }
+    expect(list.mock.calls.length).toBeGreaterThan(0)
+    for (const [params] of list.mock.calls) {
+      expect(params?.limit ?? 0).toBeLessThanOrEqual(100)
+    }
   })
 })

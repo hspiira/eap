@@ -54,6 +54,13 @@ export const Route = createFileRoute("/contracts/")({
   }),
 })
 
+/**
+ * The clients endpoint caps limit at 100 (`pagination()` defaults in
+ * app/api/dependencies/pagination.py). Asking for more 422s, which left the
+ * lookup empty and every row reading "Unknown client".
+ */
+const CLIENT_LOOKUP_LIMIT = 100
+
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: ContractStatus.ACTIVE, label: "Active" },
@@ -115,7 +122,7 @@ function ContractsListPage() {
 
   const { data: clientsData } = useQuery({
     queryKey: ["clients", "lookup"],
-    queryFn: () => clientsApi.list({ limit: 500 }),
+    queryFn: () => clientsApi.list({ limit: CLIENT_LOOKUP_LIMIT }),
     staleTime: 5 * 60_000,
   })
   const clientsById = useMemo(() => {
@@ -283,7 +290,7 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
   const billing = formatBilling(row)
   const clientName = clientsById.get(row.client_id)?.name ?? "Unknown client"
   return (
-    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+    <TableRow className={`group h-9 cursor-default ${ROW_BORDER}`}>
       <TableCell className="max-w-[16rem]">
         <Link
           to="/contracts/$contractId"
@@ -307,19 +314,19 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
       <TableCell>
         <StatusBadge status={row.payment_status} />
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-fg/75">
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {formatDay(row.period.start_date)}
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-fg/75">
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {formatDay(row.period.end_date)}
       </TableCell>
       <TableCell className={cn("whitespace-nowrap text-xs", termTone(row))}>
         {termLabel(row)}
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right tabular-nums text-sm text-fg">
+      <TableCell className="whitespace-nowrap text-right tabular-nums text-xs text-fg">
         {billing.amount}
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-fg/70">{billing.frequency}</TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">{billing.frequency}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link

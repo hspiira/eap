@@ -35,12 +35,10 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { termLabel, termTone } from "@/lib/contract-term"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { addYearsToDay, daysBetweenDays, formatDay } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
-import { cn } from "@/lib/utils"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -122,12 +120,12 @@ function ContractDetailPage() {
   })
   if (state || !contract) return state
 
-  const number = contract.id
+  const title = client?.name ?? "Contract"
 
   return (
     <PageShell
       icon={FileSignature}
-      breadcrumb={`Commercial · Contracts · ${number}`}
+      breadcrumb={`Commercial · Contracts · ${title}`}
       actions={
         <>
           <Button
@@ -282,21 +280,24 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
       >
         <FileSignature className="size-4" />
       </span>
-      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg font-mono">
-        {contract.id.slice(0, 8)}
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
+        {client ? (
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: client.id }}
+            className="hover:text-primary"
+          >
+            {client.name}
+          </Link>
+        ) : (
+          "Contract"
+        )}
       </h1>
-      {client ? (
-        <Link
-          to="/clients/$clientId"
-          params={{ clientId: client.id }}
-          className="text-xs text-fg/65 hover:text-primary"
-        >
-          {client.name}
-          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
-        </Link>
-      ) : (
-        <span className="font-mono text-xs text-fg-subtle">{contract.client_id.slice(0, 8)}</span>
-      )}
+      {client?.code ? <span className="shrink-0 text-xs text-fg-subtle">{client.code}</span> : null}
+      <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
+      <span className="shrink-0 whitespace-nowrap text-xs text-fg/65">
+        {formatDay(contract.period.start_date)} to {formatDay(contract.period.end_date)}
+      </span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={contract.status} />
     </div>
@@ -343,14 +344,13 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
         )}
       </RailSection>
 
-      <RailSection title="At a glance">
+      <RailSection title="Billing">
         <p className="tabular-nums text-lg font-semibold leading-tight text-fg">
           {formatMoney(contract)}
         </p>
         <p className="mt-0.5 text-xs text-fg-muted">{contract.payment_frequency}</p>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3">
           <StatusBadge status={contract.payment_status} size="sm" />
-          <span className={cn("text-xs", termTone(contract))}>{termLabel(contract)}</span>
         </div>
       </RailSection>
 

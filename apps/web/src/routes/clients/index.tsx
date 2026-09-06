@@ -724,7 +724,7 @@ function ClientRow({
   onArchive?: () => void
 }) {
   return (
-    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
+    <TableRow className={`group h-9 cursor-default ${ROW_BORDER}`}>
       <TableCell className="px-3">
         <Checkbox
           aria-label={`Select ${row.name}`}
