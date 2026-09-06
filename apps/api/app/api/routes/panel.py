@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import (
     get_audit_event_handler,
     get_non_compete_clause_repository,
-    get_person_repository,
+    get_provider_repository,
 )
 from app.api.schemas.panel_schemas import (
     BulkPanelStatusResponse,
@@ -15,25 +15,18 @@ from app.api.schemas.panel_schemas import (
     TierChangeRequest,
     TierChangeResponse,
 )
-from app.application.use_cases.panel_use_cases import (
-    BulkUpdatePanelStatusUseCase,
-    ChangeProviderTierUseCase,
-    CheckProviderEligibilityUseCase,
-)
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
+from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
 )
-from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.value_objects.core import (
-    ClientId,
-    PersonId,
+    ProviderId,
     TenantId,
-    UserId,
 )
 from app.shared.decorators import readonly, transactional
-from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/panel", tags=["panel"])
 
@@ -48,24 +41,33 @@ async def bulk_update_panel_status(
     data: BulkPanelStatusUpdate,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    person_repo: PersonRepository = Depends(get_person_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case = BulkUpdatePanelStatusUseCase(person_repo)
-    result = await use_case.execute(
-        tenant_id=TenantId(current_user.tenant_id),
-        provider_ids=[PersonId(p) for p in data.provider_ids],
-        new_status=data.new_status,
-        actor=UserId(current_user.user_id),
-        reason=data.reason,
-    )
+    updated, skipped, not_found, not_provider = [], [], [], []
+    for provider_id in data.provider_ids:
+        row = await provider_repo.get_by_id(ProviderId(provider_id))
+        if row is None or row[0].tenant_id != current_user.tenant_id:
+            not_found.append(provider_id)
+            continue
+        provider, _user = row
+        profile = provider.provider_profile
+        if not profile:
+            not_provider.append(provider_id)
+            continue
+        if profile.get("panel_status") == data.new_status.value:
+            skipped.append(provider_id)
+            continue
+        provider.provider_profile = {**profile, "panel_status": data.new_status.value}
+        await db.flush()
+        updated.append(provider_id)
     return BulkPanelStatusResponse(
-        updated=result.updated,
-        skipped_no_change=result.skipped_no_change,
-        not_found=result.not_found,
-        not_provider=result.not_provider,
-        updated_count=len(result.updated),
+        updated=updated,
+        skipped_no_change=skipped,
+        not_found=not_found,
+        not_provider=not_provider,
+        updated_count=len(updated),
         requested_count=len(data.provider_ids),
     )
 
@@ -81,20 +83,20 @@ async def change_provider_tier(
     data: TierChangeRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
-    person_repo: PersonRepository = Depends(get_person_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    person = await ChangeProviderTierUseCase(person_repo).execute(
-        tenant_id=TenantId(current_user.tenant_id),
-        provider_id=PersonId(provider_id),
-        new_tier=data.new_tier,
-        actor=UserId(current_user.user_id),
-        reason=data.reason,
-    )
-    await audit_change(person, audit_handler, current_user, request)
+    row = await provider_repo.get_by_id(ProviderId(provider_id))
+    if row is None or row[0].tenant_id != current_user.tenant_id:
+        raise NotFoundError(f"Provider not found: {provider_id}")
+    provider, _user = row
+    if not provider.provider_profile:
+        raise DomainError("Provider has no panel profile")
+    provider.provider_profile = {**provider.provider_profile, "tier": data.new_tier.value}
+    await db.flush()
     return TierChangeResponse(
-        provider_id=person.id.value,
+        provider_id=provider.id,
         new_tier=data.new_tier,
     )
 
@@ -109,14 +111,24 @@ async def check_provider_eligibility(
     provider_id: str,
     client_id: str | None = Query(default=None, description="Optional client scope for the check"),
     current_user: TokenData = Depends(get_current_user),
-    person_repo: PersonRepository = Depends(get_person_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     clause_repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    use_case = CheckProviderEligibilityUseCase(person_repo, clause_repo)
-    out = await use_case.execute(
-        tenant_id=TenantId(current_user.tenant_id),
-        provider_id=PersonId(provider_id),
-        client_id=ClientId(client_id) if client_id else None,
-    )
+    row = await provider_repo.get_by_id(ProviderId(provider_id))
+    if row is None or row[0].tenant_id != current_user.tenant_id:
+        raise NotFoundError(f"Provider not found: {provider_id}")
+    profile = row[0].provider_profile
+    clauses = await clause_repo.list_for_provider(TenantId(current_user.tenant_id), ProviderId(provider_id))
+    binding = [c for c in clauses if c.is_currently_binding()]
+    panel_eligible = bool(profile and profile.get("panel_status") == "Active" and profile.get("accreditation_status") == "Accredited")
+    out = {
+        "provider_id": provider_id,
+        "client_id": client_id,
+        "panel_eligible": panel_eligible,
+        "binding_non_compete_count": len(binding),
+        "binding_non_compete_ids": [c.id.value for c in binding],
+        "eligible": panel_eligible and not binding,
+        "reasons": [] if panel_eligible else ["Provider is not panel eligible"],
+    }
     return ProviderEligibilityResponse(**out)
