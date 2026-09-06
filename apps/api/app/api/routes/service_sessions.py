@@ -8,6 +8,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -119,6 +120,22 @@ def to_service_session_response(
 # ==================== COMMANDS (Use Cases) ====================
 
 
+def _provider_tenant_id(provider: object) -> str | None:
+    """Tenant of a provider row, or None when it cannot be read.
+
+    `ProviderRepository.get_by_id` selects two entities, so SQLAlchemy returns a
+    `Row`. A `Row` is not a `tuple` instance, so the isinstance check this
+    replaced never matched: every provider resolved to no tenant, took the
+    legacy person branch, and 404d. Anything that is not a Row is read
+    directly, which keeps test overrides and pre-cutover callers working.
+    """
+    if provider is None:
+        return None
+    candidate = provider[0] if isinstance(provider, Row) else provider
+    tenant_id = getattr(candidate, "tenant_id", None)
+    return tenant_id if isinstance(tenant_id, str) else None
+
+
 @router.post(
     "/",
     response_model=ServiceSessionResponse,
@@ -145,11 +162,7 @@ async def create_service_session(
     if member is None or member.tenant_id.value != tenant_id:
         raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
     provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
-    # Compatibility for test/rollout overrides and pre-cutover workers. New
-    # persistence always returns a (ProviderModel, UserModel) tuple.
-    provider_tenant = (
-        getattr(provider[0], "tenant_id", None) if isinstance(provider, tuple) else None
-    )
+    provider_tenant = _provider_tenant_id(provider)
     if provider_tenant is None:
         legacy_provider = await person_repo.get_by_id(ProviderId(data.provider_id))
         provider_tenant = legacy_provider.tenant_id.value if legacy_provider else None

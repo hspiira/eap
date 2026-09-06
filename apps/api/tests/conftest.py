@@ -1115,12 +1115,16 @@ async def session_test_service(client: AsyncClient, session_test_tenant: dict) -
 async def session_test_provider(
     db_session: AsyncSession, session_test_tenant: dict
 ) -> dict[str, Any]:
-    """Create a provider person for session tests."""
-    from app.domain.enums import BaseStatus, PersonType, UserStatus
-    from app.infrastructure.models.person_model import PersonModel
+    """Create a provider for session tests.
+
+    `service_sessions.provider_id` points at `providers`, not `persons`, since
+    `e5g7i9k1m3o5_independent_providers`. A provider person does not satisfy
+    that constraint.
+    """
+    from app.domain.enums import BaseStatus, UserStatus
+    from app.infrastructure.models.provider_model import ProviderModel
     from app.infrastructure.models.user_model import UserModel
 
-    # Create user first
     user_id = generate_cuid()
     user = UserModel(
         id=user_id,
@@ -1132,14 +1136,11 @@ async def session_test_provider(
     db_session.add(user)
     await db_session.flush()
 
-    # Create provider person
-    person_id = generate_cuid()
-    person = PersonModel(
-        id=person_id,
+    provider_id = generate_cuid()
+    provider = ProviderModel(
+        id=provider_id,
         tenant_id=session_test_tenant["id"],
         user_id=user_id,
-        person_type=PersonType.SERVICE_PROVIDER,
-        is_dual_role=False,
         status=BaseStatus.ACTIVE,
         license_info={
             "number": "LIC-TEST-001",
@@ -1147,11 +1148,11 @@ async def session_test_provider(
             "expiry_date": "2027-12-31",
         },
     )
-    db_session.add(person)
+    db_session.add(provider)
     await db_session.commit()
 
     return {
-        "id": person_id,
+        "id": provider_id,
         "user_id": user_id,
         "tenant_id": session_test_tenant["id"],
     }
