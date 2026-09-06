@@ -11,7 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
+    ProviderAliasRepository,
     ProviderOrganisationRepository,
+    ProviderSpecialtyRepository,
+    SessionImportRepository,
 )
 
 
@@ -33,3 +36,33 @@ async def get_provider_affiliation_repository(
     )
 
     return ProviderAffiliationRepositoryImpl(db)
+
+
+async def get_provider_specialty_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ProviderSpecialtyRepository:
+    from app.infrastructure.repositories.provider_network_repository import (
+        ProviderSpecialtyRepositoryImpl,
+    )
+
+    return ProviderSpecialtyRepositoryImpl(db)
+
+
+async def get_provider_alias_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ProviderAliasRepository:
+    from app.infrastructure.repositories.provider_network_repository import (
+        ProviderAliasRepositoryImpl,
+    )
+
+    return ProviderAliasRepositoryImpl(db)
+
+
+async def get_session_import_repository(
+    db: AsyncSession = Depends(get_db),
+) -> SessionImportRepository:
+    from app.infrastructure.repositories.provider_network_repository import (
+        SessionImportRepositoryImpl,
+    )
+
+    return SessionImportRepositoryImpl(db)

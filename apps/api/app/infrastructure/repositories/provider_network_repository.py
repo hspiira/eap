@@ -7,23 +7,50 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
+from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
+from app.domain.entities.provider_specialty import (
+    ProviderSpecialtyEntity,
+    ProviderSpecialtyLinkEntity,
+)
+from app.domain.entities.session_import import (
+    SessionImportBatchEntity,
+    SessionImportRowEntity,
+)
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
+    ProviderAliasRepository,
     ProviderOrganisationRepository,
+    ProviderSpecialtyRepository,
+    SessionImportRepository,
 )
 from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ProviderId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
+    ProviderAliasId,
     ProviderOrganisationId,
+    ProviderSpecialtyId,
+    SessionImportBatchId,
 )
 from app.infrastructure.mappers.provider_network_mapper import (
     ProviderAffiliationMapper,
+    ProviderAliasMapper,
     ProviderOrganisationMapper,
+    ProviderSpecialtyMapper,
+    SessionImportMapper,
 )
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
+from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
+from app.infrastructure.models.provider_specialty_model import (
+    ProviderSpecialtyLinkModel,
+    ProviderSpecialtyModel,
+)
+from app.infrastructure.models.session_import_model import (
+    SessionImportBatchModel,
+    SessionImportRowModel,
+)
 
 _ORGANISATION_SORTS = {
     "name": ProviderOrganisationModel.name,
@@ -238,3 +265,192 @@ class ProviderAffiliationRepositoryImpl(ProviderAffiliationRepository):
     async def save_affiliation(self, affiliation: ProviderAffiliationEntity) -> None:
         await self.session.merge(ProviderAffiliationMapper.to_model(affiliation))
         await self.session.flush()
+
+
+class ProviderSpecialtyRepositoryImpl(ProviderSpecialtyRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_specialty(
+        self, specialty_id: ProviderSpecialtyId
+    ) -> ProviderSpecialtyEntity | None:
+        model = await self.session.scalar(
+            select(ProviderSpecialtyModel).where(ProviderSpecialtyModel.id == specialty_id.value)
+        )
+        return ProviderSpecialtyMapper.to_entity(model) if model else None
+
+    async def list_specialties(
+        self, *, include_inactive: bool = False
+    ) -> Sequence[ProviderSpecialtyEntity]:
+        statement = select(ProviderSpecialtyModel)
+        if not include_inactive:
+            statement = statement.where(ProviderSpecialtyModel.is_active.is_(True))
+        rows = await self.session.scalars(statement.order_by(ProviderSpecialtyModel.label))
+        return [ProviderSpecialtyMapper.to_entity(m) for m in rows]
+
+    async def save_specialty(self, specialty: ProviderSpecialtyEntity) -> None:
+        await self.session.merge(ProviderSpecialtyMapper.to_model(specialty))
+        await self.session.flush()
+
+    async def list_links_for_provider(
+        self, tenant_id: TenantId, provider_id: ProviderId
+    ) -> Sequence[ProviderSpecialtyLinkEntity]:
+        rows = await self.session.scalars(
+            select(ProviderSpecialtyLinkModel).where(
+                ProviderSpecialtyLinkModel.tenant_id == tenant_id.value,
+                ProviderSpecialtyLinkModel.provider_id == provider_id.value,
+            )
+        )
+        return [ProviderSpecialtyMapper.link_to_entity(m) for m in rows]
+
+    async def add_link(self, link: ProviderSpecialtyLinkEntity) -> None:
+        self.session.add(ProviderSpecialtyMapper.link_to_model(link))
+        await self.session.flush()
+
+    async def remove_link(self, tenant_id: TenantId, link_id: str) -> bool:
+        model = await self.session.scalar(
+            select(ProviderSpecialtyLinkModel).where(
+                ProviderSpecialtyLinkModel.id == link_id,
+                ProviderSpecialtyLinkModel.tenant_id == tenant_id.value,
+            )
+        )
+        if model is None:
+            return False
+        await self.session.delete(model)
+        await self.session.flush()
+        return True
+
+
+class ProviderAliasRepositoryImpl(ProviderAliasRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def find_alias(
+        self, tenant_id: TenantId, source_system: str, normalized_value: str
+    ) -> ProviderAliasEntity | None:
+        model = await self.session.scalar(
+            select(ProviderAliasModel).where(
+                ProviderAliasModel.tenant_id == tenant_id.value,
+                ProviderAliasModel.source_system == source_system,
+                ProviderAliasModel.normalized_value == normalized_value,
+            )
+        )
+        return ProviderAliasMapper.to_entity(model) if model else None
+
+    async def get_alias(
+        self, tenant_id: TenantId, alias_id: ProviderAliasId
+    ) -> ProviderAliasEntity | None:
+        model = await self.session.scalar(
+            select(ProviderAliasModel).where(
+                ProviderAliasModel.id == alias_id.value,
+                ProviderAliasModel.tenant_id == tenant_id.value,
+            )
+        )
+        return ProviderAliasMapper.to_entity(model) if model else None
+
+    async def list_aliases(
+        self,
+        tenant_id: TenantId,
+        *,
+        source_system: str | None = None,
+        state: str | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[Sequence[ProviderAliasEntity], int]:
+        statement = select(ProviderAliasModel).where(
+            ProviderAliasModel.tenant_id == tenant_id.value
+        )
+        if source_system:
+            statement = statement.where(ProviderAliasModel.source_system == source_system)
+        if state:
+            statement = statement.where(ProviderAliasModel.state == state)
+        total = await _count(self.session, statement)
+        rows = await self.session.scalars(
+            statement.order_by(ProviderAliasModel.normalized_value).limit(limit).offset(offset)
+        )
+        return [ProviderAliasMapper.to_entity(m) for m in rows], total
+
+    async def save_alias(self, alias: ProviderAliasEntity) -> None:
+        await self.session.merge(ProviderAliasMapper.to_model(alias))
+        await self.session.flush()
+
+
+class SessionImportRepositoryImpl(SessionImportRepository):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_batch(
+        self, tenant_id: TenantId, batch_id: SessionImportBatchId
+    ) -> SessionImportBatchEntity | None:
+        model = await self.session.scalar(
+            select(SessionImportBatchModel).where(
+                SessionImportBatchModel.id == batch_id.value,
+                SessionImportBatchModel.tenant_id == tenant_id.value,
+            )
+        )
+        return SessionImportMapper.batch_to_entity(model) if model else None
+
+    async def find_batch_by_hash(
+        self, tenant_id: TenantId, file_hash: str
+    ) -> SessionImportBatchEntity | None:
+        model = await self.session.scalar(
+            select(SessionImportBatchModel).where(
+                SessionImportBatchModel.tenant_id == tenant_id.value,
+                SessionImportBatchModel.file_hash == file_hash,
+            )
+        )
+        return SessionImportMapper.batch_to_entity(model) if model else None
+
+    async def save_batch(self, batch: SessionImportBatchEntity) -> None:
+        await self.session.merge(SessionImportMapper.batch_to_model(batch))
+        await self.session.flush()
+
+    async def add_rows(self, rows: Sequence[SessionImportRowEntity], *, file_hash: str) -> None:
+        for row in rows:
+            self.session.add(SessionImportMapper.row_to_model(row, file_hash=file_hash))
+        await self.session.flush()
+
+    async def list_rows(
+        self,
+        tenant_id: TenantId,
+        batch_id: SessionImportBatchId,
+        *,
+        outcome: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[Sequence[SessionImportRowEntity], int]:
+        statement = select(SessionImportRowModel).where(
+            SessionImportRowModel.tenant_id == tenant_id.value,
+            SessionImportRowModel.batch_id == batch_id.value,
+        )
+        if outcome:
+            statement = statement.where(SessionImportRowModel.outcome == outcome)
+        total = await _count(self.session, statement)
+        rows = await self.session.scalars(
+            statement.order_by(SessionImportRowModel.row_number).limit(limit).offset(offset)
+        )
+        return [SessionImportMapper.row_to_entity(m) for m in rows], total
+
+    async def find_row_by_replay_key(
+        self, tenant_id: TenantId, replay_key: str
+    ) -> SessionImportRowEntity | None:
+        model = await self.session.scalar(
+            select(SessionImportRowModel).where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.replay_key == replay_key,
+            )
+        )
+        return SessionImportMapper.row_to_entity(model) if model else None
+
+    async def outcome_counts(
+        self, tenant_id: TenantId, batch_id: SessionImportBatchId
+    ) -> dict[str, int]:
+        rows = await self.session.execute(
+            select(SessionImportRowModel.outcome, func.count())
+            .where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.batch_id == batch_id.value,
+            )
+            .group_by(SessionImportRowModel.outcome)
+        )
+        return {str(outcome): int(count) for outcome, count in rows}

@@ -27,7 +27,14 @@ def _require_non_blank(value: str) -> str:
     return stripped
 
 
-NonBlankStr = Annotated[SanitizedStr, Field(max_length=500), AfterValidator(_require_non_blank)]
+def _non_blank(max_length: int):
+    """A required text field that rejects whitespace-only input as a 422."""
+    return Annotated[SanitizedStr, Field(max_length=max_length), AfterValidator(_require_non_blank)]
+
+
+NonBlankStr = _non_blank(500)
+NonBlankName = _non_blank(255)
+NonBlankCode = _non_blank(100)
 
 
 class ReasonRequest(BaseModel):
@@ -41,7 +48,7 @@ class ReasonRequest(BaseModel):
 
 
 class ProviderOrganisationCreate(BaseModel):
-    name: SanitizedStr = Field(..., min_length=1, max_length=255)
+    name: NonBlankName
     registration_number: OptionalSanitizedStr = Field(None, max_length=100)
     contact_email: EmailStr | None = None
     contact_phone: OptionalSanitizedStr = Field(None, max_length=50)
@@ -127,8 +134,8 @@ class ProviderSpecialtyResponse(BaseModel):
 
 
 class ProviderSpecialtyCreate(BaseModel):
-    code: SanitizedStr = Field(..., min_length=1, max_length=100)
-    label: SanitizedStr = Field(..., min_length=1, max_length=255)
+    code: NonBlankCode
+    label: NonBlankName
 
 
 class ProviderSpecialtyLinkCreate(BaseModel):
@@ -175,7 +182,7 @@ class ProviderAliasResolveRequest(BaseModel):
 
 
 class ProviderAliasRejectRequest(BaseModel):
-    note: SanitizedStr = Field(..., min_length=1, max_length=500)
+    note: NonBlankStr
 
 
 class SessionImportRowPreview(BaseModel):
